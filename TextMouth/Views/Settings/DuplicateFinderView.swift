@@ -156,14 +156,16 @@ struct DuplicateFinderView: View {
                             ForEach(group.books) { book in
                                 DuplicateBookRow(
                                     book: book,
-                                    isSelected: selectedForRemoval.contains(book.id),
-                                    onToggle: {
-                                        if selectedForRemoval.contains(book.id) {
-                                            selectedForRemoval.remove(book.id)
-                                        } else {
-                                            selectedForRemoval.insert(book.id)
+                                    isSelected: Binding(
+                                        get: { selectedForRemoval.contains(book.id) },
+                                        set: { newValue in
+                                            if newValue {
+                                                selectedForRemoval.insert(book.id)
+                                            } else {
+                                                selectedForRemoval.remove(book.id)
+                                            }
                                         }
-                                    }
+                                    )
                                 )
                                 Divider().padding(.leading)
                             }
@@ -305,18 +307,17 @@ struct DuplicateFinderView: View {
     }
 }
 
-/// A row showing a potentially duplicate book with a selection checkbox.
-/// The entire row is a single accessibility element with toggle behavior.
-struct DuplicateBookRow: View {
+/// Custom toggle style that renders as a checkmark circle with book details.
+/// Using a real Toggle (instead of a custom view with accessibilityRepresentation)
+/// gives VoiceOver a native "tick box" role with reliable checked/unchecked state.
+struct DuplicateBookToggleStyle: ToggleStyle {
     let book: Book
-    let isSelected: Bool
-    let onToggle: () -> Void
 
-    var body: some View {
+    func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 10) {
-            // Selection indicator (visual only — accessibility is on the row)
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isSelected ? .red : .secondary)
+            // Checkmark indicator
+            Image(systemName: configuration.isOn ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(configuration.isOn ? .red : .secondary)
                 .font(.title3)
                 .accessibilityHidden(true)
 
@@ -357,26 +358,30 @@ struct DuplicateBookRow: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
-        .background(isSelected ? Color.red.opacity(0.08) : Color.clear)
+        .background(configuration.isOn ? Color.red.opacity(0.08) : Color.clear)
         .contentShape(Rectangle())
-        .onTapGesture { onToggle() }
-        .accessibilityRepresentation {
-            // Represent as a Toggle so VoiceOver announces the checked/unchecked state
-            Toggle(accessibilityLabel, isOn: Binding(
-                get: { isSelected },
-                set: { _ in onToggle() }
-            ))
+        .onTapGesture { configuration.isOn.toggle() }
+    }
+}
+
+/// A row showing a potentially duplicate book with a selection checkbox.
+/// Built as a real Toggle so VoiceOver announces "tick box, checked/unchecked".
+struct DuplicateBookRow: View {
+    let book: Book
+    @Binding var isSelected: Bool
+
+    var body: some View {
+        Toggle(isOn: $isSelected) {
+            // The label is hidden visually but used by VoiceOver
+            Text(accessibilityLabel)
         }
+        .toggleStyle(DuplicateBookToggleStyle(book: book))
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(isSelected ? "Checked" : "Unchecked")
     }
 
     private var accessibilityLabel: String {
-        var parts: [String] = []
-        if isSelected {
-            parts.append("Selected for removal")
-        }
-        parts.append(book.title)
-        parts.append("by \(book.author)")
-        parts.append(book.format.displayName)
+        var parts = [book.title, "by \(book.author)", book.format.displayName]
         if !book.folderPath.isEmpty {
             parts.append("in \(book.folderPath)")
         } else {
