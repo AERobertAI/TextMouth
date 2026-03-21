@@ -921,25 +921,30 @@ class LibraryViewModel: ObservableObject {
         let oldDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(oldPath, isDirectory: true)
         try? TextMouthPaths.ensureLibrarySubfolder(newParentPath)
         let newDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(newPath, isDirectory: true)
+        var diskMoveSucceeded = false
         if FileManager.default.fileExists(atPath: oldDiskURL.path), oldDiskURL != newDiskURL {
             do {
                 try FileManager.default.moveItem(at: oldDiskURL, to: newDiskURL)
+                diskMoveSucceeded = true
             } catch {
                 print("Failed to move folder on disk: \(error)")
             }
         }
 
-        // Update filePath for all books in the moved tree
-        for i in library.books.indices {
-            let book = library.books[i]
-            if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
-                if !book.tmbDirectoryName.isEmpty {
-                    let tmbDir = TextMouthPaths.tmbPath(
-                        folderPath: book.folderPath,
-                        tmbName: book.tmbDirectoryName
-                    )
-                    let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-                    library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+        // Only update filePath if the disk move actually succeeded, otherwise
+        // the file is still at the old location and updating filePath would break it
+        if diskMoveSucceeded {
+            for i in library.books.indices {
+                let book = library.books[i]
+                if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
+                    if !book.tmbDirectoryName.isEmpty {
+                        let tmbDir = TextMouthPaths.tmbPath(
+                            folderPath: book.folderPath,
+                            tmbName: book.tmbDirectoryName
+                        )
+                        let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+                        library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+                    }
                 }
             }
         }
@@ -959,25 +964,29 @@ class LibraryViewModel: ObservableObject {
         // Rename the disk directory
         let oldDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(oldPath, isDirectory: true)
         let newDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(newPath, isDirectory: true)
+        var diskRenameSucceeded = false
         if FileManager.default.fileExists(atPath: oldDiskURL.path), oldDiskURL != newDiskURL {
             do {
                 try FileManager.default.moveItem(at: oldDiskURL, to: newDiskURL)
+                diskRenameSucceeded = true
             } catch {
                 print("Failed to rename folder on disk: \(error)")
             }
         }
 
-        // Update filePath for all books in the renamed tree
-        for i in library.books.indices {
-            let book = library.books[i]
-            if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
-                if !book.tmbDirectoryName.isEmpty {
-                    let tmbDir = TextMouthPaths.tmbPath(
-                        folderPath: book.folderPath,
-                        tmbName: book.tmbDirectoryName
-                    )
-                    let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-                    library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+        // Only update filePath if the disk rename succeeded
+        if diskRenameSucceeded {
+            for i in library.books.indices {
+                let book = library.books[i]
+                if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
+                    if !book.tmbDirectoryName.isEmpty {
+                        let tmbDir = TextMouthPaths.tmbPath(
+                            folderPath: book.folderPath,
+                            tmbName: book.tmbDirectoryName
+                        )
+                        let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+                        library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+                    }
                 }
             }
         }
