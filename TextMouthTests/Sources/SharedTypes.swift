@@ -125,6 +125,17 @@ struct BookFolder: Identifiable, Codable, Hashable {
     }
 }
 
+extension Array where Element == BookFolder {
+    /// Sort folders in tree order: parent immediately followed by children.
+    func sortedTreeOrder() -> [BookFolder] {
+        sorted {
+            let a = $0.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
+            let b = $1.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
+            return a < b
+        }
+    }
+}
+
 /// Mirrored from the app for metadata editing and persistence tests
 struct AudioMetadata: Codable {
     var title: String

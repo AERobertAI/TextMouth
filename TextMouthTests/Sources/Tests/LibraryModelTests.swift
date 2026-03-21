@@ -683,4 +683,56 @@ test("renameFolder sanitizes slashes in name") {
     try assertEqual(library.folders[0].name, "New-Name", "Slashes should be replaced with dashes")
 }
 
+// ---- Folder Tree-Order Sort Tests ----
+print("\n--- Folder Tree-Order Sort Tests ---")
+
+test("sortedTreeOrder keeps children after parent, not interleaved") {
+    // The bug: "Misc SciFi anthologies" sorted between "Misc SciFi" and "Misc SciFi/Sub"
+    let folders = [
+        BookFolder(name: "Misc SciFi"),
+        BookFolder(name: "Sub", parentPath: "Misc SciFi"),
+        BookFolder(name: "Misc SciFi anthologies"),
+    ]
+    let sorted = folders.sortedTreeOrder()
+    let paths = sorted.map { $0.fullPath }
+
+    try assertEqual(paths[0], "Misc SciFi", "Parent should come first")
+    try assertEqual(paths[1], "Misc SciFi/Sub", "Child should follow parent")
+    try assertEqual(paths[2], "Misc SciFi anthologies", "Unrelated folder should come after parent's children")
+}
+
+test("sortedTreeOrder handles deep nesting correctly") {
+    let folders = [
+        BookFolder(name: "Z"),
+        BookFolder(name: "A"),
+        BookFolder(name: "B", parentPath: "A"),
+        BookFolder(name: "C", parentPath: "A/B"),
+        BookFolder(name: "A extra"),
+    ]
+    let sorted = folders.sortedTreeOrder()
+    let paths = sorted.map { $0.fullPath }
+
+    try assertEqual(paths[0], "A")
+    try assertEqual(paths[1], "A/B")
+    try assertEqual(paths[2], "A/B/C")
+    try assertEqual(paths[3], "A extra")
+    try assertEqual(paths[4], "Z")
+}
+
+test("sortedTreeOrder: siblings are alphabetical") {
+    let folders = [
+        BookFolder(name: "Parent"),
+        BookFolder(name: "Zebra", parentPath: "Parent"),
+        BookFolder(name: "Alpha", parentPath: "Parent"),
+        BookFolder(name: "Middle", parentPath: "Parent"),
+    ]
+    let sorted = folders.sortedTreeOrder()
+    let paths = sorted.map { $0.fullPath }
+
+    try assertEqual(paths[0], "Parent")
+    try assertEqual(paths[1], "Parent/Alpha")
+    try assertEqual(paths[2], "Parent/Middle")
+    try assertEqual(paths[3], "Parent/Zebra")
+}
+
 } // end runLibraryModelTests

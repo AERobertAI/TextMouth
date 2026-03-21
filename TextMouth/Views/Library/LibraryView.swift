@@ -1102,7 +1102,7 @@ struct NewFolderSheet: View {
 
             Picker("Parent folder", selection: $parentPath) {
                 Text("Library Root").tag("")
-                ForEach(folders.sorted(by: { $0.fullPath < $1.fullPath })) { folder in
+                ForEach(folders.sortedTreeOrder()) { folder in
                     if folder.depth < BookFolder.maxDepth {
                         Text(folder.fullPath).tag(folder.fullPath)
                     }
@@ -1153,7 +1153,7 @@ struct MoveFolderSheet: View {
     /// All available destination paths, including "Library Root" (empty string)
     private var folderOptions: [(label: String, path: String)] {
         var options: [(String, String)] = [("Library Root", "")]
-        for folder in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+        for folder in library.folders.sortedTreeOrder() {
             options.append((folder.fullPath, folder.fullPath))
         }
         return options
@@ -1183,7 +1183,7 @@ struct MoveFolderSheet: View {
 
                         Picker("Parent folder", selection: $newFolderParent) {
                             Text("Library Root").tag("")
-                            ForEach(library.folders.sorted(by: { $0.fullPath < $1.fullPath })) { folder in
+                            ForEach(library.folders.sortedTreeOrder()) { folder in
                                 if folder.depth < BookFolder.maxDepth {
                                     Text(folder.fullPath).tag(folder.fullPath)
                                 }
@@ -1293,7 +1293,7 @@ struct MoveFolderToParentSheet: View {
     private var validDestinations: [(label: String, path: String)] {
         let selfPath = folder.fullPath
         var options: [(String, String)] = [("Library Root", "")]
-        for f in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+        for f in library.folders.sortedTreeOrder() {
             // Exclude: the folder itself, its descendants, and check depth limit
             if f.fullPath == selfPath { continue }
             if f.fullPath.hasPrefix(selfPath + "/") { continue }
@@ -1349,7 +1349,7 @@ struct DeleteFolderMoveContentsSheet: View {
     private var validDestinations: [(label: String, path: String)] {
         let selfPath = folder.fullPath
         var options: [(String, String)] = [("Library Root", "")]
-        for f in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+        for f in library.folders.sortedTreeOrder() {
             if f.fullPath == selfPath { continue }
             if f.fullPath.hasPrefix(selfPath + "/") { continue }
             options.append((f.fullPath, f.fullPath))
@@ -1390,6 +1390,29 @@ struct DeleteFolderMoveContentsSheet: View {
         .onAppear {
             // Default to the parent of the folder being deleted
             selectedDestination = folder.parentPath
+        }
+    }
+}
+
+// MARK: - Tree-Order Folder Sorting
+
+extension Array where Element == BookFolder {
+    /// Sort folders in tree order: each parent is immediately followed by its children,
+    /// then the next sibling. Siblings are sorted alphabetically.
+    /// This prevents unrelated folders like "Misc SciFi anthologies" from appearing
+    /// between "Misc SciFi" and "Misc SciFi/Sub" in picker lists.
+    func sortedTreeOrder() -> [BookFolder] {
+        // Sort so that a folder's children appear immediately after it,
+        // before any unrelated folder that shares a prefix (e.g. "Misc SciFi"
+        // children before "Misc SciFi anthologies").
+        //
+        // Replace "/" with "\0" for comparison so path separators sort before
+        // any printable character (space is 0x20, "/" is 0x2F — both after "\0").
+        // This ensures "Misc SciFi\0Sub" < "Misc SciFi anthologies".
+        sorted {
+            let a = $0.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
+            let b = $1.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
+            return a < b
         }
     }
 }
