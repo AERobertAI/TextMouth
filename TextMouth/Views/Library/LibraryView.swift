@@ -141,7 +141,7 @@ struct LibraryView: View {
                                 } label: {
                                     FolderRow(
                                         folder: folder,
-                                        bookCount: libraryViewModel.library.booksInFolder(folder.fullPath).count
+                                        bookCount: libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -257,7 +257,7 @@ struct LibraryView: View {
             .accessibilityRotor("Folders") {
                 ForEach(libraryViewModel.subfoldersOf(currentFolderPath)) { folder in
                     AccessibilityRotorEntry(
-                        "\(folder.name), \(libraryViewModel.library.booksInFolder(folder.fullPath).count) books",
+                        "\(folder.name), \(libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)) books",
                         id: folder.id
                     )
                 }
