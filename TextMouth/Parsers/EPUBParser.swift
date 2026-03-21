@@ -4,6 +4,7 @@ import SwiftSoup
 
 enum EPUBParserError: LocalizedError {
     case invalidArchive
+    case fileNotFound(String)
     case missingContainer
     case missingOPF
     case invalidOPF
@@ -13,6 +14,7 @@ enum EPUBParserError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidArchive: return "The EPUB file could not be opened as a ZIP archive."
+        case .fileNotFound(let path): return "The EPUB file was not found at: \(path)"
         case .missingContainer: return "The EPUB is missing META-INF/container.xml."
         case .missingOPF: return "The EPUB is missing its package document (OPF file)."
         case .invalidOPF: return "The EPUB package document could not be parsed."
@@ -25,7 +27,15 @@ enum EPUBParserError: LocalizedError {
 enum EPUBParser {
 
     static func parse(url: URL) throws -> DocumentContent {
-        guard let archive = Archive(url: url, accessMode: .read) else {
+        // Verify the file exists before attempting to open as a ZIP archive,
+        // so the error message distinguishes "missing file" from "corrupt archive"
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw EPUBParserError.fileNotFound(url.path)
+        }
+        let archive: Archive
+        do {
+            archive = try Archive(url: url, accessMode: .read)
+        } catch {
             throw EPUBParserError.invalidArchive
         }
 
@@ -77,7 +87,13 @@ enum EPUBParser {
     // MARK: - Metadata
 
     static func readMetadata(url: URL) throws -> EPUBMetadata {
-        guard let archive = Archive(url: url, accessMode: .read) else {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw EPUBParserError.fileNotFound(url.path)
+        }
+        let archive: Archive
+        do {
+            archive = try Archive(url: url, accessMode: .read)
+        } catch {
             throw EPUBParserError.invalidArchive
         }
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
@@ -136,7 +152,10 @@ enum EPUBParser {
     /// Write updated metadata back to the EPUB file in place.
     /// Returns the new MD5 hash of the modified file.
     static func writeMetadata(_ metadata: EPUBMetadata, to url: URL) throws -> String {
-        guard let archive = Archive(url: url, accessMode: .read) else {
+        let archive: Archive
+        do {
+            archive = try Archive(url: url, accessMode: .read)
+        } catch {
             throw EPUBParserError.invalidArchive
         }
 
@@ -155,7 +174,10 @@ enum EPUBParser {
         try FileManager.default.copyItem(at: url, to: tempURL)
 
         // Replace the OPF entry in the copy
-        guard let writeArchive = Archive(url: tempURL, accessMode: .update) else {
+        let writeArchive: Archive
+        do {
+            writeArchive = try Archive(url: tempURL, accessMode: .update)
+        } catch {
             throw EPUBParserError.writeFailed("Could not open archive for writing")
         }
 

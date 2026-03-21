@@ -92,18 +92,41 @@ class LibraryViewModel: ObservableObject {
     private func migrateOldBooksIfNeeded() {
         var needsSave = false
 
-        // Fix stale file paths — if the file doesn't exist at the stored path
-        // but the .tmb is in the current library dir, update the path
+        // Fix stale file paths — if the file doesn't exist at the stored path,
+        // search for the .tmb in the expected folder, then fall back to the root
+        // Library directory (fixes a bug where folder moves updated the path
+        // without physically moving the .tmb directory).
         for i in library.books.indices {
             let book = library.books[i]
             if !book.tmbDirectoryName.isEmpty &&
                !FileManager.default.fileExists(atPath: book.filePath) {
-                // Try to find the file inside the .tmb at the current library location
-                let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
                 let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+
+                // First try the expected folder location
+                let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
                 let correctPath = tmbDir.appendingPathComponent(fileName).path
                 if FileManager.default.fileExists(atPath: correctPath) {
                     library.books[i].filePath = correctPath
+                    needsSave = true
+                    continue
+                }
+
+                // Fall back: check root Library directory (the .tmb may never
+                // have been physically moved when the book was assigned to a folder)
+                let rootTmbDir = TextMouthPaths.tmbPath(folderPath: "", tmbName: book.tmbDirectoryName)
+                let rootPath = rootTmbDir.appendingPathComponent(fileName).path
+                if FileManager.default.fileExists(atPath: rootPath) {
+                    // Move the .tmb to the correct folder location
+                    do {
+                        if !book.folderPath.isEmpty {
+                            try? TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
+                        }
+                        try FileManager.default.moveItem(at: rootTmbDir, to: tmbDir)
+                        library.books[i].filePath = correctPath
+                    } catch {
+                        // Move failed — just update the path to where the file actually is
+                        library.books[i].filePath = rootPath
+                    }
                     needsSave = true
                 }
             }
@@ -519,8 +542,9 @@ class LibraryViewModel: ObservableObject {
         if let folder = library.createFolder(name: folderName, parentPath: parentPath) {
             for book in pendingZipBooks {
                 if let idx = library.books.firstIndex(where: { $0.md5Hash == book.md5Hash }) {
-                    library.books[idx].folderPath = folder.fullPath
+                    // Move .tmb on disk BEFORE updating folderPath
                     moveTMBToFolder(book: &library.books[idx], newFolderPath: folder.fullPath)
+                    library.books[idx].folderPath = folder.fullPath
                 }
             }
         }
@@ -600,18 +624,23 @@ class LibraryViewModel: ObservableObject {
     func moveBooks(_ books: [Book], toFolder path: String) {
         for book in books {
             guard let idx = library.books.firstIndex(where: { $0.id == book.id }) else { continue }
-            library.books[idx].folderPath = path
+            // Move .tmb on disk BEFORE updating folderPath, so book.tmbDirectory
+            // still points to the old location for the move source
             moveTMBToFolder(book: &library.books[idx], newFolderPath: path)
+            library.books[idx].folderPath = path
         }
         lastMovedFolderPath = path
         save()
     }
 
-    /// Move a .tmb package directory to a new library subfolder
-    private func moveTMBToFolder(book: inout Book, newFolderPath: String) {
+    /// Move a .tmb package directory to a new library subfolder.
+    /// When oldFolderPath is provided, it overrides book.folderPath for computing
+    /// the source location (needed when folderPath was already updated by the model).
+    private func moveTMBToFolder(book: inout Book, newFolderPath: String, oldFolderPath: String? = nil) {
         guard !book.tmbDirectoryName.isEmpty else { return }
 
-        let oldTmbDir = book.tmbDirectory
+        let sourceFolderPath = oldFolderPath ?? book.folderPath
+        let oldTmbDir = TextMouthPaths.tmbPath(folderPath: sourceFolderPath, tmbName: book.tmbDirectoryName)
         try? TextMouthPaths.ensureLibrarySubfolder(newFolderPath)
         let newTmbDir = TextMouthPaths.tmbPath(folderPath: newFolderPath, tmbName: book.tmbDirectoryName)
 
@@ -846,16 +875,19 @@ class LibraryViewModel: ObservableObject {
     /// Remove a folder, moving its contents to the given destination path.
     /// Subfolders are reparented under the destination; books are reassigned.
     func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
-        // Move .tmb packages on disk for books being reassigned
+        // Move .tmb packages on disk for books being reassigned.
+        // Capture old folder paths BEFORE the model update changes them.
         let oldPath = folder.fullPath
         let booksToReassign = library.books.filter {
             $0.folderPath == oldPath || $0.folderPath.hasPrefix(oldPath + "/")
         }
+        let oldFolderPaths = Dictionary(uniqueKeysWithValues: booksToReassign.map { ($0.id, $0.folderPath) })
         library.removeFolder(id: folder.id, movingContentsTo: destination)
-        // Update disk locations for moved books
-        for book in booksToReassign {
-            if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
-                moveTMBToFolder(book: &library.books[idx], newFolderPath: library.books[idx].folderPath)
+        // Move disk locations using the captured old paths
+        for (bookID, oldBookFolderPath) in oldFolderPaths {
+            if let idx = library.books.firstIndex(where: { $0.id == bookID }) {
+                let newFolderPath = library.books[idx].folderPath
+                moveTMBToFolder(book: &library.books[idx], newFolderPath: newFolderPath, oldFolderPath: oldBookFolderPath)
             }
         }
         // Ensure destination subfolder directories exist on disk

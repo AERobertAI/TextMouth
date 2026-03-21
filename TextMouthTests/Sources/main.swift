@@ -33,6 +33,7 @@ runTextSubstitutionTests()
 runFeatureTests()
 runAudioMetadataTests()
 runWindowFocusTests()
+runFolderMoveTests()
 runIntegrationTests()
 
 // ---- Summary ----
