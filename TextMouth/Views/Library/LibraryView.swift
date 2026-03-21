@@ -377,6 +377,51 @@ struct LibraryView: View {
             if let hw = hostWindow, !hw.isKeyWindow { return }
             showTextInput = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
+            // Cmd+Delete: remove selected books from library
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
+            if !selected.isEmpty {
+                libraryViewModel.removeBooks(selected)
+                selectedBookIDs = []
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .newFolder)) { notification in
+            // Cmd+Shift+N: create new folder
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            newFolderParentPath = currentFolderPath
+            showNewFolderSheet = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .moveToFolder)) { notification in
+            // Cmd+Shift+M: move selected books to folder
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
+            if !selected.isEmpty {
+                booksToMove = selected
+                showMoveSheet = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .selectAll)) { notification in
+            // Cmd+A: select all visible books
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            selectedBookIDs = Set(filteredBooks.map { $0.id })
+        }
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in

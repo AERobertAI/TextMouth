@@ -18,6 +18,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case whereAmI = "Where Am I?"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
+    case removeFromLibrary = "Remove from Library"
+    case newFolder = "New Folder"
+    case moveToFolder = "Move to Folder"
+    case selectAll = "Select All"
 
     var id: String { rawValue }
 
@@ -40,6 +44,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .whereAmI: return .whereAmI
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
+        case .removeFromLibrary: return .removeFromLibrary
+        case .newFolder: return .newFolder
+        case .moveToFolder: return .moveToFolder
+        case .selectAll: return .selectAll
         }
     }
 
@@ -54,7 +62,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .whereAmI:
             return "Information"
-        case .openSelectedBook, .showBookInfo:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll:
             return "Library"
         }
     }
@@ -232,6 +240,18 @@ extension ShortcutAction {
             ],
             .showBookInfo: [
                 KeyBinding(key: "i", command: true)
+            ],
+            .removeFromLibrary: [
+                KeyBinding(key: "delete", command: true)
+            ],
+            .newFolder: [
+                KeyBinding(key: "n", command: true, shift: true)
+            ],
+            .moveToFolder: [
+                KeyBinding(key: "m", command: true, shift: true)
+            ],
+            .selectAll: [
+                KeyBinding(key: "a", command: true)
             ]
         ]
     }

@@ -33,6 +33,7 @@ struct TextMouthApp: App {
 
             PlaybackCommands()
             NavigationCommands()
+            LibraryCommands()
             BookmarkCommands()
         }
 

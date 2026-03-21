@@ -85,6 +85,29 @@ struct NavigationCommands: Commands {
     }
 }
 
+struct LibraryCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Library") {
+            Button("New Folder") {
+                NotificationCenter.default.post(name: .newFolder, object: nil)
+            }
+            // Cmd+Shift+N handled by KeyboardShortcutManager for window targeting
+
+            Button("Move to Folder...") {
+                NotificationCenter.default.post(name: .moveToFolder, object: nil)
+            }
+            // Cmd+Shift+M handled by KeyboardShortcutManager for window targeting
+
+            Divider()
+
+            Button("Remove from Library") {
+                NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
+            }
+            // Cmd+Delete handled by KeyboardShortcutManager for window targeting
+        }
+    }
+}
+
 struct BookmarkCommands: Commands {
     var body: some Commands {
         CommandMenu("Bookmarks") {
@@ -127,4 +150,8 @@ extension Notification.Name {
     static let searchInBook = Notification.Name("searchInBook")
     static let newFromText = Notification.Name("newFromText")
     static let continueToNextBook = Notification.Name("continueToNextBook")
+    static let removeFromLibrary = Notification.Name("removeFromLibrary")
+    static let newFolder = Notification.Name("newFolder")
+    static let moveToFolder = Notification.Name("moveToFolder")
+    static let selectAll = Notification.Name("selectAll")
 }

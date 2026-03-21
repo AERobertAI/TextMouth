@@ -60,6 +60,12 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
     case whereAmI = "Where Am I?"
+    case openSelectedBook = "Open Selected Book"
+    case showBookInfo = "Book Info"
+    case removeFromLibrary = "Remove from Library"
+    case newFolder = "New Folder"
+    case moveToFolder = "Move to Folder"
+    case selectAll = "Select All"
 
     var category: String {
         switch self {
@@ -71,6 +77,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
             return "Bookmarks"
         case .whereAmI:
             return "Information"
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll:
+            return "Library"
         }
     }
 
@@ -90,6 +98,12 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .nextBookmark: [KeyBinding(key: "b", command: true, shift: true)],
             .previousBookmark: [KeyBinding(key: "b", command: true, option: true)],
             .whereAmI: [KeyBinding(key: "w")],
+            .openSelectedBook: [KeyBinding(key: "return")],
+            .showBookInfo: [KeyBinding(key: "i", command: true)],
+            .removeFromLibrary: [KeyBinding(key: "delete", command: true)],
+            .newFolder: [KeyBinding(key: "n", command: true, shift: true)],
+            .moveToFolder: [KeyBinding(key: "m", command: true, shift: true)],
+            .selectAll: [KeyBinding(key: "a", command: true)],
         ]
     }
 }
@@ -301,6 +315,77 @@ test("Full bindings dictionary JSON round-trip") {
         try assertEqual(original.count, restored!.count, "Binding count should match for \(action.rawValue)")
     }
     print("    Full bindings dictionary round-trip preserved \(decoded.count) actions")
+}
+
+// ---- Library Shortcut Tests ----
+print("\n--- Library Shortcut Tests ---")
+
+test("Remove from Library has Cmd+Delete binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.removeFromLibrary]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "delete")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(!bindings[0].shift, "Should not have shift modifier")
+    print("    Remove from Library default: \(bindings[0].displayString)")
+}
+
+test("New Folder has Cmd+Shift+N binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.newFolder]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "n")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    print("    New Folder default: \(bindings[0].displayString)")
+}
+
+test("Move to Folder has Cmd+Shift+M binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.moveToFolder]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "m")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    print("    Move to Folder default: \(bindings[0].displayString)")
+}
+
+test("Select All has Cmd+A binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.selectAll]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "a")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(!bindings[0].shift, "Should not have shift modifier")
+    print("    Select All default: \(bindings[0].displayString)")
+}
+
+test("Library category includes all library actions") {
+    let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
+    try assertEqual(libraryActions.count, 6, "Should have 6 library actions")
+    let names = libraryActions.map { $0.rawValue }
+    try assertTrue(names.contains("Remove from Library"))
+    try assertTrue(names.contains("New Folder"))
+    try assertTrue(names.contains("Move to Folder"))
+    try assertTrue(names.contains("Select All"))
+    try assertTrue(names.contains("Open Selected Book"))
+    try assertTrue(names.contains("Book Info"))
+    print("    Library category has \(libraryActions.count) actions")
+}
+
+test("New library shortcuts display correctly for accessibility") {
+    let remove = KeyBinding(key: "delete", command: true)
+    try assertEqual(remove.accessibleDisplayString, "Command + \u{232B}")
+
+    let newFolder = KeyBinding(key: "n", command: true, shift: true)
+    try assertEqual(newFolder.accessibleDisplayString, "Shift + Command + N")
+
+    let move = KeyBinding(key: "m", command: true, shift: true)
+    try assertEqual(move.accessibleDisplayString, "Shift + Command + M")
+
+    let selectAll = KeyBinding(key: "a", command: true)
+    try assertEqual(selectAll.accessibleDisplayString, "Command + A")
+    print("    All accessible display strings verified")
 }
 
 // ---- SoundEvent Tests ----
