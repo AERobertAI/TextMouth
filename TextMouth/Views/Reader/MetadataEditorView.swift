@@ -96,6 +96,7 @@ struct MetadataEditorView: View {
             .padding()
         }
         .frame(width: 450, height: 550)
+        .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
     }
 
     // MARK: - Audio Sections

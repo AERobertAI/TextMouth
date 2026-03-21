@@ -18,6 +18,8 @@ struct LibraryView: View {
     @State private var selectedBookID: UUID?
     @State private var bookInfoTarget: Book?
     @State private var showTextInput = false
+    /// The NSWindow hosting this library, for checking key window status on notifications
+    @State private var hostWindow: NSWindow?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -274,10 +276,20 @@ struct LibraryView: View {
                 )
             }
         }
+        .background(WindowAccessor(onWindowFound: { window in
+            hostWindow = window
+        }))
         .sheet(item: $bookInfoTarget) { book in
             LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
+            // Only open in the focused library window
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                // Menu command (no sourceWindow) — check this window is key
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
             // Cmd+I: show info for selected book
             if let id = selectedBookID,
                let book = filteredBooks.first(where: { $0.id == id }) {
@@ -596,11 +608,21 @@ struct LibraryBookInfoSheet: View {
                 Spacer()
 
                 Button("Save") {
-                    var updated = book
-                    updated.title = title
-                    updated.author = author
-                    libraryViewModel.updateBookMetadata(updated)
+                    // Capture state before dismissing
+                    let savedTitle = title
+                    let savedAuthor = author
+                    let savedBook = book
+                    let vm = libraryViewModel
+
+                    // Dismiss first so shared state updates don't steal focus
                     dismiss()
+
+                    DispatchQueue.main.async {
+                        var updated = savedBook
+                        updated.title = savedTitle
+                        updated.author = savedAuthor
+                        vm.updateBookMetadata(updated)
+                    }
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .disabled(title.isEmpty)
@@ -608,6 +630,7 @@ struct LibraryBookInfoSheet: View {
         }
         .padding()
         .frame(width: 400, height: 350)
+        .navigationTitle("Info: \(book.title)")
     }
 }
 

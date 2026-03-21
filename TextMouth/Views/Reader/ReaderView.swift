@@ -218,10 +218,13 @@ struct ReaderView: View {
         .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { _ in
             showSearch = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { _ in
-            if viewModel.book.format == .epub || viewModel.isAudioBook {
-                showMetadataEditor = true
+        .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
+            // Only open in the focused reader window — check sourceWindow matches
+            guard viewModel.book.format == .epub || viewModel.isAudioBook else { return }
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard sourceWindow === viewModel.hostWindow else { return }
             }
+            showMetadataEditor = true
         }
     }
 }

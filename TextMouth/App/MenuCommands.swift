@@ -78,7 +78,9 @@ struct NavigationCommands: Commands {
             Button("Book Info") {
                 NotificationCenter.default.post(name: .showBookInfo, object: nil)
             }
-            .keyboardShortcut("i", modifiers: .command)
+            // Cmd+I is handled by KeyboardShortcutManager which includes window focus
+            // info in the notification. Adding .keyboardShortcut here would cause
+            // a second notification without focus info, opening dialogs in every window.
         }
     }
 }
