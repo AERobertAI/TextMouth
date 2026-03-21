@@ -1,0 +1,224 @@
+import SwiftUI
+import Combine
+
+/// Root view for a library window. Each library window has its own navigation state.
+struct LibraryWindowView: View {
+    @EnvironmentObject var libraryViewModel: LibraryViewModel
+    @EnvironmentObject var settingsViewModel: SettingsViewModel
+    @Environment(\.openWindow) private var openWindow
+
+    @State private var currentFolderPath = ""
+    @State private var category: LibraryCategory = .folders
+    @State private var sortField: LibrarySortField = .title
+    @State private var sortAscending: Bool = true
+    @State private var showFileImporter = false
+    @State private var zipFolderName = ""
+
+    var body: some View {
+        ZStack {
+            LibraryView(
+                currentFolderPath: $currentFolderPath,
+                category: $category,
+                sortField: $sortField,
+                sortAscending: $sortAscending,
+                showFileImporter: $showFileImporter,
+                onOpenBook: { book in
+                    openWindow(id: "book-reader", value: book.id)
+                }
+            )
+
+            // Import progress overlay
+            if libraryViewModel.isImporting {
+                ImportProgressOverlay(
+                    current: libraryViewModel.importProgressCurrent,
+                    total: libraryViewModel.importProgressTotal,
+                    message: libraryViewModel.importProgressMessage
+                )
+            }
+        }
+        .navigationTitle(windowTitle)
+        .frame(minWidth: 600, minHeight: 400)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: FileImportService.supportedTypes,
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let urls):
+                libraryViewModel.importFiles(urls: urls, toFolder: currentFolderPath)
+            case .failure(let error):
+                libraryViewModel.errorMessage = error.localizedDescription
+                libraryViewModel.showError = true
+            }
+        }
+        .alert("Error", isPresented: $libraryViewModel.showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
+        }
+        // Zip folder creation dialog
+        .alert("Create Folder for Imported Books?", isPresented: $libraryViewModel.showZipFolderDialog) {
+            TextField("Folder name", text: $zipFolderName)
+            Button("Create Folder") {
+                libraryViewModel.moveZipBooksToFolder(folderName: zipFolderName)
+                zipFolderName = ""
+            }
+            Button("No Thanks", role: .cancel) {
+                libraryViewModel.pendingZipBooks = []
+            }
+        } message: {
+            Text("\(libraryViewModel.pendingZipBooks.count) books were imported from the ZIP. Would you like to create a new folder to hold them?")
+        }
+        // Delete original file confirmation dialog
+        .alert("Delete Original File?", isPresented: $libraryViewModel.showDeleteOriginalDialog) {
+            Button("Delete", role: .destructive) {
+                if let url = libraryViewModel.pendingOriginalURL {
+                    FileImportService.deleteOriginalFile(at: url)
+                }
+                libraryViewModel.pendingOriginalURL = nil
+            }
+            Button("Keep", role: .cancel) {
+                libraryViewModel.pendingOriginalURL = nil
+            }
+        } message: {
+            if let url = libraryViewModel.pendingOriginalURL {
+                Text("The book has been imported successfully. Delete the original file \"\(url.lastPathComponent)\"?")
+            } else {
+                Text("The book has been imported successfully. Delete the original file?")
+            }
+        }
+        // Remove book confirmation dialog
+        .alert("Remove Book?", isPresented: $libraryViewModel.showRemoveBookDialog) {
+            Button("Remove & Delete", role: .destructive) {
+                if let book = libraryViewModel.pendingRemoveBook {
+                    libraryViewModel.removeBookAndDelete(book)
+                }
+                libraryViewModel.pendingRemoveBook = nil
+            }
+            Button("Remove from Library Only") {
+                if let book = libraryViewModel.pendingRemoveBook {
+                    libraryViewModel.removeBookFromLibraryOnly(book)
+                }
+                libraryViewModel.pendingRemoveBook = nil
+            }
+            Button("Cancel", role: .cancel) {
+                libraryViewModel.pendingRemoveBook = nil
+            }
+        } message: {
+            if let book = libraryViewModel.pendingRemoveBook {
+                Text("Remove \"\(book.title)\"? \"Remove & Delete\" also deletes the .tmb package from disk. \"Remove from Library Only\" keeps the file.")
+            }
+        }
+        // Duplicate import dialog
+        .alert("Duplicate Book Found", isPresented: $libraryViewModel.showDuplicateDialog) {
+            Button("Replace Existing") {
+                libraryViewModel.replaceDuplicate()
+            }
+            Button("Keep Both") {
+                libraryViewModel.keepDuplicate()
+            }
+            Button("Cancel", role: .cancel) {
+                libraryViewModel.cancelDuplicate()
+            }
+        } message: {
+            if let existing = libraryViewModel.pendingDuplicateExisting {
+                Text("A book matching \"\(existing.title)\" is already in your library. Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?")
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openBookFile)) { _ in
+            showFileImporter = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openBookWindow)) { notification in
+            if let bookID = notification.object as? UUID {
+                openWindow(id: "book-reader", value: bookID)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
+            navigateUp()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .goForward)) { _ in
+            navigateForward()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
+            if let bookID = notification.userInfo?["bookID"] as? UUID {
+                openWindow(id: "book-reader", value: bookID)
+            }
+        }
+    }
+
+    private var windowTitle: String {
+        let locationName: String
+        switch category {
+        case .folders:
+            locationName = currentFolderPath.isEmpty ? "All Folders" : currentFolderPath.components(separatedBy: "/").last ?? "All Folders"
+        case .allItems:
+            locationName = "All Items"
+        case .noFolder:
+            locationName = "No Folder"
+        case .recent:
+            locationName = "Recent"
+        }
+        let direction = sortAscending ? "Ascending" : "Descending"
+        return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
+    }
+
+    private func navigateUp() {
+        let parts = currentFolderPath.components(separatedBy: "/")
+        if parts.count > 1 {
+            currentFolderPath = parts.dropLast().joined(separator: "/")
+        } else {
+            currentFolderPath = ""
+        }
+    }
+
+    private func navigateForward() {
+        if category == .folders {
+            let subfolders = libraryViewModel.subfoldersOf(currentFolderPath)
+            if subfolders.count == 1, let only = subfolders.first {
+                currentFolderPath = only.fullPath
+            }
+        }
+    }
+}
+
+// MARK: - Import Progress Overlay
+
+struct ImportProgressOverlay: View {
+    let current: Int
+    let total: Int
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Importing Books")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            if total > 0 {
+                ProgressView(value: Double(current), total: Double(total))
+                    .progressViewStyle(.linear)
+                    .frame(width: 300)
+
+                Text("\(current) of \(total) books processed")
+                    .font(.body)
+            } else {
+                ProgressView()
+                    .progressViewStyle(.circular)
+            }
+
+            if !message.isEmpty {
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(32)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .shadow(radius: 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(total > 0
+            ? "Importing books: \(current) of \(total) processed"
+            : "Importing books: extracting archive"
+        )
+    }
+}

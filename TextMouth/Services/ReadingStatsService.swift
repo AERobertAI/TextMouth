@@ -1,0 +1,194 @@
+import Foundation
+import Combine
+
+/// Tracks reading/listening statistics.
+class ReadingStatsService: ObservableObject {
+    static let shared = ReadingStatsService()
+
+    @Published var stats: ReadingStats
+
+    private var sessionStartTime: Date?
+    private var sessionBookID: UUID?
+    private var saveTimer: Timer?
+
+    private init() {
+        stats = Self.load()
+        startAutoSave()
+    }
+
+    deinit {
+        saveTimer?.invalidate()
+    }
+
+    // MARK: - Session Tracking
+
+    func startSession(bookID: UUID) {
+        endSession() // End any existing session first
+        sessionStartTime = Date()
+        sessionBookID = bookID
+    }
+
+    func endSession() {
+        guard let start = sessionStartTime, let bookID = sessionBookID else { return }
+        let duration = Date().timeIntervalSince(start)
+        guard duration > 1 else { return } // Ignore sub-second sessions
+
+        let today = Self.dateKey(Date())
+        stats.dailyListeningSeconds[today, default: 0] += duration
+        stats.totalListeningSeconds += duration
+
+        // Per-book tracking
+        stats.bookListeningSeconds[bookID.uuidString, default: 0] += duration
+
+        sessionStartTime = nil
+        sessionBookID = nil
+        save()
+    }
+
+    func markBookFinished(bookID: UUID, title: String) {
+        let entry = FinishedBookEntry(
+            bookID: bookID.uuidString,
+            title: title,
+            dateFinished: Date()
+        )
+        stats.finishedBooks.append(entry)
+        save()
+    }
+
+    // MARK: - Computed Stats
+
+    var todayListeningTime: TimeInterval {
+        let today = Self.dateKey(Date())
+        let saved = stats.dailyListeningSeconds[today] ?? 0
+        // Add current session time if active
+        if let start = sessionStartTime {
+            return saved + Date().timeIntervalSince(start)
+        }
+        return saved
+    }
+
+    var thisWeekListeningTime: TimeInterval {
+        let calendar = Calendar.current
+        let now = Date()
+        var total: TimeInterval = 0
+        for dayOffset in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) {
+                let key = Self.dateKey(date)
+                total += stats.dailyListeningSeconds[key] ?? 0
+            }
+        }
+        if let start = sessionStartTime {
+            total += Date().timeIntervalSince(start)
+        }
+        return total
+    }
+
+    var booksFinishedThisYear: Int {
+        let year = Calendar.current.component(.year, from: Date())
+        return stats.finishedBooks.filter {
+            Calendar.current.component(.year, from: $0.dateFinished) == year
+        }.count
+    }
+
+    var currentStreak: Int {
+        let calendar = Calendar.current
+        var streak = 0
+        var date = Date()
+        // Check today and each preceding day
+        while true {
+            let key = Self.dateKey(date)
+            if (stats.dailyListeningSeconds[key] ?? 0) > 60 { // At least 1 minute counts
+                streak += 1
+                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
+                date = prev
+            } else if streak == 0 {
+                // Today might not have listening yet, check yesterday
+                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
+                date = prev
+                // Only allow one skip (today)
+                let key2 = Self.dateKey(date)
+                if (stats.dailyListeningSeconds[key2] ?? 0) > 60 {
+                    streak += 1
+                    guard let prev2 = calendar.date(byAdding: .day, value: -1, to: date) else { break }
+                    date = prev2
+                } else {
+                    break
+                }
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    // MARK: - Persistence
+
+    private static func dateKey(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    func save() {
+        do {
+            try TextMouthPaths.ensureDirectoryStructure()
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(stats)
+            try data.write(to: TextMouthPaths.readingStatsFile, options: .atomic)
+        } catch {
+            print("Failed to save reading stats: \(error)")
+        }
+    }
+
+    private static func load() -> ReadingStats {
+        let url = TextMouthPaths.readingStatsFile
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return ReadingStats()
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(ReadingStats.self, from: data)
+        } catch {
+            print("Failed to load reading stats: \(error)")
+            return ReadingStats()
+        }
+    }
+
+    private func startAutoSave() {
+        saveTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            self?.save()
+        }
+    }
+
+    /// Prune daily entries older than 90 days to keep the file small
+    func pruneOldEntries() {
+        let calendar = Calendar.current
+        guard let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()) else { return }
+        let cutoffKey = Self.dateKey(cutoff)
+        stats.dailyListeningSeconds = stats.dailyListeningSeconds.filter { $0.key >= cutoffKey }
+        save()
+    }
+}
+
+// MARK: - Data Model
+
+struct ReadingStats: Codable {
+    /// Daily listening time in seconds, keyed by "yyyy-MM-dd"
+    var dailyListeningSeconds: [String: TimeInterval] = [:]
+    /// Total listening time across all time
+    var totalListeningSeconds: TimeInterval = 0
+    /// Per-book listening time in seconds, keyed by book UUID string
+    var bookListeningSeconds: [String: TimeInterval] = [:]
+    /// Books that have been finished
+    var finishedBooks: [FinishedBookEntry] = []
+}
+
+struct FinishedBookEntry: Codable {
+    var bookID: String
+    var title: String
+    var dateFinished: Date
+}

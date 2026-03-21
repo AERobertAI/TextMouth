@@ -1,0 +1,60 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+
+# Xcode - user-specific files
+*.xcuserstate
+*.xcuserdatad
+*.moved-aside
+*.hmap
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+Package.resolved
+.swiftpm/
+
+# Carthage / CocoaPods
+Carthage/Build/
+Pods/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Archives & distribution
+*.xcarchive
+*.app
+*.framework
+
+# Crash logs
+*.crash
+
+# IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Claude Code
+.claude/

@@ -1,0 +1,642 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D811A8124A1918F17347B0C /* SettingsViewModel.swift */; };
+		0CC6EFB85DAAFF35CCFB0725 /* BookmarkPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */; };
+		0D1366B31BB381F496114511 /* KeyboardShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0FAA2D62EBEDD1E25F851E /* KeyboardShortcut.swift */; };
+		0E0BDF8219D4913B5529E861 /* PlainTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */; };
+		12F5EEA0E4B1E5FA546D8E40 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */; };
+		14E7FBBCCAEE1BFC04987E3B /* ReadingStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */; };
+		1C5CA2D0AF843931A023E589 /* BookFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD1A4A2C32FFB392ACF99B8 /* BookFolder.swift */; };
+		27ACC87E64625C7E0C136926 /* DocumentContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFCBACA33B07A5F3D5C2291 /* DocumentContent.swift */; };
+		2D478BE9B8B13B997292DECD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7541C995663E4122E4183C /* SettingsView.swift */; };
+		2EC1F4F2D565E4927A8BDF17 /* MenuCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EEF0BE216857723A3BE5DF8 /* MenuCommands.swift */; };
+		32E3EB8DE67D6AE9E93F7467 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = A4671730986C0B11EE16B32B /* Markdown */; };
+		37DCA1AD24C30D76D55AF07C /* BookInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B267ED889C499844904817F /* BookInfo.swift */; };
+		4AF32878BBAD6B9E037798A0 /* AudioPlaybackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */; };
+		4B5041D21985032528EED9B6 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 914EC5D9B8C9AFD8E5EA845D /* SwiftSoup */; };
+		4DAF165C77F9903C15E1355D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67F22AA3696E45373BC65B0 /* ContentView.swift */; };
+		4FC339E28580DBABEDFC8962 /* LibraryPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */; };
+		510C6CB83E85D5866485E19F /* MetadataEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */; };
+		532B42D410BD9A0A3AA2E1DF /* SoundEffectsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */; };
+		5A233F32938802DAD2D13741 /* ConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BDD80EF3BDF71FF9FC117F8 /* ConfigService.swift */; };
+		5E41506D5916EE738A08867B /* NowPlayingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D187AA27CB277F31962348 /* NowPlayingService.swift */; };
+		5FCBF3E917E0E5190A3F35D2 /* AudioBookParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE37CEAAAD30C913992B8C2 /* AudioBookParser.swift */; };
+		62617B46A22022F24B741BA6 /* KeyboardShortcutsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF42C04B513F41E43AD9841 /* KeyboardShortcutsSettingsView.swift */; };
+		660A36E42E6AC01AEDBD81E6 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227031800A34F0E8E5166D55 /* ReaderView.swift */; };
+		6D3203DAE85C21F900F5EB2E /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0B3D346828CB907524B46A /* Library.swift */; };
+		70A75355233612534D72C1A9 /* AudioEngineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C626E53CE9170545EE20A94 /* AudioEngineService.swift */; };
+		7227E74C504DC25F3E45D30C /* HTMLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105C530DC040CBB0A08DC1F4 /* HTMLParser.swift */; };
+		7A380DF9E707FF7AC7334B1D /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6AEB1AF29767066AB7B08A /* LibraryView.swift */; };
+		8D4E6358C34F1876DFA4A8AD /* TextMouthPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CBAF87A1E9FB623267BB355 /* TextMouthPaths.swift */; };
+		8FAF46B67A95B256FC46AA9C /* BookSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65975C06BFA32E3D48086801 /* BookSearchView.swift */; };
+		917F00B96C78230F4AE638BB /* LibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E9AC1689CAC30509BDBD9A /* LibraryViewModel.swift */; };
+		92635958E372EBA5EECB682C /* SubstitutionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1989F1DC4B2A079BAB658FB4 /* SubstitutionsSettingsView.swift */; };
+		9A77D2E5E7B18AAC63775667 /* TextMouthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80A28928CD7C89E51F8F50F2 /* TextMouthApp.swift */; };
+		AE6AE6B6F112216E047EB9B8 /* EPUBParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BDF4BE043D7AE530F97F86 /* EPUBParser.swift */; };
+		AFDB7B145F95708EC444EB06 /* HeadingNavigatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840154AE5B7C86A2ADE4300A /* HeadingNavigatorView.swift */; };
+		B157ADDDD1C416B2EC69BDBD /* BookReaderWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */; };
+		B24490E19231E7EDAB744F53 /* EPUBMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9636427F4E0150CE95CDF620 /* EPUBMetadata.swift */; };
+		B2D31A9256B8344308F95785 /* TextInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DE8D5C20F37D59AB734B4B /* TextInputView.swift */; };
+		B6E055DCAE0A9E1E6CD4BA4A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41AA0E0E676B77D10639BD64 /* AppDelegate.swift */; };
+		BB3691256FCF76F3D1C3EFA1 /* PlaybackControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A06EF6FE24227C31FB77CBE /* PlaybackControlsView.swift */; };
+		BFCE7F944988F0053C41993F /* FileImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44477438F518186462243E0D /* FileImportService.swift */; };
+		D5A6103AC05056688A44AA88 /* ReadingStatsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD345AC5DD9D23B1670900A8 /* ReadingStatsService.swift */; };
+		D9475A00DCC939D9CFA4D78E /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229E08EEAD61FF8FA4CADE06 /* MarkdownParser.swift */; };
+		DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */; };
+		DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68958730DF17A7371B3258DA /* SleepTimerView.swift */; };
+		E39BDAD399C494EA11014901 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A7970E91CA6E948DFB0B82 /* Book.swift */; };
+		E4B14A04D0B58A89217CD423 /* BookParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADA01E6BE651B28BC03B976 /* BookParser.swift */; };
+		E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */; };
+		E9A2A97218D04F150D466456 /* TextSubstitutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C6B9C07025815378361DC3 /* TextSubstitutionService.swift */; };
+		EC4F01E1EFF8ED5C0BB7CD6A /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 6BAF0F19732A525C801EEE13 /* ZIPFoundation */; };
+		EC9D36CBD606C3475746FD7F /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7C85DB727DC9AE8C88ABDBF /* SpeechService.swift */; };
+		F0B5232D2D9BF0155232CCC3 /* KeyboardShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D153CF5E02C9086AED99FFA2 /* KeyboardShortcutManager.swift */; };
+		F46C04BB34CF5456D53A501D /* ReaderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E7D4AAEE36EFDFD40C8CB0 /* ReaderViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
+		0E6AEB1AF29767066AB7B08A /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		105C530DC040CBB0A08DC1F4 /* HTMLParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLParser.swift; sourceTree = "<group>"; };
+		12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffectService.swift; sourceTree = "<group>"; };
+		1989F1DC4B2A079BAB658FB4 /* SubstitutionsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstitutionsSettingsView.swift; sourceTree = "<group>"; };
+		1D811A8124A1918F17347B0C /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		20A7970E91CA6E948DFB0B82 /* Book.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Book.swift; sourceTree = "<group>"; };
+		227031800A34F0E8E5166D55 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
+		229E08EEAD61FF8FA4CADE06 /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
+		22E7D4AAEE36EFDFD40C8CB0 /* ReaderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderViewModel.swift; sourceTree = "<group>"; };
+		304A2089880557ADA1ADFB08 /* TextMouth.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TextMouth.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A06EF6FE24227C31FB77CBE /* PlaybackControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackControlsView.swift; sourceTree = "<group>"; };
+		3EEF0BE216857723A3BE5DF8 /* MenuCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuCommands.swift; sourceTree = "<group>"; };
+		41AA0E0E676B77D10639BD64 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		44477438F518186462243E0D /* FileImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImportService.swift; sourceTree = "<group>"; };
+		4BDD80EF3BDF71FF9FC117F8 /* ConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigService.swift; sourceTree = "<group>"; };
+		4C626E53CE9170545EE20A94 /* AudioEngineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngineService.swift; sourceTree = "<group>"; };
+		5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainTextParser.swift; sourceTree = "<group>"; };
+		6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataEditorView.swift; sourceTree = "<group>"; };
+		65975C06BFA32E3D48086801 /* BookSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookSearchView.swift; sourceTree = "<group>"; };
+		68958730DF17A7371B3258DA /* SleepTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
+		6CBAF87A1E9FB623267BB355 /* TextMouthPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextMouthPaths.swift; sourceTree = "<group>"; };
+		78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffectsSettingsView.swift; sourceTree = "<group>"; };
+		7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkPanelView.swift; sourceTree = "<group>"; };
+		7B267ED889C499844904817F /* BookInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookInfo.swift; sourceTree = "<group>"; };
+		7DD1A4A2C32FFB392ACF99B8 /* BookFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFolder.swift; sourceTree = "<group>"; };
+		80A28928CD7C89E51F8F50F2 /* TextMouthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextMouthApp.swift; sourceTree = "<group>"; };
+		840154AE5B7C86A2ADE4300A /* HeadingNavigatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadingNavigatorView.swift; sourceTree = "<group>"; };
+		92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookReaderWindowView.swift; sourceTree = "<group>"; };
+		9636427F4E0150CE95CDF620 /* EPUBMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBMetadata.swift; sourceTree = "<group>"; };
+		9CE37CEAAAD30C913992B8C2 /* AudioBookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBookParser.swift; sourceTree = "<group>"; };
+		A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPersistenceService.swift; sourceTree = "<group>"; };
+		ABD02911CFAA200C7454DD7F /* TextMouth.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TextMouth.entitlements; sourceTree = "<group>"; };
+		AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsView.swift; sourceTree = "<group>"; };
+		AD7541C995663E4122E4183C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B2C6B9C07025815378361DC3 /* TextSubstitutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSubstitutionService.swift; sourceTree = "<group>"; };
+		B2D187AA27CB277F31962348 /* NowPlayingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingService.swift; sourceTree = "<group>"; };
+		B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackService.swift; sourceTree = "<group>"; };
+		B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageSettingsView.swift; sourceTree = "<group>"; };
+		C5BDF4BE043D7AE530F97F86 /* EPUBParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBParser.swift; sourceTree = "<group>"; };
+		C67F22AA3696E45373BC65B0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		CE0B3D346828CB907524B46A /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
+		D153CF5E02C9086AED99FFA2 /* KeyboardShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutManager.swift; sourceTree = "<group>"; };
+		DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerService.swift; sourceTree = "<group>"; };
+		DCFCBACA33B07A5F3D5C2291 /* DocumentContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentContent.swift; sourceTree = "<group>"; };
+		DF0FAA2D62EBEDD1E25F851E /* KeyboardShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcut.swift; sourceTree = "<group>"; };
+		E0E9AC1689CAC30509BDBD9A /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
+		EFF42C04B513F41E43AD9841 /* KeyboardShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsSettingsView.swift; sourceTree = "<group>"; };
+		F7C85DB727DC9AE8C88ABDBF /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		F7DE8D5C20F37D59AB734B4B /* TextInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputView.swift; sourceTree = "<group>"; };
+		FD345AC5DD9D23B1670900A8 /* ReadingStatsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsService.swift; sourceTree = "<group>"; };
+		FDD7BC7D2012446B0B0039B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EC4F01E1EFF8ED5C0BB7CD6A /* ZIPFoundation in Frameworks */,
+				4B5041D21985032528EED9B6 /* SwiftSoup in Frameworks */,
+				32E3EB8DE67D6AE9E93F7467 /* Markdown in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		186811333DB411ED58703F4D = {
+			isa = PBXGroup;
+			children = (
+				56083D0B866F612061656ABF /* TextMouth */,
+				9593FC299243D0E3B22FF8AC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		261D70915A1351D748E62664 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				0E6AEB1AF29767066AB7B08A /* LibraryView.swift */,
+				F7DE8D5C20F37D59AB734B4B /* TextInputView.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		3D97B68CADCD1DC35C2B5D6C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4C626E53CE9170545EE20A94 /* AudioEngineService.swift */,
+				B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */,
+				4BDD80EF3BDF71FF9FC117F8 /* ConfigService.swift */,
+				44477438F518186462243E0D /* FileImportService.swift */,
+				D153CF5E02C9086AED99FFA2 /* KeyboardShortcutManager.swift */,
+				A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */,
+				B2D187AA27CB277F31962348 /* NowPlayingService.swift */,
+				FD345AC5DD9D23B1670900A8 /* ReadingStatsService.swift */,
+				DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */,
+				12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */,
+				F7C85DB727DC9AE8C88ABDBF /* SpeechService.swift */,
+				6CBAF87A1E9FB623267BB355 /* TextMouthPaths.swift */,
+				B2C6B9C07025815378361DC3 /* TextSubstitutionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3EC2F826E149793D3E8EB4EE /* Reader */ = {
+			isa = PBXGroup;
+			children = (
+				7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */,
+				92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */,
+				65975C06BFA32E3D48086801 /* BookSearchView.swift */,
+				840154AE5B7C86A2ADE4300A /* HeadingNavigatorView.swift */,
+				6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */,
+				3A06EF6FE24227C31FB77CBE /* PlaybackControlsView.swift */,
+				227031800A34F0E8E5166D55 /* ReaderView.swift */,
+				68958730DF17A7371B3258DA /* SleepTimerView.swift */,
+			);
+			path = Reader;
+			sourceTree = "<group>";
+		};
+		56083D0B866F612061656ABF /* TextMouth */ = {
+			isa = PBXGroup;
+			children = (
+				B38911B57EFAF4E45AC410D9 /* App */,
+				8C90AA91326596BAAD781EF6 /* Models */,
+				AAD419FC7D13F57FC5D94BF9 /* Parsers */,
+				E07144FA6F15B9ECB9B0F0E5 /* Resources */,
+				3D97B68CADCD1DC35C2B5D6C /* Services */,
+				CC4FA05804618692D2B59EE4 /* ViewModels */,
+				CC445C4E9DB5CABE5DB51B43 /* Views */,
+			);
+			path = TextMouth;
+			sourceTree = "<group>";
+		};
+		7FCD86BD03D5C57B1E031ADC /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				EFF42C04B513F41E43AD9841 /* KeyboardShortcutsSettingsView.swift */,
+				AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */,
+				AD7541C995663E4122E4183C /* SettingsView.swift */,
+				78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */,
+				B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */,
+				1989F1DC4B2A079BAB658FB4 /* SubstitutionsSettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		8C90AA91326596BAAD781EF6 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				20A7970E91CA6E948DFB0B82 /* Book.swift */,
+				7DD1A4A2C32FFB392ACF99B8 /* BookFolder.swift */,
+				7B267ED889C499844904817F /* BookInfo.swift */,
+				DCFCBACA33B07A5F3D5C2291 /* DocumentContent.swift */,
+				9636427F4E0150CE95CDF620 /* EPUBMetadata.swift */,
+				DF0FAA2D62EBEDD1E25F851E /* KeyboardShortcut.swift */,
+				CE0B3D346828CB907524B46A /* Library.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		9593FC299243D0E3B22FF8AC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				304A2089880557ADA1ADFB08 /* TextMouth.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AAD419FC7D13F57FC5D94BF9 /* Parsers */ = {
+			isa = PBXGroup;
+			children = (
+				9CE37CEAAAD30C913992B8C2 /* AudioBookParser.swift */,
+				0ADA01E6BE651B28BC03B976 /* BookParser.swift */,
+				C5BDF4BE043D7AE530F97F86 /* EPUBParser.swift */,
+				105C530DC040CBB0A08DC1F4 /* HTMLParser.swift */,
+				229E08EEAD61FF8FA4CADE06 /* MarkdownParser.swift */,
+				5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */,
+			);
+			path = Parsers;
+			sourceTree = "<group>";
+		};
+		B38911B57EFAF4E45AC410D9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				41AA0E0E676B77D10639BD64 /* AppDelegate.swift */,
+				3EEF0BE216857723A3BE5DF8 /* MenuCommands.swift */,
+				80A28928CD7C89E51F8F50F2 /* TextMouthApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		CC445C4E9DB5CABE5DB51B43 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C67F22AA3696E45373BC65B0 /* ContentView.swift */,
+				261D70915A1351D748E62664 /* Library */,
+				3EC2F826E149793D3E8EB4EE /* Reader */,
+				7FCD86BD03D5C57B1E031ADC /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		CC4FA05804618692D2B59EE4 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				E0E9AC1689CAC30509BDBD9A /* LibraryViewModel.swift */,
+				22E7D4AAEE36EFDFD40C8CB0 /* ReaderViewModel.swift */,
+				1D811A8124A1918F17347B0C /* SettingsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		E07144FA6F15B9ECB9B0F0E5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FDD7BC7D2012446B0B0039B9 /* Info.plist */,
+				ABD02911CFAA200C7454DD7F /* TextMouth.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B6C4B7D013F499991F5B7477 /* TextMouth */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5316024CE426EBB26E83F40 /* Build configuration list for PBXNativeTarget "TextMouth" */;
+			buildPhases = (
+				5FC640F02C1A3BAEB07508E0 /* Sources */,
+				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TextMouth;
+			packageProductDependencies = (
+				6BAF0F19732A525C801EEE13 /* ZIPFoundation */,
+				914EC5D9B8C9AFD8E5EA845D /* SwiftSoup */,
+				A4671730986C0B11EE16B32B /* Markdown */,
+			);
+			productName = TextMouth;
+			productReference = 304A2089880557ADA1ADFB08 /* TextMouth.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		89F82D94D897820417C98192 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 061E9EF6EC843026C10E4C22 /* Build configuration list for PBXProject "TextMouth" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 186811333DB411ED58703F4D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D7B9D80C81F2D803EC29788F /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				7341314DF819034185CE4AFF /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				EAC81789CCD3DA63250E61E1 /* XCRemoteSwiftPackageReference "swift-markdown" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9593FC299243D0E3B22FF8AC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B6C4B7D013F499991F5B7477 /* TextMouth */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5FC640F02C1A3BAEB07508E0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B6E055DCAE0A9E1E6CD4BA4A /* AppDelegate.swift in Sources */,
+				5FCBF3E917E0E5190A3F35D2 /* AudioBookParser.swift in Sources */,
+				70A75355233612534D72C1A9 /* AudioEngineService.swift in Sources */,
+				4AF32878BBAD6B9E037798A0 /* AudioPlaybackService.swift in Sources */,
+				E39BDAD399C494EA11014901 /* Book.swift in Sources */,
+				1C5CA2D0AF843931A023E589 /* BookFolder.swift in Sources */,
+				37DCA1AD24C30D76D55AF07C /* BookInfo.swift in Sources */,
+				E4B14A04D0B58A89217CD423 /* BookParser.swift in Sources */,
+				B157ADDDD1C416B2EC69BDBD /* BookReaderWindowView.swift in Sources */,
+				8FAF46B67A95B256FC46AA9C /* BookSearchView.swift in Sources */,
+				0CC6EFB85DAAFF35CCFB0725 /* BookmarkPanelView.swift in Sources */,
+				5A233F32938802DAD2D13741 /* ConfigService.swift in Sources */,
+				4DAF165C77F9903C15E1355D /* ContentView.swift in Sources */,
+				27ACC87E64625C7E0C136926 /* DocumentContent.swift in Sources */,
+				B24490E19231E7EDAB744F53 /* EPUBMetadata.swift in Sources */,
+				AE6AE6B6F112216E047EB9B8 /* EPUBParser.swift in Sources */,
+				BFCE7F944988F0053C41993F /* FileImportService.swift in Sources */,
+				7227E74C504DC25F3E45D30C /* HTMLParser.swift in Sources */,
+				AFDB7B145F95708EC444EB06 /* HeadingNavigatorView.swift in Sources */,
+				0D1366B31BB381F496114511 /* KeyboardShortcut.swift in Sources */,
+				F0B5232D2D9BF0155232CCC3 /* KeyboardShortcutManager.swift in Sources */,
+				62617B46A22022F24B741BA6 /* KeyboardShortcutsSettingsView.swift in Sources */,
+				6D3203DAE85C21F900F5EB2E /* Library.swift in Sources */,
+				4FC339E28580DBABEDFC8962 /* LibraryPersistenceService.swift in Sources */,
+				7A380DF9E707FF7AC7334B1D /* LibraryView.swift in Sources */,
+				917F00B96C78230F4AE638BB /* LibraryViewModel.swift in Sources */,
+				D9475A00DCC939D9CFA4D78E /* MarkdownParser.swift in Sources */,
+				2EC1F4F2D565E4927A8BDF17 /* MenuCommands.swift in Sources */,
+				510C6CB83E85D5866485E19F /* MetadataEditorView.swift in Sources */,
+				5E41506D5916EE738A08867B /* NowPlayingService.swift in Sources */,
+				0E0BDF8219D4913B5529E861 /* PlainTextParser.swift in Sources */,
+				BB3691256FCF76F3D1C3EFA1 /* PlaybackControlsView.swift in Sources */,
+				660A36E42E6AC01AEDBD81E6 /* ReaderView.swift in Sources */,
+				F46C04BB34CF5456D53A501D /* ReaderViewModel.swift in Sources */,
+				D5A6103AC05056688A44AA88 /* ReadingStatsService.swift in Sources */,
+				14E7FBBCCAEE1BFC04987E3B /* ReadingStatsView.swift in Sources */,
+				2D478BE9B8B13B997292DECD /* SettingsView.swift in Sources */,
+				051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */,
+				E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */,
+				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
+				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
+				532B42D410BD9A0A3AA2E1DF /* SoundEffectsSettingsView.swift in Sources */,
+				EC9D36CBD606C3475746FD7F /* SpeechService.swift in Sources */,
+				12F5EEA0E4B1E5FA546D8E40 /* StorageSettingsView.swift in Sources */,
+				92635958E372EBA5EECB682C /* SubstitutionsSettingsView.swift in Sources */,
+				B2D31A9256B8344308F95785 /* TextInputView.swift in Sources */,
+				9A77D2E5E7B18AAC63775667 /* TextMouthApp.swift in Sources */,
+				8D4E6358C34F1876DFA4A8AD /* TextMouthPaths.swift in Sources */,
+				E9A2A97218D04F150D466456 /* TextSubstitutionService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5B73DA46E3F141B7C02179E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		5F7416FE9C1939F94916A222 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TextMouth/Resources/TextMouth.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
+				PRODUCT_NAME = TextMouth;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5;
+			};
+			name = Debug;
+		};
+		6063715DEF0268E5103CA2D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		E6BA70A6D910CE502571E3F1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TextMouth/Resources/TextMouth.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
+				PRODUCT_NAME = TextMouth;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		061E9EF6EC843026C10E4C22 /* Build configuration list for PBXProject "TextMouth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B73DA46E3F141B7C02179E0 /* Debug */,
+				6063715DEF0268E5103CA2D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F5316024CE426EBB26E83F40 /* Build configuration list for PBXNativeTarget "TextMouth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F7416FE9C1939F94916A222 /* Debug */,
+				E6BA70A6D910CE502571E3F1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7341314DF819034185CE4AFF /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+		D7B9D80C81F2D803EC29788F /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.5;
+			};
+		};
+		EAC81789CCD3DA63250E61E1 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swiftlang/swift-markdown.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6BAF0F19732A525C801EEE13 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7341314DF819034185CE4AFF /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+		914EC5D9B8C9AFD8E5EA845D /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7B9D80C81F2D803EC29788F /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+		A4671730986C0B11EE16B32B /* Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EAC81789CCD3DA63250E61E1 /* XCRemoteSwiftPackageReference "swift-markdown" */;
+			productName = Markdown;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 89F82D94D897820417C98192 /* Project object */;
+}

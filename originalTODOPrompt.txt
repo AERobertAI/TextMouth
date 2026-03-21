@@ -1,0 +1,37 @@
+I have used apps like VoiceDream Reader on IOS for many years to read books, but that app has unfortunately been taken over buy another company who do not care about accessibility as much (I am blind and use a screen reader). Anyway the other day it just started to fail to read books and so now I want to move on and have you help me make a basic TTS reader app for Mac OS using the accessible Coco API and SWIFT that works exactly as I want it to... It should be able to read at menimum Epub files (both V2 and V3), txt and markdown, and html, along with being able to import zips of said files. To Reach a initial version it should be able to navigate by heading in files like these (based on the file type) and support different heading levels, have a library of books based off of there file paths and MD5 hashes to determine original files and allow categorizing them into folders and sub folders to 4 levels deep at first, also accessible navigation in the library and easy removal or moving of books. Allow simple addition of numbered bookmarks and navigation between them. A very simple play interface allowing play/pause, fastforard and rewind (which should also be controllable with the keyboard keys for such or remote devices like Airpods) along with a sleep timer that can be set for intervals of 10 minutes, 15, 30, 45, 60, or a custom one or to the end of heading / document which ever comes first (pausing the book should keep the sleep timer running) when the timer runs out automaticly pause for now. As for voices, it should simply use the Mac OS built in set of voices and allow raising or lowering the speed to the maximum exstend per voice, it should be possible to control speed by word count per minute so like 300 words per minute or 600 words per minute (you might need to research to see how this can be sennt to the APIs for speech) the spoken content should be separate from VoiceOver's speech and the app shouldn't Require VoiceOver to be on. It should be possible to have multple multiple open windows / tabs in the app for currently reading books, when a book is opened from the library it should open in a new tab in the same window as the library. Currently the tabs and windows shouldn't have any other purpose then convenients. There should also be a accessible preferances panel openable with command+, for controlling the voice setting and other features.
+As for the code, it should be in a modular and easy to edit project structure (you decide on the specifics). Please do careful research and write down your findings to make sure you understand every API and code your going to need before doing main development.
+Lets call the app... TextMouth (like you're giving text a mouth).
+I will save this prompt in the root of the project directory so you can refer back to it to remember the end goal, you can add a TODO list to it or whatever you need to the end but don't remove the original prompt!
+
+---
+
+## TODO / Progress Tracker
+
+### DONE (v0.1 - Initial Scaffold)
+- [x] Project structure: App/, Models/, Services/, Parsers/, Views/, ViewModels/
+- [x] Research: TTS APIs, EPUB parsing, accessibility, media controls (see RESEARCH.md)
+- [x] Models: Book, BookFolder, Bookmark, ReadingPosition, DocumentContent, Library
+- [x] Parsers: EPUB (v2+v3), HTML, Markdown, Plain Text, ZIP import
+- [x] Services: SpeechService (AVSpeechSynthesizer, WPM control), NowPlayingService (media keys/AirPods), SleepTimerService, FileImportService (MD5 hashing), LibraryPersistenceService
+- [x] Views: Library (folder navigation, search, breadcrumbs), Reader (playback controls, heading navigator, bookmarks, sleep timer), Settings (voice selection, speed, shortcuts)
+- [x] Menu commands with keyboard shortcuts (Space=play/pause, Cmd+arrows=skip, Cmd+B=bookmark, etc.)
+- [x] Xcode project generation with xcodegen, all dependencies (ZIPFoundation, SwiftSoup, swift-markdown)
+- [x] Successful build
+
+### TODO (Next Steps)
+- [ ] Testing: import actual EPUB/TXT/MD/HTML files and verify parsing
+- [ ] Fix tab behavior: books should open as native macOS window tabs
+- [ ] WPM calibration: run empirical test to calibrate baseline WPM per voice
+- [ ] Improve EPUB metadata extraction: use TOC (NCX/Nav) as primary heading source
+- [ ] Book title/author extraction from EPUB metadata on import
+- [ ] Better error handling and user feedback for malformed files
+- [ ] Drag-and-drop import support
+- [ ] Reading position persistence: verify save/restore works across app launches
+- [ ] VoiceOver testing: full audit of all views with VoiceOver
+- [ ] Accessibility rotors for heading navigation within reader view
+- [ ] Multiple window/tab support refinement
+- [ ] Personal Voice support (macOS 14+)
+- [ ] Speed control: allow finer WPM steps and custom input field
+- [ ] Sleep timer: "end of heading" logic needs proper heading boundary detection
+- [ ] Library: rename books, edit metadata
+- [ ] Search within book text

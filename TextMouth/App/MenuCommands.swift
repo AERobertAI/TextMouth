@@ -1,0 +1,128 @@
+import SwiftUI
+
+struct PlaybackCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Playback") {
+            Button("Play / Pause") {
+                NotificationCenter.default.post(name: .togglePlayback, object: nil)
+            }
+
+            Divider()
+
+            Button("Skip Forward") {
+                NotificationCenter.default.post(name: .skipForward, object: nil)
+            }
+
+            Button("Skip Backward") {
+                NotificationCenter.default.post(name: .skipBackward, object: nil)
+            }
+
+            Divider()
+
+            Button("Increase Speed") {
+                NotificationCenter.default.post(name: .increaseSpeed, object: nil)
+            }
+
+            Button("Decrease Speed") {
+                NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
+            }
+
+            Divider()
+
+            Button("Where Am I?") {
+                NotificationCenter.default.post(name: .whereAmI, object: nil)
+            }
+
+            Divider()
+
+            Button("Copy Reading Position") {
+                NotificationCenter.default.post(name: .copyReadingPosition, object: nil)
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+
+            Button("Search in Book") {
+                NotificationCenter.default.post(name: .searchInBook, object: nil)
+            }
+            .keyboardShortcut("f", modifiers: .command)
+        }
+    }
+}
+
+struct NavigationCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Navigate") {
+            Button("Go to Library") {
+                NotificationCenter.default.post(name: .goToLibrary, object: nil)
+            }
+
+            Button("Go Back") {
+                NotificationCenter.default.post(name: .goBack, object: nil)
+            }
+
+            Button("Go Forward") {
+                NotificationCenter.default.post(name: .goForward, object: nil)
+            }
+
+            Divider()
+
+            Button("Next Heading") {
+                NotificationCenter.default.post(name: .nextHeading, object: nil)
+            }
+
+            Button("Previous Heading") {
+                NotificationCenter.default.post(name: .previousHeading, object: nil)
+            }
+
+            Divider()
+
+            Button("Book Info") {
+                NotificationCenter.default.post(name: .showBookInfo, object: nil)
+            }
+            .keyboardShortcut("i", modifiers: .command)
+        }
+    }
+}
+
+struct BookmarkCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Bookmarks") {
+            Button("Add Bookmark") {
+                NotificationCenter.default.post(name: .addBookmark, object: nil)
+            }
+
+            Button("Next Bookmark") {
+                NotificationCenter.default.post(name: .nextBookmark, object: nil)
+            }
+
+            Button("Previous Bookmark") {
+                NotificationCenter.default.post(name: .previousBookmark, object: nil)
+            }
+        }
+    }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let togglePlayback = Notification.Name("togglePlayback")
+    static let skipForward = Notification.Name("skipForward")
+    static let skipBackward = Notification.Name("skipBackward")
+    static let increaseSpeed = Notification.Name("increaseSpeed")
+    static let decreaseSpeed = Notification.Name("decreaseSpeed")
+    static let nextHeading = Notification.Name("nextHeading")
+    static let previousHeading = Notification.Name("previousHeading")
+    static let addBookmark = Notification.Name("addBookmark")
+    static let nextBookmark = Notification.Name("nextBookmark")
+    static let previousBookmark = Notification.Name("previousBookmark")
+    static let goToLibrary = Notification.Name("goToLibrary")
+    static let goBack = Notification.Name("goBack")
+    static let goForward = Notification.Name("goForward")
+    static let whereAmI = Notification.Name("whereAmI")
+    static let openBookFile = Notification.Name("openBookFile")
+    static let showBookInfo = Notification.Name("showBookInfo")
+    static let openSelectedBook = Notification.Name("openSelectedBook")
+    static let copyReadingPosition = Notification.Name("copyReadingPosition")
+    static let searchInBook = Notification.Name("searchInBook")
+    static let newFromText = Notification.Name("newFromText")
+    static let continueToNextBook = Notification.Name("continueToNextBook")
+}
