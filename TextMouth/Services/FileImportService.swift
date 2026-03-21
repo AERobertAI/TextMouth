@@ -46,6 +46,27 @@ enum FileImportService {
             }
         }
 
+        // Extract metadata from audio files using AVAsset common metadata tags
+        var audioAlbum: String?
+        var audioGenre: String?
+        var audioYear: String?
+        if format.isAudio {
+            let semaphore = DispatchSemaphore(value: 0)
+            var audioMeta: AudioMetadata?
+            Task {
+                audioMeta = await AudioPlaybackService.extractFullMetadata(from: sourceURL)
+                semaphore.signal()
+            }
+            semaphore.wait()
+            if let meta = audioMeta {
+                if !meta.title.isEmpty { title = meta.title }
+                if !meta.artist.isEmpty { author = meta.artist }
+                if !meta.album.isEmpty { audioAlbum = meta.album }
+                if !meta.genre.isEmpty { audioGenre = meta.genre }
+                if !meta.year.isEmpty { audioYear = meta.year }
+            }
+        }
+
         // Create .tmb directory name
         let tmbName = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded)
 
@@ -69,7 +90,10 @@ enum FileImportService {
             folderPath: folderPath,
             dateAdded: dateAdded,
             tmbDirectoryName: tmbName,
-            sourceFilePath: sourceURL.path
+            sourceFilePath: sourceURL.path,
+            audioAlbum: audioAlbum,
+            audioGenre: audioGenre,
+            audioYear: audioYear
         )
 
         // Write bookInfo.json

@@ -147,18 +147,69 @@ class AudioPlaybackService: NSObject, ObservableObject {
     }
 
     /// Extract basic metadata (title, artist) from an audio file.
+    /// Used by AudioBookParser for quick title/artist extraction during import.
     static func extractMetadata(from url: URL) async -> (title: String?, artist: String?) {
+        let full = await extractFullMetadata(from: url)
+        return (title: full.title.isEmpty ? nil : full.title,
+                artist: full.artist.isEmpty ? nil : full.artist)
+    }
+
+    /// Extract comprehensive metadata from an audio file including album, genre, year, and duration.
+    /// Returns an AudioMetadata struct with all available fields populated.
+    static func extractFullMetadata(from url: URL) async -> AudioMetadata {
         let asset = AVURLAsset(url: url)
+        var result = AudioMetadata()
+
+        // Set the file format from the extension
+        result.fileFormat = url.pathExtension.uppercased()
+
         do {
             let metadata = try await asset.load(.commonMetadata)
+
+            // Extract each field from common metadata identifiers
             let titleItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierTitle)
+            result.title = (try? await titleItems.first?.load(.stringValue)) ?? ""
+
             let artistItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierArtist)
-            let title = try? await titleItems.first?.load(.stringValue)
-            let artist = try? await artistItems.first?.load(.stringValue)
-            return (title: title, artist: artist)
+            result.artist = (try? await artistItems.first?.load(.stringValue)) ?? ""
+
+            let albumItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierAlbumName)
+            result.album = (try? await albumItems.first?.load(.stringValue)) ?? ""
+
+            let creatorItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierCreator)
+            // Use creator as artist fallback if artist is empty
+            if result.artist.isEmpty {
+                result.artist = (try? await creatorItems.first?.load(.stringValue)) ?? ""
+            }
+
+            let typeItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierType)
+            result.genre = (try? await typeItems.first?.load(.stringValue)) ?? ""
+
+            let dateItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierCreationDate)
+            result.year = (try? await dateItems.first?.load(.stringValue)) ?? ""
         } catch {
-            return (nil, nil)
+            // Metadata extraction failed; fields stay empty
         }
+
+        // Extract duration separately (always available even if metadata tags are missing)
+        do {
+            let dur = try await asset.load(.duration)
+            let secs = CMTimeGetSeconds(dur)
+            if secs.isFinite && secs > 0 {
+                let hours = Int(secs) / 3600
+                let minutes = (Int(secs) % 3600) / 60
+                let seconds = Int(secs) % 60
+                if hours > 0 {
+                    result.duration = String(format: "%d:%02d:%02d", hours, minutes, seconds)
+                } else {
+                    result.duration = String(format: "%d:%02d", minutes, seconds)
+                }
+            }
+        } catch {
+            // Duration not available
+        }
+
+        return result
     }
 
     /// Get duration of an audio file without playing it.

@@ -138,7 +138,7 @@ struct ReaderView: View {
                 }
                 .accessibilityLabel("Change voice for this book")
 
-                if viewModel.book.format == .epub {
+                if viewModel.book.format == .epub || viewModel.isAudioBook {
                     Button {
                         showMetadataEditor.toggle()
                     } label: {
@@ -188,6 +188,13 @@ struct ReaderView: View {
                         viewModel.saveEPUBMetadata(updated, writeToFile: writeToFile)
                     }
                 )
+            } else if let audioMeta = viewModel.audioMetadata {
+                MetadataEditorView(
+                    audioMetadata: audioMeta,
+                    onSave: { updated in
+                        viewModel.saveAudioMetadata(updated)
+                    }
+                )
             }
         }
         .sheet(isPresented: $showVoicePicker) {
@@ -212,7 +219,7 @@ struct ReaderView: View {
             showSearch = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { _ in
-            if viewModel.book.format == .epub {
+            if viewModel.book.format == .epub || viewModel.isAudioBook {
                 showMetadataEditor = true
             }
         }

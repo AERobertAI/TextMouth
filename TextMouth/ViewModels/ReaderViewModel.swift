@@ -19,6 +19,7 @@ class ReaderViewModel: ObservableObject {
     @Published var headings: [Heading] = []
     @Published var bookmarks: [Bookmark] = []
     @Published var epubMetadata: EPUBMetadata?
+    @Published var audioMetadata: AudioMetadata?
 
     /// Republished from speechService so SwiftUI views update when playback state changes
     @Published var isCurrentlyPlaying = false
@@ -425,6 +426,21 @@ class ReaderViewModel: ObservableObject {
                     metadata = try? EPUBParser.readMetadata(url: url)
                 }
 
+                // Load audio metadata from file tags, then overlay any user-edited fields
+                // stored in the Book model so previous edits are preserved
+                var audioMeta: AudioMetadata?
+                if format.isAudio {
+                    var extracted = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+                    // Use the book's stored title/author (which may have been user-edited)
+                    extracted.title = self?.book.title ?? extracted.title
+                    extracted.artist = self?.book.author ?? extracted.artist
+                    // Overlay stored audio-specific fields if the user previously edited them
+                    if let album = self?.book.audioAlbum { extracted.album = album }
+                    if let genre = self?.book.audioGenre { extracted.genre = genre }
+                    if let year = self?.book.audioYear { extracted.year = year }
+                    audioMeta = extracted
+                }
+
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     if let audioFiles = audioFiles {
@@ -433,6 +449,7 @@ class ReaderViewModel: ObservableObject {
                     self.content = parsed
                     self.headings = parsed.allHeadings
                     self.epubMetadata = metadata
+                    self.audioMetadata = audioMeta
                     self.isLoading = false
 
                     // Save word/char counts for library time estimation
@@ -1181,6 +1198,28 @@ class ReaderViewModel: ObservableObject {
         )
     }
 
+    /// Save edited audio metadata. Updates the book's title/author and persists
+    /// the album, genre, and year fields to bookInfo.json inside the .tmb package.
+    func saveAudioMetadata(_ metadata: AudioMetadata) {
+        audioMetadata = metadata
+
+        book.title = metadata.title
+        book.author = metadata.artist
+        book.audioAlbum = metadata.album
+        book.audioGenre = metadata.genre
+        book.audioYear = metadata.year
+
+        libraryViewModel.updateBookMetadata(book)
+        announceToVoiceOver("Metadata updated")
+
+        // Update NowPlaying with the new metadata
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title,
+            author: book.author,
+            isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
+        )
+    }
+
     // MARK: - Audio Book Playback
 
     private func setupAudioCallbacks() {
@@ -1544,10 +1583,20 @@ class ReaderViewModel: ObservableObject {
         speakWhereAmI(summary)
     }
 
-    /// Brief summary: title, chapter, percentage
+    /// Brief summary: title, chapter name, position, percentage
     private func buildBriefWhereAmI(content: DocumentContent) -> String {
         var parts: [String] = []
         parts.append(book.title)
+        // Include the current heading name so the user knows where they are semantically
+        if let currentHeading = currentHeadingAtPosition() {
+            parts.append(currentHeading.text)
+        } else if currentChapterIndex < content.chapters.count {
+            // Fall back to chapter title if no heading found
+            let chapter = content.chapters[currentChapterIndex]
+            if !chapter.title.isEmpty {
+                parts.append(chapter.title)
+            }
+        }
         if currentChapterIndex < content.chapters.count {
             parts.append("Chapter \(currentChapterIndex + 1) of \(content.chapters.count)")
         }

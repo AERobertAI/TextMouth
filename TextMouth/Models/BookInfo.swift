@@ -43,6 +43,11 @@ struct BookMetadata: Codable {
     var epubIdentifier: String?
     var epubVersion: String?
 
+    // Audio-specific metadata (populated from file tags when available)
+    var audioAlbum: String?
+    var audioGenre: String?
+    var audioYear: String?
+
     init(
         title: String = "Untitled",
         author: String = "Unknown",
@@ -59,7 +64,10 @@ struct BookMetadata: Codable {
         isbn: String? = nil,
         language: String? = nil,
         epubIdentifier: String? = nil,
-        epubVersion: String? = nil
+        epubVersion: String? = nil,
+        audioAlbum: String? = nil,
+        audioGenre: String? = nil,
+        audioYear: String? = nil
     ) {
         self.title = title
         self.author = author
@@ -77,6 +85,9 @@ struct BookMetadata: Codable {
         self.language = language
         self.epubIdentifier = epubIdentifier
         self.epubVersion = epubVersion
+        self.audioAlbum = audioAlbum
+        self.audioGenre = audioGenre
+        self.audioYear = audioYear
     }
 }
 

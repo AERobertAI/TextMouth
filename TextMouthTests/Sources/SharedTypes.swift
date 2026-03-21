@@ -104,3 +104,104 @@ struct BookFolder {
     var depth: Int { fullPath.isEmpty ? 0 : fullPath.components(separatedBy: "/").count }
     static let maxDepth = 4
 }
+
+/// Mirrored from the app for metadata editing and persistence tests
+struct AudioMetadata: Codable {
+    var title: String
+    var artist: String
+    var album: String
+    var genre: String
+    var year: String
+    var duration: String
+    var fileFormat: String
+
+    init(
+        title: String = "",
+        artist: String = "",
+        album: String = "",
+        genre: String = "",
+        year: String = "",
+        duration: String = "",
+        fileFormat: String = ""
+    ) {
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.genre = genre
+        self.year = year
+        self.duration = duration
+        self.fileFormat = fileFormat
+    }
+}
+
+/// Book format enum mirrored from the app
+enum BookFormat: String, Codable, CaseIterable {
+    case epub, txt, markdown, html, audio
+    var isAudio: Bool { self == .audio }
+}
+
+/// Minimal BookMetadata mirrored from the app for JSON round-trip tests
+struct BookMetadata: Codable {
+    var title: String
+    var author: String
+    var format: BookFormat
+    var md5Hash: String
+    var dateAdded: Date
+    var lastOpened: Date?
+    var originalFileName: String
+    var folderPath: String
+    var bookID: UUID
+    var sourceFilePath: String?
+    var publisher: String?
+    var publicationDate: String?
+    var isbn: String?
+    var language: String?
+    var epubIdentifier: String?
+    var epubVersion: String?
+    var audioAlbum: String?
+    var audioGenre: String?
+    var audioYear: String?
+
+    init(
+        title: String = "Untitled",
+        author: String = "Unknown",
+        format: BookFormat = .txt,
+        md5Hash: String = "",
+        dateAdded: Date = Date(),
+        lastOpened: Date? = nil,
+        originalFileName: String = "",
+        folderPath: String = "",
+        bookID: UUID = UUID(),
+        sourceFilePath: String? = nil,
+        publisher: String? = nil,
+        publicationDate: String? = nil,
+        isbn: String? = nil,
+        language: String? = nil,
+        epubIdentifier: String? = nil,
+        epubVersion: String? = nil,
+        audioAlbum: String? = nil,
+        audioGenre: String? = nil,
+        audioYear: String? = nil
+    ) {
+        self.title = title
+        self.author = author
+        self.format = format
+        self.md5Hash = md5Hash
+        self.dateAdded = dateAdded
+        self.lastOpened = lastOpened
+        self.originalFileName = originalFileName
+        self.folderPath = folderPath
+        self.bookID = bookID
+        self.sourceFilePath = sourceFilePath
+        self.publisher = publisher
+        self.publicationDate = publicationDate
+        self.isbn = isbn
+        self.language = language
+        self.epubIdentifier = epubIdentifier
+        self.epubVersion = epubVersion
+        self.audioAlbum = audioAlbum
+        self.audioGenre = audioGenre
+        self.audioYear = audioYear
+    }
+}
+

@@ -31,6 +31,7 @@ runBookStateTests()
 runParserEdgeCaseTests()
 runTextSubstitutionTests()
 runFeatureTests()
+runAudioMetadataTests()
 
 // ---- Summary ----
 print("\n" + "=" * 60)

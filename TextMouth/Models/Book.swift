@@ -76,6 +76,10 @@ struct Book: Identifiable, Codable, Hashable {
     var manualSortOrder: Int?
     /// Total audio duration in seconds (for audio books only)
     var audioDuration: TimeInterval?
+    /// Audio-specific metadata fields (album, genre, year) persisted in bookInfo.json
+    var audioAlbum: String?
+    var audioGenre: String?
+    var audioYear: String?
 
     init(
         id: UUID = UUID(),
@@ -100,7 +104,10 @@ struct Book: Identifiable, Codable, Hashable {
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
-        audioDuration: TimeInterval? = nil
+        audioDuration: TimeInterval? = nil,
+        audioAlbum: String? = nil,
+        audioGenre: String? = nil,
+        audioYear: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -125,6 +132,9 @@ struct Book: Identifiable, Codable, Hashable {
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
+        self.audioAlbum = audioAlbum
+        self.audioGenre = audioGenre
+        self.audioYear = audioYear
     }
 
     // Custom decoding to handle missing fields from old library.json
@@ -153,6 +163,9 @@ struct Book: Identifiable, Codable, Hashable {
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
         audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
+        audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
+        audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
+        audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
     }
 
     /// The .tmb package directory URL
@@ -208,7 +221,10 @@ struct Book: Identifiable, Codable, Hashable {
                 originalFileName: bookFileURL.lastPathComponent,
                 folderPath: folderPath,
                 bookID: id,
-                sourceFilePath: sourceFilePath
+                sourceFilePath: sourceFilePath,
+                audioAlbum: audioAlbum,
+                audioGenre: audioGenre,
+                audioYear: audioYear
             ),
             state: BookState(
                 readingPosition: readingPosition,
