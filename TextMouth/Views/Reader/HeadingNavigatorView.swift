@@ -100,7 +100,7 @@ struct HeadingNavigatorView: View {
                 .accessibilityRotor("Heading Levels") {
                     ForEach(filteredHeadings) { heading in
                         AccessibilityRotorEntry(
-                            "Level \(heading.level): \(heading.text)",
+                            "\(heading.text) - level \(heading.level)",
                             id: heading.id
                         )
                     }
@@ -185,15 +185,16 @@ struct HeadingRow: View {
     }
 
     private var accessibilityDescription: String {
+        // Format: "heading name - level N, info" for fast screen reader scanning
         let skipPrefix = isSkipped ? "Skipped, " : ""
-        let base = "\(skipPrefix)Level \(heading.level) heading: \(heading.text)"
+        let base = "\(skipPrefix)\(heading.text) - level \(heading.level)"
         switch displayMode {
         case .timeEstimate:
-            return "\(base), estimated duration \(TimeFormatting.spoken(viewModel.timeEstimateForHeading(heading)))"
+            return "\(base), \(TimeFormatting.spoken(viewModel.timeEstimateForHeading(heading)))"
         case .timeIntoBook:
-            return "\(base), starts at \(TimeFormatting.spoken(viewModel.timeToHeading(heading))) into book"
+            return "\(base), \(TimeFormatting.spoken(viewModel.timeToHeading(heading))) in"
         case .percentage:
-            return "\(base), at \(String(format: "%.1f percent", viewModel.percentAtHeading(heading))) of book"
+            return "\(base), \(String(format: "%.1f percent", viewModel.percentAtHeading(heading)))"
         }
     }
 

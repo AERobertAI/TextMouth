@@ -9,7 +9,7 @@ struct TextMouthApp: App {
     @StateObject private var soundEffectService = SoundEffectService()
 
     var body: some Scene {
-        // Library windows — Cmd+N creates a new one
+        // Library window — only one opens on launch; Cmd+N can still create additional ones.
         WindowGroup {
             LibraryWindowView()
                 .environmentObject(libraryViewModel)
@@ -37,6 +37,7 @@ struct TextMouthApp: App {
         }
 
         // Book reader windows — opened programmatically via openWindow(id:value:)
+        // Restoration disabled so old reader windows don't reopen on launch.
         WindowGroup("Book Reader", id: "book-reader", for: UUID.self) { $bookID in
             if let bookID = bookID {
                 BookReaderWindowView(

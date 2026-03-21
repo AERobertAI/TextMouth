@@ -55,6 +55,11 @@ class ReaderViewModel: ObservableObject {
     private var savedChapterIndex: Int = 0
     private var savedCharacterOffset: Int = 0
 
+    /// The NSWindow hosting this reader. Used to check if this is the focused window
+    /// before responding to keyboard shortcut notifications (prevents K from activating
+    /// playback in ALL open book windows at once).
+    weak var hostWindow: NSWindow?
+
     /// Separate synthesizer for "Where Am I?" announcements (not the book reader)
     private let whereAmISynth = AVSpeechSynthesizer()
     /// Whether playback was active before "Where Am I?" interrupted it
@@ -319,69 +324,112 @@ class ReaderViewModel: ObservableObject {
         )
     }
 
+    /// Check whether a keyboard shortcut notification was sent from this reader's window.
+    /// Notifications from the menu bar (no sourceWindow) are always accepted; notifications
+    /// from keyboard events are only accepted when this window is the source.
+    private func isTargetedNotification(_ notification: Notification) -> Bool {
+        guard let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow else {
+            // No window info means this came from a menu command — always accept
+            return true
+        }
+        // Only respond if this reader's window is the one that had focus
+        return sourceWindow === hostWindow
+    }
+
     private func setupNotifications() {
         let nc = NotificationCenter.default
 
         nc.publisher(for: .togglePlayback)
-            .sink { [weak self] _ in self?.togglePlayPause() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.togglePlayPause()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .skipForward)
             .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
                 let shiftHeld = notification.userInfo?["shiftHeld"] as? Bool ?? false
-                self?.skipForward(useShiftUnit: shiftHeld)
+                self.skipForward(useShiftUnit: shiftHeld)
             }
             .store(in: &cancellables)
 
         nc.publisher(for: .skipBackward)
             .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
                 let shiftHeld = notification.userInfo?["shiftHeld"] as? Bool ?? false
-                self?.skipBackward(useShiftUnit: shiftHeld)
+                self.skipBackward(useShiftUnit: shiftHeld)
             }
             .store(in: &cancellables)
 
         nc.publisher(for: .increaseSpeed)
-            .sink { [weak self] _ in self?.adjustSpeed(delta: 25) }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.adjustSpeed(delta: 25)
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .decreaseSpeed)
-            .sink { [weak self] _ in self?.adjustSpeed(delta: -25) }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.adjustSpeed(delta: -25)
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .nextHeading)
-            .sink { [weak self] _ in self?.nextHeading() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.nextHeading()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .previousHeading)
-            .sink { [weak self] _ in self?.previousHeading() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.previousHeading()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .addBookmark)
-            .sink { [weak self] _ in self?.addBookmarkAtCurrentPosition() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.addBookmarkAtCurrentPosition()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .nextBookmark)
-            .sink { [weak self] _ in self?.goToNextBookmark() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goToNextBookmark()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .previousBookmark)
-            .sink { [weak self] _ in self?.goToPreviousBookmark() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goToPreviousBookmark()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .whereAmI)
-            .sink { [weak self] _ in self?.whereAmI() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.whereAmI()
+            }
             .store(in: &cancellables)
 
         nc.publisher(for: .copyReadingPosition)
-            .sink { [weak self] _ in self?.copyReadingPosition() }
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.copyReadingPosition()
+            }
             .store(in: &cancellables)
 
+        // Settings changes apply to all reader windows (not window-specific)
         nc.publisher(for: .speechSettingsChanged)
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 self.sleepTimerService.fadeOutDuration = self.settingsViewModel.sleepFadeOutDuration
-                // Re-apply local overrides after global settings changed
-                // (SpeechService.reloadSettings may have overwritten them)
                 if let localWPM = self.book.localWPM {
                     self.speechService.setSpeedRealtime(localWPM)
                 }

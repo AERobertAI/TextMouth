@@ -70,12 +70,25 @@ struct MetadataEditorView: View {
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button("Save") {
-                    if isAudio {
-                        onSaveAudio?(editedAudioMetadata)
-                    } else {
-                        onSaveEPUB?(editedEPUBMetadata, writeToFile)
-                    }
+                    // Capture edited values before dismissing
+                    let audioMeta = editedAudioMetadata
+                    let epubMeta = editedEPUBMetadata
+                    let shouldWriteToFile = writeToFile
+                    let saveAudio = onSaveAudio
+                    let saveEPUB = onSaveEPUB
+                    let isAudioBook = isAudio
+
+                    // Dismiss first so the sheet closes before the save callback
+                    // triggers shared state updates that could steal window focus
                     dismiss()
+
+                    DispatchQueue.main.async {
+                        if isAudioBook {
+                            saveAudio?(audioMeta)
+                        } else {
+                            saveEPUB?(epubMeta, shouldWriteToFile)
+                        }
+                    }
                 }
                 .keyboardShortcut(.return, modifiers: .command)
                 .accessibilityLabel("Save metadata changes")

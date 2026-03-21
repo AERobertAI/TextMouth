@@ -128,7 +128,12 @@ class KeyboardShortcutManager: ObservableObject {
                     // Pass whether Shift was held (for secondary skip amounts)
                     // Only count it as "extra shift" if the binding itself doesn't require Shift
                     let shiftHeld = event.modifierFlags.contains(.shift) && !binding.shift
-                    let userInfo: [String: Any] = shiftHeld ? ["shiftHeld": true] : [:]
+                    // Include the key window so only the focused book reader responds
+                    var userInfo: [String: Any] = [:]
+                    if shiftHeld { userInfo["shiftHeld"] = true }
+                    if let keyWindow = NSApp.keyWindow {
+                        userInfo["sourceWindow"] = keyWindow
+                    }
                     NotificationCenter.default.post(name: action.notificationName, object: nil, userInfo: userInfo)
                     return true
                 }

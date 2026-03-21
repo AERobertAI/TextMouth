@@ -2,6 +2,13 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
+        NSWindow.allowsAutomaticWindowTabbing = false
+
+        // Disable macOS automatic window state restoration so previous sessions don't
+        // spawn extra library or reader windows on launch. Only one library window
+        // should appear on startup; additional ones require Cmd+N.
+        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

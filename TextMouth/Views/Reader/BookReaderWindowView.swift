@@ -26,6 +26,9 @@ struct BookReaderWindowView: View {
 
     var body: some View {
         ReaderView(viewModel: viewModel)
+            .background(WindowAccessor(onWindowFound: { window in
+                viewModel.hostWindow = window
+            }))
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
@@ -42,5 +45,32 @@ struct BookReaderWindowView: View {
             return "Book: \(book.title)"
         }
         return "Book: \(book.title) by \(book.author)"
+    }
+}
+
+/// Invisible NSView that captures its hosting NSWindow and passes it back to SwiftUI.
+/// Used so the ReaderViewModel can check whether its window is focused before responding
+/// to keyboard shortcut notifications.
+struct WindowAccessor: NSViewRepresentable {
+    let onWindowFound: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = WindowAccessorView()
+        view.onWindowFound = onWindowFound
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+/// Helper NSView that reports its window once it appears in the view hierarchy.
+private class WindowAccessorView: NSView {
+    var onWindowFound: ((NSWindow) -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let window = window {
+            onWindowFound?(window)
+        }
     }
 }

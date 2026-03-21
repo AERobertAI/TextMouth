@@ -13,6 +13,8 @@ struct LibraryWindowView: View {
     @State private var sortAscending: Bool = true
     @State private var showFileImporter = false
     @State private var zipFolderName = ""
+    /// The NSWindow hosting this library view, captured via WindowAccessor
+    @State private var hostWindow: NSWindow?
 
     var body: some View {
         ZStack {
@@ -36,6 +38,9 @@ struct LibraryWindowView: View {
                 )
             }
         }
+        .background(WindowAccessor(onWindowFound: { window in
+            hostWindow = window
+        }))
         .navigationTitle(windowTitle)
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
@@ -126,21 +131,30 @@ struct LibraryWindowView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBookFile)) { _ in
-            showFileImporter = true
+            // Only show the file importer in the key (focused) library window
+            // to prevent multiple file dialogs from appearing at once
+            if isKeyLibraryWindow {
+                showFileImporter = true
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBookWindow)) { notification in
-            if let bookID = notification.object as? UUID {
+            // Only open from the key library window to prevent duplicate openWindow calls
+            if isKeyLibraryWindow, let bookID = notification.object as? UUID {
                 openWindow(id: "book-reader", value: bookID)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
-            navigateUp()
+            if isKeyLibraryWindow {
+                navigateUp()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .goForward)) { _ in
-            navigateForward()
+            if isKeyLibraryWindow {
+                navigateForward()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
-            if let bookID = notification.userInfo?["bookID"] as? UUID {
+            if isKeyLibraryWindow, let bookID = notification.userInfo?["bookID"] as? UUID {
                 openWindow(id: "book-reader", value: bookID)
             }
         }
@@ -178,6 +192,14 @@ struct LibraryWindowView: View {
                 currentFolderPath = only.fullPath
             }
         }
+    }
+
+    /// True when this library window is the current key (focused) window.
+    /// Used to prevent multiple library windows from all responding to the same
+    /// global notification (e.g. opening a file dialog in every library window at once).
+    private var isKeyLibraryWindow: Bool {
+        guard let hostWindow = hostWindow else { return true }
+        return hostWindow.isKeyWindow
     }
 }
 

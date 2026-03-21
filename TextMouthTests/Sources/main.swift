@@ -32,6 +32,7 @@ runParserEdgeCaseTests()
 runTextSubstitutionTests()
 runFeatureTests()
 runAudioMetadataTests()
+runWindowFocusTests()
 
 // ---- Summary ----
 print("\n" + "=" * 60)
