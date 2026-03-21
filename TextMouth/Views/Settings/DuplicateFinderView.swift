@@ -360,12 +360,13 @@ struct DuplicateBookRow: View {
         .background(isSelected ? Color.red.opacity(0.08) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { onToggle() }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Double-tap to \(isSelected ? "deselect" : "select for removal")")
-        .accessibilityAddTraits([.isButton])
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .accessibilityAction(.default) { onToggle() }
+        .accessibilityRepresentation {
+            // Represent as a Toggle so VoiceOver announces the checked/unchecked state
+            Toggle(accessibilityLabel, isOn: Binding(
+                get: { isSelected },
+                set: { _ in onToggle() }
+            ))
+        }
     }
 
     private var accessibilityLabel: String {
