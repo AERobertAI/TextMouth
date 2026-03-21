@@ -15,6 +15,8 @@ struct LibraryView: View {
     @State private var newFolderParentPath = ""
     @State private var booksToMove: [Book] = []
     @State private var showMoveSheet = false
+    @State private var folderToMove: BookFolder?
+    @State private var showMoveFolderSheet = false
     @State private var searchText = ""
     @State private var selectedBookIDs: Set<UUID> = []
     /// Edit mode: activating a book toggles its selection instead of opening it
@@ -144,8 +146,19 @@ struct LibraryView: View {
                                     currentFolderPath = folder.fullPath
                                 }
                                 .contextMenu {
-                                    Button("Delete Folder", role: .destructive) {
-                                        libraryViewModel.removeFolder(folder)
+                                    Button("Move Folder...") {
+                                        folderToMove = folder
+                                        showMoveFolderSheet = true
+                                    }
+                                    Divider()
+                                    Button("Delete Folder...", role: .destructive) {
+                                        if libraryViewModel.folderHasContents(folder) {
+                                            libraryViewModel.pendingDeleteFolder = folder
+                                            libraryViewModel.showDeleteFolderDialog = true
+                                        } else {
+                                            // Empty folder — just delete it
+                                            libraryViewModel.removeFolder(folder)
+                                        }
                                     }
                                 }
                             }
@@ -511,6 +524,78 @@ struct LibraryView: View {
                 },
                 onCancel: { showTextInput = false }
             )
+        }
+        // Move folder to new parent sheet
+        .sheet(isPresented: $showMoveFolderSheet) {
+            if let folder = folderToMove {
+                MoveFolderToParentSheet(
+                    folder: folder,
+                    library: libraryViewModel.library,
+                    onMove: { newParent in
+                        libraryViewModel.moveFolder(folder, toParent: newParent)
+                        showMoveFolderSheet = false
+                    },
+                    onCancel: { showMoveFolderSheet = false }
+                )
+            }
+        }
+        // Delete folder dialog: move contents out vs delete everything
+        .alert(
+            "Delete Folder?",
+            isPresented: $libraryViewModel.showDeleteFolderDialog
+        ) {
+            Button("Move Contents Out") {
+                libraryViewModel.showDeleteFolderDestinationSheet = true
+            }
+            Button("Delete Everything", role: .destructive) {
+                libraryViewModel.showDeleteEverythingConfirm = true
+            }
+            Button("Cancel", role: .cancel) {
+                libraryViewModel.pendingDeleteFolder = nil
+            }
+        } message: {
+            if let folder = libraryViewModel.pendingDeleteFolder {
+                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
+                Text("\"\(folder.name)\" contains \(count) \(count == 1 ? "book" : "books") and may have subfolders. What would you like to do?")
+            }
+        }
+        // Second confirmation for Delete Everything
+        .alert(
+            "Are you sure?",
+            isPresented: $libraryViewModel.showDeleteEverythingConfirm
+        ) {
+            Button("Delete Everything", role: .destructive) {
+                if let folder = libraryViewModel.pendingDeleteFolder {
+                    libraryViewModel.removeFolderAndEverything(folder)
+                    libraryViewModel.pendingDeleteFolder = nil
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                libraryViewModel.pendingDeleteFolder = nil
+            }
+        } message: {
+            if let folder = libraryViewModel.pendingDeleteFolder {
+                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
+                Text("This will permanently remove the folder \"\(folder.name)\" and all \(count) \(count == 1 ? "book" : "books") inside it. This cannot be undone.")
+            }
+        }
+        // Move contents destination picker
+        .sheet(isPresented: $libraryViewModel.showDeleteFolderDestinationSheet) {
+            if let folder = libraryViewModel.pendingDeleteFolder {
+                DeleteFolderMoveContentsSheet(
+                    folder: folder,
+                    library: libraryViewModel.library,
+                    onConfirm: { destination in
+                        libraryViewModel.removeFolderMovingContents(folder, toPath: destination)
+                        libraryViewModel.pendingDeleteFolder = nil
+                        libraryViewModel.showDeleteFolderDestinationSheet = false
+                    },
+                    onCancel: {
+                        libraryViewModel.pendingDeleteFolder = nil
+                        libraryViewModel.showDeleteFolderDestinationSheet = false
+                    }
+                )
+            }
         }
     }
 
@@ -1117,6 +1202,120 @@ struct MoveFolderSheet: View {
                folderOptions.contains(where: { $0.path == lastMovedFolderPath }) {
                 selectedPath = lastMovedFolderPath
             }
+        }
+    }
+}
+
+/// Sheet for moving a folder to a new parent folder
+struct MoveFolderToParentSheet: View {
+    let folder: BookFolder
+    let library: Library
+    let onMove: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var selectedParent = ""
+
+    /// Valid destinations: all folders except the folder itself, its descendants, and its current parent
+    private var validDestinations: [(label: String, path: String)] {
+        let selfPath = folder.fullPath
+        var options: [(String, String)] = [("Library Root", "")]
+        for f in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+            // Exclude: the folder itself, its descendants, and check depth limit
+            if f.fullPath == selfPath { continue }
+            if f.fullPath.hasPrefix(selfPath + "/") { continue }
+            // Check that moving here wouldn't exceed max depth
+            let newDepth = (f.fullPath.isEmpty ? 0 : f.fullPath.components(separatedBy: "/").count) + 1
+            if newDepth > BookFolder.maxDepth { continue }
+            options.append((f.fullPath, f.fullPath))
+        }
+        return options
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Move \"\(folder.name)\"")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            Picker("New parent folder", selection: $selectedParent) {
+                ForEach(validDestinations, id: \.path) { option in
+                    Text(option.label).tag(option.path)
+                }
+            }
+            .accessibilityLabel("Destination parent folder")
+
+            HStack {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.escape, modifiers: [])
+                Spacer()
+                Button("Move") { onMove(selectedParent) }
+                    .keyboardShortcut(.return, modifiers: [])
+                    .disabled(selectedParent == folder.parentPath)
+            }
+        }
+        .padding()
+        .frame(width: 400)
+        .navigationTitle("Move Folder: \(folder.name)")
+        .onAppear {
+            selectedParent = folder.parentPath
+        }
+    }
+}
+
+/// Sheet for choosing where to move folder contents when deleting a folder
+struct DeleteFolderMoveContentsSheet: View {
+    let folder: BookFolder
+    let library: Library
+    let onConfirm: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var selectedDestination = ""
+
+    /// Valid destinations: all folders except the folder being deleted and its descendants
+    private var validDestinations: [(label: String, path: String)] {
+        let selfPath = folder.fullPath
+        var options: [(String, String)] = [("Library Root", "")]
+        for f in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+            if f.fullPath == selfPath { continue }
+            if f.fullPath.hasPrefix(selfPath + "/") { continue }
+            options.append((f.fullPath, f.fullPath))
+        }
+        return options
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Move Contents of \"\(folder.name)\"")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            Text("Choose where to move the books and subfolders before deleting \"\(folder.name)\".")
+                .font(.callout)
+                .foregroundColor(.secondary)
+
+            Picker("Move contents to", selection: $selectedDestination) {
+                ForEach(validDestinations, id: \.path) { option in
+                    Text(option.label).tag(option.path)
+                }
+            }
+            .accessibilityLabel("Destination for folder contents")
+
+            HStack {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.escape, modifiers: [])
+                Spacer()
+                Button("Move Contents & Delete Folder") {
+                    onConfirm(selectedDestination)
+                }
+                .keyboardShortcut(.return, modifiers: [])
+            }
+        }
+        .padding()
+        .frame(width: 450)
+        .navigationTitle("Move Contents: \(folder.name)")
+        .onAppear {
+            // Default to the parent of the folder being deleted
+            selectedDestination = folder.parentPath
         }
     }
 }

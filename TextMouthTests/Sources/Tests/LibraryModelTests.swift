@@ -452,4 +452,174 @@ test("Moving multiple books updates last moved folder once") {
     try assertEqual(library.booksInFolder("Target").count, 2)
 }
 
+// ---- Folder Move Tests ----
+print("\n--- Folder Move Tests ---")
+
+test("moveFolder changes parent and updates books") {
+    var library = Library()
+    _ = library.createFolder(name: "Fiction")
+    _ = library.createFolder(name: "NonFiction")
+    let scifi = library.createFolder(name: "SciFi", parentPath: "Fiction")!
+    library.addBook(Book(title: "Dune", md5Hash: "d1", folderPath: "Fiction/SciFi"))
+
+    let result = library.moveFolder(id: scifi.id, toParentPath: "NonFiction")
+    try assertTrue(result, "Move should succeed")
+
+    // SciFi should now be under NonFiction
+    let moved = library.folders.first(where: { $0.name == "SciFi" })!
+    try assertEqual(moved.parentPath, "NonFiction")
+    try assertEqual(moved.fullPath, "NonFiction/SciFi")
+
+    // Book should be updated
+    try assertEqual(library.books[0].folderPath, "NonFiction/SciFi")
+}
+
+test("moveFolder to root") {
+    var library = Library()
+    _ = library.createFolder(name: "Parent")
+    let child = library.createFolder(name: "Child", parentPath: "Parent")!
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "Parent/Child"))
+
+    let result = library.moveFolder(id: child.id, toParentPath: "")
+    try assertTrue(result)
+    try assertEqual(library.books[0].folderPath, "Child")
+}
+
+test("moveFolder prevents cycle (into own descendant)") {
+    var library = Library()
+    let parent = library.createFolder(name: "Parent")!
+    _ = library.createFolder(name: "Child", parentPath: "Parent")
+
+    let result = library.moveFolder(id: parent.id, toParentPath: "Parent/Child")
+    try assertTrue(!result, "Should prevent moving into own descendant")
+}
+
+test("moveFolder prevents exceeding max depth") {
+    var library = Library()
+    // Create a folder with a subfolder at depth 3 (A/B/C)
+    _ = library.createFolder(name: "A")
+    let b = library.createFolder(name: "B", parentPath: "A")!
+    _ = library.createFolder(name: "C", parentPath: "A/B")
+    // B is at depth 2, with subfolder C at depth 3.
+    // Create a depth-3 target: X/Y/Z
+    _ = library.createFolder(name: "X")
+    _ = library.createFolder(name: "Y", parentPath: "X")
+    _ = library.createFolder(name: "Z", parentPath: "X/Y")
+
+    // Moving B (which contains C) under X/Y/Z would put C at X/Y/Z/B/C = depth 5
+    let result = library.moveFolder(id: b.id, toParentPath: "X/Y/Z")
+    try assertTrue(!result, "Should prevent exceeding max depth for subfolders")
+}
+
+test("moveFolder updates subfolder paths") {
+    var library = Library()
+    _ = library.createFolder(name: "Old")
+    let sub = library.createFolder(name: "Sub", parentPath: "Old")!
+    _ = library.createFolder(name: "Deep", parentPath: "Old/Sub")
+    _ = library.createFolder(name: "New")
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "Old/Sub/Deep"))
+
+    library.moveFolder(id: sub.id, toParentPath: "New")
+
+    let deep = library.folders.first(where: { $0.name == "Deep" })!
+    try assertEqual(deep.parentPath, "New/Sub")
+    try assertEqual(deep.fullPath, "New/Sub/Deep")
+    try assertEqual(library.books[0].folderPath, "New/Sub/Deep")
+}
+
+test("moveFolder rejects name collision") {
+    var library = Library()
+    _ = library.createFolder(name: "A")
+    _ = library.createFolder(name: "B")
+    let dup = library.createFolder(name: "A", parentPath: "B")! // B/A exists
+
+    // Try to move B/A to root where "A" already exists
+    let result = library.moveFolder(id: dup.id, toParentPath: "")
+    try assertTrue(!result, "Should reject because A already exists at root")
+}
+
+// ---- Folder Delete Tests ----
+print("\n--- Folder Delete Tests ---")
+
+test("removeFolderAndContents removes books and subfolders") {
+    var library = Library()
+    let folder = library.createFolder(name: "ToDelete")!
+    _ = library.createFolder(name: "Sub", parentPath: "ToDelete")
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "ToDelete"))
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "ToDelete/Sub"))
+    library.addBook(Book(title: "C", md5Hash: "c1", folderPath: ""))
+
+    let removed = library.removeFolderAndContents(id: folder.id)
+
+    try assertEqual(removed.count, 2, "Should return 2 removed books")
+    try assertEqual(library.books.count, 1, "Only unrelated book should remain")
+    try assertEqual(library.books[0].title, "C")
+    try assertTrue(!library.folders.contains(where: { $0.name == "ToDelete" }))
+    try assertTrue(!library.folders.contains(where: { $0.name == "Sub" }))
+}
+
+test("removeFolder movingContentsTo reparents children") {
+    var library = Library()
+    let folder = library.createFolder(name: "Old")!
+    _ = library.createFolder(name: "Sub", parentPath: "Old")
+    _ = library.createFolder(name: "Target")
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "Old"))
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "Old/Sub"))
+
+    library.removeFolder(id: folder.id, movingContentsTo: "Target")
+
+    // Book A should be in Target
+    try assertEqual(library.books.first(where: { $0.title == "A" })!.folderPath, "Target")
+    // Book B should be in Target/Sub
+    try assertEqual(library.books.first(where: { $0.title == "B" })!.folderPath, "Target/Sub")
+    // Sub folder should be reparented under Target
+    let sub = library.folders.first(where: { $0.name == "Sub" })!
+    try assertEqual(sub.parentPath, "Target")
+    // Old folder should be gone
+    try assertTrue(!library.folders.contains(where: { $0.name == "Old" }))
+}
+
+test("removeFolder movingContentsTo root reparents correctly") {
+    var library = Library()
+    let folder = library.createFolder(name: "Parent")!
+    _ = library.createFolder(name: "Child", parentPath: "Parent")
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "Parent"))
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "Parent/Child"))
+
+    library.removeFolder(id: folder.id, movingContentsTo: "")
+
+    try assertEqual(library.books.first(where: { $0.title == "A" })!.folderPath, "")
+    try assertEqual(library.books.first(where: { $0.title == "B" })!.folderPath, "Child")
+    let child = library.folders.first(where: { $0.name == "Child" })!
+    try assertEqual(child.parentPath, "")
+}
+
+test("folderHasContents detects books and subfolders") {
+    var library = Library()
+    let empty = library.createFolder(name: "Empty")!
+    let withBook = library.createFolder(name: "WithBook")!
+    let withSub = library.createFolder(name: "WithSub")!
+    _ = library.createFolder(name: "Sub", parentPath: "WithSub")
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "WithBook"))
+
+    try assertTrue(!library.folderHasContents(empty), "Empty folder should have no contents")
+    try assertTrue(library.folderHasContents(withBook), "Folder with book should have contents")
+    try assertTrue(library.folderHasContents(withSub), "Folder with subfolder should have contents")
+}
+
+test("totalBooksInFolderTree counts recursively") {
+    var library = Library()
+    _ = library.createFolder(name: "Root")
+    _ = library.createFolder(name: "Sub", parentPath: "Root")
+    _ = library.createFolder(name: "Deep", parentPath: "Root/Sub")
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "Root"))
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "Root/Sub"))
+    library.addBook(Book(title: "C", md5Hash: "c1", folderPath: "Root/Sub/Deep"))
+    library.addBook(Book(title: "D", md5Hash: "d1", folderPath: ""))
+
+    try assertEqual(library.totalBooksInFolderTree("Root"), 3)
+    try assertEqual(library.totalBooksInFolderTree("Root/Sub"), 2)
+    try assertEqual(library.totalBooksInFolderTree("Root/Sub/Deep"), 1)
+}
+
 } // end runLibraryModelTests

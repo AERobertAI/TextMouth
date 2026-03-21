@@ -10,10 +10,12 @@ struct StorageSettingsView: View {
     @State private var statusMessage: String?
     @State private var importDeleteBehavior: ImportDeleteBehavior
     @State private var confirmBeforeDelete: Bool
+    @State private var moveToTrash: Bool
 
     init() {
         _importDeleteBehavior = State(initialValue: ConfigService.shared.config.importDeleteBehavior)
         _confirmBeforeDelete = State(initialValue: ConfigService.shared.config.confirmBeforeDelete)
+        _moveToTrash = State(initialValue: ConfigService.shared.config.moveToTrashInsteadOfDeleting)
     }
 
     var body: some View {
@@ -114,6 +116,19 @@ struct StorageSettingsView: View {
                         ConfigService.shared.saveToDisk()
                     }
                     .accessibilityHint("When enabled, you will be asked to confirm before a book is removed, with the option to keep or delete the file")
+
+                Toggle("Move to Trash instead of deleting", isOn: $moveToTrash)
+                    .onChange(of: moveToTrash) { newValue in
+                        ConfigService.shared.config.moveToTrashInsteadOfDeleting = newValue
+                        ConfigService.shared.saveToDisk()
+                    }
+                    .accessibilityHint("When enabled, deleted books are moved to the Trash where they can be recovered. When disabled, files are permanently deleted.")
+
+                Text(moveToTrash
+                    ? "Removed books go to the Trash and can be recovered."
+                    : "Removed books are permanently deleted from disk.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             } header: {
                 Text("Removal Behavior")
             }

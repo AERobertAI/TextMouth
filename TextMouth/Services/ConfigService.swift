@@ -43,6 +43,8 @@ class ConfigService: ObservableObject {
         var lastOpenedBookID: String = ""
         /// Auto-play when navigating to a heading, bookmark, or search result
         var autoPlayOnNavigate: Bool = false
+        /// Move deleted books to Trash instead of permanently deleting
+        var moveToTrashInsteadOfDeleting: Bool = true
     }
 
     private init() {

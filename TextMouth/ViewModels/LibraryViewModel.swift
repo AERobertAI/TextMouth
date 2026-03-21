@@ -47,6 +47,12 @@ class LibraryViewModel: ObservableObject {
     /// Last folder path a book was moved to, used as default in move sheet
     @Published var lastMovedFolderPath: String = ""
 
+    /// Folder deletion dialogs
+    @Published var showDeleteFolderDialog = false
+    @Published var pendingDeleteFolder: BookFolder?
+    @Published var showDeleteFolderDestinationSheet = false
+    @Published var showDeleteEverythingConfirm = false
+
     /// Duplicate import detection
     @Published var showDuplicateDialog = false
     @Published var pendingDuplicateBook: Book?
@@ -837,9 +843,85 @@ class LibraryViewModel: ObservableObject {
         save()
     }
 
-    func removeFolder(_ folder: BookFolder) {
-        library.removeFolder(id: folder.id)
+    /// Remove a folder, moving its contents to the given destination path.
+    /// Subfolders are reparented under the destination; books are reassigned.
+    func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
+        // Move .tmb packages on disk for books being reassigned
+        let oldPath = folder.fullPath
+        let booksToReassign = library.books.filter {
+            $0.folderPath == oldPath || $0.folderPath.hasPrefix(oldPath + "/")
+        }
+        library.removeFolder(id: folder.id, movingContentsTo: destination)
+        // Update disk locations for moved books
+        for book in booksToReassign {
+            if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
+                moveTMBToFolder(book: &library.books[idx], newFolderPath: library.books[idx].folderPath)
+            }
+        }
+        // Ensure destination subfolder directories exist on disk
+        for f in library.folders {
+            try? TextMouthPaths.ensureLibrarySubfolder(f.fullPath)
+        }
         save()
+    }
+
+    /// Remove a folder and permanently delete all its contents (books, subfolders, .tmb files).
+    func removeFolderAndEverything(_ folder: BookFolder) {
+        let removedBooks = library.removeFolderAndContents(id: folder.id)
+        // Delete .tmb packages from disk (respects trash setting)
+        for book in removedBooks {
+            FileImportService.deleteBookPackage(book)
+        }
+        // Remove the folder's disk directory
+        let folderDiskURL = TextMouthPaths.libraryDir
+            .appendingPathComponent(folder.fullPath, isDirectory: true)
+        FileImportService.removeItemRespectingTrashSetting(at: folderDiskURL)
+        save()
+    }
+
+    /// Move a folder to a new parent, preserving its internal structure on disk.
+    func moveFolder(_ folder: BookFolder, toParent newParentPath: String) {
+        let oldPath = folder.fullPath
+        guard library.moveFolder(id: folder.id, toParentPath: newParentPath) else { return }
+        let newPath = newParentPath.isEmpty ? folder.name : "\(newParentPath)/\(folder.name)"
+
+        // Move the disk directory
+        let oldDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(oldPath, isDirectory: true)
+        try? TextMouthPaths.ensureLibrarySubfolder(newParentPath)
+        let newDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(newPath, isDirectory: true)
+        if FileManager.default.fileExists(atPath: oldDiskURL.path), oldDiskURL != newDiskURL {
+            do {
+                try FileManager.default.moveItem(at: oldDiskURL, to: newDiskURL)
+            } catch {
+                print("Failed to move folder on disk: \(error)")
+            }
+        }
+
+        // Update filePath for all books in the moved tree
+        for i in library.books.indices {
+            let book = library.books[i]
+            if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
+                if !book.tmbDirectoryName.isEmpty {
+                    let tmbDir = TextMouthPaths.tmbPath(
+                        folderPath: book.folderPath,
+                        tmbName: book.tmbDirectoryName
+                    )
+                    let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+                    library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+                }
+            }
+        }
+        save()
+    }
+
+    /// Check whether a folder has any books or subfolders
+    func folderHasContents(_ folder: BookFolder) -> Bool {
+        library.folderHasContents(folder)
+    }
+
+    /// Legacy: remove folder, moving contents to root
+    func removeFolder(_ folder: BookFolder) {
+        removeFolderMovingContents(folder, toPath: folder.parentPath)
     }
 
     // MARK: - Directory Management

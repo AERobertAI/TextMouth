@@ -179,12 +179,13 @@ test("Library: nested folders → subfolder query → delete cascade") {
     let subs = library.subfolders(of: "Genre")
     try assertEqual(subs.count, 2)
 
-    // Delete parent folder → books move to root, subfolders removed
+    // Delete parent folder → books and subfolders reparent to root (default destination)
     let genreFolder = library.folders.first { $0.name == "Genre" && $0.parentPath.isEmpty }!
-    library.removeFolder(id: genreFolder.id)
+    library.removeFolder(id: genreFolder.id, movingContentsTo: "")
 
-    try assertEqual(library.folders.count, 0, "All folders should be removed")
-    try assertEqual(library.booksInFolder("").count, 2, "Books should move to root")
+    try assertEqual(library.folders.count, 2, "SciFi and Fantasy should be reparented to root")
+    try assertEqual(library.booksInFolder("SciFi").count, 1, "Dune should be in SciFi at root")
+    try assertEqual(library.booksInFolder("Fantasy").count, 1, "Hobbit should be in Fantasy at root")
 }
 
 test("Library: duplicate book rejected by MD5 hash") {
