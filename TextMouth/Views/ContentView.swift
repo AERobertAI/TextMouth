@@ -92,26 +92,32 @@ struct LibraryWindowView: View {
                 Text("The book has been imported successfully. Delete the original file?")
             }
         }
-        // Remove book confirmation dialog
-        .alert("Remove Book?", isPresented: $libraryViewModel.showRemoveBookDialog) {
+        // Remove book confirmation dialog (supports single or multiple books)
+        .alert(
+            libraryViewModel.pendingRemoveBooks.count > 1
+                ? "Remove \(libraryViewModel.pendingRemoveBooks.count) Books?"
+                : "Remove Book?",
+            isPresented: $libraryViewModel.showRemoveBookDialog
+        ) {
             Button("Remove & Delete", role: .destructive) {
-                if let book = libraryViewModel.pendingRemoveBook {
-                    libraryViewModel.removeBookAndDelete(book)
-                }
-                libraryViewModel.pendingRemoveBook = nil
+                let books = libraryViewModel.pendingRemoveBooks
+                libraryViewModel.removeBooksAndDelete(books)
+                libraryViewModel.pendingRemoveBooks = []
             }
             Button("Remove from Library Only") {
-                if let book = libraryViewModel.pendingRemoveBook {
-                    libraryViewModel.removeBookFromLibraryOnly(book)
-                }
-                libraryViewModel.pendingRemoveBook = nil
+                let books = libraryViewModel.pendingRemoveBooks
+                libraryViewModel.removeBooksFromLibraryOnly(books)
+                libraryViewModel.pendingRemoveBooks = []
             }
             Button("Cancel", role: .cancel) {
-                libraryViewModel.pendingRemoveBook = nil
+                libraryViewModel.pendingRemoveBooks = []
             }
         } message: {
-            if let book = libraryViewModel.pendingRemoveBook {
+            let books = libraryViewModel.pendingRemoveBooks
+            if books.count == 1, let book = books.first {
                 Text("Remove \"\(book.title)\"? \"Remove & Delete\" also deletes the .tmb package from disk. \"Remove from Library Only\" keeps the file.")
+            } else if books.count > 1 {
+                Text("Remove \(books.count) books? \"Remove & Delete\" also deletes the .tmb packages from disk. \"Remove from Library Only\" keeps the files.")
             }
         }
         // Duplicate import dialog

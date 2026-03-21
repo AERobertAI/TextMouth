@@ -40,9 +40,12 @@ class LibraryViewModel: ObservableObject {
     @Published var showDeleteOriginalDialog = false
     @Published var pendingOriginalURL: URL?
 
-    /// Book removal confirmation
+    /// Book removal confirmation (supports single or multi-book removal)
     @Published var showRemoveBookDialog = false
-    @Published var pendingRemoveBook: Book?
+    @Published var pendingRemoveBooks: [Book] = []
+
+    /// Last folder path a book was moved to, used as default in move sheet
+    @Published var lastMovedFolderPath: String = ""
 
     /// Duplicate import detection
     @Published var showDuplicateDialog = false
@@ -543,40 +546,58 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
-    /// Request removal of a book — shows confirmation if enabled
+    /// Request removal of a single book — shows confirmation if enabled
     func removeBook(_ book: Book) {
+        removeBooks([book])
+    }
+
+    /// Request removal of one or more books — shows confirmation if enabled
+    func removeBooks(_ books: [Book]) {
+        guard !books.isEmpty else { return }
         if configService.config.confirmBeforeDelete {
-            pendingRemoveBook = book
+            pendingRemoveBooks = books
             showRemoveBookDialog = true
         } else {
             // Default: remove from library and delete .tmb
-            performRemoveBook(book, deleteTMB: true)
+            performRemoveBooks(books, deleteTMB: true)
         }
     }
 
-    /// Remove a book from the library index only, leaving the .tmb on disk
-    func removeBookFromLibraryOnly(_ book: Book) {
-        library.removeBook(id: book.id)
+    /// Remove books from the library index only, leaving .tmb files on disk
+    func removeBooksFromLibraryOnly(_ books: [Book]) {
+        for book in books {
+            library.removeBook(id: book.id)
+        }
         save()
     }
 
-    /// Remove a book from the library and delete its .tmb package
-    func removeBookAndDelete(_ book: Book) {
-        performRemoveBook(book, deleteTMB: true)
+    /// Remove books from the library and delete their .tmb packages
+    func removeBooksAndDelete(_ books: [Book]) {
+        performRemoveBooks(books, deleteTMB: true)
     }
 
-    private func performRemoveBook(_ book: Book, deleteTMB: Bool) {
-        if deleteTMB {
-            FileImportService.deleteBookPackage(book)
+    private func performRemoveBooks(_ books: [Book], deleteTMB: Bool) {
+        for book in books {
+            if deleteTMB {
+                FileImportService.deleteBookPackage(book)
+            }
+            library.removeBook(id: book.id)
         }
-        library.removeBook(id: book.id)
         save()
     }
 
     func moveBook(_ book: Book, toFolder path: String) {
-        guard let idx = library.books.firstIndex(where: { $0.id == book.id }) else { return }
-        library.books[idx].folderPath = path
-        moveTMBToFolder(book: &library.books[idx], newFolderPath: path)
+        moveBooks([book], toFolder: path)
+    }
+
+    /// Move one or more books to the specified folder path
+    func moveBooks(_ books: [Book], toFolder path: String) {
+        for book in books {
+            guard let idx = library.books.firstIndex(where: { $0.id == book.id }) else { continue }
+            library.books[idx].folderPath = path
+            moveTMBToFolder(book: &library.books[idx], newFolderPath: path)
+        }
+        lastMovedFolderPath = path
         save()
     }
 

@@ -274,6 +274,94 @@ test("Library booksInFolder query") {
     try assertEqual(all.count, 4)
 }
 
+// ---- Multi-Selection Operations ----
+print("\n--- Multi-Selection Tests ---")
+
+test("Library removeBooks removes multiple books at once") {
+    var library = Library()
+    let book1 = Book(title: "First", md5Hash: "h1")
+    let book2 = Book(title: "Second", md5Hash: "h2")
+    let book3 = Book(title: "Third", md5Hash: "h3")
+    library.addBook(book1)
+    library.addBook(book2)
+    library.addBook(book3)
+
+    // Remove two books at once
+    let toRemove = [book1, book3]
+    for book in toRemove {
+        library.removeBook(id: book.id)
+    }
+
+    try assertEqual(library.books.count, 1, "Should have 1 book remaining")
+    try assertEqual(library.books[0].title, "Second", "Remaining book should be Second")
+}
+
+test("Library moveBooks moves multiple books to same folder") {
+    var library = Library()
+    let book1 = Book(title: "A", md5Hash: "a1", folderPath: "")
+    let book2 = Book(title: "B", md5Hash: "b1", folderPath: "")
+    let book3 = Book(title: "C", md5Hash: "c1", folderPath: "Fiction")
+    library.addBook(book1)
+    library.addBook(book2)
+    library.addBook(book3)
+    _ = library.createFolder(name: "Fiction")
+    _ = library.createFolder(name: "NonFiction")
+
+    // Move first two books to NonFiction
+    let toMove = [book1, book2]
+    for book in toMove {
+        library.moveBook(id: book.id, toFolder: "NonFiction")
+    }
+
+    let nonFictionBooks = library.booksInFolder("NonFiction")
+    try assertEqual(nonFictionBooks.count, 2, "Should have 2 books in NonFiction")
+    let rootBooks = library.booksInFolder("")
+    try assertEqual(rootBooks.count, 0, "Root should be empty")
+    let fictionBooks = library.booksInFolder("Fiction")
+    try assertEqual(fictionBooks.count, 1, "Fiction should still have 1 book")
+}
+
+test("Multi-select remove leaves unselected books intact") {
+    var library = Library()
+    for i in 0..<5 {
+        library.addBook(Book(title: "Book \(i)", md5Hash: "hash\(i)"))
+    }
+    try assertEqual(library.books.count, 5)
+
+    // Simulate multi-select: remove books at indices 1 and 3
+    let idsToRemove = [library.books[1].id, library.books[3].id]
+    for id in idsToRemove {
+        library.removeBook(id: id)
+    }
+
+    try assertEqual(library.books.count, 3, "Should have 3 books left")
+    try assertEqual(library.books[0].title, "Book 0")
+    try assertEqual(library.books[1].title, "Book 2")
+    try assertEqual(library.books[2].title, "Book 4")
+}
+
+test("Multi-select move preserves books not in selection") {
+    var library = Library()
+    let bookA = Book(title: "A", md5Hash: "a", folderPath: "Old")
+    let bookB = Book(title: "B", md5Hash: "b", folderPath: "Old")
+    let bookC = Book(title: "C", md5Hash: "c", folderPath: "Old")
+    library.addBook(bookA)
+    library.addBook(bookB)
+    library.addBook(bookC)
+    _ = library.createFolder(name: "Old")
+    _ = library.createFolder(name: "New")
+
+    // Move only A and C
+    library.moveBook(id: bookA.id, toFolder: "New")
+    library.moveBook(id: bookC.id, toFolder: "New")
+
+    let newBooks = library.booksInFolder("New")
+    let oldBooks = library.booksInFolder("Old")
+    try assertEqual(newBooks.count, 2, "New folder should have 2 books")
+    try assertEqual(oldBooks.count, 1, "Old folder should have 1 book remaining")
+    try assertEqual(oldBooks[0].title, "B", "Remaining book should be B")
+}
+
 // ---- LibraryCategory Enum ----
 print("\n--- LibraryCategory Enum ---")
 

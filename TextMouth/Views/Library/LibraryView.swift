@@ -12,10 +12,11 @@ struct LibraryView: View {
 
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
-    @State private var bookToMove: Book?
+    @State private var newFolderParentPath = ""
+    @State private var booksToMove: [Book] = []
     @State private var showMoveSheet = false
     @State private var searchText = ""
-    @State private var selectedBookID: UUID?
+    @State private var selectedBookIDs: Set<UUID> = []
     @State private var bookInfoTarget: Book?
     /// EPUB metadata loaded on-demand when showing the rich editor from the library
     @State private var richInfoEPUBMetadata: EPUBMetadata?
@@ -86,7 +87,7 @@ struct LibraryView: View {
             TimeRemainingBar(books: displayedBooks, wpm: settingsViewModel.wordsPerMinute)
 
             // Main list with native selection
-            List(selection: $selectedBookID) {
+            List(selection: $selectedBookIDs) {
                 // Folders section (only in folders category)
                 if category == .folders {
                     let subfolders = libraryViewModel.subfoldersOf(currentFolderPath)
@@ -133,19 +134,32 @@ struct LibraryView: View {
                                 onOpenBook(book)
                             }
                             .contextMenu {
-                                Button("Open") {
-                                    onOpenBook(book)
+                                // Determine which books the action applies to:
+                                // if the right-clicked book is part of a multi-selection,
+                                // operate on all selected books; otherwise just this one.
+                                let targetBooks: [Book] = {
+                                    if selectedBookIDs.contains(book.id), selectedBookIDs.count > 1 {
+                                        return filteredBooks.filter { selectedBookIDs.contains($0.id) }
+                                    }
+                                    return [book]
+                                }()
+                                let isMulti = targetBooks.count > 1
+
+                                if !isMulti {
+                                    Button("Open") {
+                                        onOpenBook(book)
+                                    }
+                                    Button("Book Info") {
+                                        showBookInfo(for: book)
+                                    }
                                 }
-                                Button("Book Info") {
-                                    showBookInfo(for: book)
-                                }
-                                Button("Move to Folder...") {
-                                    bookToMove = book
+                                Button(isMulti ? "Move \(targetBooks.count) Books to Folder..." : "Move to Folder...") {
+                                    booksToMove = targetBooks
                                     showMoveSheet = true
                                 }
                                 Divider()
-                                Button("Remove from Library", role: .destructive) {
-                                    libraryViewModel.removeBook(book)
+                                Button(isMulti ? "Remove \(targetBooks.count) Books from Library" : "Remove from Library", role: .destructive) {
+                                    libraryViewModel.removeBooks(targetBooks)
                                 }
                             }
                     }
@@ -178,11 +192,11 @@ struct LibraryView: View {
                 }
             }
             .onDeleteCommand {
-                // Delete key removes selected book
-                if let id = selectedBookID,
-                   let book = filteredBooks.first(where: { $0.id == id }) {
-                    libraryViewModel.removeBook(book)
-                    selectedBookID = nil
+                // Delete key removes all selected books
+                let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
+                if !selected.isEmpty {
+                    libraryViewModel.removeBooks(selected)
+                    selectedBookIDs = []
                 }
             }
         }
@@ -215,6 +229,7 @@ struct LibraryView: View {
 
                 if category == .folders {
                     Button {
+                        newFolderParentPath = currentFolderPath
                         showNewFolderSheet = true
                     } label: {
                         Label("New Folder", systemImage: "folder.badge.plus")
@@ -256,25 +271,33 @@ struct LibraryView: View {
         .sheet(isPresented: $showNewFolderSheet) {
             NewFolderSheet(
                 folderName: $newFolderName,
+                parentPath: $newFolderParentPath,
+                folders: libraryViewModel.library.folders,
                 onCreate: {
-                    libraryViewModel.createFolder(name: newFolderName, parentPath: currentFolderPath)
+                    libraryViewModel.createFolder(name: newFolderName, parentPath: newFolderParentPath)
                     newFolderName = ""
+                    newFolderParentPath = currentFolderPath
                     showNewFolderSheet = false
                 },
                 onCancel: {
                     newFolderName = ""
+                    newFolderParentPath = currentFolderPath
                     showNewFolderSheet = false
                 }
             )
         }
         .sheet(isPresented: $showMoveSheet) {
-            if let book = bookToMove {
+            if !booksToMove.isEmpty {
                 MoveFolderSheet(
-                    book: book,
+                    books: booksToMove,
                     library: libraryViewModel.library,
+                    lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
                     onMove: { path in
-                        libraryViewModel.moveBook(book, toFolder: path)
+                        libraryViewModel.moveBooks(booksToMove, toFolder: path)
                         showMoveSheet = false
+                    },
+                    onCreateFolder: { name, parentPath in
+                        libraryViewModel.createFolder(name: name, parentPath: parentPath)
                     },
                     onCancel: { showMoveSheet = false }
                 )
@@ -331,8 +354,8 @@ struct LibraryView: View {
                 // Menu command (no sourceWindow) — check this window is key
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            // Cmd+I: show info for selected book
-            if let id = selectedBookID,
+            // Cmd+I: show info for the first selected book
+            if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
                 showBookInfo(for: book)
             }
@@ -344,7 +367,7 @@ struct LibraryView: View {
             } else {
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            if let id = selectedBookID,
+            if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
                 onOpenBook(book)
             }
@@ -719,6 +742,8 @@ struct LibraryBookInfoSheet: View {
 
 struct NewFolderSheet: View {
     @Binding var folderName: String
+    @Binding var parentPath: String
+    let folders: [BookFolder]
     let onCreate: () -> Void
     let onCancel: () -> Void
 
@@ -731,6 +756,16 @@ struct NewFolderSheet: View {
             TextField("Folder name", text: $folderName)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("Folder name")
+
+            Picker("Parent folder", selection: $parentPath) {
+                Text("Library Root").tag("")
+                ForEach(folders.sorted(by: { $0.fullPath < $1.fullPath })) { folder in
+                    if folder.depth < BookFolder.maxDepth {
+                        Text(folder.fullPath).tag(folder.fullPath)
+                    }
+                }
+            }
+            .accessibilityLabel("Parent folder")
 
             HStack {
                 Button("Cancel", action: onCancel)
@@ -748,37 +783,124 @@ struct NewFolderSheet: View {
 }
 
 struct MoveFolderSheet: View {
-    let book: Book
+    let books: [Book]
     let library: Library
+    let lastMovedFolderPath: String
     let onMove: (String) -> Void
+    let onCreateFolder: (String, String) -> Void
     let onCancel: () -> Void
+
+    /// The folder path currently selected in the picker
+    @State private var selectedPath: String = ""
+    /// Whether the inline new-folder fields are showing
+    @State private var showNewFolder = false
+    /// Name for the new folder being created
+    @State private var newFolderName = ""
+    /// Parent path for the new folder
+    @State private var newFolderParent = ""
+
+    /// Title shown in the sheet header
+    private var headerTitle: String {
+        if books.count == 1, let book = books.first {
+            return "Move \"\(book.title)\""
+        }
+        return "Move \(books.count) Books"
+    }
+
+    /// All available destination paths, including "Library Root" (empty string)
+    private var folderOptions: [(label: String, path: String)] {
+        var options: [(String, String)] = [("Library Root", "")]
+        for folder in library.folders.sorted(by: { $0.fullPath < $1.fullPath }) {
+            options.append((folder.fullPath, folder.fullPath))
+        }
+        return options
+    }
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Move \"\(book.title)\"")
+            Text(headerTitle)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            List {
-                Button("Library Root") { onMove("") }
-                    .accessibilityLabel("Move to library root")
-
-                ForEach(library.folders) { folder in
-                    Button(folder.fullPath) { onMove(folder.fullPath) }
-                        .accessibilityLabel("Move to \(folder.fullPath)")
+            // Folder picker
+            Picker("Destination", selection: $selectedPath) {
+                ForEach(folderOptions, id: \.path) { option in
+                    Text(option.label).tag(option.path)
                 }
             }
-            .frame(height: 200)
+            .accessibilityLabel("Destination folder")
+
+            // Inline new folder creation
+            if showNewFolder {
+                GroupBox("New Folder") {
+                    VStack(spacing: 8) {
+                        TextField("Folder name", text: $newFolderName)
+                            .textFieldStyle(.roundedBorder)
+                            .accessibilityLabel("New folder name")
+
+                        Picker("Parent folder", selection: $newFolderParent) {
+                            Text("Library Root").tag("")
+                            ForEach(library.folders.sorted(by: { $0.fullPath < $1.fullPath })) { folder in
+                                if folder.depth < BookFolder.maxDepth {
+                                    Text(folder.fullPath).tag(folder.fullPath)
+                                }
+                            }
+                        }
+                        .accessibilityLabel("Parent folder for new folder")
+
+                        HStack {
+                            Button("Cancel") {
+                                newFolderName = ""
+                                showNewFolder = false
+                            }
+                            Spacer()
+                            Button("Create") {
+                                let name = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !name.isEmpty else { return }
+                                onCreateFolder(name, newFolderParent)
+                                // Select the newly created folder as destination
+                                let sanitized = name.replacingOccurrences(of: "/", with: "-")
+                                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                                let newPath = newFolderParent.isEmpty ? sanitized : "\(newFolderParent)/\(sanitized)"
+                                selectedPath = newPath
+                                newFolderName = ""
+                                showNewFolder = false
+                            }
+                            .disabled(newFolderName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
+
                 Spacer()
+
+                if !showNewFolder {
+                    Button("New Folder...") {
+                        showNewFolder = true
+                    }
+                }
+
+                Button("Move") {
+                    onMove(selectedPath)
+                }
+                .keyboardShortcut(.return, modifiers: [])
             }
         }
         .padding()
-        .frame(width: 350)
-        .navigationTitle("Move: \(book.title)")
+        .frame(width: 400)
+        .navigationTitle(headerTitle)
+        .onAppear {
+            // Default to last moved folder if it still exists, otherwise Library Root
+            if !lastMovedFolderPath.isEmpty,
+               folderOptions.contains(where: { $0.path == lastMovedFolderPath }) {
+                selectedPath = lastMovedFolderPath
+            }
+        }
     }
 }
 
