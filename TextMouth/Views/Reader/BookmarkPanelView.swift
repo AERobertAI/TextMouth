@@ -78,6 +78,7 @@ struct BookmarkPanelView: View {
             }
         }
         .frame(width: 380, height: 400)
+        .navigationTitle("Bookmarks: \(viewModel.book.title)")
         .accessibilityLabel("Bookmarks, \(viewModel.bookmarks.count) \(viewModel.bookmarks.count == 1 ? "bookmark" : "bookmarks")")
         .sheet(isPresented: $showAddBookmark) {
             VStack(spacing: 16) {
@@ -109,6 +110,7 @@ struct BookmarkPanelView: View {
             }
             .padding()
             .frame(width: 320)
+            .navigationTitle("Add Bookmark: \(viewModel.book.title)")
         }
         .sheet(item: $editingBookmark) { bookmark in
             VStack(spacing: 16) {
@@ -137,6 +139,7 @@ struct BookmarkPanelView: View {
             }
             .padding()
             .frame(width: 320)
+            .navigationTitle("Edit Bookmark \(bookmark.number): \(viewModel.book.title)")
         }
     }
 }

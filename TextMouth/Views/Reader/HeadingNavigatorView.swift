@@ -108,6 +108,7 @@ struct HeadingNavigatorView: View {
             }
         }
         .frame(width: 550, height: 500)
+        .navigationTitle("Headings: \(viewModel.book.title)")
         .accessibilityLabel("Headings, \(filteredHeadings.count) \(filteredHeadings.count == 1 ? "heading" : "headings")")
     }
 

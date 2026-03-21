@@ -102,6 +102,7 @@ struct TextInputView: View {
         }
         .padding()
         .frame(width: 600, height: 500)
+        .navigationTitle("New Book from Text")
     }
 
     // MARK: - Actions

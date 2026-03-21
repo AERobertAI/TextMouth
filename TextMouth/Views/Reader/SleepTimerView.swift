@@ -88,6 +88,7 @@ struct SleepTimerView: View {
         }
         .padding()
         .frame(width: 300)
+        .navigationTitle("Sleep Timer")
     }
 
     private func startTimerAndPlay(duration: SleepTimerDuration) {

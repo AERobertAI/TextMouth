@@ -251,6 +251,7 @@ struct SubstitutionRuleEditorView: View {
         }
         .padding()
         .frame(width: 480, height: 460)
+        .navigationTitle(isNew ? "Add Substitution Rule" : "Edit Substitution Rule")
         .onAppear { validatePattern() }
     }
 

@@ -140,6 +140,7 @@ struct BookSearchView: View {
             }
         }
         .frame(width: 500, height: 450)
+        .navigationTitle("Search in Book")
     }
 
     private var searchOutcome: SearchOutcome {

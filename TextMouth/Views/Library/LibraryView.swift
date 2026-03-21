@@ -17,6 +17,10 @@ struct LibraryView: View {
     @State private var searchText = ""
     @State private var selectedBookID: UUID?
     @State private var bookInfoTarget: Book?
+    /// EPUB metadata loaded on-demand when showing the rich editor from the library
+    @State private var richInfoEPUBMetadata: EPUBMetadata?
+    /// Audio metadata loaded on-demand when showing the rich editor from the library
+    @State private var richInfoAudioMetadata: AudioMetadata?
     @State private var showTextInput = false
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
@@ -133,7 +137,7 @@ struct LibraryView: View {
                                     onOpenBook(book)
                                 }
                                 Button("Book Info") {
-                                    bookInfoTarget = book
+                                    showBookInfo(for: book)
                                 }
                                 Button("Move to Folder...") {
                                     bookToMove = book
@@ -280,7 +284,44 @@ struct LibraryView: View {
             hostWindow = window
         }))
         .sheet(item: $bookInfoTarget) { book in
-            LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
+            if book.format == .epub, let metadata = richInfoEPUBMetadata {
+                // EPUB books get the rich metadata editor with publisher, date, etc.
+                MetadataEditorView(
+                    metadata: metadata,
+                    isEPUB: true,
+                    onSave: { updated, writeToFile in
+                        var updatedBook = book
+                        updatedBook.title = updated.title
+                        updatedBook.author = updated.author
+                        libraryViewModel.updateBookMetadata(updatedBook)
+                        if writeToFile {
+                            let url = URL(fileURLWithPath: book.filePath)
+                            if let newHash = try? EPUBParser.writeMetadata(updated, to: url) {
+                                var hashBook = updatedBook
+                                hashBook.md5Hash = newHash
+                                libraryViewModel.updateBookMetadata(hashBook)
+                            }
+                        }
+                    }
+                )
+            } else if book.format.isAudio, let audioMeta = richInfoAudioMetadata {
+                // Audio books get the rich metadata editor with album, genre, etc.
+                MetadataEditorView(
+                    audioMetadata: audioMeta,
+                    onSave: { updated in
+                        var updatedBook = book
+                        updatedBook.title = updated.title
+                        updatedBook.author = updated.artist
+                        updatedBook.audioAlbum = updated.album
+                        updatedBook.audioGenre = updated.genre
+                        updatedBook.audioYear = updated.year
+                        libraryViewModel.updateBookMetadata(updatedBook)
+                    }
+                )
+            } else {
+                // Plain text, markdown, HTML — simple title/author editor
+                LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
@@ -293,7 +334,7 @@ struct LibraryView: View {
             // Cmd+I: show info for selected book
             if let id = selectedBookID,
                let book = filteredBooks.first(where: { $0.id == id }) {
-                bookInfoTarget = book
+                showBookInfo(for: book)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { _ in
@@ -342,6 +383,41 @@ struct LibraryView: View {
         } else {
             currentFolderPath = ""
         }
+    }
+
+    /// Load format-specific metadata and present the appropriate info editor.
+    /// EPUB and audio books get the rich MetadataEditorView; plain text formats
+    /// get the simple LibraryBookInfoSheet.
+    private func showBookInfo(for book: Book) {
+        richInfoEPUBMetadata = nil
+        richInfoAudioMetadata = nil
+
+        if book.format == .epub {
+            // Load EPUB metadata from the file
+            let url = URL(fileURLWithPath: book.filePath)
+            richInfoEPUBMetadata = try? EPUBParser.readMetadata(url: url)
+        } else if book.format.isAudio {
+            // Load audio metadata asynchronously, then show the sheet
+            Task {
+                let meta = await AudioPlaybackService.extractFullMetadata(
+                    from: URL(fileURLWithPath: book.filePath)
+                )
+                // Overlay stored user edits
+                var merged = meta
+                merged.title = book.title
+                merged.artist = book.author
+                if let album = book.audioAlbum { merged.album = album }
+                if let genre = book.audioGenre { merged.genre = genre }
+                if let year = book.audioYear { merged.year = year }
+                await MainActor.run {
+                    richInfoAudioMetadata = merged
+                    bookInfoTarget = book
+                }
+            }
+            return // Don't set bookInfoTarget yet — the Task will do it
+        }
+
+        bookInfoTarget = book
     }
 }
 
@@ -660,6 +736,7 @@ struct NewFolderSheet: View {
         }
         .padding()
         .frame(width: 300)
+        .navigationTitle("New Folder")
     }
 }
 
@@ -694,6 +771,7 @@ struct MoveFolderSheet: View {
         }
         .padding()
         .frame(width: 350)
+        .navigationTitle("Move: \(book.title)")
     }
 }
 

@@ -138,14 +138,12 @@ struct ReaderView: View {
                 }
                 .accessibilityLabel("Change voice for this book")
 
-                if viewModel.book.format == .epub || viewModel.isAudioBook {
-                    Button {
-                        showMetadataEditor.toggle()
-                    } label: {
-                        Label("Book Info", systemImage: "info.circle")
-                    }
-                    .accessibilityLabel("Edit book metadata")
+                Button {
+                    showMetadataEditor.toggle()
+                } label: {
+                    Label("Book Info", systemImage: "info.circle")
                 }
+                .accessibilityLabel("Edit book metadata")
 
                 if viewModel.isAudioBook {
                     Text(String(format: "%.2fx", viewModel.audioSpeed))
@@ -195,6 +193,12 @@ struct ReaderView: View {
                         viewModel.saveAudioMetadata(updated)
                     }
                 )
+            } else {
+                // Plain text, markdown, HTML — use the simple info editor
+                LibraryBookInfoSheet(
+                    book: viewModel.book,
+                    libraryViewModel: viewModel.libraryViewModel
+                )
             }
         }
         .sheet(isPresented: $showVoicePicker) {
@@ -220,7 +224,6 @@ struct ReaderView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused reader window — check sourceWindow matches
-            guard viewModel.book.format == .epub || viewModel.isAudioBook else { return }
             if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
                 guard sourceWindow === viewModel.hostWindow else { return }
             }
@@ -353,6 +356,7 @@ struct BookVoicePickerView: View {
         }
         .padding()
         .frame(width: 450, height: 500)
+        .navigationTitle("Voice & Speed: \(viewModel.book.title)")
         .onAppear {
             // Default to the current voice's language
             if let voice = viewModel.speechService.currentVoice {
