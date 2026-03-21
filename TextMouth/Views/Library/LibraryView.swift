@@ -114,12 +114,11 @@ struct LibraryView: View {
                         let books = selectedBooks
                         if !books.isEmpty {
                             libraryViewModel.removeBooks(books)
-                            editSelection = []
-                            selectedBookIDs = []
+                            clearAllSelections()
                         }
                     },
                     onDone: {
-                        isEditMode = false
+                        clearAllSelections()
                     }
                 )
             }
@@ -231,6 +230,7 @@ struct LibraryView: View {
                                 Divider()
                                 Button(isMulti ? "Remove \(targetBooks.count) Books from Library" : "Remove from Library", role: .destructive) {
                                     libraryViewModel.removeBooks(targetBooks)
+                                    clearAllSelections()
                                 }
                             }
                     }
@@ -267,9 +267,18 @@ struct LibraryView: View {
                 let books = selectedBooks
                 if !books.isEmpty {
                     libraryViewModel.removeBooks(books)
-                    selectedBookIDs = []
-                    editSelection = []
+                    clearAllSelections()
                 }
+            }
+            .onChange(of: currentFolderPath) { _ in
+                // Clear selections when navigating to a different folder
+                editSelection = []
+                selectedBookIDs = []
+            }
+            .onChange(of: category) { _ in
+                // Clear selections when switching library categories
+                editSelection = []
+                selectedBookIDs = []
             }
         }
         .toolbar {
@@ -301,8 +310,11 @@ struct LibraryView: View {
 
                 // Edit mode toggle
                 Button {
-                    isEditMode.toggle()
-                    if !isEditMode { editSelection = [] }
+                    if isEditMode {
+                        clearAllSelections()
+                    } else {
+                        isEditMode = true
+                    }
                 } label: {
                     Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
@@ -378,6 +390,7 @@ struct LibraryView: View {
                     lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
                     onMove: { path in
                         libraryViewModel.moveBooks(booksToMove, toFolder: path)
+                        clearAllSelections()
                         showMoveSheet = false
                     },
                     onCreateFolder: { name, parentPath in
@@ -471,8 +484,7 @@ struct LibraryView: View {
             let books = selectedBooks
             if !books.isEmpty {
                 libraryViewModel.removeBooks(books)
-                selectedBookIDs = []
-                editSelection = []
+                clearAllSelections()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .newFolder)) { notification in
@@ -521,8 +533,11 @@ struct LibraryView: View {
             } else {
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            isEditMode.toggle()
-            if !isEditMode { editSelection = [] }
+            if isEditMode {
+                clearAllSelections()
+            } else {
+                isEditMode = true
+            }
         }
         .sheet(isPresented: $showTextInput) {
             TextInputView(
@@ -647,6 +662,13 @@ struct LibraryView: View {
         } else {
             editSelection.insert(id)
         }
+    }
+
+    /// Clear all selections (both native and edit mode) and exit edit mode
+    private func clearAllSelections() {
+        editSelection = []
+        selectedBookIDs = []
+        isEditMode = false
     }
 
     /// The union of native List selection and edit mode selection.

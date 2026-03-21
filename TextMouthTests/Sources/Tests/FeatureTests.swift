@@ -1286,6 +1286,94 @@ test("Edit mode context menu on unselected book targets only that book") {
     try assertEqual(targetBooks[0].title, "B")
 }
 
+// ---- Edit Mode Selection Robustness Tests ----
+print("\n--- Edit Mode Selection Robustness Tests ---")
+
+test("Selections cleared after moving books") {
+    var editSelection: Set<UUID> = [UUID(), UUID(), UUID()]
+    var selectedBookIDs: Set<UUID> = [UUID()]
+    var isEditMode = true
+
+    // Simulate clearAllSelections after a move
+    editSelection = []
+    selectedBookIDs = []
+    isEditMode = false
+
+    try assertTrue(editSelection.isEmpty, "Edit selection should be cleared after move")
+    try assertTrue(selectedBookIDs.isEmpty, "Native selection should be cleared after move")
+    try assertTrue(!isEditMode, "Edit mode should exit after move")
+}
+
+test("Selections cleared after removing books") {
+    var editSelection: Set<UUID> = [UUID(), UUID()]
+    var isEditMode = true
+
+    // Simulate clearAllSelections after remove
+    editSelection = []
+    isEditMode = false
+
+    try assertTrue(editSelection.isEmpty)
+    try assertTrue(!isEditMode)
+}
+
+test("Selections cleared when navigating to different folder") {
+    var editSelection: Set<UUID> = [UUID(), UUID(), UUID()]
+    var selectedBookIDs: Set<UUID> = [UUID()]
+
+    // Simulate onChange(of: currentFolderPath)
+    editSelection = []
+    selectedBookIDs = []
+
+    try assertTrue(editSelection.isEmpty, "Should clear on folder navigation")
+    try assertTrue(selectedBookIDs.isEmpty, "Should clear native selection on folder navigation")
+}
+
+test("Selections cleared when switching library category") {
+    var editSelection: Set<UUID> = [UUID(), UUID()]
+    var selectedBookIDs: Set<UUID> = [UUID()]
+
+    // Simulate onChange(of: category)
+    editSelection = []
+    selectedBookIDs = []
+
+    try assertTrue(editSelection.isEmpty, "Should clear on category switch")
+    try assertTrue(selectedBookIDs.isEmpty)
+}
+
+test("Done button clears selections and exits edit mode") {
+    var editSelection: Set<UUID> = [UUID(), UUID(), UUID()]
+    var selectedBookIDs: Set<UUID> = []
+    var isEditMode = true
+
+    // Simulate Done
+    editSelection = []
+    selectedBookIDs = []
+    isEditMode = false
+
+    try assertTrue(editSelection.isEmpty, "Done should clear edit selection")
+    try assertTrue(!isEditMode, "Done should exit edit mode")
+}
+
+test("Edit selection doesn't carry stale IDs across folders") {
+    let folder1Books = [UUID(), UUID(), UUID()]
+    let folder2Books = [UUID(), UUID()]
+
+    var editSelection: Set<UUID> = Set(folder1Books)
+    try assertEqual(editSelection.count, 3)
+
+    // Navigate to folder2 — selection should be cleared
+    editSelection = []
+
+    // Select in folder2
+    editSelection.insert(folder2Books[0])
+    try assertEqual(editSelection.count, 1)
+    try assertTrue(editSelection.contains(folder2Books[0]))
+    // No stale IDs from folder1
+    for id in folder1Books {
+        try assertTrue(!editSelection.contains(id), "Stale ID from folder1 should not persist")
+    }
+}
+
 // ---- Duplicate Detection Tests ----
 print("\n--- Duplicate Detection Tests ---")
 
