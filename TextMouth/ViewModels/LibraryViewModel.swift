@@ -914,6 +914,44 @@ class LibraryViewModel: ObservableObject {
         save()
     }
 
+    /// Rename a folder, updating disk directory and all book file paths.
+    func renameFolder(_ folder: BookFolder, to newName: String) {
+        let oldPath = folder.fullPath
+        guard library.renameFolder(id: folder.id, to: newName) else { return }
+
+        // Compute the new path after the model update
+        let sanitized = newName.replacingOccurrences(of: "/", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let newPath = folder.parentPath.isEmpty ? sanitized : "\(folder.parentPath)/\(sanitized)"
+
+        // Rename the disk directory
+        let oldDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(oldPath, isDirectory: true)
+        let newDiskURL = TextMouthPaths.libraryDir.appendingPathComponent(newPath, isDirectory: true)
+        if FileManager.default.fileExists(atPath: oldDiskURL.path), oldDiskURL != newDiskURL {
+            do {
+                try FileManager.default.moveItem(at: oldDiskURL, to: newDiskURL)
+            } catch {
+                print("Failed to rename folder on disk: \(error)")
+            }
+        }
+
+        // Update filePath for all books in the renamed tree
+        for i in library.books.indices {
+            let book = library.books[i]
+            if book.folderPath == newPath || book.folderPath.hasPrefix(newPath + "/") {
+                if !book.tmbDirectoryName.isEmpty {
+                    let tmbDir = TextMouthPaths.tmbPath(
+                        folderPath: book.folderPath,
+                        tmbName: book.tmbDirectoryName
+                    )
+                    let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+                    library.books[i].filePath = tmbDir.appendingPathComponent(fileName).path
+                }
+            }
+        }
+        save()
+    }
+
     /// Check whether a folder has any books or subfolders
     func folderHasContents(_ folder: BookFolder) -> Bool {
         library.folderHasContents(folder)

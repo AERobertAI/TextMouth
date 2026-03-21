@@ -483,6 +483,35 @@ struct Library: Codable {
         return true
     }
 
+    @discardableResult
+    mutating func renameFolder(id: UUID, to newName: String) -> Bool {
+        let sanitized = newName.replacingOccurrences(of: "/", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !sanitized.isEmpty else { return false }
+        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
+        let folder = folders[folderIdx]
+        guard sanitized != folder.name else { return false }
+        let oldPath = folder.fullPath
+        let newPath = folder.parentPath.isEmpty ? sanitized : "\(folder.parentPath)/\(sanitized)"
+        if folders.contains(where: { $0.fullPath == newPath }) { return false }
+        folders[folderIdx].name = sanitized
+        for i in folders.indices {
+            if folders[i].parentPath == oldPath {
+                folders[i].parentPath = newPath
+            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
+                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
+            }
+        }
+        for i in books.indices {
+            if books[i].folderPath == oldPath {
+                books[i].folderPath = newPath
+            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
+                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
+            }
+        }
+        return true
+    }
+
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
         let hasBooks = books.contains {

@@ -622,4 +622,65 @@ test("totalBooksInFolderTree counts recursively") {
     try assertEqual(library.totalBooksInFolderTree("Root/Sub/Deep"), 1)
 }
 
+// ---- Folder Rename Tests ----
+print("\n--- Folder Rename Tests ---")
+
+test("renameFolder updates folder name and book paths") {
+    var library = Library()
+    let folder = library.createFolder(name: "OldName")!
+    library.addBook(Book(title: "A", md5Hash: "a1", folderPath: "OldName"))
+
+    let result = library.renameFolder(id: folder.id, to: "NewName")
+    try assertTrue(result, "Rename should succeed")
+
+    let renamed = library.folders.first(where: { $0.id == folder.id })!
+    try assertEqual(renamed.name, "NewName")
+    try assertEqual(renamed.fullPath, "NewName")
+    try assertEqual(library.books[0].folderPath, "NewName")
+}
+
+test("renameFolder updates subfolder paths") {
+    var library = Library()
+    let parent = library.createFolder(name: "Parent")!
+    _ = library.createFolder(name: "Child", parentPath: "Parent")
+    library.addBook(Book(title: "B", md5Hash: "b1", folderPath: "Parent/Child"))
+
+    library.renameFolder(id: parent.id, to: "Renamed")
+
+    let child = library.folders.first(where: { $0.name == "Child" })!
+    try assertEqual(child.parentPath, "Renamed")
+    try assertEqual(child.fullPath, "Renamed/Child")
+    try assertEqual(library.books[0].folderPath, "Renamed/Child")
+}
+
+test("renameFolder rejects empty name") {
+    var library = Library()
+    let folder = library.createFolder(name: "Test")!
+    let result = library.renameFolder(id: folder.id, to: "   ")
+    try assertTrue(!result, "Empty name should be rejected")
+    try assertEqual(library.folders[0].name, "Test", "Name should be unchanged")
+}
+
+test("renameFolder rejects same name") {
+    var library = Library()
+    let folder = library.createFolder(name: "Same")!
+    let result = library.renameFolder(id: folder.id, to: "Same")
+    try assertTrue(!result, "Same name should be rejected")
+}
+
+test("renameFolder rejects collision with sibling") {
+    var library = Library()
+    _ = library.createFolder(name: "Existing")
+    let folder = library.createFolder(name: "ToRename")!
+    let result = library.renameFolder(id: folder.id, to: "Existing")
+    try assertTrue(!result, "Should reject collision with sibling folder")
+}
+
+test("renameFolder sanitizes slashes in name") {
+    var library = Library()
+    let folder = library.createFolder(name: "Test")!
+    library.renameFolder(id: folder.id, to: "New/Name")
+    try assertEqual(library.folders[0].name, "New-Name", "Slashes should be replaced with dashes")
+}
+
 } // end runLibraryModelTests

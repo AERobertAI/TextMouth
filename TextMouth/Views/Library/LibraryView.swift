@@ -17,6 +17,9 @@ struct LibraryView: View {
     @State private var showMoveSheet = false
     @State private var folderToMove: BookFolder?
     @State private var showMoveFolderSheet = false
+    @State private var folderToRename: BookFolder?
+    @State private var showRenameFolderSheet = false
+    @State private var renameFolderText = ""
     @State private var searchText = ""
     @State private var selectedBookIDs: Set<UUID> = []
     /// Edit mode: activating a book toggles its selection instead of opening it
@@ -146,6 +149,11 @@ struct LibraryView: View {
                                     currentFolderPath = folder.fullPath
                                 }
                                 .contextMenu {
+                                    Button("Rename Folder...") {
+                                        folderToRename = folder
+                                        renameFolderText = folder.name
+                                        showRenameFolderSheet = true
+                                    }
                                     Button("Move Folder...") {
                                         folderToMove = folder
                                         showMoveFolderSheet = true
@@ -524,6 +532,39 @@ struct LibraryView: View {
                 },
                 onCancel: { showTextInput = false }
             )
+        }
+        // Rename folder sheet
+        .sheet(isPresented: $showRenameFolderSheet) {
+            if let folder = folderToRename {
+                RenameFolderSheet(
+                    currentName: folder.name,
+                    newName: $renameFolderText,
+                    onRename: {
+                        libraryViewModel.renameFolder(folder, to: renameFolderText)
+                        // Update currentFolderPath if we're inside the renamed folder
+                        if currentFolderPath == folder.fullPath {
+                            let sanitized = renameFolderText
+                                .replacingOccurrences(of: "/", with: "-")
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                            currentFolderPath = folder.parentPath.isEmpty
+                                ? sanitized
+                                : "\(folder.parentPath)/\(sanitized)"
+                        } else if currentFolderPath.hasPrefix(folder.fullPath + "/") {
+                            let sanitized = renameFolderText
+                                .replacingOccurrences(of: "/", with: "-")
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                            let newPrefix = folder.parentPath.isEmpty
+                                ? sanitized
+                                : "\(folder.parentPath)/\(sanitized)"
+                            currentFolderPath = newPrefix + String(currentFolderPath.dropFirst(folder.fullPath.count))
+                        }
+                        showRenameFolderSheet = false
+                    },
+                    onCancel: {
+                        showRenameFolderSheet = false
+                    }
+                )
+            }
         }
         // Move folder to new parent sheet
         .sheet(isPresented: $showMoveFolderSheet) {
@@ -1207,6 +1248,39 @@ struct MoveFolderSheet: View {
 }
 
 /// Sheet for moving a folder to a new parent folder
+/// Sheet for renaming a folder
+struct RenameFolderSheet: View {
+    let currentName: String
+    @Binding var newName: String
+    let onRename: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Rename Folder")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            TextField("Folder name", text: $newName)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("New folder name")
+
+            HStack {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.escape, modifiers: [])
+                Spacer()
+                Button("Rename", action: onRename)
+                    .keyboardShortcut(.return, modifiers: [])
+                    .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                              || newName.trimmingCharacters(in: .whitespacesAndNewlines) == currentName)
+            }
+        }
+        .padding()
+        .frame(width: 300)
+        .navigationTitle("Rename Folder")
+    }
+}
+
 struct MoveFolderToParentSheet: View {
     let folder: BookFolder
     let library: Library

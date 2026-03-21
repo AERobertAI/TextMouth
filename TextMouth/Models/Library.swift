@@ -182,6 +182,47 @@ struct Library: Codable {
         return true
     }
 
+    /// Rename a folder, updating all subfolder and book paths.
+    /// Returns false if the name is empty, unchanged, or would collide with a sibling.
+    @discardableResult
+    mutating func renameFolder(id: UUID, to newName: String) -> Bool {
+        let sanitized = newName.replacingOccurrences(of: "/", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !sanitized.isEmpty else { return false }
+        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
+        let folder = folders[folderIdx]
+        guard sanitized != folder.name else { return false }
+
+        let oldPath = folder.fullPath
+        let newPath = folder.parentPath.isEmpty ? sanitized : "\(folder.parentPath)/\(sanitized)"
+
+        // Check for name collision with a sibling folder
+        if folders.contains(where: { $0.fullPath == newPath }) { return false }
+
+        // Update the folder name
+        folders[folderIdx].name = sanitized
+
+        // Update all subfolder parentPaths that referenced the old path
+        for i in folders.indices {
+            if folders[i].parentPath == oldPath {
+                folders[i].parentPath = newPath
+            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
+                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
+            }
+        }
+
+        // Update all book folderPaths
+        for i in books.indices {
+            if books[i].folderPath == oldPath {
+                books[i].folderPath = newPath
+            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
+                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
+            }
+        }
+
+        return true
+    }
+
     /// Check whether a folder contains any books or subfolders
     func folderHasContents(_ folder: BookFolder) -> Bool {
         let path = folder.fullPath
