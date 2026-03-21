@@ -1416,4 +1416,49 @@ test("Duplicate detection: union of filters finds more matches") {
     try assertEqual(allIDs.count, 4, "Union of both filters catches all 4 books")
 }
 
+test("Duplicate by ISBN: matches books with same ISBN") {
+    // Simulate ISBN lookup via an external cache (mirrors DuplicateFinderView.isbnCache)
+    let id1 = UUID(), id2 = UUID(), id3 = UUID(), id4 = UUID()
+    let books = [
+        Book(id: id1, title: "EPUB A", format: .epub, md5Hash: "h1"),
+        Book(id: id2, title: "EPUB A Copy", format: .epub, md5Hash: "h2"),
+        Book(id: id3, title: "EPUB B", format: .epub, md5Hash: "h3"),
+        Book(id: id4, title: "Text Book", format: .txt, md5Hash: "h4"),
+    ]
+    let isbnCache: [UUID: String] = [
+        id1: "978-0-123456-78-9",
+        id2: "978-0-123456-78-9",  // Same ISBN as id1
+        id3: "978-0-999999-99-9",
+        // id4 has no ISBN (not an EPUB)
+    ]
+
+    let groups = findDuplicateGroups(books: books) { book in
+        guard let isbn = isbnCache[book.id], !isbn.isEmpty else { return nil }
+        return isbn.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    try assertEqual(groups.count, 1, "Should find 1 ISBN duplicate group")
+    try assertEqual(groups[0].count, 2)
+    // Text book should not be included
+    let groupIDs = Set(groups[0].map { $0.id })
+    try assertTrue(!groupIDs.contains(id4), "Non-EPUB book should not be in ISBN group")
+}
+
+test("Duplicate by ISBN: empty ISBNs are skipped") {
+    let id1 = UUID(), id2 = UUID()
+    let books = [
+        Book(id: id1, title: "A", format: .epub, md5Hash: "h1"),
+        Book(id: id2, title: "B", format: .epub, md5Hash: "h2"),
+    ]
+    let isbnCache: [UUID: String] = [
+        id1: "",
+        id2: "",
+    ]
+    let groups = findDuplicateGroups(books: books) { book in
+        guard let isbn = isbnCache[book.id], !isbn.isEmpty else { return nil }
+        return isbn
+    }
+    try assertEqual(groups.count, 0, "Empty ISBNs should not match")
+}
+
 } // end runFeatureTests

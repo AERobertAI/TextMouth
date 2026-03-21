@@ -3,6 +3,7 @@ import SwiftUI
 /// Criteria for matching duplicate books
 enum DuplicateFilter: String, CaseIterable, Identifiable {
     case md5Hash = "Identical File (MD5)"
+    case isbn = "Same ISBN"
     case title = "Same Title"
     case author = "Same Author"
     case titleAndAuthor = "Same Title & Author"
@@ -13,6 +14,7 @@ enum DuplicateFilter: String, CaseIterable, Identifiable {
     var hint: String {
         switch self {
         case .md5Hash: return "Exact file content match — the strongest indicator"
+        case .isbn: return "EPUB books with the same ISBN identifier"
         case .title: return "Books with the same title, regardless of author"
         case .author: return "All books by the same author"
         case .titleAndAuthor: return "Books with both the same title and author"
@@ -40,6 +42,10 @@ struct DuplicateFinderView: View {
     @State private var selectedForRemoval: Set<UUID> = []
     /// Whether the scan has been performed
     @State private var hasScanned = false
+    /// ISBN cache: loaded on demand from bookInfo.json for EPUB books
+    @State private var isbnCache: [UUID: String] = [:]
+    /// Whether ISBN loading is in progress
+    @State private var isLoadingISBNs = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -77,10 +83,23 @@ struct DuplicateFinderView: View {
                 }
 
                 HStack {
-                    Button("Scan for Duplicates") {
-                        hasScanned = true
+                    Button(isLoadingISBNs ? "Loading ISBNs..." : "Scan for Duplicates") {
+                        if activeFilters.contains(.isbn) && isbnCache.isEmpty {
+                            // Load ISBNs from bookInfo.json before scanning
+                            isLoadingISBNs = true
+                            Task {
+                                let cache = await loadISBNs(from: library.books)
+                                await MainActor.run {
+                                    isbnCache = cache
+                                    isLoadingISBNs = false
+                                    hasScanned = true
+                                }
+                            }
+                        } else {
+                            hasScanned = true
+                        }
                     }
-                    .disabled(activeFilters.isEmpty)
+                    .disabled(activeFilters.isEmpty || isLoadingISBNs)
                     .accessibilityHint("Searches the entire library for books matching the selected criteria")
 
                     if hasScanned && !duplicateGroups.isEmpty && !selectedForRemoval.isEmpty {
@@ -199,6 +218,9 @@ struct DuplicateFinderView: View {
             case .md5Hash:
                 guard !book.md5Hash.isEmpty else { continue }
                 key = book.md5Hash
+            case .isbn:
+                guard let isbn = isbnCache[book.id], !isbn.isEmpty else { continue }
+                key = isbn.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
             case .title:
                 let normalized = book.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !normalized.isEmpty else { continue }
@@ -225,6 +247,9 @@ struct DuplicateFinderView: View {
                 case .md5Hash:
                     // Show the title of the first book rather than the raw hash
                     displayKey = books.first?.title ?? key
+                case .isbn:
+                    // Show "ISBN: xxx — Title" for readability
+                    displayKey = "ISBN: \(key.uppercased())"
                 case .titleAndAuthor:
                     let parts = key.split(separator: "|", maxSplits: 1)
                     displayKey = parts.count == 2 ? "\(parts[0]) by \(parts[1])" : key
@@ -245,6 +270,8 @@ struct DuplicateFinderView: View {
                     activeFilters.insert(filter)
                 } else {
                     activeFilters.remove(filter)
+                    // Clear ISBN cache when filter is removed to force reload next time
+                    if filter == .isbn { isbnCache = [:] }
                 }
                 // Reset results when filters change
                 hasScanned = false
@@ -252,9 +279,34 @@ struct DuplicateFinderView: View {
             }
         )
     }
+
+    /// Load ISBN values from bookInfo.json for all EPUB books.
+    /// Runs on a background thread since it involves disk I/O.
+    private func loadISBNs(from books: [Book]) async -> [UUID: String] {
+        await withTaskGroup(of: (UUID, String)?.self) { group in
+            for book in books where book.format == .epub && !book.tmbDirectoryName.isEmpty {
+                group.addTask {
+                    let tmbDir = book.tmbDirectory
+                    guard let info = try? BookInfo.load(from: tmbDir),
+                          let isbn = info.metadata.isbn, !isbn.isEmpty else {
+                        return nil
+                    }
+                    return (book.id, isbn)
+                }
+            }
+            var result: [UUID: String] = [:]
+            for await pair in group {
+                if let (id, isbn) = pair {
+                    result[id] = isbn
+                }
+            }
+            return result
+        }
+    }
 }
 
-/// A row showing a potentially duplicate book with a selection checkbox
+/// A row showing a potentially duplicate book with a selection checkbox.
+/// The entire row is a single accessibility element with toggle behavior.
 struct DuplicateBookRow: View {
     let book: Book
     let isSelected: Bool
@@ -262,15 +314,11 @@ struct DuplicateBookRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Selection checkbox
-            Button(action: onToggle) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(isSelected ? .red : .secondary)
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isSelected ? "Selected for removal" : "Not selected")
-            .accessibilityHint("Double-tap to \(isSelected ? "deselect" : "select for removal")")
+            // Selection indicator (visual only — accessibility is on the row)
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isSelected ? .red : .secondary)
+                .font(.title3)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(book.title)
@@ -309,22 +357,29 @@ struct DuplicateBookRow: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+        .background(isSelected ? Color.red.opacity(0.08) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { onToggle() }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Double-tap to \(isSelected ? "deselect" : "select for removal")")
+        .accessibilityAddTraits([.isButton])
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityAction(.default) { onToggle() }
     }
 
     private var accessibilityLabel: String {
-        var parts = [book.title, "by \(book.author)", book.format.displayName]
+        var parts: [String] = []
+        if isSelected {
+            parts.append("Selected for removal")
+        }
+        parts.append(book.title)
+        parts.append("by \(book.author)")
+        parts.append(book.format.displayName)
         if !book.folderPath.isEmpty {
             parts.append("in \(book.folderPath)")
         } else {
             parts.append("in Library Root")
-        }
-        if isSelected {
-            parts.insert("Selected for removal", at: 0)
         }
         return parts.joined(separator: ", ")
     }
