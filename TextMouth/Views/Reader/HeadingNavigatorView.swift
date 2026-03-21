@@ -71,29 +71,37 @@ struct HeadingNavigatorView: View {
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(filteredHeadings) { heading in
-                    HeadingRow(
-                        heading: heading,
-                        isCurrent: isCurrentHeading(heading),
-                        isSkipped: viewModel.isHeadingSkipped(heading),
-                        displayMode: displayMode,
-                        viewModel: viewModel
-                    )
-                    .onTapGesture {
-                        viewModel.navigateToHeading(heading)
-                        dismiss()
-                    }
-                    .accessibilityAction(.default) {
-                        viewModel.navigateToHeading(heading)
-                        dismiss()
-                    }
-                    .contextMenu {
-                        Button("Go To") {
-                            viewModel.navigateToHeading(heading)
-                            dismiss()
-                        }
-                        Button(viewModel.isHeadingSkipped(heading) ? "Include Section" : "Skip Section") {
-                            viewModel.toggleHeadingSkip(heading)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(filteredHeadings) { heading in
+                            HeadingRow(
+                                heading: heading,
+                                isCurrent: isCurrentHeading(heading),
+                                isSkipped: viewModel.isHeadingSkipped(heading),
+                                displayMode: displayMode,
+                                viewModel: viewModel
+                            )
+                            .padding(.horizontal)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.navigateToHeading(heading)
+                                dismiss()
+                            }
+                            .accessibilityAction(.default) {
+                                viewModel.navigateToHeading(heading)
+                                dismiss()
+                            }
+                            .contextMenu {
+                                Button("Go To") {
+                                    viewModel.navigateToHeading(heading)
+                                    dismiss()
+                                }
+                                Button(viewModel.isHeadingSkipped(heading) ? "Include Section" : "Skip Section") {
+                                    viewModel.toggleHeadingSkip(heading)
+                                }
+                            }
+                            Divider()
                         }
                     }
                 }

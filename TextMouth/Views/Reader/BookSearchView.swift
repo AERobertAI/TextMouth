@@ -110,22 +110,30 @@ struct BookSearchView: View {
                     .accessibilityLabel("Regex error: \(message)")
 
             case .results(let results):
-                List(results) { result in
-                    SearchResultRow(
-                        result: result,
-                        displayMode: displayMode,
-                        chapterTitle: chapterTitles[result.chapterIndex],
-                        totalCharacterCount: totalCharacterCount,
-                        totalWordCount: totalWordCount,
-                        currentWPM: currentWPM
-                    )
-                    .onTapGesture {
-                        onNavigate(result.chapterIndex, result.characterOffset)
-                        dismiss()
-                    }
-                    .accessibilityAction(.default) {
-                        onNavigate(result.chapterIndex, result.characterOffset)
-                        dismiss()
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(results) { result in
+                            SearchResultRow(
+                                result: result,
+                                displayMode: displayMode,
+                                chapterTitle: chapterTitles[result.chapterIndex],
+                                totalCharacterCount: totalCharacterCount,
+                                totalWordCount: totalWordCount,
+                                currentWPM: currentWPM
+                            )
+                            .padding(.horizontal)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                onNavigate(result.chapterIndex, result.characterOffset)
+                                dismiss()
+                            }
+                            .accessibilityAction(.default) {
+                                onNavigate(result.chapterIndex, result.characterOffset)
+                                dismiss()
+                            }
+                            Divider()
+                        }
                     }
                 }
                 .accessibilityLabel("\(results.count) \(results.count == 1 ? "match" : "matches") found")

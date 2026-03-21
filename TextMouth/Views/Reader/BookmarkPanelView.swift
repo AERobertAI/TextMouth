@@ -41,30 +41,36 @@ struct BookmarkPanelView: View {
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(sortedBookmarks) { bookmark in
-                        BookmarkRow(bookmark: bookmark)
-                            .onTapGesture {
-                                viewModel.navigateToBookmark(bookmark)
-                                dismiss()
-                            }
-                            .accessibilityAction(.default) {
-                                viewModel.navigateToBookmark(bookmark)
-                                dismiss()
-                            }
-                            .contextMenu {
-                                Button("Go To") {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(sortedBookmarks) { bookmark in
+                            BookmarkRow(bookmark: bookmark)
+                                .padding(.horizontal)
+                                .padding(.vertical, 6)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
                                     viewModel.navigateToBookmark(bookmark)
                                     dismiss()
                                 }
-                                Button("Edit Note") {
-                                    editingBookmark = bookmark
-                                    editingNote = bookmark.label
+                                .accessibilityAction(.default) {
+                                    viewModel.navigateToBookmark(bookmark)
+                                    dismiss()
                                 }
-                                Button("Delete", role: .destructive) {
-                                    viewModel.removeBookmark(bookmark)
+                                .contextMenu {
+                                    Button("Go To") {
+                                        viewModel.navigateToBookmark(bookmark)
+                                        dismiss()
+                                    }
+                                    Button("Edit Note") {
+                                        editingBookmark = bookmark
+                                        editingNote = bookmark.label
+                                    }
+                                    Button("Delete", role: .destructive) {
+                                        viewModel.removeBookmark(bookmark)
+                                    }
                                 }
-                            }
+                            Divider()
+                        }
                     }
                 }
                 .accessibilityRotor("Bookmarks") {
