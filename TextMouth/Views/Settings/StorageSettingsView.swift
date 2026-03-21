@@ -11,6 +11,7 @@ struct StorageSettingsView: View {
     @State private var importDeleteBehavior: ImportDeleteBehavior
     @State private var confirmBeforeDelete: Bool
     @State private var moveToTrash: Bool
+    @State private var showDuplicateFinder = false
 
     init() {
         _importDeleteBehavior = State(initialValue: ConfigService.shared.config.importDeleteBehavior)
@@ -147,6 +148,20 @@ struct StorageSettingsView: View {
             } header: {
                 Text("Library Statistics")
             }
+
+            Section {
+                Button("Find Duplicate Books...") {
+                    showDuplicateFinder = true
+                }
+                .accessibilityLabel("Find duplicate books")
+                .accessibilityHint("Scans the library for books with matching files, titles, or authors")
+
+                Text("Search across all folders for potential duplicate books based on file content, title, or author.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } header: {
+                Text("Library Maintenance")
+            }
         }
         .padding()
         .fileImporter(
@@ -195,6 +210,14 @@ struct StorageSettingsView: View {
             if let url = pendingMoveURL {
                 Text("Move all TextMouth data to \(url.path)? The app will use this location going forward.")
             }
+        }
+        .sheet(isPresented: $showDuplicateFinder) {
+            DuplicateFinderView(
+                library: libraryViewModel.library,
+                onRemoveBooks: { books in
+                    libraryViewModel.removeBooks(books)
+                }
+            )
         }
     }
 

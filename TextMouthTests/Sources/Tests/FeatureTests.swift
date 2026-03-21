@@ -1286,4 +1286,134 @@ test("Edit mode context menu on unselected book targets only that book") {
     try assertEqual(targetBooks[0].title, "B")
 }
 
+// ---- Duplicate Detection Tests ----
+print("\n--- Duplicate Detection Tests ---")
+
+/// Helper: find duplicate groups by bucketing books on a key extractor
+func findDuplicateGroups(books: [Book], keyExtractor: (Book) -> String?) -> [[Book]] {
+    var buckets: [String: [Book]] = [:]
+    for book in books {
+        guard let key = keyExtractor(book) else { continue }
+        buckets[key, default: []].append(book)
+    }
+    return buckets.values.filter { $0.count >= 2 }.sorted { $0[0].title < $1[0].title }
+}
+
+test("Duplicate by MD5: finds exact file matches") {
+    let books = [
+        Book(title: "A", md5Hash: "hash1", folderPath: ""),
+        Book(title: "A Copy", md5Hash: "hash1", folderPath: "Backup"),
+        Book(title: "B", md5Hash: "hash2", folderPath: ""),
+        Book(title: "C", md5Hash: "hash3", folderPath: ""),
+    ]
+    let groups = findDuplicateGroups(books: books) { b in
+        b.md5Hash.isEmpty ? nil : b.md5Hash
+    }
+    try assertEqual(groups.count, 1, "Should find 1 group of duplicates")
+    try assertEqual(groups[0].count, 2, "Group should have 2 books")
+}
+
+test("Duplicate by MD5: skips books with empty hash") {
+    let books = [
+        Book(title: "A", md5Hash: "", folderPath: ""),
+        Book(title: "B", md5Hash: "", folderPath: ""),
+    ]
+    let groups = findDuplicateGroups(books: books) { b in
+        b.md5Hash.isEmpty ? nil : b.md5Hash
+    }
+    try assertEqual(groups.count, 0, "Empty hashes should not match")
+}
+
+test("Duplicate by title: case-insensitive matching") {
+    let books = [
+        Book(title: "The Great Novel", md5Hash: "h1", folderPath: ""),
+        Book(title: "the great novel", md5Hash: "h2", folderPath: "Fiction"),
+        Book(title: "Other Book", md5Hash: "h3", folderPath: ""),
+    ]
+    let groups = findDuplicateGroups(books: books) { b in
+        let t = b.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? nil : t
+    }
+    try assertEqual(groups.count, 1)
+    try assertEqual(groups[0].count, 2)
+}
+
+test("Duplicate by author: skips Unknown author") {
+    let books = [
+        Book(title: "A", author: "Unknown", md5Hash: "h1"),
+        Book(title: "B", author: "Unknown", md5Hash: "h2"),
+        Book(title: "C", author: "Jane Doe", md5Hash: "h3"),
+        Book(title: "D", author: "Jane Doe", md5Hash: "h4"),
+    ]
+    let groups = findDuplicateGroups(books: books) { b in
+        let a = b.author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        return (a.isEmpty || a == "unknown") ? nil : a
+    }
+    try assertEqual(groups.count, 1, "Only Jane Doe group, not Unknown")
+    try assertEqual(groups[0].count, 2)
+}
+
+test("Duplicate by title+author: combined key") {
+    let books = [
+        Book(title: "Novel", author: "Writer A", md5Hash: "h1", folderPath: ""),
+        Book(title: "Novel", author: "Writer A", md5Hash: "h2", folderPath: "Backup"),
+        Book(title: "Novel", author: "Writer B", md5Hash: "h3", folderPath: ""),
+    ]
+    let groups = findDuplicateGroups(books: books) { b in
+        let t = b.title.lowercased()
+        let a = b.author.lowercased()
+        return t.isEmpty ? nil : "\(t)|\(a)"
+    }
+    try assertEqual(groups.count, 1, "Only Writer A pair should match")
+    try assertEqual(groups[0].count, 2)
+}
+
+test("Duplicate detection: no duplicates returns empty") {
+    let books = [
+        Book(title: "A", md5Hash: "h1"),
+        Book(title: "B", md5Hash: "h2"),
+        Book(title: "C", md5Hash: "h3"),
+    ]
+    let byHash = findDuplicateGroups(books: books) { $0.md5Hash.isEmpty ? nil : $0.md5Hash }
+    let byTitle = findDuplicateGroups(books: books) { $0.title.lowercased() }
+    try assertEqual(byHash.count, 0)
+    try assertEqual(byTitle.count, 0)
+}
+
+test("Duplicate detection: multiple groups found") {
+    let books = [
+        Book(title: "A", md5Hash: "h1"),
+        Book(title: "A", md5Hash: "h1"),
+        Book(title: "B", md5Hash: "h2"),
+        Book(title: "B", md5Hash: "h2"),
+        Book(title: "C", md5Hash: "h3"),
+    ]
+    let groups = findDuplicateGroups(books: books) { $0.md5Hash.isEmpty ? nil : $0.md5Hash }
+    try assertEqual(groups.count, 2, "Should find 2 duplicate groups")
+}
+
+test("Duplicate detection: union of filters finds more matches") {
+    let books = [
+        Book(title: "Same", author: "Author A", md5Hash: "unique1"),
+        Book(title: "Same", author: "Author B", md5Hash: "unique2"),
+        Book(title: "Different", author: "Author C", md5Hash: "dup"),
+        Book(title: "Also Different", author: "Author D", md5Hash: "dup"),
+    ]
+    // By MD5 only
+    let byHash = findDuplicateGroups(books: books) { $0.md5Hash.isEmpty ? nil : $0.md5Hash }
+    try assertEqual(byHash.count, 1, "1 MD5 duplicate group")
+
+    // By title only
+    let byTitle = findDuplicateGroups(books: books) {
+        $0.title.lowercased().isEmpty ? nil : $0.title.lowercased()
+    }
+    try assertEqual(byTitle.count, 1, "1 title duplicate group")
+
+    // Union: both groups found
+    var allIDs: Set<UUID> = []
+    for group in byHash { for book in group { allIDs.insert(book.id) } }
+    for group in byTitle { for book in group { allIDs.insert(book.id) } }
+    try assertEqual(allIDs.count, 4, "Union of both filters catches all 4 books")
+}
+
 } // end runFeatureTests
