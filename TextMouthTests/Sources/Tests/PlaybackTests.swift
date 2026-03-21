@@ -26,6 +26,159 @@ test("NowPlaying clear sets nil") {
     try assertTrue(info == nil, "Should be nil after clear")
 }
 
+// ---- NowPlaying Remote Command Separation Tests ----
+print("\n--- NowPlaying Remote Command Separation Tests ---")
+
+// Simulates the NowPlayingService's play/pause/toggle separation and suppress logic.
+// The actual service uses MPRemoteCommandCenter which can't be unit tested,
+// so we test the logic pattern directly.
+
+test("Play command only plays, does not toggle") {
+    // Simulate the separated command handlers
+    var isPlaying = false
+    var playCallCount = 0
+    var pauseCallCount = 0
+
+    let onPlay = { playCallCount += 1; isPlaying = true }
+    let onPause = { pauseCallCount += 1; isPlaying = false }
+
+    // Start paused, receive play command
+    onPlay()
+    try assertTrue(isPlaying)
+    try assertEqual(playCallCount, 1)
+
+    // Already playing, receive another play command — should not toggle off
+    onPlay()
+    try assertTrue(isPlaying, "Play should keep playing, not toggle to paused")
+    try assertEqual(playCallCount, 2)
+    try assertEqual(pauseCallCount, 0, "Pause should never have been called")
+}
+
+test("Pause command only pauses, does not toggle") {
+    var isPlaying = true
+    var pauseCallCount = 0
+
+    let onPause = { pauseCallCount += 1; isPlaying = false }
+
+    // Playing, receive pause
+    onPause()
+    try assertTrue(!isPlaying)
+    try assertEqual(pauseCallCount, 1)
+
+    // Already paused, receive another pause — should not toggle to play
+    onPause()
+    try assertTrue(!isPlaying, "Pause should keep paused, not toggle to playing")
+    try assertEqual(pauseCallCount, 2)
+}
+
+test("Suppress flag blocks next play command after device change") {
+    var suppressNextPlay = false
+    var playFired = false
+
+    func simulateDeviceChange() {
+        suppressNextPlay = true
+    }
+
+    func handlePlayCommand() {
+        if suppressNextPlay {
+            suppressNextPlay = false
+            return
+        }
+        playFired = true
+    }
+
+    // Device changes — suppress flag is set
+    simulateDeviceChange()
+    try assertTrue(suppressNextPlay)
+
+    // System sends play command — should be suppressed
+    handlePlayCommand()
+    try assertTrue(!playFired, "Play should be suppressed after device change")
+    try assertTrue(!suppressNextPlay, "Suppress flag should be cleared after use")
+
+    // Next deliberate play should work
+    handlePlayCommand()
+    try assertTrue(playFired, "Second play should not be suppressed")
+}
+
+test("Toggle command clears suppress flag") {
+    var suppressNextPlay = true
+    var toggleCount = 0
+
+    func handleToggleCommand() {
+        suppressNextPlay = false
+        toggleCount += 1
+    }
+
+    // User presses media key (toggle) — should clear suppress and work
+    handleToggleCommand()
+    try assertTrue(!suppressNextPlay, "Toggle should clear suppress flag")
+    try assertEqual(toggleCount, 1)
+}
+
+test("Device change pauses then suppresses play") {
+    var isPlaying = true
+    var suppressNextPlay = false
+
+    func onPause() { isPlaying = false }
+
+    func simulateDeviceChange() {
+        suppressNextPlay = true
+        onPause()
+    }
+
+    func handlePlayCommand() {
+        if suppressNextPlay {
+            suppressNextPlay = false
+            return
+        }
+        isPlaying = true
+    }
+
+    // Simulate AirPods disconnect sequence:
+    // 1. Device change triggers pause + suppress
+    simulateDeviceChange()
+    try assertTrue(!isPlaying, "Should be paused after device change")
+    try assertTrue(suppressNextPlay)
+
+    // 2. System sends play command to resume on new device — should be blocked
+    handlePlayCommand()
+    try assertTrue(!isPlaying, "Play should be suppressed, staying paused")
+
+    // 3. User later deliberately presses play — should work
+    handlePlayCommand()
+    try assertTrue(isPlaying, "Manual play should work after suppress is cleared")
+}
+
+test("Multiple rapid device changes only need one suppress") {
+    var suppressNextPlay = false
+    var playCount = 0
+
+    func simulateDeviceChange() {
+        suppressNextPlay = true
+    }
+
+    func handlePlayCommand() {
+        if suppressNextPlay {
+            suppressNextPlay = false
+            return
+        }
+        playCount += 1
+    }
+
+    // Rapid device switching
+    simulateDeviceChange()
+    simulateDeviceChange()  // Second change re-arms the flag
+
+    // Only one play command comes in — should be suppressed
+    handlePlayCommand()
+    try assertEqual(playCount, 0, "Should still be suppressed")
+
+    // Next play should work
+    handlePlayCommand()
+    try assertEqual(playCount, 1, "Should work after suppress cleared")
+}
+
 // ---- Speed Control Tests ----
 print("\n--- Speed Control Tests ---")
 

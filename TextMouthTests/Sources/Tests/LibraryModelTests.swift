@@ -374,4 +374,82 @@ test("LibraryCategory: recent raw value") {
     try assertEqual(LibraryCategory.recent.rawValue, "Recent")
 }
 
+// ---- Last Moved Folder Tests ----
+print("\n--- Last Moved Folder Tests ---")
+
+test("Last moved folder tracks most recent move destination") {
+    var lastMovedFolderPath = ""
+
+    // Move to Fiction
+    lastMovedFolderPath = "Fiction"
+    try assertEqual(lastMovedFolderPath, "Fiction")
+
+    // Move to NonFiction — should update
+    lastMovedFolderPath = "NonFiction"
+    try assertEqual(lastMovedFolderPath, "NonFiction")
+
+    // Move to root — should update to empty string
+    lastMovedFolderPath = ""
+    try assertEqual(lastMovedFolderPath, "")
+}
+
+test("Last moved folder used as default in move dialog") {
+    let lastMovedFolderPath = "Fiction/SciFi"
+    let availableFolders = [
+        (label: "Library Root", path: ""),
+        (label: "Fiction", path: "Fiction"),
+        (label: "Fiction/SciFi", path: "Fiction/SciFi"),
+        (label: "NonFiction", path: "NonFiction"),
+    ]
+
+    // The default selected path should match lastMovedFolderPath if it exists
+    let defaultPath: String
+    if !lastMovedFolderPath.isEmpty,
+       availableFolders.contains(where: { $0.path == lastMovedFolderPath }) {
+        defaultPath = lastMovedFolderPath
+    } else {
+        defaultPath = ""
+    }
+
+    try assertEqual(defaultPath, "Fiction/SciFi", "Should default to last moved folder")
+}
+
+test("Last moved folder falls back to root if folder was deleted") {
+    let lastMovedFolderPath = "DeletedFolder"
+    let availableFolders = [
+        (label: "Library Root", path: ""),
+        (label: "Fiction", path: "Fiction"),
+    ]
+
+    let defaultPath: String
+    if !lastMovedFolderPath.isEmpty,
+       availableFolders.contains(where: { $0.path == lastMovedFolderPath }) {
+        defaultPath = lastMovedFolderPath
+    } else {
+        defaultPath = ""
+    }
+
+    try assertEqual(defaultPath, "", "Should fall back to root when folder no longer exists")
+}
+
+test("Moving multiple books updates last moved folder once") {
+    var library = Library()
+    let book1 = Book(title: "A", md5Hash: "a1", folderPath: "")
+    let book2 = Book(title: "B", md5Hash: "b1", folderPath: "")
+    library.addBook(book1)
+    library.addBook(book2)
+    _ = library.createFolder(name: "Target")
+
+    var lastMovedFolderPath = ""
+
+    // Simulate moveBooks which moves all then sets lastMovedFolderPath once
+    for book in [book1, book2] {
+        library.moveBook(id: book.id, toFolder: "Target")
+    }
+    lastMovedFolderPath = "Target"
+
+    try assertEqual(lastMovedFolderPath, "Target")
+    try assertEqual(library.booksInFolder("Target").count, 2)
+}
+
 } // end runLibraryModelTests

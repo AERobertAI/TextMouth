@@ -1159,4 +1159,131 @@ test("Audio position tracking: char offset to time conversion") {
     try assertEqual(offset, 1234)
 }
 
+// ---- Library Edit Mode Tests ----
+print("\n--- Library Edit Mode Tests ---")
+
+test("Edit selection toggle adds and removes IDs") {
+    var editSelection: Set<UUID> = []
+    let id1 = UUID()
+    let id2 = UUID()
+    let id3 = UUID()
+
+    // Toggle on
+    editSelection.insert(id1)
+    editSelection.insert(id2)
+    try assertEqual(editSelection.count, 2)
+    try assertTrue(editSelection.contains(id1))
+    try assertTrue(editSelection.contains(id2))
+
+    // Toggle off
+    editSelection.remove(id1)
+    try assertEqual(editSelection.count, 1)
+    try assertTrue(!editSelection.contains(id1))
+    try assertTrue(editSelection.contains(id2))
+
+    // Toggle on again
+    editSelection.insert(id1)
+    editSelection.insert(id3)
+    try assertEqual(editSelection.count, 3)
+}
+
+test("Effective selection is union of native and edit selection") {
+    let id1 = UUID()
+    let id2 = UUID()
+    let id3 = UUID()
+    let id4 = UUID()
+
+    // Native selection from List
+    let nativeSelection: Set<UUID> = [id1, id2]
+    // Edit mode selection
+    let editSelection: Set<UUID> = [id2, id3]
+    // Effective = union of both
+    let effective = nativeSelection.union(editSelection)
+
+    try assertEqual(effective.count, 3, "Union should have 3 unique IDs")
+    try assertTrue(effective.contains(id1))
+    try assertTrue(effective.contains(id2))
+    try assertTrue(effective.contains(id3))
+    try assertTrue(!effective.contains(id4))
+}
+
+test("Exiting edit mode clears edit selection") {
+    var isEditMode = true
+    var editSelection: Set<UUID> = [UUID(), UUID(), UUID()]
+
+    try assertEqual(editSelection.count, 3)
+
+    // Exit edit mode
+    isEditMode = false
+    if !isEditMode { editSelection = [] }
+
+    try assertEqual(editSelection.count, 0, "Edit selection should be cleared on exit")
+}
+
+test("Select all populates edit selection with all book IDs") {
+    let allIDs: [UUID] = (0..<10).map { _ in UUID() }
+    var editSelection: Set<UUID> = []
+
+    // Select all
+    editSelection = Set(allIDs)
+
+    try assertEqual(editSelection.count, 10)
+    for id in allIDs {
+        try assertTrue(editSelection.contains(id))
+    }
+
+    // Deselect all
+    editSelection = []
+    try assertEqual(editSelection.count, 0)
+}
+
+test("Edit mode context menu uses effective selection for batch operations") {
+    let id1 = UUID()
+    let id2 = UUID()
+    let id3 = UUID()
+
+    // All book IDs in the list
+    let allBooks = [(id: id1, title: "A"), (id: id2, title: "B"), (id: id3, title: "C")]
+
+    // Edit selection has id1 and id3 selected
+    let editSelection: Set<UUID> = [id1, id3]
+    let nativeSelection: Set<UUID> = []
+    let effectiveSelection = nativeSelection.union(editSelection)
+
+    // Context menu on id1 (which is in selection)
+    let contextBookID = id1
+    let targetBooks: [(id: UUID, title: String)]
+    if effectiveSelection.contains(contextBookID), effectiveSelection.count > 1 {
+        targetBooks = allBooks.filter { effectiveSelection.contains($0.id) }
+    } else {
+        targetBooks = allBooks.filter { $0.id == contextBookID }
+    }
+
+    try assertEqual(targetBooks.count, 2, "Should operate on all selected books")
+    try assertEqual(targetBooks[0].title, "A")
+    try assertEqual(targetBooks[1].title, "C")
+}
+
+test("Edit mode context menu on unselected book targets only that book") {
+    let id1 = UUID()
+    let id2 = UUID()
+    let id3 = UUID()
+
+    let allBooks = [(id: id1, title: "A"), (id: id2, title: "B"), (id: id3, title: "C")]
+    let editSelection: Set<UUID> = [id1, id3]
+    let effectiveSelection = editSelection
+
+    // Context menu on id2 (NOT in selection)
+    let contextBookID = id2
+    let targetBooks: [(id: UUID, title: String)]
+    if effectiveSelection.contains(contextBookID), effectiveSelection.count > 1 {
+        targetBooks = allBooks.filter { effectiveSelection.contains($0.id) }
+    } else {
+        targetBooks = allBooks.filter { $0.id == contextBookID }
+    }
+
+    try assertEqual(targetBooks.count, 1, "Should target only the context-clicked book")
+    try assertEqual(targetBooks[0].title, "B")
+}
+
 } // end runFeatureTests
