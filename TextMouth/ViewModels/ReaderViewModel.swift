@@ -318,6 +318,8 @@ class ReaderViewModel: ObservableObject {
         sleepTimerService.fadeOutDuration = settingsViewModel.sleepFadeOutDuration
 
         nowPlayingService.setup(
+            onPlay: { [weak self] in self?.play() },
+            onPause: { [weak self] in self?.pause() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
             onSkipForward: { [weak self] in self?.skipForward() },
             onSkipBackward: { [weak self] in self?.skipBackward() }
