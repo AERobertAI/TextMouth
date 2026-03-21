@@ -22,6 +22,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case newFolder = "New Folder"
     case moveToFolder = "Move to Folder"
     case selectAll = "Select All"
+    case toggleEditMode = "Edit Mode"
 
     var id: String { rawValue }
 
@@ -48,6 +49,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .newFolder: return .newFolder
         case .moveToFolder: return .moveToFolder
         case .selectAll: return .selectAll
+        case .toggleEditMode: return .toggleEditMode
         }
     }
 
@@ -62,7 +64,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Bookmarks"
         case .whereAmI:
             return "Information"
-        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode:
             return "Library"
         }
     }
@@ -252,6 +254,9 @@ extension ShortcutAction {
             ],
             .selectAll: [
                 KeyBinding(key: "a", command: true)
+            ],
+            .toggleEditMode: [
+                KeyBinding(key: "e", command: true)
             ]
         ]
     }

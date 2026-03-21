@@ -17,6 +17,10 @@ struct LibraryView: View {
     @State private var showMoveSheet = false
     @State private var searchText = ""
     @State private var selectedBookIDs: Set<UUID> = []
+    /// Edit mode: activating a book toggles its selection instead of opening it
+    @State private var isEditMode = false
+    /// Books selected via edit mode (persists through VoiceOver navigation)
+    @State private var editSelection: Set<UUID> = []
     @State private var bookInfoTarget: Book?
     /// EPUB metadata loaded on-demand when showing the rich editor from the library
     @State private var richInfoEPUBMetadata: EPUBMetadata?
@@ -82,6 +86,39 @@ struct LibraryView: View {
                 .accessibilityHint("Opens the last book you were reading")
             }
 
+            // Edit mode toolbar: shown when edit mode is active
+            if isEditMode {
+                EditModeBar(
+                    selectedCount: effectiveSelection.count,
+                    totalCount: filteredBooks.count,
+                    onSelectAll: {
+                        editSelection = Set(filteredBooks.map { $0.id })
+                    },
+                    onDeselectAll: {
+                        editSelection = []
+                        selectedBookIDs = []
+                    },
+                    onMove: {
+                        let books = selectedBooks
+                        if !books.isEmpty {
+                            booksToMove = books
+                            showMoveSheet = true
+                        }
+                    },
+                    onRemove: {
+                        let books = selectedBooks
+                        if !books.isEmpty {
+                            libraryViewModel.removeBooks(books)
+                            editSelection = []
+                            selectedBookIDs = []
+                        }
+                    },
+                    onDone: {
+                        isEditMode = false
+                    }
+                )
+            }
+
             // Total time remaining bar (refreshTick forces periodic re-evaluation)
             let _ = libraryViewModel.refreshTick
             TimeRemainingBar(books: displayedBooks, wpm: settingsViewModel.wordsPerMinute)
@@ -127,19 +164,26 @@ struct LibraryView: View {
                         BookRow(
                             book: book,
                             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
-                            wpm: settingsViewModel.wordsPerMinute
+                            wpm: settingsViewModel.wordsPerMinute,
+                            isEditMode: isEditMode,
+                            isEditSelected: editSelection.contains(book.id)
                         )
                             .tag(book.id)
                             .accessibilityAction(.default) {
-                                onOpenBook(book)
+                                if isEditMode {
+                                    toggleEditSelection(book.id)
+                                } else {
+                                    onOpenBook(book)
+                                }
                             }
                             .contextMenu {
                                 // Determine which books the action applies to:
-                                // if the right-clicked book is part of a multi-selection,
-                                // operate on all selected books; otherwise just this one.
+                                // use edit selection in edit mode, native selection otherwise,
+                                // falling back to just the clicked book.
                                 let targetBooks: [Book] = {
-                                    if selectedBookIDs.contains(book.id), selectedBookIDs.count > 1 {
-                                        return filteredBooks.filter { selectedBookIDs.contains($0.id) }
+                                    let ids = effectiveSelection
+                                    if ids.contains(book.id), ids.count > 1 {
+                                        return filteredBooks.filter { ids.contains($0.id) }
                                     }
                                     return [book]
                                 }()
@@ -151,6 +195,12 @@ struct LibraryView: View {
                                     }
                                     Button("Book Info") {
                                         showBookInfo(for: book)
+                                    }
+                                }
+                                if !isEditMode {
+                                    Button("Select") {
+                                        editSelection.insert(book.id)
+                                        isEditMode = true
                                     }
                                 }
                                 Button(isMulti ? "Move \(targetBooks.count) Books to Folder..." : "Move to Folder...") {
@@ -192,11 +242,12 @@ struct LibraryView: View {
                 }
             }
             .onDeleteCommand {
-                // Delete key removes all selected books
-                let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
-                if !selected.isEmpty {
-                    libraryViewModel.removeBooks(selected)
+                // Delete key removes all selected books (either selection mechanism)
+                let books = selectedBooks
+                if !books.isEmpty {
+                    libraryViewModel.removeBooks(books)
                     selectedBookIDs = []
+                    editSelection = []
                 }
             }
         }
@@ -226,6 +277,18 @@ struct LibraryView: View {
                 }
                 .accessibilityLabel("New book from text")
                 .accessibilityHint("Create a new book by pasting or typing text")
+
+                // Edit mode toggle
+                Button {
+                    isEditMode.toggle()
+                    if !isEditMode { editSelection = [] }
+                } label: {
+                    Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
+                }
+                .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
+                .accessibilityHint(isEditMode
+                    ? "Exits edit mode. \(editSelection.count) books selected."
+                    : "Enter edit mode to select multiple books for moving or deleting")
 
                 if category == .folders {
                     Button {
@@ -384,10 +447,11 @@ struct LibraryView: View {
             } else {
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
-            if !selected.isEmpty {
-                libraryViewModel.removeBooks(selected)
+            let books = selectedBooks
+            if !books.isEmpty {
+                libraryViewModel.removeBooks(books)
                 selectedBookIDs = []
+                editSelection = []
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .newFolder)) { notification in
@@ -407,20 +471,37 @@ struct LibraryView: View {
             } else {
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            let selected = filteredBooks.filter { selectedBookIDs.contains($0.id) }
-            if !selected.isEmpty {
-                booksToMove = selected
+            let books = selectedBooks
+            if !books.isEmpty {
+                booksToMove = books
                 showMoveSheet = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .selectAll)) { notification in
-            // Cmd+A: select all visible books
+            // Cmd+A: select all visible books (in edit mode, use edit selection)
             if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
                 guard hostWindow == nil || sourceWindow === hostWindow else { return }
             } else {
                 if let hw = hostWindow, !hw.isKeyWindow { return }
             }
-            selectedBookIDs = Set(filteredBooks.map { $0.id })
+            let allIDs = Set(filteredBooks.map { $0.id })
+            if isEditMode {
+                editSelection = allIDs
+            } else {
+                // Auto-enter edit mode so the selection is visible and persistent
+                editSelection = allIDs
+                isEditMode = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleEditMode)) { notification in
+            // Cmd+E: toggle edit mode
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            isEditMode.toggle()
+            if !isEditMode { editSelection = [] }
         }
         .sheet(isPresented: $showTextInput) {
             TextInputView(
@@ -431,6 +512,27 @@ struct LibraryView: View {
                 onCancel: { showTextInput = false }
             )
         }
+    }
+
+    /// Toggle a book's membership in the edit selection set
+    private func toggleEditSelection(_ id: UUID) {
+        if editSelection.contains(id) {
+            editSelection.remove(id)
+        } else {
+            editSelection.insert(id)
+        }
+    }
+
+    /// The union of native List selection and edit mode selection.
+    /// Shortcut handlers use this so either selection mechanism works.
+    private var effectiveSelection: Set<UUID> {
+        selectedBookIDs.union(editSelection)
+    }
+
+    /// Books currently selected via either mechanism
+    private var selectedBooks: [Book] {
+        let ids = effectiveSelection
+        return filteredBooks.filter { ids.contains($0.id) }
     }
 
     private var displayedBooks: [Book] {
@@ -493,6 +595,56 @@ struct LibraryView: View {
         }
 
         bookInfoTarget = book
+    }
+}
+
+// MARK: - Edit Mode Bar
+
+/// Toolbar shown at the top of the library when edit mode is active.
+/// Provides batch actions and selection controls that work reliably with VoiceOver.
+struct EditModeBar: View {
+    let selectedCount: Int
+    let totalCount: Int
+    let onSelectAll: () -> Void
+    let onDeselectAll: () -> Void
+    let onMove: () -> Void
+    let onRemove: () -> Void
+    let onDone: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("\(selectedCount) of \(totalCount) selected")
+                .font(.callout)
+                .fontWeight(.medium)
+
+            Spacer()
+
+            Button(selectedCount == totalCount ? "Deselect All" : "Select All") {
+                if selectedCount == totalCount {
+                    onDeselectAll()
+                } else {
+                    onSelectAll()
+                }
+            }
+            .accessibilityLabel(selectedCount == totalCount ? "Deselect all books" : "Select all \(totalCount) books")
+
+            Button("Move") { onMove() }
+                .disabled(selectedCount == 0)
+                .accessibilityLabel("Move \(selectedCount) \(selectedCount == 1 ? "book" : "books") to folder")
+
+            Button("Remove", role: .destructive) { onRemove() }
+                .disabled(selectedCount == 0)
+                .accessibilityLabel("Remove \(selectedCount) \(selectedCount == 1 ? "book" : "books") from library")
+
+            Button("Done") { onDone() }
+                .fontWeight(.semibold)
+                .accessibilityLabel("Exit edit mode")
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.1))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Edit mode, \(selectedCount) of \(totalCount) books selected")
     }
 }
 
@@ -627,68 +779,88 @@ struct BookRow: View {
     let book: Book
     var isOpenInWindow: Bool = false
     var wpm: Double = 200
+    var isEditMode: Bool = false
+    var isEditSelected: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(book.title)
-                    .font(.headline)
-
-                if book.lastOpened == nil {
-                    Text("New")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(3)
-                } else if isOpenInWindow {
-                    Text("Now Reading")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(3)
-                }
+        HStack(spacing: 8) {
+            // Selection indicator in edit mode
+            if isEditMode {
+                Image(systemName: isEditSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isEditSelected ? .accentColor : .secondary)
+                    .font(.title3)
+                    .accessibilityHidden(true)
             }
-            HStack {
-                Text(book.author)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
 
-                Spacer()
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(book.title)
+                        .font(.headline)
 
-                if let pos = book.readingPosition {
-                    Text("Ch. \(pos.chapterIndex + 1)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if book.lastOpened == nil {
+                        Text("New")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(3)
+                    } else if isOpenInWindow {
+                        Text("Now Reading")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(3)
+                    }
                 }
-
-                if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
-                    Text("\(TimeFormatting.format(remaining)) left")
-                        .font(.caption)
+                HStack {
+                    Text(book.author)
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
-                }
 
-                Text(book.format.displayName)
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.2))
-                    .cornerRadius(4)
+                    Spacer()
+
+                    if let pos = book.readingPosition {
+                        Text("Ch. \(pos.chapterIndex + 1)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
+                        Text("\(TimeFormatting.format(remaining)) left")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text(book.format.displayName)
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.2))
+                        .cornerRadius(4)
+                }
             }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Press Enter to open, Command I for info")
+        .accessibilityHint(isEditMode
+            ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
+            : "Press Enter to open, Command I for info")
+        .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
     }
 
     private var accessibilityLabel: String {
-        var parts = [book.title, "by \(book.author)"]
+        var parts: [String] = []
+        if isEditMode && isEditSelected {
+            parts.append("Selected")
+        }
+        parts.append(book.title)
+        parts.append("by \(book.author)")
         if book.lastOpened == nil {
             parts.append("New")
         } else if isOpenInWindow {

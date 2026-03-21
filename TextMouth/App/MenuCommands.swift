@@ -88,6 +88,13 @@ struct NavigationCommands: Commands {
 struct LibraryCommands: Commands {
     var body: some Commands {
         CommandMenu("Library") {
+            Button("Edit Mode") {
+                NotificationCenter.default.post(name: .toggleEditMode, object: nil)
+            }
+            // Cmd+E handled by KeyboardShortcutManager for window targeting
+
+            Divider()
+
             Button("New Folder") {
                 NotificationCenter.default.post(name: .newFolder, object: nil)
             }
@@ -154,4 +161,5 @@ extension Notification.Name {
     static let newFolder = Notification.Name("newFolder")
     static let moveToFolder = Notification.Name("moveToFolder")
     static let selectAll = Notification.Name("selectAll")
+    static let toggleEditMode = Notification.Name("toggleEditMode")
 }

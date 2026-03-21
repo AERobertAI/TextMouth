@@ -66,6 +66,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case newFolder = "New Folder"
     case moveToFolder = "Move to Folder"
     case selectAll = "Select All"
+    case toggleEditMode = "Edit Mode"
 
     var category: String {
         switch self {
@@ -77,7 +78,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
             return "Bookmarks"
         case .whereAmI:
             return "Information"
-        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode:
             return "Library"
         }
     }
@@ -104,6 +105,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .newFolder: [KeyBinding(key: "n", command: true, shift: true)],
             .moveToFolder: [KeyBinding(key: "m", command: true, shift: true)],
             .selectAll: [KeyBinding(key: "a", command: true)],
+            .toggleEditMode: [KeyBinding(key: "e", command: true)],
         ]
     }
 }
@@ -362,7 +364,7 @@ test("Select All has Cmd+A binding") {
 
 test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
-    try assertEqual(libraryActions.count, 6, "Should have 6 library actions")
+    try assertEqual(libraryActions.count, 7, "Should have 7 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
@@ -370,7 +372,18 @@ test("Library category includes all library actions") {
     try assertTrue(names.contains("Select All"))
     try assertTrue(names.contains("Open Selected Book"))
     try assertTrue(names.contains("Book Info"))
+    try assertTrue(names.contains("Edit Mode"))
     print("    Library category has \(libraryActions.count) actions")
+}
+
+test("Edit Mode has Cmd+E binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.toggleEditMode]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "e")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(!bindings[0].shift, "Should not have shift modifier")
+    print("    Edit Mode default: \(bindings[0].displayString)")
 }
 
 test("New library shortcuts display correctly for accessibility") {
