@@ -33,6 +33,7 @@ runTextSubstitutionTests()
 runFeatureTests()
 runAudioMetadataTests()
 runWindowFocusTests()
+runIntegrationTests()
 
 // ---- Summary ----
 print("\n" + "=" * 60)

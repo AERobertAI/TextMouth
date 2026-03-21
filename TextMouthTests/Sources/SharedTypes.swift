@@ -70,6 +70,19 @@ struct DocumentContent {
         guard wpm > 0 else { return 0 }
         return Double(totalWordCount) / wpm * 60.0
     }
+
+    /// Estimated time to read from a given global character offset to the end
+    func estimatedTimeRemaining(fromGlobalOffset offset: Int, wpm: Double) -> TimeInterval {
+        guard wpm > 0, totalCharacterCount > 0 else { return 0 }
+        let remainingFraction = Double(max(totalCharacterCount - offset, 0)) / Double(totalCharacterCount)
+        return estimatedReadingTime(wpm: wpm) * remainingFraction
+    }
+
+    /// Percentage through the book for a given global offset
+    func percentComplete(globalOffset: Int) -> Double {
+        guard totalCharacterCount > 0 else { return 0 }
+        return min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
+    }
 }
 
 struct Bookmark: Identifiable, Codable {
@@ -97,12 +110,19 @@ struct Bookmark: Identifiable, Codable {
     }
 }
 
-struct BookFolder {
+struct BookFolder: Identifiable, Codable, Hashable {
+    let id: UUID
     var name: String
     var parentPath: String
     var fullPath: String { parentPath.isEmpty ? name : "\(parentPath)/\(name)" }
     var depth: Int { fullPath.isEmpty ? 0 : fullPath.components(separatedBy: "/").count }
     static let maxDepth = 4
+
+    init(id: UUID = UUID(), name: String, parentPath: String = "") {
+        self.id = id
+        self.name = name
+        self.parentPath = parentPath
+    }
 }
 
 /// Mirrored from the app for metadata editing and persistence tests
@@ -203,5 +223,247 @@ struct BookMetadata: Codable {
         self.audioGenre = audioGenre
         self.audioYear = audioYear
     }
+}
+
+// MARK: - ReadingPosition (mirrored from app)
+
+struct ReadingPosition: Codable, Hashable {
+    var chapterIndex: Int
+    var headingIndex: Int?
+    var characterOffset: Int
+    var globalCharacterOffset: Int?
+    var lastUpdated: Date
+
+    init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil) {
+        self.chapterIndex = chapterIndex
+        self.headingIndex = headingIndex
+        self.characterOffset = characterOffset
+        self.globalCharacterOffset = globalCharacterOffset
+        self.lastUpdated = Date()
+    }
+}
+
+// MARK: - Book (mirrored from app with key business logic)
+
+struct Book: Identifiable, Codable {
+    let id: UUID
+    var title: String
+    var author: String
+    var format: BookFormat
+    var filePath: String
+    var md5Hash: String
+    var folderPath: String
+    var dateAdded: Date
+    var lastOpened: Date?
+    var readingPosition: ReadingPosition?
+    var bookmarks: [Bookmark]
+    var totalWordCount: Int?
+    var totalCharacterCount: Int?
+    var tmbDirectoryName: String
+    var sourceFilePath: String?
+    var localVoiceID: String?
+    var localWPM: Double?
+    var skippedHeadingIDs: [String]?
+    var localEndOfBookBehavior: String?
+    var manualSortOrder: Int?
+    var audioDuration: TimeInterval?
+    var audioAlbum: String?
+    var audioGenre: String?
+    var audioYear: String?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        author: String = "Unknown",
+        format: BookFormat = .txt,
+        filePath: String = "",
+        md5Hash: String = "",
+        folderPath: String = "",
+        dateAdded: Date = Date(),
+        lastOpened: Date? = nil,
+        readingPosition: ReadingPosition? = nil,
+        bookmarks: [Bookmark] = [],
+        totalWordCount: Int? = nil,
+        totalCharacterCount: Int? = nil,
+        tmbDirectoryName: String = "",
+        sourceFilePath: String? = nil,
+        localVoiceID: String? = nil,
+        localWPM: Double? = nil,
+        skippedHeadingIDs: [String]? = nil,
+        localEndOfBookBehavior: String? = nil,
+        manualSortOrder: Int? = nil,
+        audioDuration: TimeInterval? = nil,
+        audioAlbum: String? = nil,
+        audioGenre: String? = nil,
+        audioYear: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.author = author
+        self.format = format
+        self.filePath = filePath
+        self.md5Hash = md5Hash
+        self.folderPath = folderPath
+        self.dateAdded = dateAdded
+        self.lastOpened = lastOpened
+        self.readingPosition = readingPosition
+        self.bookmarks = bookmarks
+        self.totalWordCount = totalWordCount
+        self.totalCharacterCount = totalCharacterCount
+        self.tmbDirectoryName = tmbDirectoryName
+        self.sourceFilePath = sourceFilePath
+        self.localVoiceID = localVoiceID
+        self.localWPM = localWPM
+        self.skippedHeadingIDs = skippedHeadingIDs
+        self.localEndOfBookBehavior = localEndOfBookBehavior
+        self.manualSortOrder = manualSortOrder
+        self.audioDuration = audioDuration
+        self.audioAlbum = audioAlbum
+        self.audioGenre = audioGenre
+        self.audioYear = audioYear
+    }
+
+    /// The effective WPM for this book: local override if set, otherwise the provided fallback
+    func effectiveWPM(fallback: Double) -> Double {
+        localWPM ?? fallback
+    }
+
+    /// Estimated time remaining in seconds, or nil if unknown.
+    func estimatedTimeRemaining(wpm: Double) -> TimeInterval? {
+        if format.isAudio {
+            guard let duration = audioDuration, duration > 0 else { return nil }
+            let speed = localWPM ?? 1.0
+            let adjustedDuration = duration / speed
+            guard let pos = readingPosition else { return adjustedDuration }
+            let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
+            guard let totalChars = totalCharacterCount, totalChars > 0 else { return adjustedDuration }
+            let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
+            return adjustedDuration * (1.0 - fraction)
+        }
+
+        let effectiveSpeed = effectiveWPM(fallback: wpm)
+        guard let totalWords = totalWordCount, let totalChars = totalCharacterCount,
+              totalChars > 0, effectiveSpeed > 0 else { return nil }
+        let totalTime = Double(totalWords) / effectiveSpeed * 60.0
+        guard let pos = readingPosition else { return totalTime }
+        let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
+        let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
+        return totalTime * (1.0 - fraction)
+    }
+}
+
+// MARK: - Library (mirrored from app with all operations)
+
+struct Library: Codable {
+    var books: [Book]
+    var folders: [BookFolder]
+
+    init(books: [Book] = [], folders: [BookFolder] = []) {
+        self.books = books
+        self.folders = folders
+    }
+
+    mutating func addBook(_ book: Book) {
+        guard !books.contains(where: { $0.md5Hash == book.md5Hash }) else { return }
+        books.append(book)
+    }
+
+    mutating func removeBook(id: UUID) {
+        books.removeAll { $0.id == id }
+    }
+
+    mutating func moveBook(id: UUID, toFolder folderPath: String) {
+        guard let index = books.firstIndex(where: { $0.id == id }) else { return }
+        books[index].folderPath = folderPath
+    }
+
+    mutating func updateReadingPosition(bookID: UUID, position: ReadingPosition) {
+        guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
+        books[index].readingPosition = position
+        books[index].lastOpened = Date()
+    }
+
+    mutating func addBookmark(bookID: UUID, chapterIndex: Int, characterOffset: Int, label: String = "") {
+        guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
+        let nextNumber = (books[index].bookmarks.map { $0.number }.max() ?? 0) + 1
+        let bookmark = Bookmark(number: nextNumber, chapterIndex: chapterIndex, characterOffset: characterOffset, label: label)
+        books[index].bookmarks.append(bookmark)
+    }
+
+    mutating func removeBookmark(bookID: UUID, bookmarkID: UUID) {
+        guard let bookIndex = books.firstIndex(where: { $0.id == bookID }) else { return }
+        books[bookIndex].bookmarks.removeAll { $0.id == bookmarkID }
+        for i in books[bookIndex].bookmarks.indices {
+            books[bookIndex].bookmarks[i].number = i + 1
+        }
+    }
+
+    mutating func createFolder(name: String, parentPath: String = "") -> BookFolder? {
+        let folder = BookFolder(name: name, parentPath: parentPath)
+        guard folder.depth <= BookFolder.maxDepth else { return nil }
+        guard !folders.contains(where: { $0.fullPath == folder.fullPath }) else { return nil }
+        folders.append(folder)
+        return folder
+    }
+
+    mutating func removeFolder(id: UUID) {
+        guard let folder = folders.first(where: { $0.id == id }) else { return }
+        let folderPath = folder.fullPath
+        for i in books.indices {
+            if books[i].folderPath == folderPath || books[i].folderPath.hasPrefix(folderPath + "/") {
+                books[i].folderPath = ""
+            }
+        }
+        folders.removeAll { $0.fullPath == folderPath || $0.fullPath.hasPrefix(folderPath + "/") }
+    }
+
+    func booksInFolder(_ path: String) -> [Book] {
+        books.filter { $0.folderPath == path }
+    }
+
+    func subfolders(of parentPath: String) -> [BookFolder] {
+        folders.filter { $0.parentPath == parentPath }.sorted { $0.name < $1.name }
+    }
+
+    func bookByHash(_ hash: String) -> Book? {
+        books.first { $0.md5Hash == hash }
+    }
+}
+
+// MARK: - SleepTimerDuration (mirrored from app)
+
+enum SleepTimerDuration: Hashable {
+    case minutes(Int)
+    case endOfHeading
+    case endOfDocument
+}
+
+// MARK: - BookInfo (mirrored from app for persistence tests)
+
+struct BookInfo: Codable {
+    var metadata: BookMetadata
+    var state: BookState
+    var bookmarks: [Bookmark]
+
+    init(metadata: BookMetadata = BookMetadata(), state: BookState = BookState(), bookmarks: [Bookmark] = []) {
+        self.metadata = metadata
+        self.state = state
+        self.bookmarks = bookmarks
+    }
+}
+
+// MARK: - ReadingStats (mirrored from app)
+
+struct ReadingStats: Codable {
+    var dailyListeningSeconds: [String: TimeInterval] = [:]
+    var totalListeningSeconds: TimeInterval = 0
+    var bookListeningSeconds: [String: TimeInterval] = [:]
+    var finishedBooks: [FinishedBookEntry] = []
+}
+
+struct FinishedBookEntry: Codable {
+    var bookID: String
+    var title: String
+    var dateFinished: Date
 }
 

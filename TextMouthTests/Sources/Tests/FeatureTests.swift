@@ -692,19 +692,6 @@ test("Skip sections: backward compatible without skippedHeadingIDs") {
 // ---- Reading Statistics ----
 print("\n--- Reading Statistics ---")
 
-struct ReadingStats: Codable {
-    var dailyListeningSeconds: [String: TimeInterval] = [:]
-    var totalListeningSeconds: TimeInterval = 0
-    var bookListeningSeconds: [String: TimeInterval] = [:]
-    var finishedBooks: [FinishedBookEntry] = []
-}
-
-struct FinishedBookEntry: Codable {
-    var bookID: String
-    var title: String
-    var dateFinished: Date
-}
-
 test("ReadingStats: JSON round-trip") {
     let stats = ReadingStats(
         dailyListeningSeconds: ["2026-03-20": 3600.0],

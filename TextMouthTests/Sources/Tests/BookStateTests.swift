@@ -12,6 +12,35 @@ struct BookState: Codable {
     var skippedHeadingIDs: [String]?
     var localEndOfBookBehavior: String?
     var manualSortOrder: Int?
+    var audioDuration: TimeInterval?
+
+    init(
+        totalWordCount: Int? = nil,
+        totalCharacterCount: Int? = nil,
+        isNew: Bool = true,
+        tmbDirectoryName: String = "",
+        lastPlaybackStarted: Date? = nil,
+        lastPlaybackStopped: Date? = nil,
+        localVoiceID: String? = nil,
+        localWPM: Double? = nil,
+        skippedHeadingIDs: [String]? = nil,
+        localEndOfBookBehavior: String? = nil,
+        manualSortOrder: Int? = nil,
+        audioDuration: TimeInterval? = nil
+    ) {
+        self.totalWordCount = totalWordCount
+        self.totalCharacterCount = totalCharacterCount
+        self.isNew = isNew
+        self.tmbDirectoryName = tmbDirectoryName
+        self.lastPlaybackStarted = lastPlaybackStarted
+        self.lastPlaybackStopped = lastPlaybackStopped
+        self.localVoiceID = localVoiceID
+        self.localWPM = localWPM
+        self.skippedHeadingIDs = skippedHeadingIDs
+        self.localEndOfBookBehavior = localEndOfBookBehavior
+        self.manualSortOrder = manualSortOrder
+        self.audioDuration = audioDuration
+    }
 }
 
 func runBookStateTests() {
