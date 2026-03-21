@@ -212,12 +212,7 @@ struct StorageSettingsView: View {
             }
         }
         .sheet(isPresented: $showDuplicateFinder) {
-            DuplicateFinderView(
-                library: libraryViewModel.library,
-                onRemoveBooks: { books in
-                    libraryViewModel.removeBooks(books)
-                }
-            )
+            DuplicateFinderView(libraryViewModel: libraryViewModel)
         }
     }
 
