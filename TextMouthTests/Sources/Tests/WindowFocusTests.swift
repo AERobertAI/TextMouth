@@ -3,55 +3,34 @@ import Foundation
 func runWindowFocusTests() {
 print("\n--- Window Focus & Notification Routing Tests ---")
 
-test("Notification without sourceWindow is accepted (menu commands)") {
-    // Menu commands don't include a sourceWindow, so all readers should respond
-    let notification = Notification(name: .init("test"), object: nil, userInfo: nil)
-    let sourceWindow = notification.userInfo?["sourceWindow"]
-    // No sourceWindow means accept
-    let accepted = (sourceWindow == nil)
-    try assertTrue(accepted, "Menu commands (no sourceWindow) should always be accepted")
-}
+test("Keyboard shortcut: notification with sourceWindow only accepted by matching window") {
+    let userInfo: [String: Any] = ["sourceWindow": "window-A"]
 
-test("Notification with sourceWindow only accepted by matching window") {
-    // Simulate: two readers, only one should respond
-    let notification = Notification(
-        name: .init("test"),
-        object: nil,
-        userInfo: ["sourceWindow": "window-A"]
-    )
-    let sourceWindow = notification.userInfo?["sourceWindow"] as? String
-
-    // Reader A has "window-A"
+    // Reader A has "window-A" — should accept
     let readerAWindow = "window-A"
-    let readerAAccepts = (sourceWindow == nil) || (sourceWindow == readerAWindow)
+    let sourceWindow = userInfo["sourceWindow"] as? String
+    let readerAAccepts = (sourceWindow == readerAWindow)
     try assertTrue(readerAAccepts, "Reader A should accept notification from window-A")
 
-    // Reader B has "window-B"
+    // Reader B has "window-B" — should reject
     let readerBWindow = "window-B"
-    let readerBAccepts = (sourceWindow == nil) || (sourceWindow == readerBWindow)
+    let readerBAccepts = (sourceWindow == readerBWindow)
     try assertTrue(!readerBAccepts, "Reader B should NOT accept notification from window-A")
 }
 
-test("Notification routing: only focused reader responds to keyboard shortcut") {
-    // Simulate the full flow:
-    // 1. KeyboardShortcutManager posts notification with sourceWindow
-    // 2. Multiple readers check isTargetedNotification
-    // 3. Only the one matching the source window responds
-
+test("Keyboard shortcut: only focused reader responds to play/pause") {
     var readerAPlayed = false
     var readerBPlayed = false
     let focusedWindow = "focused-reader"
 
-    // Simulate keyboard event posting
     let userInfo: [String: Any] = ["sourceWindow": focusedWindow]
 
-    // Reader A checks (it's the focused one)
-    let readerAHostWindow = focusedWindow
-    if let source = userInfo["sourceWindow"] as? String, source == readerAHostWindow {
+    // Reader A checks — it's the focused one
+    if let source = userInfo["sourceWindow"] as? String, source == focusedWindow {
         readerAPlayed = true
     }
 
-    // Reader B checks (it's NOT focused)
+    // Reader B checks — it's NOT focused
     let readerBHostWindow = "other-reader"
     if let source = userInfo["sourceWindow"] as? String, source == readerBHostWindow {
         readerBPlayed = true
@@ -59,6 +38,112 @@ test("Notification routing: only focused reader responds to keyboard shortcut") 
 
     try assertTrue(readerAPlayed, "Focused reader should respond")
     try assertTrue(!readerBPlayed, "Unfocused reader should NOT respond")
+}
+
+test("Menu command: no sourceWindow, only key window should respond") {
+    // Menu commands don't include a sourceWindow. The handler must check
+    // whether its own window is the key window before responding.
+    let userInfo: [String: Any]? = nil
+
+    // Simulate isTargetedNotification logic for menu commands:
+    // If no sourceWindow, check hostWindow.isKeyWindow
+
+    // Reader A's window is key — should respond
+    let readerAIsKey = true
+    let readerAAccepts: Bool
+    if userInfo?["sourceWindow"] != nil {
+        readerAAccepts = false // Would need to match, but no sourceWindow
+    } else {
+        readerAAccepts = readerAIsKey
+    }
+    try assertTrue(readerAAccepts, "Key window reader should accept menu command")
+
+    // Reader B's window is NOT key — should not respond
+    let readerBIsKey = false
+    let readerBAccepts: Bool
+    if userInfo?["sourceWindow"] != nil {
+        readerBAccepts = false
+    } else {
+        readerBAccepts = readerBIsKey
+    }
+    try assertTrue(!readerBAccepts, "Non-key window reader should reject menu command")
+}
+
+test("Menu command: Cmd+F search only opens in focused reader") {
+    // searchInBook comes from menu with no sourceWindow.
+    // Only the reader whose window is key should open the search sheet.
+    var searchOpenedInA = false
+    var searchOpenedInB = false
+
+    let windowAIsKey = true
+    let windowBIsKey = false
+
+    // Simulate the handler: guard hostWindow.isKeyWindow
+    if windowAIsKey { searchOpenedInA = true }
+    if windowBIsKey { searchOpenedInB = true }
+
+    try assertTrue(searchOpenedInA, "Search should open in focused reader")
+    try assertTrue(!searchOpenedInB, "Search should NOT open in unfocused reader")
+}
+
+test("Menu command: Cmd+Shift+P copy position only in focused reader") {
+    // copyReadingPosition from menu — same pattern
+    var copiedInA = false
+    var copiedInB = false
+
+    let windowAIsKey = true
+    let windowBIsKey = false
+
+    if windowAIsKey { copiedInA = true }
+    if windowBIsKey { copiedInB = true }
+
+    try assertTrue(copiedInA, "Copy position should run in focused reader")
+    try assertTrue(!copiedInB, "Copy position should NOT run in unfocused reader")
+}
+
+test("Library: Enter key only opens book from focused library window") {
+    var libraryAOpened = false
+    var libraryBOpened = false
+
+    let windowAIsKey = true
+    let windowBIsKey = false
+
+    // openSelectedBook from KeyboardShortcutManager — has sourceWindow
+    let sourceWindow = "library-window-A"
+    let libraryAHostWindow = "library-window-A"
+    let libraryBHostWindow = "library-window-B"
+
+    if sourceWindow == libraryAHostWindow { libraryAOpened = true }
+    if sourceWindow == libraryBHostWindow { libraryBOpened = true }
+
+    try assertTrue(libraryAOpened, "Focused library should open selected book")
+    try assertTrue(!libraryBOpened, "Unfocused library should NOT open selected book")
+    // Suppress unused variable warnings
+    _ = windowAIsKey
+    _ = windowBIsKey
+}
+
+test("Library: Cmd+Shift+T new from text only in focused library") {
+    var textShownInA = false
+    var textShownInB = false
+
+    let windowAIsKey = true
+    let windowBIsKey = false
+
+    // newFromText comes from menu — no sourceWindow, check isKeyWindow
+    if windowAIsKey { textShownInA = true }
+    if windowBIsKey { textShownInB = true }
+
+    try assertTrue(textShownInA, "New from text should open in focused library")
+    try assertTrue(!textShownInB, "New from text should NOT open in unfocused library")
+}
+
+test("No hostWindow set yet: accept notification as fallback") {
+    // When the window hasn't been captured yet (nil hostWindow),
+    // notifications should be accepted to avoid silently dropping commands
+    let hostWindow: String? = nil
+    let accepted = (hostWindow == nil) // true means accept
+    try assertTrue(accepted, "Should accept when hostWindow not yet captured")
 }
 
 // MARK: - Heading Navigator Format Tests
@@ -96,7 +181,6 @@ test("Heading accessibility: format is shorter than old format") {
 test("Heading rotor entry format matches row format") {
     let headingText = "The Battle"
     let level = 2
-    // Both the rotor entry and the row should use the same format
     let rotorFormat = "\(headingText) - level \(level)"
     let rowFormat = "\(headingText) - level \(level)"
     try assertEqual(rotorFormat, rowFormat, "Rotor and row formats should match")

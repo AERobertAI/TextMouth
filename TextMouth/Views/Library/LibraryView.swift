@@ -337,14 +337,21 @@ struct LibraryView: View {
                 showBookInfo(for: book)
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { _ in
-            // Enter key: open the selected book
+        .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
+            // Only respond in the focused library window
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
             if let id = selectedBookID,
                let book = filteredBooks.first(where: { $0.id == id }) {
                 onOpenBook(book)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .newFromText)) { _ in
+            // Only open in the focused library window
+            if let hw = hostWindow, !hw.isKeyWindow { return }
             showTextInput = true
         }
         .sheet(isPresented: $showTextInput) {

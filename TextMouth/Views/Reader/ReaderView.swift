@@ -220,12 +220,16 @@ struct ReaderView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { _ in
+            // Only open search in the focused reader window
+            guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
             showSearch = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
-            // Only open in the focused reader window — check sourceWindow matches
+            // Only open in the focused reader window
             if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
                 guard sourceWindow === viewModel.hostWindow else { return }
+            } else {
+                guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
             }
             showMetadataEditor = true
         }

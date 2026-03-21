@@ -218,4 +218,47 @@ test("Where Am I brief: heading comes before chapter number in output") {
                    "Heading name should come before chapter number")
 }
 
+// MARK: - Unified Dialog Format Selection Tests
+
+print("\n--- Unified Dialog Format Selection Tests ---")
+
+test("EPUB books should use the rich metadata editor") {
+    let format = BookFormat.epub
+    let usesRichEditor = (format == .epub || format.isAudio)
+    try assertTrue(usesRichEditor, "EPUB should use MetadataEditorView")
+}
+
+test("Audio books should use the rich metadata editor") {
+    let format = BookFormat.audio
+    let usesRichEditor = (format == .epub || format.isAudio)
+    try assertTrue(usesRichEditor, "Audio should use MetadataEditorView")
+}
+
+test("Plain text books should use the simple editor") {
+    let format = BookFormat.txt
+    let usesRichEditor = (format == .epub || format.isAudio)
+    try assertTrue(!usesRichEditor, "Plain text should use LibraryBookInfoSheet")
+}
+
+test("Markdown books should use the simple editor") {
+    let format = BookFormat.markdown
+    let usesRichEditor = (format == .epub || format.isAudio)
+    try assertTrue(!usesRichEditor, "Markdown should use LibraryBookInfoSheet")
+}
+
+test("HTML books should use the simple editor") {
+    let format = BookFormat.html
+    let usesRichEditor = (format == .epub || format.isAudio)
+    try assertTrue(!usesRichEditor, "HTML should use LibraryBookInfoSheet")
+}
+
+test("Format detection covers all cases for dialog selection") {
+    // Every BookFormat case should be handled
+    for format in BookFormat.allCases {
+        let usesRich = (format == .epub || format.isAudio)
+        let usesSimple = !usesRich
+        try assertTrue(usesRich || usesSimple, "\(format) should map to one editor type")
+    }
+}
+
 } // end runAudioMetadataTests

@@ -324,16 +324,17 @@ class ReaderViewModel: ObservableObject {
         )
     }
 
-    /// Check whether a keyboard shortcut notification was sent from this reader's window.
-    /// Notifications from the menu bar (no sourceWindow) are always accepted; notifications
-    /// from keyboard events are only accepted when this window is the source.
+    /// Check whether a notification should be handled by this reader instance.
+    /// - Keyboard shortcuts include sourceWindow: only respond if it matches hostWindow.
+    /// - Menu commands have no sourceWindow: only respond if this reader's window is key.
     private func isTargetedNotification(_ notification: Notification) -> Bool {
-        guard let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow else {
-            // No window info means this came from a menu command — always accept
-            return true
+        if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+            // Keyboard shortcut — only the window that had focus should respond
+            return sourceWindow === hostWindow
         }
-        // Only respond if this reader's window is the one that had focus
-        return sourceWindow === hostWindow
+        // Menu command — only the key (focused) window's reader should respond
+        guard let hostWindow = hostWindow else { return true }
+        return hostWindow.isKeyWindow
     }
 
     private func setupNotifications() {
