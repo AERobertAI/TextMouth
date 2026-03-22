@@ -2,8 +2,12 @@ import SwiftUI
 
 // MARK: - Window Type Tracking
 
-/// Identifies which type of window currently has focus, used to show/hide
-/// menus that only apply to a specific window type.
+/// Identifies which type of window currently has focus, used for two purposes:
+/// 1. Each CommandMenu below conditionally populates its items based on this
+///    value via @FocusedValue — this controls menu *contents*.
+/// 2. MenuVisibilityManager uses this to hide/show the menu bar *titles*
+///    themselves via NSMenuItem.isHidden — see that file for full details
+///    and instructions on adding new window types.
 enum ActiveWindowType {
     case library
     case reader
