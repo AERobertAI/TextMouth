@@ -111,6 +111,18 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            Button("Move Book Up") {
+                NotificationCenter.default.post(name: .moveBookUp, object: nil)
+            }
+            // Control+Option+Up handled by KeyboardShortcutManager
+
+            Button("Move Book Down") {
+                NotificationCenter.default.post(name: .moveBookDown, object: nil)
+            }
+            // Control+Option+Down handled by KeyboardShortcutManager
+
+            Divider()
+
             Button("Remove from Library") {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
@@ -167,4 +179,6 @@ extension Notification.Name {
     static let moveToFolder = Notification.Name("moveToFolder")
     static let selectAll = Notification.Name("selectAll")
     static let toggleEditMode = Notification.Name("toggleEditMode")
+    static let moveBookUp = Notification.Name("moveBookUp")
+    static let moveBookDown = Notification.Name("moveBookDown")
 }

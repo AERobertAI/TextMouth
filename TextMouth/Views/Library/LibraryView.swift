@@ -227,6 +227,20 @@ struct LibraryView: View {
                                     booksToMove = targetBooks
                                     showMoveSheet = true
                                 }
+                                // Manual order move commands (single book only, when sort is Manual)
+                                if !isMulti && sortField == .manual {
+                                    Divider()
+                                    Button("Move Up") {
+                                        libraryViewModel.moveBookInManualOrder(
+                                            bookID: book.id, direction: -1, folderPath: currentFolderPath
+                                        )
+                                    }
+                                    Button("Move Down") {
+                                        libraryViewModel.moveBookInManualOrder(
+                                            bookID: book.id, direction: 1, folderPath: currentFolderPath
+                                        )
+                                    }
+                                }
                                 Divider()
                                 Button(isMulti ? "Remove \(targetBooks.count) Books from Library" : "Remove from Library", role: .destructive) {
                                     libraryViewModel.removeBooks(targetBooks)
@@ -539,6 +553,22 @@ struct LibraryView: View {
                 isEditMode = true
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            moveSelectedBookInManualOrder(direction: -1)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
+            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                guard hostWindow == nil || sourceWindow === hostWindow else { return }
+            } else {
+                if let hw = hostWindow, !hw.isKeyWindow { return }
+            }
+            moveSelectedBookInManualOrder(direction: 1)
+        }
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
@@ -688,6 +718,17 @@ struct LibraryView: View {
             libraryViewModel.booksForCategory(category, folderPath: currentFolderPath),
             by: sortField,
             ascending: sortAscending
+        )
+    }
+
+    /// Move the currently selected book up or down in manual sort order.
+    /// Only works when a single book is selected and sort is Manual Order.
+    private func moveSelectedBookInManualOrder(direction: Int) {
+        guard sortField == .manual else { return }
+        let ids = effectiveSelection
+        guard ids.count == 1, let bookID = ids.first else { return }
+        libraryViewModel.moveBookInManualOrder(
+            bookID: bookID, direction: direction, folderPath: currentFolderPath
         )
     }
 

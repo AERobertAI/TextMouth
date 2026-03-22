@@ -842,6 +842,32 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
+    /// Move a book up or down by one position within its folder's manual sort order.
+    /// direction: -1 for up, +1 for down.
+    /// Returns the new position index (0-based) or nil if the move was not possible.
+    @discardableResult
+    func moveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> Int? {
+        // Get the sorted list of books in this folder (same ordering as reorderBooksInFolder)
+        var folderBooks = library.booksInFolder(folderPath)
+            .sorted { a, b in
+                let orderA = a.manualSortOrder ?? Int.max
+                let orderB = b.manualSortOrder ?? Int.max
+                if orderA != orderB { return orderA < orderB }
+                return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+            }
+        guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return nil }
+        let newIndex = currentIndex + direction
+        guard newIndex >= 0, newIndex < folderBooks.count else { return nil }
+
+        // Swap the two books
+        folderBooks.swapAt(currentIndex, newIndex)
+        // Reassign sequential sort orders
+        for (i, book) in folderBooks.enumerated() {
+            updateManualSortOrder(bookID: book.id, order: i)
+        }
+        return newIndex
+    }
+
     func updateEndOfBookBehavior(bookID: UUID, behavior: String?) {
         if let index = library.books.firstIndex(where: { $0.id == bookID }) {
             library.books[index].localEndOfBookBehavior = behavior
