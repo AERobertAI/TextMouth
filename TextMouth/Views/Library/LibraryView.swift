@@ -287,9 +287,9 @@ struct LibraryView: View {
                     Button {
                         navigateUp()
                     } label: {
-                        Label("Go Back", systemImage: "chevron.left")
+                        Label("Up One Level", systemImage: "chevron.up")
                     }
-                    .accessibilityLabel("Go back to parent folder")
+                    .accessibilityLabel("Go up one folder level")
                 }
 
                 Button {

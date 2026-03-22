@@ -63,6 +63,10 @@ struct NavigationCommands: Commands {
                 NotificationCenter.default.post(name: .goForward, object: nil)
             }
 
+            Button("Up One Level") {
+                NotificationCenter.default.post(name: .navigateUpLevel, object: nil)
+            }
+
             Divider()
 
             Button("Next Heading") {
@@ -149,6 +153,7 @@ extension Notification.Name {
     static let goToLibrary = Notification.Name("goToLibrary")
     static let goBack = Notification.Name("goBack")
     static let goForward = Notification.Name("goForward")
+    static let navigateUpLevel = Notification.Name("navigateUpLevel")
     static let whereAmI = Notification.Name("whereAmI")
     static let openBookFile = Notification.Name("openBookFile")
     static let showBookInfo = Notification.Name("showBookInfo")

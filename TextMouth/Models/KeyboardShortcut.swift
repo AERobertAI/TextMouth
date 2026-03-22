@@ -16,6 +16,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
     case whereAmI = "Where Am I?"
+    case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
     case removeFromLibrary = "Remove from Library"
@@ -37,6 +38,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .goToLibrary: return .goToLibrary
         case .goBack: return .goBack
         case .goForward: return .goForward
+        case .navigateUpLevel: return .navigateUpLevel
         case .nextHeading: return .nextHeading
         case .previousHeading: return .previousHeading
         case .addBookmark: return .addBookmark
@@ -58,7 +60,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .togglePlayback, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
             return "Playback"
-        case .goToLibrary, .goBack, .goForward, .nextHeading, .previousHeading:
+        case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark:
             return "Bookmarks"
@@ -218,6 +220,9 @@ extension ShortcutAction {
             ],
             .goForward: [
                 KeyBinding(key: "]", command: true)
+            ],
+            .navigateUpLevel: [
+                KeyBinding(key: "upArrow", command: true)
             ],
             .nextHeading: [
                 KeyBinding(key: "downArrow", command: true, option: true)

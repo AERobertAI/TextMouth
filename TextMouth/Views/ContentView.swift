@@ -16,6 +16,9 @@ struct LibraryWindowView: View {
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: NSWindow?
 
+    /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
+    @StateObject private var folderNav = FolderNavigationHistory()
+
     var body: some View {
         ZStack {
             LibraryView(
@@ -159,14 +162,23 @@ struct LibraryWindowView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
-            if isKeyLibraryWindow {
-                navigateUp()
+            if isKeyLibraryWindow, let path = folderNav.goBack() {
+                currentFolderPath = path
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .goForward)) { _ in
-            if isKeyLibraryWindow {
-                navigateForward()
+            if isKeyLibraryWindow, let path = folderNav.goForward() {
+                currentFolderPath = path
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateUpLevel)) { _ in
+            if isKeyLibraryWindow, let parent = FolderNavigationHistory.parentPath(of: currentFolderPath) {
+                currentFolderPath = parent
+            }
+        }
+        // Record folder changes into the navigation history
+        .onChange(of: currentFolderPath) { _, newPath in
+            folderNav.recordVisit(to: newPath)
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
             if isKeyLibraryWindow, let bookID = notification.userInfo?["bookID"] as? UUID {
@@ -189,24 +201,6 @@ struct LibraryWindowView: View {
         }
         let direction = sortAscending ? "Ascending" : "Descending"
         return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
-    }
-
-    private func navigateUp() {
-        let parts = currentFolderPath.components(separatedBy: "/")
-        if parts.count > 1 {
-            currentFolderPath = parts.dropLast().joined(separator: "/")
-        } else {
-            currentFolderPath = ""
-        }
-    }
-
-    private func navigateForward() {
-        if category == .folders {
-            let subfolders = libraryViewModel.subfoldersOf(currentFolderPath)
-            if subfolders.count == 1, let only = subfolders.first {
-                currentFolderPath = only.fullPath
-            }
-        }
     }
 
     /// True when this library window is the current key (focused) window.
