@@ -36,19 +36,23 @@ struct LibraryWindowView: View {
 
             // Import progress overlay
             if libraryViewModel.isImporting {
-                ImportProgressOverlay(
+                ProgressOverlay(
+                    title: "Importing Books",
                     current: libraryViewModel.importProgressCurrent,
                     total: libraryViewModel.importProgressTotal,
-                    message: libraryViewModel.importProgressMessage
+                    message: libraryViewModel.importProgressMessage,
+                    itemNoun: "books processed"
                 )
             }
 
             // Text extraction progress overlay (shown on startup or re-extraction)
             if libraryViewModel.isExtracting {
-                ExtractionProgressOverlay(
+                ProgressOverlay(
+                    title: "Extracting Text",
                     current: libraryViewModel.extractionProgressCurrent,
                     total: libraryViewModel.extractionProgressTotal,
-                    message: libraryViewModel.extractionProgressMessage
+                    message: libraryViewModel.extractionProgressMessage,
+                    itemNoun: "books extracted"
                 )
             }
         }
@@ -261,18 +265,20 @@ struct LibraryWindowView: View {
     }
 }
 
-// MARK: - Extraction Progress Overlay
+// MARK: - Progress Overlay
 
-/// Shown when TextMouth is extracting text from books that don't yet have
-/// a cached content.md (e.g. on first launch after update, or during re-extraction).
-struct ExtractionProgressOverlay: View {
+/// Reusable progress overlay for long-running operations (import, extraction, etc.)
+struct ProgressOverlay: View {
+    let title: String
     let current: Int
     let total: Int
     let message: String
+    /// Noun for the items being processed (e.g. "books extracted", "books processed")
+    let itemNoun: String
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Extracting Text")
+            Text(title)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
@@ -281,7 +287,7 @@ struct ExtractionProgressOverlay: View {
                     .progressViewStyle(.linear)
                     .frame(width: 300)
 
-                Text("\(current) of \(total) books extracted")
+                Text("\(current) of \(total) \(itemNoun)")
                     .font(.body)
             } else {
                 ProgressView()
@@ -299,50 +305,8 @@ struct ExtractionProgressOverlay: View {
         .shadow(radius: 10)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(total > 0
-            ? "Extracting text: \(current) of \(total) books processed"
-            : "Extracting text from library books"
-        )
-    }
-}
-
-// MARK: - Import Progress Overlay
-
-struct ImportProgressOverlay: View {
-    let current: Int
-    let total: Int
-    let message: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Importing Books")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-
-            if total > 0 {
-                ProgressView(value: Double(current), total: Double(total))
-                    .progressViewStyle(.linear)
-                    .frame(width: 300)
-
-                Text("\(current) of \(total) books processed")
-                    .font(.body)
-            } else {
-                ProgressView()
-                    .progressViewStyle(.circular)
-            }
-
-            if !message.isEmpty {
-                Text(message)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(32)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .shadow(radius: 10)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(total > 0
-            ? "Importing books: \(current) of \(total) processed"
-            : "Importing books: extracting archive"
+            ? "\(title): \(current) of \(total) \(itemNoun)"
+            : "\(title)"
         )
     }
 }

@@ -410,12 +410,7 @@ struct BookVoicePickerView: View {
     }
 
     private func voiceQualityLabel(_ voice: AVSpeechSynthesisVoice) -> String {
-        switch voice.quality {
-        case .default: return "Standard"
-        case .enhanced: return "Enhanced"
-        case .premium: return "Premium"
-        @unknown default: return "Unknown"
-        }
+        voice.qualityLabel
     }
 
     private func previewVoice() {

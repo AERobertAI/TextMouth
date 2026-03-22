@@ -180,12 +180,7 @@ class SettingsViewModel: ObservableObject {
     }
 
     func voiceQualityLabel(_ voice: AVSpeechSynthesisVoice) -> String {
-        switch voice.quality {
-        case .default: return "Standard"
-        case .enhanced: return "Enhanced"
-        case .premium: return "Premium"
-        @unknown default: return "Unknown"
-        }
+        voice.qualityLabel
     }
 
     // MARK: - Config Sync
@@ -213,42 +208,7 @@ class SettingsViewModel: ObservableObject {
 
     /// Pull settings from config.json (only for values that differ, i.e., external edits)
     private func loadFromConfig() {
-        let config = configService.config
-        isSyncingFromConfig = true
-        if !config.selectedVoiceID.isEmpty && config.selectedVoiceID != selectedVoiceID {
-            selectedVoiceID = config.selectedVoiceID
-        }
-        if config.wordsPerMinute > 0 && config.wordsPerMinute != wordsPerMinute {
-            wordsPerMinute = config.wordsPerMinute
-        }
-        if config.pitchMultiplier > 0 && config.pitchMultiplier != pitchMultiplier {
-            pitchMultiplier = config.pitchMultiplier
-        }
-        if !config.selectedLanguage.isEmpty && config.selectedLanguage != selectedLanguage {
-            selectedLanguage = config.selectedLanguage
-        }
-        if !config.skipForwardUnit.isEmpty && config.skipForwardUnit != skipForwardUnitRaw {
-            skipForwardUnitRaw = config.skipForwardUnit
-        }
-        if !config.skipBackwardUnit.isEmpty && config.skipBackwardUnit != skipBackwardUnitRaw {
-            skipBackwardUnitRaw = config.skipBackwardUnit
-        }
-        if !config.rewindOnResumeUnit.isEmpty && config.rewindOnResumeUnit != rewindOnResumeUnitRaw {
-            rewindOnResumeUnitRaw = config.rewindOnResumeUnit
-        }
-        if config.rewindSmartMode != rewindSmartMode {
-            rewindSmartMode = config.rewindSmartMode
-        }
-        if config.rewindSmartThreshold > 0 && config.rewindSmartThreshold != rewindSmartThreshold {
-            rewindSmartThreshold = config.rewindSmartThreshold
-        }
-        if config.sleepFadeOutDuration != sleepFadeOutDuration {
-            sleepFadeOutDuration = config.sleepFadeOutDuration
-        }
-        if config.autoPlayOnNavigate != autoPlayOnNavigate {
-            autoPlayOnNavigate = config.autoPlayOnNavigate
-        }
-        isSyncingFromConfig = false
+        applyConfigChanges(configService.config)
     }
 
     /// Watch for external config.json changes
@@ -261,6 +221,8 @@ class SettingsViewModel: ObservableObject {
             }
     }
 
+    /// Sync local @AppStorage properties from a config snapshot.
+    /// Used both on initial load and when config.json is externally modified.
     private func applyConfigChanges(_ config: ConfigService.AppConfig) {
         isSyncingFromConfig = true
         if !config.selectedVoiceID.isEmpty && config.selectedVoiceID != selectedVoiceID {
