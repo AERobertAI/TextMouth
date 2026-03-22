@@ -91,10 +91,11 @@ final class MenuVisibilityManager {
         }
 
         // SwiftUI's Settings scene creates a regular NSWindow (not NSPanel)
-        // with this identifier. Its title is the current tab name (e.g.
-        // "Shortcuts", "General"), not "Settings", so we must check the
-        // identifier instead.
-        if identifier.contains("Settings") {
+        // with identifier "com_apple_SwiftUI_Settings_window". Its title is
+        // the current tab name (e.g. "Shortcuts"), not "Settings". We match
+        // the exact prefix rather than just "Settings" because library window
+        // identifiers contain "SettingsViewModel" in the SwiftUI type chain.
+        if identifier.hasPrefix("com_apple_SwiftUI_Settings") {
             return nil
         }
 

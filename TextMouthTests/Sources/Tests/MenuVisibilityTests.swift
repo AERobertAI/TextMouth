@@ -40,9 +40,10 @@ enum MenuVisibilityManager {
             return .reader
         }
 
-        // SwiftUI Settings window has this identifier; its title is the
-        // current tab name (e.g. "Shortcuts"), not "Settings".
-        if identifier.contains("Settings") {
+        // SwiftUI Settings window has identifier "com_apple_SwiftUI_Settings_window".
+        // Must use exact prefix, not just "Settings", because library window
+        // identifiers contain "SettingsViewModel" in the SwiftUI type chain.
+        if identifier.hasPrefix("com_apple_SwiftUI_Settings") {
             return nil
         }
 
@@ -257,6 +258,23 @@ test("detectWindowType: library window is default titled window") {
     window.title = "Library: All Folders"
     let result = MenuVisibilityManager.detectWindowType(for: window)
     try assertTrue(result == .library, "Default titled window should return .library")
+}
+
+test("detectWindowType: library window with SettingsViewModel in identifier is still library") {
+    // SwiftUI includes the full view type chain in window identifiers,
+    // which contains "SettingsViewModel". Must not match Settings check.
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: true
+    )
+    window.identifier = NSUserInterfaceItemIdentifier(
+        "SwiftUI.ModifiedContent<TextMouth.SettingsViewModel>-1-AppWindow-2"
+    )
+    window.title = "Library: All Folders"
+    let result = MenuVisibilityManager.detectWindowType(for: window)
+    try assertTrue(result == .library, "Library window with SettingsViewModel in id should still be .library")
 }
 
 } // end runMenuVisibilityTests
