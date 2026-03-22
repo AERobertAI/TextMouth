@@ -37,6 +37,15 @@ struct LibraryWindowView: View {
                     message: libraryViewModel.importProgressMessage
                 )
             }
+
+            // Text extraction progress overlay (shown on startup or re-extraction)
+            if libraryViewModel.isExtracting {
+                ExtractionProgressOverlay(
+                    current: libraryViewModel.extractionProgressCurrent,
+                    total: libraryViewModel.extractionProgressTotal,
+                    message: libraryViewModel.extractionProgressMessage
+                )
+            }
         }
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
@@ -206,6 +215,50 @@ struct LibraryWindowView: View {
     private var isKeyLibraryWindow: Bool {
         guard let hostWindow = hostWindow else { return true }
         return hostWindow.isKeyWindow
+    }
+}
+
+// MARK: - Extraction Progress Overlay
+
+/// Shown when TextMouth is extracting text from books that don't yet have
+/// a cached content.md (e.g. on first launch after update, or during re-extraction).
+struct ExtractionProgressOverlay: View {
+    let current: Int
+    let total: Int
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Extracting Text")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            if total > 0 {
+                ProgressView(value: Double(current), total: Double(total))
+                    .progressViewStyle(.linear)
+                    .frame(width: 300)
+
+                Text("\(current) of \(total) books extracted")
+                    .font(.body)
+            } else {
+                ProgressView()
+                    .progressViewStyle(.circular)
+            }
+
+            if !message.isEmpty {
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(32)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .shadow(radius: 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(total > 0
+            ? "Extracting text: \(current) of \(total) books processed"
+            : "Extracting text from library books"
+        )
     }
 }
 

@@ -12,6 +12,7 @@ struct StorageSettingsView: View {
     @State private var confirmBeforeDelete: Bool
     @State private var moveToTrash: Bool
     @State private var showDuplicateFinder = false
+    @State private var showRedoExtractionConfirmation = false
 
     init() {
         _importDeleteBehavior = State(initialValue: ConfigService.shared.config.importDeleteBehavior)
@@ -159,6 +160,30 @@ struct StorageSettingsView: View {
                 Text("Search across all folders for potential duplicate books based on file content, title, or author.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                Button("Redo Text Extraction...") {
+                    showRedoExtractionConfirmation = true
+                }
+                .disabled(libraryViewModel.isExtracting)
+                .accessibilityLabel("Redo text extraction")
+                .accessibilityHint("Re-extracts cached text from all books. Useful after parser fixes or format improvements.")
+
+                if libraryViewModel.isExtracting {
+                    HStack(spacing: 8) {
+                        ProgressView(value: Double(libraryViewModel.extractionProgressCurrent),
+                                     total: Double(max(libraryViewModel.extractionProgressTotal, 1)))
+                            .progressViewStyle(.linear)
+                        Text("\(libraryViewModel.extractionProgressCurrent)/\(libraryViewModel.extractionProgressTotal)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Text extraction progress: \(libraryViewModel.extractionProgressCurrent) of \(libraryViewModel.extractionProgressTotal)")
+                } else {
+                    Text("Re-extract the cached text for all books. Use this after parser updates to refresh the cached content.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             } header: {
                 Text("Library Maintenance")
             }
@@ -210,6 +235,14 @@ struct StorageSettingsView: View {
             if let url = pendingMoveURL {
                 Text("Move all TextMouth data to \(url.path)? The app will use this location going forward.")
             }
+        }
+        .alert("Redo Text Extraction?", isPresented: $showRedoExtractionConfirmation) {
+            Button("Re-extract All") {
+                libraryViewModel.redoAllTextExtraction()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will re-extract the cached text for all books in your library. This may take a while for large libraries. Reading positions will be preserved, but character offsets may shift slightly if the extraction produces different text.")
         }
         .sheet(isPresented: $showDuplicateFinder) {
             DuplicateFinderView(libraryViewModel: libraryViewModel)

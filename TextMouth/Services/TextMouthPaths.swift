@@ -65,10 +65,6 @@ enum TextMouthPaths {
         root.appendingPathComponent("Logs", isDirectory: true)
     }
 
-    static var tempAudioDir: URL {
-        root.appendingPathComponent("TempAudio", isDirectory: true)
-    }
-
     static var configFile: URL {
         root.appendingPathComponent("config.json")
     }
@@ -120,12 +116,22 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent("bookInfo.json")
     }
 
+    /// Path to the cached Markdown content file inside a .tmb package
+    static func contentMarkdownPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent("content.md")
+    }
+
+    /// Path to the per-book cached audio directory inside a .tmb package
+    static func cachedAudioDir(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent("cachedAudio", isDirectory: true)
+    }
+
     // MARK: - Directory Setup
 
     /// Create the full directory structure. Safe to call multiple times.
     static func ensureDirectoryStructure() throws {
         let fm = FileManager.default
-        let dirs = [root, libraryDir, logsDir, tempAudioDir]
+        let dirs = [root, libraryDir, logsDir]
         for dir in dirs {
             if !fm.fileExists(atPath: dir.path) {
                 try fm.createDirectory(at: dir, withIntermediateDirectories: true)

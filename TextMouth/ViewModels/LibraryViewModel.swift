@@ -65,6 +65,12 @@ class LibraryViewModel: ObservableObject {
     @Published var importProgressTotal = 0
     @Published var importProgressMessage = ""
 
+    /// Text extraction progress tracking (for startup cache generation and re-extraction)
+    @Published var isExtracting = false
+    @Published var extractionProgressCurrent = 0
+    @Published var extractionProgressTotal = 0
+    @Published var extractionProgressMessage = ""
+
     private var cancellables = Set<AnyCancellable>()
     private var refreshTimer: Timer?
     private let configService = ConfigService.shared
@@ -80,7 +86,11 @@ class LibraryViewModel: ObservableObject {
         migrateOldBooksIfNeeded()
         setupFinderOpenHandler()
         startRefreshTimer()
-        calculateMissingBookStats()
+        // Extract caches first, then calculate stats (which can use the caches).
+        // Both run on background queues; stats waits for extraction to finish.
+        extractMissingContentCaches(then: { [weak self] in
+            self?.calculateMissingBookStats()
+        })
     }
 
     deinit {
@@ -165,7 +175,13 @@ class LibraryViewModel: ObservableObject {
                 guard FileManager.default.fileExists(atPath: url.path) else { continue }
 
                 do {
-                    let parsed = try BookParser.parse(url: url, format: book.format)
+                    // Use cached Markdown content when available (much faster)
+                    let parsed: DocumentContent
+                    if !book.format.isAudio && MarkdownCacheService.cacheExists(for: book) {
+                        parsed = try MarkdownCacheService.loadFromCache(for: book)
+                    } else {
+                        parsed = try BookParser.parse(url: url, format: book.format)
+                    }
                     let wordCount = parsed.totalWordCount
                     let charCount = parsed.totalCharacterCount
 
@@ -184,6 +200,81 @@ class LibraryViewModel: ObservableObject {
                 } catch {
                     // Silently skip books that fail to parse — they'll be parsed when opened
                 }
+            }
+        }
+    }
+
+    /// Generate content.md caches for any books that don't have one yet.
+    /// Runs in the background with progress tracking so the UI stays responsive.
+    /// Calls the optional completion handler when finished (on the background queue).
+    private func extractMissingContentCaches(then completion: (() -> Void)? = nil) {
+        let booksNeedingCache = library.books.filter { book in
+            !book.format.isAudio
+            && !book.tmbDirectoryName.isEmpty
+            && !MarkdownCacheService.cacheExists(for: book)
+        }
+        guard !booksNeedingCache.isEmpty else {
+            // No extraction needed — run completion immediately
+            DispatchQueue.global(qos: .utility).async { completion?() }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.isExtracting = true
+            self.extractionProgressTotal = booksNeedingCache.count
+            self.extractionProgressCurrent = 0
+            self.extractionProgressMessage = "Extracting text from \(booksNeedingCache.count) book\(booksNeedingCache.count == 1 ? "" : "s")..."
+        }
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            for (index, book) in booksNeedingCache.enumerated() {
+                guard self != nil else { return }
+                MarkdownCacheService.generateCache(for: book)
+
+                DispatchQueue.main.async {
+                    self?.extractionProgressCurrent = index + 1
+                    self?.extractionProgressMessage = "Extracting text: \(index + 1) of \(booksNeedingCache.count)..."
+                }
+            }
+
+            DispatchQueue.main.async {
+                self?.isExtracting = false
+                self?.extractionProgressMessage = ""
+            }
+
+            completion?()
+        }
+    }
+
+    /// Re-extract content.md caches for all non-audio books.
+    /// Called from the "Redo Text Extraction" button in Storage Settings.
+    func redoAllTextExtraction() {
+        let booksToExtract = library.books.filter { book in
+            !book.format.isAudio && !book.tmbDirectoryName.isEmpty
+        }
+        guard !booksToExtract.isEmpty else { return }
+
+        isExtracting = true
+        extractionProgressTotal = booksToExtract.count
+        extractionProgressCurrent = 0
+        extractionProgressMessage = "Re-extracting text from \(booksToExtract.count) book\(booksToExtract.count == 1 ? "" : "s")..."
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            for (index, book) in booksToExtract.enumerated() {
+                guard self != nil else { return }
+                // Delete existing cache first
+                MarkdownCacheService.deleteCache(for: book)
+                MarkdownCacheService.generateCache(for: book)
+
+                DispatchQueue.main.async {
+                    self?.extractionProgressCurrent = index + 1
+                    self?.extractionProgressMessage = "Re-extracting text: \(index + 1) of \(booksToExtract.count)..."
+                }
+            }
+
+            DispatchQueue.main.async {
+                self?.isExtracting = false
+                self?.extractionProgressMessage = ""
             }
         }
     }
@@ -432,6 +523,8 @@ class LibraryViewModel: ObservableObject {
             library.addBook(book)
             save()
             LibraryPersistenceService.saveBookInfo(for: book)
+            // Generate cached Markdown content
+            MarkdownCacheService.generateCache(for: book)
         } catch {
             errorMessage = error.localizedDescription
             showError = true

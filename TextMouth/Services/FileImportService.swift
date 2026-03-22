@@ -99,6 +99,11 @@ enum FileImportService {
         // Write bookInfo.json
         book.saveBookInfo()
 
+        // Generate cached Markdown content (non-audio books only)
+        if !format.isAudio {
+            MarkdownCacheService.generateCache(for: book)
+        }
+
         return book
     }
 
@@ -204,6 +209,11 @@ enum FileImportService {
         migrated.tmbDirectoryName = tmbName
 
         migrated.saveBookInfo()
+
+        // Generate cached Markdown content for the migrated book
+        if !migrated.format.isAudio {
+            MarkdownCacheService.generateCache(for: migrated)
+        }
 
         return migrated
     }

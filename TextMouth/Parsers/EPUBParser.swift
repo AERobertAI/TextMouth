@@ -246,9 +246,9 @@ enum EPUBParser {
         return doc.xmlString(options: [.nodePrettyPrint])
     }
 
-    // MARK: - Container Parsing
+    // MARK: - Container Parsing (shared with MarkdownCacheService)
 
-    private static func parseContainerForOPFPath(_ xml: String) throws -> String {
+    static func parseContainerForOPFPath(_ xml: String) throws -> String {
         let doc = try XMLDocument(xmlString: xml)
         let rootfiles = try doc.nodes(forXPath: "//*[local-name()='rootfile']")
         guard let rootfile = rootfiles.first,
@@ -259,21 +259,21 @@ enum EPUBParser {
         return fullPath
     }
 
-    // MARK: - OPF Parsing
+    // MARK: - OPF Parsing (shared with MarkdownCacheService)
 
-    private struct OPFData {
+    struct OPFData {
         var title: String
         var author: String
         var manifest: [String: ManifestItem]  // id -> item
         var spineItemRefs: [String]  // ordered manifest IDs
     }
 
-    private struct ManifestItem {
+    struct ManifestItem {
         var href: String
         var mediaType: String
     }
 
-    private static func parseOPF(_ xml: String) throws -> OPFData {
+    static func parseOPF(_ xml: String) throws -> OPFData {
         let doc = try XMLDocument(xmlString: xml)
 
         // Metadata
@@ -353,9 +353,9 @@ enum EPUBParser {
         return Chapter(title: chapterTitle, text: allText, headings: headings)
     }
 
-    // MARK: - ZIP Helpers
+    // MARK: - ZIP Helpers (shared with MarkdownCacheService)
 
-    private static func extractString(archive: Archive, path: String) throws -> String {
+    static func extractString(archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else {
             if path == "META-INF/container.xml" {
                 throw EPUBParserError.missingContainer

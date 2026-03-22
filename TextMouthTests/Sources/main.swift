@@ -35,6 +35,8 @@ runAudioMetadataTests()
 runWindowFocusTests()
 runFolderMoveTests()
 runVoiceSettingsTests()
+runHTMLToMarkdownTests()
+runMarkdownCacheTests()
 runIntegrationTests()
 
 // ---- Summary ----

@@ -457,6 +457,7 @@ class ReaderViewModel: ObservableObject {
         isLoading = true
         let filePath = book.filePath
         let format = book.format
+        let bookCopy = book
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let url = URL(fileURLWithPath: filePath)
@@ -475,7 +476,17 @@ class ReaderViewModel: ObservableObject {
                         parsed = try BookParser.parse(url: url, format: format)
                     }
                 } else {
-                    parsed = try BookParser.parse(url: url, format: format)
+                    // Generate cache if missing, then always load from it so
+                    // reading positions are consistent across sessions
+                    if !MarkdownCacheService.cacheExists(for: bookCopy) {
+                        MarkdownCacheService.generateCache(for: bookCopy)
+                    }
+                    if MarkdownCacheService.cacheExists(for: bookCopy) {
+                        parsed = try MarkdownCacheService.loadFromCache(for: bookCopy)
+                    } else {
+                        // Cache generation failed — fall back to original parser
+                        parsed = try BookParser.parse(url: url, format: format)
+                    }
                 }
 
                 // Load EPUB metadata if applicable
