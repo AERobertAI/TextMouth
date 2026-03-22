@@ -104,7 +104,10 @@ struct DuplicateFinderView: View {
                             let booksToRemove = libraryViewModel.library.books.filter {
                                 selectedForRemoval.contains($0.id)
                             }
-                            libraryViewModel.removeBooks(booksToRemove)
+                            // Use removeBooksAndDelete directly — the user already
+                            // confirmed by pressing this button, and removeBooks would
+                            // try to show a nested confirmation dialog inside this sheet
+                            libraryViewModel.removeBooksAndDelete(booksToRemove)
                             selectedForRemoval = []
                             // Re-scan with updated library after a brief delay for state to settle
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

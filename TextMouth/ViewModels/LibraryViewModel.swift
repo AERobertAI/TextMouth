@@ -704,9 +704,16 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
-    /// Remove books from the library index only, leaving .tmb files on disk
+    /// Remove books from the library index only, leaving .tmb files on disk.
+    /// Deletes bookInfo.json from each .tmb so orphan adoption won't re-add them.
     func removeBooksFromLibraryOnly(_ books: [Book]) {
         for book in books {
+            // Remove bookInfo.json so adoptOrphanedTMBPackages won't re-adopt this book.
+            // The .tmb and its book file remain on disk for the user to reimport if desired.
+            if !book.tmbDirectoryName.isEmpty {
+                let infoURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+                try? FileManager.default.removeItem(at: infoURL)
+            }
             library.removeBook(id: book.id)
         }
         save()
@@ -986,6 +993,7 @@ class LibraryViewModel: ObservableObject {
 
     /// Remove a folder, moving its contents to the given destination path.
     /// Subfolders are reparented under the destination; books are reassigned.
+    /// The folder's disk directory is removed after all contents have been moved out.
     func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
         // Move .tmb packages on disk for books being reassigned.
         // Capture old folder paths BEFORE the model update changes them.
@@ -1006,6 +1014,10 @@ class LibraryViewModel: ObservableObject {
         for f in library.folders {
             try? TextMouthPaths.ensureLibrarySubfolder(f.fullPath)
         }
+        // Remove the now-empty folder directory from disk
+        let folderDiskURL = TextMouthPaths.libraryDir
+            .appendingPathComponent(oldPath, isDirectory: true)
+        FileImportService.removeItemRespectingTrashSetting(at: folderDiskURL)
         save()
     }
 

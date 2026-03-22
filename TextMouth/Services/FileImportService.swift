@@ -370,6 +370,9 @@ enum FileImportService {
         // Adopt any orphaned .tmb packages found on disk
         adoptOrphanedTMBPackages(library: &library)
 
+        // Clean up empty subdirectories left behind by folder removal
+        removeEmptyLibrarySubdirectories(library: library)
+
         if let oldDir = TextMouthPaths.oldAppSupportDir,
            FileManager.default.fileExists(atPath: oldDir.path) {
             let contents = (try? FileManager.default.contentsOfDirectory(atPath: oldDir.path)) ?? []
@@ -425,6 +428,80 @@ enum FileImportService {
             print("Relocated \(relocated) misplaced .tmb package(s) to correct folders")
         }
         return relocated
+    }
+
+    /// Remove empty subdirectories from the library that aren't tracked as folders.
+    /// These are left behind when folders are removed from the library model but
+    /// the disk directory isn't cleaned up.
+    static func removeEmptyLibrarySubdirectories(library: Library) {
+        let fm = FileManager.default
+        let libraryDir = TextMouthPaths.libraryDir
+        let knownFolderPaths = Set(library.folders.map { $0.fullPath })
+
+        // Walk the library directory looking for non-.tmb subdirectories
+        guard let enumerator = fm.enumerator(
+            at: libraryDir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        var candidatesForRemoval: [URL] = []
+
+        while let url = enumerator.nextObject() as? URL {
+            guard (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+            else { continue }
+
+            // Skip .tmb directories — those are book packages, not folders
+            if url.pathExtension == "tmb" {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            // Compute the relative path from the library root
+            let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+            let resolvedURL = url.resolvingSymlinksInPath().path
+            let relativePath = resolvedURL
+                .replacingOccurrences(of: resolvedLibrary, with: "")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+            guard !relativePath.isEmpty else { continue }
+
+            // If this directory is a known folder, keep it
+            if knownFolderPaths.contains(relativePath) { continue }
+
+            // Check if the directory is empty (no files or subdirectories)
+            let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+            if contents.isEmpty {
+                candidatesForRemoval.append(url)
+            }
+        }
+
+        // Remove empty directories (deepest first so parents become empty too)
+        let sorted = candidatesForRemoval.sorted {
+            $0.pathComponents.count > $1.pathComponents.count
+        }
+        for url in sorted {
+            let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+            if contents.isEmpty {
+                try? fm.removeItem(at: url)
+            }
+        }
+
+        // After removing leaf directories, walk up and remove any newly empty parents
+        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+        for url in sorted {
+            var parent = url.deletingLastPathComponent()
+            while parent.resolvingSymlinksInPath().path != resolvedLibrary {
+                let relativePath = parent.resolvingSymlinksInPath().path
+                    .replacingOccurrences(of: resolvedLibrary, with: "")
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if relativePath.isEmpty || knownFolderPaths.contains(relativePath) { break }
+                let contents = (try? fm.contentsOfDirectory(atPath: parent.path)) ?? []
+                guard contents.isEmpty else { break }
+                try? fm.removeItem(at: parent)
+                parent = parent.deletingLastPathComponent()
+            }
+        }
     }
 
     /// Scan the library directory for .tmb packages that exist on disk but are not

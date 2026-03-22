@@ -39,6 +39,8 @@ runHTMLToMarkdownTests()
 runMarkdownCacheTests()
 runOrphanAdoptionTests()
 runRelocationTests()
+runEmptyDirectoryCleanupTests()
+runOrphanNonReAdoptionTests()
 runIntegrationTests()
 
 // ---- Summary ----

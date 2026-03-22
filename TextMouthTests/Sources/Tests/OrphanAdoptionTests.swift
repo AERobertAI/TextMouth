@@ -650,3 +650,200 @@ func adoptOrphanedTMBs(libraryDir: URL, library: inout Library) -> Int {
 
     return adopted
 }
+
+// MARK: - Empty Directory Cleanup Tests
+
+func runEmptyDirectoryCleanupTests() {
+    print("\n--- Empty Directory Cleanup Tests ---")
+
+    let fm = FileManager.default
+
+    func createTempLibrary() -> URL {
+        let tempDir = fm.temporaryDirectory
+            .appendingPathComponent("TextMouthCleanupTest-\(UUID().uuidString)")
+            .appendingPathComponent("Library")
+        try! fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        return tempDir
+    }
+
+    test("Removes empty directories not tracked as folders") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        // Create some empty directories (as if folders were removed from model but not disk)
+        let emptyDir1 = libraryDir.appendingPathComponent("OldFolder", isDirectory: true)
+        let emptyDir2 = libraryDir.appendingPathComponent("AnotherEmpty", isDirectory: true)
+        try! fm.createDirectory(at: emptyDir1, withIntermediateDirectories: true)
+        try! fm.createDirectory(at: emptyDir2, withIntermediateDirectories: true)
+
+        // Library has no folders
+        let library = Library()
+        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+
+        try assertTrue(!fm.fileExists(atPath: emptyDir1.path), "Empty dir 1 removed")
+        try assertTrue(!fm.fileExists(atPath: emptyDir2.path), "Empty dir 2 removed")
+    }
+
+    test("Keeps directories that are tracked as folders") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        let keepDir = libraryDir.appendingPathComponent("ActiveFolder", isDirectory: true)
+        try! fm.createDirectory(at: keepDir, withIntermediateDirectories: true)
+
+        // This folder IS tracked in the library
+        let knownPaths: Set<String> = ["ActiveFolder"]
+        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: knownPaths)
+
+        try assertTrue(fm.fileExists(atPath: keepDir.path), "Tracked folder preserved")
+    }
+
+    test("Keeps non-empty directories even if untracked") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        // Directory with a .tmb inside (not empty)
+        let dirWithContent = libraryDir.appendingPathComponent("HasBooks", isDirectory: true)
+        let tmbDir = dirWithContent.appendingPathComponent("Book-Author-12345.tmb", isDirectory: true)
+        try! fm.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+
+        let library = Library()
+        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+
+        try assertTrue(fm.fileExists(atPath: dirWithContent.path), "Non-empty dir preserved")
+    }
+
+    test("Does not remove .tmb directories") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        // An empty .tmb directory (unusual but should not be removed by cleanup)
+        let emptyTmb = libraryDir.appendingPathComponent("Empty-Book-12345.tmb", isDirectory: true)
+        try! fm.createDirectory(at: emptyTmb, withIntermediateDirectories: true)
+
+        let library = Library()
+        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+
+        try assertTrue(fm.fileExists(atPath: emptyTmb.path), "Empty .tmb not removed by cleanup")
+    }
+
+    test("Removes nested empty directories deepest-first") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        // Create nested empty dirs
+        let nested = libraryDir.appendingPathComponent("A/B/C", isDirectory: true)
+        try! fm.createDirectory(at: nested, withIntermediateDirectories: true)
+
+        let library = Library()
+        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+
+        // All should be removed since they're all empty (deepest first makes parents empty)
+        try assertTrue(!fm.fileExists(atPath: nested.path), "Deepest dir removed")
+        try assertTrue(!fm.fileExists(
+            atPath: libraryDir.appendingPathComponent("A/B").path), "Middle dir removed")
+        try assertTrue(!fm.fileExists(
+            atPath: libraryDir.appendingPathComponent("A").path), "Top dir removed")
+    }
+}
+
+// MARK: - Standalone empty directory cleanup function
+
+/// Remove empty subdirectories from a library dir that aren't known folders.
+func removeEmptySubdirectories(libraryDir: URL, knownFolderPaths: Set<String>) {
+    let fm = FileManager.default
+
+    guard let enumerator = fm.enumerator(
+        at: libraryDir,
+        includingPropertiesForKeys: [.isDirectoryKey],
+        options: [.skipsHiddenFiles]
+    ) else { return }
+
+    var candidates: [URL] = []
+
+    while let url = enumerator.nextObject() as? URL {
+        guard (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+        else { continue }
+
+        if url.pathExtension == "tmb" {
+            enumerator.skipDescendants()
+            continue
+        }
+
+        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+        let resolvedURL = url.resolvingSymlinksInPath().path
+        let relativePath = resolvedURL
+            .replacingOccurrences(of: resolvedLibrary, with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        guard !relativePath.isEmpty else { continue }
+        if knownFolderPaths.contains(relativePath) { continue }
+
+        let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+        if contents.isEmpty {
+            candidates.append(url)
+        }
+    }
+
+    // Remove deepest first, then re-check parents that may have become empty
+    let sorted = candidates.sorted { $0.pathComponents.count > $1.pathComponents.count }
+    for url in sorted {
+        let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+        if contents.isEmpty {
+            try? fm.removeItem(at: url)
+        }
+    }
+
+    // After removing leaf directories, walk up and remove any newly empty parents
+    for url in sorted {
+        var parent = url.deletingLastPathComponent()
+        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+        while parent.resolvingSymlinksInPath().path != resolvedLibrary {
+            let relativePath = parent.resolvingSymlinksInPath().path
+                .replacingOccurrences(of: resolvedLibrary, with: "")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            if relativePath.isEmpty || knownFolderPaths.contains(relativePath) { break }
+            let contents = (try? fm.contentsOfDirectory(atPath: parent.path)) ?? []
+            guard contents.isEmpty else { break }
+            try? fm.removeItem(at: parent)
+            parent = parent.deletingLastPathComponent()
+        }
+    }
+}
+
+// MARK: - Orphan Non-Re-Adoption Tests
+
+func runOrphanNonReAdoptionTests() {
+    print("\n--- Orphan Non-Re-Adoption Tests ---")
+
+    let fm = FileManager.default
+
+    func createTempLibrary() -> URL {
+        let tempDir = fm.temporaryDirectory
+            .appendingPathComponent("TextMouthNonReAdoptTest-\(UUID().uuidString)")
+            .appendingPathComponent("Library")
+        try! fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        return tempDir
+    }
+
+    test("Does not adopt .tmb without bookInfo.json (simulates library-only removal)") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        // Create a .tmb with a book file but NO bookInfo.json
+        // (this is what happens when removeBooksFromLibraryOnly deletes bookInfo.json)
+        let tmbDir = libraryDir.appendingPathComponent("Removed_Book-Author-12345.tmb", isDirectory: true)
+        try! fm.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+        let bookFile = tmbDir.appendingPathComponent("Removed Book.epub")
+        fm.createFile(atPath: bookFile.path, contents: Data("book data".utf8))
+
+        var library = Library()
+        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+
+        try assertEqual(adopted, 0, "Should not adopt .tmb without bookInfo.json")
+        try assertEqual(library.books.count, 0, "Library still empty")
+        // But the .tmb itself should still be on disk
+        try assertTrue(fm.fileExists(atPath: tmbDir.path), "TMB preserved on disk")
+        try assertTrue(fm.fileExists(atPath: bookFile.path), "Book file preserved on disk")
+    }
+}
