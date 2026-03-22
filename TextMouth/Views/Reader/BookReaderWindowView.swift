@@ -29,6 +29,7 @@ struct BookReaderWindowView: View {
             .background(WindowAccessor(onWindowFound: { window in
                 viewModel.hostWindow = window
             }))
+            .focusedValue(\.activeWindowType, .reader)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)

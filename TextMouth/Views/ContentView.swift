@@ -55,6 +55,7 @@ struct LibraryWindowView: View {
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
         }))
+        .focusedValue(\.activeWindowType, .library)
         .navigationTitle(windowTitle)
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(

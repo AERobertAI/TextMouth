@@ -2,6 +2,7 @@ import SwiftUI
 
 struct KeyboardShortcutsSettingsView: View {
     @EnvironmentObject var shortcutManager: KeyboardShortcutManager
+    @State private var showResetConfirmation = false
 
     var body: some View {
         Form {
@@ -17,12 +18,20 @@ struct KeyboardShortcutsSettingsView: View {
 
             Section {
                 Button("Reset to Defaults") {
-                    shortcutManager.resetToDefaults()
+                    showResetConfirmation = true
                 }
                 .accessibilityLabel("Reset all keyboard shortcuts to defaults")
             }
         }
         .padding()
+        .alert("Reset Keyboard Shortcuts?", isPresented: $showResetConfirmation) {
+            Button("Reset", role: .destructive) {
+                shortcutManager.resetToDefaults()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will reset all keyboard shortcuts to their default values. Any custom bindings will be lost.")
+        }
     }
 
     private var categories: [String] {
