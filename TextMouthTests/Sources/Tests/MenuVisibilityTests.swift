@@ -15,7 +15,7 @@ enum MenuVisibilityManager {
     /// All context-specific menu titles (union of reader + library sets)
     static let allContextMenuTitles: Set<String> = readerMenuTitles.union(libraryMenuTitles)
 
-    /// Applies the visibility rules to all items in the given main menu.
+    /// Pure-logic version using isHidden (works fine in tests without SwiftUI)
     static func applyVisibility(for windowType: ActiveWindowType?, to mainMenu: NSMenu?) {
         guard let mainMenu = mainMenu else { return }
 
@@ -34,6 +34,11 @@ enum MenuVisibilityManager {
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
 
+        // Panels (Settings, About, etc.) are never library or reader windows
+        if window is NSPanel {
+            return nil
+        }
+
         if let identifier = window.identifier?.rawValue,
            identifier.contains("book-reader") {
             return .reader
@@ -48,6 +53,20 @@ enum MenuVisibilityManager {
         }
 
         return nil
+    }
+
+    /// Determines which menu titles should be visible for a given window type.
+    static func visibleTitles(for windowType: ActiveWindowType?) -> Set<String> {
+        switch windowType {
+        case .reader: return readerMenuTitles
+        case .library: return libraryMenuTitles
+        case nil: return []
+        }
+    }
+
+    /// Determines which menu titles should be hidden for a given window type.
+    static func hiddenTitles(for windowType: ActiveWindowType?) -> Set<String> {
+        return allContextMenuTitles.subtracting(visibleTitles(for: windowType))
     }
 }
 
@@ -142,7 +161,6 @@ test("applyVisibility: nil window type hides all context menus") {
 }
 
 test("applyVisibility: nil menu is safe no-op") {
-    // Should not crash when called with nil menu
     MenuVisibilityManager.applyVisibility(for: .reader, to: nil)
     MenuVisibilityManager.applyVisibility(for: nil, to: nil)
 }
@@ -154,7 +172,6 @@ test("applyVisibility: non-context menus are never hidden") {
         menu.addItem(NSMenuItem(title: title, action: nil, keyEquivalent: ""))
     }
 
-    // Try all possible window types — standard menus should never be hidden
     for windowType in [ActiveWindowType.reader, ActiveWindowType.library] {
         MenuVisibilityManager.applyVisibility(for: windowType, to: menu)
         for item in menu.items {
@@ -162,7 +179,6 @@ test("applyVisibility: non-context menus are never hidden") {
         }
     }
 
-    // Also nil
     MenuVisibilityManager.applyVisibility(for: nil, to: menu)
     for item in menu.items {
         try assertTrue(!item.isHidden, "\(item.title) should never be hidden for nil window")
@@ -174,22 +190,18 @@ test("applyVisibility: switching window type toggles visibility correctly") {
     menu.addItem(NSMenuItem(title: "Playback", action: nil, keyEquivalent: ""))
     menu.addItem(NSMenuItem(title: "Library", action: nil, keyEquivalent: ""))
 
-    // Start with reader
     MenuVisibilityManager.applyVisibility(for: .reader, to: menu)
     try assertTrue(!menu.items[0].isHidden, "Playback visible for reader")
     try assertTrue(menu.items[1].isHidden, "Library hidden for reader")
 
-    // Switch to library
     MenuVisibilityManager.applyVisibility(for: .library, to: menu)
     try assertTrue(menu.items[0].isHidden, "Playback hidden after switch to library")
     try assertTrue(!menu.items[1].isHidden, "Library visible after switch to library")
 
-    // Switch to nil (no window)
     MenuVisibilityManager.applyVisibility(for: nil, to: menu)
     try assertTrue(menu.items[0].isHidden, "Playback hidden for nil")
     try assertTrue(menu.items[1].isHidden, "Library hidden for nil")
 
-    // Switch back to reader
     MenuVisibilityManager.applyVisibility(for: .reader, to: menu)
     try assertTrue(!menu.items[0].isHidden, "Playback visible again after back to reader")
     try assertTrue(menu.items[1].isHidden, "Library hidden again after back to reader")
@@ -200,6 +212,66 @@ test("applyVisibility: switching window type toggles visibility correctly") {
 test("detectWindowType: nil window returns nil") {
     let result = MenuVisibilityManager.detectWindowType(for: nil)
     try assertTrue(result == nil, "Nil window should return nil type")
+}
+
+test("detectWindowType: NSPanel returns nil (Settings, About, etc.)") {
+    let panel = NSPanel(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: true
+    )
+    panel.title = "Settings"
+    let result = MenuVisibilityManager.detectWindowType(for: panel)
+    try assertTrue(result == nil, "NSPanel should return nil window type")
+}
+
+test("detectWindowType: NSPanel with any title returns nil") {
+    let panel = NSPanel(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: true
+    )
+    panel.title = "TextMouth"
+    let result = MenuVisibilityManager.detectWindowType(for: panel)
+    try assertTrue(result == nil, "NSPanel should always return nil regardless of title")
+}
+
+// MARK: - Visibility helper logic
+
+test("visibleTitles: reader shows only reader menus") {
+    let visible = MenuVisibilityManager.visibleTitles(for: .reader)
+    try assertEqual(visible, MenuVisibilityManager.readerMenuTitles)
+}
+
+test("visibleTitles: library shows only library menus") {
+    let visible = MenuVisibilityManager.visibleTitles(for: .library)
+    try assertEqual(visible, MenuVisibilityManager.libraryMenuTitles)
+}
+
+test("visibleTitles: nil shows no context menus") {
+    let visible = MenuVisibilityManager.visibleTitles(for: nil)
+    try assertEqual(visible.count, 0, "No menus should be visible for nil")
+}
+
+test("hiddenTitles: reader hides library menus") {
+    let hidden = MenuVisibilityManager.hiddenTitles(for: .reader)
+    try assertTrue(hidden.contains("Library"), "Library should be hidden for reader")
+    try assertTrue(!hidden.contains("Playback"), "Playback should not be hidden for reader")
+}
+
+test("hiddenTitles: library hides reader menus") {
+    let hidden = MenuVisibilityManager.hiddenTitles(for: .library)
+    try assertTrue(hidden.contains("Playback"), "Playback should be hidden for library")
+    try assertTrue(hidden.contains("Navigate"), "Navigate should be hidden for library")
+    try assertTrue(hidden.contains("Bookmarks"), "Bookmarks should be hidden for library")
+    try assertTrue(!hidden.contains("Library"), "Library should not be hidden for library")
+}
+
+test("hiddenTitles: nil hides all context menus") {
+    let hidden = MenuVisibilityManager.hiddenTitles(for: nil)
+    try assertEqual(hidden, MenuVisibilityManager.allContextMenuTitles)
 }
 
 } // end runMenuVisibilityTests
