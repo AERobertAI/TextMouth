@@ -37,6 +37,7 @@ runFolderMoveTests()
 runVoiceSettingsTests()
 runHTMLToMarkdownTests()
 runMarkdownCacheTests()
+runOrphanAdoptionTests()
 runIntegrationTests()
 
 // ---- Summary ----

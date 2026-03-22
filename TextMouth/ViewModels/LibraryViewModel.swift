@@ -152,6 +152,11 @@ class LibraryViewModel: ObservableObject {
             }
         }
 
+        // Adopt any .tmb packages on disk that aren't tracked in library.json.
+        // This recovers books left behind by interrupted imports or crashes.
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library)
+        if adopted > 0 { needsSave = true }
+
         if needsSave {
             save()
         }
@@ -1099,12 +1104,17 @@ class LibraryViewModel: ObservableObject {
 
     // MARK: - Directory Management
 
-    /// Rebuild the .TextMouth directory structure and migrate all books
+    /// Rebuild the .TextMouth directory structure, migrate all books,
+    /// adopt orphaned .tmb packages, and extract missing content caches.
     func rebuildDirectory() {
         do {
             try FileImportService.rebuildDirectoryStructure(library: &library)
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
+            // Extract content caches for any newly adopted books, then recalculate stats
+            extractMissingContentCaches(then: { [weak self] in
+                self?.calculateMissingBookStats()
+            })
         } catch {
             errorMessage = "Failed to rebuild directory: \(error.localizedDescription)"
             showError = true

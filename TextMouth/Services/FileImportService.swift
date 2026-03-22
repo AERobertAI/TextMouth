@@ -336,9 +336,11 @@ enum FileImportService {
     }
 
     /// Rebuild the .TextMouth directory structure, migrating any books from old storage
+    /// and adopting orphaned .tmb packages that exist on disk but aren't in the library.
     static func rebuildDirectoryStructure(library: inout Library) throws {
         try TextMouthPaths.ensureDirectoryStructure()
 
+        // Migrate books that don't have .tmb packages yet
         for i in library.books.indices {
             let book = library.books[i]
             if book.tmbDirectoryName.isEmpty {
@@ -348,6 +350,9 @@ enum FileImportService {
             }
         }
 
+        // Adopt any orphaned .tmb packages found on disk
+        adoptOrphanedTMBPackages(library: &library)
+
         if let oldDir = TextMouthPaths.oldAppSupportDir,
            FileManager.default.fileExists(atPath: oldDir.path) {
             let contents = (try? FileManager.default.contentsOfDirectory(atPath: oldDir.path)) ?? []
@@ -355,5 +360,120 @@ enum FileImportService {
                 try? FileManager.default.removeItem(at: oldDir)
             }
         }
+    }
+
+    /// Scan the library directory for .tmb packages that exist on disk but are not
+    /// tracked in the library. Reconstructs Book objects from their bookInfo.json
+    /// and adds them to the library. Returns the number of adopted books.
+    ///
+    /// This handles cases where the app was quit or crashed during import before
+    /// the book could be saved to library.json, leaving orphaned .tmb packages.
+    @discardableResult
+    static func adoptOrphanedTMBPackages(library: inout Library) -> Int {
+        let fm = FileManager.default
+        let libraryDir = TextMouthPaths.libraryDir
+
+        // Collect all .tmb directory names currently tracked in the library
+        let knownTMBNames = Set(library.books.map { $0.tmbDirectoryName })
+
+        // Walk the library directory tree to find all .tmb packages on disk
+        var adopted = 0
+        guard let enumerator = fm.enumerator(
+            at: libraryDir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+
+        while let url = enumerator.nextObject() as? URL {
+            // Only look at .tmb directories
+            guard url.pathExtension == "tmb",
+                  (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+            else { continue }
+
+            // Don't recurse into .tmb packages
+            enumerator.skipDescendants()
+
+            let tmbName = url.lastPathComponent
+            // Skip if already tracked in the library
+            if knownTMBNames.contains(tmbName) { continue }
+
+            // Try to load bookInfo.json from the orphaned .tmb
+            guard let info = try? BookInfo.load(from: url) else { continue }
+
+            // Find the actual book file inside the .tmb (skip metadata/cache files)
+            let tmbContents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+            let bookFileName = tmbContents.first { name in
+                !name.hasPrefix(".")
+                && name != "bookInfo.json"
+                && name != "content.md"
+                && name != "cachedAudio"
+            }
+
+            guard let fileName = bookFileName else { continue }
+            let bookFilePath = url.appendingPathComponent(fileName).path
+            guard fm.fileExists(atPath: bookFilePath) else { continue }
+
+            // Determine the folder path relative to the library directory.
+            // e.g. Library/Science Fiction/Author/Book.tmb → "Science Fiction/Author"
+            // Resolve symlinks so /tmp vs /private/tmp paths match consistently.
+            let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+            let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
+            let relativePath = resolvedParent
+                .replacingOccurrences(of: resolvedLibrary, with: "")
+            let folderPath = relativePath
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+            // Build the Book from bookInfo.json metadata and state
+            let book = Book(
+                id: info.metadata.bookID,
+                title: info.metadata.title,
+                author: info.metadata.author,
+                format: info.metadata.format,
+                filePath: bookFilePath,
+                md5Hash: info.metadata.md5Hash,
+                folderPath: folderPath,
+                dateAdded: info.metadata.dateAdded,
+                lastOpened: info.metadata.lastOpened,
+                readingPosition: info.state.readingPosition,
+                bookmarks: info.bookmarks,
+                totalWordCount: info.state.totalWordCount,
+                totalCharacterCount: info.state.totalCharacterCount,
+                tmbDirectoryName: tmbName,
+                sourceFilePath: info.metadata.sourceFilePath,
+                lastPlaybackStarted: info.state.lastPlaybackStarted,
+                lastPlaybackStopped: info.state.lastPlaybackStopped,
+                localVoiceID: info.state.localVoiceID,
+                localWPM: info.state.localWPM,
+                localPitch: info.state.localPitch,
+                skippedHeadingIDs: info.state.skippedHeadingIDs,
+                localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+                manualSortOrder: info.state.manualSortOrder,
+                audioDuration: info.state.audioDuration,
+                audioAlbum: info.metadata.audioAlbum,
+                audioGenre: info.metadata.audioGenre,
+                audioYear: info.metadata.audioYear
+            )
+
+            // addBook guards against duplicate hashes — only truly new books get added
+            let countBefore = library.books.count
+            library.addBook(book)
+            if library.books.count > countBefore {
+                adopted += 1
+
+                // Update the bookInfo.json folderPath if it was empty but the .tmb
+                // lives inside a subfolder (common with orphans from zip imports)
+                if info.metadata.folderPath != folderPath {
+                    var updatedBook = book
+                    updatedBook.folderPath = folderPath
+                    library.books[library.books.count - 1] = updatedBook
+                    updatedBook.saveBookInfo()
+                }
+            }
+        }
+
+        if adopted > 0 {
+            print("Adopted \(adopted) orphaned .tmb package(s) into library")
+        }
+        return adopted
     }
 }
