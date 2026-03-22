@@ -260,6 +260,14 @@ extension ReaderViewModel {
     /// Navigate to a specific chapter and character offset.
     /// Handles both TTS and audio book playback, with same-chapter seek optimization.
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
+        guard let content = content, !content.chapters.isEmpty else { return }
+
+        // Clamp chapter index to valid range
+        let chapterIndex = min(max(0, chapterIndex), content.chapters.count - 1)
+        // Clamp character offset to chapter text length
+        let chapterLen = content.chapters[chapterIndex].text.count
+        let characterOffset = min(max(0, characterOffset), max(0, chapterLen - 1))
+
         if isAudioBook {
             let wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
             if chapterIndex != currentChapterIndex {

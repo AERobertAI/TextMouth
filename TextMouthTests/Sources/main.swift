@@ -52,6 +52,7 @@ runMenuVisibilityTests()
 runRelocationTests()
 runEmptyDirectoryCleanupTests()
 runOrphanNonReAdoptionTests()
+runBugRegressionTests()
 runIntegrationTests()
 
 // ---- Summary ----

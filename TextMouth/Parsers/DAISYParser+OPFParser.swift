@@ -7,6 +7,8 @@ struct DAISYOPFResult {
     var title: String = ""
     var author: String = ""
     var manifest: [String: DAISYManifestItem] = [:]
+    /// Ordered list of manifest item IDs defining the reading sequence
+    var spineItemRefs: [String] = []
 }
 
 /// A single item from the OPF manifest
@@ -50,6 +52,11 @@ class DAISYOPFParser: NSObject, XMLParserDelegate {
             if let id = attributes["id"], let href = attributes["href"],
                let mediaType = attributes["media-type"] {
                 result.manifest[id] = DAISYManifestItem(id: id, href: href, mediaType: mediaType)
+            }
+        case "itemref":
+            // Spine item reference — defines reading order
+            if let idref = attributes["idref"] {
+                result.spineItemRefs.append(idref)
             }
         default:
             break

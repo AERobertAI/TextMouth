@@ -179,8 +179,12 @@ extension ReaderViewModel {
         let chapterText = substitutionService.transform(rawText).modifiedText
         nextChapterIndex = nextIdx
 
+        // Capture generation so stale renders from rapid navigation are discarded
+        let renderGeneration = chapterPlaybackGeneration
         engine.render(text: chapterText, voice: speechService.currentVoice, wpm: speechService.wordsPerMinute) { [weak self] success in
             guard let self = self else { return }
+            // Discard result if playback generation changed (user navigated elsewhere)
+            guard self.chapterPlaybackGeneration == renderGeneration else { return }
             if success {
                 self.nextChapterEngine = engine
                 self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.count) chars)")

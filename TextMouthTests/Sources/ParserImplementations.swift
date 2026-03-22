@@ -842,6 +842,100 @@ struct DAISYMetadata {
     var author: String
 }
 
+/// Parsed OPF package data (test version matching app's DAISYOPFResult)
+struct DAISYOPFResult {
+    var title: String = ""
+    var author: String = ""
+    var manifest: [String: DAISYManifestItem] = [:]
+    var spineItemRefs: [String] = []
+}
+
+/// A single item from the OPF manifest
+struct DAISYManifestItem {
+    var id: String
+    var href: String
+    var mediaType: String
+}
+
+/// OPF parser with spine support (test version matching app's DAISYOPFParser)
+class DAISYOPFParser: NSObject, XMLParserDelegate {
+    private let data: Data
+    private var result = DAISYOPFResult()
+    private var elementStack: [String] = []
+    private var currentText = ""
+
+    init(data: Data) { self.data = data }
+
+    func parse() -> DAISYOPFResult {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return result
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let local = (elementName.components(separatedBy: ":").last ?? elementName).lowercased()
+        elementStack.append(local)
+        currentText = ""
+
+        switch local {
+        case "item":
+            if let id = attributes["id"], let href = attributes["href"],
+               let mediaType = attributes["media-type"] {
+                result.manifest[id] = DAISYManifestItem(id: id, href: href, mediaType: mediaType)
+            }
+        case "itemref":
+            if let idref = attributes["idref"] {
+                result.spineItemRefs.append(idref)
+            }
+        default:
+            break
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let local = (elementName.components(separatedBy: ":").last ?? elementName).lowercased()
+        let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if local == "title" && result.title.isEmpty && !text.isEmpty { result.title = text }
+        if local == "creator" && result.author.isEmpty && !text.isEmpty { result.author = text }
+        if !elementStack.isEmpty { elementStack.removeLast() }
+    }
+}
+
+/// Shared parser utilities (test version matching app's ParserUtilities)
+enum ParserUtilities {
+    static func stripNamespacePrefix(_ elementName: String) -> String {
+        elementName.components(separatedBy: ":").last ?? elementName
+    }
+
+    static func normalizeMarkdownWhitespace(_ text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        lines = lines.map {
+            $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
+        }
+        var result: [String] = []
+        var blankCount = 0
+        for line in lines {
+            if line.isEmpty {
+                blankCount += 1
+                if blankCount <= 2 { result.append(line) }
+            } else {
+                blankCount = 0
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 /// Check if a ZIP file is a DAISY package
 func isDAISYZipFile(url: URL) -> Bool {
     guard let archive = try? Archive(url: url, accessMode: .read) else { return false }

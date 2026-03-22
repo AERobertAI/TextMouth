@@ -282,28 +282,52 @@ enum DAISYParser {
         let opfParser = DAISYOPFParser(data: opfData)
         let opfResult = opfParser.parse()
 
-        // Find the DTBook XML in the manifest
+        // Collect DTBook content files, using spine order when available
         let opfDir = (opfPath as NSString).deletingLastPathComponent
-        var dtbookPath: String?
+        var dtbookPaths: [String] = []
 
-        for (_, item) in opfResult.manifest {
-            if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
-                dtbookPath = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
-                break
+        if !opfResult.spineItemRefs.isEmpty {
+            // Use spine order to determine reading sequence
+            for idref in opfResult.spineItemRefs {
+                guard let item = opfResult.manifest[idref] else { continue }
+                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
+                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
+                    dtbookPaths.append(path)
+                }
             }
         }
 
-        // Fall back to finding any .xml file that looks like DTBook
-        if dtbookPath == nil {
-            dtbookPath = findDTBookXML(in: allFiles, provider: provider)
+        // Fall back to scanning manifest if spine didn't yield DTBook files
+        if dtbookPaths.isEmpty {
+            for (_, item) in opfResult.manifest {
+                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
+                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
+                    dtbookPaths.append(path)
+                }
+            }
         }
 
-        guard let xmlPath = dtbookPath else {
+        // Last resort: find any .xml file that looks like DTBook
+        if dtbookPaths.isEmpty {
+            if let xmlPath = findDTBookXML(in: allFiles, provider: provider) {
+                dtbookPaths.append(xmlPath)
+            }
+        }
+
+        guard !dtbookPaths.isEmpty else {
             throw DAISYParserError.missingContent("No DTBook XML found in DAISY package")
         }
 
-        let xmlData = try provider.readFile(at: xmlPath)
-        return try convertDTBookToMarkdown(xmlData)
+        // Convert each content file and concatenate in reading order
+        var allMarkdown: [String] = []
+        for path in dtbookPaths {
+            let xmlData = try provider.readFile(at: path)
+            let markdown = try convertDTBookToMarkdown(xmlData)
+            if !markdown.isEmpty {
+                allMarkdown.append(markdown)
+            }
+        }
+        return allMarkdown.joined(separator: "\n\n")
     }
 
     /// Find a DTBook XML file by scanning for files with <dtbook> root element
