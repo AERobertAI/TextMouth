@@ -34,11 +34,6 @@ enum MenuVisibilityManager {
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
 
-        // Panels (Settings, About, etc.) are never library or reader windows
-        if window is NSPanel {
-            return nil
-        }
-
         if let identifier = window.identifier?.rawValue,
            identifier.contains("book-reader") {
             return .reader
@@ -205,30 +200,6 @@ test("applyVisibility: switching window type toggles visibility correctly") {
 test("detectWindowType: nil window returns nil") {
     let result = MenuVisibilityManager.detectWindowType(for: nil)
     try assertTrue(result == nil, "Nil window should return nil type")
-}
-
-test("detectWindowType: NSPanel returns nil (Settings, About, etc.)") {
-    let panel = NSPanel(
-        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-        styleMask: [.titled, .closable],
-        backing: .buffered,
-        defer: true
-    )
-    panel.title = "Settings"
-    let result = MenuVisibilityManager.detectWindowType(for: panel)
-    try assertTrue(result == nil, "NSPanel should return nil window type")
-}
-
-test("detectWindowType: NSPanel with any title returns nil") {
-    let panel = NSPanel(
-        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-        styleMask: [.titled, .closable],
-        backing: .buffered,
-        defer: true
-    )
-    panel.title = "TextMouth"
-    let result = MenuVisibilityManager.detectWindowType(for: panel)
-    try assertTrue(result == nil, "NSPanel should always return nil regardless of title")
 }
 
 } // end runMenuVisibilityTests

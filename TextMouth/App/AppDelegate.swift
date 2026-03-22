@@ -14,13 +14,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // spawn extra library or reader windows on launch. Only one library window
         // should appear on startup; additional ones require Cmd+N.
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
-    }
 
-    /// Called on every event loop iteration. Applies menu visibility after
-    /// SwiftUI has finished rebuilding CommandMenu bodies, so our isHidden
-    /// settings always take effect even when SwiftUI resets them.
-    func applicationWillUpdate(_ notification: Notification) {
-        menuVisibilityManager.updateMenuVisibility()
+        // Start hiding/showing context-specific menus based on active window type
+        menuVisibilityManager.startObserving()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
