@@ -57,7 +57,12 @@ enum PDFTextParser {
         // Try outline-based chapter extraction first
         let outline = extractOutline(from: document)
 
-        // Extract text from all pages with font analysis
+        // When the PDF has an outline, use that for headings and extract
+        // page text without font-based heading detection (avoids false positives
+        // from LaTeX/design fonts that use slightly different sizes for first
+        // paragraphs, drop caps, etc.). Only use font heuristics when there's
+        // no outline to provide structure.
+        let hasOutline = !outline.isEmpty
         var allPageTexts: [(pageIndex: Int, markdown: String, wasOCR: Bool)] = []
 
         for i in 0..<document.pageCount {
@@ -66,9 +71,16 @@ enum PDFTextParser {
             let pageText = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
             if pageText.count >= 10 {
-                // Text-based page — use attributed string for heading detection
-                let markdown = extractMarkdownFromTextPage(page)
-                allPageTexts.append((i, markdown, false))
+                if hasOutline {
+                    // Outline provides structure — extract plain text with inline
+                    // formatting (bold/italic) but no heading detection
+                    let markdown = extractPlainMarkdownFromPage(page)
+                    allPageTexts.append((i, markdown, false))
+                } else {
+                    // No outline — use font analysis for heading detection
+                    let markdown = extractMarkdownFromTextPage(page)
+                    allPageTexts.append((i, markdown, false))
+                }
             } else {
                 // Possibly scanned page — try OCR
                 let ocrText = performOCR(on: page)
@@ -83,7 +95,7 @@ enum PDFTextParser {
         }
 
         // If we have an outline, use it to insert chapter markers
-        if !outline.isEmpty {
+        if hasOutline {
             return buildMarkdownWithOutline(
                 pageTexts: allPageTexts,
                 outline: outline,
@@ -91,7 +103,7 @@ enum PDFTextParser {
             )
         }
 
-        // No outline — just concatenate page text
+        // No outline — just concatenate page text (with font-based headings)
         return allPageTexts.map { $0.markdown }
             .joined(separator: "\n\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -111,10 +123,85 @@ enum PDFTextParser {
         return PDFMetadata(title: title, author: author)
     }
 
-    // MARK: - Text Page Extraction
+    // MARK: - Plain Text Extraction (for PDFs with outline)
+
+    /// Extract text from a PDF page with bold/italic inline formatting but
+    /// no heading detection. Used when the PDF has an outline that provides
+    /// reliable chapter structure, avoiding false heading positives from font
+    /// size variations.
+    private static func extractPlainMarkdownFromPage(_ page: PDFPage) -> String {
+        guard let attrString = page.attributedString else {
+            return page.string ?? ""
+        }
+
+        var lines: [TextLine] = []
+        var currentLineText = ""
+        let bodyFontSize = detectBodyFontSize(in: attrString)
+        let fullRange = NSRange(location: 0, length: attrString.length)
+
+        attrString.enumerateAttributes(in: fullRange, options: []) { attrs, range, _ in
+            let text = attrString.attributedSubstring(from: range).string
+            guard !text.trimmingCharacters(in: .whitespaces).isEmpty || text.contains("\n") else {
+                return
+            }
+
+            let font = attrs[.font] as? NSFont
+            let fontSize = font?.pointSize ?? bodyFontSize
+            let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
+            let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
+
+            let segments = text.components(separatedBy: "\n")
+            for (segIndex, segment) in segments.enumerated() {
+                if segIndex > 0 {
+                    let trimmed = currentLineText.trimmingCharacters(in: .whitespaces)
+                    if !trimmed.isEmpty {
+                        lines.append(TextLine(text: trimmed, isHeading: false,
+                                              headingLevel: 0, fontSize: fontSize))
+                    }
+                    currentLineText = ""
+                }
+
+                let trimmed = segment.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { continue }
+
+                var formatted = trimmed
+                if isBold && isItalic {
+                    formatted = "***\(formatted)***"
+                } else if isBold {
+                    formatted = "**\(formatted)**"
+                } else if isItalic {
+                    formatted = "*\(formatted)*"
+                }
+
+                if !currentLineText.isEmpty { currentLineText += " " }
+                currentLineText += formatted
+            }
+        }
+
+        let finalTrimmed = currentLineText.trimmingCharacters(in: .whitespaces)
+        if !finalTrimmed.isEmpty {
+            lines.append(TextLine(text: finalTrimmed, isHeading: false,
+                                  headingLevel: 0,
+                                  fontSize: detectBodyFontSize(in: attrString)))
+        }
+
+        return joinLinesIntoParagraphs(lines)
+    }
+
+    // MARK: - Text Page Extraction (with heading detection)
+
+    /// A single line of text extracted from the PDF with its formatting metadata
+    private struct TextLine {
+        var text: String
+        var isHeading: Bool
+        var headingLevel: Int
+        var fontSize: CGFloat
+    }
 
     /// Extract Markdown from a text-based PDF page using font attribute analysis
     /// to detect headings, bold, and italic formatting.
+    /// Joins consecutive body-text lines into paragraphs (PDFs have hard line
+    /// breaks at each visual line, which we need to unwrap).
     private static func extractMarkdownFromTextPage(_ page: PDFPage) -> String {
         guard let attrString = page.attributedString else {
             return page.string ?? ""
@@ -123,95 +210,172 @@ enum PDFTextParser {
         // First pass: determine the body font size (most common size)
         let bodyFontSize = detectBodyFontSize(in: attrString)
 
-        // Second pass: convert runs to Markdown with heading detection
-        var markdown = ""
-        var currentLine = ""
+        // Second pass: build an array of text lines with formatting metadata
+        var lines: [TextLine] = []
+        var currentLineText = ""
         var currentLineIsHeading = false
         var currentHeadingLevel = 0
+        var currentFontSize: CGFloat = bodyFontSize
 
         let fullRange = NSRange(location: 0, length: attrString.length)
 
         attrString.enumerateAttributes(in: fullRange, options: []) { attrs, range, _ in
             let text = attrString.attributedSubstring(from: range).string
-
-            // Skip empty runs
             guard !text.trimmingCharacters(in: .whitespaces).isEmpty || text.contains("\n") else {
                 return
             }
 
-            // Detect font properties
             let font = attrs[.font] as? NSFont
             let fontSize = font?.pointSize ?? bodyFontSize
             let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
             let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
 
-            // Check if this run is a heading based on font size
             let isHeading = fontSize > bodyFontSize * 1.15 && bodyFontSize > 0
             let headingLevel = headingLevelFromFontSize(fontSize, bodySize: bodyFontSize)
 
-            // Process text, splitting on newlines
             let segments = text.components(separatedBy: "\n")
             for (segIndex, segment) in segments.enumerated() {
-                // Handle newline boundaries
                 if segIndex > 0 {
-                    // Flush the current line
-                    markdown += flushLine(
-                        currentLine,
-                        isHeading: currentLineIsHeading,
-                        headingLevel: currentHeadingLevel
-                    )
-                    currentLine = ""
+                    // Newline boundary — flush current line
+                    let trimmed = currentLineText.trimmingCharacters(in: .whitespaces)
+                    if !trimmed.isEmpty {
+                        lines.append(TextLine(
+                            text: trimmed,
+                            isHeading: currentLineIsHeading,
+                            headingLevel: currentHeadingLevel,
+                            fontSize: currentFontSize
+                        ))
+                    }
+                    currentLineText = ""
                     currentLineIsHeading = false
                     currentHeadingLevel = 0
+                    currentFontSize = bodyFontSize
                 }
 
                 let trimmed = segment.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty else { continue }
 
-                // Apply inline formatting
+                // Apply inline formatting — but skip bold/italic on headings
+                // since the # prefix already conveys emphasis
                 var formatted = trimmed
-                if isBold && isItalic {
-                    formatted = "***\(formatted)***"
-                } else if isBold && !isHeading {
-                    // Don't bold headings — the # prefix is sufficient
-                    formatted = "**\(formatted)**"
-                } else if isItalic {
-                    formatted = "*\(formatted)*"
+                if !isHeading {
+                    if isBold && isItalic {
+                        formatted = "***\(formatted)***"
+                    } else if isBold {
+                        formatted = "**\(formatted)**"
+                    } else if isItalic {
+                        formatted = "*\(formatted)*"
+                    }
                 }
 
                 if isHeading {
                     currentLineIsHeading = true
                     currentHeadingLevel = max(currentHeadingLevel, headingLevel)
                 }
+                currentFontSize = fontSize
 
-                if !currentLine.isEmpty {
-                    currentLine += " "
-                }
-                currentLine += formatted
+                if !currentLineText.isEmpty { currentLineText += " " }
+                currentLineText += formatted
             }
         }
 
         // Flush final line
-        markdown += flushLine(
-            currentLine,
-            isHeading: currentLineIsHeading,
-            headingLevel: currentHeadingLevel
-        )
-
-        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// Flush a line of text, adding heading prefix if needed
-    private static func flushLine(_ text: String, isHeading: Bool, headingLevel: Int) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return "\n" }
-
-        if isHeading {
-            let prefix = String(repeating: "#", count: max(1, min(headingLevel, 6)))
-            return "\n\(prefix) \(trimmed)\n\n"
+        let finalTrimmed = currentLineText.trimmingCharacters(in: .whitespaces)
+        if !finalTrimmed.isEmpty {
+            lines.append(TextLine(
+                text: finalTrimmed,
+                isHeading: currentLineIsHeading,
+                headingLevel: currentHeadingLevel,
+                fontSize: currentFontSize
+            ))
         }
 
-        return "\n\(trimmed)\n"
+        // Third pass: demote "headings" that are too long to be real headings.
+        // Real chapter/section headings are typically short — a line with 80+
+        // characters in a slightly larger font is more likely body text than a
+        // heading (common in LaTeX PDFs where first paragraphs use a different size).
+        for idx in lines.indices where lines[idx].isHeading {
+            if lines[idx].text.count > 80 {
+                lines[idx].isHeading = false
+                lines[idx].headingLevel = 0
+            }
+        }
+
+        // Fourth pass: join consecutive body-text lines into paragraphs.
+        // PDF line breaks are visual, not semantic — a line that doesn't end
+        // with sentence-ending punctuation and is followed by another body line
+        // at the same font size is likely a continuation of the same paragraph.
+        return joinLinesIntoParagraphs(lines)
+    }
+
+    /// Join an array of text lines into Markdown, merging consecutive body-text
+    /// lines into single paragraphs where appropriate.
+    private static func joinLinesIntoParagraphs(_ lines: [TextLine]) -> String {
+        var markdown = ""
+        var i = 0
+
+        while i < lines.count {
+            let line = lines[i]
+
+            if line.isHeading {
+                // Headings always stand alone
+                let prefix = String(repeating: "#", count: max(1, min(line.headingLevel, 6)))
+                markdown += "\n\(prefix) \(line.text)\n\n"
+                i += 1
+                continue
+            }
+
+            // Body text — accumulate continuation lines into a single paragraph
+            var paragraph = line.text
+            while i + 1 < lines.count {
+                let nextLine = lines[i + 1]
+
+                // Stop joining if the next line is a heading
+                if nextLine.isHeading { break }
+
+                // Stop joining if there's a significant font size change
+                // (suggests a different text block)
+                if abs(nextLine.fontSize - line.fontSize) > 1.0 { break }
+
+                // Stop joining if the current paragraph ends with sentence-ending
+                // punctuation followed by a blank-ish next line, or looks like a
+                // list item / standalone short line
+                let endsWithTerminator = paragraph.hasSuffix(".")
+                    || paragraph.hasSuffix("!")
+                    || paragraph.hasSuffix("?")
+                    || paragraph.hasSuffix(":")
+                    || paragraph.hasSuffix(";")
+
+                let nextIsShort = nextLine.text.count < 40
+                let nextStartsCapital = nextLine.text.first?.isUppercase ?? false
+
+                // If current ends with a period and next starts with a capital,
+                // it's likely a new paragraph
+                if endsWithTerminator && nextStartsCapital && nextIsShort { break }
+
+                // If the next line looks like a list item, keep it separate
+                if nextLine.text.hasPrefix("•") || nextLine.text.hasPrefix("-")
+                    || nextLine.text.hasPrefix("–") {
+                    break
+                }
+
+                // Numbered list item detection (e.g. "1.", "2.", "3.")
+                let nextTrimmed = nextLine.text.trimmingCharacters(in: .whitespaces)
+                if let firstChar = nextTrimmed.first, firstChar.isNumber {
+                    let prefix = nextTrimmed.prefix(while: { $0.isNumber })
+                    if nextTrimmed.dropFirst(prefix.count).hasPrefix(".") { break }
+                }
+
+                // Otherwise, join this line into the current paragraph
+                paragraph += " " + nextLine.text
+                i += 1
+            }
+
+            markdown += "\n\(paragraph)\n"
+            i += 1
+        }
+
+        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Detect the most common font size in an attributed string (the "body" size)
@@ -230,15 +394,17 @@ enum PDFTextParser {
         return sizeCounts.max(by: { $0.value < $1.value })?.key ?? 12.0
     }
 
-    /// Map a font size to a heading level relative to the body font size
+    /// Map a font size to a heading level relative to the body font size.
+    /// Thresholds calibrated against common PDF heading conventions:
+    /// 24pt/11pt=2.18→h1, 18pt/11pt=1.64→h2, 14pt/11pt=1.27→h3
     private static func headingLevelFromFontSize(_ fontSize: CGFloat, bodySize: CGFloat) -> Int {
         guard bodySize > 0 else { return 2 }
         let ratio = fontSize / bodySize
 
-        if ratio >= 2.0 { return 1 }       // 2x+ body size → h1
-        if ratio >= 1.6 { return 2 }       // 1.6x+ → h2
-        if ratio >= 1.3 { return 3 }       // 1.3x+ → h3
-        if ratio >= 1.15 { return 4 }      // 1.15x+ → h4
+        if ratio >= 1.9 { return 1 }       // ~2x body size → h1 (e.g. 24pt/11pt)
+        if ratio >= 1.5 { return 2 }       // ~1.5x+ → h2 (e.g. 18pt/11pt)
+        if ratio >= 1.2 { return 3 }       // ~1.2x+ → h3 (e.g. 14pt/11pt)
+        if ratio >= 1.15 { return 4 }      // barely larger → h4
         return 5
     }
 
@@ -371,25 +537,56 @@ enum PDFTextParser {
         var markdown = ""
 
         for (pageIndex, pageMarkdown, _) in pageTexts {
+            var cleanedPageMarkdown = pageMarkdown
+
             // Insert outline headings for this page
             if let entries = pageOutlineMap[pageIndex] {
                 for entry in entries {
                     let level = min(entry.level + 1, 6) // outline depth 0 → h1
                     let prefix = String(repeating: "#", count: level)
+                    markdown += "\n\(prefix) \(entry.title)\n\n"
 
-                    // Check if the page text already starts with this heading
-                    // (from font-based detection) to avoid duplicates
-                    let headingText = entry.title
-                    if !pageMarkdown.contains(headingText) {
-                        markdown += "\n\(prefix) \(headingText)\n\n"
-                    }
+                    // Remove the heading text from the page content to avoid
+                    // duplication (the page text often contains the same text
+                    // as the outline entry, possibly in different case)
+                    cleanedPageMarkdown = removeHeadingDuplicate(
+                        entry.title, from: cleanedPageMarkdown
+                    )
                 }
             }
 
-            markdown += pageMarkdown + "\n\n"
+            let trimmed = cleanedPageMarkdown.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                markdown += trimmed + "\n\n"
+            }
         }
 
         return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Remove a heading's duplicate text from page content.
+    /// The outline heading is authoritative; the page text may contain the same
+    /// words in different case (e.g. "PREFACE" vs outline "Preface").
+    private static func removeHeadingDuplicate(_ heading: String, from text: String) -> String {
+        let headingLower = heading.lowercased()
+        let lines = text.components(separatedBy: "\n")
+        var result: [String] = []
+
+        for line in lines {
+            let trimmedLower = line.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            // Remove lines that are just the heading text (case-insensitive)
+            // Also handle lines like "PART I" matching outline "Part I. The Special Theory..."
+            if trimmedLower == headingLower { continue }
+            // Check if the heading contains this short line (e.g. outline "I. Physical Meaning..."
+            // and page has standalone "I" or "PHYSICAL MEANING OF GEOMETRICAL PROPOSITIONS")
+            if !trimmedLower.isEmpty && trimmedLower.count <= headingLower.count
+                && headingLower.contains(trimmedLower) && trimmedLower.count < 60 {
+                continue
+            }
+            result.append(line)
+        }
+
+        return result.joined(separator: "\n")
     }
 }
 
