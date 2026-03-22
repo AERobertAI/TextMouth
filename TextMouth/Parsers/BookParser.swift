@@ -18,6 +18,8 @@ enum BookParser {
             return PlainTextParser.parse(text: text, title: url.deletingPathExtension().lastPathComponent)
         case .docx:
             return try DOCXParser.parse(url: url)
+        case .daisy:
+            return try DAISYParser.parse(url: url)
         case .audio:
             // Audio parsing is async — use a synchronous bridge here
             var result: DocumentContent?

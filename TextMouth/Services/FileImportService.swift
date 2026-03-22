@@ -54,6 +54,14 @@ enum FileImportService {
             }
         }
 
+        // Extract metadata from DAISY books (title and author from OPF or ncc.html)
+        if format == .daisy {
+            if let metadata = try? DAISYParser.readMetadata(from: sourceURL) {
+                if !metadata.title.isEmpty { title = metadata.title }
+                if !metadata.author.isEmpty { author = metadata.author }
+            }
+        }
+
         // Extract metadata from audio files using AVAsset common metadata tags
         var audioAlbum: String?
         var audioGenre: String?
@@ -134,10 +142,45 @@ enum FileImportService {
 
         try FileManager.default.unzipItem(at: zipURL, to: tempDir)
 
-        // First pass: find all supported files
+        // First pass: find all supported files, including nested ZIP files
+        // that contain DAISY packages
         var supportedFiles: [URL] = []
         let enumerator = FileManager.default.enumerator(at: tempDir, includingPropertiesForKeys: nil)
         while let fileURL = enumerator?.nextObject() as? URL {
+            let ext = fileURL.pathExtension.lowercased()
+            // Check nested ZIPs — they may be DAISY or audio packages
+            if ext == "zip" {
+                if DAISYParser.isDAISYZip(url: fileURL) {
+                    supportedFiles.append(fileURL)
+                    continue
+                }
+                // Could also be a nested zip of regular books — extract and scan
+                let nestedTemp = tempDir.appendingPathComponent("nested_\(UUID().uuidString)")
+                if let _ = try? FileManager.default.createDirectory(at: nestedTemp, withIntermediateDirectories: true),
+                   let _ = try? FileManager.default.unzipItem(at: fileURL, to: nestedTemp) {
+                    let nestedEnum = FileManager.default.enumerator(at: nestedTemp, includingPropertiesForKeys: nil)
+                    while let nestedURL = nestedEnum?.nextObject() as? URL {
+                        if BookFormat.detect(from: nestedURL) != nil {
+                            supportedFiles.append(nestedURL)
+                        }
+                    }
+                }
+                continue
+            }
+            // Check directories for DAISY packages (unzipped DAISY in a folder)
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDir), isDir.boolValue {
+                if DAISYParser.isDAISYDirectory(url: fileURL) {
+                    // Import the directory as a DAISY book by finding its OPF/ncc.html
+                    let dirFiles = (try? FileManager.default.contentsOfDirectory(atPath: fileURL.path)) ?? []
+                    if let opf = dirFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) {
+                        supportedFiles.append(fileURL.appendingPathComponent(opf))
+                    } else if let ncc = dirFiles.first(where: { $0.lowercased() == "ncc.html" || $0.lowercased() == "ncc.htm" }) {
+                        supportedFiles.append(fileURL.appendingPathComponent(ncc))
+                    }
+                }
+                continue
+            }
             if BookFormat.detect(from: fileURL) != nil {
                 supportedFiles.append(fileURL)
             }
@@ -343,6 +386,13 @@ enum FileImportService {
         }
         if let doc = UTType("com.microsoft.word.doc") {
             types.append(doc)
+        }
+        // DAISY books (OPF files and .daisy extension)
+        if let opf = UTType(filenameExtension: "opf") {
+            types.append(opf)
+        }
+        if let daisy = UTType(filenameExtension: "daisy") {
+            types.append(daisy)
         }
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })

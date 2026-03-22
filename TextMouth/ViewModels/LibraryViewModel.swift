@@ -438,6 +438,30 @@ class LibraryViewModel: ObservableObject {
         importProgressTotal = 0
         importProgressMessage = "Extracting archive..."
 
+        // Check if this is a DAISY ZIP (contains OPF or ncc.html)
+        if DAISYParser.isDAISYZip(url: url) {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else { return }
+                do {
+                    let book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                    DispatchQueue.main.async {
+                        self.library.addBook(book)
+                        self.save()
+                        self.isImporting = false
+                        self.importProgressMessage = ""
+                        self.handleOriginalFileDeletion(url: url)
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        self.isImporting = false
+                        self.errorMessage = error.localizedDescription
+                        self.showError = true
+                    }
+                }
+            }
+            return
+        }
+
         // Check if this is an audio ZIP
         if isAudioZip(url: url) {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in

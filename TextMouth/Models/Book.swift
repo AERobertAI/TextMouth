@@ -6,6 +6,7 @@ enum BookFormat: String, Codable, CaseIterable {
     case markdown
     case html
     case docx
+    case daisy
     case audio
 
     var displayName: String {
@@ -15,6 +16,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .markdown: return "Markdown"
         case .html: return "HTML"
         case .docx: return "Word Document"
+        case .daisy: return "DAISY"
         case .audio: return "Audio"
         }
     }
@@ -26,6 +28,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
         case .docx: return ["docx", "doc"]
+        case .daisy: return ["daisy", "opf"]
         case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac"]
         }
     }
@@ -38,6 +41,10 @@ enum BookFormat: String, Codable, CaseIterable {
             if format.fileExtensions.contains(ext) {
                 return format
             }
+        }
+        // Check if a ZIP file is actually a DAISY package
+        if ext == "zip" && DAISYParser.isDAISYZip(url: url) {
+            return .daisy
         }
         return nil
     }
