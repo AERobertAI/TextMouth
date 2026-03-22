@@ -114,12 +114,12 @@ struct LibraryCommands: Commands {
             Button("Move Book Up") {
                 NotificationCenter.default.post(name: .moveBookUp, object: nil)
             }
-            // Control+Option+Up handled by KeyboardShortcutManager
+            // Cmd+Shift+Up handled by KeyboardShortcutManager
 
             Button("Move Book Down") {
                 NotificationCenter.default.post(name: .moveBookDown, object: nil)
             }
-            // Control+Option+Down handled by KeyboardShortcutManager
+            // Cmd+Shift+Down handled by KeyboardShortcutManager
 
             Divider()
 

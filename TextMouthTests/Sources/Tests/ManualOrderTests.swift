@@ -1,14 +1,22 @@
 import Foundation
 
+/// Result of a manual order move, mirrored from app.
+struct TestMoveResult {
+    let movedTitle: String
+    let adjacentTitle: String
+    let direction: Int
+    let newIndex: Int
+}
+
 /// Mirrors the app's moveBookInManualOrder logic for testing.
 /// direction: -1 for up, +1 for down.
-/// Returns the new index or nil if the move was not possible.
+@discardableResult
 func simulateMoveBookInManualOrder(
     library: inout Library,
     bookID: UUID,
     direction: Int,
     folderPath: String
-) -> Int? {
+) -> TestMoveResult? {
     var folderBooks = library.booksInFolder(folderPath)
         .sorted { a, b in
             let orderA = a.manualSortOrder ?? Int.max
@@ -20,14 +28,30 @@ func simulateMoveBookInManualOrder(
     let newIndex = currentIndex + direction
     guard newIndex >= 0, newIndex < folderBooks.count else { return nil }
 
+    let movedTitle = folderBooks[currentIndex].title
+    let adjacentTitle = folderBooks[newIndex].title
+
     folderBooks.swapAt(currentIndex, newIndex)
-    // Reassign sequential sort orders in the library
     for (i, book) in folderBooks.enumerated() {
         if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
             library.books[idx].manualSortOrder = i
         }
     }
-    return newIndex
+    return TestMoveResult(movedTitle: movedTitle, adjacentTitle: adjacentTitle, direction: direction, newIndex: newIndex)
+}
+
+/// Mirrors the app's canMoveBookInManualOrder logic.
+func simulateCanMove(library: Library, bookID: UUID, direction: Int, folderPath: String) -> Bool {
+    let folderBooks = library.booksInFolder(folderPath)
+        .sorted { a, b in
+            let orderA = a.manualSortOrder ?? Int.max
+            let orderB = b.manualSortOrder ?? Int.max
+            if orderA != orderB { return orderA < orderB }
+            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        }
+    guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return false }
+    let newIndex = currentIndex + direction
+    return newIndex >= 0 && newIndex < folderBooks.count
 }
 
 func runManualOrderTests() {
@@ -42,7 +66,7 @@ func runManualOrderTests() {
         ])
 
         let result = simulateMoveBookInManualOrder(library: &library, bookID: idA, direction: 1, folderPath: "F")
-        try assertEqual(result, 1, "Alpha should move to index 1")
+        try assertEqual(result?.newIndex, 1, "Alpha should move to index 1")
 
         // Verify order: Beta(0), Alpha(1), Gamma(2)
         let sorted = library.booksInFolder("F").sorted { ($0.manualSortOrder ?? 0) < ($1.manualSortOrder ?? 0) }
@@ -60,7 +84,7 @@ func runManualOrderTests() {
         ])
 
         let result = simulateMoveBookInManualOrder(library: &library, bookID: idC, direction: -1, folderPath: "F")
-        try assertEqual(result, 1, "Gamma should move to index 1")
+        try assertEqual(result?.newIndex, 1, "Gamma should move to index 1")
 
         let sorted = library.booksInFolder("F").sorted { ($0.manualSortOrder ?? 0) < ($1.manualSortOrder ?? 0) }
         try assertEqual(sorted[0].id, idA, "Alpha should be first")
@@ -111,7 +135,7 @@ func runManualOrderTests() {
         // Without manualSortOrder, title sort: Alpha(0), Beta(1), Charlie(2)
         // Move Alpha down → Beta(0), Alpha(1), Charlie(2)
         let result = simulateMoveBookInManualOrder(library: &library, bookID: idB, direction: 1, folderPath: "F")
-        try assertEqual(result, 1, "Alpha should move from 0 to 1")
+        try assertEqual(result?.newIndex, 1, "Alpha should move from 0 to 1")
 
         let sorted = library.booksInFolder("F").sorted { ($0.manualSortOrder ?? 0) < ($1.manualSortOrder ?? 0) }
         try assertEqual(sorted[0].title, "Beta")
@@ -158,6 +182,70 @@ func runManualOrderTests() {
         for (i, book) in sorted.enumerated() {
             try assertEqual(book.manualSortOrder, i, "Order should be sequential")
         }
+    }
+
+    test("Manual order: move down result has correct titles for announcement") {
+        let idA = UUID(), idB = UUID()
+        var library = Library(books: [
+            Book(title: "Alpha", folderPath: "F", manualSortOrder: 0, id: idA),
+            Book(title: "Beta", folderPath: "F", manualSortOrder: 1, id: idB),
+        ])
+
+        let result = simulateMoveBookInManualOrder(library: &library, bookID: idA, direction: 1, folderPath: "F")
+        try assertEqual(result?.movedTitle, "Alpha")
+        try assertEqual(result?.adjacentTitle, "Beta")
+        try assertEqual(result?.direction, 1)
+
+        // Verify announcement would be "Moved Alpha below Beta"
+        let position = result!.direction < 0 ? "above" : "below"
+        let message = "Moved \(result!.movedTitle) \(position) \(result!.adjacentTitle)"
+        try assertEqual(message, "Moved Alpha below Beta")
+    }
+
+    test("Manual order: move up result has correct titles for announcement") {
+        let idA = UUID(), idB = UUID()
+        var library = Library(books: [
+            Book(title: "Alpha", folderPath: "F", manualSortOrder: 0, id: idA),
+            Book(title: "Beta", folderPath: "F", manualSortOrder: 1, id: idB),
+        ])
+
+        let result = simulateMoveBookInManualOrder(library: &library, bookID: idB, direction: -1, folderPath: "F")
+        try assertEqual(result?.movedTitle, "Beta")
+        try assertEqual(result?.adjacentTitle, "Alpha")
+        try assertEqual(result?.direction, -1)
+
+        let position = result!.direction < 0 ? "above" : "below"
+        let message = "Moved \(result!.movedTitle) \(position) \(result!.adjacentTitle)"
+        try assertEqual(message, "Moved Beta above Alpha")
+    }
+
+    test("canMove: first book cannot move up, can move down") {
+        let idA = UUID(), idB = UUID()
+        let library = Library(books: [
+            Book(title: "Alpha", folderPath: "F", manualSortOrder: 0, id: idA),
+            Book(title: "Beta", folderPath: "F", manualSortOrder: 1, id: idB),
+        ])
+        try assertTrue(!simulateCanMove(library: library, bookID: idA, direction: -1, folderPath: "F"))
+        try assertTrue(simulateCanMove(library: library, bookID: idA, direction: 1, folderPath: "F"))
+    }
+
+    test("canMove: last book cannot move down, can move up") {
+        let idA = UUID(), idB = UUID()
+        let library = Library(books: [
+            Book(title: "Alpha", folderPath: "F", manualSortOrder: 0, id: idA),
+            Book(title: "Beta", folderPath: "F", manualSortOrder: 1, id: idB),
+        ])
+        try assertTrue(simulateCanMove(library: library, bookID: idB, direction: -1, folderPath: "F"))
+        try assertTrue(!simulateCanMove(library: library, bookID: idB, direction: 1, folderPath: "F"))
+    }
+
+    test("canMove: single book cannot move in either direction") {
+        let idA = UUID()
+        let library = Library(books: [
+            Book(title: "Alpha", folderPath: "F", manualSortOrder: 0, id: idA),
+        ])
+        try assertTrue(!simulateCanMove(library: library, bookID: idA, direction: -1, folderPath: "F"))
+        try assertTrue(!simulateCanMove(library: library, bookID: idA, direction: 1, folderPath: "F"))
     }
 
     test("Manual order: manualSortOrder persists in Book model") {

@@ -268,10 +268,10 @@ extension ShortcutAction {
                 KeyBinding(key: "e", command: true)
             ],
             .moveBookUp: [
-                KeyBinding(key: "upArrow", option: true, control: true)
+                KeyBinding(key: "upArrow", command: true, shift: true)
             ],
             .moveBookDown: [
-                KeyBinding(key: "downArrow", option: true, control: true)
+                KeyBinding(key: "downArrow", command: true, shift: true)
             ]
         ]
     }

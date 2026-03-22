@@ -229,16 +229,32 @@ struct LibraryView: View {
                                 }
                                 // Manual order move commands (single book only, when sort is Manual)
                                 if !isMulti && sortField == .manual {
-                                    Divider()
-                                    Button("Move Up") {
-                                        libraryViewModel.moveBookInManualOrder(
-                                            bookID: book.id, direction: -1, folderPath: currentFolderPath
-                                        )
+                                    let canUp = libraryViewModel.canMoveBookInManualOrder(
+                                        bookID: book.id, direction: -1, folderPath: currentFolderPath
+                                    )
+                                    let canDown = libraryViewModel.canMoveBookInManualOrder(
+                                        bookID: book.id, direction: 1, folderPath: currentFolderPath
+                                    )
+                                    if canUp || canDown {
+                                        Divider()
                                     }
-                                    Button("Move Down") {
-                                        libraryViewModel.moveBookInManualOrder(
-                                            bookID: book.id, direction: 1, folderPath: currentFolderPath
-                                        )
+                                    if canUp {
+                                        Button("Move Up") {
+                                            if let result = libraryViewModel.moveBookInManualOrder(
+                                                bookID: book.id, direction: -1, folderPath: currentFolderPath
+                                            ) {
+                                                announceToVoiceOver("Moved \(result.movedTitle) above \(result.adjacentTitle)")
+                                            }
+                                        }
+                                    }
+                                    if canDown {
+                                        Button("Move Down") {
+                                            if let result = libraryViewModel.moveBookInManualOrder(
+                                                bookID: book.id, direction: 1, folderPath: currentFolderPath
+                                            ) {
+                                                announceToVoiceOver("Moved \(result.movedTitle) below \(result.adjacentTitle)")
+                                            }
+                                        }
                                     }
                                 }
                                 Divider()
@@ -736,12 +752,30 @@ struct LibraryView: View {
 
     /// Move the currently selected book up or down in manual sort order.
     /// Only works when a single book is selected and sort is Manual Order.
+    /// Announces the result to VoiceOver.
     private func moveSelectedBookInManualOrder(direction: Int) {
         guard sortField == .manual else { return }
         let ids = effectiveSelection
         guard ids.count == 1, let bookID = ids.first else { return }
-        libraryViewModel.moveBookInManualOrder(
+        if let result = libraryViewModel.moveBookInManualOrder(
             bookID: bookID, direction: direction, folderPath: currentFolderPath
+        ) {
+            let position = result.direction < 0 ? "above" : "below"
+            let message = "Moved \(result.movedTitle) \(position) \(result.adjacentTitle)"
+            announceToVoiceOver(message)
+        }
+    }
+
+    /// Post a VoiceOver announcement for the library window.
+    private func announceToVoiceOver(_ message: String) {
+        guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
+        NSAccessibility.post(
+            element: window,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue
+            ]
         )
     }
 

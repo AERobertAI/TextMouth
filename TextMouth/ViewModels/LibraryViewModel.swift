@@ -854,11 +854,18 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
+    /// Result of a manual order move, containing info for VoiceOver announcements.
+    struct MoveResult {
+        let movedTitle: String
+        let adjacentTitle: String
+        let direction: Int  // -1 = up, +1 = down
+    }
+
     /// Move a book up or down by one position within its folder's manual sort order.
     /// direction: -1 for up, +1 for down.
-    /// Returns the new position index (0-based) or nil if the move was not possible.
+    /// Returns a MoveResult for VoiceOver announcement, or nil if the move was not possible.
     @discardableResult
-    func moveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> Int? {
+    func moveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> MoveResult? {
         // Get the sorted list of books in this folder (same ordering as reorderBooksInFolder)
         var folderBooks = library.booksInFolder(folderPath)
             .sorted { a, b in
@@ -871,13 +878,30 @@ class LibraryViewModel: ObservableObject {
         let newIndex = currentIndex + direction
         guard newIndex >= 0, newIndex < folderBooks.count else { return nil }
 
+        let movedTitle = folderBooks[currentIndex].title
+        let adjacentTitle = folderBooks[newIndex].title
+
         // Swap the two books
         folderBooks.swapAt(currentIndex, newIndex)
         // Reassign sequential sort orders
         for (i, book) in folderBooks.enumerated() {
             updateManualSortOrder(bookID: book.id, order: i)
         }
-        return newIndex
+        return MoveResult(movedTitle: movedTitle, adjacentTitle: adjacentTitle, direction: direction)
+    }
+
+    /// Check if a book can be moved up or down in manual sort order.
+    func canMoveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> Bool {
+        let folderBooks = library.booksInFolder(folderPath)
+            .sorted { a, b in
+                let orderA = a.manualSortOrder ?? Int.max
+                let orderB = b.manualSortOrder ?? Int.max
+                if orderA != orderB { return orderA < orderB }
+                return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+            }
+        guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return false }
+        let newIndex = currentIndex + direction
+        return newIndex >= 0 && newIndex < folderBooks.count
     }
 
     func updateEndOfBookBehavior(bookID: UUID, behavior: String?) {
