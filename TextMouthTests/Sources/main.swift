@@ -38,6 +38,7 @@ runVoiceSettingsTests()
 runHTMLToMarkdownTests()
 runMarkdownCacheTests()
 runOrphanAdoptionTests()
+runRelocationTests()
 runIntegrationTests()
 
 // ---- Summary ----

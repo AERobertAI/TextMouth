@@ -370,6 +370,190 @@ func runOrphanAdoptionTests() {
     }
 }
 
+// MARK: - Misplaced .tmb Relocation Tests
+
+func runRelocationTests() {
+    print("\n--- TMB Relocation Tests ---")
+
+    let fm = FileManager.default
+
+    /// Create a temporary directory to act as a library root
+    func createTempLibrary() -> URL {
+        let tempDir = fm.temporaryDirectory
+            .appendingPathComponent("TextMouthRelocationTest-\(UUID().uuidString)")
+            .appendingPathComponent("Library")
+        try! fm.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        return tempDir
+    }
+
+    /// Create a .tmb at a given location with a dummy book file
+    func createTMB(in base: URL, tmbName: String, fileName: String) -> URL {
+        let tmbDir = base.appendingPathComponent(tmbName, isDirectory: true)
+        try! fm.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+        let bookFile = tmbDir.appendingPathComponent(fileName)
+        fm.createFile(atPath: bookFile.path, contents: Data("dummy book data".utf8))
+        return tmbDir
+    }
+
+    test("Moves .tmb from root to assigned folder") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        let tmbName = "Misplaced-Author-12345.tmb"
+        let fileName = "Misplaced.epub"
+        let rootTmb = createTMB(in: libraryDir, tmbName: tmbName, fileName: fileName)
+
+        // Book says it belongs in "Science Fiction" but .tmb is at root
+        var library = Library(books: [
+            Book(title: "Misplaced", author: "Author", format: .epub,
+                 filePath: rootTmb.appendingPathComponent(fileName).path,
+                 md5Hash: "hash1", folderPath: "Science Fiction",
+                 tmbDirectoryName: tmbName)
+        ])
+
+        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+
+        try assertEqual(relocated, 1, "Should relocate 1 book")
+
+        // .tmb should now be in the subfolder
+        let expectedDir = libraryDir
+            .appendingPathComponent("Science Fiction", isDirectory: true)
+            .appendingPathComponent(tmbName, isDirectory: true)
+        try assertTrue(fm.fileExists(atPath: expectedDir.path), "TMB moved to subfolder")
+        try assertTrue(!fm.fileExists(atPath: rootTmb.path), "TMB gone from root")
+
+        // filePath should be updated
+        let expectedFile = expectedDir.appendingPathComponent(fileName).path
+        try assertEqual(library.books[0].filePath, expectedFile, "filePath updated")
+    }
+
+    test("Skips .tmb already in correct folder") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        let tmbName = "Correct-Author-12345.tmb"
+        let fileName = "Correct.epub"
+        let subDir = libraryDir.appendingPathComponent("Fantasy", isDirectory: true)
+        try! fm.createDirectory(at: subDir, withIntermediateDirectories: true)
+        let tmbDir = createTMB(in: subDir, tmbName: tmbName, fileName: fileName)
+
+        var library = Library(books: [
+            Book(title: "Correct", author: "Author", format: .epub,
+                 filePath: tmbDir.appendingPathComponent(fileName).path,
+                 md5Hash: "hash1", folderPath: "Fantasy",
+                 tmbDirectoryName: tmbName)
+        ])
+
+        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        try assertEqual(relocated, 0, "Should not relocate already-correct book")
+    }
+
+    test("Skips books with no folder assignment") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        let tmbName = "RootBook-Author-12345.tmb"
+        let fileName = "RootBook.epub"
+        let tmbDir = createTMB(in: libraryDir, tmbName: tmbName, fileName: fileName)
+
+        // folderPath is empty — book belongs at root
+        var library = Library(books: [
+            Book(title: "RootBook", author: "Author", format: .epub,
+                 filePath: tmbDir.appendingPathComponent(fileName).path,
+                 md5Hash: "hash1", folderPath: "",
+                 tmbDirectoryName: tmbName)
+        ])
+
+        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        try assertEqual(relocated, 0, "Should not move root-assigned book")
+    }
+
+    test("Relocates multiple books to different folders") {
+        let libraryDir = createTempLibrary()
+        defer { try? fm.removeItem(at: libraryDir.deletingLastPathComponent()) }
+
+        let tmb1 = "Book_A-Author-11111.tmb"
+        let tmb2 = "Book_B-Author-22222.tmb"
+        let tmb3 = "Book_C-Author-33333.tmb"
+        let rootA = createTMB(in: libraryDir, tmbName: tmb1, fileName: "A.epub")
+        let rootB = createTMB(in: libraryDir, tmbName: tmb2, fileName: "B.epub")
+        let rootC = createTMB(in: libraryDir, tmbName: tmb3, fileName: "C.epub")
+
+        var library = Library(books: [
+            Book(title: "A", author: "Author", format: .epub,
+                 filePath: rootA.appendingPathComponent("A.epub").path,
+                 md5Hash: "h1", folderPath: "SciFi",
+                 tmbDirectoryName: tmb1),
+            Book(title: "B", author: "Author", format: .epub,
+                 filePath: rootB.appendingPathComponent("B.epub").path,
+                 md5Hash: "h2", folderPath: "Fantasy",
+                 tmbDirectoryName: tmb2),
+            Book(title: "C", author: "Author", format: .epub,
+                 filePath: rootC.appendingPathComponent("C.epub").path,
+                 md5Hash: "h3", folderPath: "SciFi/Space Opera",
+                 tmbDirectoryName: tmb3),
+        ])
+
+        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        try assertEqual(relocated, 3, "Should relocate all 3")
+
+        // Verify they all ended up in the right places
+        for book in library.books {
+            let expectedDir = libraryDir
+                .appendingPathComponent(book.folderPath, isDirectory: true)
+                .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+            try assertTrue(fm.fileExists(atPath: expectedDir.path),
+                          "\(book.title) moved to \(book.folderPath)")
+        }
+    }
+}
+
+// MARK: - Standalone relocation function (mirrors FileImportService.relocateMisplacedTMBPackages)
+
+/// Move .tmb packages from root to their assigned folder.
+/// Returns the number of packages relocated.
+func relocateMisplacedTMBs(libraryDir: URL, library: inout Library) -> Int {
+    let fm = FileManager.default
+    var relocated = 0
+
+    for i in library.books.indices {
+        let book = library.books[i]
+        guard !book.tmbDirectoryName.isEmpty,
+              !book.folderPath.isEmpty
+        else { continue }
+
+        let expectedDir = libraryDir
+            .appendingPathComponent(book.folderPath, isDirectory: true)
+            .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+        let rootDir = libraryDir
+            .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+
+        // Already in the right place
+        if fm.fileExists(atPath: expectedDir.path) { continue }
+
+        // Not at root either — nothing to fix
+        guard fm.fileExists(atPath: rootDir.path) else { continue }
+
+        do {
+            // Ensure the target subfolder exists
+            let parentDir = libraryDir
+                .appendingPathComponent(book.folderPath, isDirectory: true)
+            try fm.createDirectory(at: parentDir, withIntermediateDirectories: true)
+
+            try fm.moveItem(at: rootDir, to: expectedDir)
+
+            let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+            library.books[i].filePath = expectedDir
+                .appendingPathComponent(fileName).path
+            relocated += 1
+        } catch {
+            // Move failed — leave it where it is
+        }
+    }
+
+    return relocated
+}
+
 // MARK: - Standalone adoption function (mirrors FileImportService.adoptOrphanedTMBPackages)
 // This function duplicates the core logic for testing without depending on
 // TextMouthPaths or other app-specific singletons.

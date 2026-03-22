@@ -152,6 +152,12 @@ class LibraryViewModel: ObservableObject {
             }
         }
 
+        // Move .tmb packages that are at the root but should be in a subfolder.
+        // This fixes books whose folder was assigned in the UI without physically
+        // moving the directory (a bug fixed in d6c6b2c but existing books need repair).
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library)
+        if relocated > 0 { needsSave = true }
+
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
         // This recovers books left behind by interrupted imports or crashes.
         let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library)

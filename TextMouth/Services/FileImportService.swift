@@ -348,8 +348,8 @@ enum FileImportService {
         return types
     }
 
-    /// Rebuild the .TextMouth directory structure, migrating any books from old storage
-    /// and adopting orphaned .tmb packages that exist on disk but aren't in the library.
+    /// Rebuild the .TextMouth directory structure, migrating any books from old storage,
+    /// moving misplaced .tmb packages to their correct folders, and adopting orphans.
     static func rebuildDirectoryStructure(library: inout Library) throws {
         try TextMouthPaths.ensureDirectoryStructure()
 
@@ -363,6 +363,10 @@ enum FileImportService {
             }
         }
 
+        // Move .tmb packages that are at the wrong location on disk
+        // (e.g. sitting at root when they should be in a subfolder)
+        relocateMisplacedTMBPackages(library: &library)
+
         // Adopt any orphaned .tmb packages found on disk
         adoptOrphanedTMBPackages(library: &library)
 
@@ -373,6 +377,54 @@ enum FileImportService {
                 try? FileManager.default.removeItem(at: oldDir)
             }
         }
+    }
+
+    /// Move .tmb packages that exist on disk but aren't in the folder their
+    /// book's folderPath says they should be in. Updates filePath to match.
+    /// This fixes books whose folder assignment was updated in library.json
+    /// without the physical .tmb directory being moved.
+    @discardableResult
+    static func relocateMisplacedTMBPackages(library: inout Library) -> Int {
+        let fm = FileManager.default
+        var relocated = 0
+
+        for i in library.books.indices {
+            let book = library.books[i]
+            // Only care about books that have a .tmb and a folder assignment
+            guard !book.tmbDirectoryName.isEmpty,
+                  !book.folderPath.isEmpty
+            else { continue }
+
+            let expectedDir = TextMouthPaths.tmbPath(
+                folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
+            let rootDir = TextMouthPaths.tmbPath(
+                folderPath: "", tmbName: book.tmbDirectoryName)
+
+            // If the .tmb is already in the right place, nothing to do
+            if fm.fileExists(atPath: expectedDir.path) { continue }
+
+            // If the .tmb is at root, move it to the correct folder
+            guard fm.fileExists(atPath: rootDir.path) else { continue }
+
+            do {
+                try TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
+                try fm.moveItem(at: rootDir, to: expectedDir)
+
+                // Update the filePath to point to the new location
+                let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
+                library.books[i].filePath = expectedDir
+                    .appendingPathComponent(fileName).path
+                relocated += 1
+            } catch {
+                // Move failed — leave the book where it is
+                print("Failed to relocate \(book.tmbDirectoryName): \(error)")
+            }
+        }
+
+        if relocated > 0 {
+            print("Relocated \(relocated) misplaced .tmb package(s) to correct folders")
+        }
+        return relocated
     }
 
     /// Scan the library directory for .tmb packages that exist on disk but are not
