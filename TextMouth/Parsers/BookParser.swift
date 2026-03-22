@@ -20,6 +20,8 @@ enum BookParser {
             return try DOCXParser.parse(url: url)
         case .daisy:
             return try DAISYParser.parse(url: url)
+        case .pdf:
+            return try PDFTextParser.parse(url: url)
         case .audio:
             // Audio parsing is async — use a synchronous bridge here
             var result: DocumentContent?

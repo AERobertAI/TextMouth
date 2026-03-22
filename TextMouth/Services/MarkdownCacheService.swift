@@ -88,6 +88,8 @@ enum MarkdownCacheService {
             return try DOCXParser.extractMarkdown(from: url)
         case .daisy:
             return try DAISYParser.extractMarkdown(from: url)
+        case .pdf:
+            return try PDFTextParser.extractMarkdown(from: url)
         case .audio:
             // Audio books don't get text caching
             return ""

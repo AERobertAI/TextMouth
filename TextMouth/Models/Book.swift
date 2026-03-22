@@ -7,6 +7,7 @@ enum BookFormat: String, Codable, CaseIterable {
     case html
     case docx
     case daisy
+    case pdf
     case audio
 
     var displayName: String {
@@ -17,6 +18,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .html: return "HTML"
         case .docx: return "Word Document"
         case .daisy: return "DAISY"
+        case .pdf: return "PDF"
         case .audio: return "Audio"
         }
     }
@@ -29,6 +31,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .html: return ["html", "htm", "xhtml"]
         case .docx: return ["docx", "doc"]
         case .daisy: return ["daisy", "opf"]
+        case .pdf: return ["pdf"]
         case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac"]
         }
     }

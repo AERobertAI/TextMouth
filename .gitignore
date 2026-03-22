@@ -58,3 +58,13 @@ fastlane/test_output
 
 # Claude Code
 .claude/
+
+# Comparison analysis (not part of the app)
+Comparisons/
+
+# Large test PDFs (downloaded separately, not tracked in git)
+TestData/relativity-einstein.pdf
+TestData/scanned-github.pdf
+TestData/ebook-history.pdf
+TestData/portland-accessibility.pdf
+TestData/va-pdf-cheatsheet.pdf

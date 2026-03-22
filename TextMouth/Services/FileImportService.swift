@@ -54,6 +54,14 @@ enum FileImportService {
             }
         }
 
+        // Extract metadata from PDF files (title and author from document attributes)
+        if format == .pdf {
+            if let metadata = PDFTextParser.readMetadata(from: sourceURL) {
+                if !metadata.title.isEmpty { title = metadata.title }
+                if !metadata.author.isEmpty { author = metadata.author }
+            }
+        }
+
         // Extract metadata from DAISY books (title and author from OPF or ncc.html)
         if format == .daisy {
             if let metadata = try? DAISYParser.readMetadata(from: sourceURL) {
@@ -387,6 +395,8 @@ enum FileImportService {
         if let doc = UTType("com.microsoft.word.doc") {
             types.append(doc)
         }
+        // PDF documents
+        types.append(.pdf)
         // DAISY books (OPF files and .daisy extension)
         if let opf = UTType(filenameExtension: "opf") {
             types.append(opf)
