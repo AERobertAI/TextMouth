@@ -817,6 +817,18 @@ class LibraryViewModel: ObservableObject {
         return folderBooks[nextIndex]
     }
 
+    /// Update the sort setting for a specific folder path and persist.
+    func setFolderSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
+        library.setSortSetting(setting, for: folderPath)
+        save()
+    }
+
+    /// Apply a sort setting to a folder and all its subfolders, then persist.
+    func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
+        library.applySortToSubfolders(setting, from: folderPath)
+        save()
+    }
+
     /// Update manual sort order for a book within its folder.
     func updateManualSortOrder(bookID: UUID, order: Int) {
         if let index = library.books.firstIndex(where: { $0.id == bookID }) {

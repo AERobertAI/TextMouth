@@ -372,6 +372,19 @@ struct LibraryView: View {
                     } label: {
                         Text(sortAscending ? "Sort Descending" : "Sort Ascending")
                     }
+                    // Only show "Apply to Subfolders" when in folders mode and subfolders exist
+                    if category == .folders {
+                        let hasSubfolders = !libraryViewModel.subfoldersOf(currentFolderPath).isEmpty
+                        if hasSubfolders {
+                            Divider()
+                            Button {
+                                let setting = FolderSortSetting(sortField: sortField, sortAscending: sortAscending)
+                                libraryViewModel.applySortToSubfolders(setting, from: currentFolderPath)
+                            } label: {
+                                Text("Apply Sort to All Subfolders")
+                            }
+                        }
+                    }
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }

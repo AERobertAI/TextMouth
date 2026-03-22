@@ -1,12 +1,59 @@
 import Foundation
 
+/// Per-folder sort configuration. Stored in library.json keyed by folder path.
+struct FolderSortSetting: Codable, Equatable {
+    var sortField: LibrarySortField
+    var sortAscending: Bool
+
+    /// Default sort: title ascending
+    static let defaultSort = FolderSortSetting(sortField: .title, sortAscending: true)
+}
+
 struct Library: Codable {
     var books: [Book]
     var folders: [BookFolder]
+    /// Per-folder sort settings keyed by folder path (empty string = root).
+    /// Folders not in this dictionary use FolderSortSetting.defaultSort.
+    var folderSortSettings: [String: FolderSortSetting]
 
-    init(books: [Book] = [], folders: [BookFolder] = []) {
+    init(books: [Book] = [], folders: [BookFolder] = [], folderSortSettings: [String: FolderSortSetting] = [:]) {
         self.books = books
         self.folders = folders
+        self.folderSortSettings = folderSortSettings
+    }
+
+    /// Backward-compatible decoding: folderSortSettings may be absent in older library.json files
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        books = try container.decode([Book].self, forKey: .books)
+        folders = try container.decode([BookFolder].self, forKey: .folders)
+        folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
+    }
+
+    // MARK: - Sort Settings
+
+    /// Get the sort setting for a folder path, falling back to the default.
+    func sortSetting(for folderPath: String) -> FolderSortSetting {
+        folderSortSettings[folderPath] ?? .defaultSort
+    }
+
+    /// Update the sort setting for a folder path.
+    mutating func setSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
+        folderSortSettings[folderPath] = setting
+    }
+
+    /// Apply a sort setting to a folder and all its subfolders recursively.
+    mutating func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
+        folderSortSettings[folderPath] = setting
+        for folder in folders {
+            let path = folder.fullPath
+            if path == folderPath || path.hasPrefix(folderPath.isEmpty ? "" : folderPath + "/") {
+                // For root (empty folderPath), apply to all folders
+                if folderPath.isEmpty || path != folderPath {
+                    folderSortSettings[path] = setting
+                }
+            }
+        }
     }
 
     // MARK: - Book Operations

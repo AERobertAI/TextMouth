@@ -2,6 +2,25 @@ import Foundation
 
 // MARK: - Shared Types (mirrored from app)
 
+// MARK: - LibrarySortField (mirrored from app)
+
+enum LibrarySortField: String, CaseIterable, Codable {
+    case title = "Title"
+    case author = "Author"
+    case dateAdded = "Date Added"
+    case lastOpened = "Last Opened"
+    case fileSize = "File Size"
+    case manual = "Manual Order"
+}
+
+/// Per-folder sort configuration, mirrored from app
+struct FolderSortSetting: Codable, Equatable {
+    var sortField: LibrarySortField
+    var sortAscending: Bool
+
+    static let defaultSort = FolderSortSetting(sortField: .title, sortAscending: true)
+}
+
 struct Heading: Equatable {
     var id: String
     var level: Int
@@ -371,10 +390,40 @@ struct Book: Identifiable, Codable {
 struct Library: Codable {
     var books: [Book]
     var folders: [BookFolder]
+    var folderSortSettings: [String: FolderSortSetting]
 
-    init(books: [Book] = [], folders: [BookFolder] = []) {
+    init(books: [Book] = [], folders: [BookFolder] = [], folderSortSettings: [String: FolderSortSetting] = [:]) {
         self.books = books
         self.folders = folders
+        self.folderSortSettings = folderSortSettings
+    }
+
+    /// Backward-compatible decoding: folderSortSettings may be absent
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        books = try container.decode([Book].self, forKey: .books)
+        folders = try container.decode([BookFolder].self, forKey: .folders)
+        folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
+    }
+
+    func sortSetting(for folderPath: String) -> FolderSortSetting {
+        folderSortSettings[folderPath] ?? .defaultSort
+    }
+
+    mutating func setSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
+        folderSortSettings[folderPath] = setting
+    }
+
+    mutating func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
+        folderSortSettings[folderPath] = setting
+        for folder in folders {
+            let path = folder.fullPath
+            if path == folderPath || path.hasPrefix(folderPath.isEmpty ? "" : folderPath + "/") {
+                if folderPath.isEmpty || path != folderPath {
+                    folderSortSettings[path] = setting
+                }
+            }
+        }
     }
 
     mutating func addBook(_ book: Book) {

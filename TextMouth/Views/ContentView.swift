@@ -18,6 +18,8 @@ struct LibraryWindowView: View {
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
+    /// Suppresses saving sort settings back to the library when loading from a folder change
+    @State private var isLoadingFolderSort = false
 
     var body: some View {
         ZStack {
@@ -176,10 +178,18 @@ struct LibraryWindowView: View {
                 currentFolderPath = parent
             }
         }
-        // Record folder changes into the navigation history and announce to VoiceOver
+        // Record folder changes into the navigation history, load sort settings, and announce
         .onChange(of: currentFolderPath) { _, newPath in
             folderNav.recordVisit(to: newPath)
+            loadSortSettings(for: newPath)
             announceFolderChange(newPath)
+        }
+        // Save sort settings back to the library when the user changes them
+        .onChange(of: sortField) { _, _ in
+            saveSortSettings()
+        }
+        .onChange(of: sortAscending) { _, _ in
+            saveSortSettings()
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
             if isKeyLibraryWindow, let bookID = notification.userInfo?["bookID"] as? UUID {
@@ -202,6 +212,22 @@ struct LibraryWindowView: View {
         }
         let direction = sortAscending ? "Ascending" : "Descending"
         return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
+    }
+
+    /// Load per-folder sort settings when navigating to a new folder.
+    private func loadSortSettings(for path: String) {
+        let setting = libraryViewModel.library.sortSetting(for: path)
+        isLoadingFolderSort = true
+        sortField = setting.sortField
+        sortAscending = setting.sortAscending
+        isLoadingFolderSort = false
+    }
+
+    /// Save the current sort field/direction as this folder's sort setting.
+    private func saveSortSettings() {
+        guard !isLoadingFolderSort else { return }
+        let setting = FolderSortSetting(sortField: sortField, sortAscending: sortAscending)
+        libraryViewModel.setFolderSortSetting(setting, for: currentFolderPath)
     }
 
     /// Announce the new folder name and book count to VoiceOver when navigating.
