@@ -34,16 +34,19 @@ enum MenuVisibilityManager {
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
 
-        if let identifier = window.identifier?.rawValue,
-           identifier.contains("book-reader") {
+        let identifier = window.identifier?.rawValue ?? ""
+
+        if identifier.contains("book-reader") {
             return .reader
         }
 
+        // SwiftUI Settings window has this identifier; its title is the
+        // current tab name (e.g. "Shortcuts"), not "Settings".
+        if identifier.contains("Settings") {
+            return nil
+        }
+
         if window.styleMask.contains(.titled) && !window.styleMask.contains(.utilityWindow) {
-            let title = window.title
-            if title == "Settings" || title == "Preferences" {
-                return nil
-            }
             return .library
         }
 
@@ -200,6 +203,60 @@ test("applyVisibility: switching window type toggles visibility correctly") {
 test("detectWindowType: nil window returns nil") {
     let result = MenuVisibilityManager.detectWindowType(for: nil)
     try assertTrue(result == nil, "Nil window should return nil type")
+}
+
+test("detectWindowType: Settings window returns nil (identifier-based)") {
+    // SwiftUI's Settings scene creates a regular NSWindow (not NSPanel)
+    // with identifier "com_apple_SwiftUI_Settings_window". Its title is
+    // the current tab name, not "Settings".
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: true
+    )
+    window.identifier = NSUserInterfaceItemIdentifier("com_apple_SwiftUI_Settings_window")
+    window.title = "Shortcuts"  // Tab name, not "Settings"
+    let result = MenuVisibilityManager.detectWindowType(for: window)
+    try assertTrue(result == nil, "Settings window should return nil")
+}
+
+test("detectWindowType: Settings window with different tab returns nil") {
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+        styleMask: [.titled, .closable],
+        backing: .buffered,
+        defer: true
+    )
+    window.identifier = NSUserInterfaceItemIdentifier("com_apple_SwiftUI_Settings_window")
+    window.title = "General"
+    let result = MenuVisibilityManager.detectWindowType(for: window)
+    try assertTrue(result == nil, "Settings window on any tab should return nil")
+}
+
+test("detectWindowType: reader window detected by identifier") {
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: true
+    )
+    window.identifier = NSUserInterfaceItemIdentifier("book-reader-AppWindow-1")
+    window.title = "Some Book Title"
+    let result = MenuVisibilityManager.detectWindowType(for: window)
+    try assertTrue(result == .reader, "book-reader identifier should return .reader")
+}
+
+test("detectWindowType: library window is default titled window") {
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+        styleMask: [.titled, .closable, .resizable],
+        backing: .buffered,
+        defer: true
+    )
+    window.title = "Library: All Folders"
+    let result = MenuVisibilityManager.detectWindowType(for: window)
+    try assertTrue(result == .library, "Default titled window should return .library")
 }
 
 } // end runMenuVisibilityTests

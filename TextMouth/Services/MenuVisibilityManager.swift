@@ -68,38 +68,39 @@ final class MenuVisibilityManager {
     // MARK: - Core Logic
 
     /// Determines the active window type from the current main window and
-    /// hides or shows menus accordingly. Extracted as a static method so
-    /// unit tests can verify the logic without needing live windows.
+    /// hides or shows menus accordingly.
     func updateMenuVisibility() {
         let windowType = Self.detectWindowType(for: NSApp.mainWindow)
         Self.applyVisibility(for: windowType, to: NSApp.mainMenu)
     }
 
-    /// Detects the window type by checking the main window's content view
-    /// for a focusedValue marker. Library windows use LibraryWindowView and
-    /// reader windows use BookReaderWindowView — both set .focusedValue on
-    /// their root view. We identify the type by the window's title and
-    /// content structure.
+    /// Detects the window type from the given window. Reader windows are
+    /// identified by their "book-reader" window group identifier. The
+    /// Settings window is identified by its SwiftUI-assigned identifier
+    /// "com_apple_SwiftUI_Settings_window". Library windows are the
+    /// default WindowGroup with no special identifier.
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
 
+        let identifier = window.identifier?.rawValue ?? ""
+
         // Reader windows are opened with the "Book Reader" window group,
         // which gives them an identifier containing "book-reader".
-        if let identifier = window.identifier?.rawValue,
-           identifier.contains("book-reader") {
+        if identifier.contains("book-reader") {
             return .reader
         }
 
+        // SwiftUI's Settings scene creates a regular NSWindow (not NSPanel)
+        // with this identifier. Its title is the current tab name (e.g.
+        // "Shortcuts", "General"), not "Settings", so we must check the
+        // identifier instead.
+        if identifier.contains("Settings") {
+            return nil
+        }
+
         // The library WindowGroup is the default (no explicit id), so library
-        // windows will NOT have "book-reader" in their identifier. We also
-        // check that the window is not a settings/preferences panel.
+        // windows will NOT have "book-reader" or "Settings" in their identifier.
         if window.styleMask.contains(.titled) && !window.styleMask.contains(.utilityWindow) {
-            // Settings windows typically have "Preferences" or "Settings" title,
-            // and use a different style. Library windows are the default.
-            let title = window.title
-            if title == "Settings" || title == "Preferences" {
-                return nil
-            }
             return .library
         }
 
