@@ -2,6 +2,14 @@ import Foundation
 
 // MARK: - Shared Types (mirrored from app)
 
+// MARK: - ActiveWindowType (mirrored from app)
+
+/// Identifies which type of window currently has focus
+enum ActiveWindowType {
+    case library
+    case reader
+}
+
 // MARK: - LibrarySortField (mirrored from app)
 
 enum LibrarySortField: String, CaseIterable, Codable {
