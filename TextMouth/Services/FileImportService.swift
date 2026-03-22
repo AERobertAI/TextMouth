@@ -46,6 +46,14 @@ enum FileImportService {
             }
         }
 
+        // Extract metadata from DOCX files (title and author from core properties)
+        if format == .docx {
+            if let metadata = try? DOCXParser.readMetadata(from: sourceURL) {
+                if !metadata.title.isEmpty { title = metadata.title }
+                if !metadata.author.isEmpty { author = metadata.author }
+            }
+        }
+
         // Extract metadata from audio files using AVAsset common metadata tags
         var audioAlbum: String?
         var audioGenre: String?
@@ -328,6 +336,13 @@ enum FileImportService {
         }
         if let md = UTType("net.daringfireball.markdown") {
             types.append(md)
+        }
+        // Word document formats (.docx and .doc)
+        if let docx = UTType("org.openxmlformats.wordprocessingml.document") {
+            types.append(docx)
+        }
+        if let doc = UTType("com.microsoft.word.doc") {
+            types.append(doc)
         }
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })

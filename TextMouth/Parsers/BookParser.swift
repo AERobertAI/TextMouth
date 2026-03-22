@@ -16,6 +16,8 @@ enum BookParser {
         case .txt:
             let text = try String(contentsOf: url, encoding: .utf8)
             return PlainTextParser.parse(text: text, title: url.deletingPathExtension().lastPathComponent)
+        case .docx:
+            return try DOCXParser.parse(url: url)
         case .audio:
             // Audio parsing is async — use a synchronous bridge here
             var result: DocumentContent?

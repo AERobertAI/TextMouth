@@ -282,6 +282,558 @@ func parsePlainText(text: String, title: String = "Untitled") -> DocumentContent
     return DocumentContent(title: title, author: "Unknown", chapters: [chapter])
 }
 
+// MARK: - DOCX Parser
+
+/// Metadata from docProps/core.xml
+struct DOCXMetadata {
+    var title: String
+    var author: String
+}
+
+/// Parsed style information from word/styles.xml
+struct DOCXStyles {
+    var headingLevels: [String: Int] = [:]
+    var bulletListStyles: Set<String> = []
+    var numberedListStyles: Set<String> = []
+}
+
+/// Numbering definitions for lists
+struct DOCXNumbering {
+    var abstractNums: [String: [String]] = [:]  // abstractNumId → [numFmt per level]
+    var numIdToAbstractId: [String: String] = [:]
+
+    func listType(numId: String, level: Int) -> String {
+        guard let abstractId = numIdToAbstractId[numId],
+              let levels = abstractNums[abstractId],
+              level < levels.count else {
+            return "bullet"
+        }
+        return levels[level]
+    }
+}
+
+/// Extract raw data from a ZIP archive entry
+func extractDOCXData(from archive: Archive, path: String) throws -> Data {
+    guard let entry = archive[path] else {
+        throw TestError.fileNotFound(path)
+    }
+    var data = Data()
+    _ = try archive.extract(entry) { chunk in data.append(chunk) }
+    return data
+}
+
+/// Parse metadata from docProps/core.xml
+func parseDOCXMetadata(from url: URL) throws -> DOCXMetadata {
+    let archive = try Archive(url: url, accessMode: .read)
+    let data = try extractDOCXData(from: archive, path: "docProps/core.xml")
+    guard let xml = String(data: data, encoding: .utf8) else {
+        throw TestError.assertionFailed("Cannot decode core.xml as UTF-8")
+    }
+    let parser = DOCXMetadataXMLParser(xml: xml)
+    return parser.parse()
+}
+
+/// SAX parser for docProps/core.xml
+private class DOCXMetadataXMLParser: NSObject, XMLParserDelegate {
+    private let xml: String
+    private var title = ""
+    private var author = ""
+    private var currentElement = ""
+    private var currentText = ""
+
+    init(xml: String) { self.xml = xml }
+
+    func parse() -> DOCXMetadata {
+        guard let data = xml.data(using: .utf8) else {
+            return DOCXMetadata(title: "", author: "")
+        }
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return DOCXMetadata(
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            author: author.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        currentElement = localName
+        currentText = ""
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        switch localName {
+        case "title": if title.isEmpty { title = currentText }
+        case "creator": if author.isEmpty { author = currentText }
+        default: break
+        }
+    }
+}
+
+/// Parse styles from word/styles.xml
+func parseDOCXStyles(from url: URL) throws -> DOCXStyles {
+    let archive = try Archive(url: url, accessMode: .read)
+    let data = try extractDOCXData(from: archive, path: "word/styles.xml")
+    guard let xml = String(data: data, encoding: .utf8) else {
+        throw TestError.assertionFailed("Cannot decode styles.xml as UTF-8")
+    }
+    let parser = DOCXStylesXMLParser(xml: xml)
+    return parser.parse()
+}
+
+/// SAX parser for word/styles.xml
+private class DOCXStylesXMLParser: NSObject, XMLParserDelegate {
+    private let xml: String
+    private var styles = DOCXStyles()
+    private var currentStyleId = ""
+    private var currentStyleName = ""
+    private var inStyle = false
+    private var currentOutlineLevel: Int?
+
+    init(xml: String) { self.xml = xml }
+
+    func parse() -> DOCXStyles {
+        guard let data = xml.data(using: .utf8) else { return styles }
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return styles
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        switch localName {
+        case "style":
+            currentStyleId = attributes["w:styleId"] ?? ""
+            currentStyleName = ""
+            currentOutlineLevel = nil
+            inStyle = true
+        case "name" where inStyle:
+            currentStyleName = attributes["w:val"] ?? ""
+        case "outlineLvl" where inStyle:
+            if let val = attributes["w:val"], let level = Int(val) {
+                currentOutlineLevel = level + 1
+            }
+        default: break
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        if localName == "style" && inStyle {
+            // Heading detection
+            if let level = resolveHeadingLevel(), level >= 1, level <= 6 {
+                styles.headingLevels[currentStyleId] = level
+            }
+            // List style detection
+            let nameLower = currentStyleName.lowercased()
+            let idLower = currentStyleId.lowercased()
+            if nameLower.contains("list bullet") || idLower.contains("listbullet") {
+                styles.bulletListStyles.insert(currentStyleId)
+            } else if nameLower.contains("list number") || idLower.contains("listnumber") {
+                styles.numberedListStyles.insert(currentStyleId)
+            }
+            inStyle = false
+        }
+    }
+
+    private func resolveHeadingLevel() -> Int? {
+        if let level = currentOutlineLevel { return min(level, 6) }
+        let nameLower = currentStyleName.lowercased()
+        if nameLower.hasPrefix("heading") {
+            let rest = nameLower.dropFirst("heading".count).trimmingCharacters(in: .whitespaces)
+            if let level = Int(rest) { return min(level, 6) }
+        }
+        let idLower = currentStyleId.lowercased()
+        if idLower.hasPrefix("heading") {
+            let rest = idLower.dropFirst("heading".count)
+            if let level = Int(rest) { return min(level, 6) }
+        }
+        if nameLower == "title" || idLower == "title" { return 1 }
+        if nameLower == "subtitle" || idLower == "subtitle" { return 2 }
+        return nil
+    }
+}
+
+/// Convert DOCX to Markdown
+func parseDOCXToMarkdown(from url: URL) throws -> String {
+    let archive = try Archive(url: url, accessMode: .read)
+
+    // Parse styles
+    let styles: DOCXStyles
+    if let stylesData = try? extractDOCXData(from: archive, path: "word/styles.xml"),
+       let stylesXML = String(data: stylesData, encoding: .utf8) {
+        styles = DOCXStylesXMLParser(xml: stylesXML).parse()
+    } else {
+        styles = DOCXStyles()
+    }
+
+    // Parse numbering
+    let numbering: DOCXNumbering
+    if let numData = try? extractDOCXData(from: archive, path: "word/numbering.xml"),
+       let numXML = String(data: numData, encoding: .utf8) {
+        numbering = DOCXNumberingXMLParser(xml: numXML).parse()
+    } else {
+        numbering = DOCXNumbering()
+    }
+
+    // Parse relationships
+    let relationships: [String: String]
+    if let relData = try? extractDOCXData(from: archive, path: "word/_rels/document.xml.rels"),
+       let relXML = String(data: relData, encoding: .utf8) {
+        relationships = DOCXRelationshipsXMLParser(xml: relXML).parse()
+    } else {
+        relationships = [:]
+    }
+
+    // Parse document.xml
+    let docData = try extractDOCXData(from: archive, path: "word/document.xml")
+    guard let docXML = String(data: docData, encoding: .utf8) else {
+        throw TestError.assertionFailed("Cannot decode document.xml as UTF-8")
+    }
+
+    let converter = DOCXToMarkdownXMLConverter(
+        styles: styles, numbering: numbering, relationships: relationships
+    )
+    return converter.convert(xmlString: docXML)
+}
+
+/// SAX parser for numbering.xml
+private class DOCXNumberingXMLParser: NSObject, XMLParserDelegate {
+    private let xml: String
+    private var numbering = DOCXNumbering()
+    private var currentAbstractNumId = ""
+    private var inAbstractNum = false
+    private var currentLevels: [String] = []
+    private var currentNumId: String?
+    private var inNum = false
+
+    init(xml: String) { self.xml = xml }
+
+    func parse() -> DOCXNumbering {
+        guard let data = xml.data(using: .utf8) else { return numbering }
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return numbering
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        switch localName {
+        case "abstractNum":
+            currentAbstractNumId = attributes["w:abstractNumId"] ?? ""
+            currentLevels = []
+            inAbstractNum = true
+        case "numFmt" where inAbstractNum:
+            currentLevels.append(attributes["w:val"] ?? "bullet")
+        case "num":
+            currentNumId = attributes["w:numId"]
+            inNum = true
+        case "abstractNumId" where inNum:
+            if let val = attributes["w:val"], let numId = currentNumId {
+                numbering.numIdToAbstractId[numId] = val
+            }
+        default: break
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        if localName == "abstractNum" && inAbstractNum {
+            numbering.abstractNums[currentAbstractNumId] = currentLevels
+            inAbstractNum = false
+        } else if localName == "num" && inNum {
+            inNum = false
+            currentNumId = nil
+        }
+    }
+}
+
+/// SAX parser for relationships
+private class DOCXRelationshipsXMLParser: NSObject, XMLParserDelegate {
+    private let xml: String
+    private var relationships: [String: String] = [:]
+
+    init(xml: String) { self.xml = xml }
+
+    func parse() -> [String: String] {
+        guard let data = xml.data(using: .utf8) else { return relationships }
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return relationships
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        if localName == "Relationship" {
+            if let id = attributes["Id"], let target = attributes["Target"] {
+                relationships[id] = target
+            }
+        }
+    }
+}
+
+/// Main DOCX-to-Markdown converter using SAX parsing
+private class DOCXToMarkdownXMLConverter: NSObject, XMLParserDelegate {
+    private let styles: DOCXStyles
+    private let numbering: DOCXNumbering
+    private let relationships: [String: String]
+
+    private var markdown = ""
+    private var elementStack: [String] = []
+
+    // Paragraph state
+    private var currentParagraphStyle = ""
+    private var currentParagraphText = ""
+    private var isInParagraph = false
+    private var listNumId: String?
+    private var listLevel: Int = 0
+
+    // Run state
+    private var isInRun = false
+    private var runIsBold = false
+    private var runIsItalic = false
+    private var runIsStrikethrough = false
+    private var runText = ""
+
+    // Hyperlink state
+    private var isInHyperlink = false
+    private var hyperlinkRelId = ""
+    private var hyperlinkText = ""
+
+    // Table state
+    private var isInTable = false
+    private var isInTableRow = false
+    private var isInTableCell = false
+    private var tableRows: [[String]] = []
+    private var currentRowCells: [String] = []
+    private var currentCellText = ""
+
+    // List counters
+    private var listCounters: [String: [Int: Int]] = [:]
+
+    init(styles: DOCXStyles, numbering: DOCXNumbering, relationships: [String: String]) {
+        self.styles = styles
+        self.numbering = numbering
+        self.relationships = relationships
+    }
+
+    func convert(xmlString: String) -> String {
+        guard let data = xmlString.data(using: .utf8) else { return "" }
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.shouldProcessNamespaces = false
+        parser.shouldReportNamespacePrefixes = false
+        parser.parse()
+        return normalizeWhitespace(markdown)
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+        elementStack.append(localName)
+
+        switch localName {
+        case "p":
+            isInParagraph = true
+            currentParagraphStyle = ""
+            currentParagraphText = ""
+            listNumId = nil
+            listLevel = 0
+        case "pStyle":
+            currentParagraphStyle = attributes["w:val"] ?? ""
+        case "ilvl":
+            if let val = attributes["w:val"], let level = Int(val) { listLevel = level }
+        case "numId":
+            let val = attributes["w:val"] ?? "0"
+            if val != "0" { listNumId = val }
+        case "r":
+            isInRun = true
+            runIsBold = false
+            runIsItalic = false
+            runIsStrikethrough = false
+            runText = ""
+        case "b" where isInRun:
+            let val = attributes["w:val"] ?? "true"
+            if val != "0" && val != "false" { runIsBold = true }
+        case "i" where isInRun:
+            let val = attributes["w:val"] ?? "true"
+            if val != "0" && val != "false" { runIsItalic = true }
+        case "strike" where isInRun:
+            let val = attributes["w:val"] ?? "true"
+            if val != "0" && val != "false" { runIsStrikethrough = true }
+        case "br":
+            currentParagraphText += "\n"
+        case "hyperlink":
+            isInHyperlink = true
+            hyperlinkRelId = attributes["r:id"] ?? ""
+            hyperlinkText = ""
+        case "tbl":
+            isInTable = true
+            tableRows = []
+        case "tr":
+            isInTableRow = true
+            currentRowCells = []
+        case "tc":
+            isInTableCell = true
+            currentCellText = ""
+        default: break
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        if let lastElement = elementStack.last, lastElement == "t" {
+            if isInHyperlink { hyperlinkText += string }
+            runText += string
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let localName = elementName.components(separatedBy: ":").last ?? elementName
+
+        switch localName {
+        case "r":
+            if isInRun {
+                let text = runText
+                if !text.isEmpty {
+                    var formatted = text
+                    if runIsBold && runIsItalic {
+                        formatted = "***\(formatted)***"
+                    } else if runIsBold {
+                        formatted = "**\(formatted)**"
+                    } else if runIsItalic {
+                        formatted = "*\(formatted)*"
+                    }
+                    if runIsStrikethrough { formatted = "~~\(formatted)~~" }
+                    currentParagraphText += formatted
+                }
+                isInRun = false
+            }
+        case "p":
+            let text = currentParagraphText.trimmingCharacters(in: .whitespaces)
+
+            if isInTableCell {
+                if !currentCellText.isEmpty && !text.isEmpty { currentCellText += " " }
+                currentCellText += text
+                isInParagraph = false
+            } else if text.isEmpty {
+                markdown += "\n"
+                isInParagraph = false
+            } else if let headingLevel = styles.headingLevels[currentParagraphStyle] {
+                let prefix = String(repeating: "#", count: headingLevel)
+                markdown += "\n\(prefix) \(text)\n\n"
+                isInParagraph = false
+            } else if let numId = listNumId {
+                let lt = numbering.listType(numId: numId, level: listLevel)
+                let indent = String(repeating: "    ", count: listLevel)
+                if lt == "bullet" {
+                    markdown += "\(indent)- \(text)\n"
+                } else {
+                    var counter = listCounters[numId] ?? [:]
+                    let current = (counter[listLevel] ?? 0) + 1
+                    counter[listLevel] = current
+                    listCounters[numId] = counter
+                    markdown += "\(indent)\(current). \(text)\n"
+                }
+                isInParagraph = false
+            } else if styles.bulletListStyles.contains(currentParagraphStyle) {
+                markdown += "- \(text)\n"
+                isInParagraph = false
+            } else if styles.numberedListStyles.contains(currentParagraphStyle) {
+                let key = "style-\(currentParagraphStyle)"
+                var counter = listCounters[key] ?? [:]
+                let current = (counter[0] ?? 0) + 1
+                counter[0] = current
+                listCounters[key] = counter
+                markdown += "\(current). \(text)\n"
+                isInParagraph = false
+            } else {
+                markdown += "\n\(text)\n"
+                isInParagraph = false
+            }
+        case "hyperlink":
+            if isInHyperlink {
+                let text = hyperlinkText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !text.isEmpty {
+                    if let target = relationships[hyperlinkRelId], !target.isEmpty {
+                        currentParagraphText += "[\(text)](\(target))"
+                    } else {
+                        currentParagraphText += text
+                    }
+                }
+                isInHyperlink = false
+            }
+        case "tbl":
+            isInTable = false
+            guard !tableRows.isEmpty else { break }
+            let colCount = tableRows.map { $0.count }.max() ?? 0
+            guard colCount > 0 else { break }
+            markdown += "\n"
+            for (rowIndex, row) in tableRows.enumerated() {
+                var cells = row
+                while cells.count < colCount { cells.append("") }
+                markdown += "| " + cells.joined(separator: " | ") + " |\n"
+                if rowIndex == 0 {
+                    let sep = cells.map { _ in "---" }.joined(separator: " | ")
+                    markdown += "| \(sep) |\n"
+                }
+            }
+            markdown += "\n"
+        case "tr":
+            if isInTableRow {
+                tableRows.append(currentRowCells)
+                isInTableRow = false
+            }
+        case "tc":
+            if isInTableCell {
+                currentRowCells.append(currentCellText.trimmingCharacters(in: .whitespacesAndNewlines))
+                isInTableCell = false
+            }
+        default: break
+        }
+
+        if !elementStack.isEmpty { elementStack.removeLast() }
+    }
+
+    private func normalizeWhitespace(_ text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        lines = lines.map { $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression) }
+        var result: [String] = []
+        var blankCount = 0
+        for line in lines {
+            if line.isEmpty {
+                blankCount += 1
+                if blankCount <= 2 { result.append(line) }
+            } else {
+                blankCount = 0
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 // MARK: - MD5 Hashing
 
 func md5Hash(of url: URL) throws -> String {

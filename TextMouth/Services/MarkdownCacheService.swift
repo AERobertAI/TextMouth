@@ -84,6 +84,8 @@ enum MarkdownCacheService {
             return try String(contentsOf: url, encoding: .utf8)
         case .txt:
             return try extractFromPlainText(url: url)
+        case .docx:
+            return try DOCXParser.extractMarkdown(from: url)
         case .audio:
             // Audio books don't get text caching
             return ""
