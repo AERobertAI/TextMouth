@@ -72,3 +72,6 @@ TestData/va-pdf-cheatsheet.pdf
 # Large DAISY audio test files (downloaded separately)
 TestData/fire-safety-d202-audio.zip
 TestData/are-you-ready-d3-audio.zip
+
+# Feature experiments / research (not part of the app)
+featureExp/

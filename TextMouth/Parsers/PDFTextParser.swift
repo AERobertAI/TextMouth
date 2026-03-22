@@ -119,7 +119,8 @@ enum PDFTextParser {
         let author = (attrs[PDFDocumentAttribute.authorAttribute] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        if title.isEmpty && author.isEmpty { return nil }
+        // Return metadata if at least one field is populated
+        guard !title.isEmpty || !author.isEmpty else { return nil }
         return PDFMetadata(title: title, author: author)
     }
 
@@ -471,7 +472,14 @@ enum PDFTextParser {
         request.usesLanguageCorrection = true
 
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        try? handler.perform([request])
+        do {
+            try handler.perform([request])
+        } catch {
+            // If perform() throws, the callback never fires, so signal
+            // the semaphore here to avoid a deadlock
+            semaphore.signal()
+            print("Warning: Vision OCR failed for page: \(error.localizedDescription)")
+        }
         semaphore.wait()
 
         return recognizedText

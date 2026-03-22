@@ -7,14 +7,14 @@ import ZIPFoundation
 enum DOCXParserError: LocalizedError {
     case fileNotFound(String)
     case invalidArchive
-    case missingDocumentXML
+    case missingEntry(String)
     case parseError(String)
 
     var errorDescription: String? {
         switch self {
         case .fileNotFound(let path): return "DOCX file not found at: \(path)"
         case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive."
-        case .missingDocumentXML: return "The DOCX file is missing word/document.xml."
+        case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)"
         case .parseError(let msg): return "DOCX parse error: \(msg)"
         }
     }
@@ -69,7 +69,7 @@ enum DOCXParser {
         // Parse the main document content
         let documentXML = try extractData(from: archive, path: "word/document.xml")
         guard let xmlString = String(data: documentXML, encoding: .utf8) else {
-            throw DOCXParserError.missingDocumentXML
+            throw DOCXParserError.parseError("Could not decode word/document.xml as UTF-8")
         }
 
         // Parse relationships for hyperlink targets
@@ -103,7 +103,7 @@ enum DOCXParser {
     /// Extract raw data from a ZIP archive entry
     private static func extractData(from archive: Archive, path: String) throws -> Data {
         guard let entry = archive[path] else {
-            throw DOCXParserError.missingDocumentXML
+            throw DOCXParserError.missingEntry(path)
         }
         var data = Data()
         _ = try archive.extract(entry) { chunk in data.append(chunk) }
@@ -508,8 +508,10 @@ private class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
     private var currentRowCells: [String] = []
     private var currentCellText = ""
 
-    // List counter tracking (for numbered lists)
+    // List counter tracking (for numbered lists).
+    // Counters reset when a non-list paragraph interrupts a list sequence.
     private var listCounters: [String: [Int: Int]] = [:] // numId → [level: count]
+    private var previousParagraphWasList = false
 
     init(styles: DOCXStyles, numbering: DOCXNumbering, relationships: [String: String]) {
         self.styles = styles
@@ -692,6 +694,18 @@ private class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
             return
         }
 
+        // Determine if this paragraph is a list item
+        let isListParagraph = listNumId != nil
+            || styles.bulletListStyles.contains(currentParagraphStyle)
+            || styles.numberedListStyles.contains(currentParagraphStyle)
+
+        // Reset all list counters when transitioning from list to non-list,
+        // so that subsequent numbered lists restart at 1
+        if !isListParagraph && previousParagraphWasList {
+            listCounters.removeAll()
+        }
+        previousParagraphWasList = isListParagraph
+
         // Check if this paragraph is a heading
         if let headingLevel = styles.headingLevels[currentParagraphStyle] {
             let prefix = String(repeating: "#", count: headingLevel)
@@ -784,7 +798,11 @@ private class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
         guard !text.isEmpty else { return }
 
         if let target = relationships[hyperlinkRelId], !target.isEmpty {
-            currentParagraphText += "[\(text)](\(target))"
+            // Escape parentheses in URLs to avoid breaking markdown link syntax
+            let escapedTarget = target
+                .replacingOccurrences(of: "(", with: "%28")
+                .replacingOccurrences(of: ")", with: "%29")
+            currentParagraphText += "[\(text)](\(escapedTarget))"
         } else {
             // No URL found — just emit the text
             currentParagraphText += text

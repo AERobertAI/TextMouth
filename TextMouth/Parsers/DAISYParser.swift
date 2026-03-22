@@ -270,8 +270,12 @@ enum DAISYParser {
 
         let nccDir = (nccPath as NSString).deletingLastPathComponent
 
-        // Collect all text content files referenced by SMIL files
-        var contentFiles: Set<String> = []
+        // Collect all text content files referenced by SMIL files, preserving
+        // the NCC heading order (which defines the reading order). Using an
+        // ordered array with deduplication instead of a Set avoids losing the
+        // document's intended sequence.
+        var contentFiles: [String] = []
+        var seenFiles: Set<String> = []
         for heading in nccResult.headings {
             // Heading href → SMIL file → text content file
             let smilRef = heading.href
@@ -285,7 +289,9 @@ enum DAISYParser {
                     let textFile = ref.components(separatedBy: "#").first ?? ref
                     let fullPath = (smilFile as NSString).deletingLastPathComponent
                     let textPath = fullPath.isEmpty ? textFile : "\(fullPath)/\(textFile)"
-                    contentFiles.insert(textPath)
+                    if seenFiles.insert(textPath).inserted {
+                        contentFiles.append(textPath)
+                    }
                 }
             }
         }
@@ -293,8 +299,7 @@ enum DAISYParser {
         // If we found text content files, extract and convert them
         if !contentFiles.isEmpty {
             var markdown = ""
-            // Sort to maintain reading order
-            let sortedFiles = contentFiles.sorted()
+            let sortedFiles = contentFiles
             for filePath in sortedFiles {
                 if let data = try? provider.readFile(at: filePath),
                    let html = String(data: data, encoding: .utf8)
@@ -536,6 +541,9 @@ private class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
     private var isInEmphasis = false
     private var isInStrong = false
 
+    // Link state
+    private var currentLinkHref = ""
+
     // Track block context for proper spacing
     private var lastOutputWasBlock = false
 
@@ -628,6 +636,7 @@ private class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
 
         // Links
         case "a":
+            currentLinkHref = attributes["href"] ?? ""
             markdown += "["
 
         // Images
@@ -646,9 +655,10 @@ private class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
             markdown += "---\n"
             lastOutputWasBlock = true
 
-        // Page numbers — emit as a comment marker
+        // Page numbers — emit as inline marker for navigation reference
         case "pagenum":
-            break // We'll capture the text and emit it in endElement
+            ensureNewline()
+            markdown += "[Page "
 
         // Table elements
         case "table":
@@ -732,14 +742,21 @@ private class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
         case "li":
             ensureNewline()
 
+        case "pagenum":
+            markdown += "]\n"
+
         case "blockquote":
             markdown += "\n\n"
             lastOutputWasBlock = true
 
         case "a":
-            // Close link — we'd need the href, but in DTBook links are rare
-            // For simplicity, just close the bracket
-            markdown += "]"
+            // Close link with href if available
+            if !currentLinkHref.isEmpty {
+                markdown += "](\(currentLinkHref))"
+            } else {
+                markdown += "]"
+            }
+            currentLinkHref = ""
 
         case "tr":
             markdown += "\n"
@@ -844,8 +861,9 @@ private class DAISY202NCCParser: NSObject, XMLParserDelegate {
     func parse() -> DAISY202NCCResult {
         // NCC files may not be well-formed XML, so try to clean them up
         var cleanedHTML = html
-        // Add XML declaration if missing
-        if !cleanedHTML.hasPrefix("<?xml") {
+        // Add XML declaration if missing (check trimmed to handle leading whitespace)
+        let trimmedHTML = cleanedHTML.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedHTML.hasPrefix("<?xml") {
             cleanedHTML = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + cleanedHTML
         }
 
@@ -1133,17 +1151,9 @@ enum DAISYAudioConverter {
             let clips = smilParser.parse()
             guard let firstClip = clips.first else { continue }
 
-            // Determine end time: either the last clip in this SMIL, or the
-            // first clip of the next navPoint's SMIL
+            // Use the last clip's end time as the segment end
             let lastClip = clips.last ?? firstClip
-            let endTime: Double
-
-            // If all clips are in the same file, use the last clip's end
-            if clips.allSatisfy({ $0.file == firstClip.file }) {
-                endTime = lastClip.endTime
-            } else {
-                endTime = lastClip.endTime
-            }
+            let endTime = lastClip.endTime
 
             // Copy the audio file to the output directory
             let audioFileName = (firstClip.file as NSString).lastPathComponent
@@ -1151,8 +1161,11 @@ enum DAISYAudioConverter {
             let destPath = audioDir.appendingPathComponent(audioFileName)
 
             if !fm.fileExists(atPath: destPath.path) {
-                if let audioData = try? provider.readFile(at: audioSrcPath) {
+                do {
+                    let audioData = try provider.readFile(at: audioSrcPath)
                     try audioData.write(to: destPath)
+                } catch {
+                    print("Warning: Failed to copy audio file \(audioSrcPath): \(error.localizedDescription)")
                 }
             }
 
@@ -1226,8 +1239,11 @@ enum DAISYAudioConverter {
             let destPath = audioDir.appendingPathComponent(audioFileName)
 
             if !fm.fileExists(atPath: destPath.path) {
-                if let audioData = try? provider.readFile(at: audioSrcPath) {
+                do {
+                    let audioData = try provider.readFile(at: audioSrcPath)
                     try audioData.write(to: destPath)
+                } catch {
+                    print("Warning: Failed to copy audio file \(audioSrcPath): \(error.localizedDescription)")
                 }
             }
 
@@ -1267,8 +1283,11 @@ enum DAISYAudioConverter {
             let destPath = audioDir.appendingPathComponent(fileName)
 
             if !fm.fileExists(atPath: destPath.path) {
-                if let data = try? provider.readFile(at: path) {
-                    try? data.write(to: destPath)
+                do {
+                    let fileData = try provider.readFile(at: path)
+                    try fileData.write(to: destPath)
+                } catch {
+                    print("Warning: Failed to copy remaining audio file \(path): \(error.localizedDescription)")
                 }
             }
         }
