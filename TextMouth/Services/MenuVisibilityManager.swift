@@ -46,28 +46,6 @@ final class MenuVisibilityManager {
         }
         observers.append(resignedMain)
 
-        // Also observe key window changes — panels like Settings become key
-        // without becoming main, so didBecomeMain alone misses them.
-        let becameKey = NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeKeyNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.updateMenuVisibility()
-        }
-        observers.append(becameKey)
-
-        let resignedKey = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.updateMenuVisibility()
-            }
-        }
-        observers.append(resignedKey)
-
         // Initial update after SwiftUI has built the menu bar. A slight delay
         // ensures the main menu is populated before we attempt to modify it.
         DispatchQueue.main.async { [weak self] in
@@ -89,41 +67,21 @@ final class MenuVisibilityManager {
 
     // MARK: - Core Logic
 
-    /// Determines the active window type from the frontmost window and
-    /// hides or shows menus accordingly. Checks the key window first
-    /// because panels (like Settings) become key but not main — if the
-    /// key window is a non-app window we should hide all context menus
-    /// rather than showing stale menus from the main window behind it.
+    /// Determines the active window type from the current main window and
+    /// hides or shows menus accordingly. Extracted as a static method so
+    /// unit tests can verify the logic without needing live windows.
     func updateMenuVisibility() {
-        let effectiveWindow = Self.effectiveWindow()
-        let windowType = Self.detectWindowType(for: effectiveWindow)
+        let windowType = Self.detectWindowType(for: NSApp.mainWindow)
         Self.applyVisibility(for: windowType, to: NSApp.mainMenu)
     }
 
-    /// Returns the window that should drive menu visibility. The key window
-    /// takes priority because panels (Settings, About) become key without
-    /// becoming main. If the key window is not a library or reader window,
-    /// returning it lets detectWindowType return nil, hiding all context
-    /// menus. Falls back to mainWindow when no key window exists.
-    static func effectiveWindow() -> NSWindow? {
-        if let keyWindow = NSApp.keyWindow {
-            return keyWindow
-        }
-        return NSApp.mainWindow
-    }
-
-    /// Detects the window type from the given window. Reader windows are
-    /// identified by their "book-reader" window group identifier. Library
-    /// windows are the default WindowGroup (no special id). Panels like
-    /// Settings, About, and other non-document windows return nil.
+    /// Detects the window type by checking the main window's content view
+    /// for a focusedValue marker. Library windows use LibraryWindowView and
+    /// reader windows use BookReaderWindowView — both set .focusedValue on
+    /// their root view. We identify the type by the window's title and
+    /// content structure.
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
-
-        // Panels (Settings, About, color pickers, etc.) are never library
-        // or reader windows. NSPanel is a subclass of NSWindow.
-        if window is NSPanel {
-            return nil
-        }
 
         // Reader windows are opened with the "Book Reader" window group,
         // which gives them an identifier containing "book-reader".
@@ -133,9 +91,11 @@ final class MenuVisibilityManager {
         }
 
         // The library WindowGroup is the default (no explicit id), so library
-        // windows will NOT have "book-reader" in their identifier. Filter out
-        // any other non-document windows by title as an extra safety check.
+        // windows will NOT have "book-reader" in their identifier. We also
+        // check that the window is not a settings/preferences panel.
         if window.styleMask.contains(.titled) && !window.styleMask.contains(.utilityWindow) {
+            // Settings windows typically have "Preferences" or "Settings" title,
+            // and use a different style. Library windows are the default.
             let title = window.title
             if title == "Settings" || title == "Preferences" {
                 return nil
