@@ -460,7 +460,14 @@ class LibraryViewModel: ObservableObject {
             guard let self = self else { return }
 
             do {
-                let books = try FileImportService.importZip(from: url, toFolder: folderPath) { completed, total in
+                // Pass existing library hashes so zip import can skip duplicates
+                // instead of creating orphaned .tmb packages
+                let existingHashes = Set(self.library.books.map { $0.md5Hash })
+                let books = try FileImportService.importZip(
+                    from: url,
+                    toFolder: folderPath,
+                    existingHashes: existingHashes
+                ) { completed, total in
                     DispatchQueue.main.async {
                         self.importProgressCurrent = completed
                         self.importProgressTotal = total

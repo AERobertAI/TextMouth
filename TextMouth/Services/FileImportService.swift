@@ -109,10 +109,13 @@ enum FileImportService {
 
     /// Import a ZIP file containing supported book files.
     /// Calls the progress callback with (completed, total) counts.
+    /// Pass existingHashes to skip files whose content already exists in the library,
+    /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns the imported books.
     static func importZip(
         from zipURL: URL,
         toFolder folderPath: String = "",
+        existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil
     ) throws -> [Book] {
         try TextMouthPaths.ensureDirectoryStructure()
@@ -134,10 +137,20 @@ enum FileImportService {
 
         let total = supportedFiles.count
         var books: [Book] = []
+        // Track hashes from this batch to avoid creating duplicate .tmbs
+        // when the same file appears multiple times in a single zip
+        var seenHashes = existingHashes
 
-        // Second pass: import each file
+        // Second pass: import each file, skipping duplicates
         for (index, fileURL) in supportedFiles.enumerated() {
+            // Compute hash before creating .tmb to avoid orphaning on duplicate
+            if let hash = try? md5Hash(of: fileURL), seenHashes.contains(hash) {
+                progress?(index + 1, total)
+                continue
+            }
+
             if let book = try? importFile(from: fileURL, toFolder: folderPath) {
+                seenHashes.insert(book.md5Hash)
                 books.append(book)
             }
             progress?(index + 1, total)
