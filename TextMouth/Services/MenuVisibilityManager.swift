@@ -6,6 +6,11 @@ import AppKit
 /// menu bar as non-interactive dead-ends — particularly problematic for
 /// VoiceOver users. This class uses AppKit's NSMenuItem.isHidden to fully
 /// remove irrelevant menus from the bar when they have no applicable items.
+///
+/// The visibility is applied in applicationWillUpdate rather than via
+/// notifications because SwiftUI re-evaluates CommandMenu bodies when
+/// @FocusedValue changes, resetting isHidden. applicationWillUpdate fires
+/// after SwiftUI's rebuild, so our isHidden always gets the last word.
 final class MenuVisibilityManager {
 
     /// Menu titles that should only appear when a reader window is focused
@@ -17,71 +22,30 @@ final class MenuVisibilityManager {
     /// All context-specific menu titles (union of reader + library sets)
     static let allContextMenuTitles: Set<String> = readerMenuTitles.union(libraryMenuTitles)
 
-    /// NotificationCenter observers so we can clean up on deinit
-    private var observers: [NSObjectProtocol] = []
-
-    /// Sets up observers for window focus changes and performs an initial update.
-    func startObserving() {
-        // Update menus whenever a window becomes main (gains focus)
-        let becameMain = NotificationCenter.default.addObserver(
-            forName: NSWindow.didBecomeMainNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.updateMenuVisibility()
-        }
-        observers.append(becameMain)
-
-        // Update when a window resigns main — covers the case where the last
-        // window closes and no window is main (hide all context menus)
-        let resignedMain = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignMainNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            // Small delay so the new main window has time to become active
-            DispatchQueue.main.async {
-                self?.updateMenuVisibility()
-            }
-        }
-        observers.append(resignedMain)
-
-        // Initial update after SwiftUI has built the menu bar. A slight delay
-        // ensures the main menu is populated before we attempt to modify it.
-        DispatchQueue.main.async { [weak self] in
-            self?.updateMenuVisibility()
-        }
-    }
-
-    /// Stops observing window changes and removes all notification observers.
-    func stopObserving() {
-        for observer in observers {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        observers.removeAll()
-    }
-
-    deinit {
-        stopObserving()
-    }
-
     // MARK: - Core Logic
 
-    /// Determines the active window type from the current main window and
-    /// hides or shows menus accordingly. Extracted as a static method so
-    /// unit tests can verify the logic without needing live windows.
+    /// Called from AppDelegate.applicationWillUpdate on every event loop
+    /// iteration. Detects the active window type and hides or shows menus.
     func updateMenuVisibility() {
-        let windowType = Self.detectWindowType(for: NSApp.mainWindow)
+        // Check key window first — panels (Settings, About) become key
+        // without becoming main, and should hide all context menus.
+        let window = NSApp.keyWindow ?? NSApp.mainWindow
+        let windowType = Self.detectWindowType(for: window)
         Self.applyVisibility(for: windowType, to: NSApp.mainMenu)
     }
 
-    /// Detects the window type by checking the main window's content view
-    /// for a focusedValue marker. Library windows use LibraryWindowView and
-    /// reader windows use BookReaderWindowView — both set .focusedValue on
-    /// their root view. We identify the type by the window's title and
-    /// content structure.
+    /// Detects the window type from the given window. Reader windows are
+    /// identified by their "book-reader" window group identifier. Library
+    /// windows are the default WindowGroup (no special id). Panels and
+    /// other non-document windows return nil.
     static func detectWindowType(for window: NSWindow?) -> ActiveWindowType? {
         guard let window = window else { return nil }
+
+        // Panels (Settings, About, color pickers, etc.) are never library
+        // or reader windows. NSPanel is a subclass of NSWindow.
+        if window is NSPanel {
+            return nil
+        }
 
         // Reader windows are opened with the "Book Reader" window group,
         // which gives them an identifier containing "book-reader".
@@ -91,11 +55,9 @@ final class MenuVisibilityManager {
         }
 
         // The library WindowGroup is the default (no explicit id), so library
-        // windows will NOT have "book-reader" in their identifier. We also
-        // check that the window is not a settings/preferences panel.
+        // windows will NOT have "book-reader" in their identifier. Filter out
+        // any other non-document windows by title as an extra safety check.
         if window.styleMask.contains(.titled) && !window.styleMask.contains(.utilityWindow) {
-            // Settings windows typically have "Preferences" or "Settings" title,
-            // and use a different style. Library windows are the default.
             let title = window.title
             if title == "Settings" || title == "Preferences" {
                 return nil
