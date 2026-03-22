@@ -292,6 +292,68 @@ func runFolderNavigationHistoryTests() {
         try assertEqual(nav.history.count, 1, "No history entry added")
     }
 
+    // MARK: - VoiceOver Announcement Message Tests
+
+    test("Folder announcement: root shows Library with total book count") {
+        let library = Library(books: [
+            Book(title: "A", folderPath: ""),
+            Book(title: "B", folderPath: "Fiction"),
+            Book(title: "C", folderPath: "Fiction/SciFi"),
+        ])
+        let path = ""
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        // At root, count ALL books in the library
+        let bookCount = path.isEmpty ? library.books.count : library.totalBooksInFolderTree(path)
+        let bookWord = bookCount == 1 ? "book" : "books"
+        let message = "\(folderName), \(bookCount) \(bookWord)"
+        try assertEqual(message, "Library, 3 books")
+    }
+
+    test("Folder announcement: subfolder shows name and recursive count") {
+        let library = Library(books: [
+            Book(title: "A", folderPath: "Fiction"),
+            Book(title: "B", folderPath: "Fiction/SciFi"),
+            Book(title: "C", folderPath: "Fiction/SciFi/Classics"),
+            Book(title: "D", folderPath: "Nonfiction"),
+        ])
+        let path = "Fiction"
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        let bookCount = library.totalBooksInFolderTree(path)
+        let bookWord = bookCount == 1 ? "book" : "books"
+        let message = "\(folderName), \(bookCount) \(bookWord)"
+        try assertEqual(message, "Fiction, 3 books")
+    }
+
+    test("Folder announcement: single book uses singular") {
+        let library = Library(books: [
+            Book(title: "Alone", folderPath: "Solo"),
+        ])
+        let path = "Solo"
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        let bookCount = library.totalBooksInFolderTree(path)
+        let bookWord = bookCount == 1 ? "book" : "books"
+        let message = "\(folderName), \(bookCount) \(bookWord)"
+        try assertEqual(message, "Solo, 1 book")
+    }
+
+    test("Folder announcement: empty folder shows 0 books") {
+        let library = Library(books: [], folders: [BookFolder(name: "Empty")])
+        let path = "Empty"
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        let bookCount = library.totalBooksInFolderTree(path)
+        let bookWord = bookCount == 1 ? "book" : "books"
+        let message = "\(folderName), \(bookCount) \(bookWord)"
+        try assertEqual(message, "Empty, 0 books")
+    }
+
+    test("Folder announcement: nested path uses last component") {
+        let path = "Fiction/SciFi/Classics"
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        try assertEqual(folderName, "Classics")
+    }
+
+    // MARK: - Navigation + History continued
+
     test("Back after navigating up returns to deeper folder") {
         let nav = TestFolderNavigationHistory()
         nav.recordVisit(to: "A")

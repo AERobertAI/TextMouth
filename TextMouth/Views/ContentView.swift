@@ -176,9 +176,10 @@ struct LibraryWindowView: View {
                 currentFolderPath = parent
             }
         }
-        // Record folder changes into the navigation history
+        // Record folder changes into the navigation history and announce to VoiceOver
         .onChange(of: currentFolderPath) { _, newPath in
             folderNav.recordVisit(to: newPath)
+            announceFolderChange(newPath)
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
             if isKeyLibraryWindow, let bookID = notification.userInfo?["bookID"] as? UUID {
@@ -201,6 +202,27 @@ struct LibraryWindowView: View {
         }
         let direction = sortAscending ? "Ascending" : "Descending"
         return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
+    }
+
+    /// Announce the new folder name and book count to VoiceOver when navigating.
+    private func announceFolderChange(_ path: String) {
+        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
+        // At root, show total library count; in a folder, show recursive subtree count
+        let bookCount = path.isEmpty
+            ? libraryViewModel.library.books.count
+            : libraryViewModel.library.totalBooksInFolderTree(path)
+        let bookWord = bookCount == 1 ? "book" : "books"
+        let message = "\(folderName), \(bookCount) \(bookWord)"
+
+        guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
+        NSAccessibility.post(
+            element: window,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue
+            ]
+        )
     }
 
     /// True when this library window is the current key (focused) window.
