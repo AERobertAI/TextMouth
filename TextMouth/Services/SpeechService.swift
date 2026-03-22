@@ -29,6 +29,15 @@ class SpeechService: NSObject, ObservableObject {
             }
         }
     }
+    /// Pitch multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch)
+    @Published var pitchMultiplier: Double = 1.0 {
+        didSet {
+            UserDefaults.standard.set(pitchMultiplier, forKey: "pitchMultiplier")
+            if !usingDirectMode && (audioEngine.isPlaying || audioEngine.isPaused) {
+                audioEngine.setPitch(multiplier: pitchMultiplier)
+            }
+        }
+    }
 
     var onWordSpoken: ((NSRange, String) -> Void)?
     var onUtteranceFinished: (() -> Void)?
@@ -74,6 +83,11 @@ class SpeechService: NSObject, ObservableObject {
             wordsPerMinute = savedWPM
         }
 
+        let savedPitch = UserDefaults.standard.double(forKey: "pitchMultiplier")
+        if savedPitch > 0 {
+            pitchMultiplier = savedPitch
+        }
+
         let savedVoiceID = UserDefaults.standard.string(forKey: "selectedVoiceID")
         if let voiceID = savedVoiceID {
             currentVoice = AVSpeechSynthesisVoice(identifier: voiceID)
@@ -95,6 +109,11 @@ class SpeechService: NSObject, ObservableObject {
         let savedWPM = UserDefaults.standard.double(forKey: "wordsPerMinute")
         if savedWPM > 0 && savedWPM != wordsPerMinute {
             wordsPerMinute = savedWPM
+        }
+
+        let savedPitch = UserDefaults.standard.double(forKey: "pitchMultiplier")
+        if savedPitch > 0 && savedPitch != pitchMultiplier {
+            pitchMultiplier = savedPitch
         }
 
         let savedVoiceID = UserDefaults.standard.string(forKey: "selectedVoiceID")
@@ -123,6 +142,8 @@ class SpeechService: NSObject, ObservableObject {
 
     var minimumWPM: Double { 50 }
     var maximumWPM: Double { 650 }
+    var minimumPitch: Double { 0.5 }
+    var maximumPitch: Double { 2.0 }
 
     // MARK: - Playback
 
@@ -178,6 +199,7 @@ class SpeechService: NSObject, ObservableObject {
             // Engine already has audio for this text — play immediately
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
+            audioEngine.setPitch(multiplier: pitchMultiplier)
             audioEngine.play(fromCharOffset: charOffset)
             startPositionTracking()
         } else {
@@ -227,6 +249,7 @@ class SpeechService: NSObject, ObservableObject {
         let utterance = AVSpeechUtterance(string: speakText)
         utterance.voice = currentVoice
         utterance.rate = Self.rateForWPM(wordsPerMinute)
+        utterance.pitchMultiplier = Float(max(0.5, min(pitchMultiplier, 2.0)))
         utterance.prefersAssistiveTechnologySettings = false
         directSynth.speak(utterance)
     }
@@ -260,6 +283,7 @@ class SpeechService: NSObject, ObservableObject {
             directSynth.stopSpeaking(at: .immediate)
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
+            audioEngine.setPitch(multiplier: pitchMultiplier)
             audioEngine.play(fromCharOffset: offset)
             startPositionTracking()
         } else if usingDirectMode {
@@ -269,6 +293,7 @@ class SpeechService: NSObject, ObservableObject {
             // Engine ready but not playing — start it
             let offset = currentWordRange?.location ?? 0
             audioEngine.setSpeed(wpm: wordsPerMinute)
+            audioEngine.setPitch(multiplier: pitchMultiplier)
             audioEngine.play(fromCharOffset: offset)
             startPositionTracking()
         }
@@ -324,6 +349,7 @@ class SpeechService: NSObject, ObservableObject {
         usingDirectMode = false
 
         audioEngine.setSpeed(wpm: wordsPerMinute)
+        audioEngine.setPitch(multiplier: pitchMultiplier)
         audioEngine.play(fromCharOffset: charOffset)
         startPositionTracking()
 
@@ -349,6 +375,7 @@ class SpeechService: NSObject, ObservableObject {
                 usingDirectMode = false
                 let wasPlaying = isSpeaking && !isPaused
                 audioEngine.setSpeed(wpm: wordsPerMinute)
+                audioEngine.setPitch(multiplier: pitchMultiplier)
                 if wasPlaying {
                     audioEngine.play(fromCharOffset: offset)
                     startPositionTracking()
@@ -374,6 +401,12 @@ class SpeechService: NSObject, ObservableObject {
     func setSpeedRealtime(_ newWPM: Double) {
         wordsPerMinute = max(minimumWPM, min(newWPM, maximumWPM))
         // wordsPerMinute didSet handles audioEngine.setSpeed
+    }
+
+    /// Change pitch in real-time without interrupting playback.
+    func setPitchRealtime(_ newPitch: Double) {
+        pitchMultiplier = max(minimumPitch, min(newPitch, maximumPitch))
+        // pitchMultiplier didSet handles audioEngine.setPitch
     }
 
     // MARK: - Position Tracking
@@ -501,6 +534,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                     self.usingDirectMode = false
                     self.directModeChunked = false
                     self.audioEngine.setSpeed(wpm: self.wordsPerMinute)
+                    self.audioEngine.setPitch(multiplier: self.pitchMultiplier)
                     self.audioEngine.play(fromCharOffset: nextOffset)
                     self.startPositionTracking()
                     return

@@ -93,9 +93,12 @@ class ReaderViewModel: ObservableObject {
             currentCharacterOffset = pos.characterOffset
         }
 
-        // Apply per-book voice/speed overrides
+        // Apply per-book voice/speed/pitch overrides
         if let localWPM = book.localWPM {
             speechService.setSpeedRealtime(localWPM)
+        }
+        if let localPitch = book.localPitch {
+            speechService.setPitchRealtime(localPitch)
         }
         if let localVoiceID = book.localVoiceID,
            let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
@@ -433,8 +436,12 @@ class ReaderViewModel: ObservableObject {
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 self.sleepTimerService.fadeOutDuration = self.settingsViewModel.sleepFadeOutDuration
+                // Re-apply per-book overrides (they take priority over global)
                 if let localWPM = self.book.localWPM {
                     self.speechService.setSpeedRealtime(localWPM)
+                }
+                if let localPitch = self.book.localPitch {
+                    self.speechService.setPitchRealtime(localPitch)
                 }
                 if let localVoiceID = self.book.localVoiceID,
                    let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
@@ -1013,30 +1020,44 @@ class ReaderViewModel: ObservableObject {
         let newWPM = max(speechService.minimumWPM, min(speechService.wordsPerMinute + delta, speechService.maximumWPM))
         speechService.setSpeedRealtime(newWPM)
         book.localWPM = speechService.wordsPerMinute
-        libraryViewModel.updateLocalVoiceAndSpeed(
-            bookID: book.id,
-            voiceID: book.localVoiceID,
-            wpm: book.localWPM
-        )
+        saveLocalVoiceSettings()
         announceToVoiceOver("\(Int(speechService.wordsPerMinute)) words per minute")
+    }
+
+    /// Set pitch for this book (multiplier 0.5–2.0)
+    func adjustPitch(to newPitch: Double) {
+        speechService.setPitchRealtime(newPitch)
+        book.localPitch = speechService.pitchMultiplier
+        saveLocalVoiceSettings()
+        let formatted = String(format: "%.1f", speechService.pitchMultiplier)
+        announceToVoiceOver("Pitch \(formatted)")
     }
 
     /// Set voice for this book only
     func setLocalVoice(_ voice: AVSpeechSynthesisVoice) {
         speechService.currentVoice = voice
         book.localVoiceID = voice.identifier
-        libraryViewModel.updateLocalVoiceAndSpeed(
-            bookID: book.id,
-            voiceID: book.localVoiceID,
-            wpm: book.localWPM
-        )
+        saveLocalVoiceSettings()
         announceToVoiceOver("Voice changed to \(voice.name)")
     }
 
-    /// Copy this book's local voice and speed to the global settings
+    /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
+    private func saveLocalVoiceSettings() {
+        libraryViewModel.updateLocalVoiceAndSpeed(
+            bookID: book.id,
+            voiceID: book.localVoiceID,
+            wpm: book.localWPM,
+            pitch: book.localPitch
+        )
+    }
+
+    /// Copy this book's local voice, speed, and pitch to the global settings
     func saveSettingsToGlobal() {
         if let localWPM = book.localWPM {
             settingsViewModel.wordsPerMinute = localWPM
+        }
+        if let localPitch = book.localPitch {
+            settingsViewModel.pitchMultiplier = localPitch
         }
         if let localVoiceID = book.localVoiceID {
             settingsViewModel.selectedVoiceID = localVoiceID
@@ -1044,26 +1065,29 @@ class ReaderViewModel: ObservableObject {
         announceToVoiceOver("Settings saved to global defaults")
     }
 
-    /// Reset this book to use global voice and speed settings
+    /// Reset this book to use global voice, speed, and pitch settings
     func resetToGlobalSettings() {
         book.localVoiceID = nil
         book.localWPM = nil
+        book.localPitch = nil
         libraryViewModel.updateLocalVoiceAndSpeed(
             bookID: book.id,
             voiceID: nil,
-            wpm: nil
+            wpm: nil,
+            pitch: nil
         )
         // Apply global settings
         speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
+        speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)
         if let voice = settingsViewModel.selectedVoice {
             speechService.currentVoice = voice
         }
         announceToVoiceOver("Using global voice and speed settings")
     }
 
-    /// Whether this book has local voice/speed overrides
+    /// Whether this book has local voice/speed/pitch overrides
     var hasLocalSettings: Bool {
-        book.localVoiceID != nil || book.localWPM != nil
+        book.localVoiceID != nil || book.localWPM != nil || book.localPitch != nil
     }
 
     // MARK: - Skip Sections
@@ -1338,7 +1362,7 @@ class ReaderViewModel: ObservableObject {
         audioPlaybackService.setSpeed(newSpeed)
         // Save as per-book setting
         book.localWPM = newSpeed
-        libraryViewModel.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: book.localVoiceID, wpm: newSpeed)
+        libraryViewModel.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: book.localVoiceID, wpm: newSpeed, pitch: book.localPitch)
         announceToVoiceOver(String(format: "%.2fx speed", newSpeed))
     }
 

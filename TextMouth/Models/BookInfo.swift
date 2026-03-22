@@ -108,6 +108,8 @@ struct BookState: Codable {
     var localVoiceID: String?
     /// Per-book WPM override (nil = use global setting)
     var localWPM: Double?
+    /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
+    var localPitch: Double?
     /// Heading IDs that should be skipped during playback
     var skippedHeadingIDs: [String]?
     /// Per-book end-of-book behavior override (nil = use global setting)
@@ -127,6 +129,7 @@ struct BookState: Codable {
         lastPlaybackStopped: Date? = nil,
         localVoiceID: String? = nil,
         localWPM: Double? = nil,
+        localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
@@ -141,6 +144,7 @@ struct BookState: Codable {
         self.lastPlaybackStopped = lastPlaybackStopped
         self.localVoiceID = localVoiceID
         self.localWPM = localWPM
+        self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder

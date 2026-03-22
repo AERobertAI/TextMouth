@@ -318,6 +318,33 @@ struct BookVoicePickerView: View {
                 }
 
                 Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Pitch: \(pitchLabel(viewModel.speechService.pitchMultiplier))")
+                            .accessibilityLabel("Pitch: \(pitchLabel(viewModel.speechService.pitchMultiplier))")
+
+                        Slider(
+                            value: Binding(
+                                get: { viewModel.speechService.pitchMultiplier },
+                                set: { newPitch in
+                                    let clamped = max(0.5, min(newPitch, 2.0))
+                                    if abs(clamped - viewModel.speechService.pitchMultiplier) >= 0.05 {
+                                        viewModel.adjustPitch(to: clamped)
+                                    }
+                                }
+                            ),
+                            in: 0.5...2.0,
+                            step: 0.1
+                        ) {
+                            Text("Pitch")
+                        }
+                        .accessibilityLabel("Pitch slider")
+                        .accessibilityValue(pitchLabel(viewModel.speechService.pitchMultiplier))
+                    }
+                } header: {
+                    Text("Pitch")
+                }
+
+                Section {
                     Picker("When this book ends", selection: Binding(
                         get: { viewModel.effectiveEndOfBookBehavior },
                         set: { viewModel.setLocalEndOfBookBehavior($0) }
@@ -359,7 +386,7 @@ struct BookVoicePickerView: View {
                 .keyboardShortcut(.escape, modifiers: [])
         }
         .padding()
-        .frame(width: 450, height: 500)
+        .frame(width: 450, height: 600)
         .navigationTitle("Voice & Speed: \(viewModel.book.title)")
         .onAppear {
             // Default to the current voice's language
@@ -396,7 +423,14 @@ struct BookVoicePickerView: View {
         let utterance = AVSpeechUtterance(string: "Hello! This is how I'll read for you.")
         utterance.voice = viewModel.speechService.currentVoice
         utterance.rate = SpeechService.rateForWPM(viewModel.speechService.wordsPerMinute)
+        utterance.pitchMultiplier = Float(max(0.5, min(viewModel.speechService.pitchMultiplier, 2.0)))
         previewSynthesizer.speak(utterance)
+    }
+
+    /// Format pitch multiplier for display
+    private func pitchLabel(_ value: Double) -> String {
+        if abs(value - 1.0) < 0.05 { return "Normal (1.0x)" }
+        return String(format: "%.1fx", value)
     }
 }
 

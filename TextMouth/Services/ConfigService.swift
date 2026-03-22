@@ -15,6 +15,8 @@ class ConfigService: ObservableObject {
     struct AppConfig: Codable, Equatable {
         var selectedVoiceID: String = ""
         var wordsPerMinute: Double = 0  // 0 means "not yet set by user"
+        /// Pitch multiplier (0.5–2.0, default 1.0). 0 means "not yet set by user"
+        var pitchMultiplier: Double = 0
         var selectedLanguage: String = ""
         var skipForwardUnit: String = ""
         var skipBackwardUnit: String = ""
@@ -45,6 +47,34 @@ class ConfigService: ObservableObject {
         var autoPlayOnNavigate: Bool = false
         /// Move deleted books to Trash instead of permanently deleting
         var moveToTrashInsteadOfDeleting: Bool = true
+
+        /// Custom decoder to handle missing keys from older config.json files.
+        /// Without this, adding new fields would break loading of existing configs.
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            selectedVoiceID = try container.decodeIfPresent(String.self, forKey: .selectedVoiceID) ?? ""
+            wordsPerMinute = try container.decodeIfPresent(Double.self, forKey: .wordsPerMinute) ?? 0
+            pitchMultiplier = try container.decodeIfPresent(Double.self, forKey: .pitchMultiplier) ?? 0
+            selectedLanguage = try container.decodeIfPresent(String.self, forKey: .selectedLanguage) ?? ""
+            skipForwardUnit = try container.decodeIfPresent(String.self, forKey: .skipForwardUnit) ?? ""
+            skipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .skipBackwardUnit) ?? ""
+            importDeleteBehavior = try container.decodeIfPresent(ImportDeleteBehavior.self, forKey: .importDeleteBehavior) ?? .keepOriginal
+            dataDirectoryPath = try container.decodeIfPresent(String.self, forKey: .dataDirectoryPath) ?? ""
+            confirmBeforeDelete = try container.decodeIfPresent(Bool.self, forKey: .confirmBeforeDelete) ?? true
+            shiftSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .shiftSkipForwardUnit) ?? ""
+            shiftSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .shiftSkipBackwardUnit) ?? ""
+            rewindOnResumeUnit = try container.decodeIfPresent(String.self, forKey: .rewindOnResumeUnit) ?? ""
+            rewindSmartMode = try container.decodeIfPresent(Bool.self, forKey: .rewindSmartMode) ?? false
+            rewindSmartThreshold = try container.decodeIfPresent(Double.self, forKey: .rewindSmartThreshold) ?? 70
+            sleepFadeOutDuration = try container.decodeIfPresent(Double.self, forKey: .sleepFadeOutDuration) ?? 0
+            endOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .endOfBookBehavior) ?? ""
+            punctuationPauseLevel = try container.decodeIfPresent(Double.self, forKey: .punctuationPauseLevel) ?? 0
+            lastOpenedBookID = try container.decodeIfPresent(String.self, forKey: .lastOpenedBookID) ?? ""
+            autoPlayOnNavigate = try container.decodeIfPresent(Bool.self, forKey: .autoPlayOnNavigate) ?? false
+            moveToTrashInsteadOfDeleting = try container.decodeIfPresent(Bool.self, forKey: .moveToTrashInsteadOfDeleting) ?? true
+        }
+
+        init() {}
     }
 
     private init() {

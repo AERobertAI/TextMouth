@@ -9,6 +9,7 @@ struct BookState: Codable {
     var lastPlaybackStopped: Date?
     var localVoiceID: String?
     var localWPM: Double?
+    var localPitch: Double?
     var skippedHeadingIDs: [String]?
     var localEndOfBookBehavior: String?
     var manualSortOrder: Int?
@@ -23,6 +24,7 @@ struct BookState: Codable {
         lastPlaybackStopped: Date? = nil,
         localVoiceID: String? = nil,
         localWPM: Double? = nil,
+        localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
@@ -36,6 +38,7 @@ struct BookState: Codable {
         self.lastPlaybackStopped = lastPlaybackStopped
         self.localVoiceID = localVoiceID
         self.localWPM = localWPM
+        self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder
@@ -244,6 +247,93 @@ test("hasLocalSettings: false when both nil") {
     let localWPM: Double? = nil
     let hasLocal = localVoiceID != nil || localWPM != nil
     try assertTrue(!hasLocal)
+}
+
+// ---- Per-Book Pitch ----
+print("\n--- Per-Book Pitch ---")
+
+test("BookState: encodes and decodes with localPitch") {
+    let state = BookState(
+        totalWordCount: 2000,
+        totalCharacterCount: 10000,
+        isNew: false,
+        tmbDirectoryName: "test.tmb",
+        localVoiceID: "com.apple.voice.compact.en-US.Samantha",
+        localWPM: 300.0,
+        localPitch: 1.5
+    )
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    let data = try encoder.encode(state)
+    let decoded = try decoder.decode(BookState.self, from: data)
+
+    try assertEqual(decoded.localPitch, 1.5)
+    try assertEqual(decoded.localVoiceID, "com.apple.voice.compact.en-US.Samantha")
+    try assertEqual(decoded.localWPM, 300.0)
+}
+
+test("BookState: backward compatible without localPitch") {
+    let json = """
+    {"isNew": true, "tmbDirectoryName": "old.tmb", "localWPM": 200.0}
+    """
+    let data = json.data(using: .utf8)!
+    let decoded = try JSONDecoder().decode(BookState.self, from: data)
+
+    try assertTrue(decoded.localPitch == nil, "Should be nil when not in JSON")
+    try assertEqual(decoded.localWPM, 200.0)
+}
+
+test("hasLocalSettings: true when only localPitch set") {
+    let localVoiceID: String? = nil
+    let localWPM: Double? = nil
+    let localPitch: Double? = 1.3
+    let hasLocal = localVoiceID != nil || localWPM != nil || localPitch != nil
+    try assertTrue(hasLocal)
+}
+
+test("hasLocalSettings: false when all nil including pitch") {
+    let localVoiceID: String? = nil
+    let localWPM: Double? = nil
+    let localPitch: Double? = nil
+    let hasLocal = localVoiceID != nil || localWPM != nil || localPitch != nil
+    try assertTrue(!hasLocal)
+}
+
+test("Pitch multiplier clamping: values below 0.5 clamp to 0.5") {
+    let input = 0.2
+    let clamped = max(0.5, min(input, 2.0))
+    try assertEqual(clamped, 0.5)
+}
+
+test("Pitch multiplier clamping: values above 2.0 clamp to 2.0") {
+    let input = 3.5
+    let clamped = max(0.5, min(input, 2.0))
+    try assertEqual(clamped, 2.0)
+}
+
+test("Pitch multiplier clamping: normal value passes through") {
+    let input = 1.3
+    let clamped = max(0.5, min(input, 2.0))
+    try assertTrue(abs(clamped - 1.3) < 0.001)
+}
+
+test("Pitch to cents conversion: 1.0x = 0 cents") {
+    let multiplier = 1.0
+    let cents = 1200.0 * log2(multiplier)
+    try assertTrue(abs(cents) < 0.001, "1.0x should be 0 cents, got \(cents)")
+}
+
+test("Pitch to cents conversion: 2.0x = 1200 cents (one octave up)") {
+    let multiplier = 2.0
+    let cents = 1200.0 * log2(multiplier)
+    try assertTrue(abs(cents - 1200.0) < 0.001, "2.0x should be 1200 cents, got \(cents)")
+}
+
+test("Pitch to cents conversion: 0.5x = -1200 cents (one octave down)") {
+    let multiplier = 0.5
+    let cents = 1200.0 * log2(multiplier)
+    try assertTrue(abs(cents - (-1200.0)) < 0.001, "0.5x should be -1200 cents, got \(cents)")
 }
 
 } // end runBookStateTests

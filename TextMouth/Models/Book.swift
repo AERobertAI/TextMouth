@@ -68,6 +68,8 @@ struct Book: Identifiable, Codable, Hashable {
     var localVoiceID: String?
     /// Per-book WPM override (nil = use global setting)
     var localWPM: Double?
+    /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
+    var localPitch: Double?
     /// Heading IDs that should be skipped during playback
     var skippedHeadingIDs: [String]?
     /// Per-book end-of-book behavior override (nil = use global)
@@ -101,6 +103,7 @@ struct Book: Identifiable, Codable, Hashable {
         lastPlaybackStopped: Date? = nil,
         localVoiceID: String? = nil,
         localWPM: Double? = nil,
+        localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
@@ -128,6 +131,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.lastPlaybackStopped = lastPlaybackStopped
         self.localVoiceID = localVoiceID
         self.localWPM = localWPM
+        self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder
@@ -159,6 +163,7 @@ struct Book: Identifiable, Codable, Hashable {
         lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
         localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
         localWPM = try container.decodeIfPresent(Double.self, forKey: .localWPM)
+        localPitch = try container.decodeIfPresent(Double.self, forKey: .localPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
@@ -236,6 +241,7 @@ struct Book: Identifiable, Codable, Hashable {
                 lastPlaybackStopped: lastPlaybackStopped,
                 localVoiceID: localVoiceID,
                 localWPM: localWPM,
+                localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 manualSortOrder: manualSortOrder,

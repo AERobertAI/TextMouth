@@ -34,6 +34,7 @@ runFeatureTests()
 runAudioMetadataTests()
 runWindowFocusTests()
 runFolderMoveTests()
+runVoiceSettingsTests()
 runIntegrationTests()
 
 // ---- Summary ----

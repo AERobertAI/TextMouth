@@ -740,10 +740,11 @@ class LibraryViewModel: ObservableObject {
         }
     }
 
-    func updateLocalVoiceAndSpeed(bookID: UUID, voiceID: String?, wpm: Double?) {
+    func updateLocalVoiceAndSpeed(bookID: UUID, voiceID: String?, wpm: Double?, pitch: Double? = nil) {
         if let index = library.books.firstIndex(where: { $0.id == bookID }) {
             library.books[index].localVoiceID = voiceID
             library.books[index].localWPM = wpm
+            library.books[index].localPitch = pitch
             save()
             LibraryPersistenceService.saveBookInfo(for: library.books[index])
         }

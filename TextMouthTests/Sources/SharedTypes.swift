@@ -274,6 +274,7 @@ struct Book: Identifiable, Codable {
     var sourceFilePath: String?
     var localVoiceID: String?
     var localWPM: Double?
+    var localPitch: Double?
     var skippedHeadingIDs: [String]?
     var localEndOfBookBehavior: String?
     var manualSortOrder: Int?
@@ -300,6 +301,7 @@ struct Book: Identifiable, Codable {
         sourceFilePath: String? = nil,
         localVoiceID: String? = nil,
         localWPM: Double? = nil,
+        localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
@@ -325,6 +327,7 @@ struct Book: Identifiable, Codable {
         self.sourceFilePath = sourceFilePath
         self.localVoiceID = localVoiceID
         self.localWPM = localWPM
+        self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder

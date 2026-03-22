@@ -63,6 +63,9 @@ class SettingsViewModel: ObservableObject {
     @AppStorage("wordsPerMinute") var wordsPerMinute: Double = 200 {
         didSet { broadcastChanges(); syncToConfig() }
     }
+    @AppStorage("pitchMultiplier") var pitchMultiplier: Double = 1.0 {
+        didSet { broadcastChanges(); syncToConfig() }
+    }
     @AppStorage("selectedLanguage") var selectedLanguage: String = "en" {
         didSet { syncToConfig() }
     }
@@ -192,6 +195,7 @@ class SettingsViewModel: ObservableObject {
         guard !isSyncingFromConfig else { return }
         configService.config.selectedVoiceID = selectedVoiceID
         configService.config.wordsPerMinute = wordsPerMinute
+        configService.config.pitchMultiplier = pitchMultiplier
         configService.config.selectedLanguage = selectedLanguage
         configService.config.skipForwardUnit = skipForwardUnitRaw
         configService.config.skipBackwardUnit = skipBackwardUnitRaw
@@ -216,6 +220,9 @@ class SettingsViewModel: ObservableObject {
         }
         if config.wordsPerMinute > 0 && config.wordsPerMinute != wordsPerMinute {
             wordsPerMinute = config.wordsPerMinute
+        }
+        if config.pitchMultiplier > 0 && config.pitchMultiplier != pitchMultiplier {
+            pitchMultiplier = config.pitchMultiplier
         }
         if !config.selectedLanguage.isEmpty && config.selectedLanguage != selectedLanguage {
             selectedLanguage = config.selectedLanguage
@@ -261,6 +268,9 @@ class SettingsViewModel: ObservableObject {
         }
         if config.wordsPerMinute > 0 && config.wordsPerMinute != wordsPerMinute {
             wordsPerMinute = config.wordsPerMinute
+        }
+        if config.pitchMultiplier > 0 && config.pitchMultiplier != pitchMultiplier {
+            pitchMultiplier = config.pitchMultiplier
         }
         if !config.selectedLanguage.isEmpty && config.selectedLanguage != selectedLanguage {
             selectedLanguage = config.selectedLanguage

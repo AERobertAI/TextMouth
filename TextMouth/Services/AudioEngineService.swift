@@ -275,6 +275,14 @@ class AudioEngineService: ObservableObject {
         timePitch.rate = Float(max(0.25, min(wpm / renderWPM, 4.0)))
     }
 
+    /// Set pitch using a multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch).
+    /// Converts to cents for AVAudioUnitTimePitch: cents = 1200 * log2(multiplier)
+    func setPitch(multiplier: Double) {
+        let clamped = max(0.5, min(multiplier, 2.0))
+        let cents = 1200.0 * log2(clamped)
+        timePitch.pitch = Float(cents)
+    }
+
     func setVolume(_ volume: Float) {
         engine.mainMixerNode.outputVolume = max(0.0, min(volume, 1.0))
     }
