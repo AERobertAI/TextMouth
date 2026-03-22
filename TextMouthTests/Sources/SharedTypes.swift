@@ -493,6 +493,18 @@ struct Library: Codable {
                 books[i].folderPath = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
             }
         }
+        // Update sort settings: reparent child paths, remove the deleted folder's entry
+        for key in folderSortSettings.keys {
+            if key == folderPath {
+                folderSortSettings.removeValue(forKey: key)
+            } else if key.hasPrefix(folderPath + "/") {
+                let setting = folderSortSettings.removeValue(forKey: key)!
+                let suffix = String(key.dropFirst(folderPath.count))
+                let newKey = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
+                folderSortSettings[newKey] = setting
+            }
+        }
+
         folders.removeAll { $0.id == id }
     }
 
@@ -507,6 +519,12 @@ struct Library: Codable {
         }
         folders.removeAll {
             $0.fullPath == folderPath || $0.fullPath.hasPrefix(folderPath + "/")
+        }
+        // Clean up sort settings for deleted folder tree
+        for key in folderSortSettings.keys {
+            if key == folderPath || key.hasPrefix(folderPath + "/") {
+                folderSortSettings.removeValue(forKey: key)
+            }
         }
         return removedBooks
     }
@@ -543,6 +561,16 @@ struct Library: Codable {
                 books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
             }
         }
+        // Remap sort settings from old paths to new paths
+        for key in folderSortSettings.keys {
+            if key == oldPath {
+                let setting = folderSortSettings.removeValue(forKey: key)!
+                folderSortSettings[newPath] = setting
+            } else if key.hasPrefix(oldPath + "/") {
+                let setting = folderSortSettings.removeValue(forKey: key)!
+                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
+            }
+        }
         return true
     }
 
@@ -570,6 +598,16 @@ struct Library: Codable {
                 books[i].folderPath = newPath
             } else if books[i].folderPath.hasPrefix(oldPath + "/") {
                 books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
+            }
+        }
+        // Remap sort settings from old paths to new paths
+        for key in folderSortSettings.keys {
+            if key == oldPath {
+                let setting = folderSortSettings.removeValue(forKey: key)!
+                folderSortSettings[newPath] = setting
+            } else if key.hasPrefix(oldPath + "/") {
+                let setting = folderSortSettings.removeValue(forKey: key)!
+                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
             }
         }
         return true

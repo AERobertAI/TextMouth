@@ -139,6 +139,89 @@ func runFolderSortSettingTests() {
         try assertTrue(!library.sortSetting(for: "B").sortAscending)
     }
 
+    // MARK: - Sort setting cleanup on folder operations
+
+    test("Delete folder removes its sort setting") {
+        let folderID = UUID()
+        var library = Library(folders: [
+            BookFolder(id: folderID, name: "Fiction"),
+        ])
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "Fiction")
+        try assertEqual(library.sortSetting(for: "Fiction").sortField, .author)
+
+        library.removeFolderAndContents(id: folderID)
+        // Should fall back to default now
+        try assertEqual(library.sortSetting(for: "Fiction").sortField, .title)
+        try assertTrue(library.folderSortSettings["Fiction"] == nil, "Entry should be removed")
+    }
+
+    test("Delete folder and contents removes descendant sort settings") {
+        let parentID = UUID()
+        var library = Library(folders: [
+            BookFolder(id: parentID, name: "Fiction"),
+            BookFolder(name: "SciFi", parentPath: "Fiction"),
+        ])
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "Fiction")
+        library.setSortSetting(FolderSortSetting(sortField: .fileSize, sortAscending: true), for: "Fiction/SciFi")
+
+        library.removeFolderAndContents(id: parentID)
+        try assertTrue(library.folderSortSettings["Fiction"] == nil)
+        try assertTrue(library.folderSortSettings["Fiction/SciFi"] == nil)
+    }
+
+    test("Rename folder remaps sort setting to new path") {
+        let folderID = UUID()
+        var library = Library(folders: [
+            BookFolder(id: folderID, name: "Fiction"),
+            BookFolder(name: "SciFi", parentPath: "Fiction"),
+        ])
+        library.setSortSetting(FolderSortSetting(sortField: .dateAdded, sortAscending: false), for: "Fiction")
+        library.setSortSetting(FolderSortSetting(sortField: .manual, sortAscending: true), for: "Fiction/SciFi")
+
+        library.renameFolder(id: folderID, to: "Novels")
+
+        // Old paths should be gone
+        try assertTrue(library.folderSortSettings["Fiction"] == nil)
+        try assertTrue(library.folderSortSettings["Fiction/SciFi"] == nil)
+        // New paths should have the settings
+        try assertEqual(library.sortSetting(for: "Novels").sortField, .dateAdded)
+        try assertEqual(library.sortSetting(for: "Novels/SciFi").sortField, .manual)
+    }
+
+    test("Move folder remaps sort setting to new path") {
+        let folderID = UUID()
+        var library = Library(folders: [
+            BookFolder(id: folderID, name: "SciFi", parentPath: "Fiction"),
+            BookFolder(name: "Fiction"),
+            BookFolder(name: "Nonfiction"),
+        ])
+        library.setSortSetting(FolderSortSetting(sortField: .fileSize, sortAscending: false), for: "Fiction/SciFi")
+
+        library.moveFolder(id: folderID, toParentPath: "Nonfiction")
+
+        try assertTrue(library.folderSortSettings["Fiction/SciFi"] == nil, "Old path should be gone")
+        try assertEqual(library.sortSetting(for: "Nonfiction/SciFi").sortField, .fileSize)
+    }
+
+    test("Remove folder reparenting preserves child sort settings with updated paths") {
+        let parentID = UUID()
+        var library = Library(folders: [
+            BookFolder(id: parentID, name: "Fiction"),
+            BookFolder(name: "SciFi", parentPath: "Fiction"),
+        ])
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "Fiction")
+        library.setSortSetting(FolderSortSetting(sortField: .manual, sortAscending: false), for: "Fiction/SciFi")
+
+        // Remove Fiction, reparenting contents to root
+        library.removeFolder(id: parentID, movingContentsTo: "")
+
+        // Fiction's own setting should be gone
+        try assertTrue(library.folderSortSettings["Fiction"] == nil)
+        // SciFi should now be at root level with its setting preserved
+        try assertEqual(library.sortSetting(for: "SciFi").sortField, .manual)
+        try assertTrue(!library.sortSetting(for: "SciFi").sortAscending)
+    }
+
     test("Apply sort preserves non-descendant folder settings") {
         var library = Library(folders: [
             BookFolder(name: "Fiction"),
