@@ -19,6 +19,11 @@ class AudioPlaybackService: NSObject, ObservableObject {
     private var endObserver: NSObjectProtocol?
     private var durationTask: Task<Void, Never>?
 
+    /// Optional clip end time for segmented audio (e.g. DAISY).
+    /// When set, playback fires onPlaybackFinished when reaching this time
+    /// instead of waiting for the actual end of the audio file.
+    private var clipEndTime: TimeInterval?
+
     let minimumSpeed: Double = 0.25
     let maximumSpeed: Double = 4.0
 
@@ -35,6 +40,7 @@ class AudioPlaybackService: NSObject, ObservableObject {
     /// Load an audio file for playback. Call this before play().
     func load(url: URL) {
         stop()
+        clipEndTime = nil
 
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
@@ -104,6 +110,14 @@ class AudioPlaybackService: NSObject, ObservableObject {
         let cmTime = CMTime(seconds: max(0, min(time, duration)), preferredTimescale: 600)
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
         currentTime = time
+    }
+
+    /// Set an optional clip end time for segmented audio playback.
+    /// When the current time reaches this value, onPlaybackFinished is fired
+    /// instead of continuing to the actual end of the audio file.
+    /// Pass nil or 0 to clear the clip boundary.
+    func setClipEndTime(_ time: TimeInterval?) {
+        clipEndTime = (time ?? 0) > 0 ? time : nil
     }
 
     func setSpeed(_ speed: Double) {
@@ -233,6 +247,15 @@ class AudioPlaybackService: NSObject, ObservableObject {
             guard let self = self else { return }
             let secs = CMTimeGetSeconds(time)
             if secs.isFinite {
+                // Check clip end boundary for segmented audio (DAISY etc.)
+                if let endTime = self.clipEndTime, secs >= endTime {
+                    self.player?.pause()
+                    self.isPlaying = false
+                    self.isPaused = false
+                    self.clipEndTime = nil
+                    self.onPlaybackFinished?()
+                    return
+                }
                 self.currentTime = secs
                 self.onPositionUpdate?(secs)
             }

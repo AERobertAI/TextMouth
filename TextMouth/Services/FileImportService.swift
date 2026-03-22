@@ -314,6 +314,77 @@ enum FileImportService {
         return digest.map { String(format: "%02hhx", $0) }.joined()
     }
 
+    /// Import a DAISY audio ZIP as a multi-chapter audio book.
+    /// Extracts audio files, parses SMIL timing for chapter segments,
+    /// and generates a manifest.json with segment data.
+    static func importDAISYAudioZip(from zipURL: URL, toFolder folderPath: String = "") throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        if !folderPath.isEmpty {
+            try TextMouthPaths.ensureLibrarySubfolder(folderPath)
+        }
+
+        let hash = try md5Hash(of: zipURL)
+        let dateAdded = Date()
+        let bookID = UUID()
+
+        // Open the ZIP and detect DAISY version
+        let archive = try Archive(url: zipURL, accessMode: .read)
+        let provider = ArchiveFileProvider(archive: archive)
+
+        // Read metadata
+        var title = zipURL.deletingPathExtension().lastPathComponent
+        var author = "Unknown"
+        if let metadata = try? DAISYParser.readMetadata(from: zipURL) {
+            if !metadata.title.isEmpty { title = metadata.title }
+            if !metadata.author.isEmpty { author = metadata.author }
+        }
+
+        let tmbName = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded)
+        let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
+        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+
+        // Create audio directory
+        let audioDir = tmbDir.appendingPathComponent("audio", isDirectory: true)
+        try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
+
+        // Detect version and convert
+        let allFiles = provider.listFiles()
+        let version: DAISYVersion
+        if allFiles.contains(where: { $0.lowercased().hasSuffix("ncc.html") || $0.lowercased().hasSuffix("ncc.htm") }) {
+            version = .daisy202
+        } else {
+            version = .daisy3
+        }
+
+        let manifest = try DAISYAudioConverter.convertToAudioBook(
+            from: provider,
+            version: version,
+            toDirectory: audioDir
+        )
+
+        // Write manifest.json
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let manifestData = try encoder.encode(manifest)
+        try manifestData.write(to: audioDir.appendingPathComponent("manifest.json"))
+
+        let book = Book(
+            id: bookID,
+            title: title,
+            author: author,
+            format: .audio,
+            filePath: audioDir.path,
+            md5Hash: hash,
+            folderPath: folderPath,
+            dateAdded: dateAdded,
+            tmbDirectoryName: tmbName,
+            sourceFilePath: zipURL.path
+        )
+
+        book.saveBookInfo()
+        return book
+    }
+
     /// Import a ZIP of audio files as a single multi-chapter audio book.
     /// Returns a single Book where each audio file is a chapter.
     static func importAudioZip(from zipURL: URL, toFolder folderPath: String = "") throws -> Book {

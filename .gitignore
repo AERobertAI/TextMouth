@@ -68,3 +68,7 @@ TestData/scanned-github.pdf
 TestData/ebook-history.pdf
 TestData/portland-accessibility.pdf
 TestData/va-pdf-cheatsheet.pdf
+
+# Large DAISY audio test files (downloaded separately)
+TestData/fire-safety-d202-audio.zip
+TestData/are-you-ready-d3-audio.zip

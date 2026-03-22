@@ -443,7 +443,24 @@ class LibraryViewModel: ObservableObject {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 guard let self = self else { return }
                 do {
-                    let book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                    let book: Book
+                    // Check if the DAISY package has audio content
+                    if let archive = try? Archive(url: url, accessMode: .read) {
+                        let provider = ArchiveFileProvider(archive: archive)
+                        if DAISYAudioConverter.hasAudio(in: provider) {
+                            book = try FileImportService.importDAISYAudioZip(
+                                from: url, toFolder: folderPath
+                            )
+                        } else {
+                            book = try FileImportService.importFile(
+                                from: url, toFolder: folderPath
+                            )
+                        }
+                    } else {
+                        book = try FileImportService.importFile(
+                            from: url, toFolder: folderPath
+                        )
+                    }
                     DispatchQueue.main.async {
                         self.library.addBook(book)
                         self.save()

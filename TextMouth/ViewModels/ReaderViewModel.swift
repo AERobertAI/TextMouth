@@ -44,6 +44,11 @@ class ReaderViewModel: ObservableObject {
     /// For multi-file audio books (ZIP import): file paths for each chapter
     var audioChapterFiles: [String] = []
 
+    /// For segmented audio (DAISY): clip start/end times per chapter.
+    /// When non-empty, each chapter's audio starts at segments[i].startTime
+    /// and stops at segments[i].endTime within the corresponding file.
+    var audioSegments: [AudioSegment] = []
+
     /// Audio playback speed (0.25 to 4.0, separate from WPM)
     @Published var audioSpeed: Double = 1.0
 
@@ -463,6 +468,7 @@ class ReaderViewModel: ObservableObject {
                 let url = URL(fileURLWithPath: filePath)
                 let parsed: DocumentContent
                 var audioFiles: [String]?
+                var audioSegments: [AudioSegment]?
 
                 if format.isAudio {
                     // Check if this is a multi-file audio book (directory of audio files)
@@ -472,6 +478,7 @@ class ReaderViewModel: ObservableObject {
                         let result = try waitForAsync { try await AudioBookParser.parseDirectory(url: url) }
                         parsed = result.content
                         audioFiles = result.filePaths
+                        audioSegments = result.segments
                     } else {
                         parsed = try BookParser.parse(url: url, format: format)
                     }
@@ -514,6 +521,9 @@ class ReaderViewModel: ObservableObject {
                     guard let self = self else { return }
                     if let audioFiles = audioFiles {
                         self.audioChapterFiles = audioFiles
+                    }
+                    if let segs = audioSegments {
+                        self.audioSegments = segs
                     }
                     self.content = parsed
                     self.headings = parsed.allHeadings
@@ -1344,7 +1354,7 @@ class ReaderViewModel: ObservableObject {
 
         let audioURL: URL
         if !audioChapterFiles.isEmpty && currentChapterIndex < audioChapterFiles.count {
-            // Multi-file audio book
+            // Multi-file audio book (or segmented DAISY audio)
             audioURL = URL(fileURLWithPath: audioChapterFiles[currentChapterIndex])
         } else {
             // Single audio file — use book file path
@@ -1354,8 +1364,21 @@ class ReaderViewModel: ObservableObject {
         audioPlaybackService.load(url: audioURL)
         audioPlaybackService.setSpeed(audioSpeed)
 
-        // If resuming mid-chapter, seek to the right position
-        let timeOffset = Double(currentCharacterOffset) / 10.0
+        // For segmented audio (DAISY), the clip starts at the segment's startTime
+        // rather than 0. The characterOffset is relative to the segment.
+        var timeOffset = Double(currentCharacterOffset) / 10.0
+        if !audioSegments.isEmpty && currentChapterIndex < audioSegments.count {
+            let segment = audioSegments[currentChapterIndex]
+            timeOffset += segment.startTime
+
+            // Set up a clip end boundary — when playback reaches endTime,
+            // treat it as chapter finished
+            let clipEnd = segment.endTime
+            if clipEnd > segment.startTime {
+                audioPlaybackService.setClipEndTime(clipEnd)
+            }
+        }
+
         audioPlaybackService.play(fromTime: timeOffset)
 
         isCurrentlyPlaying = true
