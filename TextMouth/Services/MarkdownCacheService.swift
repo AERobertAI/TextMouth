@@ -232,10 +232,9 @@ enum MarkdownCacheService {
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
             let content = parseSingleChapter(markdown, title: bookTitle)
-            let splitResult = splitOversizedChapters(content.chapters)
             return DocumentContent(title: content.title.isEmpty ? bookTitle : content.title,
                                    author: bookAuthor,
-                                   chapters: splitResult)
+                                   chapters: content.chapters)
         }
 
         var chapters: [Chapter] = []
@@ -253,9 +252,6 @@ enum MarkdownCacheService {
                 chapters.append(ch)
             }
         }
-
-        // Split any chapters that are too large for SwiftUI to render smoothly
-        chapters = splitOversizedChapters(chapters)
 
         // Use the first chapter's title as the document title, or fall back to book title
         let docTitle = chapters.first?.title.isEmpty == false ? chapters.first!.title : bookTitle
@@ -311,67 +307,6 @@ enum MarkdownCacheService {
             ?? DocumentContent(title: title, author: "Unknown", chapters: [
                 Chapter(title: title, text: markdown, headings: [])
             ])
-    }
-
-    // MARK: - Oversized Chapter Splitting
-
-    /// Maximum plain-text character count per chapter. Chapters larger than this
-    /// are split at paragraph boundaries to prevent SwiftUI from freezing when
-    /// rendering Text views with .textSelection(.enabled). 15K chars (~6 pages)
-    /// keeps chapter transitions smooth during TTS playback, where SwiftUI
-    /// re-layouts the entire Text view on every chapter change.
-    private static let maxChapterSize = 15_000
-
-    /// Split any chapters whose text exceeds maxChapterSize at paragraph
-    /// boundaries. Returns a new array where oversized chapters have been
-    /// replaced with multiple smaller ones.
-    static func splitOversizedChapters(_ chapters: [Chapter]) -> [Chapter] {
-        var result: [Chapter] = []
-        for chapter in chapters {
-            if chapter.text.count <= maxChapterSize {
-                result.append(chapter)
-                continue
-            }
-            let subchapters = splitChapterAtParagraphs(chapter)
-            result.append(contentsOf: subchapters)
-        }
-        return result
-    }
-
-    /// Split a single oversized chapter into multiple smaller chapters at
-    /// paragraph boundaries (double-newline). Each sub-chapter gets a title
-    /// like "Original Title (part 2)" and a level-1 heading at offset 0 so
-    /// the heading navigator can reach every split section.
-    private static func splitChapterAtParagraphs(_ chapter: Chapter) -> [Chapter] {
-        let paragraphs = chapter.text.components(separatedBy: "\n\n")
-        var chunks: [Chapter] = []
-        var currentText = ""
-        var partNumber = 1
-
-        for paragraph in paragraphs {
-            let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
-
-            // If adding this paragraph would exceed the limit and we already
-            // have content, finalize the current chunk
-            if candidate.count > maxChapterSize && !currentText.isEmpty {
-                let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-                let heading = Heading(level: 1, text: title, characterOffset: 0)
-                chunks.append(Chapter(title: title, text: currentText, headings: [heading]))
-                partNumber += 1
-                currentText = paragraph
-            } else {
-                currentText = candidate
-            }
-        }
-
-        // Finalize the last chunk
-        if !currentText.isEmpty {
-            let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-            let heading = Heading(level: 1, text: title, characterOffset: 0)
-            chunks.append(Chapter(title: title, text: currentText, headings: [heading]))
-        }
-
-        return chunks
     }
 
     // MARK: - Helpers
