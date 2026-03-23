@@ -69,15 +69,15 @@ test("DTBook without level1 produces no chapter markers") {
 }
 
 test("Oversized chapter splitting works at paragraph boundaries") {
-    // Build a chapter with text exceeding 40,000 characters
+    // Build a chapter with text exceeding 15,000 characters
     var longText = "# Big Chapter\n\n"
     let paragraph = String(repeating: "This is a test sentence. ", count: 50) + "\n\n"
-    while longText.count < 60_000 {
+    while longText.count < 25_000 {
         longText += paragraph
     }
 
     let chapters = [TestChapter(title: "Big Chapter", text: longText, headings: [])]
-    let result = splitOversizedTestChapters(chapters, maxSize: 40_000)
+    let result = splitOversizedTestChapters(chapters, maxSize: 15_000)
 
     try assertGreater(result.count, 1, "Should split into multiple chapters")
     // Each chunk should be under the limit (except possibly the last one which
@@ -85,7 +85,7 @@ test("Oversized chapter splitting works at paragraph boundaries") {
     for (i, ch) in result.enumerated() {
         if i < result.count - 1 {
             try assertTrue(
-                ch.text.count <= 45_000,
+                ch.text.count <= 20_000,
                 "Chunk \(i) should be roughly under maxSize, got \(ch.text.count)"
             )
         }
@@ -99,7 +99,7 @@ test("Oversized chapter splitting works at paragraph boundaries") {
 
 test("Small chapters are not split") {
     let chapters = [TestChapter(title: "Short", text: "Hello world", headings: [])]
-    let result = splitOversizedTestChapters(chapters, maxSize: 40_000)
+    let result = splitOversizedTestChapters(chapters, maxSize: 15_000)
     try assertEqual(result.count, 1, "Should not split small chapter")
     try assertEqual(result[0].title, "Short")
 }
@@ -108,7 +108,7 @@ test("Multiple chapters with one oversized splits only the large one") {
     let shortText = "Short chapter text."
     var longText = ""
     let paragraph = String(repeating: "Word ", count: 200) + "\n\n"
-    while longText.count < 60_000 {
+    while longText.count < 25_000 {
         longText += paragraph
     }
 
@@ -117,7 +117,7 @@ test("Multiple chapters with one oversized splits only the large one") {
         TestChapter(title: "Main Content", text: longText, headings: []),
         TestChapter(title: "Epilogue", text: shortText, headings: []),
     ]
-    let result = splitOversizedTestChapters(chapters, maxSize: 40_000)
+    let result = splitOversizedTestChapters(chapters, maxSize: 15_000)
     try assertGreater(result.count, 3, "Should have more than 3 chapters after splitting")
     try assertEqual(result[0].title, "Intro", "First chapter unchanged")
     try assertEqual(result.last!.title, "Epilogue", "Last chapter unchanged")
@@ -142,8 +142,8 @@ test("Hyperion DAISY cache produces manageable chapter sizes") {
         "Should have more than 2 chapters after splitting (got \(content.chapters.count))")
     for (i, ch) in content.chapters.enumerated() {
         try assertTrue(
-            ch.text.count <= 45_000,
-            "Chapter \(i) (\(ch.title)) should be under 45k chars, got \(ch.text.count)"
+            ch.text.count <= 20_000,
+            "Chapter \(i) (\(ch.title)) should be under 20k chars, got \(ch.text.count)"
         )
     }
 }
@@ -151,11 +151,11 @@ test("Hyperion DAISY cache produces manageable chapter sizes") {
 test("Split chapters have headings for navigator") {
     var longText = ""
     let paragraph = String(repeating: "This is a test sentence. ", count: 50) + "\n\n"
-    while longText.count < 60_000 {
+    while longText.count < 25_000 {
         longText += paragraph
     }
     let chapters = [TestChapter(title: "Big Chapter", text: longText, headings: [])]
-    let result = splitOversizedTestChapters(chapters, maxSize: 40_000)
+    let result = splitOversizedTestChapters(chapters, maxSize: 15_000)
     try assertGreater(result.count, 1, "Should split")
     for (i, ch) in result.enumerated() {
         try assertEqual(ch.headings.count, 1,

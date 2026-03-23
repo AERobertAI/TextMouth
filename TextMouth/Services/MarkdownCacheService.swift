@@ -317,8 +317,10 @@ enum MarkdownCacheService {
 
     /// Maximum plain-text character count per chapter. Chapters larger than this
     /// are split at paragraph boundaries to prevent SwiftUI from freezing when
-    /// rendering massive Text views with text selection enabled.
-    private static let maxChapterSize = 40_000
+    /// rendering Text views with .textSelection(.enabled). 15K chars (~6 pages)
+    /// keeps chapter transitions smooth during TTS playback, where SwiftUI
+    /// re-layouts the entire Text view on every chapter change.
+    private static let maxChapterSize = 15_000
 
     /// Split any chapters whose text exceeds maxChapterSize at paragraph
     /// boundaries. Returns a new array where oversized chapters have been

@@ -1532,7 +1532,7 @@ func splitOversizedTestChapters(_ chapters: [TestChapter], maxSize: Int) -> [Tes
 func parseMultiChapterMarkdownTest(_ markdown: String, bookTitle: String, bookAuthor: String) -> DocumentContent {
     let chapterMarkerPrefix = "<!-- chapter: "
     let chapterMarkerSuffix = " -->"
-    let maxChapterSize = 40_000
+    let maxChapterSize = 15_000
 
     // Split on chapter markers
     let lines = markdown.components(separatedBy: "\n")
