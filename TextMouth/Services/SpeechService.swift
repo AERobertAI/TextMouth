@@ -147,6 +147,13 @@ class SpeechService: NSObject, ObservableObject {
 
     // MARK: - Playback
 
+    /// Maximum text length for background engine rendering. Texts larger than
+    /// this stay in direct mode for the entire playback. Attempting to render
+    /// very large texts (e.g. 900K+ chars) via AVSpeechSynthesizer.write()
+    /// competes with the direct-mode .speak() for macOS speech synthesis
+    /// resources, causing chunks to loop or stutter at boundaries.
+    private static let maxRenderTextLength = 100_000
+
     /// Speak text. Starts playback immediately in direct mode for zero latency.
     /// Pre-renders in background so audio engine is ready for seeking, speed changes,
     /// or to play the next chapter without delay. Does NOT switch mid-playback to avoid
@@ -164,6 +171,16 @@ class SpeechService: NSObject, ObservableObject {
 
         // Start direct mode immediately for zero-latency playback
         speakDirect(text, fromCharOffset: charOffset)
+
+        // Skip background render for very large texts. The concurrent
+        // AVSpeechSynthesizer.write() competes with the direct-mode
+        // .speak() for the macOS speech synthesis engine, causing chunk
+        // transitions to loop or stutter. Direct mode chunking handles
+        // arbitrarily long texts on its own.
+        guard text.count <= Self.maxRenderTextLength else {
+            transitionLog("RENDER_SKIP: text too large (\(text.count) chars > \(Self.maxRenderTextLength)), staying in direct mode")
+            return
+        }
 
         // Pre-render in background so engine is ready for seeks, pauses, or next chapter.
         // We do NOT switch mid-playback — direct mode runs until a natural break.
@@ -234,6 +251,7 @@ class SpeechService: NSObject, ObservableObject {
             directModeBaseOffset = startOffset
             directModeChunkEnd = startOffset + speakText.count
             directModeChunked = true
+            transitionLog("CHUNK_START: offset=\(startOffset) len=\(speakText.count) end=\(directModeChunkEnd) totalText=\(text.count)")
         } else if startOffset > 0 {
             speakText = String(text[startIdx...])
             directModeBaseOffset = startOffset
