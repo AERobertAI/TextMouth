@@ -542,6 +542,21 @@ class ReaderViewModel: ObservableObject {
                     self.headings = parsed.allHeadings
                     self.epubMetadata = metadata
                     self.audioMetadata = audioMeta
+
+                    // Clamp saved reading position to valid range. The chapter
+                    // count can change if the book was re-imported or the cache
+                    // was regenerated with different parsing.
+                    if self.currentChapterIndex >= parsed.chapters.count {
+                        self.currentChapterIndex = max(0, parsed.chapters.count - 1)
+                        self.currentCharacterOffset = 0
+                    }
+                    if self.currentChapterIndex < parsed.chapters.count {
+                        let chapterLen = parsed.chapters[self.currentChapterIndex].text.count
+                        if self.currentCharacterOffset > chapterLen {
+                            self.currentCharacterOffset = 0
+                        }
+                    }
+
                     self.isLoading = false
 
                     // Save word/char counts for library time estimation
@@ -567,6 +582,45 @@ class ReaderViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - Text Display Window
+
+    /// Maximum number of characters to render in the SwiftUI Text view.
+    /// Chapters under this limit are shown in full. Larger chapters show
+    /// a sliding window around the current reading position so the UI
+    /// stays responsive. The full text remains in memory for TTS.
+    private static let maxDisplayChars = 20_000
+
+    /// Return the text to display in the reader view. For small chapters,
+    /// returns the full text. For large chapters, returns a window of text
+    /// centred on the current character offset.
+    func visibleTextWindow(_ fullText: String) -> String {
+        guard fullText.count > Self.maxDisplayChars else { return fullText }
+
+        let halfWindow = Self.maxDisplayChars / 2
+        let center = min(max(currentCharacterOffset, halfWindow), fullText.count - halfWindow)
+        let windowStart = max(center - halfWindow, 0)
+        let windowEnd = min(center + halfWindow, fullText.count)
+
+        let startIdx = fullText.index(fullText.startIndex, offsetBy: windowStart)
+        let endIdx = fullText.index(fullText.startIndex, offsetBy: windowEnd)
+
+        // Snap to paragraph boundaries so text doesn't start/end mid-word
+        var adjustedStart = startIdx
+        if windowStart > 0 {
+            if let paraBreak = fullText.range(of: "\n\n", range: startIdx..<endIdx) {
+                adjustedStart = paraBreak.upperBound
+            }
+        }
+        var adjustedEnd = endIdx
+        if windowEnd < fullText.count {
+            if let paraBreak = fullText.range(of: "\n\n", options: .backwards, range: adjustedStart..<endIdx) {
+                adjustedEnd = paraBreak.lowerBound
+            }
+        }
+
+        return String(fullText[adjustedStart..<adjustedEnd])
     }
 
     // MARK: - Position Saving

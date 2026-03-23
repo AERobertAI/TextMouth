@@ -62,29 +62,20 @@ struct ReaderView: View {
 
                 Divider()
 
-                // Text display area
+                // Text display area — only render a window of text around the
+                // current position. The full chapter text lives in the model for
+                // TTS; rendering hundreds of thousands of characters in a SwiftUI
+                // Text view freezes the main thread.
                 ScrollView {
                     if let content = viewModel.content,
                        viewModel.currentChapterIndex < content.chapters.count {
                         let chapterText = content.chapters[viewModel.currentChapterIndex].text
-                        // Disable .textSelection for large chapters — it forces
-                        // SwiftUI to compute selection geometry for the entire string
-                        // upfront, which freezes the main thread on very long text.
-                        // VoiceOver can still read the text without this modifier.
-                        if chapterText.count > 50_000 {
-                            Text(chapterText)
-                                .font(.body)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .accessibilityLabel("Book content")
-                        } else {
-                            Text(chapterText)
-                                .font(.body)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-                                .accessibilityLabel("Book content")
-                        }
+                        Text(viewModel.visibleTextWindow(chapterText))
+                            .font(.body)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .accessibilityLabel("Book content")
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
