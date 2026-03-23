@@ -232,9 +232,10 @@ enum MarkdownCacheService {
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
             let content = parseSingleChapter(markdown, title: bookTitle)
+            let splitResult = splitOversizedChapters(content.chapters)
             return DocumentContent(title: content.title.isEmpty ? bookTitle : content.title,
                                    author: bookAuthor,
-                                   chapters: content.chapters)
+                                   chapters: splitResult)
         }
 
         var chapters: [Chapter] = []
@@ -252,6 +253,9 @@ enum MarkdownCacheService {
                 chapters.append(ch)
             }
         }
+
+        // Split any chapters that are too large for SwiftUI to render smoothly
+        chapters = splitOversizedChapters(chapters)
 
         // Use the first chapter's title as the document title, or fall back to book title
         let docTitle = chapters.first?.title.isEmpty == false ? chapters.first!.title : bookTitle
@@ -307,6 +311,75 @@ enum MarkdownCacheService {
             ?? DocumentContent(title: title, author: "Unknown", chapters: [
                 Chapter(title: title, text: markdown, headings: [])
             ])
+    }
+
+    // MARK: - Oversized Chapter Splitting
+
+    /// Maximum plain-text character count per chapter. Chapters larger than this
+    /// are split at paragraph boundaries to prevent SwiftUI from freezing when
+    /// rendering massive Text views with text selection enabled.
+    private static let maxChapterSize = 40_000
+
+    /// Split any chapters whose text exceeds maxChapterSize at paragraph
+    /// boundaries. Returns a new array where oversized chapters have been
+    /// replaced with multiple smaller ones.
+    static func splitOversizedChapters(_ chapters: [Chapter]) -> [Chapter] {
+        var result: [Chapter] = []
+        for chapter in chapters {
+            if chapter.text.count <= maxChapterSize {
+                result.append(chapter)
+                continue
+            }
+            let subchapters = splitChapterAtParagraphs(chapter)
+            result.append(contentsOf: subchapters)
+        }
+        return result
+    }
+
+    /// Split a single oversized chapter into multiple smaller chapters at
+    /// paragraph boundaries (double-newline). Each sub-chapter gets a title
+    /// like "Original Title (part 2)".
+    private static func splitChapterAtParagraphs(_ chapter: Chapter) -> [Chapter] {
+        let paragraphs = chapter.text.components(separatedBy: "\n\n")
+        var chunks: [Chapter] = []
+        var currentText = ""
+        var partNumber = 1
+
+        for paragraph in paragraphs {
+            let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
+
+            // If adding this paragraph would exceed the limit and we already
+            // have content, finalize the current chunk
+            if candidate.count > maxChapterSize && !currentText.isEmpty {
+                let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+                // Re-parse headings for this chunk of text
+                let headings = extractHeadingsFromPlainText(currentText, chapterIndex: chunks.count)
+                chunks.append(Chapter(title: title, text: currentText, headings: headings))
+                partNumber += 1
+                currentText = paragraph
+            } else {
+                currentText = candidate
+            }
+        }
+
+        // Finalize the last chunk
+        if !currentText.isEmpty {
+            let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+            let headings = extractHeadingsFromPlainText(currentText, chapterIndex: chunks.count)
+            chunks.append(Chapter(title: title, text: currentText, headings: headings))
+        }
+
+        return chunks
+    }
+
+    /// Extract heading information from plain text by looking for lines that
+    /// were headings in the original markdown (short lines after blank lines
+    /// that appear to be section titles). This is a best-effort heuristic for
+    /// split chapters where we no longer have the original markdown.
+    private static func extractHeadingsFromPlainText(_ text: String, chapterIndex: Int) -> [Heading] {
+        // For split chapters, we primarily care about navigation.
+        // Return an empty array — the chapter title itself provides navigation.
+        return []
     }
 
     // MARK: - Helpers

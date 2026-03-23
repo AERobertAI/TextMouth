@@ -26,11 +26,21 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
     // Skip elements (head, prodnote content, etc.)
     private var skipDepth = 0
 
+    // Chapter marker state: capture h1 text inside level1 to emit chapter markers.
+    // This lets MarkdownCacheService split the content into manageable chapters.
+    private var pendingChapterTitle = false
+    private var chapterTitleBuffer = ""
+    private var level1Depth = 0
+
     /// Convert DTBook XML data to Markdown
     func convert(data: Data) -> String {
         let parser = XMLParser(data: data)
         parser.delegate = self
         parser.shouldProcessNamespaces = false
+        // Disable external entity resolution to prevent delays from DTD loading.
+        // DTBook XML files reference dtbook-2005-3.dtd which isn't accessible
+        // when parsing from in-memory data extracted from a ZIP archive.
+        parser.shouldResolveExternalEntities = false
         parser.parse()
         return normalizeWhitespace(markdown)
     }
@@ -59,8 +69,14 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
             ensureBlankLine()
             markdown += "*"
 
-        // Headings
-        case "h1": ensureBlankLine(); markdown += "# "
+        // Headings — h1 inside level1 triggers chapter marker emission
+        case "h1":
+            ensureBlankLine()
+            if level1Depth > 0 {
+                pendingChapterTitle = true
+                chapterTitleBuffer = ""
+            }
+            markdown += "# "
         case "h2": ensureBlankLine(); markdown += "## "
         case "h3": ensureBlankLine(); markdown += "### "
         case "h4": ensureBlankLine(); markdown += "#### "
@@ -144,9 +160,14 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
         case "th", "td":
             break // text will be captured
 
+        // level1 containers — emit chapter markers so the cache service can
+        // split the book into manageable chapters for SwiftUI rendering
+        case "level1":
+            level1Depth += 1
+
         // Structural containers — just pass through
         case "dtbook", "book", "frontmatter", "bodymatter", "rearmatter",
-             "level1", "level2", "level3", "level4", "level5", "level6", "level",
+             "level2", "level3", "level4", "level5", "level6", "level",
              "div", "span", "sent", "w":
             break
 
@@ -168,6 +189,10 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard skipDepth == 0 else { return }
         markdown += string
+        // Capture heading text for chapter marker when inside level1 > h1
+        if pendingChapterTitle {
+            chapterTitleBuffer += string
+        }
         if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             lastOutputWasBlock = false
         }
@@ -193,9 +218,34 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
             markdown += "*\n\n"
             lastOutputWasBlock = true
 
-        case "h1", "h2", "h3", "h4", "h5", "h6", "hd":
+        case "h1":
+            // When closing an h1 inside level1, insert a chapter marker BEFORE
+            // the heading we just emitted. We find the last "# " and prepend the marker.
+            if pendingChapterTitle {
+                let title = chapterTitleBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !title.isEmpty {
+                    // Find where the "# " heading started and insert marker before it.
+                    // The heading is the last "# " line in the markdown.
+                    if let headingRange = markdown.range(of: "\n# ", options: .backwards) {
+                        let insertPos = markdown.index(after: headingRange.lowerBound)
+                        markdown.insert(contentsOf: "<!-- chapter: \(title) -->\n", at: insertPos)
+                    } else if markdown.hasPrefix("# ") {
+                        // Heading is at the very start
+                        markdown.insert(contentsOf: "<!-- chapter: \(title) -->\n", at: markdown.startIndex)
+                    }
+                }
+                pendingChapterTitle = false
+                chapterTitleBuffer = ""
+            }
             markdown += "\n\n"
             lastOutputWasBlock = true
+
+        case "h2", "h3", "h4", "h5", "h6", "hd":
+            markdown += "\n\n"
+            lastOutputWasBlock = true
+
+        case "level1":
+            level1Depth = max(0, level1Depth - 1)
 
         case "p":
             markdown += "\n\n"

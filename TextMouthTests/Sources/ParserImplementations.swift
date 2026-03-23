@@ -1293,6 +1293,325 @@ func parseDAISY202ToMarkdown(url: URL) throws -> String {
     return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
+// MARK: - DTBook Chapter Marker Converter (mirrors app's DTBookToMarkdownConverter)
+
+/// DTBook converter that emits chapter markers at level1 boundaries,
+/// matching the app's DTBookToMarkdownConverter behavior.
+private class DTBookChapterMarkerConverter: NSObject, XMLParserDelegate {
+    private var markdown = ""
+    private var elementStack: [String] = []
+    private var listTypeStack: [String] = []
+    private var listCounterStack: [Int] = []
+    private var listDepth = 0
+    private var skipDepth = 0
+    // Chapter marker state
+    private var pendingChapterTitle = false
+    private var chapterTitleBuffer = ""
+    private var level1Depth = 0
+
+    func convert(data: Data) -> String {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.shouldProcessNamespaces = false
+        parser.shouldResolveExternalEntities = false
+        parser.parse()
+        return normalizeWhitespace(markdown)
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let local = (elementName.components(separatedBy: ":").last ?? elementName).lowercased()
+        elementStack.append(local)
+        if skipDepth > 0 { skipDepth += 1; return }
+
+        switch local {
+        case "head": skipDepth = 1
+        case "prodnote": skipDepth = 1
+        case "doctitle": ensureBlankLine(); markdown += "# "
+        case "docauthor": ensureBlankLine(); markdown += "*"
+        case "h1":
+            ensureBlankLine()
+            if level1Depth > 0 {
+                pendingChapterTitle = true
+                chapterTitleBuffer = ""
+            }
+            markdown += "# "
+        case "h2": ensureBlankLine(); markdown += "## "
+        case "h3": ensureBlankLine(); markdown += "### "
+        case "h4": ensureBlankLine(); markdown += "#### "
+        case "h5": ensureBlankLine(); markdown += "##### "
+        case "h6": ensureBlankLine(); markdown += "###### "
+        case "hd": ensureBlankLine(); markdown += "## "
+        case "p": ensureBlankLine()
+        case "em": markdown += "*"
+        case "strong": markdown += "**"
+        case "level1": level1Depth += 1
+        case "list":
+            let type = (attributes["type"]?.lowercased() == "ol") ? "ol" : "ul"
+            listTypeStack.append(type)
+            listCounterStack.append(0)
+            listDepth += 1
+            ensureNewline()
+        case "li":
+            let indent = String(repeating: "    ", count: max(0, listDepth - 1))
+            if let currentType = listTypeStack.last {
+                if currentType == "ol" {
+                    let count = (listCounterStack.last ?? 0) + 1
+                    if !listCounterStack.isEmpty { listCounterStack[listCounterStack.count - 1] = count }
+                    markdown += "\(indent)\(count). "
+                } else {
+                    markdown += "\(indent)- "
+                }
+            } else {
+                markdown += "- "
+            }
+        case "blockquote": ensureBlankLine(); markdown += "> "
+        case "a": markdown += "["
+        case "br": markdown += "\n"
+        case "hr": ensureBlankLine(); markdown += "---\n"
+        case "line": ensureNewline()
+        case "poem": ensureBlankLine()
+        default: break
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard skipDepth == 0 else { return }
+        markdown += string
+        if pendingChapterTitle {
+            chapterTitleBuffer += string
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        let local = (elementName.components(separatedBy: ":").last ?? elementName).lowercased()
+        if skipDepth > 0 {
+            skipDepth -= 1
+            if !elementStack.isEmpty { elementStack.removeLast() }
+            return
+        }
+
+        switch local {
+        case "doctitle": markdown += "\n\n"
+        case "docauthor": markdown += "*\n\n"
+        case "h1":
+            if pendingChapterTitle {
+                let title = chapterTitleBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !title.isEmpty {
+                    if let headingRange = markdown.range(of: "\n# ", options: .backwards) {
+                        let insertPos = markdown.index(after: headingRange.lowerBound)
+                        markdown.insert(contentsOf: "<!-- chapter: \(title) -->\n", at: insertPos)
+                    } else if markdown.hasPrefix("# ") {
+                        markdown.insert(contentsOf: "<!-- chapter: \(title) -->\n", at: markdown.startIndex)
+                    }
+                }
+                pendingChapterTitle = false
+                chapterTitleBuffer = ""
+            }
+            markdown += "\n\n"
+        case "h2", "h3", "h4", "h5", "h6", "hd": markdown += "\n\n"
+        case "level1": level1Depth = max(0, level1Depth - 1)
+        case "p": markdown += "\n\n"
+        case "em": markdown += "*"
+        case "strong": markdown += "**"
+        case "list":
+            if !listTypeStack.isEmpty { listTypeStack.removeLast() }
+            if !listCounterStack.isEmpty { listCounterStack.removeLast() }
+            listDepth = max(0, listDepth - 1)
+            ensureNewline()
+        case "li": ensureNewline()
+        case "blockquote": markdown += "\n\n"
+        case "a": markdown += "]"
+        case "line": markdown += "\n"
+        case "poem": markdown += "\n\n"
+        default: break
+        }
+        if !elementStack.isEmpty { elementStack.removeLast() }
+    }
+
+    private func ensureBlankLine() {
+        if markdown.isEmpty { return }
+        if !markdown.hasSuffix("\n\n") {
+            markdown += markdown.hasSuffix("\n") ? "\n" : "\n\n"
+        }
+    }
+
+    private func ensureNewline() {
+        if !markdown.isEmpty && !markdown.hasSuffix("\n") { markdown += "\n" }
+    }
+
+    private func normalizeWhitespace(_ text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        lines = lines.map { $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression) }
+        var result: [String] = []
+        var blankCount = 0
+        for line in lines {
+            if line.isEmpty {
+                blankCount += 1
+                if blankCount <= 2 { result.append(line) }
+            } else {
+                blankCount = 0
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+/// Convert a DTBook XML string to Markdown with chapter markers
+func convertDTBookWithChapterMarkers(_ xml: String) -> String {
+    guard let data = xml.data(using: .utf8) else { return "" }
+    let converter = DTBookChapterMarkerConverter()
+    return converter.convert(data: data)
+}
+
+/// Parse a DAISY ZIP to Markdown using the chapter-marker-aware converter
+func parseDAISYToMarkdownFull(from url: URL) throws -> String {
+    guard let archive = try? Archive(url: url, accessMode: .read) else {
+        throw TestError.assertionFailed("Cannot open DAISY ZIP")
+    }
+    for entry in archive where entry.path.lowercased().hasSuffix(".xml") {
+        let filename = (entry.path as NSString).lastPathComponent.lowercased()
+        if filename.hasSuffix(".xsl") { continue }
+        var data = Data()
+        _ = try archive.extract(entry) { chunk in data.append(chunk) }
+        let prefix = String(data: data.prefix(500), encoding: .utf8) ?? ""
+        if prefix.contains("dtbook") {
+            let converter = DTBookChapterMarkerConverter()
+            return converter.convert(data: data)
+        }
+    }
+    throw TestError.assertionFailed("No DTBook XML found in DAISY ZIP")
+}
+
+// MARK: - Chapter Splitting Test Helpers
+
+/// Simplified Chapter struct for testing the splitting logic
+struct TestChapter {
+    var title: String
+    var text: String
+    var headings: [Heading]
+}
+
+/// Mirror of MarkdownCacheService.splitOversizedChapters for testing
+func splitOversizedTestChapters(_ chapters: [TestChapter], maxSize: Int) -> [TestChapter] {
+    var result: [TestChapter] = []
+    for chapter in chapters {
+        if chapter.text.count <= maxSize {
+            result.append(chapter)
+            continue
+        }
+        let paragraphs = chapter.text.components(separatedBy: "\n\n")
+        var currentText = ""
+        var partNumber = 1
+
+        for paragraph in paragraphs {
+            let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
+            if candidate.count > maxSize && !currentText.isEmpty {
+                let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+                result.append(TestChapter(title: title, text: currentText, headings: []))
+                partNumber += 1
+                currentText = paragraph
+            } else {
+                currentText = candidate
+            }
+        }
+        if !currentText.isEmpty {
+            let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+            result.append(TestChapter(title: title, text: currentText, headings: []))
+        }
+    }
+    return result
+}
+
+/// Mirror of MarkdownCacheService.parseMultiChapterMarkdown for testing
+func parseMultiChapterMarkdownTest(_ markdown: String, bookTitle: String, bookAuthor: String) -> DocumentContent {
+    let chapterMarkerPrefix = "<!-- chapter: "
+    let chapterMarkerSuffix = " -->"
+    let maxChapterSize = 40_000
+
+    // Split on chapter markers
+    let lines = markdown.components(separatedBy: "\n")
+    var sections: [(title: String, content: String)] = []
+    var currentTitle = ""
+    var currentLines: [String] = []
+    var foundMarker = false
+
+    for line in lines {
+        if line.hasPrefix(chapterMarkerPrefix) && line.hasSuffix(chapterMarkerSuffix) {
+            if foundMarker {
+                let content = currentLines.joined(separator: "\n")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !content.isEmpty {
+                    sections.append((title: currentTitle, content: content))
+                }
+            }
+            let titleStart = line.index(line.startIndex, offsetBy: chapterMarkerPrefix.count)
+            let titleEnd = line.index(line.endIndex, offsetBy: -chapterMarkerSuffix.count)
+            currentTitle = String(line[titleStart..<titleEnd])
+            currentLines = []
+            foundMarker = true
+        } else {
+            currentLines.append(line)
+        }
+    }
+    if foundMarker {
+        let content = currentLines.joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !content.isEmpty {
+            sections.append((title: currentTitle, content: content))
+        }
+    }
+
+    var chapters: [Chapter] = []
+    if sections.isEmpty {
+        // No markers — single chapter
+        let parsed = try? parseMarkdown(markdown: markdown, title: bookTitle)
+        chapters = parsed?.chapters ?? [Chapter(title: bookTitle, text: markdown, headings: [])]
+    } else {
+        for section in sections {
+            let parsed = try? parseMarkdown(markdown: section.content, title: section.title)
+            if let ch = parsed?.chapters.first {
+                var chapter = ch
+                if !section.title.isEmpty { chapter.title = section.title }
+                chapters.append(chapter)
+            }
+        }
+    }
+
+    // Split oversized chapters
+    var splitChapters: [Chapter] = []
+    for chapter in chapters {
+        if chapter.text.count <= maxChapterSize {
+            splitChapters.append(chapter)
+            continue
+        }
+        let paragraphs = chapter.text.components(separatedBy: "\n\n")
+        var currentText = ""
+        var partNumber = 1
+        for paragraph in paragraphs {
+            let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
+            if candidate.count > maxChapterSize && !currentText.isEmpty {
+                let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+                splitChapters.append(Chapter(title: title, text: currentText, headings: []))
+                partNumber += 1
+                currentText = paragraph
+            } else {
+                currentText = candidate
+            }
+        }
+        if !currentText.isEmpty {
+            let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
+            splitChapters.append(Chapter(title: title, text: currentText, headings: []))
+        }
+    }
+
+    let docTitle = splitChapters.first?.title.isEmpty == false ? splitChapters.first!.title : bookTitle
+    return DocumentContent(title: docTitle, author: bookAuthor, chapters: splitChapters)
+}
+
 // MARK: - MD5 Hashing
 
 func md5Hash(of url: URL) throws -> String {

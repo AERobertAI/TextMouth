@@ -48,6 +48,30 @@ protocol DAISYFileProvider {
     func readFile(at path: String) throws -> Data
 }
 
+/// Wraps a DAISYFileProvider to cache the listFiles() result. DAISY parsing
+/// calls listFiles() many times (version detection, OPF lookup, metadata, etc.)
+/// and each call enumerates the ZIP archive or filesystem. Caching avoids
+/// redundant I/O.
+class CachingFileProvider: DAISYFileProvider {
+    private let inner: DAISYFileProvider
+    private var cachedFiles: [String]?
+
+    init(wrapping provider: DAISYFileProvider) {
+        self.inner = provider
+    }
+
+    func listFiles() -> [String] {
+        if let cached = cachedFiles { return cached }
+        let files = inner.listFiles()
+        cachedFiles = files
+        return files
+    }
+
+    func readFile(at path: String) throws -> Data {
+        try inner.readFile(at: path)
+    }
+}
+
 /// Reads files from a ZIPFoundation Archive
 class ArchiveFileProvider: DAISYFileProvider {
     let archive: Archive
@@ -193,7 +217,9 @@ enum DAISYParser {
 
     // MARK: - File Access Abstraction
 
-    /// Create the appropriate file provider for a URL (ZIP, directory, or single file)
+    /// Create the appropriate file provider for a URL (ZIP, directory, or single file).
+    /// Returns a CachingFileProvider that avoids redundant listFiles() calls during
+    /// version detection, OPF lookup, and metadata extraction.
     private static func makeFileProvider(from url: URL) throws -> DAISYFileProvider {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw DAISYParserError.fileNotFound(url.path)
@@ -202,35 +228,35 @@ enum DAISYParser {
         var isDir: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
 
+        let base: DAISYFileProvider
+
         if isDir.boolValue {
             // Unzipped DAISY directory
-            return DirectoryFileProvider(baseURL: url)
-        }
+            base = DirectoryFileProvider(baseURL: url)
+        } else {
+            let ext = url.pathExtension.lowercased()
 
-        let ext = url.pathExtension.lowercased()
-
-        // If it's a ZIP file, open as archive
-        if ext == "zip" || ext == "daisy" {
-            do {
-                let archive = try Archive(url: url, accessMode: .read)
-                return ArchiveFileProvider(archive: archive)
-            } catch {
-                throw DAISYParserError.invalidArchive
+            if ext == "zip" || ext == "daisy" {
+                // ZIP archive
+                do {
+                    let archive = try Archive(url: url, accessMode: .read)
+                    base = ArchiveFileProvider(archive: archive)
+                } catch {
+                    throw DAISYParserError.invalidArchive
+                }
+            } else if ext == "opf" {
+                // .opf file — treat the containing directory as the DAISY book
+                let parentDir = url.deletingLastPathComponent()
+                base = DirectoryFileProvider(baseURL: parentDir)
+            } else if let archive = try? Archive(url: url, accessMode: .read) {
+                // Try opening as ZIP anyway (some DAISY files don't have .zip extension)
+                base = ArchiveFileProvider(archive: archive)
+            } else {
+                throw DAISYParserError.notDAISYBook
             }
         }
 
-        // If it's an .opf file, treat the containing directory as the DAISY book
-        if ext == "opf" {
-            let parentDir = url.deletingLastPathComponent()
-            return DirectoryFileProvider(baseURL: parentDir)
-        }
-
-        // Try opening as ZIP anyway (some DAISY files don't have .zip extension)
-        if let archive = try? Archive(url: url, accessMode: .read) {
-            return ArchiveFileProvider(archive: archive)
-        }
-
-        throw DAISYParserError.notDAISYBook
+        return CachingFileProvider(wrapping: base)
     }
 
     // MARK: - Version Detection
