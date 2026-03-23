@@ -7,14 +7,19 @@ struct DAISYAudioClip {
     var file: String        // audio filename (relative path)
     var startTime: Double   // seconds
     var endTime: Double     // seconds
+    var parID: String       // ID of the parent <par> element (for fragment lookup)
 }
 
 /// SAX parser for DAISY SMIL files that extracts audio clip references.
 /// Handles both DAISY 2.02 (clip-begin="npt=SS.SSSs") and DAISY 3
-/// (clipBegin="H:MM:SS.mmm") timing formats.
+/// (clipBegin="H:MM:SS.mmm") timing formats. Each clip records the ID
+/// of its parent <par> element so callers can look up clips by SMIL fragment.
 class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
     private let data: Data
     private(set) var audioClips: [DAISYAudioClip] = []
+
+    /// ID of the nearest enclosing <par> (or <seq>) element, used to tag clips
+    private var currentParID: String = ""
 
     init(data: Data) {
         self.data = data
@@ -28,10 +33,31 @@ class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
         return audioClips
     }
 
+    /// Find the first audio clip whose parID matches the given SMIL fragment ID.
+    /// Returns nil if no match (caller should fall back to first clip).
+    func clip(forFragment fragmentID: String) -> DAISYAudioClip? {
+        guard !fragmentID.isEmpty else { return nil }
+        return audioClips.first(where: { $0.parID == fragmentID })
+    }
+
+    /// Find the index of the first audio clip matching the given fragment ID.
+    func clipIndex(forFragment fragmentID: String) -> Int? {
+        guard !fragmentID.isEmpty else { return nil }
+        return audioClips.firstIndex(where: { $0.parID == fragmentID })
+    }
+
     func parser(_ parser: XMLParser, didStartElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
+
+        // Track the ID of <par> and <seq> elements so audio clips know
+        // which SMIL fragment they belong to
+        if localName == "par" || localName == "seq" {
+            if let id = attributes["id"], !id.isEmpty {
+                currentParID = id
+            }
+        }
 
         if localName == "audio" {
             guard let src = attributes["src"], !src.isEmpty else { return }
@@ -56,7 +82,8 @@ class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
             audioClips.append(DAISYAudioClip(
                 file: src,
                 startTime: startTime,
-                endTime: endTime
+                endTime: endTime,
+                parID: currentParID
             ))
         }
     }
@@ -161,28 +188,76 @@ enum DAISYAudioConverter {
         let ncxParser = DAISYNCXParser(data: ncxData)
         let navPoints = ncxParser.parse()
 
-        // For each navPoint, find its SMIL file and extract the first audio clip
-        // to determine the chapter's audio start time
-        var segments: [AudioSegment] = []
+        // Pre-parse all referenced SMIL files so we can compute segment
+        // boundaries across navPoints that share the same SMIL file.
+        // Key = resolved SMIL file path (without fragment), Value = parsed clips.
+        var smilCache: [String: DAISYAudioSMILParser] = [:]
         let fm = FileManager.default
 
-        for (i, navPoint) in navPoints.enumerated() {
+        // Build the list of (navPoint, smilFilePath, fragmentID) tuples
+        struct NavRef {
+            let navPoint: DAISYNavPoint
+            let smilPath: String
+            let fragmentID: String
+        }
+        var navRefs: [NavRef] = []
+
+        for navPoint in navPoints {
             let smilRef = navPoint.contentSrc
-            let smilFile = smilRef.components(separatedBy: "#").first ?? smilRef
+            let parts = smilRef.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+            let smilFile = String(parts[0])
+            let fragmentID = parts.count > 1 ? String(parts[1]) : ""
             let smilPath = opfDir.isEmpty ? smilFile : "\(opfDir)/\(smilFile)"
 
-            guard let smilData = try? provider.readFile(at: smilPath) else { continue }
-            let smilParser = DAISYAudioSMILParser(data: smilData)
-            let clips = smilParser.parse()
-            guard let firstClip = clips.first else { continue }
+            // Parse the SMIL file once and cache it
+            if smilCache[smilPath] == nil {
+                guard let smilData = try? provider.readFile(at: smilPath) else { continue }
+                let parser = DAISYAudioSMILParser(data: smilData)
+                _ = parser.parse()
+                smilCache[smilPath] = parser
+            }
 
-            // Use the last clip's end time as the segment end
-            let lastClip = clips.last ?? firstClip
-            let endTime = lastClip.endTime
+            navRefs.append(NavRef(navPoint: navPoint, smilPath: smilPath, fragmentID: fragmentID))
+        }
+
+        // Build segments. For each navPoint, find its fragment's clip start time.
+        // The segment's end time is determined by the NEXT navPoint's clip start
+        // (if they share the same audio file), or the SMIL's last clip end.
+        var segments: [AudioSegment] = []
+
+        for (i, ref) in navRefs.enumerated() {
+            guard let smilParser = smilCache[ref.smilPath] else { continue }
+            let clips = smilParser.audioClips
+            guard !clips.isEmpty else { continue }
+
+            // Find the clip for this navPoint's fragment, or fall back to the first clip
+            let clipForFragment = smilParser.clip(forFragment: ref.fragmentID)
+            let segmentClip = clipForFragment ?? clips[0]
+            let startTime = segmentClip.startTime
+
+            // Determine end time: use the next navPoint's clip start if it references
+            // the same audio file, otherwise use the last clip's end in this SMIL.
+            var endTime = clips.last!.endTime
+            if i + 1 < navRefs.count {
+                let nextRef = navRefs[i + 1]
+                if let nextParser = smilCache[nextRef.smilPath] {
+                    let nextClips = nextParser.audioClips
+                    let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first
+                    if let nextClip = nextClip {
+                        let nextAudioFile = (nextClip.file as NSString).lastPathComponent
+                        let thisAudioFile = (segmentClip.file as NSString).lastPathComponent
+                        // If the next navPoint references the same audio file,
+                        // this segment ends where the next one begins
+                        if nextAudioFile == thisAudioFile {
+                            endTime = nextClip.startTime
+                        }
+                    }
+                }
+            }
 
             // Copy the audio file to the output directory
-            let audioFileName = (firstClip.file as NSString).lastPathComponent
-            let audioSrcPath = opfDir.isEmpty ? firstClip.file : "\(opfDir)/\(firstClip.file)"
+            let audioFileName = (segmentClip.file as NSString).lastPathComponent
+            let audioSrcPath = opfDir.isEmpty ? segmentClip.file : "\(opfDir)/\(segmentClip.file)"
             let destPath = audioDir.appendingPathComponent(audioFileName)
 
             if !fm.fileExists(atPath: destPath.path) {
@@ -195,9 +270,9 @@ enum DAISYAudioConverter {
             }
 
             segments.append(AudioSegment(
-                title: navPoint.label,
+                title: ref.navPoint.label,
                 file: audioFileName,
-                startTime: firstClip.startTime,
+                startTime: startTime,
                 endTime: endTime
             ))
         }
@@ -236,31 +311,67 @@ enum DAISYAudioConverter {
         let nccResult = nccParser.parse()
         let nccDir = (nccPath as NSString).deletingLastPathComponent
 
-        // For each NCC heading, follow the SMIL reference to find audio clips
-        var segments: [AudioSegment] = []
+        // Pre-parse all referenced SMIL files for fragment-aware clip lookup
+        var smilCache: [String: DAISYAudioSMILParser] = [:]
         let fm = FileManager.default
+
+        struct HeadingRef {
+            let heading: NCCHeading
+            let smilPath: String
+            let fragmentID: String
+        }
+        var headingRefs: [HeadingRef] = []
 
         for heading in nccResult.headings {
             let smilRef = heading.href
-            let smilFile = smilRef.components(separatedBy: "#").first ?? smilRef
+            let parts = smilRef.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+            let smilFile = String(parts[0])
+            let fragmentID = parts.count > 1 ? String(parts[1]) : ""
             let smilPath = nccDir.isEmpty ? smilFile : "\(nccDir)/\(smilFile)"
 
-            guard let smilData = try? provider.readFile(at: smilPath) else { continue }
-            let smilParser = DAISYAudioSMILParser(data: smilData)
-            let clips = smilParser.parse()
-            guard let firstClip = clips.first else { continue }
+            if smilCache[smilPath] == nil {
+                guard let smilData = try? provider.readFile(at: smilPath) else { continue }
+                let parser = DAISYAudioSMILParser(data: smilData)
+                _ = parser.parse()
+                smilCache[smilPath] = parser
+            }
 
-            let lastClip = clips.last ?? firstClip
+            headingRefs.append(HeadingRef(heading: heading, smilPath: smilPath, fragmentID: fragmentID))
+        }
+
+        // Build segments with correct per-heading boundaries
+        var segments: [AudioSegment] = []
+
+        for (i, ref) in headingRefs.enumerated() {
+            guard let smilParser = smilCache[ref.smilPath] else { continue }
+            let clips = smilParser.audioClips
+            guard !clips.isEmpty else { continue }
+
+            let clipForFragment = smilParser.clip(forFragment: ref.fragmentID)
+            let segmentClip = clipForFragment ?? clips[0]
+            let startTime = segmentClip.startTime
+
+            // Determine end time from the next heading's clip if same audio file
+            var endTime = clips.last!.endTime
+            if i + 1 < headingRefs.count {
+                let nextRef = headingRefs[i + 1]
+                if let nextParser = smilCache[nextRef.smilPath] {
+                    let nextClips = nextParser.audioClips
+                    let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first
+                    if let nextClip = nextClip {
+                        let nextAudioFile = (nextClip.file as NSString).lastPathComponent
+                        let thisAudioFile = (segmentClip.file as NSString).lastPathComponent
+                        if nextAudioFile == thisAudioFile {
+                            endTime = nextClip.startTime
+                        }
+                    }
+                }
+            }
 
             // Copy the audio file
-            let audioFileName = (firstClip.file as NSString).lastPathComponent
-            let audioSrcPath: String
-            let smilDir = (smilPath as NSString).deletingLastPathComponent
-            if smilDir.isEmpty {
-                audioSrcPath = firstClip.file
-            } else {
-                audioSrcPath = "\(smilDir)/\(firstClip.file)"
-            }
+            let audioFileName = (segmentClip.file as NSString).lastPathComponent
+            let smilDir = (ref.smilPath as NSString).deletingLastPathComponent
+            let audioSrcPath = smilDir.isEmpty ? segmentClip.file : "\(smilDir)/\(segmentClip.file)"
             let destPath = audioDir.appendingPathComponent(audioFileName)
 
             if !fm.fileExists(atPath: destPath.path) {
@@ -273,10 +384,10 @@ enum DAISYAudioConverter {
             }
 
             segments.append(AudioSegment(
-                title: heading.text,
+                title: ref.heading.text,
                 file: audioFileName,
-                startTime: firstClip.startTime,
-                endTime: lastClip.endTime
+                startTime: startTime,
+                endTime: endTime
             ))
         }
 

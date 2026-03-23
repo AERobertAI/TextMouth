@@ -251,3 +251,67 @@ struct TestAudioSegment: Codable {
     var startTime: Double
     var endTime: Double
 }
+
+// MARK: - Fragment-Aware SMIL Parser (test version)
+
+/// Audio clip with parent <par> ID for fragment lookup
+struct TestFragmentAudioClip {
+    var file: String
+    var startTime: Double
+    var endTime: Double
+    var parID: String
+}
+
+/// Test version of the fragment-aware SMIL parser.
+/// Mirrors DAISYAudioSMILParser from the production code: records the
+/// enclosing <par>/<seq> ID on each audio clip so callers can look up
+/// clips by SMIL fragment reference.
+class TestFragmentAwareSMILParser: NSObject, XMLParserDelegate {
+    private let data: Data
+    private(set) var clips: [TestFragmentAudioClip] = []
+    private var currentParID: String = ""
+
+    init(data: Data) {
+        self.data = data
+        super.init()
+    }
+
+    @discardableResult
+    func parse() -> [TestFragmentAudioClip] {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.shouldProcessNamespaces = false
+        parser.parse()
+        return clips
+    }
+
+    /// Find the first clip whose parID matches the given fragment
+    func clip(forFragment fragmentID: String) -> TestFragmentAudioClip? {
+        guard !fragmentID.isEmpty else { return nil }
+        return clips.first(where: { $0.parID == fragmentID })
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String: String] = [:]) {
+        let local = (elementName.components(separatedBy: ":").last ?? elementName).lowercased()
+
+        if local == "par" || local == "seq" {
+            if let id = attributes["id"], !id.isEmpty {
+                currentParID = id
+            }
+        }
+
+        if local == "audio" {
+            guard let src = attributes["src"], !src.isEmpty else { return }
+            var startTime: Double = 0, endTime: Double = 0
+            if let b = attributes["clipBegin"] { startTime = parseDAISYTimeString(b) }
+            else if let b = attributes["clip-begin"] { startTime = parseDAISYTimeString(b) }
+            if let e = attributes["clipEnd"] { endTime = parseDAISYTimeString(e) }
+            else if let e = attributes["clip-end"] { endTime = parseDAISYTimeString(e) }
+            clips.append(TestFragmentAudioClip(
+                file: src, startTime: startTime, endTime: endTime, parID: currentParID
+            ))
+        }
+    }
+}

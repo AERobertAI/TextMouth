@@ -18,11 +18,18 @@ class AudioPlaybackService: NSObject, ObservableObject {
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var durationTask: Task<Void, Never>?
+    private(set) var loadedURL: URL?
 
     /// Optional clip end time for segmented audio (e.g. DAISY).
     /// When set, playback fires onPlaybackFinished when reaching this time
     /// instead of waiting for the actual end of the audio file.
     private var clipEndTime: TimeInterval?
+
+    /// Guards against the time observer firing clip-end while a seek is
+    /// still in progress. Set true before seek, cleared in the completion
+    /// handler. Prevents the stale-time race that causes rapid looping
+    /// when consecutive segments share the same audio file.
+    private var isSeeking = false
 
     let minimumSpeed: Double = 0.25
     let maximumSpeed: Double = 4.0
@@ -39,10 +46,16 @@ class AudioPlaybackService: NSObject, ObservableObject {
 
     /// Load an audio file for playback. Call this before play().
     func load(url: URL) {
+        let normalizedURL = url.standardizedFileURL
+        if let loadedURL, loadedURL == normalizedURL, player != nil {
+            clipEndTime = nil
+            return
+        }
+
         stop()
         clipEndTime = nil
 
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(url: normalizedURL)
         let item = AVPlayerItem(asset: asset)
         item.audioTimePitchAlgorithm = .timeDomain // Best for speech
 
@@ -51,6 +64,7 @@ class AudioPlaybackService: NSObject, ObservableObject {
 
         self.playerItem = item
         self.player = avPlayer
+        self.loadedURL = normalizedURL
 
         // Get duration — cancel any previous load to avoid stale overwrites
         durationTask?.cancel()
@@ -74,10 +88,16 @@ class AudioPlaybackService: NSObject, ObservableObject {
 
     func play(fromTime: TimeInterval = 0) {
         guard let player = player else { return }
-        if fromTime > 0 {
-            let cmTime = CMTime(seconds: fromTime, preferredTimescale: 600)
-            player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        let clampedTime = max(0, duration > 0 ? min(fromTime, duration) : fromTime)
+        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
+
+        // Block clip-end checks until the seek lands, preventing the stale-time
+        // race where the time observer sees the old position and re-triggers.
+        isSeeking = true
+        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            self?.isSeeking = false
         }
+        currentTime = clampedTime
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
@@ -96,20 +116,30 @@ class AudioPlaybackService: NSObject, ObservableObject {
     }
 
     func stop() {
+        durationTask?.cancel()
+        durationTask = nil
         removeObservers()
         player?.pause()
         player = nil
         playerItem = nil
+        loadedURL = nil
+        clipEndTime = nil
+        isSeeking = false
         isPlaying = false
         isPaused = false
         currentTime = 0
+        duration = 0
     }
 
     func seek(to time: TimeInterval) {
         guard let player = player else { return }
-        let cmTime = CMTime(seconds: max(0, min(time, duration)), preferredTimescale: 600)
-        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
-        currentTime = time
+        let clampedTime = max(0, duration > 0 ? min(time, duration) : time)
+        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
+        isSeeking = true
+        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            self?.isSeeking = false
+        }
+        currentTime = clampedTime
     }
 
     /// Set an optional clip end time for segmented audio playback.
@@ -247,8 +277,10 @@ class AudioPlaybackService: NSObject, ObservableObject {
             guard let self = self else { return }
             let secs = CMTimeGetSeconds(time)
             if secs.isFinite {
-                // Check clip end boundary for segmented audio (DAISY etc.)
-                if let endTime = self.clipEndTime, secs >= endTime {
+                // Skip clip-end check while a seek is in progress — the
+                // reported time may be stale (pre-seek) and would falsely
+                // trigger onPlaybackFinished for the new segment.
+                if !self.isSeeking, let endTime = self.clipEndTime, secs >= endTime {
                     self.player?.pause()
                     self.isPlaying = false
                     self.isPaused = false

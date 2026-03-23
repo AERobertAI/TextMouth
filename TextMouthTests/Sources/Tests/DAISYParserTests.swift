@@ -1,5 +1,6 @@
 import Foundation
 import ZIPFoundation
+import SwiftSoup
 
 func runDAISYParserTests() {
 print("\n--- DAISY 3 Parser Tests (Hyperion) ---")
@@ -7,6 +8,57 @@ print("\n--- DAISY 3 Parser Tests (Hyperion) ---")
 test("DAISY 3 ZIP file exists (hyperion)") {
     let url = try requireFile("hyperion_daisy.zip")
     try assertTrue(FileManager.default.fileExists(atPath: url.path))
+}
+
+func extractDAISY202TestFragmentsFromHTML(_ files: [String: String], refs: [String]) throws -> String {
+    var documents: [String: SwiftSoup.Document] = [:]
+    var fragments: [String] = []
+    var lastNormalized = ""
+
+    for ref in refs {
+        let parts = ref.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+        let filePath = String(parts[0])
+        let fragmentID = parts.count > 1 ? String(parts[1]) : ""
+        guard let html = files[filePath] else { continue }
+
+        let doc: SwiftSoup.Document
+        if let cached = documents[filePath] {
+            doc = cached
+        } else {
+            doc = try SwiftSoup.parse(html)
+            documents[filePath] = doc
+        }
+
+        let markdown: String
+        if fragmentID.isEmpty {
+            markdown = (try? parseHTML(html: html).chapters.first?.text) ?? ""
+        } else if let element = try doc.getElementById(fragmentID) {
+            markdown = try convertDAISY202TestFragmentElement(element)
+        } else {
+            continue
+        }
+
+        let normalized = ParserUtilities.normalizeMarkdownWhitespace(markdown)
+        guard !normalized.isEmpty, normalized != lastNormalized else { continue }
+        fragments.append(normalized)
+        lastNormalized = normalized
+    }
+
+    return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
+}
+
+func convertDAISY202TestFragmentElement(_ element: SwiftSoup.Element) throws -> String {
+    let tag = element.tagName().lowercased()
+    if tag == "a" {
+        return try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    let childElements = element.children().array()
+    if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
+       let firstChild = childElements.first {
+        return try convertDAISY202TestFragmentElement(firstChild)
+    }
+    return ((try? parseHTML(html: try element.outerHtml()).chapters.first?.text) ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
 test("DAISY 3 ZIP opens as archive") {
@@ -208,6 +260,27 @@ test("DAISY 2.02 Markdown contains headings from NCC") {
     )
 }
 
+test("DAISY 2.02 fragment extraction avoids whole-file duplicate wrapper text") {
+    let html = """
+    <html><body>
+    <h1 id="title_heading"><a href="part1.smil#txt_1">Opening Title</a></h1>
+    <div class="doctitle"><span id="title_sentence"><a href="part1.smil#txt_2">Opening Title</a></span></div>
+    <p id="body_1"><span id="body_sentence">First real sentence.</span></p>
+    </body></html>
+    """
+
+    let wholeFileMarkdown = (try? parseHTML(html: html).chapters.first?.text) ?? ""
+    let refs = ["book.html#title_heading", "book.html#body_sentence"]
+    let fragmentMarkdown = try extractDAISY202TestFragmentsFromHTML(["book.html": html], refs: refs)
+
+    try assertTrue(wholeFileMarkdown.contains("Opening Title Opening Title"),
+                   "Whole-file extraction should include duplicated wrapper text")
+    try assertTrue(fragmentMarkdown.contains("Opening Title"), "Fragment extraction should keep the heading text")
+    try assertTrue(fragmentMarkdown.contains("First real sentence."), "Fragment extraction should keep the body text")
+    try assertTrue(!fragmentMarkdown.contains("Opening Title Opening Title"),
+                   "Fragment extraction should not repeat the title wrapper text")
+}
+
 test("Real DAISY 2.02 (WIPO Treaty) exists") {
     let url = try requireFile("wipo-treaty-d202-text-only.zip")
     try assertTrue(FileManager.default.fileExists(atPath: url.path))
@@ -245,6 +318,163 @@ test("DTBook blockquote converts to Markdown blockquote") {
     """
     let markdown = convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains(">"), "Should contain blockquote marker")
+}
+
+// MARK: - SMIL Fragment & Segment Boundary Tests
+
+print("\n--- SMIL Fragment Audio Clip Tests ---")
+
+test("SMIL parser records par IDs on audio clips") {
+    let smilXML = """
+    <?xml version="1.0"?>
+    <smil>
+    <body>
+      <seq>
+        <par id="par_001">
+          <audio src="audio.mp3" clipBegin="0:00:00.000" clipEnd="0:00:10.500"/>
+        </par>
+        <par id="par_002">
+          <audio src="audio.mp3" clipBegin="0:00:10.500" clipEnd="0:00:25.000"/>
+        </par>
+        <par id="par_003">
+          <audio src="audio.mp3" clipBegin="0:00:25.000" clipEnd="0:00:42.300"/>
+        </par>
+      </seq>
+    </body>
+    </smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
+    let clips = parser.parse()
+
+    try assertEqual(clips.count, 3, "Should parse 3 audio clips")
+    try assertEqual(clips[0].parID, "par_001", "First clip should have par_001 ID")
+    try assertEqual(clips[1].parID, "par_002", "Second clip should have par_002 ID")
+    try assertEqual(clips[2].parID, "par_003", "Third clip should have par_003 ID")
+}
+
+test("SMIL parser clip(forFragment:) finds correct clip") {
+    let smilXML = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="intro"><audio src="ch1.mp3" clipBegin="0.0" clipEnd="5.0"/></par>
+      <par id="verse1"><audio src="ch1.mp3" clipBegin="5.0" clipEnd="20.0"/></par>
+      <par id="verse2"><audio src="ch1.mp3" clipBegin="20.0" clipEnd="38.0"/></par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
+    _ = parser.parse()
+
+    let clip1 = parser.clip(forFragment: "intro")
+    try assertTrue(clip1 != nil, "Should find clip for 'intro'")
+    try assertTrue(abs(clip1!.startTime - 0.0) < 0.001, "intro starts at 0")
+
+    let clip2 = parser.clip(forFragment: "verse2")
+    try assertTrue(clip2 != nil, "Should find clip for 'verse2'")
+    try assertTrue(abs(clip2!.startTime - 20.0) < 0.001, "verse2 starts at 20")
+
+    let missing = parser.clip(forFragment: "nonexistent")
+    try assertTrue(missing == nil, "Should return nil for unknown fragment")
+
+    let empty = parser.clip(forFragment: "")
+    try assertTrue(empty == nil, "Should return nil for empty fragment")
+}
+
+test("Segments from same SMIL get distinct non-overlapping time ranges") {
+    // Simulate what convertDAISY3Audio now does: two navPoints reference
+    // the same SMIL file but different fragment IDs.
+    let smilXML = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="heading_ch1"><audio src="book.mp3" clipBegin="0:00:00" clipEnd="0:01:00"/></par>
+      <par id="body_ch1"><audio src="book.mp3" clipBegin="0:01:00" clipEnd="0:05:00"/></par>
+      <par id="heading_ch2"><audio src="book.mp3" clipBegin="0:05:00" clipEnd="0:06:00"/></par>
+      <par id="body_ch2"><audio src="book.mp3" clipBegin="0:06:00" clipEnd="0:10:00"/></par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
+    let clips = parser.parse()
+
+    // NavPoint 1 references heading_ch1, NavPoint 2 references heading_ch2
+    let clip1 = parser.clip(forFragment: "heading_ch1")!
+    let clip2 = parser.clip(forFragment: "heading_ch2")!
+
+    // Segment 1: starts at clip1.startTime, ends at clip2.startTime (same audio file)
+    let seg1Start = clip1.startTime
+    let seg1End = clip2.startTime  // next navPoint's clip start
+
+    // Segment 2: starts at clip2.startTime, ends at last clip's endTime
+    let seg2Start = clip2.startTime
+    let seg2End = clips.last!.endTime
+
+    try assertTrue(abs(seg1Start - 0.0) < 0.001, "Segment 1 should start at 0")
+    try assertTrue(abs(seg1End - 300.0) < 0.001, "Segment 1 should end at 300 (5:00)")
+    try assertTrue(abs(seg2Start - 300.0) < 0.001, "Segment 2 should start at 300 (5:00)")
+    try assertTrue(abs(seg2End - 600.0) < 0.001, "Segment 2 should end at 600 (10:00)")
+
+    // Crucially: segments must NOT overlap
+    try assertTrue(seg1End <= seg2Start, "Segments must not overlap")
+    // And must NOT be identical (the old bug)
+    try assertTrue(seg1Start != seg2Start || seg1End != seg2End,
+                   "Segments sharing a SMIL must have distinct time ranges")
+}
+
+test("Segments from different SMIL files use their own clip ranges") {
+    // When navPoints reference different SMIL files, each segment uses
+    // its own SMIL's clip range (end = last clip end, not next navPoint).
+    let smil1 = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="s1"><audio src="part1.mp3" clipBegin="0.0" clipEnd="60.0"/></par>
+    </seq></body></smil>
+    """
+    let smil2 = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="s2"><audio src="part2.mp3" clipBegin="0.0" clipEnd="45.0"/></par>
+    </seq></body></smil>
+    """
+
+    let parser1 = TestFragmentAwareSMILParser(data: smil1.data(using: .utf8)!)
+    let clips1 = parser1.parse()
+    let parser2 = TestFragmentAwareSMILParser(data: smil2.data(using: .utf8)!)
+    let clips2 = parser2.parse()
+
+    let seg1Clip = parser1.clip(forFragment: "s1") ?? clips1[0]
+    let seg2Clip = parser2.clip(forFragment: "s2") ?? clips2[0]
+
+    // Different audio files → each segment ends at its own SMIL's last clip
+    let seg1End = clips1.last!.endTime
+    let seg2End = clips2.last!.endTime
+
+    let seg1File = (seg1Clip.file as NSString).lastPathComponent
+    let seg2File = (seg2Clip.file as NSString).lastPathComponent
+
+    try assertTrue(seg1File != seg2File, "Different SMIL files should reference different audio")
+    try assertTrue(abs(seg1End - 60.0) < 0.001, "Segment 1 end from its own SMIL")
+    try assertTrue(abs(seg2End - 45.0) < 0.001, "Segment 2 end from its own SMIL")
+}
+
+test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
+    let smilXML = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="tcp1">
+        <audio src="audio.mp3" clip-begin="npt=0.000s" clip-end="npt=12.500s"/>
+      </par>
+      <par id="tcp2">
+        <audio src="audio.mp3" clip-begin="npt=12.500s" clip-end="npt=38.228s"/>
+      </par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
+    let clips = parser.parse()
+
+    try assertEqual(clips.count, 2)
+    try assertEqual(clips[0].parID, "tcp1")
+    try assertEqual(clips[1].parID, "tcp2")
+    try assertTrue(abs(clips[0].startTime - 0.0) < 0.001)
+    try assertTrue(abs(clips[1].startTime - 12.5) < 0.001)
+    try assertTrue(abs(clips[1].endTime - 38.228) < 0.001)
 }
 
 }

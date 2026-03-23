@@ -260,6 +260,157 @@ test("Audio engine speed ratio calculation") {
     try assertTrue(rateMax <= 4.0, "Should not exceed 4.0")
 }
 
+test("Segmented audio position update uses segment-relative offset") {
+    let charsPerSecond = 10.0
+    let segmentStartTime = 120.0
+    let absoluteTime = 126.4
+    let rawOffset = Int((absoluteTime - segmentStartTime) * charsPerSecond)
+    let chapterLength = 90
+    let clampedOffset = min(rawOffset, max(0, chapterLength - 1))
+
+    try assertEqual(rawOffset, 64, "Offset should be relative to segment start, not full file time")
+    try assertEqual(clampedOffset, 64, "Relative offset should remain within chapter bounds")
+}
+
+test("Segmented audio seek adds segment start time") {
+    let charsPerSecond = 10.0
+    let characterOffset = 35
+    let segmentStartTime = 42.5
+    let absoluteSeekTime = segmentStartTime + Double(characterOffset) / charsPerSecond
+
+    try assertTrue(abs(absoluteSeekTime - 46.0) < 0.001,
+                   "Seek time should include the segment's absolute start time")
+}
+
+test("Segmented audio chapter offset clamps near clip end") {
+    let charsPerSecond = 10.0
+    let segmentStartTime = 30.0
+    let absoluteTime = 45.0
+    let chapterLength = 120
+    let rawOffset = Int(max(0, absoluteTime - segmentStartTime) * charsPerSecond)
+    let clampedOffset = min(rawOffset, max(0, chapterLength - 1))
+
+    try assertEqual(rawOffset, 150, "Absolute time should convert to a relative chapter offset")
+    try assertEqual(clampedOffset, 119, "Offset should clamp to the chapter placeholder length")
+}
+
+test("Audio playback reload is skipped when reusing the same file") {
+    var loadedURL: String?
+    var loadCount = 0
+
+    func load(_ url: String) {
+        if loadedURL == url { return }
+        loadedURL = url
+        loadCount += 1
+    }
+
+    load("/tmp/book/chapter01.mp3")
+    load("/tmp/book/chapter01.mp3")
+    load("/tmp/book/chapter02.mp3")
+
+    try assertEqual(loadCount, 2, "Reusing the same file should not rebuild the player")
+}
+
+test("Audio playback play from zero resets position") {
+    let duration = 100.0
+
+    func clampedPlayTime(from requestedTime: Double) -> Double {
+        max(0, min(requestedTime, duration))
+    }
+
+    try assertEqual(clampedPlayTime(from: 0), 0, "A zero seek should reset to the start")
+    try assertEqual(clampedPlayTime(from: 150), 100, "Playback should clamp to known duration")
+}
+
+test("Seek guard prevents clip end re-trigger during async seek") {
+    // Simulates the race condition: the time observer fires with a stale
+    // time that is >= the new clipEndTime before the seek completes.
+    var isSeeking = false
+    var clipEndTime: Double? = nil
+    var finishedCount = 0
+
+    // Simulate onPlaybackFinished
+    func onPlaybackFinished() {
+        finishedCount += 1
+    }
+
+    // Simulate time observer callback with the seek guard
+    func timeObserverFired(secs: Double) {
+        if !isSeeking, let endTime = clipEndTime, secs >= endTime {
+            clipEndTime = nil
+            onPlaybackFinished()
+        }
+    }
+
+    // First segment: clip end at 300s, properly triggered
+    clipEndTime = 300.0
+    timeObserverFired(secs: 300.5)
+    try assertEqual(finishedCount, 1, "First clip end should fire normally")
+
+    // Now simulate chapter advance: new clip end set, seek in progress
+    clipEndTime = 600.0
+    isSeeking = true
+
+    // Time observer fires with stale time (still near old position)
+    timeObserverFired(secs: 300.5)
+    try assertEqual(finishedCount, 1, "Seek guard should block stale clip-end trigger")
+
+    // Seek completes
+    isSeeking = false
+
+    // Time observer now fires with correct position
+    timeObserverFired(secs: 310.0)
+    try assertEqual(finishedCount, 1, "Should not fire because 310 < 600")
+
+    // Eventually reaches real end
+    timeObserverFired(secs: 601.0)
+    try assertEqual(finishedCount, 2, "Should fire when actually reaching new clip end")
+}
+
+test("Seek guard prevents rapid loop when consecutive segments share same clip range") {
+    // This is the exact scenario that causes the Hyperion looping bug:
+    // multiple segments with identical endTime, and each onPlaybackFinished
+    // starts an async seek that hasn't completed before the next observer fires.
+    var isSeeking = false
+    var clipEndTime: Double? = nil
+    var finishedCount = 0
+    var currentChapter = 0
+    let totalChapters = 5
+
+    func onPlaybackFinished() {
+        finishedCount += 1
+        currentChapter += 1
+        if currentChapter < totalChapters {
+            // Simulate playAudioChapter: set new clip end and start seeking
+            isSeeking = true
+            clipEndTime = 300.0  // Same end time (the bug scenario)
+            // Seek completion would clear isSeeking later
+        }
+    }
+
+    func timeObserverFired(secs: Double) {
+        if !isSeeking, let endTime = clipEndTime, secs >= endTime {
+            clipEndTime = nil
+            onPlaybackFinished()
+        }
+    }
+
+    // First segment fires normally
+    clipEndTime = 300.0
+    timeObserverFired(secs: 300.0)
+    try assertEqual(finishedCount, 1, "First segment ends normally")
+    try assertEqual(currentChapter, 1)
+
+    // Without the guard, each subsequent time observer call would trigger
+    // another onPlaybackFinished because secs (300) >= clipEndTime (300).
+    // With the guard, isSeeking blocks them all.
+    timeObserverFired(secs: 300.0)
+    timeObserverFired(secs: 300.0)
+    timeObserverFired(secs: 300.0)
+    try assertEqual(finishedCount, 1, "Seek guard should prevent rapid cascading advances")
+    try assertEqual(currentChapter, 1, "Should stay on chapter 1 until seek completes")
+}
+
 // ---- Generation Counter Pattern Tests ----
 print("\n--- Generation Counter Pattern Tests ---")
 

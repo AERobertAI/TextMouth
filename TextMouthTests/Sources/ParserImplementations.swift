@@ -1243,7 +1243,7 @@ func parseDAISY202MetadataFromZip(url: URL) throws -> DAISYMetadata {
     throw TestError.assertionFailed("No ncc.html found")
 }
 
-/// Convert a DAISY 2.02 ZIP to Markdown by extracting NCC headings and content files
+/// Convert a DAISY 2.02 ZIP to Markdown by following SMIL text fragment refs.
 func parseDAISY202ToMarkdown(url: URL) throws -> String {
     guard let archive = try? Archive(url: url, accessMode: .read) else {
         throw TestError.assertionFailed("Cannot open ZIP")
@@ -1267,30 +1267,148 @@ func parseDAISY202ToMarkdown(url: URL) throws -> String {
     let parser = DAISYTestNCCParser(html: html)
     let metadata = parser.parse()
 
-    // Try to find and convert HTML content files
-    var markdown = ""
-    for entry in archive {
-        let path = entry.path.lowercased()
-        // Skip ncc.html itself, skip non-HTML
-        if path.hasSuffix("ncc.html") || path.hasSuffix("ncc.htm") { continue }
-        if !path.hasSuffix(".html") && !path.hasSuffix(".htm") && !path.hasSuffix(".xhtml") { continue }
-
-        var data = Data()
-        _ = try archive.extract(entry) { chunk in data.append(chunk) }
-        if let contentHTML = String(data: data, encoding: .utf8) {
-            let converted = (try? parseHTML(html: contentHTML).chapters.first?.text) ?? ""
-            if !converted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                markdown += converted + "\n\n"
+    // Gather SMIL refs from NCC order, then extract just those fragments.
+    var textReferences: [String] = []
+    var seenRefs = Set<String>()
+    if let nccData = html.data(using: .utf8) {
+        let nccParser = TestDAISY202NCCHeadingParser(data: nccData)
+        let headings = nccParser.parseHeadings()
+        for href in headings {
+            let smilFile = href.components(separatedBy: "#").first ?? href
+            let smilPath = nccDir.isEmpty ? smilFile : "\(nccDir)/\(smilFile)"
+            guard let smilEntry = archive[smilPath] else { continue }
+            var smilData = Data()
+            _ = try archive.extract(smilEntry) { chunk in smilData.append(chunk) }
+            let smilParser = TestDAISYSMILTextRefParser(data: smilData)
+            for ref in smilParser.parseTextReferences() {
+                let resolved = resolveDAISYTestPath(ref, relativeTo: smilPath)
+                if seenRefs.insert(resolved).inserted {
+                    textReferences.append(resolved)
+                }
             }
         }
     }
 
-    // Fall back to NCC headings if no content HTML found
+    let markdown = try extractDAISY202TestFragments(from: textReferences, archive: archive)
+
+    // Fall back to NCC title if no content HTML found
     if markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        markdown = "# \(metadata.title)\n\n"
+        return "# \(metadata.title)\n\n".trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private func resolveDAISYTestPath(_ ref: String, relativeTo sourcePath: String) -> String {
+    let sourceDir = (sourcePath as NSString).deletingLastPathComponent
+    let filePart = ref.components(separatedBy: "#").first ?? ref
+    let fragmentPart = ref.contains("#") ? String(ref.split(separator: "#", maxSplits: 1)[1]) : ""
+    let fullFilePath = sourceDir.isEmpty ? filePart : "\(sourceDir)/\(filePart)"
+    guard !fragmentPart.isEmpty else { return fullFilePath }
+    return "\(fullFilePath)#\(fragmentPart)"
+}
+
+private func extractDAISY202TestFragments(from refs: [String], archive: Archive) throws -> String {
+    var documents: [String: SwiftSoup.Document] = [:]
+    var fragments: [String] = []
+    var lastNormalized = ""
+
+    for ref in refs {
+        let parts = ref.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+        let filePath = String(parts[0])
+        let fragmentID = parts.count > 1 ? String(parts[1]) : ""
+        guard let entry = archive[filePath] else { continue }
+
+        let doc: SwiftSoup.Document
+        let html: String
+        if let cached = documents[filePath] {
+            doc = cached
+            html = try doc.outerHtml()
+        } else {
+            var data = Data()
+            _ = try archive.extract(entry) { chunk in data.append(chunk) }
+            html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) ?? ""
+            guard !html.isEmpty else { continue }
+            doc = try SwiftSoup.parse(html)
+            documents[filePath] = doc
+        }
+
+        let fragmentMarkdown: String
+        if fragmentID.isEmpty {
+            fragmentMarkdown = (try? parseHTML(html: html).chapters.first?.text) ?? ""
+        } else if let element = try doc.getElementById(fragmentID) {
+            fragmentMarkdown = convertDAISY202TestElement(element)
+        } else {
+            continue
+        }
+
+        let normalized = ParserUtilities.normalizeMarkdownWhitespace(fragmentMarkdown)
+        guard !normalized.isEmpty, normalized != lastNormalized else { continue }
+        fragments.append(normalized)
+        lastNormalized = normalized
+    }
+
+    return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
+}
+
+private func convertDAISY202TestElement(_ element: Element) -> String {
+    let tag = element.tagName().lowercased()
+    if tag == "a" {
+        return ((try? element.text()) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    let childElements = element.children().array()
+    if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
+       let firstChild = childElements.first {
+        return convertDAISY202TestElement(firstChild)
+    }
+    return ((try? parseHTML(html: try element.outerHtml()).chapters.first?.text) ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private class TestDAISYSMILTextRefParser: NSObject, XMLParserDelegate {
+    private let data: Data
+    private var refs: [String] = []
+
+    init(data: Data) { self.data = data }
+
+    func parseTextReferences() -> [String] {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return refs
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String : String] = [:]) {
+        let local = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
+        if local == "text", let src = attributes["src"], !src.isEmpty {
+            refs.append(src)
+        }
+    }
+}
+
+private class TestDAISY202NCCHeadingParser: NSObject, XMLParserDelegate {
+    private let data: Data
+    private var refs: [String] = []
+
+    init(data: Data) { self.data = data }
+
+    func parseHeadings() -> [String] {
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+        return refs
+    }
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?,
+                attributes: [String : String] = [:]) {
+        let local = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
+        if local == "a", let href = attributes["href"], !href.isEmpty {
+            refs.append(href)
+        }
+    }
 }
 
 
