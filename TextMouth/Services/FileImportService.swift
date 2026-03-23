@@ -469,10 +469,11 @@ enum FileImportService {
         // PDF documents
         types.append(.pdf)
         // DAISY books (OPF files and .daisy extension)
-        if let opf = UTType(filenameExtension: "opf") {
+        // Use custom UTIs matching Info.plist imported type declarations
+        if let opf = UTType("com.textmouth.opf-package") {
             types.append(opf)
         }
-        if let daisy = UTType(filenameExtension: "daisy") {
+        if let daisy = UTType("com.textmouth.daisy-book") {
             types.append(daisy)
         }
         types.append(.zip)
