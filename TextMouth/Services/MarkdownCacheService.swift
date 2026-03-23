@@ -338,7 +338,8 @@ enum MarkdownCacheService {
 
     /// Split a single oversized chapter into multiple smaller chapters at
     /// paragraph boundaries (double-newline). Each sub-chapter gets a title
-    /// like "Original Title (part 2)".
+    /// like "Original Title (part 2)" and a level-1 heading at offset 0 so
+    /// the heading navigator can reach every split section.
     private static func splitChapterAtParagraphs(_ chapter: Chapter) -> [Chapter] {
         let paragraphs = chapter.text.components(separatedBy: "\n\n")
         var chunks: [Chapter] = []
@@ -352,9 +353,8 @@ enum MarkdownCacheService {
             // have content, finalize the current chunk
             if candidate.count > maxChapterSize && !currentText.isEmpty {
                 let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-                // Re-parse headings for this chunk of text
-                let headings = extractHeadingsFromPlainText(currentText, chapterIndex: chunks.count)
-                chunks.append(Chapter(title: title, text: currentText, headings: headings))
+                let heading = Heading(level: 1, text: title, characterOffset: 0)
+                chunks.append(Chapter(title: title, text: currentText, headings: [heading]))
                 partNumber += 1
                 currentText = paragraph
             } else {
@@ -365,21 +365,11 @@ enum MarkdownCacheService {
         // Finalize the last chunk
         if !currentText.isEmpty {
             let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-            let headings = extractHeadingsFromPlainText(currentText, chapterIndex: chunks.count)
-            chunks.append(Chapter(title: title, text: currentText, headings: headings))
+            let heading = Heading(level: 1, text: title, characterOffset: 0)
+            chunks.append(Chapter(title: title, text: currentText, headings: [heading]))
         }
 
         return chunks
-    }
-
-    /// Extract heading information from plain text by looking for lines that
-    /// were headings in the original markdown (short lines after blank lines
-    /// that appear to be section titles). This is a best-effort heuristic for
-    /// split chapters where we no longer have the original markdown.
-    private static func extractHeadingsFromPlainText(_ text: String, chapterIndex: Int) -> [Heading] {
-        // For split chapters, we primarily care about navigation.
-        // Return an empty array — the chapter title itself provides navigation.
-        return []
     }
 
     // MARK: - Helpers

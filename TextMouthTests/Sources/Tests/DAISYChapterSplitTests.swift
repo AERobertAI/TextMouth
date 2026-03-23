@@ -148,4 +148,41 @@ test("Hyperion DAISY cache produces manageable chapter sizes") {
     }
 }
 
+test("Split chapters have headings for navigator") {
+    var longText = ""
+    let paragraph = String(repeating: "This is a test sentence. ", count: 50) + "\n\n"
+    while longText.count < 60_000 {
+        longText += paragraph
+    }
+    let chapters = [TestChapter(title: "Big Chapter", text: longText, headings: [])]
+    let result = splitOversizedTestChapters(chapters, maxSize: 40_000)
+    try assertGreater(result.count, 1, "Should split")
+    for (i, ch) in result.enumerated() {
+        try assertEqual(ch.headings.count, 1,
+            "Split chunk \(i) should have exactly one heading")
+        try assertEqual(ch.headings[0].text, ch.title,
+            "Heading text should match chapter title")
+        try assertEqual(ch.headings[0].level, 1,
+            "Split chapter heading should be level 1")
+        try assertEqual(ch.headings[0].characterOffset, 0,
+            "Heading should be at offset 0")
+    }
+}
+
+test("Hyperion all chapters have headings for navigation") {
+    let url = try requireFile("hyperion_daisy.zip")
+    let markdown = try parseDAISYToMarkdownFull(from: url)
+    let content = parseMultiChapterMarkdownTest(
+        markdown, bookTitle: "Hyperion", bookAuthor: "Dan Simmons"
+    )
+    for (i, ch) in content.chapters.enumerated() {
+        try assertGreater(ch.headings.count, 0,
+            "Chapter \(i) (\(ch.title)) should have at least one heading")
+    }
+    // Total headings should be at least as many as chapters (some may have more)
+    let allHeadings = content.allHeadings
+    try assertTrue(allHeadings.count >= content.chapters.count,
+        "Should have at least one heading per chapter (got \(allHeadings.count) headings for \(content.chapters.count) chapters)")
+}
+
 }

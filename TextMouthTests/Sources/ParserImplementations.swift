@@ -1511,7 +1511,8 @@ func splitOversizedTestChapters(_ chapters: [TestChapter], maxSize: Int) -> [Tes
             let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
             if candidate.count > maxSize && !currentText.isEmpty {
                 let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-                result.append(TestChapter(title: title, text: currentText, headings: []))
+                let heading = Heading(level: 1, text: title, characterOffset: 0)
+                result.append(TestChapter(title: title, text: currentText, headings: [heading]))
                 partNumber += 1
                 currentText = paragraph
             } else {
@@ -1520,7 +1521,8 @@ func splitOversizedTestChapters(_ chapters: [TestChapter], maxSize: Int) -> [Tes
         }
         if !currentText.isEmpty {
             let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-            result.append(TestChapter(title: title, text: currentText, headings: []))
+            let heading = Heading(level: 1, text: title, characterOffset: 0)
+            result.append(TestChapter(title: title, text: currentText, headings: [heading]))
         }
     }
     return result
@@ -1595,7 +1597,8 @@ func parseMultiChapterMarkdownTest(_ markdown: String, bookTitle: String, bookAu
             let candidate = currentText.isEmpty ? paragraph : currentText + "\n\n" + paragraph
             if candidate.count > maxChapterSize && !currentText.isEmpty {
                 let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-                splitChapters.append(Chapter(title: title, text: currentText, headings: []))
+                let heading = Heading(level: 1, text: title, characterOffset: 0)
+                splitChapters.append(Chapter(title: title, text: currentText, headings: [heading]))
                 partNumber += 1
                 currentText = paragraph
             } else {
@@ -1604,7 +1607,8 @@ func parseMultiChapterMarkdownTest(_ markdown: String, bookTitle: String, bookAu
         }
         if !currentText.isEmpty {
             let title = partNumber == 1 ? chapter.title : "\(chapter.title) (part \(partNumber))"
-            splitChapters.append(Chapter(title: title, text: currentText, headings: []))
+            let heading = Heading(level: 1, text: title, characterOffset: 0)
+            splitChapters.append(Chapter(title: title, text: currentText, headings: [heading]))
         }
     }
 
