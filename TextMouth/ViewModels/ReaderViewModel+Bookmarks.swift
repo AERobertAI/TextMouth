@@ -7,6 +7,78 @@ extension ReaderViewModel {
 
     // MARK: - Bookmarks
 
+    /// Proximity threshold in characters for detecting nearby bookmarks.
+    /// For audio books: half a second = 5 characters (10 chars/sec * 0.5).
+    /// For text books: 10 characters.
+    var bookmarkProximityThreshold: Int {
+        isAudioBook ? 5 : 10
+    }
+
+    /// Find a bookmark within the proximity threshold of the given position.
+    /// Only matches bookmarks in the same chapter.
+    func nearbyBookmark(chapterIndex: Int, characterOffset: Int) -> Bookmark? {
+        let threshold = bookmarkProximityThreshold
+        return bookmarks.first { bm in
+            bm.chapterIndex == chapterIndex &&
+            abs(bm.characterOffset - characterOffset) <= threshold
+        }
+    }
+
+    /// Whether a bookmark exists near the current reading position
+    var hasNearbyBookmark: Bool {
+        nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) != nil
+    }
+
+    /// Toggle a bookmark at the current position: if one exists nearby, remove it;
+    /// otherwise add a new one. When adding, checks for overlap with existing
+    /// bookmarks and adjusts position to avoid placing two bookmarks within
+    /// each other's proximity zones.
+    func toggleBookmarkAtCurrentPosition() {
+        if let existing = nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) {
+            // Remove the nearby bookmark
+            let number = existing.number
+            removeBookmark(existing)
+            announceToVoiceOver("Bookmark \(number) removed")
+        } else {
+            // Add a new bookmark, adjusting position if it would overlap with an existing one
+            let adjustedOffset = adjustedBookmarkOffset(
+                chapterIndex: currentChapterIndex,
+                characterOffset: currentCharacterOffset
+            )
+            libraryViewModel.addBookmark(
+                bookID: book.id,
+                chapterIndex: currentChapterIndex,
+                characterOffset: adjustedOffset,
+                label: ""
+            )
+            bookmarks = libraryViewModel.bookmarksForBook(book.id)
+            announceToVoiceOver("Bookmark \(bookmarks.count) added")
+        }
+    }
+
+    /// Adjust a bookmark offset so it doesn't fall within the proximity zone
+    /// of an existing bookmark in the same chapter. Nudges the position just
+    /// outside the threshold of the nearest conflicting bookmark.
+    private func adjustedBookmarkOffset(chapterIndex: Int, characterOffset: Int) -> Int {
+        let threshold = bookmarkProximityThreshold
+        let sameChapterBookmarks = bookmarks.filter { $0.chapterIndex == chapterIndex }
+
+        // Check if any existing bookmark is too close
+        guard let conflict = sameChapterBookmarks.first(where: {
+            abs($0.characterOffset - characterOffset) <= threshold
+        }) else {
+            // No overlap — use the original position
+            return characterOffset
+        }
+
+        // Nudge to just outside the threshold, in the direction away from the conflict
+        if characterOffset >= conflict.characterOffset {
+            return conflict.characterOffset + threshold + 1
+        } else {
+            return max(0, conflict.characterOffset - threshold - 1)
+        }
+    }
+
     /// Add a bookmark at the current reading position with an optional label
     func addBookmarkAtCurrentPosition(label: String = "") {
         libraryViewModel.addBookmark(

@@ -178,7 +178,7 @@ struct BookmarkCommands: Commands {
     var body: some Commands {
         CommandMenu("Bookmarks") {
             if windowType == .reader {
-                Button("Add Bookmark") {
+                Button("Toggle Bookmark") {
                     NotificationCenter.default.post(name: .addBookmark, object: nil)
                 }
 

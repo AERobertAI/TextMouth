@@ -417,7 +417,7 @@ class ReaderViewModel: ObservableObject {
         nc.publisher(for: .addBookmark)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.addBookmarkAtCurrentPosition()
+                self.toggleBookmarkAtCurrentPosition()
             }
             .store(in: &cancellables)
 
