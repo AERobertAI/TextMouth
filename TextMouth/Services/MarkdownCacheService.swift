@@ -8,11 +8,28 @@ import SwiftSoup
 /// the original file on every open.
 enum MarkdownCacheService {
 
-    /// Current version of the cache format. Increment this whenever the
+    /// Current semantic version of the cache format. Bump this whenever the
     /// extraction or parsing logic changes so existing caches are regenerated
     /// on the next app launch. Books with a stored version lower than this
-    /// (or nil/0 for pre-versioning books) will have their content.md rebuilt.
-    static let currentCacheVersion: Int = 2
+    /// (or nil for pre-versioning books) will have their content.md rebuilt.
+    /// Uses semantic versioning: major.minor.patch
+    static let currentCacheVersion: String = "2.0.0"
+
+    /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
+    /// Returns true if `stored` is older than `current`.
+    static func isCacheOutdated(stored: String?, current: String = currentCacheVersion) -> Bool {
+        guard let stored = stored, !stored.isEmpty else { return true }
+        let storedParts = stored.split(separator: ".").compactMap { Int($0) }
+        let currentParts = current.split(separator: ".").compactMap { Int($0) }
+        // Pad to 3 components for consistent comparison
+        let s = storedParts + Array(repeating: 0, count: max(0, 3 - storedParts.count))
+        let c = currentParts + Array(repeating: 0, count: max(0, 3 - currentParts.count))
+        for i in 0..<3 {
+            if s[i] < c[i] { return true }
+            if s[i] > c[i] { return false }
+        }
+        return false // equal
+    }
 
     /// The comment prefix used to separate chapters in the cached Markdown file.
     /// Each chapter begins with <!-- chapter: Title --> on its own line.

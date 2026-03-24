@@ -98,7 +98,7 @@ struct Book: Identifiable, Codable, Hashable {
     /// Version of the content.md cache format. When this is lower than
     /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
     /// on the next app launch to pick up parser improvements.
-    var cacheFormatVersion: Int?
+    var cacheFormatVersion: String?
 
     init(
         id: UUID = UUID(),
@@ -128,7 +128,7 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
         audioYear: String? = nil,
-        cacheFormatVersion: Int? = nil
+        cacheFormatVersion: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -190,7 +190,14 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
         audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
         audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
-        cacheFormatVersion = try container.decodeIfPresent(Int.self, forKey: .cacheFormatVersion)
+        // Decode as String, falling back to converting old Int values for compatibility
+        if let str = try? container.decodeIfPresent(String.self, forKey: .cacheFormatVersion) {
+            cacheFormatVersion = str
+        } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .cacheFormatVersion) {
+            cacheFormatVersion = "\(intVal).0.0"
+        } else {
+            cacheFormatVersion = nil
+        }
     }
 
     /// The .tmb package directory URL

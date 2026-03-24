@@ -196,7 +196,7 @@ extension LibraryViewModel {
             guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
             // Needs cache if missing or if the stored version is outdated
             if !MarkdownCacheService.cacheExists(for: book) { return true }
-            return (book.cacheFormatVersion ?? 0) < currentVersion
+            return MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
         }
         guard !booksNeedingCache.isEmpty else {
             // No extraction needed — run completion immediately
@@ -212,7 +212,7 @@ extension LibraryViewModel {
         }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            var updatedBookIDs: [(UUID, Int)] = []
+            var updatedBookIDs: [(UUID, String)] = []
 
             for (index, book) in booksNeedingCache.enumerated() {
                 guard self != nil else { return }

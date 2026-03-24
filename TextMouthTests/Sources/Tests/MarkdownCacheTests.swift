@@ -316,55 +316,65 @@ test("Global offsets are consistent across cached chapters") {
     try assertEqual(ch2Start, content.chapters[0].text.count, "Chapter 2 start equals chapter 1 length")
 }
 
-// MARK: - Cache version system tests
+// MARK: - Cache version system tests (semantic versioning)
 
 test("Book with nil cacheFormatVersion is considered outdated") {
     let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
                     cacheFormatVersion: nil)
-    let currentVersion = 2  // matches MarkdownCacheService.currentCacheVersion
-    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
-    try assertTrue(needsRegeneration, "nil version should be outdated")
+    try assertTrue(isCacheOutdated(stored: book.cacheFormatVersion, current: "2.0.0"),
+                   "nil version should be outdated")
 }
 
-test("Book with version 0 is considered outdated") {
+test("Book with version 1.0.0 is outdated when current is 2.0.0") {
     let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
-                    cacheFormatVersion: 0)
-    let currentVersion = 2
-    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
-    try assertTrue(needsRegeneration, "Version 0 should be outdated")
-}
-
-test("Book with version 1 is considered outdated when current is 2") {
-    let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
-                    cacheFormatVersion: 1)
-    let currentVersion = 2
-    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
-    try assertTrue(needsRegeneration, "Version 1 should be outdated when current is 2")
+                    cacheFormatVersion: "1.0.0")
+    try assertTrue(isCacheOutdated(stored: book.cacheFormatVersion, current: "2.0.0"),
+                   "1.0.0 should be outdated when current is 2.0.0")
 }
 
 test("Book with current version does not need regeneration") {
-    let currentVersion = 2
     let book = Book(title: "Current Book", format: .epub, filePath: "", md5Hash: "abc",
-                    cacheFormatVersion: currentVersion)
-    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
-    try assertTrue(!needsRegeneration, "Current version should not need regeneration")
+                    cacheFormatVersion: "2.0.0")
+    try assertTrue(!isCacheOutdated(stored: book.cacheFormatVersion, current: "2.0.0"),
+                   "Current version should not need regeneration")
+}
+
+test("Semantic version comparison: minor version bump triggers regeneration") {
+    try assertTrue(isCacheOutdated(stored: "2.0.0", current: "2.1.0"),
+                   "2.0.0 should be outdated when current is 2.1.0")
+    try assertTrue(!isCacheOutdated(stored: "2.1.0", current: "2.1.0"),
+                   "Equal versions should not be outdated")
+}
+
+test("Semantic version comparison: patch version bump triggers regeneration") {
+    try assertTrue(isCacheOutdated(stored: "2.0.0", current: "2.0.1"),
+                   "2.0.0 should be outdated when current is 2.0.1")
+}
+
+test("Semantic version comparison: higher stored version is not outdated") {
+    try assertTrue(!isCacheOutdated(stored: "3.0.0", current: "2.0.0"),
+                   "3.0.0 should not be outdated when current is 2.0.0")
 }
 
 test("Audio books are never flagged for cache regeneration") {
     let book = Book(title: "Audio Book", format: .audio, filePath: "", md5Hash: "abc",
                     cacheFormatVersion: nil)
-    let currentVersion = 2
     // Audio books should be filtered out before the version check
     let needsCache = !book.format.isAudio
-        && (book.cacheFormatVersion ?? 0) < currentVersion
+        && isCacheOutdated(stored: book.cacheFormatVersion, current: "2.0.0")
     try assertTrue(!needsCache, "Audio books should never need cache regeneration")
 }
 
 test("Cache version stamps correctly on Book struct") {
     var book = Book(title: "Test", format: .epub, filePath: "", md5Hash: "abc")
     try assertTrue(book.cacheFormatVersion == nil, "Should start with nil version")
-    book.cacheFormatVersion = 2
-    try assertEqual(book.cacheFormatVersion!, 2, "Should be stamped with version 2")
+    book.cacheFormatVersion = "2.0.0"
+    try assertEqual(book.cacheFormatVersion!, "2.0.0", "Should be stamped with version 2.0.0")
+}
+
+test("Empty string cacheFormatVersion is considered outdated") {
+    try assertTrue(isCacheOutdated(stored: "", current: "2.0.0"),
+                   "Empty string should be treated as outdated")
 }
 
 } // end runMarkdownCacheTests
@@ -485,4 +495,18 @@ func extractFirstMarkdownHeading(_ markdown: String) -> String {
         }
     }
     return ""
+}
+
+/// Compare two semantic version strings — returns true if stored is older than current
+func isCacheOutdated(stored: String?, current: String) -> Bool {
+    guard let stored = stored, !stored.isEmpty else { return true }
+    let storedParts = stored.split(separator: ".").compactMap { Int($0) }
+    let currentParts = current.split(separator: ".").compactMap { Int($0) }
+    let s = storedParts + Array(repeating: 0, count: max(0, 3 - storedParts.count))
+    let c = currentParts + Array(repeating: 0, count: max(0, 3 - currentParts.count))
+    for i in 0..<3 {
+        if s[i] < c[i] { return true }
+        if s[i] > c[i] { return false }
+    }
+    return false
 }

@@ -498,7 +498,7 @@ class ReaderViewModel: ObservableObject {
                 } else {
                     // Generate cache if missing or outdated, then always load from
                     // it so reading positions are consistent across sessions
-                    let cacheOutdated = (bookCopy.cacheFormatVersion ?? 0) < MarkdownCacheService.currentCacheVersion
+                    let cacheOutdated = MarkdownCacheService.isCacheOutdated(stored: bookCopy.cacheFormatVersion)
                     if !MarkdownCacheService.cacheExists(for: bookCopy) || cacheOutdated {
                         if cacheOutdated { MarkdownCacheService.deleteCache(for: bookCopy) }
                         MarkdownCacheService.generateCache(for: bookCopy)

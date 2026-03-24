@@ -309,7 +309,7 @@ struct Book: Identifiable, Codable {
     var audioAlbum: String?
     var audioGenre: String?
     var audioYear: String?
-    var cacheFormatVersion: Int?
+    var cacheFormatVersion: String?
 
     init(
         id: UUID = UUID(),
@@ -337,7 +337,7 @@ struct Book: Identifiable, Codable {
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
         audioYear: String? = nil,
-        cacheFormatVersion: Int? = nil
+        cacheFormatVersion: String? = nil
     ) {
         self.id = id
         self.title = title
