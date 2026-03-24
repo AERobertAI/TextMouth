@@ -496,9 +496,11 @@ class ReaderViewModel: ObservableObject {
                         parsed = try BookParser.parse(url: url, format: format)
                     }
                 } else {
-                    // Generate cache if missing, then always load from it so
-                    // reading positions are consistent across sessions
-                    if !MarkdownCacheService.cacheExists(for: bookCopy) {
+                    // Generate cache if missing or outdated, then always load from
+                    // it so reading positions are consistent across sessions
+                    let cacheOutdated = (bookCopy.cacheFormatVersion ?? 0) < MarkdownCacheService.currentCacheVersion
+                    if !MarkdownCacheService.cacheExists(for: bookCopy) || cacheOutdated {
+                        if cacheOutdated { MarkdownCacheService.deleteCache(for: bookCopy) }
                         MarkdownCacheService.generateCache(for: bookCopy)
                     }
                     if MarkdownCacheService.cacheExists(for: bookCopy) {

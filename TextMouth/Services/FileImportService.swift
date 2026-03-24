@@ -104,7 +104,7 @@ enum FileImportService {
             try FileManager.default.copyItem(at: sourceURL, to: destFile)
         }
 
-        let book = Book(
+        var book = Book(
             id: bookID,
             title: title,
             author: author,
@@ -120,13 +120,14 @@ enum FileImportService {
             audioYear: audioYear
         )
 
-        // Write bookInfo.json
-        book.saveBookInfo()
-
         // Generate cached Markdown content (non-audio books only)
         if !format.isAudio {
             MarkdownCacheService.generateCache(for: book)
+            book.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
         }
+
+        // Write bookInfo.json (after cache generation so version is included)
+        book.saveBookInfo()
 
         return book
     }
@@ -285,6 +286,8 @@ enum FileImportService {
         // Generate cached Markdown content for the migrated book
         if !migrated.format.isAudio {
             MarkdownCacheService.generateCache(for: migrated)
+            migrated.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
+            migrated.saveBookInfo()
         }
 
         return migrated

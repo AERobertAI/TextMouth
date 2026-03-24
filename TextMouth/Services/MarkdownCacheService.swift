@@ -8,6 +8,12 @@ import SwiftSoup
 /// the original file on every open.
 enum MarkdownCacheService {
 
+    /// Current version of the cache format. Increment this whenever the
+    /// extraction or parsing logic changes so existing caches are regenerated
+    /// on the next app launch. Books with a stored version lower than this
+    /// (or nil/0 for pre-versioning books) will have their content.md rebuilt.
+    static let currentCacheVersion: Int = 2
+
     /// The comment prefix used to separate chapters in the cached Markdown file.
     /// Each chapter begins with <!-- chapter: Title --> on its own line.
     private static let chapterMarkerPrefix = "<!-- chapter: "
@@ -97,7 +103,10 @@ enum MarkdownCacheService {
     }
 
     /// Extract Markdown from an EPUB file. Each spine chapter is converted from HTML
-    /// to Markdown and separated by chapter markers.
+    /// to Markdown and separated by chapter markers. When the HTML lacks semantic
+    /// heading tags, falls back to the NCX table of contents for chapter titles and
+    /// injects a `# Title` heading at the top of each chapter's Markdown so that
+    /// MarkdownDocParser will find headings during cache loading.
     private static func extractFromEPUB(url: URL) throws -> String {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
@@ -115,6 +124,12 @@ enum MarkdownCacheService {
         let opfXML = try EPUBParser.extractString(archive: archive, path: opfPath)
         let opfDirectory = (opfPath as NSString).deletingLastPathComponent
         let opfData = try EPUBParser.parseOPF(opfXML)
+
+        // Build a mapping from content file href to NCX navigation title.
+        // Many EPUBs use styled <div>/<span> instead of <h1>-<h6> for chapter
+        // headings, so the HTML-to-Markdown converter produces no `#` headings.
+        // The NCX provides the authoritative chapter titles in those cases.
+        let ncxTitles = parseNCXTitles(archive: archive, opfData: opfData, opfDirectory: opfDirectory)
 
         var markdownParts: [String] = []
 
@@ -141,13 +156,25 @@ enum MarkdownCacheService {
             }
 
             // Convert chapter HTML to Markdown
-            let chapterMD = (try? HTMLToMarkdownConverter.convert(chapterHTML)) ?? ""
+            var chapterMD = (try? HTMLToMarkdownConverter.convert(chapterHTML)) ?? ""
             guard !chapterMD.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 continue
             }
 
             // Extract chapter title from the first heading in the Markdown
-            let chapterTitle = extractFirstHeading(from: chapterMD)
+            var chapterTitle = extractFirstHeading(from: chapterMD)
+
+            // If no heading was found in the HTML, look up the NCX title for this
+            // content file and inject it as a level-1 Markdown heading at the top.
+            // This ensures MarkdownDocParser will pick it up as a proper heading.
+            if chapterTitle.isEmpty {
+                let ncxTitle = ncxTitles[manifestItem.href] ?? ""
+                if !ncxTitle.isEmpty {
+                    chapterTitle = ncxTitle
+                    // Prepend the heading so it appears in the parsed content
+                    chapterMD = "# \(ncxTitle)\n\n\(chapterMD)"
+                }
+            }
 
             markdownParts.append("\(chapterMarkerPrefix)\(chapterTitle)\(chapterMarkerSuffix)\n\(chapterMD)")
         }
@@ -164,6 +191,58 @@ enum MarkdownCacheService {
         }
 
         return markdownParts.joined(separator: "\n\n")
+    }
+
+    /// Parse the NCX table of contents from an EPUB archive and return a mapping
+    /// from content file href (relative to OPF directory) to navigation title.
+    /// Returns an empty dictionary if no NCX is found or parsing fails.
+    private static func parseNCXTitles(
+        archive: Archive,
+        opfData: EPUBParser.OPFData,
+        opfDirectory: String
+    ) -> [String: String] {
+        // Find the NCX file from the manifest (media-type application/x-dtbncx+xml)
+        let ncxItem = opfData.manifest.values.first { $0.mediaType.contains("ncx") }
+        guard let ncxHref = ncxItem?.href else { return [:] }
+
+        let ncxPath = opfDirectory.isEmpty ? ncxHref : "\(opfDirectory)/\(ncxHref)"
+        guard let ncxXML = try? EPUBParser.extractString(archive: archive, path: ncxPath) else {
+            return [:]
+        }
+
+        // Parse navPoints from the NCX XML
+        guard let doc = try? XMLDocument(xmlString: ncxXML) else { return [:] }
+        guard let navPoints = try? doc.nodes(forXPath: "//*[local-name()='navPoint']") else {
+            return [:]
+        }
+
+        var titles: [String: String] = [:]
+        for navPoint in navPoints {
+            guard let element = navPoint as? XMLElement else { continue }
+
+            // Extract the label text
+            let labelText = (try? element.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?
+                .first?.stringValue ?? ""
+            guard !labelText.isEmpty else { continue }
+
+            // Extract the content src (may include a fragment like "file.html#id")
+            guard let contentNode = (try? element.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement,
+                  let src = contentNode.attribute(forName: "src")?.stringValue else {
+                continue
+            }
+
+            // Strip fragment identifier — we map by filename only so the title
+            // applies to the spine item regardless of which anchor the NCX points to
+            let fileOnly = src.components(separatedBy: "#").first ?? src
+            let decoded = fileOnly.removingPercentEncoding ?? fileOnly
+
+            // Only store the first title for each file (the primary chapter heading)
+            if titles[decoded] == nil {
+                titles[decoded] = labelText
+            }
+        }
+
+        return titles
     }
 
     /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.
@@ -249,6 +328,14 @@ enum MarkdownCacheService {
                 if !section.title.isEmpty {
                     ch.title = section.title
                 }
+
+                // If this chapter has a title but the Markdown parser found no
+                // headings, inject a synthetic level-1 heading at offset 0.
+                // This ensures every titled chapter appears in the heading list.
+                if ch.headings.isEmpty && !ch.title.isEmpty {
+                    ch.headings = [Heading(level: 1, text: ch.title, characterOffset: 0)]
+                }
+
                 chapters.append(ch)
             }
         }

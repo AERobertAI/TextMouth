@@ -186,14 +186,17 @@ extension LibraryViewModel {
         }
     }
 
-    /// Generate content.md caches for any books that don't have one yet.
+    /// Generate content.md caches for any books that don't have one yet, or
+    /// regenerate caches whose format version is older than the current version.
     /// Runs in the background with progress tracking so the UI stays responsive.
     /// Calls the optional completion handler when finished (on the background queue).
     func extractMissingContentCaches(then completion: (() -> Void)? = nil) {
+        let currentVersion = MarkdownCacheService.currentCacheVersion
         let booksNeedingCache = library.books.filter { book in
-            !book.format.isAudio
-            && !book.tmbDirectoryName.isEmpty
-            && !MarkdownCacheService.cacheExists(for: book)
+            guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
+            // Needs cache if missing or if the stored version is outdated
+            if !MarkdownCacheService.cacheExists(for: book) { return true }
+            return (book.cacheFormatVersion ?? 0) < currentVersion
         }
         guard !booksNeedingCache.isEmpty else {
             // No extraction needed — run completion immediately
@@ -205,23 +208,44 @@ extension LibraryViewModel {
             self.isExtracting = true
             self.extractionProgressTotal = booksNeedingCache.count
             self.extractionProgressCurrent = 0
-            self.extractionProgressMessage = "Extracting text from \(booksNeedingCache.count) book\(booksNeedingCache.count == 1 ? "" : "s")..."
+            self.extractionProgressMessage = "Updating text cache for \(booksNeedingCache.count) book\(booksNeedingCache.count == 1 ? "" : "s")..."
         }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
+            var updatedBookIDs: [(UUID, Int)] = []
+
             for (index, book) in booksNeedingCache.enumerated() {
                 guard self != nil else { return }
+                // Delete stale cache before regenerating
+                if MarkdownCacheService.cacheExists(for: book) {
+                    MarkdownCacheService.deleteCache(for: book)
+                }
                 MarkdownCacheService.generateCache(for: book)
+                updatedBookIDs.append((book.id, currentVersion))
 
                 DispatchQueue.main.async {
                     self?.extractionProgressCurrent = index + 1
-                    self?.extractionProgressMessage = "Extracting text: \(index + 1) of \(booksNeedingCache.count)..."
+                    self?.extractionProgressMessage = "Updating text cache: \(index + 1) of \(booksNeedingCache.count)..."
                 }
             }
 
             DispatchQueue.main.async {
-                self?.isExtracting = false
-                self?.extractionProgressMessage = ""
+                guard let self = self else { return }
+                // Stamp the new cache version on each regenerated book
+                for (bookID, version) in updatedBookIDs {
+                    if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
+                        self.library.books[idx].cacheFormatVersion = version
+                    }
+                }
+                self.save()
+                // Persist bookInfo.json for each updated book
+                for (bookID, _) in updatedBookIDs {
+                    if let book = self.library.books.first(where: { $0.id == bookID }) {
+                        LibraryPersistenceService.saveBookInfo(for: book)
+                    }
+                }
+                self.isExtracting = false
+                self.extractionProgressMessage = ""
             }
 
             completion?()
@@ -242,11 +266,15 @@ extension LibraryViewModel {
         extractionProgressMessage = "Re-extracting text from \(booksToExtract.count) book\(booksToExtract.count == 1 ? "" : "s")..."
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
+            let currentVersion = MarkdownCacheService.currentCacheVersion
+            var updatedBookIDs: [UUID] = []
+
             for (index, book) in booksToExtract.enumerated() {
                 guard self != nil else { return }
                 // Delete existing cache first
                 MarkdownCacheService.deleteCache(for: book)
                 MarkdownCacheService.generateCache(for: book)
+                updatedBookIDs.append(book.id)
 
                 DispatchQueue.main.async {
                     self?.extractionProgressCurrent = index + 1
@@ -255,8 +283,21 @@ extension LibraryViewModel {
             }
 
             DispatchQueue.main.async {
-                self?.isExtracting = false
-                self?.extractionProgressMessage = ""
+                guard let self = self else { return }
+                // Stamp new cache version on all re-extracted books
+                for bookID in updatedBookIDs {
+                    if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
+                        self.library.books[idx].cacheFormatVersion = currentVersion
+                    }
+                }
+                self.save()
+                for bookID in updatedBookIDs {
+                    if let book = self.library.books.first(where: { $0.id == bookID }) {
+                        LibraryPersistenceService.saveBookInfo(for: book)
+                    }
+                }
+                self.isExtracting = false
+                self.extractionProgressMessage = ""
             }
         }
     }

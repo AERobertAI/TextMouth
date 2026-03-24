@@ -95,6 +95,10 @@ struct Book: Identifiable, Codable, Hashable {
     var audioAlbum: String?
     var audioGenre: String?
     var audioYear: String?
+    /// Version of the content.md cache format. When this is lower than
+    /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
+    /// on the next app launch to pick up parser improvements.
+    var cacheFormatVersion: Int?
 
     init(
         id: UUID = UUID(),
@@ -123,7 +127,8 @@ struct Book: Identifiable, Codable, Hashable {
         audioDuration: TimeInterval? = nil,
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
-        audioYear: String? = nil
+        audioYear: String? = nil,
+        cacheFormatVersion: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -152,6 +157,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.audioAlbum = audioAlbum
         self.audioGenre = audioGenre
         self.audioYear = audioYear
+        self.cacheFormatVersion = cacheFormatVersion
     }
 
     // Custom decoding to handle missing fields from old library.json
@@ -184,6 +190,7 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
         audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
         audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
+        cacheFormatVersion = try container.decodeIfPresent(Int.self, forKey: .cacheFormatVersion)
     }
 
     /// The .tmb package directory URL
@@ -258,7 +265,8 @@ struct Book: Identifiable, Codable, Hashable {
                 skippedHeadingIDs: skippedHeadingIDs,
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 manualSortOrder: manualSortOrder,
-                audioDuration: audioDuration
+                audioDuration: audioDuration,
+                cacheFormatVersion: cacheFormatVersion
             ),
             bookmarks: bookmarks
         )

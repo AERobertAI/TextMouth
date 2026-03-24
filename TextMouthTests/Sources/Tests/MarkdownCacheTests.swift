@@ -156,6 +156,146 @@ test("No heading returns empty string") {
     try assertEqual(heading, "", "Should return empty for no headings")
 }
 
+// MARK: - Heading-gap bug tests (EPUB with non-semantic headings)
+
+test("Chapters with titles but no markdown headings get synthetic headings") {
+    // Simulates an EPUB where HTML used styled <div> instead of <h1>-<h6>,
+    // so the content.md has chapter markers with titles but no # headings
+    let markdown = """
+    <!-- chapter: LIZ: Red Pill Blue Pill -->
+    It's a slow Tuesday afternoon, and you're coming to the end of your shift.
+
+    <!-- chapter: ANWAR: Job Interview -->
+    In the end, it all boils down to this: You'd do anything for your kids.
+
+    <!-- chapter: TOYMAKER: The Leith Police -->
+    The blinds are drawn in the living room of the flat.
+    """
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Rule 34", author: "Stross")
+    try assertEqual(content.chapters.count, 3, "Should have 3 chapters")
+
+    // Each chapter should have a synthetic heading from its title
+    let allHeadings = content.allHeadings
+    try assertEqual(allHeadings.count, 3, "Should have 3 headings (one per chapter)")
+    try assertEqual(allHeadings[0].text, "LIZ: Red Pill Blue Pill")
+    try assertEqual(allHeadings[0].level, 1)
+    try assertEqual(allHeadings[0].chapterIndex, 0)
+    try assertEqual(allHeadings[1].text, "ANWAR: Job Interview")
+    try assertEqual(allHeadings[1].chapterIndex, 1)
+    try assertEqual(allHeadings[2].text, "TOYMAKER: The Leith Police")
+    try assertEqual(allHeadings[2].chapterIndex, 2)
+}
+
+test("Chapters with existing markdown headings are not doubled") {
+    // When the HTML did have proper <h1> tags, the heading should come from
+    // the markdown parser, not be duplicated by synthetic injection
+    let markdown = """
+    <!-- chapter: Introduction -->
+    # Introduction
+
+    Welcome to the book.
+
+    <!-- chapter: Chapter One -->
+    # Chapter One
+
+    The story begins.
+    """
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Test", author: "Author")
+    let ch1Headings = content.chapters[0].headings
+    let ch2Headings = content.chapters[1].headings
+    // Each chapter should have exactly 1 heading (from the markdown), not 2
+    try assertEqual(ch1Headings.count, 1, "Should not duplicate headings")
+    try assertEqual(ch2Headings.count, 1, "Should not duplicate headings")
+}
+
+test("Mixed chapters: some with headings, some without") {
+    // Real-world EPUBs often have front matter without headings and body
+    // chapters with headings (or vice versa with NCX-injected headings)
+    let markdown = """
+    <!-- chapter: Copyright -->
+    Published by Penguin Books.
+
+    <!-- chapter: Chapter 1 -->
+    # Chapter 1
+
+    The real content starts here.
+
+    ## Section A
+
+    Some section text.
+
+    <!-- chapter: Chapter 2 -->
+    More content without any heading markers in the markdown.
+    """
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Test", author: "Author")
+    try assertEqual(content.chapters.count, 3, "Should have 3 chapters")
+
+    // Copyright: no markdown heading → synthetic heading
+    try assertEqual(content.chapters[0].headings.count, 1)
+    try assertEqual(content.chapters[0].headings[0].text, "Copyright")
+    try assertEqual(content.chapters[0].headings[0].level, 1)
+
+    // Chapter 1: has real headings from markdown
+    try assertEqual(content.chapters[1].headings.count, 2, "Should have 2 real headings")
+    try assertEqual(content.chapters[1].headings[0].text, "Chapter 1")
+    try assertEqual(content.chapters[1].headings[1].text, "Section A")
+
+    // Chapter 2: no markdown heading → synthetic heading
+    try assertEqual(content.chapters[2].headings.count, 1)
+    try assertEqual(content.chapters[2].headings[0].text, "Chapter 2")
+}
+
+test("Empty chapter title does not produce synthetic heading") {
+    // Chapters with empty titles should not get a synthetic heading —
+    // these are typically image-only or separator pages
+    let markdown = """
+    <!-- chapter:  -->
+    Just an image page with no title.
+
+    <!-- chapter: Real Chapter -->
+    Actual content here.
+    """
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Test", author: "Author")
+    // The empty-titled chapter should have 0 headings
+    try assertEqual(content.chapters[0].headings.count, 0, "Empty title should not produce heading")
+    // The titled chapter should have 1 synthetic heading
+    try assertEqual(content.chapters[1].headings.count, 1)
+    try assertEqual(content.chapters[1].headings[0].text, "Real Chapter")
+}
+
+test("NCX-injected headings appear in cached markdown content") {
+    // Simulates what extractFromEPUB now produces: when the NCX provides a
+    // title and the HTML had no headings, a `# Title` line is prepended
+    let markdown = """
+    <!-- chapter: Part 1 -->
+    # Part 1
+
+    <!-- chapter: LIZ: Red Pill Blue Pill -->
+    # LIZ: Red Pill Blue Pill
+
+    It's a slow Tuesday afternoon.
+    """
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Rule 34", author: "Stross")
+    let allHeadings = content.allHeadings
+    try assertEqual(allHeadings.count, 2)
+    try assertEqual(allHeadings[0].text, "Part 1")
+    try assertEqual(allHeadings[1].text, "LIZ: Red Pill Blue Pill")
+    // The heading text should appear in the plain text content
+    try assertTrue(content.chapters[1].text.contains("LIZ: Red Pill Blue Pill"),
+                   "NCX-injected heading should be in plain text")
+}
+
+test("Heading count matches between chapters and allHeadings") {
+    // Regression: the user saw 50 chapters but 0 headings. After the fix,
+    // the heading count should match the number of titled chapters.
+    let markdown = (1...50).map { i in
+        "<!-- chapter: Chapter \(i) -->\nContent of chapter \(i)."
+    }.joined(separator: "\n\n")
+    let content = parseMultiChapterCacheMarkdown(markdown, title: "Big Book", author: "Author")
+    try assertEqual(content.chapters.count, 50, "Should have 50 chapters")
+    try assertEqual(content.allHeadings.count, 50, "Should have 50 headings (one per chapter)")
+}
+
 test("Global offsets are consistent across cached chapters") {
     let markdown = """
     <!-- chapter: Chapter 1 -->
@@ -174,6 +314,57 @@ test("Global offsets are consistent across cached chapters") {
     try assertEqual(ch1Start, 0, "Chapter 1 starts at 0")
     try assertGreater(ch2Start, 0, "Chapter 2 starts after chapter 1")
     try assertEqual(ch2Start, content.chapters[0].text.count, "Chapter 2 start equals chapter 1 length")
+}
+
+// MARK: - Cache version system tests
+
+test("Book with nil cacheFormatVersion is considered outdated") {
+    let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
+                    cacheFormatVersion: nil)
+    let currentVersion = 2  // matches MarkdownCacheService.currentCacheVersion
+    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
+    try assertTrue(needsRegeneration, "nil version should be outdated")
+}
+
+test("Book with version 0 is considered outdated") {
+    let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
+                    cacheFormatVersion: 0)
+    let currentVersion = 2
+    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
+    try assertTrue(needsRegeneration, "Version 0 should be outdated")
+}
+
+test("Book with version 1 is considered outdated when current is 2") {
+    let book = Book(title: "Old Book", format: .epub, filePath: "", md5Hash: "abc",
+                    cacheFormatVersion: 1)
+    let currentVersion = 2
+    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
+    try assertTrue(needsRegeneration, "Version 1 should be outdated when current is 2")
+}
+
+test("Book with current version does not need regeneration") {
+    let currentVersion = 2
+    let book = Book(title: "Current Book", format: .epub, filePath: "", md5Hash: "abc",
+                    cacheFormatVersion: currentVersion)
+    let needsRegeneration = (book.cacheFormatVersion ?? 0) < currentVersion
+    try assertTrue(!needsRegeneration, "Current version should not need regeneration")
+}
+
+test("Audio books are never flagged for cache regeneration") {
+    let book = Book(title: "Audio Book", format: .audio, filePath: "", md5Hash: "abc",
+                    cacheFormatVersion: nil)
+    let currentVersion = 2
+    // Audio books should be filtered out before the version check
+    let needsCache = !book.format.isAudio
+        && (book.cacheFormatVersion ?? 0) < currentVersion
+    try assertTrue(!needsCache, "Audio books should never need cache regeneration")
+}
+
+test("Cache version stamps correctly on Book struct") {
+    var book = Book(title: "Test", format: .epub, filePath: "", md5Hash: "abc")
+    try assertTrue(book.cacheFormatVersion == nil, "Should start with nil version")
+    book.cacheFormatVersion = 2
+    try assertEqual(book.cacheFormatVersion!, 2, "Should be stamped with version 2")
 }
 
 } // end runMarkdownCacheTests
@@ -229,6 +420,14 @@ func parseMultiChapterCacheMarkdown(_ markdown: String, title: String, author: S
            let chapter = parsed.chapters.first {
             var ch = chapter
             if !section.title.isEmpty { ch.title = section.title }
+
+            // Synthetic heading injection: if the chapter has a title but the
+            // Markdown parser found no headings, create a level-1 heading at
+            // offset 0 so the heading list always reflects the chapter structure.
+            if ch.headings.isEmpty && !ch.title.isEmpty {
+                ch.headings = [Heading(level: 1, text: ch.title, characterOffset: 0)]
+            }
+
             chapters.append(ch)
         }
     }

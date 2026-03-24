@@ -309,6 +309,7 @@ struct Book: Identifiable, Codable {
     var audioAlbum: String?
     var audioGenre: String?
     var audioYear: String?
+    var cacheFormatVersion: Int?
 
     init(
         id: UUID = UUID(),
@@ -335,7 +336,8 @@ struct Book: Identifiable, Codable {
         audioDuration: TimeInterval? = nil,
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
-        audioYear: String? = nil
+        audioYear: String? = nil,
+        cacheFormatVersion: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -362,6 +364,7 @@ struct Book: Identifiable, Codable {
         self.audioAlbum = audioAlbum
         self.audioGenre = audioGenre
         self.audioYear = audioYear
+        self.cacheFormatVersion = cacheFormatVersion
     }
 
     /// The effective WPM for this book: local override if set, otherwise the provided fallback

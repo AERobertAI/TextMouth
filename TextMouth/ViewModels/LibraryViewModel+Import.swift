@@ -259,10 +259,13 @@ extension LibraryViewModel {
                 tmbDirectoryName: tmbName
             )
             library.addBook(book)
-            save()
-            LibraryPersistenceService.saveBookInfo(for: book)
-            // Generate cached Markdown content
+            // Generate cached Markdown content and stamp version
             MarkdownCacheService.generateCache(for: book)
+            if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
+                library.books[idx].cacheFormatVersion = MarkdownCacheService.currentCacheVersion
+            }
+            save()
+            LibraryPersistenceService.saveBookInfo(for: library.books.first(where: { $0.id == book.id }) ?? book)
         } catch {
             errorMessage = error.localizedDescription
             showError = true

@@ -118,6 +118,8 @@ struct BookState: Codable {
     var manualSortOrder: Int?
     /// Total audio duration in seconds (audio books only)
     var audioDuration: TimeInterval?
+    /// Version of the content.md cache format used when the cache was generated
+    var cacheFormatVersion: Int?
 
     init(
         readingPosition: ReadingPosition? = nil,
@@ -133,7 +135,8 @@ struct BookState: Codable {
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
-        audioDuration: TimeInterval? = nil
+        audioDuration: TimeInterval? = nil,
+        cacheFormatVersion: Int? = nil
     ) {
         self.readingPosition = readingPosition
         self.totalWordCount = totalWordCount
@@ -149,6 +152,7 @@ struct BookState: Codable {
         self.localEndOfBookBehavior = localEndOfBookBehavior
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
+        self.cacheFormatVersion = cacheFormatVersion
     }
 }
 
