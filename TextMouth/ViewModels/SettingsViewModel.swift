@@ -104,6 +104,8 @@ class SettingsViewModel: ObservableObject {
     @AppStorage("autoPlayOnNavigate") var autoPlayOnNavigate: Bool = false {
         didSet { syncToConfig() }
     }
+    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false
+    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true
 
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
     @Published var availableLanguages: [String] = []

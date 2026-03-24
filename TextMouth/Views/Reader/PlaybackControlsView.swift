@@ -35,9 +35,22 @@ struct PlaybackControlsView: View {
             .accessibilityLabel("Skip forward: \(viewModel.settingsViewModel.skipForwardUnit.rawValue)")
             .buttonStyle(.plain)
 
+            // Bookmark toggle button (hidden by default, shown via settings)
+            if viewModel.settingsViewModel.showBookmarkInPlaybackControls {
+                Button {
+                    viewModel.toggleBookmarkAtCurrentPosition()
+                } label: {
+                    Image(systemName: viewModel.hasNearbyBookmark ? "bookmark.fill" : "bookmark")
+                        .font(.title2)
+                }
+                .accessibilityLabel(viewModel.hasNearbyBookmark ? "Remove bookmark" : "Add bookmark")
+                .buttonStyle(.plain)
+            }
+
             Spacer()
 
-            // Speed controls
+            // Speed controls (can be hidden via settings)
+            if viewModel.settingsViewModel.showSpeedInPlaybackControls {
             HStack(spacing: 8) {
                 Button {
                     viewModel.adjustSpeed(delta: viewModel.isAudioBook ? -0.25 : -25)
@@ -82,6 +95,7 @@ struct PlaybackControlsView: View {
                     .help("Save to global settings")
                 }
             }
+            } // showSpeedInPlaybackControls
 
             // Sleep timer indicator
             if viewModel.sleepTimerService.isActive {

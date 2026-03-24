@@ -15,6 +15,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case addBookmark = "Add Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
+    case showHeadingList = "Show Headings"
+    case showBookmarkList = "Show Bookmarks"
+    case showSleepTimer = "Show Sleep Timer"
     case whereAmI = "Where Am I?"
     case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
@@ -46,6 +49,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .addBookmark: return .addBookmark
         case .nextBookmark: return .nextBookmark
         case .previousBookmark: return .previousBookmark
+        case .showHeadingList: return .showHeadingList
+        case .showBookmarkList: return .showBookmarkList
+        case .showSleepTimer: return .showSleepTimer
         case .whereAmI: return .whereAmI
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
@@ -66,8 +72,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
-        case .addBookmark, .nextBookmark, .previousBookmark:
+        case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
+        case .showHeadingList, .showSleepTimer:
+            return "Panels"
         case .whereAmI:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown:
@@ -238,10 +246,19 @@ extension ShortcutAction {
                 KeyBinding(key: "b", command: true)
             ],
             .nextBookmark: [
-                KeyBinding(key: "b", command: true, shift: true)
+                KeyBinding(key: "b", command: true, option: true, shift: true)
             ],
             .previousBookmark: [
                 KeyBinding(key: "b", command: true, option: true)
+            ],
+            .showHeadingList: [
+                KeyBinding(key: "h", command: true, shift: true)
+            ],
+            .showBookmarkList: [
+                KeyBinding(key: "b", command: true, shift: true)
+            ],
+            .showSleepTimer: [
+                KeyBinding(key: "t", command: true, shift: true)
             ],
             .whereAmI: [
                 KeyBinding(key: "w")

@@ -341,6 +341,22 @@ struct PlaybackSettingsView: View {
             } header: {
                 Text("Sleep Timer")
             }
+
+            Section {
+                Toggle("Show bookmark button", isOn: $settingsViewModel.showBookmarkInPlaybackControls)
+                    .accessibilityLabel("Show bookmark button in playback controls")
+                    .accessibilityHint("Adds a button to add or remove a bookmark at the current position")
+
+                Toggle("Show speed controls", isOn: $settingsViewModel.showSpeedInPlaybackControls)
+                    .accessibilityLabel("Show speed controls in playback controls")
+                    .accessibilityHint("Shows the speed adjustment buttons and current speed display")
+
+                Text("Choose which controls appear in the playback bar at the bottom of the reader.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } header: {
+                Text("Playback Controls")
+            }
         }
         .padding()
     }

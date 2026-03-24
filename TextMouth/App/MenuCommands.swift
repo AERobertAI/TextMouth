@@ -107,6 +107,16 @@ struct NavigationCommands: Commands {
 
                 Divider()
 
+                Button("Show Headings") {
+                    NotificationCenter.default.post(name: .showHeadingList, object: nil)
+                }
+
+                Button("Show Sleep Timer") {
+                    NotificationCenter.default.post(name: .showSleepTimer, object: nil)
+                }
+
+                Divider()
+
                 Button("Book Info") {
                     NotificationCenter.default.post(name: .showBookInfo, object: nil)
                 }
@@ -168,9 +178,15 @@ struct BookmarkCommands: Commands {
     var body: some Commands {
         CommandMenu("Bookmarks") {
             if windowType == .reader {
-                Button("Add Bookmark") {
+                Button("Toggle Bookmark") {
                     NotificationCenter.default.post(name: .addBookmark, object: nil)
                 }
+
+                Button("Show Bookmarks") {
+                    NotificationCenter.default.post(name: .showBookmarkList, object: nil)
+                }
+
+                Divider()
 
                 Button("Next Bookmark") {
                     NotificationCenter.default.post(name: .nextBookmark, object: nil)
@@ -216,4 +232,7 @@ extension Notification.Name {
     static let toggleEditMode = Notification.Name("toggleEditMode")
     static let moveBookUp = Notification.Name("moveBookUp")
     static let moveBookDown = Notification.Name("moveBookDown")
+    static let showHeadingList = Notification.Name("showHeadingList")
+    static let showBookmarkList = Notification.Name("showBookmarkList")
+    static let showSleepTimer = Notification.Name("showSleepTimer")
 }

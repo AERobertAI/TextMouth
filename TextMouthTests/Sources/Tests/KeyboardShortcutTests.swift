@@ -59,7 +59,11 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case addBookmark = "Add Bookmark"
     case nextBookmark = "Next Bookmark"
     case previousBookmark = "Previous Bookmark"
+    case showHeadingList = "Show Headings"
+    case showBookmarkList = "Show Bookmarks"
+    case showSleepTimer = "Show Sleep Timer"
     case whereAmI = "Where Am I?"
+    case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
     case showBookInfo = "Book Info"
     case removeFromLibrary = "Remove from Library"
@@ -67,18 +71,22 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case moveToFolder = "Move to Folder"
     case selectAll = "Select All"
     case toggleEditMode = "Edit Mode"
+    case moveBookUp = "Move Book Up"
+    case moveBookDown = "Move Book Down"
 
     var category: String {
         switch self {
         case .togglePlayback, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
             return "Playback"
-        case .goToLibrary, .goBack, .goForward, .nextHeading, .previousHeading:
+        case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
-        case .addBookmark, .nextBookmark, .previousBookmark:
+        case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
+        case .showHeadingList, .showSleepTimer:
+            return "Panels"
         case .whereAmI:
             return "Information"
-        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode:
+        case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .selectAll, .toggleEditMode, .moveBookUp, .moveBookDown:
             return "Library"
         }
     }
@@ -96,9 +104,13 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .nextHeading: [KeyBinding(key: "downArrow", command: true, option: true)],
             .previousHeading: [KeyBinding(key: "upArrow", command: true, option: true)],
             .addBookmark: [KeyBinding(key: "b", command: true)],
-            .nextBookmark: [KeyBinding(key: "b", command: true, shift: true)],
+            .nextBookmark: [KeyBinding(key: "b", command: true, option: true, shift: true)],
             .previousBookmark: [KeyBinding(key: "b", command: true, option: true)],
+            .showHeadingList: [KeyBinding(key: "h", command: true, shift: true)],
+            .showBookmarkList: [KeyBinding(key: "b", command: true, shift: true)],
+            .showSleepTimer: [KeyBinding(key: "t", command: true, shift: true)],
             .whereAmI: [KeyBinding(key: "w")],
+            .navigateUpLevel: [KeyBinding(key: "upArrow", command: true)],
             .openSelectedBook: [KeyBinding(key: "return")],
             .showBookInfo: [KeyBinding(key: "i", command: true)],
             .removeFromLibrary: [KeyBinding(key: "delete", command: true)],
@@ -106,6 +118,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .moveToFolder: [KeyBinding(key: "m", command: true, shift: true)],
             .selectAll: [KeyBinding(key: "a", command: true)],
             .toggleEditMode: [KeyBinding(key: "e", command: true)],
+            .moveBookUp: [KeyBinding(key: "upArrow", command: true, shift: true)],
+            .moveBookDown: [KeyBinding(key: "downArrow", command: true, shift: true)],
         ]
     }
 }
@@ -364,7 +378,7 @@ test("Select All has Cmd+A binding") {
 
 test("Library category includes all library actions") {
     let libraryActions = ShortcutAction.allCases.filter { $0.category == "Library" }
-    try assertEqual(libraryActions.count, 7, "Should have 7 library actions")
+    try assertEqual(libraryActions.count, 9, "Should have 9 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
@@ -373,6 +387,8 @@ test("Library category includes all library actions") {
     try assertTrue(names.contains("Open Selected Book"))
     try assertTrue(names.contains("Book Info"))
     try assertTrue(names.contains("Edit Mode"))
+    try assertTrue(names.contains("Move Book Up"))
+    try assertTrue(names.contains("Move Book Down"))
     print("    Library category has \(libraryActions.count) actions")
 }
 
@@ -384,6 +400,58 @@ test("Edit Mode has Cmd+E binding") {
     try assertTrue(bindings[0].command, "Should have command modifier")
     try assertTrue(!bindings[0].shift, "Should not have shift modifier")
     print("    Edit Mode default: \(bindings[0].displayString)")
+}
+
+// ---- Panel Shortcut Tests ----
+print("\n--- Panel Shortcut Tests ---")
+
+test("Show Headings has Cmd+Shift+H binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.showHeadingList]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "h")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    print("    Show Headings default: \(bindings[0].displayString)")
+}
+
+test("Show Bookmarks has Cmd+Shift+B binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.showBookmarkList]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "b")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    try assertTrue(!bindings[0].option, "Should not have option modifier")
+    print("    Show Bookmarks default: \(bindings[0].displayString)")
+}
+
+test("Show Sleep Timer has Cmd+Shift+T binding") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.showSleepTimer]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "t")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    print("    Show Sleep Timer default: \(bindings[0].displayString)")
+}
+
+test("Next Bookmark reassigned to Cmd+Option+Shift+B") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.nextBookmark]!
+    try assertEqual(bindings.count, 1)
+    try assertEqual(bindings[0].key, "b")
+    try assertTrue(bindings[0].command, "Should have command modifier")
+    try assertTrue(bindings[0].option, "Should have option modifier")
+    try assertTrue(bindings[0].shift, "Should have shift modifier")
+    print("    Next Bookmark default: \(bindings[0].displayString)")
+}
+
+test("Panel actions have correct categories") {
+    try assertEqual(ShortcutAction.showHeadingList.category, "Panels")
+    try assertEqual(ShortcutAction.showSleepTimer.category, "Panels")
+    try assertEqual(ShortcutAction.showBookmarkList.category, "Bookmarks")
+    print("    Panel categories verified")
 }
 
 test("New library shortcuts display correctly for accessibility") {

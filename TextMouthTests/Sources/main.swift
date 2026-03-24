@@ -53,6 +53,7 @@ runRelocationTests()
 runEmptyDirectoryCleanupTests()
 runOrphanNonReAdoptionTests()
 runBugRegressionTests()
+runBookmarkToggleTests()
 runIntegrationTests()
 
 // ---- Summary ----
