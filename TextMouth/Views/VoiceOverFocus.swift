@@ -160,11 +160,13 @@ class VoiceOverFocusTriggerView: NSView {
     func postFocusNotifications(target: Any, window: NSWindow) {
         let isSheet = window.title.isEmpty
 
-        // For non-sheet windows, only act if already key (don't steal from other windows).
-        // For sheets, always act — sheets need activation to work with VoiceOver.
+        // For non-sheet windows: skip only if a DIFFERENT window is already key
+        // (don't fight over focus). If NO window is key (app just launched), proceed.
         if !isSheet && !window.isKeyWindow {
-            voiceOverFocusLog("SKIPPED: window '\(window.title)' is not key, won't steal focus")
-            return
+            if let keyWindow = NSApp.keyWindow, keyWindow !== window {
+                voiceOverFocusLog("SKIPPED: another window '\(keyWindow.title)' is key, won't steal focus")
+                return
+            }
         }
 
         // Activate window and notify VoiceOver — required for sheets
@@ -174,19 +176,64 @@ class VoiceOverFocusTriggerView: NSView {
         }
         NSAccessibility.post(element: window, notification: .focusedWindowChanged)
 
-        // Repeat ScreenChanged to catch VoiceOver when it's ready
-        for attempt in 0..<4 {
-            let delay = Double(attempt) * 0.3
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        // Post ScreenChanged, then check if VoiceOver moved. Stop retrying once
+        // the target has been reached — even if the user immediately moves away,
+        // don't fight them by re-focusing.
+        // Sheets need more attempts (VoiceOver is slower to acknowledge them).
+        // Regular windows get 2 to minimize the "reload" sound.
+        let attempts = isSheet ? 4 : 2
+
+        for attempt in 0..<attempts {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(attempt) * 0.3) {
                 if let targetView = target as? NSView {
                     window.makeFirstResponder(targetView)
                 }
                 AccessibilityNotification.ScreenChanged(target).post()
                 if attempt == 0 {
-                    voiceOverFocusLog("posting focus attempts (4x at 300ms intervals)")
+                    voiceOverFocusLog("posting focus (\(attempts) attempts)")
                 }
             }
         }
+    }
+
+    /// Check if VoiceOver's cursor is currently on or near the target element.
+    /// Uses NSApp's focused UI element to detect where VoiceOver is.
+    func isVoiceOverOnTarget(_ target: Any, window: NSWindow) -> Bool {
+        guard let focused = NSApp.accessibilityFocusedUIElement else { return false }
+
+        // Direct match: focused element is the target itself
+        if let focusedObj = focused as? NSObject, let targetObj = target as? NSObject,
+           focusedObj === targetObj {
+            return true
+        }
+
+        // Check by identifier: if the focused element has our target identifier
+        if let focusedObj = focused as? NSObject,
+           focusedObj.responds(to: Selector(("accessibilityIdentifier"))) {
+            if let focusedID = focusedObj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String,
+               focusedID == voiceOverFocusID {
+                return true
+            }
+        }
+
+        // Check by label match
+        if let focusedObj = focused as? NSObject, let targetObj = target as? NSObject {
+            let focusedLabel: String? = {
+                if let v = focusedObj as? NSView { return v.accessibilityLabel() }
+                guard focusedObj.responds(to: Selector(("accessibilityLabel"))) else { return nil }
+                return focusedObj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+            }()
+            let targetLabel: String? = {
+                if let v = targetObj as? NSView { return v.accessibilityLabel() }
+                guard targetObj.responds(to: Selector(("accessibilityLabel"))) else { return nil }
+                return targetObj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+            }()
+            if let fl = focusedLabel, let tl = targetLabel, !fl.isEmpty, fl == tl {
+                return true
+            }
+        }
+
+        return false
     }
 
     /// Fallback: find the first interactive element that isn't a radio button/group
