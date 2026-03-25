@@ -13,6 +13,7 @@ struct BookSearchView: View {
     @State private var searchText = ""
     @State private var useRegex = false
     @State private var displayMode: DisplayMode = .percentage
+    @FocusState private var isSearchFocused: Bool
 
     enum DisplayMode: String, CaseIterable {
         case percentage = "Percentage"
@@ -61,7 +62,7 @@ struct BookSearchView: View {
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Search text")
                     .accessibilityHint("Type to search within the book")
-                    .background(VoiceOverFocus())
+                    .focused($isSearchFocused)
 
                 HStack {
                     Toggle("Use Regex", isOn: $useRegex)
@@ -150,6 +151,12 @@ struct BookSearchView: View {
         }
         .frame(width: 500, height: 450)
         .navigationTitle("Search in Book")
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                voiceOverFocusLog("BookSearchView: focusing on search field")
+                isSearchFocused = true
+            }
+        }
     }
 
     private var searchOutcome: SearchOutcome {

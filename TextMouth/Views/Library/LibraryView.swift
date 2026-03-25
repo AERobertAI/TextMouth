@@ -35,6 +35,9 @@ struct LibraryView: View {
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
 
+    /// Keyboard focus target — VoiceOver's cursor tracking follows keyboard focus
+    @FocusState private var isContinueListeningFocused: Bool
+
     var body: some View {
         VStack(spacing: 0) {
             // Category picker
@@ -58,39 +61,7 @@ struct LibraryView: View {
             }
 
             // Quick-resume button
-            if let lastBook = libraryViewModel.lastOpenedBook {
-                Button {
-                    onOpenBook(lastBook)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .foregroundColor(.accentColor)
-                            .accessibilityHidden(true)
-                        Text("Continue: \(lastBook.title)")
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Spacer()
-                        if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                            Text("\(TimeFormatting.format(remaining)) left")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color.accentColor.opacity(0.1))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel({
-                    var label = "Continue listening to \(lastBook.title)"
-                    if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                        label += ", \(TimeFormatting.spoken(remaining)) remaining"
-                    }
-                    return label
-                }())
-                .accessibilityHint("Opens the last book you were reading")
-                .background(VoiceOverFocus())
-            }
+            continueListeningButton
 
             // Edit mode toolbar: shown when edit mode is active
             if isEditMode {
@@ -275,14 +246,8 @@ struct LibraryView: View {
                         }
                     }
                 } header: {
-                    if libraryViewModel.lastOpenedBook == nil {
-                        Text("Books (\(filteredBooks.count))")
-                            .accessibilityAddTraits(.isHeader)
-                            .background(VoiceOverFocus())
-                    } else {
-                        Text("Books (\(filteredBooks.count))")
-                            .accessibilityAddTraits(.isHeader)
-                    }
+                    Text("Books (\(filteredBooks.count))")
+                        .accessibilityAddTraits(.isHeader)
                 }
             }
             .searchable(text: $searchText, prompt: "Search books")
@@ -718,6 +683,57 @@ struct LibraryView: View {
                     }
                 )
             }
+        }
+        .onAppear {
+            // Move keyboard focus to Continue Listening if available.
+            // VoiceOver's cursor tracking follows keyboard focus by default.
+            if libraryViewModel.lastOpenedBook != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    voiceOverFocusLog("LibraryView: focusing on continueListening")
+                    isContinueListeningFocused = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Extracted Subviews
+
+    /// Continue Listening button — extracted to reduce body complexity for the type checker
+    @ViewBuilder
+    private var continueListeningButton: some View {
+        if let lastBook = libraryViewModel.lastOpenedBook {
+            Button {
+                onOpenBook(lastBook)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill")
+                        .foregroundColor(.accentColor)
+                        .accessibilityHidden(true)
+                    Text("Continue: \(lastBook.title)")
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                    if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
+                        Text("\(TimeFormatting.format(remaining)) left")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.accentColor.opacity(0.1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel({
+                var label = "Continue listening to \(lastBook.title)"
+                if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
+                    label += ", \(TimeFormatting.spoken(remaining)) remaining"
+                }
+                return label
+            }())
+            .accessibilityHint("Opens the last book you were reading")
+            .focusable()
+            .focused($isContinueListeningFocused)
         }
     }
 

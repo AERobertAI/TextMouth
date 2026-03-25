@@ -106,7 +106,6 @@ struct MetadataEditorView: View {
         Section {
             TextField("Title", text: $editedAudioMetadata.title)
                 .accessibilityLabel("Book title")
-                .background(VoiceOverFocus())
 
             TextField("Artist", text: $editedAudioMetadata.artist)
                 .accessibilityLabel("Artist or narrator")
@@ -154,7 +153,6 @@ struct MetadataEditorView: View {
         Section {
             TextField("Title", text: $editedEPUBMetadata.title)
                 .accessibilityLabel("Book title")
-                .background(VoiceOverFocus())
 
             TextField("Author", text: $editedEPUBMetadata.author)
                 .accessibilityLabel("Author")

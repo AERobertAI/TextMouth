@@ -5,6 +5,7 @@ struct SleepTimerView: View {
     var onStartPlayback: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var customMinutes: Int = 30
+    @FocusState private var isContentFocused: Bool
 
     var body: some View {
         VStack(spacing: 16) {
@@ -16,7 +17,8 @@ struct SleepTimerView: View {
                 VStack(spacing: 8) {
                     Text("Timer active")
                         .font(.subheadline)
-                        .background(VoiceOverFocus())
+                        .focusable()
+                        .focused($isContentFocused)
                     Text(sleepTimerService.formattedRemaining)
                         .font(.system(.title, design: .monospaced))
                         .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
@@ -30,7 +32,8 @@ struct SleepTimerView: View {
                 VStack(spacing: 8) {
                     Text("Pause playback after:")
                         .foregroundColor(.secondary)
-                        .background(VoiceOverFocus())
+                        .focusable()
+                        .focused($isContentFocused)
 
                     // Preset durations
                     ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in
@@ -91,6 +94,12 @@ struct SleepTimerView: View {
         .padding()
         .frame(width: 300)
         .navigationTitle("Sleep Timer")
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                voiceOverFocusLog("SleepTimerView: focusing on content")
+                isContentFocused = true
+            }
+        }
     }
 
     private func startTimerAndPlay(duration: SleepTimerDuration) {

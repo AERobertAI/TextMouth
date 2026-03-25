@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PlaybackControlsView: View {
     @ObservedObject var viewModel: ReaderViewModel
+    var playButtonFocused: FocusState<Bool>.Binding
 
     var body: some View {
         HStack(spacing: 20) {
@@ -23,7 +24,8 @@ struct PlaybackControlsView: View {
                     .font(.title)
             }
             .accessibilityLabel(playPauseLabel)
-            .background(VoiceOverFocus())
+            .focusable()
+            .focused(playButtonFocused)
             .buttonStyle(.plain)
 
             // Skip forward

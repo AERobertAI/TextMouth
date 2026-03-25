@@ -10,6 +10,7 @@ struct ReaderView: View {
     @State private var showMetadataEditor = false
     @State private var showVoicePicker = false
     @State private var showSearch = false
+    @FocusState private var isPlayButtonFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -83,7 +84,7 @@ struct ReaderView: View {
                 Divider()
 
                 // Playback controls
-                PlaybackControlsView(viewModel: viewModel)
+                PlaybackControlsView(viewModel: viewModel, playButtonFocused: $isPlayButtonFocused)
             }
         }
         .toolbar {
@@ -164,6 +165,10 @@ struct ReaderView: View {
         }
         .onAppear {
             viewModel.soundEffectService = soundEffectService
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                voiceOverFocusLog("ReaderView: focusing on play button")
+                isPlayButtonFocused = true
+            }
         }
         .sheet(isPresented: $showHeadingNavigator) {
             HeadingNavigatorView(viewModel: viewModel)

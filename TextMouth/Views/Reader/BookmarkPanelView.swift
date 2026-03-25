@@ -7,6 +7,7 @@ struct BookmarkPanelView: View {
     @State private var newBookmarkNote = ""
     @State private var editingBookmark: Bookmark?
     @State private var editingNote = ""
+    @FocusState private var isListFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +41,8 @@ struct BookmarkPanelView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(VoiceOverFocus())
+                .focusable()
+                .focused($isListFocused)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -82,10 +84,17 @@ struct BookmarkPanelView: View {
                         )
                     }
                 }
-                .background(VoiceOverFocus())
+                .focusable()
+                .focused($isListFocused)
             }
         }
         .frame(width: 380, height: 400)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                voiceOverFocusLog("BookmarkPanelView: focusing on list")
+                isListFocused = true
+            }
+        }
         .navigationTitle("Bookmarks: \(viewModel.book.title)")
         .accessibilityLabel("Bookmarks, \(viewModel.bookmarks.count) \(viewModel.bookmarks.count == 1 ? "bookmark" : "bookmarks")")
         .sheet(isPresented: $showAddBookmark) {
@@ -98,7 +107,6 @@ struct BookmarkPanelView: View {
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Bookmark note")
                     .accessibilityHint("Optional note to describe this bookmark")
-                    .background(VoiceOverFocus())
 
                 HStack {
                     Button("Cancel") {
