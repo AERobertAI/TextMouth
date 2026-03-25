@@ -14,14 +14,14 @@ extension ReaderViewModel {
         isAudioBook ? 5 : 10
     }
 
-    /// Find a bookmark within the proximity threshold of the given position.
-    /// Only matches bookmarks in the same chapter.
+    /// Find the closest bookmark within the proximity threshold of the given position.
+    /// Only matches bookmarks in the same chapter. When multiple bookmarks fall
+    /// within range, returns the one with the smallest distance.
     func nearbyBookmark(chapterIndex: Int, characterOffset: Int) -> Bookmark? {
         let threshold = bookmarkProximityThreshold
-        return bookmarks.first { bm in
-            bm.chapterIndex == chapterIndex &&
-            abs(bm.characterOffset - characterOffset) <= threshold
-        }
+        return bookmarks
+            .filter { $0.chapterIndex == chapterIndex && abs($0.characterOffset - characterOffset) <= threshold }
+            .min(by: { abs($0.characterOffset - characterOffset) < abs($1.characterOffset - characterOffset) })
     }
 
     /// Whether a bookmark exists near the current reading position
@@ -57,26 +57,38 @@ extension ReaderViewModel {
     }
 
     /// Adjust a bookmark offset so it doesn't fall within the proximity zone
-    /// of an existing bookmark in the same chapter. Nudges the position just
-    /// outside the threshold of the nearest conflicting bookmark.
+    /// of any existing bookmark in the same chapter. First tries nudging backward;
+    /// if that still conflicts, scans forward through sorted bookmarks, jumping
+    /// past each conflicting zone in turn. Guaranteed to terminate because the
+    /// forward scan always advances.
     private func adjustedBookmarkOffset(chapterIndex: Int, characterOffset: Int) -> Int {
         let threshold = bookmarkProximityThreshold
-        let sameChapterBookmarks = bookmarks.filter { $0.chapterIndex == chapterIndex }
+        let sameChapter = bookmarks
+            .filter { $0.chapterIndex == chapterIndex }
+            .sorted(by: { $0.characterOffset < $1.characterOffset })
 
-        // Check if any existing bookmark is too close
-        guard let conflict = sameChapterBookmarks.first(where: {
-            abs($0.characterOffset - characterOffset) <= threshold
-        }) else {
-            // No overlap — use the original position
+        // Quick check: no conflict at all
+        guard sameChapter.contains(where: { abs($0.characterOffset - characterOffset) <= threshold }) else {
             return characterOffset
         }
 
-        // Nudge to just outside the threshold, in the direction away from the conflict
-        if characterOffset >= conflict.characterOffset {
-            return conflict.characterOffset + threshold + 1
-        } else {
-            return max(0, conflict.characterOffset - threshold - 1)
+        // Try backward nudge first (only if position is before the first conflict)
+        if let first = sameChapter.first(where: { abs($0.characterOffset - characterOffset) <= threshold }),
+           characterOffset < first.characterOffset {
+            let candidate = max(0, first.characterOffset - threshold - 1)
+            if !sameChapter.contains(where: { abs($0.characterOffset - candidate) <= threshold }) {
+                return candidate
+            }
         }
+
+        // Forward scan: walk through sorted bookmarks, jumping past each conflict
+        var adjusted = characterOffset
+        for bm in sameChapter {
+            if abs(bm.characterOffset - adjusted) <= threshold {
+                adjusted = bm.characterOffset + threshold + 1
+            }
+        }
+        return adjusted
     }
 
     /// Add a bookmark at the current reading position with an optional label
