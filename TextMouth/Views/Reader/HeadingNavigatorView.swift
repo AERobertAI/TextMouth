@@ -5,7 +5,6 @@ struct HeadingNavigatorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
     @State private var maxHeadingLevel: Int = 6
-    @FocusState private var isListFocused: Bool
 
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
@@ -114,17 +113,10 @@ struct HeadingNavigatorView: View {
                         )
                     }
                 }
-                .focusable()
-                .focused($isListFocused)
+                .background(VoiceOverFocus())
             }
         }
         .frame(width: 550, height: 500)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                voiceOverFocusLog("HeadingNavigatorView: focusing on list")
-                isListFocused = true
-            }
-        }
         .navigationTitle("Headings: \(viewModel.book.title)")
         .accessibilityLabel("Headings, \(filteredHeadings.count) \(filteredHeadings.count == 1 ? "heading" : "headings")")
     }

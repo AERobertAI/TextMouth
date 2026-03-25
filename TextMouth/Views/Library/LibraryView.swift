@@ -35,9 +35,6 @@ struct LibraryView: View {
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
 
-    /// Keyboard focus target — VoiceOver's cursor tracking follows keyboard focus
-    @FocusState private var isContinueListeningFocused: Bool
-
     var body: some View {
         VStack(spacing: 0) {
             // Category picker
@@ -684,16 +681,6 @@ struct LibraryView: View {
                 )
             }
         }
-        .onAppear {
-            // Move keyboard focus to Continue Listening if available.
-            // VoiceOver's cursor tracking follows keyboard focus by default.
-            if libraryViewModel.lastOpenedBook != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    voiceOverFocusLog("LibraryView: focusing on continueListening")
-                    isContinueListeningFocused = true
-                }
-            }
-        }
     }
 
     // MARK: - Extracted Subviews
@@ -732,8 +719,7 @@ struct LibraryView: View {
                 return label
             }())
             .accessibilityHint("Opens the last book you were reading")
-            .focusable()
-            .focused($isContinueListeningFocused)
+            .background(VoiceOverFocus())
         }
     }
 
