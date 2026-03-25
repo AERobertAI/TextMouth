@@ -61,6 +61,7 @@ struct BookSearchView: View {
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Search text")
                     .accessibilityHint("Type to search within the book")
+                    .background(VoiceOverFocus())
 
                 HStack {
                     Toggle("Use Regex", isOn: $useRegex)

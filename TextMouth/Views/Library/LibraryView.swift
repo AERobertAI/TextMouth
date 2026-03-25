@@ -89,6 +89,7 @@ struct LibraryView: View {
                     return label
                 }())
                 .accessibilityHint("Opens the last book you were reading")
+                .background(VoiceOverFocus())
             }
 
             // Edit mode toolbar: shown when edit mode is active
@@ -274,8 +275,14 @@ struct LibraryView: View {
                         }
                     }
                 } header: {
-                    Text("Books (\(filteredBooks.count))")
-                        .accessibilityAddTraits(.isHeader)
+                    if libraryViewModel.lastOpenedBook == nil {
+                        Text("Books (\(filteredBooks.count))")
+                            .accessibilityAddTraits(.isHeader)
+                            .background(VoiceOverFocus())
+                    } else {
+                        Text("Books (\(filteredBooks.count))")
+                            .accessibilityAddTraits(.isHeader)
+                    }
                 }
             }
             .searchable(text: $searchText, prompt: "Search books")

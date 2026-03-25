@@ -40,6 +40,7 @@ struct BookmarkPanelView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(VoiceOverFocus())
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -81,6 +82,7 @@ struct BookmarkPanelView: View {
                         )
                     }
                 }
+                .background(VoiceOverFocus())
             }
         }
         .frame(width: 380, height: 400)
@@ -96,6 +98,7 @@ struct BookmarkPanelView: View {
                     .textFieldStyle(.roundedBorder)
                     .accessibilityLabel("Bookmark note")
                     .accessibilityHint("Optional note to describe this bookmark")
+                    .background(VoiceOverFocus())
 
                 HStack {
                     Button("Cancel") {

@@ -26,6 +26,7 @@ struct LibraryBookInfoSheet: View {
             Form {
                 TextField("Title", text: $title)
                     .accessibilityLabel("Book title")
+                    .background(VoiceOverFocus())
                 TextField("Author", text: $author)
                     .accessibilityLabel("Book author")
 
@@ -100,6 +101,7 @@ struct NewFolderSheet: View {
             TextField("Folder name", text: $folderName)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("Folder name")
+                .background(VoiceOverFocus())
 
             Picker("Parent folder", selection: $parentPath) {
                 Text("Library Root").tag("")

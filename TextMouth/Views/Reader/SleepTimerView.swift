@@ -16,6 +16,7 @@ struct SleepTimerView: View {
                 VStack(spacing: 8) {
                     Text("Timer active")
                         .font(.subheadline)
+                        .background(VoiceOverFocus())
                     Text(sleepTimerService.formattedRemaining)
                         .font(.system(.title, design: .monospaced))
                         .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
@@ -29,6 +30,7 @@ struct SleepTimerView: View {
                 VStack(spacing: 8) {
                     Text("Pause playback after:")
                         .foregroundColor(.secondary)
+                        .background(VoiceOverFocus())
 
                     // Preset durations
                     ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in

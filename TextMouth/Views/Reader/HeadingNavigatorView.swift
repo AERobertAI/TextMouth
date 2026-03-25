@@ -113,6 +113,7 @@ struct HeadingNavigatorView: View {
                         )
                     }
                 }
+                .background(VoiceOverFocus())
             }
         }
         .frame(width: 550, height: 500)
