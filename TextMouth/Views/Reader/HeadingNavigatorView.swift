@@ -73,7 +73,7 @@ struct HeadingNavigatorView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(filteredHeadings) { heading in
+                        ForEach(Array(filteredHeadings.enumerated()), id: \.element.id) { index, heading in
                             HeadingRow(
                                 heading: heading,
                                 isCurrent: isCurrentHeading(heading),
@@ -84,6 +84,8 @@ struct HeadingNavigatorView: View {
                             .padding(.horizontal)
                             .padding(.vertical, 6)
                             .contentShape(Rectangle())
+                            // Focus VoiceOver on the first heading when the sheet opens
+                            .modifier(FirstItemFocusModifier(isFirst: index == 0))
                             .onTapGesture {
                                 viewModel.navigateToHeading(heading)
                                 dismiss()
@@ -113,7 +115,6 @@ struct HeadingNavigatorView: View {
                         )
                     }
                 }
-                .background(VoiceOverFocus())
             }
         }
         .frame(width: 550, height: 500)

@@ -40,15 +40,17 @@ struct BookmarkPanelView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(VoiceOverFocus())
+                .accessibilityIdentifier(voiceOverFocusID)
+                .background(VoiceOverFocus(delay: 1.2))
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(sortedBookmarks) { bookmark in
+                        ForEach(Array(sortedBookmarks.enumerated()), id: \.element.id) { index, bookmark in
                             BookmarkRow(bookmark: bookmark)
                                 .padding(.horizontal)
                                 .padding(.vertical, 6)
                                 .contentShape(Rectangle())
+                                .modifier(FirstItemFocusModifier(isFirst: index == 0))
                                 .onTapGesture {
                                     viewModel.navigateToBookmark(bookmark)
                                     dismiss()
@@ -82,7 +84,6 @@ struct BookmarkPanelView: View {
                         )
                     }
                 }
-                .background(VoiceOverFocus())
             }
         }
         .frame(width: 380, height: 400)

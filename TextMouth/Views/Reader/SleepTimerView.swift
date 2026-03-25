@@ -16,7 +16,6 @@ struct SleepTimerView: View {
                 VStack(spacing: 8) {
                     Text("Timer active")
                         .font(.subheadline)
-                        .background(VoiceOverFocus())
                     Text(sleepTimerService.formattedRemaining)
                         .font(.system(.title, design: .monospaced))
                         .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
@@ -25,19 +24,21 @@ struct SleepTimerView: View {
                         sleepTimerService.stop()
                     }
                     .accessibilityLabel("Cancel sleep timer")
+                    .accessibilityIdentifier(voiceOverFocusID)
+                    .background(VoiceOverFocus(delay: 1.2))
                 }
             } else {
                 VStack(spacing: 8) {
                     Text("Pause playback after:")
                         .foregroundColor(.secondary)
-                        .background(VoiceOverFocus())
 
-                    // Preset durations
-                    ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in
+                    // Preset durations — first button gets VoiceOver focus
+                    ForEach(Array([10, 15, 30, 45, 60].enumerated()), id: \.element) { index, minutes in
                         Button("\(minutes) minutes") {
                             startTimerAndPlay(duration: .minutes(minutes))
                         }
                         .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+                        .modifier(FirstItemFocusModifier(isFirst: index == 0))
                     }
 
                     Divider()
