@@ -224,9 +224,19 @@ class StandardVoiceOverFocusTriggerView: NSView {
                 return obj.perform(Selector(("accessibilityRole")))?.takeUnretainedValue() as? String
             }()
             if let role = role {
-                if role == "AXRow" || role == "AXCell" { return root }
-                if role == "AXButton" { return root }
-                if role == "AXTextField" { return root }
+                let label = accessibilityLabel(for: root)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let className = NSStringFromClass(type(of: obj))
+                let isScrollerPart = className.contains("Scroller")
+
+                if role == "AXRow" || role == "AXCell" {
+                    return root
+                }
+                if role == "AXTextField" {
+                    return root
+                }
+                if role == "AXButton" && !isScrollerPart && label?.isEmpty == false {
+                    return root
+                }
             }
         }
 
@@ -245,6 +255,17 @@ class StandardVoiceOverFocusTriggerView: NSView {
             }
         }
         return nil
+    }
+
+    private func accessibilityLabel(for value: Any) -> String? {
+        if let view = value as? NSView {
+            return view.accessibilityLabel()
+        }
+        guard let obj = value as? NSObject,
+              obj.responds(to: Selector(("accessibilityLabel"))) else {
+            return nil
+        }
+        return obj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
     }
 
     func findElementByIdentifier(_ identifier: String, root: Any, depth: Int) -> Any? {

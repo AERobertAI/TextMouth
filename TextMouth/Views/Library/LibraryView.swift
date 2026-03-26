@@ -36,6 +36,8 @@ struct LibraryView: View {
     @State private var hostWindow: NSWindow?
 
     var body: some View {
+        let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
+
         VStack(spacing: 0) {
             // Category picker
             Picker("View", selection: $category) {
@@ -94,13 +96,17 @@ struct LibraryView: View {
 
             // Total time remaining bar (refreshTick forces periodic re-evaluation)
             let _ = libraryViewModel.refreshTick
-            TimeRemainingBar(books: displayedBooks, wpm: settingsViewModel.wordsPerMinute)
+            TimeRemainingBar(
+                books: displayedBooks,
+                wpm: settingsViewModel.wordsPerMinute,
+                focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
+                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
+            )
 
             // Main list with native selection
             List(selection: $selectedBookIDs) {
                 // Folders section (only in folders category)
                 if category == .folders {
-                    let subfolders = libraryViewModel.subfoldersOf(currentFolderPath)
                     if !subfolders.isEmpty {
                         Section {
                             ForEach(subfolders) { folder in
@@ -149,7 +155,7 @@ struct LibraryView: View {
                 Section {
                     // Reference refreshTick so the list re-evaluates when the timer fires
                     let _ = libraryViewModel.refreshTick
-                    ForEach(filteredBooks) { book in
+                    ForEach(Array(filteredBooks.enumerated()), id: \.element.id) { index, book in
                         BookRow(
                             book: book,
                             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
@@ -291,13 +297,7 @@ struct LibraryView: View {
                     .accessibilityLabel("Go up one folder level")
                 }
 
-                Button {
-                    showFileImporter = true
-                } label: {
-                    Label("Import Book", systemImage: "plus")
-                }
-                .accessibilityLabel("Import a book file")
-                .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+                importBookButton
 
                 Button {
                     showTextInput = true
@@ -758,6 +758,48 @@ struct LibraryView: View {
             by: sortField,
             ascending: sortAscending
         )
+    }
+
+    private enum LibraryFocusTarget {
+        case timeSummary
+        case importButton
+    }
+
+    private var preferredLibraryFocusTarget: LibraryFocusTarget? {
+        guard libraryViewModel.lastOpenedBook == nil else { return nil }
+        // The content summary above the table is a stable AX target in this view,
+        // while section headers were not reliably discoverable by the focus helper.
+        if !displayedBooks.isEmpty {
+            return .timeSummary
+        }
+        return .importButton
+    }
+
+    private var importBookButton: some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import Book", systemImage: "plus")
+        }
+        .accessibilityLabel("Import a book file")
+        .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+        .modifier(LibraryFocusTargetModifier(
+            isEnabled: preferredLibraryFocusTarget == .importButton
+        ))
+    }
+
+    private struct LibraryFocusTargetModifier: ViewModifier {
+        let isEnabled: Bool
+
+        func body(content: Content) -> some View {
+            if isEnabled {
+                content
+                    .accessibilityIdentifier(voiceOverFocusID)
+                    .background(StandardVoiceOverFocus(delay: 1.2))
+            } else {
+                content
+            }
+        }
     }
 
     /// Move the currently selected book up or down in manual sort order.
