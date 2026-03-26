@@ -23,6 +23,8 @@ struct PlaybackControlsView: View {
                     .font(.title)
             }
             .accessibilityLabel(playPauseLabel)
+            .accessibilityIdentifier(voiceOverFocusID)
+            .background(StandardVoiceOverFocus())
             .buttonStyle(.plain)
 
             // Skip forward

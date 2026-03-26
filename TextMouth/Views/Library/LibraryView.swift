@@ -36,6 +36,8 @@ struct LibraryView: View {
     @State private var hostWindow: NSWindow?
 
     var body: some View {
+        let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
+
         VStack(spacing: 0) {
             // Category picker
             Picker("View", selection: $category) {
@@ -58,38 +60,7 @@ struct LibraryView: View {
             }
 
             // Quick-resume button
-            if let lastBook = libraryViewModel.lastOpenedBook {
-                Button {
-                    onOpenBook(lastBook)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .foregroundColor(.accentColor)
-                            .accessibilityHidden(true)
-                        Text("Continue: \(lastBook.title)")
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Spacer()
-                        if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                            Text("\(TimeFormatting.format(remaining)) left")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color.accentColor.opacity(0.1))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel({
-                    var label = "Continue listening to \(lastBook.title)"
-                    if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
-                        label += ", \(TimeFormatting.spoken(remaining)) remaining"
-                    }
-                    return label
-                }())
-                .accessibilityHint("Opens the last book you were reading")
-            }
+            continueListeningButton
 
             // Edit mode toolbar: shown when edit mode is active
             if isEditMode {
@@ -125,13 +96,17 @@ struct LibraryView: View {
 
             // Total time remaining bar (refreshTick forces periodic re-evaluation)
             let _ = libraryViewModel.refreshTick
-            TimeRemainingBar(books: displayedBooks, wpm: settingsViewModel.wordsPerMinute)
+            TimeRemainingBar(
+                books: displayedBooks,
+                wpm: settingsViewModel.wordsPerMinute,
+                focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
+                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
+            )
 
             // Main list with native selection
             List(selection: $selectedBookIDs) {
                 // Folders section (only in folders category)
                 if category == .folders {
-                    let subfolders = libraryViewModel.subfoldersOf(currentFolderPath)
                     if !subfolders.isEmpty {
                         Section {
                             ForEach(subfolders) { folder in
@@ -180,7 +155,7 @@ struct LibraryView: View {
                 Section {
                     // Reference refreshTick so the list re-evaluates when the timer fires
                     let _ = libraryViewModel.refreshTick
-                    ForEach(filteredBooks) { book in
+                    ForEach(Array(filteredBooks.enumerated()), id: \.element.id) { index, book in
                         BookRow(
                             book: book,
                             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
@@ -322,13 +297,7 @@ struct LibraryView: View {
                     .accessibilityLabel("Go up one folder level")
                 }
 
-                Button {
-                    showFileImporter = true
-                } label: {
-                    Label("Import Book", systemImage: "plus")
-                }
-                .accessibilityLabel("Import a book file")
-                .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+                importBookButton
 
                 Button {
                     showTextInput = true
@@ -714,6 +683,47 @@ struct LibraryView: View {
         }
     }
 
+    // MARK: - Extracted Subviews
+
+    /// Continue Listening button — extracted to reduce body complexity for the type checker
+    @ViewBuilder
+    private var continueListeningButton: some View {
+        if let lastBook = libraryViewModel.lastOpenedBook {
+            Button {
+                onOpenBook(lastBook)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill")
+                        .foregroundColor(.accentColor)
+                        .accessibilityHidden(true)
+                    Text("Continue: \(lastBook.title)")
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                    if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
+                        Text("\(TimeFormatting.format(remaining)) left")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.accentColor.opacity(0.1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel({
+                var label = "Continue listening to \(lastBook.title)"
+                if let remaining = lastBook.estimatedTimeRemaining(wpm: settingsViewModel.wordsPerMinute) {
+                    label += ", \(TimeFormatting.spoken(remaining)) remaining"
+                }
+                return label
+            }())
+            .accessibilityHint("Opens the last book you were reading")
+            .accessibilityIdentifier(voiceOverFocusID)
+            .background(StandardVoiceOverFocus(delay: 1.2))
+        }
+    }
+
     /// Toggle a book's membership in the edit selection set
     private func toggleEditSelection(_ id: UUID) {
         if editSelection.contains(id) {
@@ -748,6 +758,48 @@ struct LibraryView: View {
             by: sortField,
             ascending: sortAscending
         )
+    }
+
+    private enum LibraryFocusTarget {
+        case timeSummary
+        case importButton
+    }
+
+    private var preferredLibraryFocusTarget: LibraryFocusTarget? {
+        guard libraryViewModel.lastOpenedBook == nil else { return nil }
+        // The content summary above the table is a stable AX target in this view,
+        // while section headers were not reliably discoverable by the focus helper.
+        if !displayedBooks.isEmpty {
+            return .timeSummary
+        }
+        return .importButton
+    }
+
+    private var importBookButton: some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import Book", systemImage: "plus")
+        }
+        .accessibilityLabel("Import a book file")
+        .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
+        .modifier(LibraryFocusTargetModifier(
+            isEnabled: preferredLibraryFocusTarget == .importButton
+        ))
+    }
+
+    private struct LibraryFocusTargetModifier: ViewModifier {
+        let isEnabled: Bool
+
+        func body(content: Content) -> some View {
+            if isEnabled {
+                content
+                    .accessibilityIdentifier(voiceOverFocusID)
+                    .background(StandardVoiceOverFocus(delay: 1.2))
+            } else {
+                content
+            }
+        }
     }
 
     /// Move the currently selected book up or down in manual sort order.

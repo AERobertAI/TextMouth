@@ -7,6 +7,7 @@ struct BookmarkPanelView: View {
     @State private var newBookmarkNote = ""
     @State private var editingBookmark: Bookmark?
     @State private var editingNote = ""
+    @FocusState private var focusedBookmarkID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,6 +23,7 @@ struct BookmarkPanelView: View {
                     Label("Add Bookmark", systemImage: "plus")
                 }
                 .accessibilityLabel("Add bookmark at current position")
+                .modifier(EmptyBookmarksFocusModifier(isEmpty: viewModel.bookmarks.isEmpty))
 
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
@@ -43,19 +45,25 @@ struct BookmarkPanelView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(sortedBookmarks) { bookmark in
-                            BookmarkRow(bookmark: bookmark)
-                                .padding(.horizontal)
-                                .padding(.vertical, 6)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    viewModel.navigateToBookmark(bookmark)
-                                    dismiss()
-                                }
-                                .accessibilityAction(.default) {
-                                    viewModel.navigateToBookmark(bookmark)
-                                    dismiss()
-                                }
+                        ForEach(Array(sortedBookmarks.enumerated()), id: \.element.id) { index, bookmark in
+                            let row = BookmarkRow(bookmark: bookmark)
+
+                            Button {
+                                viewModel.navigateToBookmark(bookmark)
+                                dismiss()
+                            } label: {
+                                row
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                                .buttonStyle(.plain)
+                                .focusable(index == 0)
+                                .focused($focusedBookmarkID, equals: index == 0 ? bookmark.id : nil)
+                                .accessibilityLabel(row.bookmarkAccessibilityLabel)
+                                .accessibilityHint(row.accessibilityHintText)
+                                .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 1.2))
                                 .contextMenu {
                                     Button("Go To") {
                                         viewModel.navigateToBookmark(bookmark)
@@ -86,6 +94,12 @@ struct BookmarkPanelView: View {
         .frame(width: 380, height: 400)
         .navigationTitle("Bookmarks: \(viewModel.book.title)")
         .accessibilityLabel("Bookmarks, \(viewModel.bookmarks.count) \(viewModel.bookmarks.count == 1 ? "bookmark" : "bookmarks")")
+        .onAppear {
+            guard let firstBookmark = sortedBookmarks.first else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                focusedBookmarkID = firstBookmark.id
+            }
+        }
         .sheet(isPresented: $showAddBookmark) {
             VStack(spacing: 16) {
                 Text("Add Bookmark")
@@ -187,16 +201,31 @@ struct BookmarkRow: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(bookmarkAccessibilityLabel)
-        .accessibilityHint("Double-tap to navigate to this bookmark")
     }
 
-    private var bookmarkAccessibilityLabel: String {
+    var accessibilityHintText: String {
+        "Double-tap to navigate to this bookmark"
+    }
+
+    var bookmarkAccessibilityLabel: String {
         var parts = ["Bookmark \(bookmark.number)", "Chapter \(bookmark.chapterIndex + 1)"]
         if !bookmark.label.isEmpty {
             parts.append("Note: \(bookmark.label)")
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+private struct EmptyBookmarksFocusModifier: ViewModifier {
+    let isEmpty: Bool
+
+    func body(content: Content) -> some View {
+        if isEmpty {
+            content
+                .accessibilityIdentifier(voiceOverFocusID)
+                .background(VoiceOverFocus(delay: 1.2))
+        } else {
+            content
+        }
     }
 }

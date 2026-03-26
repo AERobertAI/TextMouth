@@ -55,6 +55,11 @@ struct EditModeBar: View {
 struct TimeRemainingBar: View {
     let books: [Book]
     let wpm: Double
+    /// Optional fallback focus target for the library when Continue Listening is absent.
+    /// This summary is part of the content area and shows up reliably in the AX tree,
+    /// unlike List section headers in this view hierarchy.
+    var focusIdentifier: String? = nil
+    var shouldTriggerFocus = false
 
     var body: some View {
         let (time, known, unknown) = computeTimeRemaining()
@@ -87,6 +92,14 @@ struct TimeRemainingBar: View {
             .background(Color.secondary.opacity(0.08))
             .accessibilityElement(children: .combine)
             .accessibilityLabel(accessibilityLabel(time: time, known: known, unknown: unknown))
+            .accessibilityIdentifier(focusIdentifier ?? "")
+            .background(
+                Group {
+                    if shouldTriggerFocus {
+                        StandardVoiceOverFocus(delay: 1.2)
+                    }
+                }
+            )
         }
     }
 

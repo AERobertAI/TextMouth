@@ -5,7 +5,6 @@ struct SleepTimerView: View {
     var onStartPlayback: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var customMinutes: Int = 30
-
     var body: some View {
         VStack(spacing: 16) {
             Text("Sleep Timer")
@@ -24,18 +23,21 @@ struct SleepTimerView: View {
                         sleepTimerService.stop()
                     }
                     .accessibilityLabel("Cancel sleep timer")
+                    .accessibilityIdentifier(voiceOverFocusID)
+                    .background(VoiceOverFocus(delay: 1.2))
                 }
             } else {
                 VStack(spacing: 8) {
                     Text("Pause playback after:")
                         .foregroundColor(.secondary)
 
-                    // Preset durations
-                    ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in
+                    // Preset durations — first button gets VoiceOver focus
+                    ForEach(Array([10, 15, 30, 45, 60].enumerated()), id: \.element) { index, minutes in
                         Button("\(minutes) minutes") {
                             startTimerAndPlay(duration: .minutes(minutes))
                         }
                         .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+                        .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 1.2))
                     }
 
                     Divider()

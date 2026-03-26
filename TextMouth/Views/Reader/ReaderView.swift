@@ -10,7 +10,6 @@ struct ReaderView: View {
     @State private var showMetadataEditor = false
     @State private var showVoicePicker = false
     @State private var showSearch = false
-
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading {

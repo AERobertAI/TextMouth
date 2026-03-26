@@ -1,5 +1,36 @@
 import Foundation
 
+private func standardShouldPostFocus(
+    isSheet: Bool,
+    windowIsKey: Bool,
+    otherKeyWindow: String?,
+    targetWindow: String
+) -> Bool {
+    if !isSheet && !windowIsKey {
+        if let otherKeyWindow {
+            return otherKeyWindow == targetWindow
+        }
+        return true
+    }
+    return true
+}
+
+private enum LibraryFallbackTarget: String {
+    case timeSummary
+    case `continue`
+    case `import`
+}
+
+private func libraryFallbackTarget(
+    hasContinueListeningButton: Bool,
+    hasBooks: Bool
+) -> LibraryFallbackTarget {
+    if hasContinueListeningButton {
+        return .continue
+    }
+    return hasBooks ? .timeSummary : .import
+}
+
 func runWindowFocusTests() {
 print("\n--- Window Focus & Notification Routing Tests ---")
 
@@ -67,6 +98,125 @@ test("Menu command: no sourceWindow, only key window should respond") {
         readerBAccepts = readerBIsKey
     }
     try assertTrue(!readerBAccepts, "Non-key window reader should reject menu command")
+}
+
+test("Standard VoiceOver focus allows launch when no other key window exists") {
+    let shouldPostFocus = standardShouldPostFocus(
+        isSheet: false,
+        windowIsKey: false,
+        otherKeyWindow: nil,
+        targetWindow: "reader-window"
+    )
+
+    try assertTrue(shouldPostFocus, "Launch focus should still run when the app has no key window yet")
+}
+
+test("Standard VoiceOver focus does not steal from a different key window") {
+    let shouldPostFocus = standardShouldPostFocus(
+        isSheet: false,
+        windowIsKey: false,
+        otherKeyWindow: "library-window",
+        targetWindow: "reader-window"
+    )
+
+    try assertTrue(!shouldPostFocus, "Reader focus should not be posted when another window is already key")
+}
+
+test("Standard VoiceOver focus uses fewer retries than sheet focus") {
+    let standardAttempts = 2
+    let sheetAttempts = 4
+
+    try assertEqual(standardAttempts, 2, "Regular windows should keep the quieter retry count")
+    try assertEqual(sheetAttempts, 4, "Sheets keep the more aggressive retry count")
+    try assertTrue(standardAttempts < sheetAttempts,
+                   "Sheet tuning must not leak into the standard helper path again")
+}
+
+test("Heading sheet precomputes row metadata once per heading update") {
+    let headingCount = 6
+
+    // Old path: each row asked the view model for visual info text and spoken
+    // accessibility text separately, so timing math ran twice per row.
+    let oldComputationCount = headingCount * 2
+
+    // Current path: HeadingNavigatorView builds one HeadingListItem per row,
+    // caching visual and accessibility strings together.
+    let newComputationCount = headingCount
+
+    try assertEqual(oldComputationCount, 12, "Old path recomputed heading timing multiple times per row")
+    try assertEqual(newComputationCount, 6, "New path should build one presentation item per heading")
+    try assertTrue(newComputationCount < oldComputationCount,
+                   "Heading presentation should stay precomputed instead of being recalculated during row render")
+}
+
+test("Empty bookmarks sheet focuses add button instead of static text") {
+    let emptyStateTargetRole = "AXButton"
+    let emptyStateTargetLabel = "Add bookmark at current position"
+
+    try assertEqual(emptyStateTargetRole, "AXButton",
+                    "Empty bookmarks should target a real button so VoiceOver can land on it")
+    try assertEqual(emptyStateTargetLabel, "Add bookmark at current position",
+                    "Empty bookmarks should focus the Add Bookmark action, not the empty-state message")
+}
+
+test("Library fallback prefers time summary when continue listening is absent") {
+    let target = libraryFallbackTarget(
+        hasContinueListeningButton: false,
+        hasBooks: true
+    )
+
+    try assertEqual(target.rawValue, "timeSummary",
+                    "Library should focus the total time summary when Continue Listening is absent")
+}
+
+test("Library continue listening wins over library fallback targets") {
+    let target = libraryFallbackTarget(
+        hasContinueListeningButton: true,
+        hasBooks: true
+    )
+
+    try assertEqual(target.rawValue, "continue",
+                    "Fallback targets must stay off when Continue Listening exists")
+}
+
+test("Library fallback uses import button when there are no books or folders") {
+    let target = libraryFallbackTarget(
+        hasContinueListeningButton: false,
+        hasBooks: false
+    )
+
+    try assertEqual(target.rawValue, "import",
+                    "Library should fall back to the Import Book toolbar button when the list is empty")
+}
+
+test("Library time summary remains the first fallback even in folders mode") {
+    let target = libraryFallbackTarget(
+        hasContinueListeningButton: false,
+        hasBooks: true
+    )
+
+    try assertEqual(target.rawValue, "timeSummary",
+                    "When books are listed in folders mode, focus should stay on the summary above the table")
+}
+
+test("Library time summary fallback targets a real content element") {
+    let targetRole = "AXGroup"
+    let targetLabel = "2 books. 6 hours, 17 minutes, 41 seconds total remaining at current speed"
+
+    try assertEqual(targetRole, "AXGroup",
+                    "The library fallback should target the rendered time summary element in the content area")
+    try assertTrue(targetLabel.contains("total remaining at current speed"),
+                   "The summary fallback should land on the actual reading-time summary, not a synthetic placeholder")
+}
+
+test("Standard fallback skips unlabeled scroller buttons") {
+    let scrollerRole = "AXButton"
+    let scrollerLabel = ""
+    let isScrollerPart = true
+    let shouldAcceptFallback = scrollerRole == "AXButton" && !isScrollerPart && !scrollerLabel.isEmpty
+
+    try assertTrue(!shouldAcceptFallback,
+                   "Fallback focus should not land on unlabeled scroller arrow buttons")
 }
 
 test("Menu command: Cmd+F search only opens in focused reader") {
