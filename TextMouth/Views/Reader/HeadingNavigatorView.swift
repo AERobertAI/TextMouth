@@ -1,11 +1,27 @@
 import SwiftUI
 
 struct HeadingNavigatorView: View {
+    struct HeadingListItem: Identifiable {
+        let heading: Heading
+        let isCurrent: Bool
+        let isSkipped: Bool
+        let infoText: String
+        let accessibilityDescription: String
+
+        var id: String { heading.id }
+    }
+
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
     @State private var maxHeadingLevel: Int = 6
-
+    // Cache the rendered heading metadata in state so sheet presentation does
+    // not repeatedly recompute timing/accessibility strings on the main thread.
+    @State private var headingItems: [HeadingListItem] = []
+    @State private var sheetAppearedAt = Date()
+    // VoiceOver would keep the segmented control as first responder until the
+    // first heading also became the actual keyboard focus target.
+    @FocusState private var focusedHeadingID: String?
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
         case timeIntoBook = "Time In"
@@ -73,34 +89,64 @@ struct HeadingNavigatorView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(filteredHeadings.enumerated()), id: \.element.id) { index, heading in
-                            HeadingRow(
-                                heading: heading,
-                                isCurrent: isCurrentHeading(heading),
-                                isSkipped: viewModel.isHeadingSkipped(heading),
-                                displayMode: displayMode,
-                                viewModel: viewModel
+                        ForEach(Array(headingItems.enumerated()), id: \.element.id) { index, item in
+                            let row = HeadingRow(
+                                heading: item.heading,
+                                isCurrent: item.isCurrent,
+                                isSkipped: item.isSkipped,
+                                infoText: item.infoText
                             )
-                            .padding(.horizontal)
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
-                            // Focus VoiceOver on the first heading when the sheet opens
-                            .modifier(FirstItemFocusModifier(isFirst: index == 0))
-                            .onTapGesture {
-                                viewModel.navigateToHeading(heading)
-                                dismiss()
-                            }
-                            .accessibilityAction(.default) {
-                                viewModel.navigateToHeading(heading)
-                                dismiss()
-                            }
-                            .contextMenu {
-                                Button("Go To") {
-                                    viewModel.navigateToHeading(heading)
+
+                            if index == 0 {
+                                Button {
+                                    viewModel.navigateToHeading(item.heading)
                                     dismiss()
+                                } label: {
+                                    row
+                                        .padding(.horizontal)
+                                        .padding(.vertical, 6)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
                                 }
-                                Button(viewModel.isHeadingSkipped(heading) ? "Include Section" : "Skip Section") {
-                                    viewModel.toggleHeadingSkip(heading)
+                                .buttonStyle(.plain)
+                                .focusable()
+                                .focused($focusedHeadingID, equals: item.heading.id)
+                                .accessibilityLabel(item.accessibilityDescription)
+                                .accessibilityHint(row.accessibilityHintText)
+                                .accessibilityAddTraits(item.isCurrent ? [.isSelected] : [])
+                                .modifier(FirstItemFocusModifier(isFirst: true, delay: 0.2))
+                                .contextMenu {
+                                    Button("Go To") {
+                                        viewModel.navigateToHeading(item.heading)
+                                        dismiss()
+                                    }
+                                    Button(item.isSkipped ? "Include Section" : "Skip Section") {
+                                        viewModel.toggleHeadingSkip(item.heading)
+                                    }
+                                }
+                            } else {
+                                Button {
+                                    viewModel.navigateToHeading(item.heading)
+                                    dismiss()
+                                } label: {
+                                    row
+                                        .padding(.horizontal)
+                                        .padding(.vertical, 6)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(item.accessibilityDescription)
+                                .accessibilityHint(row.accessibilityHintText)
+                                .accessibilityAddTraits(item.isCurrent ? [.isSelected] : [])
+                                .contextMenu {
+                                    Button("Go To") {
+                                        viewModel.navigateToHeading(item.heading)
+                                        dismiss()
+                                    }
+                                    Button(item.isSkipped ? "Include Section" : "Skip Section") {
+                                        viewModel.toggleHeadingSkip(item.heading)
+                                    }
                                 }
                             }
                             Divider()
@@ -119,11 +165,148 @@ struct HeadingNavigatorView: View {
         }
         .frame(width: 550, height: 500)
         .navigationTitle("Headings: \(viewModel.book.title)")
-        .accessibilityLabel("Headings, \(filteredHeadings.count) \(filteredHeadings.count == 1 ? "heading" : "headings")")
+        .accessibilityLabel("Headings, \(headingItems.count) \(headingItems.count == 1 ? "heading" : "headings")")
+        .onAppear {
+            sheetAppearedAt = Date()
+            rebuildHeadingItems()
+            voiceOverFocusLog("headings sheet appeared with \(headingItems.count) rows")
+            guard let firstHeading = headingItems.first?.heading else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                focusedHeadingID = firstHeading.id
+                let elapsed = Date().timeIntervalSince(sheetAppearedAt)
+                voiceOverFocusLog("headings sheet assigned keyboard focus after \(String(format: "%.3f", elapsed))s to '\(firstHeading.text)'")
+            }
+        }
+        .onChange(of: focusedHeadingID) { _, newValue in
+            guard let newValue else { return }
+            let elapsed = Date().timeIntervalSince(sheetAppearedAt)
+            voiceOverFocusLog("headings sheet focus binding changed after \(String(format: "%.3f", elapsed))s to id '\(newValue)'")
+        }
+        .onChange(of: displayMode) { _, _ in
+            rebuildHeadingItems()
+        }
+        .onChange(of: maxHeadingLevel) { _, _ in
+            rebuildHeadingItems()
+        }
+        .onChange(of: viewModel.headings) { _, _ in
+            rebuildHeadingItems()
+        }
+        .onChange(of: viewModel.currentChapterIndex) { _, _ in
+            rebuildHeadingItems()
+        }
+        .onChange(of: viewModel.currentCharacterOffset) { _, _ in
+            rebuildHeadingItems()
+        }
+        .onChange(of: viewModel.book.skippedHeadingIDs ?? []) { _, _ in
+            rebuildHeadingItems()
+        }
     }
 
     private var filteredHeadings: [Heading] {
         viewModel.headings.filter { $0.level <= maxHeadingLevel }
+    }
+
+    private func makeHeadingItems() -> [HeadingListItem] {
+        let filtered = filteredHeadings
+        let currentID = currentHeadingID(in: filtered)
+        let skippedIDs = viewModel.skippedHeadingIDs
+
+        guard let content = viewModel.content else {
+            return filtered.map { heading in
+                let isSkipped = skippedIDs.contains(heading.id)
+                return HeadingListItem(
+                    heading: heading,
+                    isCurrent: heading.id == currentID,
+                    isSkipped: isSkipped,
+                    infoText: "",
+                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "")
+                )
+            }
+        }
+
+        let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.count))
+        let allHeadings = viewModel.headings
+        let totalCharacterCount = max(content.totalCharacterCount, 1)
+        let totalWordCount = content.totalWordCount
+        let totalReadingTime = content.estimatedReadingTime(wpm: viewModel.speechService.wordsPerMinute)
+
+        let globalOffsetsByID = Dictionary(uniqueKeysWithValues: allHeadings.map { heading in
+            (heading.id, chapterStartOffsets[safe: heading.chapterIndex, default: 0] + heading.characterOffset)
+        })
+
+        var nextOffsetsByID: [String: Int] = [:]
+        for (index, heading) in allHeadings.enumerated() {
+            if index + 1 < allHeadings.count {
+                let nextHeading = allHeadings[index + 1]
+                nextOffsetsByID[heading.id] = globalOffsetsByID[nextHeading.id] ?? totalCharacterCount
+            } else {
+                nextOffsetsByID[heading.id] = totalCharacterCount
+            }
+        }
+
+        return filtered.map { heading in
+            let isSkipped = skippedIDs.contains(heading.id)
+            let globalOffset = globalOffsetsByID[heading.id] ?? 0
+            let nextOffset = nextOffsetsByID[heading.id] ?? totalCharacterCount
+
+            switch displayMode {
+            case .timeEstimate:
+                let charCount = max(nextOffset - globalOffset, 0)
+                let seconds: TimeInterval
+                if viewModel.isAudioBook {
+                    seconds = Double(charCount) / ReaderViewModel.audioCharsPerSecond / viewModel.audioSpeed
+                } else if totalWordCount > 0, viewModel.speechService.wordsPerMinute > 0 {
+                    let wordEstimate = Double(charCount) / Double(totalCharacterCount) * Double(totalWordCount)
+                    seconds = wordEstimate / viewModel.speechService.wordsPerMinute * 60.0
+                } else {
+                    seconds = 0
+                }
+                return HeadingListItem(
+                    heading: heading,
+                    isCurrent: heading.id == currentID,
+                    isSkipped: isSkipped,
+                    infoText: TimeFormatting.format(seconds),
+                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: TimeFormatting.spoken(seconds))
+                )
+            case .timeIntoBook:
+                let seconds: TimeInterval
+                if viewModel.isAudioBook {
+                    seconds = Double(globalOffset) / ReaderViewModel.audioCharsPerSecond / viewModel.audioSpeed
+                } else if viewModel.speechService.wordsPerMinute > 0 {
+                    let fraction = Double(globalOffset) / Double(totalCharacterCount)
+                    seconds = totalReadingTime * fraction
+                } else {
+                    seconds = 0
+                }
+                return HeadingListItem(
+                    heading: heading,
+                    isCurrent: heading.id == currentID,
+                    isSkipped: isSkipped,
+                    infoText: TimeFormatting.format(seconds),
+                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "\(TimeFormatting.spoken(seconds)) in")
+                )
+            case .percentage:
+                let percent = min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
+                return HeadingListItem(
+                    heading: heading,
+                    isCurrent: heading.id == currentID,
+                    isSkipped: isSkipped,
+                    infoText: String(format: "%.1f%%", percent),
+                    accessibilityDescription: describeHeading(
+                        heading,
+                        isSkipped: isSkipped,
+                        suffix: String(format: "%.1f percent", percent)
+                    )
+                )
+            }
+        }
+    }
+
+    private func rebuildHeadingItems() {
+        let startedAt = CFAbsoluteTimeGetCurrent()
+        headingItems = makeHeadingItems()
+        let elapsed = CFAbsoluteTimeGetCurrent() - startedAt
+        voiceOverFocusLog("rebuilt headings items in \(String(format: "%.3f", elapsed))s")
     }
 
     /// Distinct heading levels present in this document (sorted), for building the filter picker
@@ -131,13 +314,28 @@ struct HeadingNavigatorView: View {
         Array(Set(viewModel.headings.map { $0.level })).sorted()
     }
 
-    private func isCurrentHeading(_ heading: Heading) -> Bool {
-        // Find the last heading at or before the current position — only that one is "current"
-        let currentID = filteredHeadings.last(where: {
+    private func currentHeadingID(in headings: [Heading]) -> String? {
+        headings.last(where: {
             $0.chapterIndex < viewModel.currentChapterIndex ||
             ($0.chapterIndex == viewModel.currentChapterIndex && $0.characterOffset <= viewModel.currentCharacterOffset)
         })?.id
-        return heading.id == currentID
+    }
+
+    private func cumulativeChapterOffsets(_ counts: [Int]) -> [Int] {
+        var offsets: [Int] = []
+        offsets.reserveCapacity(counts.count)
+        var runningTotal = 0
+        for count in counts {
+            offsets.append(runningTotal)
+            runningTotal += count
+        }
+        return offsets
+    }
+
+    private func describeHeading(_ heading: Heading, isSkipped: Bool, suffix: String) -> String {
+        let skipPrefix = isSkipped ? "Skipped, " : ""
+        let base = "\(skipPrefix)\(heading.text) - level \(heading.level)"
+        return suffix.isEmpty ? base : "\(base), \(suffix)"
     }
 }
 
@@ -145,8 +343,7 @@ struct HeadingRow: View {
     let heading: Heading
     let isCurrent: Bool
     var isSkipped: Bool = false
-    let displayMode: HeadingNavigatorView.HeadingDisplayMode
-    let viewModel: ReaderViewModel
+    let infoText: String
 
     var body: some View {
         HStack {
@@ -178,35 +375,10 @@ struct HeadingRow: View {
             }
         }
         .opacity(isSkipped ? 0.5 : 1.0)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityDescription)
-        .accessibilityHint("Double-tap to navigate. Use context menu to skip or include this section.")
-        .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
     }
 
-    private var infoText: String {
-        switch displayMode {
-        case .timeEstimate:
-            return TimeFormatting.format(viewModel.timeEstimateForHeading(heading))
-        case .timeIntoBook:
-            return TimeFormatting.format(viewModel.timeToHeading(heading))
-        case .percentage:
-            return String(format: "%.1f%%", viewModel.percentAtHeading(heading))
-        }
-    }
-
-    private var accessibilityDescription: String {
-        // Format: "heading name - level N, info" for fast screen reader scanning
-        let skipPrefix = isSkipped ? "Skipped, " : ""
-        let base = "\(skipPrefix)\(heading.text) - level \(heading.level)"
-        switch displayMode {
-        case .timeEstimate:
-            return "\(base), \(TimeFormatting.spoken(viewModel.timeEstimateForHeading(heading)))"
-        case .timeIntoBook:
-            return "\(base), \(TimeFormatting.spoken(viewModel.timeToHeading(heading))) in"
-        case .percentage:
-            return "\(base), \(String(format: "%.1f percent", viewModel.percentAtHeading(heading)))"
-        }
+    var accessibilityHintText: String {
+        "Double-tap to navigate. Use context menu to skip or include this section."
     }
 
     private func fontForLevel(_ level: Int) -> Font {
@@ -216,5 +388,11 @@ struct HeadingRow: View {
         case 3: return .subheadline
         default: return .body
         }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int, default fallback: Element) -> Element {
+        indices.contains(index) ? self[index] : fallback
     }
 }

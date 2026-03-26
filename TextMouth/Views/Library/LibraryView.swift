@@ -37,11 +37,6 @@ struct LibraryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // VoiceOver focus helper — searches the tree for vo-focus-target.
-            // Longer delay (1.5s) to ensure library data is loaded on first launch.
-            VoiceOverFocus(delay: 1.5)
-                .frame(width: 0, height: 0)
-
             // Category picker
             Picker("View", selection: $category) {
                 ForEach(LibraryCategory.allCases, id: \.self) { cat in
@@ -725,6 +720,7 @@ struct LibraryView: View {
             }())
             .accessibilityHint("Opens the last book you were reading")
             .accessibilityIdentifier(voiceOverFocusID)
+            .background(StandardVoiceOverFocus(delay: 1.2))
         }
     }
 

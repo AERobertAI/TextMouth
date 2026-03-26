@@ -5,7 +5,6 @@ struct SleepTimerView: View {
     var onStartPlayback: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var customMinutes: Int = 30
-
     var body: some View {
         VStack(spacing: 16) {
             Text("Sleep Timer")
@@ -38,7 +37,7 @@ struct SleepTimerView: View {
                             startTimerAndPlay(duration: .minutes(minutes))
                         }
                         .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
-                        .modifier(FirstItemFocusModifier(isFirst: index == 0))
+                        .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 1.2))
                     }
 
                     Divider()

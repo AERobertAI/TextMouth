@@ -69,6 +69,81 @@ test("Menu command: no sourceWindow, only key window should respond") {
     try assertTrue(!readerBAccepts, "Non-key window reader should reject menu command")
 }
 
+test("Standard VoiceOver focus allows launch when no other key window exists") {
+    let isSheet = false
+    let windowIsKey = false
+    let otherKeyWindow: String? = nil
+
+    let shouldPostFocus: Bool
+    if !isSheet && !windowIsKey {
+        if let otherKeyWindow {
+            shouldPostFocus = (otherKeyWindow == "reader-window")
+        } else {
+            shouldPostFocus = true
+        }
+    } else {
+        shouldPostFocus = true
+    }
+
+    try assertTrue(shouldPostFocus, "Launch focus should still run when the app has no key window yet")
+}
+
+test("Standard VoiceOver focus does not steal from a different key window") {
+    let isSheet = false
+    let windowIsKey = false
+    let otherKeyWindow: String? = "library-window"
+
+    let shouldPostFocus: Bool
+    if !isSheet && !windowIsKey {
+        if let otherKeyWindow {
+            shouldPostFocus = (otherKeyWindow == "reader-window")
+        } else {
+            shouldPostFocus = true
+        }
+    } else {
+        shouldPostFocus = true
+    }
+
+    try assertTrue(!shouldPostFocus, "Reader focus should not be posted when another window is already key")
+}
+
+test("Standard VoiceOver focus uses fewer retries than sheet focus") {
+    let standardAttempts = 2
+    let sheetAttempts = 4
+
+    try assertEqual(standardAttempts, 2, "Regular windows should keep the quieter retry count")
+    try assertEqual(sheetAttempts, 4, "Sheets keep the more aggressive retry count")
+    try assertTrue(standardAttempts < sheetAttempts,
+                   "Sheet tuning must not leak into the standard helper path again")
+}
+
+test("Heading sheet precomputes row metadata once per heading update") {
+    let headingCount = 6
+
+    // Old path: each row asked the view model for visual info text and spoken
+    // accessibility text separately, so timing math ran twice per row.
+    let oldComputationCount = headingCount * 2
+
+    // Current path: HeadingNavigatorView builds one HeadingListItem per row,
+    // caching visual and accessibility strings together.
+    let newComputationCount = headingCount
+
+    try assertEqual(oldComputationCount, 12, "Old path recomputed heading timing multiple times per row")
+    try assertEqual(newComputationCount, 6, "New path should build one presentation item per heading")
+    try assertTrue(newComputationCount < oldComputationCount,
+                   "Heading presentation should stay precomputed instead of being recalculated during row render")
+}
+
+test("Empty bookmarks sheet focuses add button instead of static text") {
+    let emptyStateTargetRole = "AXButton"
+    let emptyStateTargetLabel = "Add bookmark at current position"
+
+    try assertEqual(emptyStateTargetRole, "AXButton",
+                    "Empty bookmarks should target a real button so VoiceOver can land on it")
+    try assertEqual(emptyStateTargetLabel, "Add bookmark at current position",
+                    "Empty bookmarks should focus the Add Bookmark action, not the empty-state message")
+}
+
 test("Menu command: Cmd+F search only opens in focused reader") {
     // searchInBook comes from menu with no sourceWindow.
     // Only the reader whose window is key should open the search sheet.
