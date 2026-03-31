@@ -222,6 +222,107 @@ func runFolderSortSettingTests() {
         try assertTrue(!library.sortSetting(for: "SciFi").sortAscending)
     }
 
+    // MARK: - Category sort settings
+
+    test("Recent category default sort is lastOpened descending") {
+        let setting = FolderSortSetting.recentDefault
+        try assertEqual(setting.sortField, .lastOpened)
+        try assertTrue(!setting.sortAscending, "Recent default should be descending (newest first)")
+    }
+
+    test("Recent category sort key is __recent__") {
+        try assertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
+    }
+
+    test("Folders category has no sort key (uses folder path)") {
+        try assertTrue(LibraryCategory.folders.sortSettingsKey == nil)
+    }
+
+    test("All categories except folders have reserved sort keys") {
+        try assertEqual(LibraryCategory.allItems.sortSettingsKey, "__allItems__")
+        try assertEqual(LibraryCategory.noFolder.sortSettingsKey, "__noFolder__")
+        try assertEqual(LibraryCategory.recent.sortSettingsKey, "__recent__")
+    }
+
+    test("Category sort keys cannot collide with folder paths") {
+        // Reserved keys start and end with __ which is not valid in folder names
+        for cat in LibraryCategory.allCases {
+            if let key = cat.sortSettingsKey {
+                try assertTrue(key.hasPrefix("__"), "Category key should start with __")
+                try assertTrue(key.hasSuffix("__"), "Category key should end with __")
+            }
+        }
+    }
+
+    test("Library returns recent default when no preference stored") {
+        let library = Library()
+        let setting = library.sortSetting(for: "__recent__", default: .recentDefault)
+        try assertEqual(setting.sortField, .lastOpened)
+        try assertTrue(!setting.sortAscending)
+    }
+
+    test("Library returns user preference for recent when stored") {
+        var library = Library()
+        let userPref = FolderSortSetting(sortField: .title, sortAscending: true)
+        library.setSortSetting(userPref, for: "__recent__")
+
+        let setting = library.sortSetting(for: "__recent__", default: .recentDefault)
+        try assertEqual(setting.sortField, .title, "User preference should override default")
+        try assertTrue(setting.sortAscending, "User preference should override default")
+    }
+
+    test("Category sort settings don't interfere with folder settings") {
+        var library = Library(folders: [BookFolder(name: "Recent")])
+        // Set a sort for the folder literally named "Recent"
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "Recent")
+        // Set a sort for the Recent category
+        library.setSortSetting(FolderSortSetting(sortField: .dateAdded, sortAscending: false), for: "__recent__")
+
+        // They should be independent
+        try assertEqual(library.sortSetting(for: "Recent").sortField, .author)
+        try assertEqual(library.sortSetting(for: "__recent__").sortField, .dateAdded)
+    }
+
+    test("Category sort settings survive JSON round-trip") {
+        var library = Library()
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "__recent__")
+        library.setSortSetting(FolderSortSetting(sortField: .fileSize, sortAscending: true), for: "__allItems__")
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(library)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(Library.self, from: data)
+
+        try assertEqual(decoded.sortSetting(for: "__recent__").sortField, .author)
+        try assertTrue(!decoded.sortSetting(for: "__recent__").sortAscending)
+        try assertEqual(decoded.sortSetting(for: "__allItems__").sortField, .fileSize)
+        try assertTrue(decoded.sortSetting(for: "__allItems__").sortAscending)
+    }
+
+    test("Folder operations don't affect category sort keys") {
+        let folderID = UUID()
+        var library = Library(folders: [BookFolder(id: folderID, name: "Fiction")])
+        library.setSortSetting(FolderSortSetting(sortField: .dateAdded, sortAscending: false), for: "__recent__")
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "Fiction")
+
+        // Delete the folder
+        library.removeFolderAndContents(id: folderID)
+
+        // Category sort setting should be unaffected
+        try assertEqual(library.sortSetting(for: "__recent__").sortField, .dateAdded)
+        try assertTrue(library.folderSortSettings["__recent__"] != nil)
+    }
+
+    test("Non-folder categories use their own default when no preference set") {
+        try assertEqual(LibraryCategory.recent.defaultSortSetting, .recentDefault)
+        try assertEqual(LibraryCategory.folders.defaultSortSetting, .defaultSort)
+        try assertEqual(LibraryCategory.allItems.defaultSortSetting, .defaultSort)
+        try assertEqual(LibraryCategory.noFolder.defaultSortSetting, .defaultSort)
+    }
+
     test("Apply sort preserves non-descendant folder settings") {
         var library = Library(folders: [
             BookFolder(name: "Fiction"),

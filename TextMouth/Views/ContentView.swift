@@ -186,8 +186,12 @@ struct LibraryWindowView: View {
         // Record folder changes into the navigation history, load sort settings, and announce
         .onChange(of: currentFolderPath) { _, newPath in
             folderNav.recordVisit(to: newPath)
-            loadSortSettings(for: newPath)
+            loadSortSettingsForCurrentView()
             announceFolderChange(newPath)
+        }
+        // Load sort settings when switching categories (e.g. Folders -> Recent)
+        .onChange(of: category) { _, _ in
+            loadSortSettingsForCurrentView()
         }
         // Save sort settings back to the library when the user changes them
         .onChange(of: sortField) { _, _ in
@@ -219,20 +223,29 @@ struct LibraryWindowView: View {
         return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
     }
 
-    /// Load per-folder sort settings when navigating to a new folder.
-    private func loadSortSettings(for path: String) {
-        let setting = libraryViewModel.library.sortSetting(for: path)
+    /// The sort settings key for the current view — category key for non-folder
+    /// categories, folder path for the Folders category.
+    private var currentSortSettingsKey: String {
+        category.sortSettingsKey ?? currentFolderPath
+    }
+
+    /// Load sort settings for the current category/folder combination.
+    private func loadSortSettingsForCurrentView() {
+        let setting = libraryViewModel.library.sortSetting(
+            for: currentSortSettingsKey,
+            default: category.defaultSortSetting
+        )
         isLoadingFolderSort = true
         sortField = setting.sortField
         sortAscending = setting.sortAscending
         isLoadingFolderSort = false
     }
 
-    /// Save the current sort field/direction as this folder's sort setting.
+    /// Save the current sort field/direction for the current view.
     private func saveSortSettings() {
         guard !isLoadingFolderSort else { return }
         let setting = FolderSortSetting(sortField: sortField, sortAscending: sortAscending)
-        libraryViewModel.setFolderSortSetting(setting, for: currentFolderPath)
+        libraryViewModel.setFolderSortSetting(setting, for: currentSortSettingsKey)
     }
 
     /// Announce the new folder name and book count to VoiceOver when navigating.

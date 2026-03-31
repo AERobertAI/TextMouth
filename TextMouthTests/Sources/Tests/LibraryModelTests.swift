@@ -6,6 +6,22 @@ enum LibraryCategory: String, CaseIterable, Codable {
     case allItems = "All Items"
     case noFolder = "No Folder"
     case recent = "Recent"
+
+    var sortSettingsKey: String? {
+        switch self {
+        case .folders:  return nil
+        case .allItems: return "__allItems__"
+        case .noFolder: return "__noFolder__"
+        case .recent:   return "__recent__"
+        }
+    }
+
+    var defaultSortSetting: FolderSortSetting {
+        switch self {
+        case .recent: return .recentDefault
+        default:      return .defaultSort
+        }
+    }
 }
 
 func runLibraryModelTests() {

@@ -27,6 +27,7 @@ struct FolderSortSetting: Codable, Equatable {
     var sortAscending: Bool
 
     static let defaultSort = FolderSortSetting(sortField: .title, sortAscending: true)
+    static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 }
 
 struct Heading: Equatable {
@@ -417,8 +418,8 @@ struct Library: Codable {
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
     }
 
-    func sortSetting(for folderPath: String) -> FolderSortSetting {
-        folderSortSettings[folderPath] ?? .defaultSort
+    func sortSetting(for key: String, default fallback: FolderSortSetting = .defaultSort) -> FolderSortSetting {
+        folderSortSettings[key] ?? fallback
     }
 
     mutating func setSortSetting(_ setting: FolderSortSetting, for folderPath: String) {

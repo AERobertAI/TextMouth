@@ -7,6 +7,9 @@ struct FolderSortSetting: Codable, Equatable {
 
     /// Default sort: title ascending
     static let defaultSort = FolderSortSetting(sortField: .title, sortAscending: true)
+
+    /// Default sort for the Recent category: last opened descending (newest first)
+    static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 }
 
 struct Library: Codable {
@@ -32,9 +35,10 @@ struct Library: Codable {
 
     // MARK: - Sort Settings
 
-    /// Get the sort setting for a folder path, falling back to the default.
-    func sortSetting(for folderPath: String) -> FolderSortSetting {
-        folderSortSettings[folderPath] ?? .defaultSort
+    /// Get the sort setting for a key (folder path or category key),
+    /// falling back to the provided default or the global default.
+    func sortSetting(for key: String, default fallback: FolderSortSetting = .defaultSort) -> FolderSortSetting {
+        folderSortSettings[key] ?? fallback
     }
 
     /// Update the sort setting for a folder path.

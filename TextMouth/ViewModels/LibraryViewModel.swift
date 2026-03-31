@@ -18,6 +18,26 @@ enum LibraryCategory: String, CaseIterable, Codable {
     case allItems = "All Items"
     case noFolder = "No Folder"
     case recent = "Recent"
+
+    /// Key used to store per-category sort settings in folderSortSettings.
+    /// Folder category uses the actual folder path; other categories use
+    /// a reserved key that cannot collide with real folder paths.
+    var sortSettingsKey: String? {
+        switch self {
+        case .folders:  return nil  // uses folder path instead
+        case .allItems: return "__allItems__"
+        case .noFolder: return "__noFolder__"
+        case .recent:   return "__recent__"
+        }
+    }
+
+    /// The default sort setting for this category when no user preference exists.
+    var defaultSortSetting: FolderSortSetting {
+        switch self {
+        case .recent: return .recentDefault
+        default:      return .defaultSort
+        }
+    }
 }
 
 /// App-level library data and operations.
