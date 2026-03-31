@@ -56,13 +56,16 @@ extension ReaderViewModel {
         case .bookmark:
             if forward { goToNextBookmark() } else { goToPreviousBookmark() }
         default:
-            // Time-based skip
+            // Time-based skip: calculate character delta from the same formula used
+            // for the time display so the displayed time change is always consistent.
+            // Time display uses: timeRemaining = totalTime * (remainingChars / totalChars)
+            // So: deltaChars = deltaSeconds * totalChars / totalTime
             if isAudioBook, let seconds = unit.seconds {
                 // For audio: convert seconds directly to character offset (10 chars = 1 second)
                 let charDelta = Int(Double(seconds) * Self.audioCharsPerSecond)
                 skipCharacters(count: forward ? charDelta : -charDelta)
-            } else if let wordCount = unit.wordCount(wpm: speechService.wordsPerMinute) {
-                skipWords(count: forward ? wordCount : -wordCount)
+            } else if let seconds = unit.seconds {
+                skipByTime(seconds: forward ? Double(seconds) : -Double(seconds))
             }
         }
     }
@@ -347,6 +350,89 @@ extension ReaderViewModel {
             speechService.stop()
 
             // Now safe to update chapter/offset — no stale callback can overwrite
+            currentChapterIndex = chapIdx
+            currentCharacterOffset = charOffset
+
+            if wasPlaying {
+                speakCurrentChapter()
+            }
+        }
+
+        if wasPlaying {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+        }
+
+        savePosition()
+    }
+
+    /// Skip forward or backward by a number of seconds for TTS text books.
+    /// Calculates the character delta using the same formula as the time-remaining display
+    /// (deltaChars = deltaSeconds * totalChars / totalTime) so the displayed time change
+    /// is always consistent regardless of word length at the skip location.
+    /// Snaps to the nearest word boundary after computing the character delta.
+    func skipByTime(seconds: Double) {
+        guard let content = content,
+              currentChapterIndex < content.chapters.count else { return }
+
+        let totalTime = content.estimatedReadingTime(wpm: speechService.wordsPerMinute)
+        guard totalTime > 0 else { return }
+
+        // Calculate character delta from the time display formula:
+        // timeRemaining = totalTime * (remainingChars / totalChars)
+        // So: deltaChars = deltaSeconds / totalTime * totalChars
+        let totalChars = Double(content.totalCharacterCount)
+        let charDelta = Int(seconds / totalTime * totalChars)
+
+        debugLog("skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(totalChars) charDelta=\(charDelta)")
+
+        let wasPlaying = speechService.isSpeaking && !speechService.isPaused
+
+        var chapIdx = currentChapterIndex
+        var charOffset = currentCharacterOffset + charDelta
+
+        // Handle cross-chapter navigation
+        if charOffset < 0 {
+            while charOffset < 0 && chapIdx > 0 {
+                chapIdx -= 1
+                charOffset += content.chapters[chapIdx].text.count
+            }
+            charOffset = max(0, charOffset)
+        } else {
+            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.count {
+                charOffset -= content.chapters[chapIdx].text.count
+                chapIdx += 1
+            }
+            if chapIdx >= content.chapters.count {
+                chapIdx = content.chapters.count - 1
+                charOffset = max(0, content.chapters[chapIdx].text.count - 1)
+            }
+        }
+
+        // Snap to nearest word boundary so playback doesn't start mid-word
+        let text = content.chapters[chapIdx].text
+        if charOffset > 0 && charOffset < text.count {
+            let targetIndex = text.index(text.startIndex, offsetBy: charOffset)
+            var wordStart = targetIndex
+            while wordStart > text.startIndex && !text[text.index(before: wordStart)].isWhitespace {
+                wordStart = text.index(before: wordStart)
+            }
+            charOffset = text.distance(from: text.startIndex, to: wordStart)
+        }
+
+        let sameChapter = (chapIdx == currentChapterIndex)
+
+        if sameChapter {
+            currentCharacterOffset = charOffset
+            seekSpeechService(toOriginalOffset: charOffset)
+        } else {
+            chapterPlaybackGeneration += 1
+            nextChapterEngine?.cancelRender()
+            nextChapterEngine = nil
+            nextChapterIndex = nil
+
+            speechService.stop()
             currentChapterIndex = chapIdx
             currentCharacterOffset = charOffset
 

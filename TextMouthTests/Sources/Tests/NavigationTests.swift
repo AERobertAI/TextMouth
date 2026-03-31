@@ -514,4 +514,77 @@ test("Skip forward with multiple spaces between words") {
     try assertEqual(result, 8, "Should handle multiple spaces")
 }
 
+// ---- Time-Based Skip Consistency Tests ----
+print("\n--- Time-Based Skip Consistency Tests ---")
+
+/// Simulate skipByTime character delta calculation (mirrors ReaderViewModel.skipByTime)
+func timeSkipCharDelta(seconds: Double, totalChars: Int, totalWordCount: Int, wpm: Double) -> Int {
+    let totalTime = Double(totalWordCount) / wpm * 60.0
+    guard totalTime > 0 else { return 0 }
+    return Int(seconds / totalTime * Double(totalChars))
+}
+
+/// Simulate time remaining calculation (mirrors DocumentContent.estimatedTimeRemaining)
+func timeRemaining(globalOffset: Int, totalChars: Int, totalWordCount: Int, wpm: Double) -> Double {
+    guard wpm > 0, totalChars > 0 else { return 0 }
+    let totalTime = Double(totalWordCount) / wpm * 60.0
+    let remainingFraction = Double(max(totalChars - globalOffset, 0)) / Double(totalChars)
+    return totalTime * remainingFraction
+}
+
+test("skipByTime: 15-second skip changes time display by exactly 15 seconds") {
+    // Book with uniform word density (5 chars/word avg)
+    let totalChars = 10000
+    let totalWords = 2000
+    let wpm = 200.0
+    let startOffset = 5000
+
+    let timeBefore = timeRemaining(globalOffset: startOffset, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+    let charDelta = timeSkipCharDelta(seconds: 15.0, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+    let timeAfter = timeRemaining(globalOffset: startOffset - charDelta, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+
+    let displayedChange = timeAfter - timeBefore
+    // Should be exactly 15 seconds (within floating point tolerance)
+    try assertTrue(abs(displayedChange - 15.0) < 0.01, "Time change should be 15s, got \(displayedChange)")
+}
+
+test("skipByTime: 30-second skip is consistent regardless of position in book") {
+    let totalChars = 50000
+    let totalWords = 10000
+    let wpm = 250.0
+
+    // Skip from different positions — time change should always be 30 seconds
+    let charDelta = timeSkipCharDelta(seconds: 30.0, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+
+    for startOffset in stride(from: 5000, through: 40000, by: 5000) {
+        let timeBefore = timeRemaining(globalOffset: startOffset, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+        let timeAfter = timeRemaining(globalOffset: startOffset - charDelta, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+        let change = timeAfter - timeBefore
+        try assertTrue(abs(change - 30.0) < 0.01,
+            "30s skip from offset \(startOffset): expected 30s change, got \(change)")
+    }
+}
+
+test("skipByTime: forward and backward are symmetric") {
+    let totalChars = 20000
+    let totalWords = 4000
+    let wpm = 200.0
+
+    let fwdDelta = timeSkipCharDelta(seconds: 15.0, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+    let bwdDelta = timeSkipCharDelta(seconds: -15.0, totalChars: totalChars, totalWordCount: totalWords, wpm: wpm)
+
+    try assertEqual(fwdDelta, -bwdDelta, "Forward and backward deltas should be symmetric")
+}
+
+test("skipByTime: different WPM produces different char deltas") {
+    let totalChars = 10000
+    let totalWords = 2000
+
+    let delta200 = timeSkipCharDelta(seconds: 15.0, totalChars: totalChars, totalWordCount: totalWords, wpm: 200.0)
+    let delta400 = timeSkipCharDelta(seconds: 15.0, totalChars: totalChars, totalWordCount: totalWords, wpm: 400.0)
+
+    // At higher WPM, total time is shorter, so 15 seconds is a larger fraction of the book
+    try assertTrue(delta400 > delta200, "Higher WPM should skip more chars for same time delta")
+}
+
 } // end runNavigationTests
