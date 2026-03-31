@@ -323,6 +323,57 @@ func runFolderSortSettingTests() {
         try assertEqual(LibraryCategory.noFolder.defaultSortSetting, .defaultSort)
     }
 
+    // MARK: - Category switch round-trip (simulates the ContentView load/save cycle)
+
+    test("Round-trip: folder → recent → folder does not pollute folder sort") {
+        // Simulates ContentView's load/save flow. If saveSortSettings() fires
+        // during a load (due to SwiftUI onChange batching), the recent sort
+        // must not be saved under the folder's key.
+        var library = Library()
+        let folderPath = "Fiction"
+
+        // Step 1: in folder with no custom sort → should use default
+        let folderSetting = library.sortSetting(for: folderPath, default: LibraryCategory.folders.defaultSortSetting)
+        try assertEqual(folderSetting.sortField, .title)
+        try assertTrue(folderSetting.sortAscending)
+
+        // Step 2: switch to recent → load recent default
+        let recentKey = LibraryCategory.recent.sortSettingsKey!
+        let recentSetting = library.sortSetting(for: recentKey, default: LibraryCategory.recent.defaultSortSetting)
+        try assertEqual(recentSetting.sortField, .lastOpened)
+        try assertTrue(!recentSetting.sortAscending)
+
+        // Step 3: if save fires during load, it must target the category key, NOT the folder
+        // Simulate correct save: saves to "__recent__"
+        library.setSortSetting(recentSetting, for: recentKey)
+
+        // Step 4: switch back to folder → folder should still have no stored setting
+        try assertTrue(library.folderSortSettings[folderPath] == nil,
+                       "Folder should have no stored sort setting — it was never explicitly set")
+        let restoredFolderSetting = library.sortSetting(for: folderPath, default: LibraryCategory.folders.defaultSortSetting)
+        try assertEqual(restoredFolderSetting.sortField, .title, "Folder should revert to title sort")
+        try assertTrue(restoredFolderSetting.sortAscending, "Folder should revert to ascending")
+    }
+
+    test("Round-trip: folder with custom sort → recent → folder preserves custom sort") {
+        var library = Library()
+        let folderPath = "Nonfiction"
+
+        // Set a custom sort for this folder
+        let customSort = FolderSortSetting(sortField: .author, sortAscending: false)
+        library.setSortSetting(customSort, for: folderPath)
+
+        // Switch to recent
+        let recentKey = LibraryCategory.recent.sortSettingsKey!
+        let recentSetting = library.sortSetting(for: recentKey, default: LibraryCategory.recent.defaultSortSetting)
+        library.setSortSetting(recentSetting, for: recentKey)
+
+        // Switch back to folder — custom sort should be preserved
+        let restored = library.sortSetting(for: folderPath, default: LibraryCategory.folders.defaultSortSetting)
+        try assertEqual(restored.sortField, .author, "Custom folder sort should be preserved")
+        try assertTrue(!restored.sortAscending, "Custom folder ascending should be preserved")
+    }
+
     test("Apply sort preserves non-descendant folder settings") {
         var library = Library(folders: [
             BookFolder(name: "Fiction"),

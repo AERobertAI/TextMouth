@@ -235,10 +235,16 @@ struct LibraryWindowView: View {
             for: currentSortSettingsKey,
             default: category.defaultSortSetting
         )
+        // Keep the guard flag raised until the next run-loop iteration.
+        // SwiftUI coalesces synchronous true→false state changes, so
+        // onChange(of: sortField/sortAscending) would see false and
+        // spuriously save the loaded setting back under the wrong key.
         isLoadingFolderSort = true
         sortField = setting.sortField
         sortAscending = setting.sortAscending
-        isLoadingFolderSort = false
+        DispatchQueue.main.async {
+            isLoadingFolderSort = false
+        }
     }
 
     /// Save the current sort field/direction for the current view.
