@@ -1,16 +1,49 @@
 import SwiftUI
 
+/// Tracks which sub-view the bookmark panel is showing.
+/// Using inline modes instead of nested sheets avoids a macOS SwiftUI bug
+/// where dismissing a sheet-on-sheet breaks the outer sheet's responder
+/// chain, trapping keyboard focus and making escape / Cmd+W unresponsive.
+enum BookmarkPanelMode: Equatable {
+    case list
+    case add
+    case edit(Bookmark)
+}
+
 struct BookmarkPanelView: View {
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var showAddBookmark = false
-    @State private var newBookmarkNote = ""
-    @State private var editingBookmark: Bookmark?
-    @State private var editingNote = ""
+    @State private var mode: BookmarkPanelMode = .list
+    @State private var noteText = ""
     @FocusState private var focusedBookmarkID: UUID?
+    @FocusState private var noteFieldFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
+            switch mode {
+            case .list:
+                listContent
+            case .add:
+                addContent
+            case .edit(let bookmark):
+                editContent(bookmark)
+            }
+        }
+        .frame(width: 380, height: 400)
+        .navigationTitle(viewModel.book.title)
+        .onAppear {
+            guard let firstBookmark = sortedBookmarks.first else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                focusedBookmarkID = firstBookmark.id
+            }
+        }
+    }
+
+    // MARK: - List Mode
+
+    private var listContent: some View {
+        Group {
+            // Header bar
             HStack {
                 Text("Bookmarks")
                     .font(.headline)
@@ -18,7 +51,8 @@ struct BookmarkPanelView: View {
                 Spacer()
 
                 Button {
-                    showAddBookmark = true
+                    noteText = ""
+                    mode = .add
                 } label: {
                     Label("Add Bookmark", systemImage: "plus")
                 }
@@ -33,6 +67,7 @@ struct BookmarkPanelView: View {
             Divider()
 
             if viewModel.bookmarks.isEmpty {
+                // Empty state — grouped into a single VoiceOver element
                 VStack(spacing: 8) {
                     Text("No bookmarks yet.")
                         .foregroundColor(.secondary)
@@ -40,6 +75,7 @@ struct BookmarkPanelView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                .accessibilityElement(children: .combine)
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -70,8 +106,8 @@ struct BookmarkPanelView: View {
                                         dismiss()
                                     }
                                     Button("Edit Note") {
-                                        editingBookmark = bookmark
-                                        editingNote = bookmark.label
+                                        noteText = bookmark.label
+                                        mode = .edit(bookmark)
                                     }
                                     Button("Delete", role: .destructive) {
                                         viewModel.removeBookmark(bookmark)
@@ -91,75 +127,76 @@ struct BookmarkPanelView: View {
                 }
             }
         }
-        .frame(width: 380, height: 400)
-        .navigationTitle("Bookmarks: \(viewModel.book.title)")
-        .accessibilityLabel("Bookmarks, \(viewModel.bookmarks.count) \(viewModel.bookmarks.count == 1 ? "bookmark" : "bookmarks")")
+    }
+
+    // MARK: - Add Bookmark (Inline)
+
+    private var addContent: some View {
+        VStack(spacing: 16) {
+            Text("Add Bookmark")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            TextField("Note (optional)", text: $noteText)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Bookmark note")
+                .accessibilityHint("Optional note to describe this bookmark")
+                .focused($noteFieldFocused)
+
+            HStack {
+                Button("Cancel") {
+                    noteText = ""
+                    mode = .list
+                }
+                .keyboardShortcut(.escape, modifiers: [])
+
+                Spacer()
+
+                Button("Add") {
+                    viewModel.addBookmarkAtCurrentPosition(label: noteText)
+                    noteText = ""
+                    mode = .list
+                }
+                .keyboardShortcut(.return, modifiers: [])
+            }
+        }
+        .padding()
         .onAppear {
-            guard let firstBookmark = sortedBookmarks.first else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                focusedBookmarkID = firstBookmark.id
+            noteFieldFocused = true
+        }
+    }
+
+    // MARK: - Edit Bookmark (Inline)
+
+    private func editContent(_ bookmark: Bookmark) -> some View {
+        VStack(spacing: 16) {
+            Text("Edit Bookmark \(bookmark.number)")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            TextField("Note", text: $noteText)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Bookmark note")
+                .focused($noteFieldFocused)
+
+            HStack {
+                Button("Cancel") {
+                    mode = .list
+                }
+                .keyboardShortcut(.escape, modifiers: [])
+
+                Spacer()
+
+                Button("Save") {
+                    viewModel.updateBookmarkLabel(bookmark, label: noteText)
+                    mode = .list
+                }
+                .keyboardShortcut(.return, modifiers: [])
             }
         }
-        .sheet(isPresented: $showAddBookmark) {
-            VStack(spacing: 16) {
-                Text("Add Bookmark")
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-
-                TextField("Note (optional)", text: $newBookmarkNote)
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel("Bookmark note")
-                    .accessibilityHint("Optional note to describe this bookmark")
-
-                HStack {
-                    Button("Cancel") {
-                        newBookmarkNote = ""
-                        showAddBookmark = false
-                    }
-                    .keyboardShortcut(.escape, modifiers: [])
-
-                    Spacer()
-
-                    Button("Add") {
-                        viewModel.addBookmarkAtCurrentPosition(label: newBookmarkNote)
-                        newBookmarkNote = ""
-                        showAddBookmark = false
-                    }
-                    .keyboardShortcut(.return, modifiers: [])
-                }
-            }
-            .padding()
-            .frame(width: 320)
-            .navigationTitle("Add Bookmark: \(viewModel.book.title)")
-        }
-        .sheet(item: $editingBookmark) { bookmark in
-            VStack(spacing: 16) {
-                Text("Edit Bookmark \(bookmark.number)")
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-
-                TextField("Note", text: $editingNote)
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel("Bookmark note")
-
-                HStack {
-                    Button("Cancel") {
-                        editingBookmark = nil
-                    }
-                    .keyboardShortcut(.escape, modifiers: [])
-
-                    Spacer()
-
-                    Button("Save") {
-                        viewModel.updateBookmarkLabel(bookmark, label: editingNote)
-                        editingBookmark = nil
-                    }
-                    .keyboardShortcut(.return, modifiers: [])
-                }
-            }
-            .padding()
-            .frame(width: 320)
-            .navigationTitle("Edit Bookmark \(bookmark.number): \(viewModel.book.title)")
+        .padding()
+        .onAppear {
+            noteFieldFocused = true
         }
     }
 }

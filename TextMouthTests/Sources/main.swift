@@ -54,6 +54,7 @@ runEmptyDirectoryCleanupTests()
 runOrphanNonReAdoptionTests()
 runBugRegressionTests()
 runBookmarkToggleTests()
+runBookmarkPanelAccessibilityTests()
 runIntegrationTests()
 
 // ---- Summary ----

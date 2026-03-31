@@ -112,7 +112,7 @@ struct DocumentContent {
     }
 }
 
-struct Bookmark: Identifiable, Codable {
+struct Bookmark: Identifiable, Codable, Hashable {
     let id: UUID
     var number: Int
     var chapterIndex: Int
