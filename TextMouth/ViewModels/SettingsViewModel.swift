@@ -95,6 +95,9 @@ class SettingsViewModel: ObservableObject {
     @AppStorage("sleepFadeOutDuration") var sleepFadeOutDuration: Double = 0 {
         didSet { syncToConfig() }
     }
+    @AppStorage("sleepTimerAutoClose") var sleepTimerAutoClose: Bool = true {
+        didSet { syncToConfig() }
+    }
     @AppStorage("endOfBookBehavior") var endOfBookBehaviorRaw: String = EndOfBookBehavior.stop.rawValue {
         didSet { syncToConfig() }
     }
@@ -202,6 +205,7 @@ class SettingsViewModel: ObservableObject {
         configService.config.rewindSmartMode = rewindSmartMode
         configService.config.rewindSmartThreshold = rewindSmartThreshold
         configService.config.sleepFadeOutDuration = sleepFadeOutDuration
+        configService.config.sleepTimerAutoClose = sleepTimerAutoClose
         configService.config.autoPlayOnNavigate = autoPlayOnNavigate
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
@@ -256,6 +260,9 @@ class SettingsViewModel: ObservableObject {
         }
         if config.sleepFadeOutDuration != sleepFadeOutDuration {
             sleepFadeOutDuration = config.sleepFadeOutDuration
+        }
+        if config.sleepTimerAutoClose != sleepTimerAutoClose {
+            sleepTimerAutoClose = config.sleepTimerAutoClose
         }
         if config.autoPlayOnNavigate != autoPlayOnNavigate {
             autoPlayOnNavigate = config.autoPlayOnNavigate

@@ -177,7 +177,8 @@ struct ReaderView: View {
                     if !viewModel.isCurrentlyPlaying || viewModel.isCurrentlyPaused {
                         viewModel.togglePlayPause()
                     }
-                }
+                },
+                autoClose: viewModel.settingsViewModel.sleepTimerAutoClose
             )
         }
         .sheet(isPresented: $showMetadataEditor) {

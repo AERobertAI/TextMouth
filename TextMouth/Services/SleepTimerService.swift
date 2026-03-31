@@ -40,6 +40,12 @@ class SleepTimerService: ObservableObject {
         }
     }
 
+    /// Restart the timer with the same duration. No-op if no timer is active.
+    func restart() {
+        guard let current = duration else { return }
+        start(duration: current)
+    }
+
     func stop() {
         generation += 1
         timer?.invalidate()

@@ -37,6 +37,8 @@ class ConfigService: ObservableObject {
         var rewindSmartThreshold: Double = 70
         /// Sleep timer fade-out duration in seconds (0 = instant pause)
         var sleepFadeOutDuration: Double = 0
+        /// Whether to automatically close the sleep timer sheet after setting a timer
+        var sleepTimerAutoClose: Bool = true
         /// End-of-book behavior (stop, loop, continueNext)
         var endOfBookBehavior: String = ""
         /// Punctuation pause level (0 = none, 1 = subtle, 2 = moderate, 3 = heavy)
@@ -67,6 +69,7 @@ class ConfigService: ObservableObject {
             rewindSmartMode = try container.decodeIfPresent(Bool.self, forKey: .rewindSmartMode) ?? false
             rewindSmartThreshold = try container.decodeIfPresent(Double.self, forKey: .rewindSmartThreshold) ?? 70
             sleepFadeOutDuration = try container.decodeIfPresent(Double.self, forKey: .sleepFadeOutDuration) ?? 0
+            sleepTimerAutoClose = try container.decodeIfPresent(Bool.self, forKey: .sleepTimerAutoClose) ?? true
             endOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .endOfBookBehavior) ?? ""
             punctuationPauseLevel = try container.decodeIfPresent(Double.self, forKey: .punctuationPauseLevel) ?? 0
             lastOpenedBookID = try container.decodeIfPresent(String.self, forKey: .lastOpenedBookID) ?? ""

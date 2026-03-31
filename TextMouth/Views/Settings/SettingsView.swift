@@ -338,6 +338,10 @@ struct PlaybackSettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+
+                Toggle("Close sheet after setting timer", isOn: $settingsViewModel.sleepTimerAutoClose)
+                    .accessibilityLabel("Close sleep timer sheet after setting a timer")
+                    .accessibilityHint("When off, the sheet stays open showing the remaining time and a reset button")
             } header: {
                 Text("Sleep Timer")
             }

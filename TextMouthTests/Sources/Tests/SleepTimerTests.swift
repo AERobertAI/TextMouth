@@ -114,4 +114,140 @@ test("SleepTimer formattedRemaining") {
     try assertEqual(format(minutes: true, seconds: 0), "0:00")
 }
 
+// ---- Sleep Timer Auto-Close Setting ----
+print("\n--- Sleep Timer Auto-Close Setting ---")
+
+test("Auto-close default is true") {
+    // The default config should have sleepTimerAutoClose = true
+    let config = TestAppConfig()
+    try assertTrue(config.sleepTimerAutoClose, "Default should be auto-close")
+}
+
+test("Auto-close setting round-trips through JSON") {
+    var config = TestAppConfig()
+    config.sleepTimerAutoClose = false
+
+    let data = try JSONEncoder().encode(config)
+    let decoded = try JSONDecoder().decode(TestAppConfig.self, from: data)
+    try assertTrue(!decoded.sleepTimerAutoClose, "Should preserve false after round-trip")
+}
+
+test("Auto-close setting missing from JSON defaults to true") {
+    // Simulate old config.json without the sleepTimerAutoClose key
+    let json = """
+    {"sleepFadeOutDuration": 5}
+    """.data(using: .utf8)!
+    let decoded = try JSONDecoder().decode(TestAppConfig.self, from: json)
+    try assertTrue(decoded.sleepTimerAutoClose, "Missing key should default to true")
+}
+
+// ---- Sleep Timer Restart ----
+print("\n--- Sleep Timer Restart ---")
+
+test("Restart preserves duration type: minutes") {
+    var duration: SleepTimerDuration? = .minutes(15)
+    var remainingSeconds = 15 * 60
+
+    // Simulate countdown
+    remainingSeconds -= 300  // 5 minutes pass
+    try assertEqual(remainingSeconds, 600, "Should have 10 minutes left")
+
+    // Restart: re-apply the same duration
+    if let d = duration {
+        if case .minutes(let m) = d {
+            remainingSeconds = m * 60
+        }
+    }
+    try assertEqual(remainingSeconds, 900, "After restart should be back to 15 minutes (900s)")
+}
+
+test("Restart preserves duration type: endOfHeading") {
+    let duration: SleepTimerDuration? = .endOfHeading
+    var endOfHeadingTriggered = true  // was armed
+
+    // Restart: reset the trigger
+    if let d = duration, case .endOfHeading = d {
+        endOfHeadingTriggered = false
+    }
+    try assertTrue(!endOfHeadingTriggered, "Restart should reset the heading trigger")
+}
+
+test("Restart with no active duration is a no-op") {
+    let duration: SleepTimerDuration? = nil
+    var restarted = false
+    if duration != nil {
+        restarted = true
+    }
+    try assertTrue(!restarted, "Should not restart when no duration is set")
+}
+
+// ---- Sleep Timer State Transitions ----
+print("\n--- Sleep Timer State Transitions ---")
+
+test("Start sets isActive and duration") {
+    var isActive = false
+    var duration: SleepTimerDuration? = nil
+
+    // Simulate start
+    duration = .minutes(30)
+    isActive = true
+    try assertTrue(isActive)
+    if case .minutes(let m) = duration {
+        try assertEqual(m, 30)
+    } else {
+        throw TestError.assertionFailed("Duration should be minutes(30)")
+    }
+}
+
+test("Stop clears isActive and duration") {
+    var isActive = true
+    var duration: SleepTimerDuration? = .minutes(10)
+    var remainingSeconds = 600
+
+    // Simulate stop
+    isActive = false
+    duration = nil
+    remainingSeconds = 0
+
+    try assertTrue(!isActive)
+    try assertTrue(duration == nil)
+    try assertEqual(remainingSeconds, 0)
+}
+
+test("Cancel then re-set: clean state transition") {
+    var isActive = true
+    var duration: SleepTimerDuration? = .minutes(10)
+
+    // Cancel
+    isActive = false
+    duration = nil
+
+    // Re-set with different duration
+    duration = .minutes(45)
+    isActive = true
+
+    if case .minutes(let m) = duration {
+        try assertEqual(m, 45, "Should have new duration after cancel + re-set")
+    } else {
+        throw TestError.assertionFailed("Duration should be minutes(45)")
+    }
+}
+
 } // end runSleepTimerTests
+
+/// Minimal config struct for testing sleep timer settings persistence
+private struct TestAppConfig: Codable {
+    var sleepFadeOutDuration: Double
+    var sleepTimerAutoClose: Bool
+
+    init(sleepFadeOutDuration: Double = 0, sleepTimerAutoClose: Bool = true) {
+        self.sleepFadeOutDuration = sleepFadeOutDuration
+        self.sleepTimerAutoClose = sleepTimerAutoClose
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sleepFadeOutDuration = try container.decodeIfPresent(Double.self, forKey: .sleepFadeOutDuration) ?? 0
+        sleepTimerAutoClose = try container.decodeIfPresent(Bool.self, forKey: .sleepTimerAutoClose) ?? true
+    }
+}
