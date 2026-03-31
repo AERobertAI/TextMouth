@@ -396,4 +396,122 @@ test("Snap at exact word boundary stays put") {
     try assertEqual(snappedOffset, 6, "Should stay at word boundary")
 }
 
+// ---- Word Boundary Scanning Tests ----
+print("\n--- Word Boundary Scanning Tests ---")
+
+/// Mirror of ReaderViewModel.offsetAfterSkippingWords for testing
+func offsetAfterSkippingWords(in text: String, from startOffset: Int, wordCount: Int) -> Int {
+    guard !text.isEmpty else { return 0 }
+    let clampedStart = max(0, min(startOffset, text.count))
+
+    if wordCount > 0 {
+        var idx = text.index(text.startIndex, offsetBy: clampedStart)
+        var wordsFound = 0
+        while idx < text.endIndex && !text[idx].isWhitespace { idx = text.index(after: idx) }
+        while wordsFound < wordCount && idx < text.endIndex {
+            while idx < text.endIndex && text[idx].isWhitespace { idx = text.index(after: idx) }
+            if idx < text.endIndex { wordsFound += 1 }
+            if wordsFound < wordCount {
+                while idx < text.endIndex && !text[idx].isWhitespace { idx = text.index(after: idx) }
+            }
+        }
+        return text.distance(from: text.startIndex, to: idx)
+    } else {
+        let targetWords = abs(wordCount)
+        var idx = text.index(text.startIndex, offsetBy: clampedStart)
+        var wordsFound = 0
+        while wordsFound < targetWords && idx > text.startIndex {
+            while idx > text.startIndex && text[text.index(before: idx)].isWhitespace { idx = text.index(before: idx) }
+            while idx > text.startIndex && !text[text.index(before: idx)].isWhitespace { idx = text.index(before: idx) }
+            wordsFound += 1
+        }
+        return text.distance(from: text.startIndex, to: idx)
+    }
+}
+
+/// Mirror of ReaderViewModel.countWordsBetween for testing
+func countWordsBetween(in text: String, from startOffset: Int, to endOffset: Int) -> Int {
+    guard !text.isEmpty, startOffset < endOffset else { return 0 }
+    let start = text.index(text.startIndex, offsetBy: max(0, min(startOffset, text.count)))
+    let end = text.index(text.startIndex, offsetBy: max(0, min(endOffset, text.count)))
+    guard start < end else { return 0 }
+    var count = 0
+    var inWhitespace = true
+    var idx = start
+    while idx < end {
+        if text[idx].isWhitespace { inWhitespace = true }
+        else if inWhitespace { count += 1; inWhitespace = false }
+        idx = text.index(after: idx)
+    }
+    return count
+}
+
+test("Skip forward 1 word from start") {
+    let text = "Hello world test"
+    let result = offsetAfterSkippingWords(in: text, from: 0, wordCount: 1)
+    try assertEqual(result, 6, "Should land at start of 'world'")
+}
+
+test("Skip forward 3 words from start") {
+    let text = "one two three four five"
+    let result = offsetAfterSkippingWords(in: text, from: 0, wordCount: 3)
+    try assertEqual(result, 14, "Should land at start of 'four'")
+}
+
+test("Skip forward past end of text clamps") {
+    let text = "Hello world"
+    let result = offsetAfterSkippingWords(in: text, from: 0, wordCount: 10)
+    try assertEqual(result, text.count, "Should reach end of text")
+}
+
+test("Skip backward 1 word") {
+    let text = "Hello world test"
+    let result = offsetAfterSkippingWords(in: text, from: 16, wordCount: -1)
+    try assertEqual(result, 12, "Should land at start of 'test'")
+}
+
+test("Skip backward 2 words from middle") {
+    let text = "one two three four five"
+    // From offset 18 (start of 'five'), skip back 2 words
+    let result = offsetAfterSkippingWords(in: text, from: 18, wordCount: -2)
+    try assertEqual(result, 8, "Should land at start of 'three'")
+}
+
+test("Skip backward past start clamps to 0") {
+    let text = "Hello world"
+    let result = offsetAfterSkippingWords(in: text, from: 6, wordCount: -10)
+    try assertEqual(result, 0, "Should clamp to start of text")
+}
+
+test("Skip forward from middle of word") {
+    let text = "Hello world test"
+    // From offset 3 (middle of "Hello"), skip 1 word → should go to "world"
+    let result = offsetAfterSkippingWords(in: text, from: 3, wordCount: 1)
+    try assertEqual(result, 6, "Should skip to start of 'world'")
+}
+
+test("Skip in empty text returns 0") {
+    let result = offsetAfterSkippingWords(in: "", from: 0, wordCount: 5)
+    try assertEqual(result, 0, "Empty text always returns 0")
+}
+
+test("countWordsBetween basic") {
+    let text = "one two three four"
+    let count = countWordsBetween(in: text, from: 0, to: 18)
+    try assertEqual(count, 4, "Should count 4 words")
+}
+
+test("countWordsBetween partial range") {
+    let text = "one two three four"
+    // From offset 4 (start of 'two') to 13 (start of 'four')
+    let count = countWordsBetween(in: text, from: 4, to: 14)
+    try assertEqual(count, 2, "Should count 'two' and 'three'")
+}
+
+test("Skip forward with multiple spaces between words") {
+    let text = "Hello   world   test"
+    let result = offsetAfterSkippingWords(in: text, from: 0, wordCount: 1)
+    try assertEqual(result, 8, "Should handle multiple spaces")
+}
+
 } // end runNavigationTests

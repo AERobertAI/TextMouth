@@ -5,6 +5,13 @@ import AppKit
 
 extension ReaderViewModel {
 
+    /// Convert an original-text offset to modified-text space and seek the speech service.
+    /// Falls back to using the offset directly if no transformation pipeline is active.
+    func seekSpeechService(toOriginalOffset offset: Int) {
+        let seekOffset = currentOffsetMap?.toModified(offset) ?? offset
+        speechService.seek(toCharOffset: seekOffset)
+    }
+
     /// Skip forward by the configured unit (or shift-unit if shift is held).
     /// Debounces rapid-fire calls within 0.3 seconds.
     func skipForward(useShiftUnit: Bool = false) {
@@ -37,6 +44,10 @@ extension ReaderViewModel {
     func performSkip(unit: SkipUnit, forward: Bool) {
         debugLog("performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
         switch unit {
+        case .sentence:
+            if forward { nextSentence() } else { previousSentence() }
+        case .paragraph:
+            if forward { nextParagraph() } else { previousParagraph() }
         case .heading:
             if forward { nextHeading() } else { previousHeading() }
         case .subheading:
@@ -90,48 +101,228 @@ extension ReaderViewModel {
         }
     }
 
-    /// Skip forward or backward by a number of words (approximately 5 chars per word).
-    /// Handles cross-chapter boundaries and snaps to word boundaries.
+    // MARK: - Sentence Navigation
+
+    /// Jump forward to the start of the next sentence after the current position.
+    /// Scans for sentence-ending punctuation (. ! ?) followed by whitespace.
+    /// Crosses chapter boundaries if no next sentence is found in the current chapter.
+    func nextSentence() {
+        guard let content = content,
+              currentChapterIndex < content.chapters.count else { return }
+
+        let text = content.chapters[currentChapterIndex].text
+        let sentenceEnders: Set<Character> = [".", "!", "?"]
+
+        // Scan forward from current position for the end of a sentence
+        if currentCharacterOffset < text.count {
+            let startIdx = text.index(text.startIndex, offsetBy: currentCharacterOffset)
+            var pos = startIdx
+            while pos < text.endIndex {
+                if sentenceEnders.contains(text[pos]) {
+                    // Found sentence end — move past punctuation and whitespace to next sentence start
+                    var nextStart = text.index(after: pos)
+                    while nextStart < text.endIndex && text[nextStart].isWhitespace {
+                        nextStart = text.index(after: nextStart)
+                    }
+                    let newOffset = text.distance(from: text.startIndex, to: nextStart)
+                    // Only advance if we actually moved forward and there's text ahead
+                    if newOffset > currentCharacterOffset && nextStart < text.endIndex {
+                        navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
+                        announceToVoiceOver("Next sentence")
+                        return
+                    }
+                }
+                pos = text.index(after: pos)
+            }
+        }
+
+        // No next sentence in current chapter — advance to start of next non-empty chapter
+        var nextChapter = currentChapterIndex + 1
+        while nextChapter < content.chapters.count &&
+              content.chapters[nextChapter].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            nextChapter += 1
+        }
+        if nextChapter < content.chapters.count {
+            navigateTo(chapterIndex: nextChapter, characterOffset: 0)
+            announceToVoiceOver("Next chapter")
+        }
+    }
+
+    /// Jump backward to the start of the current or previous sentence.
+    /// Uses a grace zone: if we're near the start of a sentence, goes to the one before it.
+    /// Crosses chapter boundaries if at the start of the current chapter.
+    func previousSentence() {
+        guard let content = content,
+              currentChapterIndex < content.chapters.count else { return }
+
+        let text = content.chapters[currentChapterIndex].text
+        let offset = currentCharacterOffset
+
+        // Use the existing findSentenceStart to find the start of the current sentence
+        let sentenceStart = findSentenceStart(in: text, before: offset)
+
+        if sentenceStart < offset {
+            navigateTo(chapterIndex: currentChapterIndex, characterOffset: sentenceStart)
+            announceToVoiceOver("Previous sentence")
+            return
+        }
+
+        // Already at sentence start or start of chapter — go to previous chapter
+        if currentChapterIndex > 0 {
+            var prevChapter = currentChapterIndex - 1
+            while prevChapter > 0 &&
+                  content.chapters[prevChapter].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                prevChapter -= 1
+            }
+            let prevText = content.chapters[prevChapter].text
+            // Find the last sentence start in the previous chapter
+            let prevOffset = findSentenceStart(in: prevText, before: prevText.count)
+            navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
+            announceToVoiceOver("Previous chapter")
+        }
+    }
+
+    // MARK: - Paragraph Navigation
+
+    /// Jump forward to the start of the next paragraph after the current position.
+    /// Scans for double-newline paragraph breaks.
+    /// Crosses chapter boundaries if no next paragraph is found in the current chapter.
+    func nextParagraph() {
+        guard let content = content,
+              currentChapterIndex < content.chapters.count else { return }
+
+        let text = content.chapters[currentChapterIndex].text
+
+        // Scan forward for the next double-newline paragraph boundary
+        if currentCharacterOffset < text.count - 1 {
+            let startIdx = text.index(text.startIndex, offsetBy: currentCharacterOffset)
+            var pos = startIdx
+            while pos < text.endIndex {
+                let nextPos = text.index(after: pos)
+                if nextPos < text.endIndex && text[pos] == "\n" && text[nextPos] == "\n" {
+                    // Found paragraph break — skip past newlines and leading whitespace
+                    var paragraphStart = text.index(after: nextPos)
+                    while paragraphStart < text.endIndex && text[paragraphStart].isWhitespace && text[paragraphStart] != "\n" {
+                        paragraphStart = text.index(after: paragraphStart)
+                    }
+                    // Skip any additional newlines (triple+ newlines)
+                    while paragraphStart < text.endIndex && text[paragraphStart] == "\n" {
+                        paragraphStart = text.index(after: paragraphStart)
+                    }
+                    let newOffset = text.distance(from: text.startIndex, to: paragraphStart)
+                    if newOffset > currentCharacterOffset && paragraphStart < text.endIndex {
+                        navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
+                        announceToVoiceOver("Next paragraph")
+                        return
+                    }
+                }
+                pos = text.index(after: pos)
+            }
+        }
+
+        // No next paragraph in current chapter — advance to next non-empty chapter
+        var nextChapter = currentChapterIndex + 1
+        while nextChapter < content.chapters.count &&
+              content.chapters[nextChapter].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            nextChapter += 1
+        }
+        if nextChapter < content.chapters.count {
+            navigateTo(chapterIndex: nextChapter, characterOffset: 0)
+            announceToVoiceOver("Next chapter")
+        }
+    }
+
+    /// Jump backward to the start of the current or previous paragraph.
+    /// Crosses chapter boundaries if at the start of the current chapter.
+    func previousParagraph() {
+        guard let content = content,
+              currentChapterIndex < content.chapters.count else { return }
+
+        let text = content.chapters[currentChapterIndex].text
+        let offset = currentCharacterOffset
+
+        // Use the existing findParagraphStart to find the start of the current paragraph
+        let paragraphStart = findParagraphStart(in: text, before: offset)
+
+        if paragraphStart < offset {
+            navigateTo(chapterIndex: currentChapterIndex, characterOffset: paragraphStart)
+            announceToVoiceOver("Previous paragraph")
+            return
+        }
+
+        // Already at paragraph start or start of chapter — go to previous chapter
+        if currentChapterIndex > 0 {
+            var prevChapter = currentChapterIndex - 1
+            while prevChapter > 0 &&
+                  content.chapters[prevChapter].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                prevChapter -= 1
+            }
+            let prevText = content.chapters[prevChapter].text
+            // Find the last paragraph start in the previous chapter
+            let prevOffset = findParagraphStart(in: prevText, before: prevText.count)
+            navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
+            announceToVoiceOver("Previous chapter")
+        }
+    }
+
+    /// Skip forward or backward by a number of words, scanning actual word boundaries
+    /// in the text. Handles cross-chapter boundaries.
     func skipWords(count: Int) {
         guard let content = content,
               currentChapterIndex < content.chapters.count else { return }
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
-        let charDelta = count * 5  // ~5 chars per word average
-        let chapterLen = content.chapters[currentChapterIndex].text.count
 
-        debugLog("skipWords count=\(count) charDelta=\(charDelta) currentOffset=\(currentCharacterOffset) chapterLen=\(chapterLen) chapter=\(currentChapterIndex)")
+        debugLog("skipWords count=\(count) currentOffset=\(currentCharacterOffset) chapter=\(currentChapterIndex)")
 
         var chapIdx = currentChapterIndex
-        var charOffset = currentCharacterOffset + charDelta
+        var remainingWords = abs(count)
+        let forward = count > 0
 
-        // Handle cross-chapter navigation
-        if charOffset < 0 {
-            while charOffset < 0 && chapIdx > 0 {
-                chapIdx -= 1
-                charOffset += content.chapters[chapIdx].text.count
-            }
-            charOffset = max(0, charOffset)
-        } else {
-            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.count {
-                charOffset -= content.chapters[chapIdx].text.count
-                chapIdx += 1
-            }
-            if chapIdx >= content.chapters.count {
-                chapIdx = content.chapters.count - 1
-                charOffset = max(0, content.chapters[chapIdx].text.count - 1)
-            }
-        }
+        // Start from current position and scan word boundaries, crossing chapters as needed
+        var charOffset = currentCharacterOffset
 
-        // Snap to word boundary
-        let text = content.chapters[chapIdx].text
-        if charOffset > 0 && charOffset < text.count {
-            let targetIndex = text.index(text.startIndex, offsetBy: charOffset)
-            var wordStart = targetIndex
-            while wordStart > text.startIndex && !text[text.index(before: wordStart)].isWhitespace {
-                wordStart = text.index(before: wordStart)
+        while remainingWords > 0 {
+            let chapterText = content.chapters[chapIdx].text
+
+            if forward {
+                // Scan forward through word boundaries in this chapter
+                let newOffset = offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: remainingWords)
+                let wordsSkipped = countWordsBetween(in: chapterText, from: charOffset, to: newOffset)
+                remainingWords -= wordsSkipped
+
+                if remainingWords > 0 {
+                    // Hit end of chapter — advance to next
+                    if chapIdx + 1 < content.chapters.count {
+                        chapIdx += 1
+                        charOffset = 0
+                    } else {
+                        // At last chapter — clamp to end
+                        charOffset = max(0, chapterText.count - 1)
+                        break
+                    }
+                } else {
+                    charOffset = newOffset
+                }
+            } else {
+                // Scan backward through word boundaries in this chapter
+                let newOffset = offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: -remainingWords)
+                let wordsSkipped = countWordsBetween(in: chapterText, from: newOffset, to: charOffset)
+                remainingWords -= wordsSkipped
+
+                if remainingWords > 0 && newOffset == 0 {
+                    // Hit start of chapter — go to previous
+                    if chapIdx > 0 {
+                        chapIdx -= 1
+                        charOffset = content.chapters[chapIdx].text.count
+                    } else {
+                        charOffset = 0
+                        break
+                    }
+                } else {
+                    charOffset = newOffset
+                }
             }
-            charOffset = text.distance(from: text.startIndex, to: wordStart)
         }
 
         let sameChapter = (chapIdx == currentChapterIndex)
@@ -144,7 +335,7 @@ extension ReaderViewModel {
             // If still in direct mode, this restarts direct speech from the new offset
             // without cancelling the in-progress engine render.
             currentCharacterOffset = charOffset
-            speechService.seek(toCharOffset: charOffset)
+            seekSpeechService(toOriginalOffset: charOffset)
         } else {
             // Different chapter — invalidate stale callbacks before changing state
             chapterPlaybackGeneration += 1
@@ -289,9 +480,10 @@ extension ReaderViewModel {
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 
         if chapterIndex == currentChapterIndex && wasPlaying {
-            // Same chapter: instant seek, no re-rendering
+            // Same chapter: instant seek, no re-rendering.
+            // Convert original-text offset to modified-text offset for the speech service.
             currentCharacterOffset = characterOffset
-            speechService.seek(toCharOffset: characterOffset)
+            seekSpeechService(toOriginalOffset: characterOffset)
         } else {
             // Different chapter — invalidate stale callbacks first
             chapterPlaybackGeneration += 1
@@ -311,5 +503,85 @@ extension ReaderViewModel {
         }
 
         savePosition()
+    }
+
+    // MARK: - Word Boundary Scanning
+
+    /// Find the character offset after skipping a given number of words forward (positive)
+    /// or backward (negative) from a starting offset. Scans actual word boundaries in the text
+    /// rather than using a fixed chars-per-word estimate.
+    func offsetAfterSkippingWords(in text: String, from startOffset: Int, wordCount: Int) -> Int {
+        guard !text.isEmpty else { return 0 }
+        let clampedStart = max(0, min(startOffset, text.count))
+
+        if wordCount > 0 {
+            // Scan forward: find the start of the Nth next word
+            var idx = text.index(text.startIndex, offsetBy: clampedStart)
+            var wordsFound = 0
+
+            // Skip the rest of the current word (if we're in one)
+            while idx < text.endIndex && !text[idx].isWhitespace {
+                idx = text.index(after: idx)
+            }
+
+            while wordsFound < wordCount && idx < text.endIndex {
+                // Skip whitespace between words
+                while idx < text.endIndex && text[idx].isWhitespace {
+                    idx = text.index(after: idx)
+                }
+                if idx < text.endIndex {
+                    wordsFound += 1
+                }
+                // If more words to skip, advance past this word
+                if wordsFound < wordCount {
+                    while idx < text.endIndex && !text[idx].isWhitespace {
+                        idx = text.index(after: idx)
+                    }
+                }
+            }
+            return text.distance(from: text.startIndex, to: idx)
+        } else {
+            // Scan backward: find the start of the Nth previous word
+            let targetWords = abs(wordCount)
+            var idx = text.index(text.startIndex, offsetBy: clampedStart)
+            var wordsFound = 0
+
+            while wordsFound < targetWords && idx > text.startIndex {
+                // Skip whitespace backward
+                while idx > text.startIndex && text[text.index(before: idx)].isWhitespace {
+                    idx = text.index(before: idx)
+                }
+                // Skip word characters backward
+                while idx > text.startIndex && !text[text.index(before: idx)].isWhitespace {
+                    idx = text.index(before: idx)
+                }
+                wordsFound += 1
+            }
+            return text.distance(from: text.startIndex, to: idx)
+        }
+    }
+
+    /// Count the number of word boundaries between two offsets in a text.
+    /// Used to determine how many words were actually skipped within a chapter.
+    func countWordsBetween(in text: String, from startOffset: Int, to endOffset: Int) -> Int {
+        guard !text.isEmpty, startOffset < endOffset else { return 0 }
+        let start = text.index(text.startIndex, offsetBy: max(0, min(startOffset, text.count)))
+        let end = text.index(text.startIndex, offsetBy: max(0, min(endOffset, text.count)))
+        guard start < end else { return 0 }
+
+        // Count transitions from whitespace to non-whitespace (word starts) in the range
+        var count = 0
+        var inWhitespace = true
+        var idx = start
+        while idx < end {
+            if text[idx].isWhitespace {
+                inWhitespace = true
+            } else if inWhitespace {
+                count += 1
+                inWhitespace = false
+            }
+            idx = text.index(after: idx)
+        }
+        return count
     }
 }

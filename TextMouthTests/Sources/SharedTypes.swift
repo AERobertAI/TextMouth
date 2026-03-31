@@ -690,3 +690,62 @@ struct FinishedBookEntry: Codable {
     var dateFinished: Date
 }
 
+// MARK: - OffsetMap (mirrored from app)
+
+/// Bidirectional mapping between character offsets in two text versions.
+/// Convention: positive delta = target shorter (deletion), negative = target longer (insertion).
+struct OffsetMap: Equatable {
+    let points: [(targetPos: Int, cumulativeDelta: Int)]
+    static let identity = OffsetMap(points: [])
+    var hasChanges: Bool { !points.isEmpty }
+
+    /// Convert target offset to source offset: source = target + delta
+    func toSource(_ targetOffset: Int) -> Int {
+        guard !points.isEmpty else { return targetOffset }
+        var delta = 0
+        for point in points {
+            if point.targetPos <= targetOffset {
+                delta = point.cumulativeDelta
+            } else {
+                break
+            }
+        }
+        return targetOffset + delta
+    }
+
+    /// Convert source offset to target offset: target = source - delta
+    func toTarget(_ sourceOffset: Int) -> Int {
+        guard !points.isEmpty else { return sourceOffset }
+        var delta = 0
+        for point in points {
+            let sourceAtPoint = point.targetPos + point.cumulativeDelta
+            if sourceAtPoint <= sourceOffset {
+                delta = point.cumulativeDelta
+            } else {
+                break
+            }
+        }
+        return max(0, sourceOffset - delta)
+    }
+
+    static func == (lhs: OffsetMap, rhs: OffsetMap) -> Bool {
+        guard lhs.points.count == rhs.points.count else { return false }
+        for (l, r) in zip(lhs.points, rhs.points) {
+            if l.targetPos != r.targetPos || l.cumulativeDelta != r.cumulativeDelta { return false }
+        }
+        return true
+    }
+}
+
+/// Chains multiple OffsetMap stages into a single bidirectional mapping.
+struct ComposedOffsetMap: Equatable {
+    let stages: [OffsetMap]
+    func toModified(_ originalOffset: Int) -> Int {
+        stages.reduce(originalOffset) { $1.toTarget($0) }
+    }
+    func toOriginal(_ modifiedOffset: Int) -> Int {
+        stages.reversed().reduce(modifiedOffset) { $1.toSource($0) }
+    }
+    var hasChanges: Bool { stages.contains(where: { $0.hasChanges }) }
+}
+

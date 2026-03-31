@@ -31,17 +31,19 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
 }
 
 /// Result of applying substitutions: modified text + bidirectional offset mapping.
+/// Uses OffsetMap internally for offset conversion, and exposes it for pipeline composition.
 struct TextTransformation {
     let originalText: String
     let modifiedText: String
-    /// Sorted list of (modifiedPos, cumulativeDelta).
-    /// To convert modified offset → original: add the delta at that point.
-    private let offsetPoints: [(modifiedPos: Int, cumulativeDelta: Int)]
+    /// The offset map for this substitution stage (modified↔original).
+    /// Exposed so it can be composed with other pipeline stages.
+    let offsetMap: OffsetMap
 
     init(originalText: String, modifiedText: String, offsetPoints: [(modifiedPos: Int, cumulativeDelta: Int)]) {
         self.originalText = originalText
         self.modifiedText = modifiedText
-        self.offsetPoints = offsetPoints
+        // Convert legacy offset points to OffsetMap format (conventions match exactly)
+        self.offsetMap = OffsetMap(points: offsetPoints.map { (targetPos: $0.modifiedPos, cumulativeDelta: $0.cumulativeDelta) })
     }
 
     /// Identity transformation (no changes).
@@ -51,33 +53,12 @@ struct TextTransformation {
 
     /// Convert an offset in the modified text to the corresponding offset in the original text.
     func toOriginalOffset(_ modified: Int) -> Int {
-        guard !offsetPoints.isEmpty else { return modified }
-        var delta = 0
-        for point in offsetPoints {
-            if point.modifiedPos <= modified {
-                delta = point.cumulativeDelta
-            } else {
-                break
-            }
-        }
-        return modified + delta
+        offsetMap.toSource(modified)
     }
 
     /// Convert an offset in the original text to the corresponding offset in the modified text.
     func toModifiedOffset(_ original: Int) -> Int {
-        guard !offsetPoints.isEmpty else { return original }
-        // Build reverse: for each offset point, originalPos = modifiedPos + delta
-        // We want: modified = original - delta (at the right point)
-        var delta = 0
-        for point in offsetPoints {
-            let originalAtPoint = point.modifiedPos + point.cumulativeDelta
-            if originalAtPoint <= original {
-                delta = point.cumulativeDelta
-            } else {
-                break
-            }
-        }
-        return max(0, original - delta)
+        offsetMap.toTarget(original)
     }
 
     var hasChanges: Bool { originalText != modifiedText }

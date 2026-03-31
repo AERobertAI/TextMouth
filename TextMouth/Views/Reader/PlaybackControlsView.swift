@@ -142,6 +142,8 @@ struct PlaybackControlsView: View {
         case .seconds15: return "gobackward.15"
         case .seconds30: return "gobackward.30"
         case .seconds60: return "gobackward.60"
+        case .sentence: return "text.line.first.and.arrowtriangle.forward"
+        case .paragraph: return "text.justify.left"
         case .heading, .subheading: return "backward.end.fill"
         case .bookmark: return "bookmark.fill"
         }
@@ -154,6 +156,8 @@ struct PlaybackControlsView: View {
         case .seconds15: return "goforward.15"
         case .seconds30: return "goforward.30"
         case .seconds60: return "goforward.60"
+        case .sentence: return "text.line.last.and.arrowtriangle.forward"
+        case .paragraph: return "text.justify.right"
         case .heading, .subheading: return "forward.end.fill"
         case .bookmark: return "bookmark.fill"
         }

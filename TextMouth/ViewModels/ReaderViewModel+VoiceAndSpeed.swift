@@ -114,14 +114,15 @@ extension ReaderViewModel {
     }
 
     /// Remove text under skipped headings from a chapter's text.
-    /// Returns the filtered text for TTS.
-    func filterSkippedSections(chapterIndex: Int, text: String) -> String {
-        guard let content = content else { return text }
+    /// Returns the filtered text and an OffsetMap tracking which characters were removed,
+    /// so downstream offset conversions can map back to original-text positions.
+    func filterSkippedSections(chapterIndex: Int, text: String) -> (text: String, offsetMap: OffsetMap) {
+        guard let content = content else { return (text, .identity) }
         let skipped = skippedHeadingIDs
-        guard !skipped.isEmpty else { return text }
+        guard !skipped.isEmpty else { return (text, .identity) }
 
         let chapterHeadings = content.allHeadings.filter { $0.chapterIndex == chapterIndex }
-        guard !chapterHeadings.isEmpty else { return text }
+        guard !chapterHeadings.isEmpty else { return (text, .identity) }
 
         // Build ranges to exclude
         var excludeRanges: [Range<Int>] = []
@@ -137,23 +138,34 @@ extension ReaderViewModel {
             excludeRanges.append(start..<end)
         }
 
-        guard !excludeRanges.isEmpty else { return text }
+        guard !excludeRanges.isEmpty else { return (text, .identity) }
 
-        // Build filtered text by including only non-excluded ranges
+        // Build filtered text and offset map by tracking deletions.
+        // Each excluded range shifts all subsequent target positions by the range's length.
         var result = ""
         var pos = 0
+        var cumulativeDelta = 0
+        var points: [(targetPos: Int, cumulativeDelta: Int)] = []
+
         for range in excludeRanges.sorted(by: { $0.lowerBound < $1.lowerBound }) {
             if pos < range.lowerBound {
                 let startIdx = text.index(text.startIndex, offsetBy: pos)
                 let endIdx = text.index(text.startIndex, offsetBy: min(range.lowerBound, text.count))
                 result += text[startIdx..<endIdx]
             }
+            // Record the deletion: at the current target position, delta increases
+            // by the number of characters removed in this range.
+            let deletedCount = range.upperBound - range.lowerBound
+            cumulativeDelta += deletedCount
+            let targetPos = range.lowerBound - (cumulativeDelta - deletedCount)
+            points.append((targetPos: targetPos, cumulativeDelta: cumulativeDelta))
+
             pos = range.upperBound
         }
         if pos < text.count {
             let startIdx = text.index(text.startIndex, offsetBy: pos)
             result += text[startIdx...]
         }
-        return result
+        return (result, OffsetMap(points: points))
     }
 }

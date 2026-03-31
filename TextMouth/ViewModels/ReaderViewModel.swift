@@ -56,6 +56,10 @@ class ReaderViewModel: ObservableObject {
     /// Accessed from Playback extension when speaking chapters.
     var currentTransformation: TextTransformation?
 
+    /// Composed offset map covering the full text pipeline (filter → pause → substitution).
+    /// Used to convert between original-text offsets and modified-text offsets for seeking.
+    var currentOffsetMap: ComposedOffsetMap?
+
     /// Saved position before heading/bookmark navigation (for "go back to where I was").
     /// Accessed from Bookmarks extension.
     @Published var hasSavedPosition = false
@@ -256,9 +260,11 @@ class ReaderViewModel: ObservableObject {
     private func setupCallbacks() {
         speechService.onWordSpoken = { [weak self] range, _ in
             guard let self = self else { return }
-            // Map from modified-text offset back to original-text offset
-            if let transform = self.currentTransformation, transform.hasChanges {
-                self.currentCharacterOffset = transform.toOriginalOffset(range.location)
+            // Map from modified-text (speech service) offset back to original-text offset
+            // using the full composed offset map that tracks all transformation stages
+            // (filtering, punctuation pauses, substitutions).
+            if let map = self.currentOffsetMap, map.hasChanges {
+                self.currentCharacterOffset = map.toOriginal(range.location)
             } else {
                 self.currentCharacterOffset = range.location
             }
@@ -297,8 +303,13 @@ class ReaderViewModel: ObservableObject {
                        self.nextChapterIndex == nextIndex,
                        preEngine.hasRenderedAudio {
                         self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
-                        let transform = self.substitutionService.transform(content.chapters[nextIndex].text)
+                        // Apply full text pipeline so offset map covers all stages
+                        let (filteredText, filterMap) = self.filterSkippedSections(
+                            chapterIndex: nextIndex, text: content.chapters[nextIndex].text)
+                        let (pausedText, pauseMap) = self.applyPunctuationPauses(filteredText)
+                        let transform = self.substitutionService.transform(pausedText)
                         self.currentTransformation = transform
+                        self.currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap, transform.offsetMap])
                         self.speechService.usePreRenderedEngine(preEngine, text: transform.modifiedText)
                         self.nextChapterEngine = nil
                         self.nextChapterIndex = nil

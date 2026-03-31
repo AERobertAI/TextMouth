@@ -23,17 +23,21 @@ enum SkipUnit: String, CaseIterable, Codable {
     case seconds15 = "15 seconds"
     case seconds30 = "30 seconds"
     case seconds60 = "60 seconds"
+    case sentence = "Sentence"
+    case paragraph = "Paragraph"
     case heading = "Heading"
     case subheading = "Subheading"
     case bookmark = "Bookmark"
 
+    /// For time-based units, the number of words to skip at the given WPM rate.
+    /// Returns nil for structural units (sentence, paragraph, heading, etc.).
     func wordCount(wpm: Double) -> Int? {
         switch self {
         case .seconds10: return max(1, Int(wpm * 10.0 / 60.0))
         case .seconds15: return max(1, Int(wpm * 15.0 / 60.0))
         case .seconds30: return max(1, Int(wpm * 30.0 / 60.0))
         case .seconds60: return max(1, Int(wpm * 60.0 / 60.0))
-        case .heading, .subheading, .bookmark: return nil
+        case .sentence, .paragraph, .heading, .subheading, .bookmark: return nil
         }
     }
 

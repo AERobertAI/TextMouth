@@ -141,13 +141,17 @@ extension ReaderViewModel {
 
         debugLog("speakCurrentChapter: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
 
-        // Filter out skipped sections, apply punctuation pauses, then text substitutions
-        let filteredText = filterSkippedSections(chapterIndex: currentChapterIndex, text: chapter.text)
-        let pausedText = applyPunctuationPauses(filteredText)
+        // Filter out skipped sections, apply punctuation pauses, then text substitutions.
+        // Each stage returns an OffsetMap tracking how character positions shifted.
+        // Compose all three into a single bidirectional map for offset conversion.
+        let (filteredText, filterMap) = filterSkippedSections(chapterIndex: currentChapterIndex, text: chapter.text)
+        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
         let transformation = substitutionService.transform(pausedText)
         currentTransformation = transformation
+        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap, transformation.offsetMap])
         let speakText = transformation.modifiedText
-        let speakOffset = transformation.toModifiedOffset(currentCharacterOffset)
+        // Convert original-text offset to modified-text offset using the full composed map
+        let speakOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
 
         // Start playback from the current offset.
         utteranceBaseOffset = 0
@@ -175,8 +179,12 @@ extension ReaderViewModel {
         nextChapterEngine?.cancelRender()
 
         let engine = AudioEngineService()
+        // Apply the full text transformation pipeline so pre-rendered audio
+        // matches what speakCurrentChapter would produce.
         let rawText = content.chapters[nextIdx].text
-        let chapterText = substitutionService.transform(rawText).modifiedText
+        let (filteredText, _) = filterSkippedSections(chapterIndex: nextIdx, text: rawText)
+        let (pausedText, _) = applyPunctuationPauses(filteredText)
+        let chapterText = substitutionService.transform(pausedText).modifiedText
         nextChapterIndex = nextIdx
 
         // Capture generation so stale renders from rapid navigation are discarded
@@ -404,14 +412,14 @@ extension ReaderViewModel {
             if newOffset < offset {
                 debugLog("rewindOnResume: sentence rewind \(offset) -> \(newOffset)")
                 currentCharacterOffset = newOffset
-                speechService.seek(toCharOffset: newOffset)
+                seekSpeechService(toOriginalOffset: newOffset)
             }
         case .paragraph:
             let newOffset = findParagraphStart(in: text, before: offset)
             if newOffset < offset {
                 debugLog("rewindOnResume: paragraph rewind \(offset) -> \(newOffset)")
                 currentCharacterOffset = newOffset
-                speechService.seek(toCharOffset: newOffset)
+                seekSpeechService(toOriginalOffset: newOffset)
             }
         case .heading:
             if let heading = currentHeadingAtPosition() {
@@ -419,7 +427,7 @@ extension ReaderViewModel {
                 if headingOffset < offset {
                     debugLog("rewindOnResume: heading rewind \(offset) -> \(headingOffset)")
                     currentCharacterOffset = headingOffset
-                    speechService.seek(toCharOffset: headingOffset)
+                    seekSpeechService(toOriginalOffset: headingOffset)
                 }
             }
         }
@@ -472,35 +480,84 @@ extension ReaderViewModel {
     // MARK: - Punctuation Pauses
 
     /// Insert extra pause characters at punctuation to slow down dense text.
+    /// Returns the paused text and an OffsetMap tracking where insertions occurred.
     /// Level 0 = off, 1 = subtle (periods), 2 = moderate (periods + commas), 3 = heavy (+ paragraph breaks)
-    func applyPunctuationPauses(_ text: String) -> String {
+    func applyPunctuationPauses(_ text: String) -> (text: String, offsetMap: OffsetMap) {
         let level = settingsViewModel.punctuationPauseLevel
-        guard level > 0 else { return text }
+        guard level > 0 else { return (text, .identity) }
 
-        // Use a period followed by space as a natural TTS pause cue
-        let periodPause = ". "     // Extra pause after sentences
-        let commaPause = ", "      // Extra pause after commas
-        let paragraphPause = ".\n\n" // Extra pause at paragraph breaks
-
-        var result = text
+        // Build the set of (pattern, replacement) pairs.
+        // Each replacement is the full string that replaces the pattern.
+        // The extra characters (replacement.count - pattern.count) create the pause.
+        var replacements: [(pattern: String, replacement: String)] = []
 
         // Level 1+: Extra pause after sentence-ending punctuation
+        // ". " → ".. " (period repeated for TTS pause), same for ! and ?
         if level >= 1 {
-            result = result.replacingOccurrences(of: ". ", with: ".\(periodPause)")
-            result = result.replacingOccurrences(of: "! ", with: "!\(periodPause)")
-            result = result.replacingOccurrences(of: "? ", with: "?\(periodPause)")
+            replacements.append((pattern: ". ", replacement: ".. "))
+            replacements.append((pattern: "! ", replacement: "!. "))
+            replacements.append((pattern: "? ", replacement: "?. "))
         }
 
         // Level 2+: Extra pause after commas
+        // ", " → ",, " (comma repeated for TTS pause)
         if level >= 2 {
-            result = result.replacingOccurrences(of: ", ", with: ",\(commaPause)")
+            replacements.append((pattern: ", ", replacement: ",, "))
         }
 
         // Level 3: Extra pause at paragraph breaks
+        // "\n\n" → "\n\n.\n\n" (extra sentence break at paragraph boundary)
         if level >= 3 {
-            result = result.replacingOccurrences(of: "\n\n", with: "\n\n\(paragraphPause)")
+            replacements.append((pattern: "\n\n", replacement: "\n\n.\n\n"))
         }
 
-        return result
+        // Scan through text, matching patterns and tracking insertions.
+        // At each position, check if any pattern matches. If so, emit the
+        // full replacement and record the offset delta for the extra characters.
+        var result = ""
+        result.reserveCapacity(text.count + text.count / 10) // estimate ~10% growth
+        var sourcePos = 0
+        var cumulativeDelta = 0
+        var points: [(targetPos: Int, cumulativeDelta: Int)] = []
+
+        while sourcePos < text.count {
+            var matched = false
+
+            for (pattern, replacement) in replacements {
+                // Check if pattern matches at current source position
+                let patternLen = pattern.count
+                if sourcePos + patternLen > text.count { continue }
+
+                let startIdx = text.index(text.startIndex, offsetBy: sourcePos)
+                let endIdx = text.index(startIdx, offsetBy: patternLen)
+                if text[startIdx..<endIdx] == pattern {
+                    // Emit the full replacement string
+                    result += replacement
+
+                    // Record the offset delta at the target position after the replacement.
+                    // The delta is negative because the target text is longer (extra chars inserted).
+                    let extraChars = replacement.count - patternLen
+                    cumulativeDelta -= extraChars
+                    let targetPosAfter = result.count
+                    points.append((targetPos: targetPosAfter, cumulativeDelta: cumulativeDelta))
+
+                    sourcePos += patternLen
+                    matched = true
+                    break
+                }
+            }
+
+            if !matched {
+                // No pattern matched — copy one character as-is
+                let idx = text.index(text.startIndex, offsetBy: sourcePos)
+                result.append(text[idx])
+                sourcePos += 1
+            }
+        }
+
+        if points.isEmpty {
+            return (text, .identity)
+        }
+        return (result, OffsetMap(points: points))
     }
 }

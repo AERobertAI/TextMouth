@@ -56,6 +56,8 @@ runBugRegressionTests()
 runBookmarkToggleTests()
 runBookmarkPanelAccessibilityTests()
 runIntegrationTests()
+runOffsetMapTests()
+runSentenceParagraphSkipTests()
 
 // ---- Summary ----
 print("\n" + "=" * 60)
