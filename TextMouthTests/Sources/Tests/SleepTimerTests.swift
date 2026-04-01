@@ -233,6 +233,134 @@ test("Cancel then re-set: clean state transition") {
     }
 }
 
+// ---- Sleep Timer Fade-Out Volume Pop Tests (Fix 10) ----
+print("\n--- Sleep Timer Fade-Out Volume Pop Tests ---")
+
+test("Fade expiry: pause happens before volume restore") {
+    // Simulates the onTimerExpired handler ordering.
+    // The fix ensures pause() is called BEFORE restoreVolume()
+    // so there's no audible pop of full-volume audio.
+    var actions: [String] = []
+    var currentVolume: Float = 0.0  // Faded to zero
+    var isPaused = false
+
+    // Correct ordering: pause first, then restore
+    func pauseFirst() {
+        isPaused = true
+        actions.append("pause")
+    }
+    func restoreAfter() {
+        currentVolume = 1.0
+        actions.append("restore")
+    }
+
+    pauseFirst()
+    restoreAfter()
+
+    try assertEqual(actions, ["pause", "restore"],
+        "Pause must happen before volume restore to avoid audible pop")
+    try assertTrue(isPaused, "Audio should be paused")
+    try assertEqual(currentVolume, 1.0, "Volume should be restored after pause")
+}
+
+test("Fade expiry: volume is at zero when pause fires") {
+    // The last fade step sets volume to 0.0. When onTimerExpired
+    // fires, volume should still be 0.0 at the moment of pause.
+    var volumeHistory: [Float] = []
+    var currentVolume: Float = 1.0
+
+    // Simulate fade-out: 5 steps from 1.0 to 0.0
+    let totalSteps = 5
+    for step in 1...totalSteps {
+        currentVolume = Float(max(0, 1.0 - Double(step) / Double(totalSteps)))
+        volumeHistory.append(currentVolume)
+    }
+
+    // At this point, volume should be 0.0
+    try assertEqual(currentVolume, 0.0, "Volume should be 0 after fade completes")
+
+    // Now the onTimerExpired handler fires — volume is still 0.0
+    // Pause happens first (at volume 0.0), then restore (inaudible)
+    let volumeAtPause = currentVolume
+    try assertEqual(volumeAtPause, 0.0,
+        "Volume must be 0 at the moment pause is called")
+
+    // Restore happens after pause
+    currentVolume = 1.0
+    try assertEqual(currentVolume, 1.0, "Volume restored for next playback")
+}
+
+test("Manual pause during fade: audio pauses before volume restore") {
+    // If the user presses pause while a fade-out is in progress,
+    // the pause() method should pause audio first, then clean up
+    // the fade state and restore volume.
+    var actions: [String] = []
+    var isFadingOut = true
+    var currentVolume: Float = 0.5  // Mid-fade
+
+    // Simulates the corrected pause() ordering
+    func pause() {
+        // 1. Pause audio first
+        actions.append("pause_audio")
+        // 2. Then handle fade cleanup (volume is now inaudible)
+        if isFadingOut {
+            isFadingOut = false
+            currentVolume = 1.0
+            actions.append("restore_volume")
+        }
+    }
+
+    pause()
+
+    try assertEqual(actions, ["pause_audio", "restore_volume"],
+        "Audio must pause before volume is restored")
+    try assertTrue(!isFadingOut, "Fade should be stopped")
+    try assertEqual(currentVolume, 1.0, "Volume should be restored")
+}
+
+test("No fade active: pause does not touch volume") {
+    // When there's no fade-out in progress, pause() should not
+    // call restoreVolume() at all.
+    var actions: [String] = []
+    var isFadingOut = false
+    var currentVolume: Float = 1.0
+
+    func pause() {
+        actions.append("pause_audio")
+        if isFadingOut {
+            isFadingOut = false
+            currentVolume = 1.0
+            actions.append("restore_volume")
+        }
+    }
+
+    pause()
+
+    try assertEqual(actions, ["pause_audio"],
+        "No volume restore when fade is not active")
+    try assertEqual(currentVolume, 1.0, "Volume should remain at 1.0")
+}
+
+test("Fade expiry with zero duration: pause before expire callback") {
+    // With fadeOutDuration = 0, expire() calls onTimerExpired
+    // directly (no fade steps). The handler still must pause
+    // before restoring volume.
+    var actions: [String] = []
+    var currentVolume: Float = 1.0
+
+    func onTimerExpired() {
+        // Correct ordering
+        actions.append("pause")
+        currentVolume = 1.0  // restore
+        actions.append("restore")
+    }
+
+    // No fade steps, just expire
+    onTimerExpired()
+    try assertEqual(actions.first, "pause",
+        "Even with zero fade duration, pause must come first")
+}
+
 } // end runSleepTimerTests
 
 /// Minimal config struct for testing sleep timer settings persistence

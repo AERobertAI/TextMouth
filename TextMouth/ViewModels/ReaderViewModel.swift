@@ -328,12 +328,16 @@ class ReaderViewModel: ObservableObject {
 
         sleepTimerService.onTimerExpired = { [weak self] in
             guard let self = self else { return }
+            // Pause FIRST so audio output stops before we restore
+            // volume. Previously restoreVolume() ran before pause(),
+            // causing a brief pop of full-volume audio at the tail
+            // end of the fade-out.
+            self.pause()
             if self.isAudioBook {
                 self.audioPlaybackService.restoreVolume()
             } else {
                 self.speechService.audioEngine.restoreVolume()
             }
-            self.pause()
             self.announceToVoiceOver("Sleep timer expired. Playback paused.")
         }
 

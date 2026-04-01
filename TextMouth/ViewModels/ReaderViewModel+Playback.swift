@@ -30,17 +30,23 @@ extension ReaderViewModel {
     /// Pause the current playback (TTS or audio) and save position.
     func pause() {
         soundEffectService?.play(for: .pause)
-        if sleepTimerService.isFadingOut {
-            sleepTimerService.stop()
-            if isAudioBook { audioPlaybackService.restoreVolume() }
-            else { speechService.audioEngine.restoreVolume() }
-        }
+        // Pause audio output FIRST so any volume changes below
+        // are inaudible. Previously, restoreVolume() was called
+        // before pausing, causing a brief pop of full-volume audio
+        // at the end of a sleep timer fade-out.
         if isAudioBook {
             audioPlaybackService.pause()
             isCurrentlyPlaying = true // still "playing" but paused
             isCurrentlyPaused = true
         } else {
             speechService.pause()
+        }
+        // Now safe to clean up fade state and restore volume —
+        // audio is paused so the volume change won't be heard
+        if sleepTimerService.isFadingOut {
+            sleepTimerService.stop()
+            if isAudioBook { audioPlaybackService.restoreVolume() }
+            else { speechService.audioEngine.restoreVolume() }
         }
         readingStatsService.endSession()
         nowPlayingService.updateNowPlayingInfo(

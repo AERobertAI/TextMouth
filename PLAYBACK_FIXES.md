@@ -121,6 +121,42 @@ The key design principle established in this session:
 
 ---
 
+## Fix 9: Silence Padding for Chapter-End Clipping (AudioEngineService) — 2026-03-31
+
+**Problem:** `.dataPlayedBack` fires when the `playerNode` finishes consuming data, but the `AVAudioUnitTimePitch` node downstream still has audio in its internal processing buffer. During chapter transitions, `stop()` discards those buffered samples, clipping the last word or syllable. The effect is worse at non-1.0 rates (e.g., 200 WPM = 0.44x rate) where the timePitch buffer is larger.
+
+**Solution:** Append 200ms of silence to the end of every rendered buffer. This gives the timePitch node time to fully process and output the last real audio samples before the completion callback fires and the chapter transition begins. The char-to-frame mapping and `totalFrames` use only the speech portion so position tracking remains accurate.
+
+**Files:** `AudioEngineService.swift` — `render()`, `silencePaddingDuration` constant
+
+**What NOT to do:** Do not remove the silence padding. Do not include padding frames in `totalFrames` or the char-to-frame mapping — characters should only map to real speech audio, not silence.
+
+---
+
+## Fix 10: Sleep Timer Fade-Out Volume Pop (ReaderViewModel) — 2026-03-31
+
+**Problem:** When the sleep timer fade-out completed, `onTimerExpired` called `restoreVolume()` (setting volume to 1.0) *before* calling `pause()`. This created a brief audible pop of full-volume audio in the last ~250ms before the pause took effect. The same bug existed in the manual `pause()` path when the user pressed pause during an active fade-out.
+
+**Solution:** Reordered both paths: pause audio output first (stopping sound immediately), then restore volume (now inaudible since audio is paused). The volume is ready for the next playback session without any audible artifact.
+
+**Files:** `ReaderViewModel.swift` — `setupCallbacks()` (`onTimerExpired`), `ReaderViewModel+Playback.swift` — `pause()`
+
+**What NOT to do:** Do not call `restoreVolume()` or `setVolume(1.0)` while audio is still playing. Always pause first.
+
+---
+
+## Fix 11: Volume Tracking Across Engine Restarts (AudioEngineService) — 2026-03-31
+
+**Problem:** During chapter transitions, `stop()` calls `engine.stop()` and then `play()` disconnects/reconnects nodes and calls `engine.start()`. The `mainMixerNode.outputVolume` can reset to 1.0 during this cycle, discarding any volume set by the sleep timer fade or other callers. This caused unpredictable volume jumps between chapters.
+
+**Solution:** Added a `currentVolume` property that shadows the mixer node's output volume. `setVolume()` and `restoreVolume()` update both the tracked value and the mixer node. `play()` re-applies `currentVolume` after `engine.start()` so volume persists across chapter boundaries regardless of engine restart behavior.
+
+**Files:** `AudioEngineService.swift` — `currentVolume` property, `setVolume()`, `restoreVolume()`, `play()`
+
+**What NOT to do:** Do not set `engine.mainMixerNode.outputVolume` directly — always go through `setVolume()` or `restoreVolume()` so the tracked value stays in sync.
+
+---
+
 ## Debugging
 
 Two log files are written to the app's sandbox container:
@@ -128,7 +164,7 @@ Two log files are written to the app's sandbox container:
 - `textmouth_debug.log` — Skip/rewind/FF calculations, chapter advances
 - `textmouth_transition.log` — Mode switches, engine render readiness, pre-render status
 
-Location: `~/Library/Containers/com.textmouth.TextMouth/Data/`
+Location: `~/.TextMouth/Logs/`
 
 ---
 

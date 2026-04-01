@@ -32,8 +32,23 @@ class AudioEngineService: ObservableObject {
     @Published var isPaused = false
     @Published var isRendering = false
 
+    /// Tracks the intended output volume independently of the engine's
+    /// mixer node. When the engine is stopped and restarted during
+    /// chapter transitions, mainMixerNode.outputVolume can reset to 1.0.
+    /// This property is re-applied after every engine.start() so the
+    /// volume remains consistent across chapters.
+    private var currentVolume: Float = 1.0
+
     var onPlaybackFinished: (() -> Void)?
     var renderWPM: Double = 350.0
+
+    /// Silence padding appended to rendered buffers (in seconds).
+    /// The AVAudioUnitTimePitch node buffers audio internally — when the
+    /// playerNode finishes and fires .dataPlayedBack, the timePitch may
+    /// still have unplayed samples in its processing pipeline. Without
+    /// padding, those final samples get discarded on chapter transitions,
+    /// clipping the last word. 200ms provides enough runway at any rate.
+    private static let silencePaddingDuration: Double = 0.2
 
     /// Reference to the in-progress render synthesizer so we can cancel stale renders.
     /// Without cancellation, old write() calls keep synthesizing in the background,
@@ -122,8 +137,15 @@ class AudioEngineService: ObservableObject {
                 return
             }
 
-            // Concatenate buffers
-            let totalFrameCount = buffers.reduce(0) { $0 + Int($1.frameLength) }
+            // Concatenate buffers, then append silence padding so the
+            // timePitch node can flush its internal processing buffer
+            // before the .dataPlayedBack completion fires. Without this,
+            // the last fraction-of-a-second of each chapter gets clipped
+            // because the playerNode reports "done" while timePitch still
+            // has unplayed samples queued.
+            let speechFrameCount = buffers.reduce(0) { $0 + Int($1.frameLength) }
+            let paddingFrames = Int(audioFormat.sampleRate * Self.silencePaddingDuration)
+            let totalFrameCount = speechFrameCount + paddingFrames
             guard let combinedBuffer = AVAudioPCMBuffer(
                 pcmFormat: audioFormat,
                 frameCapacity: AVAudioFrameCount(totalFrameCount)
@@ -141,17 +163,29 @@ class AudioEngineService: ObservableObject {
                 }
                 offset += buf.frameLength
             }
-            combinedBuffer.frameLength = offset
+            // Zero-fill the padding region (silence). The buffer was
+            // allocated with frameCapacity covering both speech + padding,
+            // and AVAudioPCMBuffer zero-initializes its storage, but we
+            // explicitly zero here for clarity and safety.
+            if let channelData = combinedBuffer.floatChannelData {
+                for ch in 0..<Int(audioFormat.channelCount) {
+                    let padStart = channelData[ch].advanced(by: Int(offset))
+                    padStart.initialize(repeating: 0, count: paddingFrames)
+                }
+            }
+            combinedBuffer.frameLength = AVAudioFrameCount(totalFrameCount)
 
-            // Build char-to-frame mapping
+            // Build char-to-frame mapping using only the speech frames
+            // (not the silence padding). Characters map to real audio;
+            // the padding exists solely to let timePitch flush.
             let charCount = text.count
-            let framesPerChar = charCount > 0 ? Double(totalFrameCount) / Double(charCount) : 0
+            let framesPerChar = charCount > 0 ? Double(speechFrameCount) / Double(charCount) : 0
             var map: [(charOffset: Int, frame: AVAudioFramePosition)] = []
             let step = max(1, charCount / 200)
             for i in stride(from: 0, to: charCount, by: step) {
                 map.append((charOffset: i, frame: AVAudioFramePosition(Double(i) * framesPerChar)))
             }
-            map.append((charOffset: charCount, frame: AVAudioFramePosition(totalFrameCount)))
+            map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
 
             // Clear render synth reference now that we're done
             self.renderLock.lock()
@@ -164,7 +198,10 @@ class AudioEngineService: ObservableObject {
                 self.renderedBuffer = combinedBuffer
                 self.renderFormat = audioFormat
                 self.wordFrameMap = map
-                self.totalFrames = AVAudioFrameCount(totalFrameCount)
+                // totalFrames tracks only the speech portion for position
+                // calculations. The buffer is longer (includes silence
+                // padding) but characters only map to speech frames.
+                self.totalFrames = AVAudioFrameCount(speechFrameCount)
                 self.isRendering = false
                 completion(true)
             }
@@ -188,6 +225,12 @@ class AudioEngineService: ObservableObject {
                 return
             }
         }
+
+        // Re-apply the tracked volume after engine start. The
+        // stop→reconnect→start cycle during chapter transitions can
+        // reset mainMixerNode.outputVolume to 1.0, discarding any
+        // volume set by the sleep timer or other callers.
+        engine.mainMixerNode.outputVolume = currentVolume
 
         scheduleAndPlay(buffer: buffer, format: format, fromCharOffset: charOffset)
     }
@@ -284,10 +327,12 @@ class AudioEngineService: ObservableObject {
     }
 
     func setVolume(_ volume: Float) {
-        engine.mainMixerNode.outputVolume = max(0.0, min(volume, 1.0))
+        currentVolume = max(0.0, min(volume, 1.0))
+        engine.mainMixerNode.outputVolume = currentVolume
     }
 
     func restoreVolume() {
+        currentVolume = 1.0
         engine.mainMixerNode.outputVolume = 1.0
     }
 
