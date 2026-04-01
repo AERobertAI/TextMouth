@@ -59,19 +59,12 @@ class SpeechService: NSObject, ObservableObject {
 
     private var settingsCancellables = Set<AnyCancellable>()
 
+    /// Log transition events (mode switches, render status) to the
+    /// transition log file. Dispatched to a background queue so
+    /// FileHandle I/O doesn't block the main thread during playback.
     private func transitionLog(_ msg: String) {
-        let logPath = TextMouthPaths.logsDir.appendingPathComponent("textmouth_transition.log").path
-        let line = "\(Date()): \(msg)\n"
-        if let data = line.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: logPath),
-               let handle = FileHandle(forWritingAtPath: logPath) {
-                handle.seekToEndOfFile()
-                handle.write(data)
-                handle.closeFile()
-            } else {
-                try? data.write(to: URL(fileURLWithPath: logPath))
-            }
-        }
+        let logFile = TextMouthPaths.logsDir.appendingPathComponent("textmouth_transition.log")
+        TextMouthPaths.appendLog(to: logFile, message: msg)
     }
 
     override init() {
@@ -436,24 +429,48 @@ class SpeechService: NSObject, ObservableObject {
         return audioEngine.currentCharOffset()
     }
 
+    /// Background queue for position tracking string operations.
+    /// String.index(offsetBy:) is O(n) for Swift strings — running
+    /// it on the main thread every 100ms with large chapter texts
+    /// (30K+ chars) causes UI freezes. The word extraction happens
+    /// here; only the final result is dispatched to main.
+    private static let positionQueue = DispatchQueue(
+        label: "com.textmouth.positionTracking",
+        qos: .userInteractive
+    )
+
     private func startPositionTracking() {
         stopPositionTracking()
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, !self.usingDirectMode,
                   self.audioEngine.isPlaying || self.audioEngine.isPaused else { return }
+            // currentCharOffset() reads the audio node's render time,
+            // which is safe from the main thread (the timer's thread)
             let offset = self.audioEngine.currentCharOffset()
             let range = NSRange(location: offset, length: 1)
+            // Capture the text for background processing. The text
+            // doesn't change during playback so this reference is safe.
+            let text = self.currentText
 
-            DispatchQueue.main.async {
-                self.currentWordRange = range
-                if offset >= 0 && offset < self.currentText.count {
-                    let idx = self.currentText.index(self.currentText.startIndex, offsetBy: offset)
+            // Move the O(n) string indexing off the main thread.
+            // String.index(startIndex, offsetBy:) iterates through
+            // Unicode scalars from the start — expensive for large texts.
+            Self.positionQueue.async { [weak self] in
+                var word = ""
+                if offset >= 0 && offset < text.count {
+                    let idx = text.index(text.startIndex, offsetBy: offset)
                     var end = idx
-                    while end < self.currentText.endIndex && !self.currentText[end].isWhitespace {
-                        end = self.currentText.index(after: end)
+                    while end < text.endIndex && !text[end].isWhitespace {
+                        end = text.index(after: end)
                     }
-                    let word = String(self.currentText[idx..<end])
-                    self.onWordSpoken?(range, word)
+                    word = String(text[idx..<end])
+                }
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.currentWordRange = range
+                    if !word.isEmpty {
+                        self.onWordSpoken?(range, word)
+                    }
                 }
             }
         }

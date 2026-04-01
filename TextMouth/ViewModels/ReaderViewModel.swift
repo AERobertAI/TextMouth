@@ -654,20 +654,11 @@ class ReaderViewModel: ObservableObject {
 
     // MARK: - Debug Logging
 
-    /// Append a timestamped message to the debug log file
+    /// Append a timestamped message to the debug log file.
+    /// Dispatched to a background queue so FileHandle I/O doesn't
+    /// block the main thread during playback callbacks.
     func debugLog(_ msg: String) {
-        let logPath = TextMouthPaths.debugLogFile.path
-        let line = "\(Date()): \(msg)\n"
-        if let data = line.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: logPath),
-               let handle = FileHandle(forWritingAtPath: logPath) {
-                handle.seekToEndOfFile()
-                handle.write(data)
-                handle.closeFile()
-            } else {
-                try? data.write(to: URL(fileURLWithPath: logPath))
-            }
-        }
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: msg)
     }
 
     deinit {

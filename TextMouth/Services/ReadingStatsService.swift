@@ -123,22 +123,39 @@ class ReadingStatsService: ObservableObject {
 
     // MARK: - Persistence
 
+    /// Background queue for stats file I/O. JSON encoding and atomic
+    /// file writes are synchronous operations that block the calling
+    /// thread. Without this queue, save() blocks the main thread on
+    /// every pause and every 60-second auto-save tick.
+    private static let saveQueue = DispatchQueue(
+        label: "com.textmouth.readingStats",
+        qos: .utility
+    )
+
     private static func dateKey(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
     }
 
+    /// Persist stats to disk on a background queue. Safe to call
+    /// from the main thread — the actual encoding and file write
+    /// are dispatched asynchronously.
     func save() {
-        do {
-            try TextMouthPaths.ensureDirectoryStructure()
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(stats)
-            try data.write(to: TextMouthPaths.readingStatsFile, options: .atomic)
-        } catch {
-            print("Failed to save reading stats: \(error)")
+        // Snapshot the stats value type on the calling thread so
+        // the background write captures a consistent copy
+        let snapshot = stats
+        Self.saveQueue.async {
+            do {
+                try TextMouthPaths.ensureDirectoryStructure()
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                let data = try encoder.encode(snapshot)
+                try data.write(to: TextMouthPaths.readingStatsFile, options: .atomic)
+            } catch {
+                print("Failed to save reading stats: \(error)")
+            }
         }
     }
 

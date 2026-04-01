@@ -226,6 +226,38 @@ enum TextMouthPaths {
         oldAppSupportDir?.appendingPathComponent("library.json")
     }
 
+    // MARK: - Async Logging
+
+    /// Serial background queue for all log file writes. Logging uses
+    /// synchronous FileHandle I/O (seekToEndOfFile, write, closeFile)
+    /// which blocks the calling thread. Without this queue, logging
+    /// during playback callbacks blocks the main thread and causes
+    /// UI freezes — especially when disk I/O is slow (Spotlight
+    /// indexing, Time Machine backup, etc.).
+    private static let logQueue = DispatchQueue(
+        label: "com.textmouth.logging",
+        qos: .utility
+    )
+
+    /// Append a timestamped line to a log file on a background queue.
+    /// Safe to call from any thread including main — the actual I/O
+    /// is dispatched to logQueue so it never blocks the caller.
+    static func appendLog(to logFile: URL, message: String) {
+        let line = "\(Date()): \(message)\n"
+        guard let data = line.data(using: .utf8) else { return }
+        let path = logFile.path
+        logQueue.async {
+            if FileManager.default.fileExists(atPath: path),
+               let handle = FileHandle(forWritingAtPath: path) {
+                handle.seekToEndOfFile()
+                handle.write(data)
+                handle.closeFile()
+            } else {
+                try? data.write(to: URL(fileURLWithPath: path))
+            }
+        }
+    }
+
     // MARK: - Private
 
     private static func sanitizeForFilename(_ str: String) -> String {
