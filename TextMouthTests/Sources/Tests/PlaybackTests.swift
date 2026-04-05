@@ -71,104 +71,393 @@ test("Pause command only pauses, does not toggle") {
     try assertEqual(pauseCallCount, 2)
 }
 
-test("Suppress flag blocks next play command after device change") {
-    var suppressNextPlay = false
+// Simulates the timestamp-based suppress window used by NowPlayingService.
+// A device change sets `suppressUntil` to now + window; `isSuppressed` is
+// true while Date() < suppressUntil. Tests use short windows and `sleep`
+// or explicit past/future timestamps to control the boundary deterministically.
+
+test("Suppress window blocks next play command after device change") {
+    var suppressUntil: Date = .distantPast
     var playFired = false
+    var isSuppressed: Bool { Date() < suppressUntil }
 
     func simulateDeviceChange() {
-        suppressNextPlay = true
+        suppressUntil = Date().addingTimeInterval(2.0)
     }
 
     func handlePlayCommand() {
-        if suppressNextPlay {
-            suppressNextPlay = false
+        if isSuppressed {
+            suppressUntil = .distantPast  // consume
             return
         }
         playFired = true
     }
 
-    // Device changes — suppress flag is set
+    // Device changes — suppress window opens
     simulateDeviceChange()
-    try assertTrue(suppressNextPlay)
+    try assertTrue(isSuppressed)
 
-    // System sends play command — should be suppressed
+    // System sends play command — should be suppressed and consumed
     handlePlayCommand()
     try assertTrue(!playFired, "Play should be suppressed after device change")
-    try assertTrue(!suppressNextPlay, "Suppress flag should be cleared after use")
+    try assertTrue(!isSuppressed, "Suppress window should be closed after use")
 
     // Next deliberate play should work
     handlePlayCommand()
     try assertTrue(playFired, "Second play should not be suppressed")
 }
 
-test("Toggle command clears suppress flag") {
-    var suppressNextPlay = true
-    var toggleCount = 0
+// Simulates the togglePlayPauseCommand handler. During the suppress window,
+// the handler must honour the gate (unlike the old code that unconditionally
+// cleared the suppress flag). The direction is constrained: playing → pause,
+// paused → ignore. This is the core fix for the macOS Bluetooth-disconnect
+// spurious auto-resume bug.
+
+test("Toggle during suppress: playing → pauses") {
+    var isPlaying = true
+    var suppressUntil: Date = Date().addingTimeInterval(2.0)
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var pauseCount = 0
+    var toggleForwarded = 0
 
     func handleToggleCommand() {
-        suppressNextPlay = false
-        toggleCount += 1
-    }
-
-    // User presses media key (toggle) — should clear suppress and work
-    handleToggleCommand()
-    try assertTrue(!suppressNextPlay, "Toggle should clear suppress flag")
-    try assertEqual(toggleCount, 1)
-}
-
-test("Device change pauses then suppresses play") {
-    var isPlaying = true
-    var suppressNextPlay = false
-
-    func onPause() { isPlaying = false }
-
-    func simulateDeviceChange() {
-        suppressNextPlay = true
-        onPause()
-    }
-
-    func handlePlayCommand() {
-        if suppressNextPlay {
-            suppressNextPlay = false
+        if isSuppressed {
+            suppressUntil = .distantPast
+            // Only allow the pause direction during suppress
+            if isPlaying {
+                isPlaying = false
+                pauseCount += 1
+            }
             return
         }
-        isPlaying = true
+        // Normal toggle (not suppressed) — forward to app toggle handler
+        toggleForwarded += 1
+        isPlaying.toggle()
     }
 
-    // Simulate AirPods disconnect sequence:
-    // 1. Device change triggers pause + suppress
+    // AirPods disconnect sequence with playback running
+    handleToggleCommand()
+    try assertTrue(!isPlaying, "Playing → should pause on spurious toggle")
+    try assertEqual(pauseCount, 1)
+    try assertEqual(toggleForwarded, 0, "Toggle should not be forwarded during suppress")
+    try assertTrue(!isSuppressed, "Window consumed after handling")
+}
+
+test("Toggle during suppress: paused → ignored (blocks spurious auto-resume)") {
+    var isPlaying = false
+    var suppressUntil: Date = Date().addingTimeInterval(2.0)
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var toggleForwarded = 0
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                isPlaying = false
+            }
+            // Paused → do nothing. This is the bug fix.
+            return
+        }
+        toggleForwarded += 1
+        isPlaying.toggle()
+    }
+
+    // THIS is the reported bug: paused + AirPods disconnect → macOS sends
+    // togglePlayPause which would flip to playing. We must ignore it.
+    handleToggleCommand()
+    try assertTrue(!isPlaying, "Paused → should stay paused on spurious toggle (the bug fix)")
+    try assertEqual(toggleForwarded, 0, "Toggle must not be forwarded during suppress")
+    try assertTrue(!isSuppressed, "Window consumed after handling")
+}
+
+test("Toggle after suppress window expires works normally") {
+    var isPlaying = false
+    // Suppress window that is already in the past — same shape as natural expiry
+    var suppressUntil: Date = Date().addingTimeInterval(-0.1)
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var toggleForwarded = 0
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying { isPlaying = false }
+            return
+        }
+        toggleForwarded += 1
+        isPlaying.toggle()
+    }
+
+    // Window already expired — deliberate media-key press must work
+    try assertTrue(!isSuppressed)
+    handleToggleCommand()
+    try assertTrue(isPlaying, "Toggle after window should flip state normally")
+    try assertEqual(toggleForwarded, 1)
+}
+
+test("Device change with currently-paused state does not call onPause") {
+    // The listener should only call onPause if playback is actually running.
+    // Calling it when already paused would fire the pause sound effect and
+    // thrash the reading-stats session for no benefit.
+    var isPlaying = false
+    var pauseCallCount = 0
+    var suppressUntil: Date = .distantPast
+    let isCurrentlyPlaying = { isPlaying }
+
+    func simulateDeviceChange() {
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
     simulateDeviceChange()
-    try assertTrue(!isPlaying, "Should be paused after device change")
-    try assertTrue(suppressNextPlay)
+    try assertEqual(pauseCallCount, 0, "onPause must not fire when already paused")
+    try assertTrue(Date() < suppressUntil, "Suppress window still armed for incoming toggle")
+}
 
-    // 2. System sends play command to resume on new device — should be blocked
-    handlePlayCommand()
-    try assertTrue(!isPlaying, "Play should be suppressed, staying paused")
+test("Device change with currently-playing state pauses and arms suppress") {
+    var isPlaying = true
+    var pauseCallCount = 0
+    var suppressUntil: Date = .distantPast
+    let isCurrentlyPlaying = { isPlaying }
 
-    // 3. User later deliberately presses play — should work
-    handlePlayCommand()
-    try assertTrue(isPlaying, "Manual play should work after suppress is cleared")
+    func simulateDeviceChange() {
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
+    simulateDeviceChange()
+    try assertEqual(pauseCallCount, 1, "Playing → should pause immediately")
+    try assertTrue(!isPlaying)
+    try assertTrue(Date() < suppressUntil, "Suppress window should be armed")
+}
+
+test("Full AirPods disconnect sequence from paused state") {
+    // End-to-end simulation of the bug scenario:
+    //  1. User is paused (most common state for a book reader)
+    //  2. AirPods disconnect → device change listener fires
+    //  3. rcd delivers togglePlayPauseCommand
+    //  4. App must stay paused (not flip to playing)
+    var isPlaying = false
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func deviceChangeListener() {
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                pauseCallCount += 1
+                isPlaying = false
+            }
+            return
+        }
+        isPlaying.toggle()
+    }
+
+    // Step 1: paused baseline
+    try assertTrue(!isPlaying)
+
+    // Step 2: AirPods disconnect — listener fires first
+    deviceChangeListener()
+    try assertEqual(pauseCallCount, 0, "No onPause because already paused")
+    try assertTrue(isSuppressed, "Suppress window armed")
+
+    // Step 3: rcd delivers its spurious toggle
+    handleToggleCommand()
+    try assertTrue(!isPlaying, "Spurious toggle must not flip paused → playing (the bug fix)")
+    try assertTrue(!isSuppressed, "Window consumed")
+}
+
+test("Full AirPods disconnect sequence from playing state") {
+    // The non-buggy direction — verify it still works after the fix.
+    var isPlaying = true
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func deviceChangeListener() {
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                pauseCallCount += 1
+                isPlaying = false
+            }
+            return
+        }
+        isPlaying.toggle()
+    }
+
+    deviceChangeListener()
+    try assertEqual(pauseCallCount, 1, "Playing → listener pauses immediately")
+    try assertTrue(!isPlaying)
+
+    // rcd's toggle arrives next — should be a no-op (we already paused, and
+    // the suppress handler's "only pause direction" rule ignores the paused case)
+    handleToggleCommand()
+    try assertEqual(pauseCallCount, 1, "No double-pause")
+    try assertTrue(!isPlaying)
+}
+
+// Simulates the transport-type gate: the listener only arms the suppress
+// window when the PREVIOUS (departing) audio device was Bluetooth. This
+// prevents false positives when the user is deliberately switching between
+// wired/built-in devices, where rcd does not send a spurious toggle.
+
+test("Transport gate: non-Bluetooth departure does not arm suppress") {
+    var suppressUntil: Date = .distantPast
+    var isPlaying = true
+    var pauseCallCount = 0
+    var previousDeviceWasBluetooth = false  // e.g. built-in speakers
+
+    func simulateDeviceChange() {
+        let wasBluetooth = previousDeviceWasBluetooth
+        // Refresh baseline for next change (simulate the new device being
+        // something non-Bluetooth too — the baseline will flip as appropriate
+        // in real code via refreshPreviousDeviceInfo()).
+        previousDeviceWasBluetooth = false
+
+        guard wasBluetooth else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isPlaying {
+            isPlaying = false
+            pauseCallCount += 1
+        }
+    }
+
+    simulateDeviceChange()
+    try assertEqual(pauseCallCount, 0, "Non-BT departure should not pause playback")
+    try assertTrue(isPlaying, "Playback should continue on wired switch")
+    try assertTrue(Date() >= suppressUntil, "Suppress window must not be armed")
+}
+
+test("Transport gate: Bluetooth departure arms suppress") {
+    var suppressUntil: Date = .distantPast
+    var isPlaying = true
+    var pauseCallCount = 0
+    var previousDeviceWasBluetooth = true  // e.g. AirPods
+
+    func simulateDeviceChange() {
+        let wasBluetooth = previousDeviceWasBluetooth
+        previousDeviceWasBluetooth = false  // now on built-in after disconnect
+
+        guard wasBluetooth else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isPlaying {
+            isPlaying = false
+            pauseCallCount += 1
+        }
+    }
+
+    simulateDeviceChange()
+    try assertEqual(pauseCallCount, 1, "BT departure should pause running playback")
+    try assertTrue(!isPlaying)
+    try assertTrue(Date() < suppressUntil, "Suppress window must be armed")
+}
+
+test("Transport gate: BluetoothLE also arms suppress") {
+    // kAudioDeviceTransportTypeBluetoothLE ('blea') must be treated the
+    // same as kAudioDeviceTransportTypeBluetooth ('blue'). AirPods Pro and
+    // other modern Bluetooth audio devices use the LE transport.
+    let kBluetooth: UInt32 = 0x626C7565  // 'blue'
+    let kBluetoothLE: UInt32 = 0x626C6561 // 'blea'
+    let kBuiltIn: UInt32 = 0x62696C74     // 'bilt'
+
+    func isBluetoothTransport(_ t: UInt32) -> Bool {
+        return t == kBluetooth || t == kBluetoothLE
+    }
+
+    try assertTrue(isBluetoothTransport(kBluetooth), "Classic BT should gate")
+    try assertTrue(isBluetoothTransport(kBluetoothLE), "BT LE should gate")
+    try assertTrue(!isBluetoothTransport(kBuiltIn), "Built-in should not gate")
+}
+
+test("Transport gate: first notification uses setup-time baseline") {
+    // At setup, the service caches the initial default output device's
+    // transport type so the very first change notification has a baseline
+    // to compare against (rather than defaulting to "no previous, assume
+    // Bluetooth" which would cause a spurious pause on launch).
+    var previousDeviceWasBluetooth = false  // captured at setup (built-in)
+
+    func refreshBaseline(isBluetooth: Bool) {
+        previousDeviceWasBluetooth = isBluetooth
+    }
+
+    // Simulate service startup: user is on built-in speakers
+    refreshBaseline(isBluetooth: false)
+    try assertTrue(!previousDeviceWasBluetooth)
+
+    // User then connects AirPods: refreshBaseline would be called at the
+    // end of the first listener fire, updating to Bluetooth=true so that
+    // when AirPods later disconnect, the gate correctly identifies the
+    // departing device as Bluetooth.
+    refreshBaseline(isBluetooth: true)
+    try assertTrue(previousDeviceWasBluetooth)
+}
+
+test("Transport gate: query failure falls back to treating as Bluetooth") {
+    // Defensive fallback: if the AudioObjectGetPropertyData query fails
+    // (e.g. because the device has already been removed), the helper
+    // returns true so the suppress window is armed anyway. Missing a real
+    // Bluetooth disconnect is worse than a spurious pause on an unusual
+    // device removal.
+    func isBluetoothDevice(queryStatus: Int32, transportType: UInt32) -> Bool {
+        guard queryStatus == 0 else { return true }  // noErr = 0
+        let kBluetooth: UInt32 = 0x626C7565
+        let kBluetoothLE: UInt32 = 0x626C6561
+        return transportType == kBluetooth || transportType == kBluetoothLE
+    }
+
+    try assertTrue(isBluetoothDevice(queryStatus: -1, transportType: 0),
+                  "Query failure should assume Bluetooth")
+    try assertTrue(isBluetoothDevice(queryStatus: 0, transportType: 0x626C7565),
+                  "Success with BT transport should return true")
+    try assertTrue(!isBluetoothDevice(queryStatus: 0, transportType: 0x62696C74),
+                  "Success with built-in transport should return false")
 }
 
 test("Multiple rapid device changes only need one suppress") {
-    var suppressNextPlay = false
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
     var playCount = 0
 
     func simulateDeviceChange() {
-        suppressNextPlay = true
+        suppressUntil = Date().addingTimeInterval(2.0)
     }
 
     func handlePlayCommand() {
-        if suppressNextPlay {
-            suppressNextPlay = false
+        if isSuppressed {
+            suppressUntil = .distantPast
             return
         }
         playCount += 1
     }
 
-    // Rapid device switching
+    // Rapid device switching — the later change extends/re-arms the window
     simulateDeviceChange()
-    simulateDeviceChange()  // Second change re-arms the flag
+    simulateDeviceChange()
 
     // Only one play command comes in — should be suppressed
     handlePlayCommand()

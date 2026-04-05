@@ -358,7 +358,19 @@ class ReaderViewModel: ObservableObject {
             onPause: { [weak self] in self?.pause() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
             onSkipForward: { [weak self] in self?.skipForward() },
-            onSkipBackward: { [weak self] in self?.skipBackward() }
+            onSkipBackward: { [weak self] in self?.skipBackward() },
+            // NowPlayingService needs to know whether playback is currently
+            // running so it can correctly handle the Bluetooth-disconnect
+            // suppress window: during that window, a spurious toggle command
+            // is converted into a pause if playing, or ignored if already
+            // paused (blocking macOS's spurious auto-resume bug).
+            isCurrentlyPlaying: { [weak self] in
+                guard let self = self else { return false }
+                if self.isAudioBook {
+                    return self.audioPlaybackService.isPlaying && !self.audioPlaybackService.isPaused
+                }
+                return self.speechService.isSpeaking && !self.speechService.isPaused
+            }
         )
     }
 
