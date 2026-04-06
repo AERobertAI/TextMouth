@@ -319,8 +319,13 @@ enum EPUBParser {
     private static func parseChapterHTML(_ html: String) throws -> Chapter {
         let doc = try SwiftSoup.parse(html)
 
-        // Remove script and style elements
-        try doc.select("script, style").remove()
+        // Remove non-content elements before extracting text.
+        // - script, style: executable/presentational, never read aloud
+        // - nav: EPUB3 navigation (TOC) embeds that duplicate heading
+        //   text — their link labels repeat the same titles that appear
+        //   as <h1>/<h2> in the body content, causing TTS to read each
+        //   heading twice.
+        try doc.select("script, style, nav").remove()
 
         // Extract headings with their positions
         let body = doc.body() ?? doc

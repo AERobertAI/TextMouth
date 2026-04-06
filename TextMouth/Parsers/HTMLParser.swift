@@ -9,8 +9,9 @@ enum HTMLParser {
         // Try to get title from <title> tag
         let docTitle = (try? doc.title()).flatMap({ $0.isEmpty ? nil : $0 }) ?? title
 
-        // Remove script and style
-        try doc.select("script, style").remove()
+        // Remove non-content elements: script/style (executable/presentational)
+        // and nav (navigation TOC that duplicates heading text).
+        try doc.select("script, style, nav").remove()
 
         let body = doc.body() ?? doc
         let fullText = try body.text()
