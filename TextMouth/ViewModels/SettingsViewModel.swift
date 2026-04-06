@@ -114,6 +114,17 @@ class SettingsViewModel: ObservableObject {
     @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false
     @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true
 
+    /// Whether to monitor Bluetooth device disconnections and suppress
+    /// spurious media commands from macOS's rcd daemon.
+    @AppStorage("bluetoothMonitoringEnabled") var bluetoothMonitoringEnabled: Bool = true {
+        didSet { broadcastBluetoothChanges(); syncToConfig() }
+    }
+    /// How long (in seconds) to suppress spurious media commands after
+    /// a Bluetooth audio device disconnects. Range: 1–10, default 2.
+    @AppStorage("bluetoothDisconnectDelay") var bluetoothDisconnectDelay: Double = 2.0 {
+        didSet { broadcastBluetoothChanges(); syncToConfig() }
+    }
+
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
     @Published var availableLanguages: [String] = []
 
@@ -211,6 +222,8 @@ class SettingsViewModel: ObservableObject {
         configService.config.sleepFadeOutDuration = sleepFadeOutDuration
         configService.config.sleepTimerAutoClose = sleepTimerAutoClose
         configService.config.autoPlayOnNavigate = autoPlayOnNavigate
+        configService.config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
+        configService.config.bluetoothDisconnectDelay = bluetoothDisconnectDelay
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         configService.saveToDisk()
@@ -271,6 +284,12 @@ class SettingsViewModel: ObservableObject {
         if config.autoPlayOnNavigate != autoPlayOnNavigate {
             autoPlayOnNavigate = config.autoPlayOnNavigate
         }
+        if config.bluetoothMonitoringEnabled != bluetoothMonitoringEnabled {
+            bluetoothMonitoringEnabled = config.bluetoothMonitoringEnabled
+        }
+        if config.bluetoothDisconnectDelay > 0 && config.bluetoothDisconnectDelay != bluetoothDisconnectDelay {
+            bluetoothDisconnectDelay = config.bluetoothDisconnectDelay
+        }
         // Handle external change to dataDirectoryPath
         let currentCustom = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         if config.dataDirectoryPath != currentCustom {
@@ -286,8 +305,13 @@ class SettingsViewModel: ObservableObject {
     private func broadcastChanges() {
         NotificationCenter.default.post(name: .speechSettingsChanged, object: nil)
     }
+
+    private func broadcastBluetoothChanges() {
+        NotificationCenter.default.post(name: .bluetoothSettingsChanged, object: nil)
+    }
 }
 
 extension Notification.Name {
     static let speechSettingsChanged = Notification.Name("speechSettingsChanged")
+    static let bluetoothSettingsChanged = Notification.Name("bluetoothSettingsChanged")
 }

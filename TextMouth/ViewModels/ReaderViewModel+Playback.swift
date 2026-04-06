@@ -110,14 +110,17 @@ extension ReaderViewModel {
         if sleepTimerService.isFadingOut {
             sleepTimerService.stop()
         }
+        // Stop audio FIRST, then restore volume. Restoring volume
+        // while audio is still playing causes a brief pop of
+        // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
-            audioPlaybackService.restoreVolume()
             audioPlaybackService.stop()
+            audioPlaybackService.restoreVolume()
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
         } else {
-            speechService.audioEngine.restoreVolume()
             speechService.stop()
+            speechService.audioEngine.restoreVolume()
         }
         readingStatsService.endSession()
         nowPlayingService.clearNowPlaying()

@@ -34,8 +34,13 @@ class NowPlayingService {
     /// rcd typically delivers its toggle within a few hundred milliseconds,
     /// so 2s is comfortably long enough to catch the spurious command while
     /// staying short enough that a deliberate media-key press a few seconds
-    /// later still works.
-    private static let suppressWindow: TimeInterval = 2.0
+    /// later still works. Configurable via Miscellaneous settings.
+    private var suppressWindow: TimeInterval = 2.0
+
+    /// Whether Bluetooth disconnect monitoring is active. When disabled,
+    /// the device-change listener is not registered and no suppress
+    /// windows are opened. Configurable via Miscellaneous settings.
+    private var bluetoothMonitoringEnabled: Bool = true
 
     /// True while the device-change suppress window is active.
     private var isSuppressed: Bool { Date() < suppressUntil }
@@ -61,7 +66,9 @@ class NowPlayingService {
         onTogglePlayPause: @escaping () -> Void,
         onSkipForward: @escaping () -> Void,
         onSkipBackward: @escaping () -> Void,
-        isCurrentlyPlaying: @escaping () -> Bool
+        isCurrentlyPlaying: @escaping () -> Bool,
+        bluetoothMonitoring: Bool = true,
+        bluetoothDelay: TimeInterval = 2.0
     ) {
         self.onPlay = onPlay
         self.onPause = onPause
@@ -69,9 +76,30 @@ class NowPlayingService {
         self.onSkipForward = onSkipForward
         self.onSkipBackward = onSkipBackward
         self.isCurrentlyPlaying = isCurrentlyPlaying
+        self.bluetoothMonitoringEnabled = bluetoothMonitoring
+        self.suppressWindow = bluetoothDelay
 
         setupRemoteCommands()
-        startDeviceChangeListener()
+        if bluetoothMonitoringEnabled {
+            startDeviceChangeListener()
+        }
+    }
+
+    /// Update Bluetooth monitoring settings at runtime (from Miscellaneous prefs).
+    /// Starts or stops the device-change listener as needed.
+    func updateBluetoothSettings(enabled: Bool, delay: TimeInterval) {
+        suppressWindow = delay
+
+        if enabled != bluetoothMonitoringEnabled {
+            bluetoothMonitoringEnabled = enabled
+            if enabled {
+                startDeviceChangeListener()
+            } else {
+                stopDeviceChangeListener()
+                // Clear any active suppress window when disabling
+                suppressUntil = .distantPast
+            }
+        }
     }
 
     private func setupRemoteCommands() {
@@ -217,7 +245,7 @@ class NowPlayingService {
 
             // Arm the suppress window so the incoming spurious system command
             // (usually togglePlayPauseCommand on Bluetooth disconnect) is gated.
-            self.suppressUntil = Date().addingTimeInterval(Self.suppressWindow)
+            self.suppressUntil = Date().addingTimeInterval(self.suppressWindow)
 
             // Preemptively pause only if we were actually playing. Calling
             // onPause when already paused would fire the pause sound effect

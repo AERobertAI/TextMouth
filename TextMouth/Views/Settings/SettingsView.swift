@@ -40,6 +40,11 @@ struct SettingsView: View {
                 .tabItem {
                     Label("Storage", systemImage: "folder.badge.gearshape")
                 }
+
+            MiscellaneousSettingsView()
+                .tabItem {
+                    Label("Miscellaneous", systemImage: "gearshape.2")
+                }
         }
         .frame(width: 600, height: 540)
     }

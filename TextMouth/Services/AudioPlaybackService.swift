@@ -31,6 +31,14 @@ class AudioPlaybackService: NSObject, ObservableObject {
     /// when consecutive segments share the same audio file.
     private var isSeeking = false
 
+    /// Tracks the intended output volume independently of the AVPlayer
+    /// instance. When load() creates a new AVPlayer for a chapter
+    /// transition, the new player defaults to volume 1.0, discarding
+    /// any fade-in-progress volume set by the sleep timer. This property
+    /// is re-applied after every new player creation so volume remains
+    /// consistent across chapters (mirrors the fix in AudioEngineService).
+    private var currentVolume: Float = 1.0
+
     let minimumSpeed: Double = 0.25
     let maximumSpeed: Double = 4.0
 
@@ -61,6 +69,9 @@ class AudioPlaybackService: NSObject, ObservableObject {
 
         let avPlayer = AVPlayer(playerItem: item)
         avPlayer.automaticallyWaitsToMinimizeStalling = false
+        // Re-apply tracked volume to the new player. AVPlayer defaults
+        // to 1.0, which discards any in-progress sleep timer fade.
+        avPlayer.volume = currentVolume
 
         self.playerItem = item
         self.player = avPlayer
@@ -129,6 +140,7 @@ class AudioPlaybackService: NSObject, ObservableObject {
         isPaused = false
         currentTime = 0
         duration = 0
+        currentVolume = 1.0
     }
 
     func seek(to time: TimeInterval) {
@@ -157,12 +169,17 @@ class AudioPlaybackService: NSObject, ObservableObject {
         }
     }
 
-    /// Volume control (for sleep timer fade-out)
+    /// Volume control (for sleep timer fade-out).
+    /// Tracks the intended volume so it persists across chapter
+    /// transitions where a new AVPlayer is created.
     func setVolume(_ volume: Float) {
-        player?.volume = max(0.0, min(volume, 1.0))
+        currentVolume = max(0.0, min(volume, 1.0))
+        player?.volume = currentVolume
     }
 
+    /// Restore volume to full (1.0) after a fade completes.
     func restoreVolume() {
+        currentVolume = 1.0
         player?.volume = 1.0
     }
 

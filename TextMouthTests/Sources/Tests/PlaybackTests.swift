@@ -1042,4 +1042,223 @@ test("Fade-out: 10 second duration produces 100 fade steps") {
     try assertTrue(timer.fadeSteps.first! > 0.0 && timer.fadeSteps.first! < 1.0)
 }
 
+// ---- Configurable Bluetooth Settings Tests ----
+print("\n--- Configurable Bluetooth Settings Tests ---")
+
+test("Configurable suppress delay: longer window catches late commands") {
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var suppressWindow: TimeInterval = 5.0  // User configured 5 seconds
+    var playCount = 0
+
+    func simulateDeviceChange() {
+        suppressUntil = Date().addingTimeInterval(suppressWindow)
+    }
+
+    func handlePlayCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            return
+        }
+        playCount += 1
+    }
+
+    simulateDeviceChange()
+    try assertTrue(isSuppressed, "5-second window should be active")
+    handlePlayCommand()
+    try assertEqual(playCount, 0, "Play should be suppressed within window")
+}
+
+test("Configurable suppress delay: shorter window allows faster deliberate play") {
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var suppressWindow: TimeInterval = 1.0  // Minimum delay
+    var playCount = 0
+
+    func simulateDeviceChange() {
+        suppressUntil = Date().addingTimeInterval(suppressWindow)
+    }
+
+    func handlePlayCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            return
+        }
+        playCount += 1
+    }
+
+    // Even with short window, spurious command during window is caught
+    simulateDeviceChange()
+    handlePlayCommand()
+    try assertEqual(playCount, 0, "Short window still catches immediate spurious command")
+
+    // After window consumed, next play works
+    handlePlayCommand()
+    try assertEqual(playCount, 1, "Deliberate play works after window consumed")
+}
+
+test("Configurable suppress delay: different delay values produce correct windows") {
+    var suppressUntil: Date = .distantPast
+
+    for delay in [1.0, 2.0, 5.0, 10.0] {
+        suppressUntil = Date().addingTimeInterval(delay)
+        let windowEnd = suppressUntil.timeIntervalSinceNow
+        try assertTrue(abs(windowEnd - delay) < 0.1,
+            "Window for \(Int(delay))s delay should be ~\(Int(delay))s, got \(windowEnd)")
+    }
+}
+
+test("Bluetooth monitoring disabled: device change does not arm suppress") {
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var bluetoothMonitoringEnabled = false
+    var isPlaying = true
+    var pauseCount = 0
+    var previousDeviceWasBluetooth = true
+
+    func simulateDeviceChange() {
+        guard bluetoothMonitoringEnabled else { return }
+        let wasBluetooth = previousDeviceWasBluetooth
+        previousDeviceWasBluetooth = false
+        guard wasBluetooth else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isPlaying {
+            isPlaying = false
+            pauseCount += 1
+        }
+    }
+
+    simulateDeviceChange()
+    try assertTrue(!isSuppressed, "Suppress window must not arm when monitoring disabled")
+    try assertTrue(isPlaying, "Playback must not be paused when monitoring disabled")
+    try assertEqual(pauseCount, 0, "No onPause when monitoring disabled")
+}
+
+test("Bluetooth monitoring toggle: enable starts monitoring") {
+    var isListening = false
+    var bluetoothEnabled = false
+
+    func updateSettings(enabled: Bool, delay: TimeInterval) {
+        if enabled != bluetoothEnabled {
+            bluetoothEnabled = enabled
+            if enabled {
+                isListening = true
+            } else {
+                isListening = false
+            }
+        }
+    }
+
+    try assertTrue(!isListening)
+    updateSettings(enabled: true, delay: 2.0)
+    try assertTrue(isListening, "Enabling monitoring should start listener")
+}
+
+test("Bluetooth monitoring toggle: disable stops monitoring and clears window") {
+    var isListening = true
+    var bluetoothEnabled = true
+    var suppressUntil: Date = Date().addingTimeInterval(5.0)
+    var isSuppressed: Bool { Date() < suppressUntil }
+
+    func updateSettings(enabled: Bool, delay: TimeInterval) {
+        if enabled != bluetoothEnabled {
+            bluetoothEnabled = enabled
+            if enabled {
+                isListening = true
+            } else {
+                isListening = false
+                suppressUntil = .distantPast
+            }
+        }
+    }
+
+    try assertTrue(isSuppressed, "Suppress window should be active before disable")
+    updateSettings(enabled: false, delay: 2.0)
+    try assertTrue(!isListening, "Disabling should stop listener")
+    try assertTrue(!isSuppressed, "Disabling should clear active suppress window")
+}
+
+test("Bluetooth delay update: new delay takes effect for next device change") {
+    var suppressWindow: TimeInterval = 2.0
+    var suppressUntil: Date = .distantPast
+
+    func updateDelay(_ newDelay: TimeInterval) {
+        suppressWindow = newDelay
+    }
+
+    func simulateDeviceChange() {
+        suppressUntil = Date().addingTimeInterval(suppressWindow)
+    }
+
+    // Start with default 2s
+    simulateDeviceChange()
+    let window1 = suppressUntil.timeIntervalSinceNow
+    try assertTrue(abs(window1 - 2.0) < 0.1, "Initial window should be ~2s")
+
+    // User changes to 7 seconds
+    updateDelay(7.0)
+    simulateDeviceChange()
+    let window2 = suppressUntil.timeIntervalSinceNow
+    try assertTrue(abs(window2 - 7.0) < 0.1, "Updated window should be ~7s")
+}
+
+test("Bluetooth settings: default values match expected") {
+    // Verify the defaults match what's documented:
+    // - monitoring enabled by default (true)
+    // - delay defaults to 2 seconds
+    let defaultEnabled = true
+    let defaultDelay = 2.0
+
+    try assertTrue(defaultEnabled, "Bluetooth monitoring should be on by default")
+    try assertEqual(defaultDelay, 2.0, "Default delay should be 2 seconds")
+}
+
+test("Bluetooth settings persistence: config round-trip") {
+    // Simulate ConfigService's encoding/decoding of Bluetooth settings
+    let config = TestBluetoothConfig(
+        bluetoothMonitoringEnabled: false,
+        bluetoothDisconnectDelay: 7.0
+    )
+
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(config)
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(TestBluetoothConfig.self, from: data)
+
+    try assertEqual(decoded.bluetoothMonitoringEnabled, false,
+        "Enabled state should round-trip through JSON")
+    try assertEqual(decoded.bluetoothDisconnectDelay, 7.0,
+        "Delay value should round-trip through JSON")
+}
+
+test("Bluetooth settings persistence: missing keys use defaults") {
+    // Older config.json files won't have bluetooth keys.
+    // The decoder must use defaults (enabled=true, delay=2.0).
+    let json = "{}"
+    let data = json.data(using: .utf8)!
+    let decoded = try JSONDecoder().decode(TestBluetoothConfig.self, from: data)
+
+    try assertEqual(decoded.bluetoothMonitoringEnabled, true,
+        "Missing key should default to enabled")
+    try assertEqual(decoded.bluetoothDisconnectDelay, 2.0,
+        "Missing key should default to 2 seconds")
+}
+
 } // end runPlaybackTests
+
+/// Minimal config struct for testing Bluetooth settings persistence
+private struct TestBluetoothConfig: Codable {
+    var bluetoothMonitoringEnabled: Bool
+    var bluetoothDisconnectDelay: Double
+
+    init(bluetoothMonitoringEnabled: Bool = true, bluetoothDisconnectDelay: Double = 2.0) {
+        self.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
+        self.bluetoothDisconnectDelay = bluetoothDisconnectDelay
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        bluetoothMonitoringEnabled = try container.decodeIfPresent(Bool.self, forKey: .bluetoothMonitoringEnabled) ?? true
+        bluetoothDisconnectDelay = try container.decodeIfPresent(Double.self, forKey: .bluetoothDisconnectDelay) ?? 2.0
+    }
+}

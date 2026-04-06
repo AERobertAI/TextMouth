@@ -49,6 +49,10 @@ class ConfigService: ObservableObject {
         var autoPlayOnNavigate: Bool = false
         /// Move deleted books to Trash instead of permanently deleting
         var moveToTrashInsteadOfDeleting: Bool = true
+        /// Whether Bluetooth disconnect monitoring is enabled
+        var bluetoothMonitoringEnabled: Bool = true
+        /// Suppress window duration (seconds) after Bluetooth disconnect
+        var bluetoothDisconnectDelay: Double = 2.0
 
         /// Custom decoder to handle missing keys from older config.json files.
         /// Without this, adding new fields would break loading of existing configs.
@@ -75,6 +79,8 @@ class ConfigService: ObservableObject {
             lastOpenedBookID = try container.decodeIfPresent(String.self, forKey: .lastOpenedBookID) ?? ""
             autoPlayOnNavigate = try container.decodeIfPresent(Bool.self, forKey: .autoPlayOnNavigate) ?? false
             moveToTrashInsteadOfDeleting = try container.decodeIfPresent(Bool.self, forKey: .moveToTrashInsteadOfDeleting) ?? true
+            bluetoothMonitoringEnabled = try container.decodeIfPresent(Bool.self, forKey: .bluetoothMonitoringEnabled) ?? true
+            bluetoothDisconnectDelay = try container.decodeIfPresent(Double.self, forKey: .bluetoothDisconnectDelay) ?? 2.0
         }
 
         init() {}

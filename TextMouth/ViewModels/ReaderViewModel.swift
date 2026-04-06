@@ -370,7 +370,9 @@ class ReaderViewModel: ObservableObject {
                     return self.audioPlaybackService.isPlaying && !self.audioPlaybackService.isPaused
                 }
                 return self.speechService.isSpeaking && !self.speechService.isPaused
-            }
+            },
+            bluetoothMonitoring: settingsViewModel.bluetoothMonitoringEnabled,
+            bluetoothDelay: settingsViewModel.bluetoothDisconnectDelay
         )
     }
 
@@ -492,6 +494,18 @@ class ReaderViewModel: ObservableObject {
                    let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
                     self.speechService.currentVoice = voice
                 }
+            }
+            .store(in: &cancellables)
+
+        // Observe Bluetooth settings and forward to NowPlayingService at runtime
+        nc.publisher(for: .bluetoothSettingsChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.nowPlayingService.updateBluetoothSettings(
+                    enabled: self.settingsViewModel.bluetoothMonitoringEnabled,
+                    delay: self.settingsViewModel.bluetoothDisconnectDelay
+                )
             }
             .store(in: &cancellables)
     }

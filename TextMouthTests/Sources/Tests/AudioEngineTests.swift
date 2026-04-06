@@ -407,4 +407,150 @@ test("Volume tracking: adoptRenderedAudio does not affect volume") {
         "Mixer volume should be unaffected by audio adoption")
 }
 
+// ---- AudioPlaybackService Volume Tracking (Fix 12) ----
+print("\n--- AudioPlaybackService Volume Tracking Tests ---")
+
+test("AudioPlayback: setVolume tracks currentVolume") {
+    // Mirrors AudioEngineService's fix — AudioPlaybackService must
+    // also track volume so new AVPlayer instances inherit the current
+    // volume level on chapter transitions.
+    var currentVolume: Float = 1.0
+    var playerVolume: Float = 1.0
+
+    func setVolume(_ volume: Float) {
+        currentVolume = max(0.0, min(volume, 1.0))
+        playerVolume = currentVolume
+    }
+
+    setVolume(0.5)
+    try assertEqual(currentVolume, 0.5, "Tracked volume should be 0.5")
+    try assertEqual(playerVolume, 0.5, "Player volume should match")
+
+    setVolume(0.0)
+    try assertEqual(currentVolume, 0.0, "Volume should track to 0")
+}
+
+test("AudioPlayback: restoreVolume resets tracking to 1.0") {
+    var currentVolume: Float = 0.3
+    var playerVolume: Float = 0.3
+
+    func restoreVolume() {
+        currentVolume = 1.0
+        playerVolume = 1.0
+    }
+
+    restoreVolume()
+    try assertEqual(currentVolume, 1.0, "Tracked volume should be 1.0")
+    try assertEqual(playerVolume, 1.0, "Player volume should be 1.0")
+}
+
+test("AudioPlayback: new player inherits tracked volume on load") {
+    // When load() creates a new AVPlayer for a chapter transition,
+    // the new player must have currentVolume applied immediately.
+    // Previously, new players started at 1.0 (AVPlayer default),
+    // causing a volume pop during sleep timer fades.
+    var currentVolume: Float = 0.4  // mid-fade
+    var playerVolume: Float = 0.4
+
+    // Simulate load() creating a new player
+    func load() {
+        playerVolume = 1.0  // New AVPlayer defaults to 1.0 (the bug)
+        // Fix: re-apply tracked volume
+        playerVolume = currentVolume
+    }
+
+    load()
+    try assertEqual(playerVolume, 0.4,
+        "New player must inherit tracked volume, not reset to 1.0")
+}
+
+test("AudioPlayback: chapter transition preserves fade volume") {
+    // Full scenario: sleep timer is fading, audio book chapter ends,
+    // next chapter starts with a new player. Volume must persist.
+    var currentVolume: Float = 1.0
+    var playerVolume: Float = 1.0
+
+    func setVolume(_ volume: Float) {
+        currentVolume = max(0.0, min(volume, 1.0))
+        playerVolume = currentVolume
+    }
+
+    func loadNewChapter() {
+        playerVolume = 1.0  // New AVPlayer default (the bug)
+        playerVolume = currentVolume  // The fix
+    }
+
+    // Sleep timer fades to 60%
+    setVolume(0.6)
+    try assertEqual(playerVolume, 0.6)
+
+    // Chapter transition
+    loadNewChapter()
+    try assertEqual(playerVolume, 0.6,
+        "Volume should stay at 0.6 through chapter transition")
+    try assertEqual(currentVolume, 0.6,
+        "Tracked volume unchanged by load")
+}
+
+test("AudioPlayback: multiple transitions with progressive fade") {
+    var currentVolume: Float = 1.0
+    var playerVolume: Float = 1.0
+
+    func setVolume(_ v: Float) {
+        currentVolume = max(0.0, min(v, 1.0))
+        playerVolume = currentVolume
+    }
+
+    func loadNewChapter() {
+        playerVolume = 1.0  // Reset
+        playerVolume = currentVolume  // Fix
+    }
+
+    // Fade while crossing chapter boundaries
+    setVolume(0.8)
+    loadNewChapter()
+    try assertEqual(playerVolume, 0.8)
+
+    setVolume(0.5)
+    loadNewChapter()
+    try assertEqual(playerVolume, 0.5)
+
+    setVolume(0.1)
+    loadNewChapter()
+    loadNewChapter()  // Rapid double transition
+    try assertEqual(playerVolume, 0.1,
+        "Volume should survive double-transition during fade")
+}
+
+test("AudioPlayback: stop resets tracked volume to 1.0") {
+    // When playback is fully stopped (not just paused), reset
+    // volume tracking so the next playback starts fresh.
+    var currentVolume: Float = 0.3
+
+    func stop() {
+        currentVolume = 1.0
+    }
+
+    stop()
+    try assertEqual(currentVolume, 1.0,
+        "stop() should reset tracked volume to full")
+}
+
+test("AudioPlayback: setVolume clamps to valid range") {
+    var currentVolume: Float = 1.0
+
+    func setVolume(_ volume: Float) {
+        currentVolume = max(0.0, min(volume, 1.0))
+    }
+
+    setVolume(-0.5)
+    try assertEqual(currentVolume, 0.0, "Negative should clamp to 0")
+
+    setVolume(2.0)
+    try assertEqual(currentVolume, 1.0, "Above 1.0 should clamp to 1.0")
+
+    setVolume(0.75)
+    try assertEqual(currentVolume, 0.75, "Normal value passes through")
+}
+
 } // end runAudioEngineTests

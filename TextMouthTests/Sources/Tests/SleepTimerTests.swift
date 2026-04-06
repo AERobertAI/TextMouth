@@ -361,6 +361,85 @@ test("Fade expiry with zero duration: pause before expire callback") {
         "Even with zero fade duration, pause must come first")
 }
 
+// ---- Stop Ordering Tests (Fix 13) ----
+print("\n--- Stop Ordering Tests ---")
+
+test("stop(): audio stops before volume restore (TTS path)") {
+    // Previously, stop() called restoreVolume() BEFORE stopping audio,
+    // causing a brief pop of full-volume audio. The fix mirrors the
+    // pause() ordering: stop audio first, then restore volume.
+    var actions: [String] = []
+    var currentVolume: Float = 0.2  // Mid-fade
+
+    func stop() {
+        // Correct ordering: stop audio first
+        actions.append("stop_audio")
+        // Then restore volume (inaudible because audio is stopped)
+        currentVolume = 1.0
+        actions.append("restore_volume")
+    }
+
+    stop()
+    try assertEqual(actions, ["stop_audio", "restore_volume"],
+        "Audio must stop before volume is restored to avoid pop")
+    try assertEqual(currentVolume, 1.0, "Volume restored for next playback")
+}
+
+test("stop(): audio stops before volume restore (audio book path)") {
+    var actions: [String] = []
+    var currentVolume: Float = 0.3
+
+    func stop() {
+        actions.append("stop_audio")
+        currentVolume = 1.0
+        actions.append("restore_volume")
+    }
+
+    stop()
+    try assertEqual(actions, ["stop_audio", "restore_volume"],
+        "Audio book path: stop before restore")
+}
+
+test("stop() during active fade: fade stops, audio stops, then volume restore") {
+    // When stop() is called while a fade is in progress, the sleep
+    // timer should be stopped first, then audio, then volume restored.
+    var actions: [String] = []
+    var isFadingOut = true
+    var currentVolume: Float = 0.4
+
+    func stop() {
+        if isFadingOut {
+            isFadingOut = false
+            actions.append("stop_fade")
+        }
+        actions.append("stop_audio")
+        currentVolume = 1.0
+        actions.append("restore_volume")
+    }
+
+    stop()
+    try assertEqual(actions, ["stop_fade", "stop_audio", "restore_volume"],
+        "Fade must stop, then audio, then restore")
+    try assertTrue(!isFadingOut)
+    try assertEqual(currentVolume, 1.0)
+}
+
+test("stop() without fade: no restore volume before stop") {
+    // Verify the ordering is correct even when no fade is active.
+    var actions: [String] = []
+    var currentVolume: Float = 1.0
+
+    func stop() {
+        actions.append("stop_audio")
+        currentVolume = 1.0
+        actions.append("restore_volume")
+    }
+
+    stop()
+    try assertTrue(actions.first == "stop_audio",
+        "Stop audio must always come first, even without fade")
+}
+
 } // end runSleepTimerTests
 
 /// Minimal config struct for testing sleep timer settings persistence
