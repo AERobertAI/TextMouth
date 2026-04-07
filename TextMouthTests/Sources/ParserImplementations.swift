@@ -80,18 +80,29 @@ func parseChapterHTML(_ html: String) throws -> Chapter {
     let doc = try SwiftSoup.parse(html)
     try doc.select("script, style").remove()
     let body = doc.body() ?? doc
+
+    // Strip <nav> only when headings exist outside it (nav is duplicating
+    // content headings). If all headings are inside nav, keep them.
+    let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    if allHeadingCount > navHeadingCount {
+        try body.select("nav").remove()
+    }
+
     let allText = try body.text()
     var headings: [Heading] = []
-    let headingElements = try doc.select("h1, h2, h3, h4, h5, h6")
+    let headingElements = try body.select("h1, h2, h3, h4, h5, h6")
+    var searchStart = allText.startIndex
     for element in headingElements.array() {
         let tag = element.tagName()
         let level = tag.last.flatMap({ Int(String($0)) }) ?? 1
         let headingText = try element.text()
         let offset: Int
-        if let range = allText.range(of: headingText) {
+        if let range = allText.range(of: headingText, range: searchStart..<allText.endIndex) {
             offset = allText.distance(from: allText.startIndex, to: range.lowerBound)
+            searchStart = range.upperBound
         } else {
-            offset = 0
+            offset = allText.distance(from: allText.startIndex, to: searchStart)
         }
         headings.append(Heading(level: level, text: headingText, characterOffset: offset))
     }
@@ -137,6 +148,14 @@ func parseHTML(html: String, title: String = "Untitled") throws -> DocumentConte
     let docTitle = (try? doc.title()).flatMap({ $0.isEmpty ? nil : $0 }) ?? title
     try doc.select("script, style").remove()
     let body = doc.body() ?? doc
+
+    // Strip <nav> only when headings exist outside it
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    if allH > navH {
+        try body.select("nav").remove()
+    }
+
     let fullText = try body.text()
     var headings: [Heading] = []
     let headingElements = try doc.select("h1, h2, h3, h4, h5, h6")
