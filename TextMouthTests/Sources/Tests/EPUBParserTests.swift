@@ -132,11 +132,9 @@ test("HTML with <title> matching <h1>: doc.text() DUPLICATES heading") {
     try assertTrue(bodyCount == 1, "body.text() should have heading once")
 }
 
-test("HTML with <nav> in body: nav removal prevents heading duplication") {
-    // EPUB3 files commonly embed <nav> TOCs within the body.
-    // The nav link labels repeat the same text as the <h1>/<h2>
-    // headings, causing TTS to read each heading twice. The fix
-    // strips <nav> elements before text extraction.
+test("Nav with headings outside: nav stripped, heading appears once") {
+    // When headings exist outside <nav>, the nav is duplicating them
+    // and should be stripped to prevent TTS reading each heading twice.
     let html = """
     <html>
     <body>
@@ -152,15 +150,46 @@ test("HTML with <nav> in body: nav removal prevents heading duplication") {
     </html>
     """
     let doc = try SwiftSoup.parse(html)
-    try doc.select("script, style, nav").remove()
+    try doc.select("script, style").remove()
     let body = doc.body() ?? doc
+    // Replicate parser logic: strip nav only if headings exist outside it
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    if allH > navH { try body.select("nav").remove() }
     let text = try body.text()
     let count = text.components(separatedBy: "Chapter 1: Introduction").count - 1
     try assertEqual(count, 1,
-        "After removing <nav>, heading should appear exactly once")
+        "With headings outside nav, nav should be stripped — heading appears once")
 }
 
-test("HTML with nested <nav> in section: still stripped") {
+test("Nav with heading ONLY inside nav: nav kept, heading preserved") {
+    // If the only heading is inside <nav>, stripping it would lose the
+    // heading entirely. The parser must keep it.
+    let html = """
+    <html>
+    <body>
+    <nav>
+    <h1>Chapter 1: Introduction</h1>
+    <ol><li><a href="#s1">Section 1</a></li></ol>
+    </nav>
+    <p>Content without any heading element outside nav.</p>
+    </body>
+    </html>
+    """
+    let doc = try SwiftSoup.parse(html)
+    try doc.select("script, style").remove()
+    let body = doc.body() ?? doc
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    // allH == navH == 1 → no headings outside nav → keep nav
+    try assertEqual(allH, navH,
+        "All headings are inside nav — should not strip")
+    let text = try body.text()
+    try assertTrue(text.contains("Chapter 1: Introduction"),
+        "Heading from nav must be preserved when it's the only source")
+}
+
+test("Nested nav in section: stripped when content headings exist") {
     let html = """
     <html>
     <body>
@@ -182,18 +211,20 @@ test("HTML with nested <nav> in section: still stripped") {
     </html>
     """
     let doc = try SwiftSoup.parse(html)
-    try doc.select("script, style, nav").remove()
-    let text = try (doc.body() ?? doc).text()
+    try doc.select("script, style").remove()
+    let body = doc.body() ?? doc
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    // 4 total (Contents, Chapter Title, Section 1, Section 2) > 1 nav (Contents)
+    try assertTrue(allH > navH, "Headings exist outside nav")
+    if allH > navH { try body.select("nav").remove() }
+    let text = try body.text()
     let s1Count = text.components(separatedBy: "Section 1").count - 1
     try assertEqual(s1Count, 1,
-        "Nested <nav> should also be stripped, heading appears once")
-    // The nav's "Contents" heading should also be gone
-    try assertTrue(!text.contains("Contents"),
-        "Nav-only heading 'Contents' should be removed")
+        "Nested nav stripped — section heading appears once")
 }
 
-test("HTML without <nav>: headings preserved normally") {
-    // Verify that stripping <nav> doesn't affect pages without one.
+test("No nav: headings preserved normally") {
     let html = """
     <html>
     <body>
@@ -205,11 +236,47 @@ test("HTML without <nav>: headings preserved normally") {
     </html>
     """
     let doc = try SwiftSoup.parse(html)
-    try doc.select("script, style, nav").remove()
-    let text = try (doc.body() ?? doc).text()
+    try doc.select("script, style").remove()
+    let body = doc.body() ?? doc
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    try assertEqual(navH, 0, "No nav headings")
+    try assertTrue(allH > navH, "Headings exist outside nav")
+    let text = try body.text()
     try assertTrue(text.contains("Chapter 1"), "H1 heading preserved")
     try assertTrue(text.contains("Section 1.1"), "H2 heading preserved")
     try assertTrue(text.contains("Content here"), "Body content preserved")
+}
+
+test("Nav with only links (no heading elements): stripped when body has headings") {
+    // Most common EPUB3 pattern: nav has <a> links (not h1-h6),
+    // body has actual heading elements.
+    let html = """
+    <html>
+    <body>
+    <nav epub:type="toc">
+    <ol>
+    <li><a href="#ch1">Chapter 1</a></li>
+    <li><a href="#ch2">Chapter 2</a></li>
+    </ol>
+    </nav>
+    <h1 id="ch1">Chapter 1</h1>
+    <p>First chapter content.</p>
+    </body>
+    </html>
+    """
+    let doc = try SwiftSoup.parse(html)
+    try doc.select("script, style").remove()
+    let body = doc.body() ?? doc
+    let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    try assertEqual(allH, 1, "One heading outside nav")
+    try assertEqual(navH, 0, "No heading elements inside nav")
+    try assertTrue(allH > navH)
+    if allH > navH { try body.select("nav").remove() }
+    let text = try body.text()
+    let count = text.components(separatedBy: "Chapter 1").count - 1
+    try assertEqual(count, 1, "Nav link text stripped, heading appears once")
 }
 
 test("EPUB alice.epub: no heading duplication in chapter text") {

@@ -9,11 +9,20 @@ enum HTMLParser {
         // Try to get title from <title> tag
         let docTitle = (try? doc.title()).flatMap({ $0.isEmpty ? nil : $0 }) ?? title
 
-        // Remove non-content elements: script/style (executable/presentational)
-        // and nav (navigation TOC that duplicates heading text).
-        try doc.select("script, style, nav").remove()
+        // Remove executable/presentational elements
+        try doc.select("script, style").remove()
 
         let body = doc.body() ?? doc
+
+        // Strip <nav> only when headings exist outside it (nav is
+        // duplicating them). If headings only exist inside nav,
+        // keep them so TTS still reads the heading.
+        let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
+        let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+        if allH > navH {
+            try body.select("nav").remove()
+        }
+
         let fullText = try body.text()
 
         // Extract headings

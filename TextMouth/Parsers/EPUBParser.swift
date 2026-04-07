@@ -319,16 +319,23 @@ enum EPUBParser {
     private static func parseChapterHTML(_ html: String) throws -> Chapter {
         let doc = try SwiftSoup.parse(html)
 
-        // Remove non-content elements before extracting text.
-        // - script, style: executable/presentational, never read aloud
-        // - nav: EPUB3 navigation (TOC) embeds that duplicate heading
-        //   text — their link labels repeat the same titles that appear
-        //   as <h1>/<h2> in the body content, causing TTS to read each
-        //   heading twice.
-        try doc.select("script, style, nav").remove()
+        // Remove executable/presentational elements — never read aloud
+        try doc.select("script, style").remove()
 
-        // Extract headings with their positions
         let body = doc.body() ?? doc
+
+        // Strip <nav> elements only when the body has heading elements
+        // (h1-h6) outside the nav. EPUB3 nav TOCs duplicate heading text
+        // via link labels, causing TTS to read each heading twice. But if
+        // a heading ONLY exists inside the nav (no content heading to
+        // duplicate), removing it would lose the heading entirely.
+        let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
+        let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+        if allHeadingCount > navHeadingCount {
+            // Headings exist outside nav — nav is duplicating them
+            try body.select("nav").remove()
+        }
+
         let allText = try body.text()
 
         var headings: [Heading] = []
