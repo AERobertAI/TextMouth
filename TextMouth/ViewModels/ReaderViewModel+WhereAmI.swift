@@ -46,7 +46,11 @@ extension ReaderViewModel {
 
         soundEffectService?.play(for: .whereAmIStart)
 
-        // Pause the book if it's currently playing (without the normal pause sound)
+        // Pause the book if it's currently playing (without the normal pause sound).
+        // This deliberately bypasses ReaderViewModel.pause() — Where Am I is a
+        // brief announcement (a few seconds), and we don't want it to fire the
+        // pause sound effect, end the reading-stats session, or halt the sleep
+        // timer countdown. The companion resume calls below are likewise direct.
         if wasPlayingBeforeWhereAmI {
             if isAudioBook {
                 audioPlaybackService.pause()

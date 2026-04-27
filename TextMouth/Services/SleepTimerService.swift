@@ -2,7 +2,12 @@ import Foundation
 import Combine
 import AppKit
 
-/// Manages the sleep timer. Timer continues running while paused.
+/// Manages the sleep timer. The minutes-based countdown is paused
+/// alongside playback (via `pauseCountdown` / `resumeCountdown`) so a
+/// timer set before a long break doesn't expire silently in the
+/// background and pause the user mid-sentence after they resume.
+/// Heading-end and document-end modes don't tick on a clock, so they
+/// are unaffected by playback state.
 class SleepTimerService: ObservableObject {
     @Published var isActive = false
     @Published var remainingSeconds: Int = 0
@@ -21,6 +26,13 @@ class SleepTimerService: ObservableObject {
     private var endOfHeadingTriggered = false
     /// Generation counter to prevent stale fade/expire callbacks from firing after stop()
     private var generation: Int = 0
+    /// True when the minutes-based countdown is currently halted because
+    /// playback is paused. The repeating Timer is invalidated and
+    /// `remainingSeconds` is preserved; `resumeCountdown()` re-arms it
+    /// with the same remaining time. Fade timers are NOT paused —
+    /// once a fade has begun, the user is already being put to sleep
+    /// and halting the fade would leave audio at an arbitrary low volume.
+    private var isCountdownPausedByPlayback = false
 
     func start(duration: SleepTimerDuration) {
         stop()
@@ -57,6 +69,33 @@ class SleepTimerService: ObservableObject {
         remainingSeconds = 0
         duration = nil
         endOfHeadingTriggered = false
+        isCountdownPausedByPlayback = false
+    }
+
+    /// Halt the minutes-based countdown without losing remaining time.
+    /// Called from the playback layer when the user pauses, so the
+    /// timer doesn't keep ticking in the background and expire while
+    /// the user is away on a break.
+    /// No-op for heading-end / document-end modes (which don't use a
+    /// wall-clock timer), and no-op when a fade is already in progress
+    /// (the user is in the middle of being put to sleep).
+    func pauseCountdown() {
+        guard isActive,
+              case .minutes = duration,
+              !isFadingOut,
+              let activeTimer = timer else { return }
+        activeTimer.invalidate()
+        timer = nil
+        isCountdownPausedByPlayback = true
+    }
+
+    /// Resume a previously-paused countdown with its preserved remaining
+    /// time. Called from the playback layer when the user resumes.
+    /// No-op when there's nothing paused.
+    func resumeCountdown() {
+        guard isActive, isCountdownPausedByPlayback, case .minutes = duration else { return }
+        isCountdownPausedByPlayback = false
+        startCountdown()
     }
 
     func notifyHeadingBoundary() {

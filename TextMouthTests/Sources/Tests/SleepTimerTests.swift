@@ -233,6 +233,201 @@ test("Cancel then re-set: clean state transition") {
     }
 }
 
+// ---- Pause-Aware Countdown Tests ----
+print("\n--- Pause-Aware Countdown Tests ---")
+
+// These mirror the production pauseCountdown / resumeCountdown behaviour.
+// Symptom they prevent: a sleep timer set before a long break expires
+// silently while playback is paused, then pauses the user a few minutes
+// after they resume — perceived as a "random pause every couple of
+// minutes" without an obvious cause.
+
+/// Local simulator of the relevant SleepTimerService state machine.
+class PauseAwareSleepTimer {
+    var isActive = false
+    var isFadingOut = false
+    var duration: SleepTimerDuration? = nil
+    var remainingSeconds = 0
+    var timerArmed = false
+    var isCountdownPausedByPlayback = false
+
+    func start(_ duration: SleepTimerDuration) {
+        stop()
+        self.duration = duration
+        isActive = true
+        switch duration {
+        case .minutes(let m):
+            remainingSeconds = m * 60
+            timerArmed = true
+        case .endOfHeading, .endOfDocument:
+            remainingSeconds = 0
+        }
+    }
+
+    func stop() {
+        isActive = false
+        isFadingOut = false
+        duration = nil
+        remainingSeconds = 0
+        timerArmed = false
+        isCountdownPausedByPlayback = false
+    }
+
+    func tick() {
+        guard isActive, timerArmed else { return }
+        if remainingSeconds > 0 { remainingSeconds -= 1 }
+    }
+
+    func pauseCountdown() {
+        guard isActive,
+              case .minutes = duration,
+              !isFadingOut,
+              timerArmed else { return }
+        timerArmed = false
+        isCountdownPausedByPlayback = true
+    }
+
+    func resumeCountdown() {
+        guard isActive,
+              isCountdownPausedByPlayback,
+              case .minutes = duration else { return }
+        isCountdownPausedByPlayback = false
+        timerArmed = true
+    }
+}
+
+test("Pause-aware countdown: pause halts the tick") {
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(2))
+    try assertEqual(t.remainingSeconds, 120)
+
+    // Tick once, then pause — subsequent ticks must not decrement.
+    t.tick()
+    try assertEqual(t.remainingSeconds, 119)
+
+    t.pauseCountdown()
+    for _ in 0..<60 { t.tick() }
+    try assertEqual(t.remainingSeconds, 119, "Paused countdown must preserve remaining time")
+    try assertTrue(t.isCountdownPausedByPlayback)
+    try assertTrue(!t.timerArmed)
+}
+
+test("Pause-aware countdown: resume re-arms with the same remaining time") {
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(5))
+    for _ in 0..<10 { t.tick() }
+    try assertEqual(t.remainingSeconds, 290)
+
+    t.pauseCountdown()
+    // Long break — many ticks while paused should be no-ops.
+    for _ in 0..<10_000 { t.tick() }
+    try assertEqual(t.remainingSeconds, 290, "Time must not advance during a paused break")
+
+    t.resumeCountdown()
+    try assertTrue(!t.isCountdownPausedByPlayback)
+    try assertTrue(t.timerArmed)
+    t.tick()
+    try assertEqual(t.remainingSeconds, 289, "Tick after resume should resume normal decrement")
+}
+
+test("Pause-aware countdown: pause is a no-op for endOfHeading mode") {
+    // Heading-end and document-end durations don't tick on a clock —
+    // they're triggered by playback events. Pausing them shouldn't
+    // touch any state.
+    let t = PauseAwareSleepTimer()
+    t.start(.endOfHeading)
+    t.pauseCountdown()
+    try assertTrue(!t.isCountdownPausedByPlayback,
+                  "Heading-end mode should not enter the paused countdown state")
+    try assertTrue(t.isActive, "Service stays active for the heading event")
+}
+
+test("Pause-aware countdown: pause is a no-op for endOfDocument mode") {
+    let t = PauseAwareSleepTimer()
+    t.start(.endOfDocument)
+    t.pauseCountdown()
+    try assertTrue(!t.isCountdownPausedByPlayback)
+    try assertTrue(t.isActive)
+}
+
+test("Pause-aware countdown: resume is a no-op when nothing was paused") {
+    // Cold start path — play() may call resumeCountdown unconditionally.
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(10))
+    try assertTrue(t.timerArmed)
+    try assertTrue(!t.isCountdownPausedByPlayback)
+
+    t.resumeCountdown()  // should not arm a second timer or change state
+    try assertTrue(t.timerArmed)
+    try assertTrue(!t.isCountdownPausedByPlayback)
+}
+
+test("Pause-aware countdown: resume is a no-op when no timer is active") {
+    // No timer set at all — resume must not start one out of nowhere.
+    let t = PauseAwareSleepTimer()
+    try assertTrue(!t.isActive)
+    t.resumeCountdown()
+    try assertTrue(!t.isActive)
+    try assertTrue(!t.timerArmed)
+}
+
+test("Pause-aware countdown: pause does not touch a fading timer") {
+    // Mid-fade pauses are handled by the playback layer (which calls
+    // sleepTimerService.stop() to abort the fade). pauseCountdown
+    // must NOT accidentally halt the fade — that would leave audio
+    // at a low volume indefinitely.
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(1))
+    t.isFadingOut = true
+    t.timerArmed = true  // pre-fade tick state captured
+
+    t.pauseCountdown()
+    try assertTrue(!t.isCountdownPausedByPlayback,
+                  "Mid-fade pauseCountdown must be a no-op")
+    try assertTrue(t.timerArmed, "Fading timer state must not be modified")
+}
+
+test("Pause-aware countdown: stop clears the paused-by-playback flag") {
+    // If the user cancels the timer while it was halted by a pause,
+    // the flag must clear so a new timer started later doesn't
+    // inherit a stale paused state.
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(10))
+    t.pauseCountdown()
+    try assertTrue(t.isCountdownPausedByPlayback)
+
+    t.stop()
+    try assertTrue(!t.isCountdownPausedByPlayback,
+                  "stop() must clear the pause-by-playback flag")
+
+    // New timer starts cleanly
+    t.start(.minutes(5))
+    try assertTrue(t.timerArmed)
+    try assertTrue(!t.isCountdownPausedByPlayback)
+}
+
+test("Pause-aware countdown: long-break scenario does not expire silently") {
+    // The bug scenario in one test:
+    // 1. User sets a 10-minute timer, plays for a moment.
+    // 2. User pauses to do something else for 30 minutes.
+    // 3. User resumes — must still have ~all the original time left.
+    // 4. Without the pause-aware fix, the timer would have expired
+    //    during the break and pause the user moments after resume.
+    let t = PauseAwareSleepTimer()
+    t.start(.minutes(10))
+    for _ in 0..<5 { t.tick() }   // 5 seconds of playback
+    try assertEqual(t.remainingSeconds, 595)
+
+    t.pauseCountdown()
+    for _ in 0..<(30 * 60) { t.tick() }  // 30 minutes of paused-break time
+    try assertEqual(t.remainingSeconds, 595,
+                   "Bug fix: timer must not have run down during the break")
+
+    t.resumeCountdown()
+    for _ in 0..<5 { t.tick() }   // 5 more seconds of playback after resume
+    try assertEqual(t.remainingSeconds, 590)
+}
+
 // ---- Sleep Timer Fade-Out Volume Pop Tests (Fix 10) ----
 print("\n--- Sleep Timer Fade-Out Volume Pop Tests ---")
 

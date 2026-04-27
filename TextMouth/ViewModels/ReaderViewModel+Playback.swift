@@ -17,6 +17,10 @@ extension ReaderViewModel {
         soundEffectService?.play(for: .play)
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
+        // Resume any sleep-timer countdown that was halted at the
+        // matching pause(). No-op when no countdown was paused (cold
+        // start, expired/cancelled timer, heading/document mode).
+        sleepTimerService.resumeCountdown()
         if isAudioBook {
             playAudioChapter()
         } else {
@@ -47,6 +51,13 @@ extension ReaderViewModel {
             sleepTimerService.stop()
             if isAudioBook { audioPlaybackService.restoreVolume() }
             else { speechService.audioEngine.restoreVolume() }
+        } else {
+            // Halt any minutes-based countdown so it doesn't keep
+            // ticking during the pause and expire while the user is
+            // taking a break. Mid-fade pauses fall through the branch
+            // above and do not reach here. Heading/document-end modes
+            // are no-ops — the service guards on duration kind.
+            sleepTimerService.pauseCountdown()
         }
         readingStatsService.endSession()
         nowPlayingService.updateNowPlayingInfo(
@@ -75,6 +86,7 @@ extension ReaderViewModel {
                 soundEffectService?.play(for: .play)
                 recordPlaybackStarted()
                 readingStatsService.startSession(bookID: book.id)
+                sleepTimerService.resumeCountdown()
                 audioPlaybackService.resume()
                 isCurrentlyPaused = false
                 nowPlayingService.updateNowPlayingInfo(
@@ -94,6 +106,7 @@ extension ReaderViewModel {
             applyRewindOnResume()
             recordPlaybackStarted()
             readingStatsService.startSession(bookID: book.id)
+            sleepTimerService.resumeCountdown()
             speechService.resume()
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
