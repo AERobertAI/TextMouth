@@ -8,6 +8,7 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
     var isRegex: Bool
     var isEnabled: Bool
     var caseSensitive: Bool
+    var wholeWord: Bool
 
     init(
         id: UUID = UUID(),
@@ -16,11 +17,36 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
         replacement: String = "",
         isRegex: Bool = false,
         isEnabled: Bool = true,
-        caseSensitive: Bool = false
+        caseSensitive: Bool = false,
+        wholeWord: Bool = false
     ) {
         self.id = id; self.name = name; self.pattern = pattern
         self.replacement = replacement; self.isRegex = isRegex
         self.isEnabled = isEnabled; self.caseSensitive = caseSensitive
+        self.wholeWord = wholeWord
+    }
+
+    /// Backward-compatible decode: `wholeWord` defaults to false when
+    /// missing from older rule files.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        pattern = try container.decode(String.self, forKey: .pattern)
+        replacement = try container.decode(String.self, forKey: .replacement)
+        isRegex = try container.decode(Bool.self, forKey: .isRegex)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        caseSensitive = try container.decode(Bool.self, forKey: .caseSensitive)
+        wholeWord = try container.decodeIfPresent(Bool.self, forKey: .wholeWord) ?? false
+    }
+
+    /// Whether wholeWord is actually influencing matching. Mirrors the
+    /// production predicate so the test helper behaves identically.
+    var isWholeWordEffective: Bool {
+        wholeWord
+            && !isRegex
+            && !pattern.isEmpty
+            && !pattern.contains(where: { $0.isWhitespace })
     }
 }
 
@@ -35,11 +61,32 @@ func applyRules(_ rules: [SubstitutionRule], to text: String) -> String {
             let nsText = current as NSString
             let matches = regex.matches(in: current, range: NSRange(location: 0, length: nsText.length))
             var result = current
+            // Convert NSRange (UTF-16) to Range<String.Index> (grapheme).
+            // String.index(_:offsetBy:) would crash on emoji/surrogate text.
             for match in matches.reversed() {
                 let expanded = regex.replacementString(for: match, in: current, offset: 0, template: rule.replacement)
-                let startIdx = result.index(result.startIndex, offsetBy: match.range.location)
-                let endIdx = result.index(startIdx, offsetBy: match.range.length)
-                result.replaceSubrange(startIdx..<endIdx, with: expanded)
+                guard let stringRange = Range(match.range, in: result) else { continue }
+                result.replaceSubrange(stringRange, with: expanded)
+            }
+            current = result
+        } else if rule.isWholeWordEffective {
+            // Whole-word match: wrap the (escaped) literal pattern with
+            // Unicode-aware lookarounds — letters, digits, combining
+            // marks, underscore. Replacement is taken literally — no
+            // group expansion.
+            let escapedPattern = NSRegularExpression.escapedPattern(for: rule.pattern)
+            let wrapped = "(?<![\\p{L}\\p{N}\\p{M}_])\(escapedPattern)(?![\\p{L}\\p{N}\\p{M}_])"
+            var options: NSRegularExpression.Options = []
+            if !rule.caseSensitive { options.insert(.caseInsensitive) }
+            guard let regex = try? NSRegularExpression(pattern: wrapped, options: options) else { continue }
+            let nsText = current as NSString
+            let matches = regex.matches(in: current, range: NSRange(location: 0, length: nsText.length))
+            let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replacement)
+            var result = current
+            for match in matches.reversed() {
+                let expanded = regex.replacementString(for: match, in: current, offset: 0, template: escapedReplacement)
+                guard let stringRange = Range(match.range, in: result) else { continue }
+                result.replaceSubrange(stringRange, with: expanded)
             }
             current = result
         } else {
@@ -432,6 +479,270 @@ test("Edge case: pronunciation-style replacement") {
 test("Edge case: multiple regex groups") {
     let rules = [SubstitutionRule(pattern: "(\\w+)\\s+(\\w+)", replacement: "$2 $1", isRegex: true)]
     try assertEqual(applyRules(rules, to: "hello world"), "world hello")
+}
+
+print("\n--- Text Substitution: Whole Word ---")
+
+// The OCR-pipe-to-I scenario the feature was added for: a book where
+// every standalone "I" was misread as "|". The user wants to fix the
+// pipes back to "I" without disturbing legitimate "|" usages elsewhere.
+test("Whole word: pipe matches standalone but not when adjacent to letters") {
+    let rules = [SubstitutionRule(pattern: "|", replacement: "I", wholeWord: true)]
+    try assertEqual(
+        applyRules(rules, to: "And |, who am | really?"),
+        "And I, who am I really?",
+        "Standalone pipes should be replaced"
+    )
+    try assertEqual(
+        applyRules(rules, to: "code|with|pipes"),
+        "code|with|pipes",
+        "Pipes embedded between word characters must not match"
+    )
+}
+
+test("Whole word: doubled pipes do match (each pipe has non-word neighbours)") {
+    // Pipes are non-word characters, so each "|" in "||" has a non-word
+    // neighbour on each side and DOES qualify as standalone under the
+    // lookaround definition. Pinning this in a test so the behaviour
+    // for non-word patterns is unambiguous — users picking wholeWord
+    // for a non-word pattern get a "no letters/digits adjacent" rule,
+    // not "isolated by whitespace" semantics.
+    let rules = [SubstitutionRule(pattern: "|", replacement: "I", wholeWord: true)]
+    try assertEqual(applyRules(rules, to: "||"), "II")
+}
+
+test("Whole word: cat does not match category") {
+    let rules = [SubstitutionRule(pattern: "cat", replacement: "dog", wholeWord: true)]
+    try assertEqual(applyRules(rules, to: "a cat sat in the category"), "a dog sat in the category")
+}
+
+test("Whole word: matches at start and end of string") {
+    let r = SubstitutionRule(pattern: "I", replacement: "eye", caseSensitive: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "I am here"), "eye am here", "Match at start of string")
+    try assertEqual(applyRules([r], to: "here I am"), "here eye am", "Match in middle")
+    try assertEqual(applyRules([r], to: "here am I"), "here am eye", "Match at end of string")
+}
+
+test("Whole word: case-insensitive by default") {
+    let r = SubstitutionRule(pattern: "I", replacement: "eye", wholeWord: true)
+    try assertEqual(applyRules([r], to: "i love I"), "eye love eye")
+}
+
+test("Whole word: case-sensitive when set") {
+    let r = SubstitutionRule(pattern: "I", replacement: "eye", caseSensitive: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "i love I"), "i love eye", "Lowercase i must not match")
+}
+
+test("Whole word: empty replacement deletes the matched word") {
+    let r = SubstitutionRule(pattern: "umm", replacement: "", wholeWord: true)
+    try assertEqual(applyRules([r], to: "well, umm, yes"), "well, , yes")
+    try assertEqual(applyRules([r], to: "summer"), "summer", "Substring inside another word must remain")
+}
+
+test("Whole word: surrounded by punctuation matches") {
+    let r = SubstitutionRule(pattern: "TBD", replacement: "to be done", caseSensitive: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "[TBD] handle later"), "[to be done] handle later")
+    try assertEqual(applyRules([r], to: "(TBD)."), "(to be done).")
+}
+
+test("Whole word: pattern with regex metacharacters is treated literally") {
+    // "Mr." contains a regex metacharacter (".") — wholeWord must escape
+    // the pattern so the dot doesn't accidentally match any character.
+    let r = SubstitutionRule(pattern: "Mr.", replacement: "Mister", wholeWord: true)
+    try assertEqual(applyRules([r], to: "Mr. Smith"), "Mister Smith")
+    try assertEqual(applyRules([r], to: "MrX Smith"), "MrX Smith", "Regex dot must NOT match X")
+}
+
+test("Whole word: replacement with $ is taken literally") {
+    // $1 in the replacement must NOT be interpreted as a capture-group
+    // back-reference (the wholeWord path uses NSRegularExpression's
+    // template engine internally, but escaped templates must be literal).
+    let r = SubstitutionRule(pattern: "money", replacement: "$1 dollars", wholeWord: true)
+    try assertEqual(applyRules([r], to: "got money today"), "got $1 dollars today")
+}
+
+test("Whole word: ignored when isRegex is true") {
+    // wholeWord stored alongside isRegex must NOT silently apply
+    // boundaries — the user enabled regex precisely so they could
+    // express their own boundaries (or not).
+    let r = SubstitutionRule(pattern: "cat", replacement: "dog", isRegex: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "category"), "dogegory",
+                    "When isRegex is true, wholeWord should be ignored — substring match applies")
+    try assertTrue(!r.isWholeWordEffective, "isWholeWordEffective should be false when isRegex is on")
+}
+
+test("Whole word: ignored when pattern contains whitespace") {
+    let r = SubstitutionRule(pattern: "hello world", replacement: "greeting", wholeWord: true)
+    try assertEqual(applyRules([r], to: "hello worlds unite"), "greetings unite",
+                    "When the pattern contains whitespace, wholeWord should be ignored — substring match applies")
+    try assertTrue(!r.isWholeWordEffective, "isWholeWordEffective should be false when pattern has whitespace")
+}
+
+test("Whole word: tab in pattern also disables the whole-word predicate") {
+    let r = SubstitutionRule(pattern: "a\tb", replacement: "x", wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective, "Tab must count as whitespace for the predicate")
+}
+
+test("Whole word: empty pattern is not effective") {
+    let r = SubstitutionRule(pattern: "", replacement: "x", wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective)
+}
+
+test("Whole word: Unicode letter is treated as a word character") {
+    // \p{L} covers accented Latin letters, so "I" inside "naïve" must
+    // not match — the î to its right is a letter neighbour.
+    let r = SubstitutionRule(pattern: "I", replacement: "eye", caseSensitive: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "naïve I am"), "naïve eye am",
+                    "I attached to ï counts as a word neighbour and must not match; standalone I must")
+}
+
+test("Whole word: Unicode digit blocks the boundary") {
+    let r = SubstitutionRule(pattern: "id", replacement: "identifier", wholeWord: true)
+    try assertEqual(applyRules([r], to: "id 42"), "identifier 42")
+    try assertEqual(applyRules([r], to: "id1234"), "id1234", "Digit after must block whole-word match")
+}
+
+test("Whole word: underscore counts as a word character") {
+    let r = SubstitutionRule(pattern: "var", replacement: "variable", wholeWord: true)
+    try assertEqual(applyRules([r], to: "var x"), "variable x")
+    try assertEqual(applyRules([r], to: "var_name"), "var_name", "Underscore after must block whole-word match")
+}
+
+test("Whole word: multiple matches in a single string") {
+    let r = SubstitutionRule(pattern: "I", replacement: "eye", caseSensitive: true, wholeWord: true)
+    try assertEqual(applyRules([r], to: "I and I and I"), "eye and eye and eye")
+}
+
+test("Whole word: rule still respects isEnabled=false") {
+    let r = SubstitutionRule(pattern: "cat", replacement: "dog", isEnabled: false, wholeWord: true)
+    try assertEqual(applyRules([r], to: "a cat sat"), "a cat sat")
+}
+
+test("Whole word: emoji-adjacent text does not crash on grapheme/UTF-16 mismatch") {
+    // NSRegularExpression returns UTF-16-indexed ranges. The naive
+    // `String.index(_:offsetBy:)` walk treats the NSRange as Character
+    // offsets, which traps when the difference matters (text contains
+    // emoji or other surrogate-pair characters whose grapheme count
+    // diverges from the UTF-16 unit count). Production and the test
+    // mock both convert via Range(_:in:); these cases exercise the
+    // conversion across "before-the-match" and "match-near-end-of-string"
+    // shapes so a regression in either would show up.
+    let r = SubstitutionRule(pattern: "cat", replacement: "dog", wholeWord: true)
+
+    // Match starts past several emoji — UTF-16 location > character count.
+    // Without the fix this either produces wrong slicing or traps on the
+    // index-out-of-bounds precondition.
+    try assertEqual(applyRules([r], to: "🙂🙂🙂 cat"), "🙂🙂🙂 dog")
+    try assertEqual(applyRules([r], to: "🙂 cat sat"), "🙂 dog sat")
+    try assertEqual(applyRules([r], to: "🙂cat"), "🙂dog",
+                    "Emoji to the left of the word — emoji is non-letter, so wholeWord should match")
+    try assertEqual(applyRules([r], to: "cat 🙂"), "dog 🙂")
+    // Match where the end runs to the very last UTF-16 unit.
+    try assertEqual(applyRules([r], to: "🙂🙂cat"), "🙂🙂dog")
+}
+
+test("Whole word: combining mark anchors the diacritic to its base") {
+    // U+0301 (combining acute) attached to a preceding letter — the
+    // base+mark pair is one user-perceived "word character". A pattern
+    // match that ends just before the combining mark would orphan it,
+    // so \p{M} must be in the right-side word class.
+    let r = SubstitutionRule(pattern: "cafe", replacement: "coffee", caseSensitive: true, wholeWord: true)
+    let withCombining = "cafe\u{0301}"  // grapheme: café (e + combining acute)
+    try assertEqual(applyRules([r], to: withCombining), withCombining,
+                    "Pattern 'cafe' must NOT match when followed by a combining mark")
+    // Plain "cafe" with no following mark still matches
+    try assertEqual(applyRules([r], to: "cafe today"), "coffee today")
+}
+
+test("Regex: emoji-adjacent text does not crash on grapheme/UTF-16 mismatch") {
+    // Same fix applies to the regex path. Pre-existing bug — added a
+    // covering test now that it's been hardened.
+    let r = SubstitutionRule(pattern: "cat", replacement: "dog", isRegex: true)
+    try assertEqual(applyRules([r], to: "🙂 cat sat"), "🙂 dog sat")
+    try assertEqual(applyRules([r], to: "cat 🙂"), "dog 🙂")
+}
+
+print("\n--- Text Substitution: Whole Word — Persistence ---")
+
+test("Whole word: JSON round-trip preserves the field") {
+    let rule = SubstitutionRule(pattern: "|", replacement: "I", wholeWord: true)
+    let data = try JSONEncoder().encode(rule)
+    let decoded = try JSONDecoder().decode(SubstitutionRule.self, from: data)
+    try assertTrue(decoded.wholeWord, "wholeWord must round-trip through JSON")
+    try assertEqual(decoded.pattern, "|")
+    try assertEqual(decoded.replacement, "I")
+}
+
+test("Whole word: legacy JSON without the field decodes as false") {
+    // Prior versions wrote rule files without `wholeWord`. Decoding
+    // such a file must succeed and default the new field to false.
+    let id = UUID().uuidString
+    let legacyJSON = """
+    {
+        "id": "\(id)",
+        "name": "Hermione",
+        "pattern": "Hermione",
+        "replacement": "Her-MY-oh-nee",
+        "isRegex": false,
+        "isEnabled": true,
+        "caseSensitive": false
+    }
+    """
+    let decoded = try JSONDecoder().decode(SubstitutionRule.self, from: legacyJSON.data(using: .utf8)!)
+    try assertTrue(!decoded.wholeWord, "Missing key must default to false")
+    try assertEqual(decoded.pattern, "Hermione")
+    try assertEqual(decoded.name, "Hermione")
+}
+
+test("Whole word: array of rules with mixed wholeWord round-trips") {
+    let rules = [
+        SubstitutionRule(pattern: "cat", replacement: "dog"),
+        SubstitutionRule(pattern: "I", replacement: "eye", wholeWord: true),
+        SubstitutionRule(pattern: "Mr.", replacement: "Mister", isRegex: true),
+    ]
+    let data = try JSONEncoder().encode(rules)
+    let decoded = try JSONDecoder().decode([SubstitutionRule].self, from: data)
+    try assertEqual(decoded.count, 3)
+    try assertTrue(!decoded[0].wholeWord)
+    try assertTrue(decoded[1].wholeWord)
+    try assertTrue(!decoded[2].wholeWord, "Regex rule's stored wholeWord round-trips as-is")
+}
+
+print("\n--- Text Substitution: Whole Word — isWholeWordEffective Predicate ---")
+
+// The same predicate is consulted by the matcher, the editor UI (to
+// hide the toggle), the rule row badge, and the accessibility label.
+// These tests pin down the truth table so all four call sites stay in
+// sync if the predicate ever needs to change.
+
+test("Predicate: plain rule with simple pattern → effective") {
+    let r = SubstitutionRule(pattern: "cat", wholeWord: true)
+    try assertTrue(r.isWholeWordEffective)
+}
+
+test("Predicate: wholeWord=false → not effective") {
+    let r = SubstitutionRule(pattern: "cat", wholeWord: false)
+    try assertTrue(!r.isWholeWordEffective)
+}
+
+test("Predicate: isRegex=true → not effective") {
+    let r = SubstitutionRule(pattern: "cat", isRegex: true, wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective)
+}
+
+test("Predicate: pattern with space → not effective") {
+    let r = SubstitutionRule(pattern: "hello world", wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective)
+}
+
+test("Predicate: empty pattern → not effective") {
+    let r = SubstitutionRule(pattern: "", wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective)
+}
+
+test("Predicate: pattern of only whitespace → not effective") {
+    let r = SubstitutionRule(pattern: "   ", wholeWord: true)
+    try assertTrue(!r.isWholeWordEffective)
 }
 
 } // end runTextSubstitutionTests

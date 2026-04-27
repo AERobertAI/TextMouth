@@ -10,6 +10,15 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
     var isRegex: Bool
     var isEnabled: Bool
     var caseSensitive: Bool
+    /// When true (and the rule is plain text, and the pattern contains no
+    /// whitespace), the match must not be adjacent to a letter, digit, or
+    /// underscore on either side. This is the "Match whole word only"
+    /// behaviour from find/replace dialogs — useful for pronunciation
+    /// rules where the pattern itself may be a non-word character (e.g.
+    /// OCR'd "|" → "I"), so standard regex `\b` is not sufficient.
+    /// The stored value is preserved across edits; whether it actually
+    /// affects matching is gated by `isWholeWordEffective`.
+    var wholeWord: Bool
 
     init(
         id: UUID = UUID(),
@@ -18,7 +27,8 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
         replacement: String = "",
         isRegex: Bool = false,
         isEnabled: Bool = true,
-        caseSensitive: Bool = false
+        caseSensitive: Bool = false,
+        wholeWord: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -27,6 +37,37 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
         self.isRegex = isRegex
         self.isEnabled = isEnabled
         self.caseSensitive = caseSensitive
+        self.wholeWord = wholeWord
+    }
+
+    /// Decode with backward compatibility — older rule files (and the
+    /// seeded defaults from previous app versions) don't carry the
+    /// `wholeWord` key, so missing means false.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        pattern = try container.decode(String.self, forKey: .pattern)
+        replacement = try container.decode(String.self, forKey: .replacement)
+        isRegex = try container.decode(Bool.self, forKey: .isRegex)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        caseSensitive = try container.decode(Bool.self, forKey: .caseSensitive)
+        wholeWord = try container.decodeIfPresent(Bool.self, forKey: .wholeWord) ?? false
+    }
+
+    /// Whether the wholeWord setting actually influences matching for
+    /// this rule's current configuration. The UI uses the same predicate
+    /// to decide when to show the toggle and the badge, so the displayed
+    /// state stays consistent with behaviour.
+    /// - Regex rules use `\b` directly in the pattern; the toggle is N/A.
+    /// - Patterns with internal whitespace are treated as phrases for
+    ///   which a single "word" boundary doesn't make sense.
+    /// - Empty patterns are skipped at the matcher level anyway.
+    var isWholeWordEffective: Bool {
+        wholeWord
+            && !isRegex
+            && !pattern.isEmpty
+            && !pattern.contains(where: { $0.isWhitespace })
     }
 }
 
@@ -74,6 +115,13 @@ class TextSubstitutionService: ObservableObject {
     /// Cached compiled regexes keyed by rule ID
     private var regexCache: [UUID: NSRegularExpression] = [:]
 
+    /// Cached compiled regexes for whole-word rules. Kept separate from
+    /// `regexCache` because the underlying pattern is different (the
+    /// stored pattern wrapped with Unicode-aware lookarounds), and we
+    /// don't want a regex-mode rule's compiled form to be reused if the
+    /// user toggles it through plain+wholeWord and back.
+    private var wholeWordRegexCache: [UUID: NSRegularExpression] = [:]
+
     static let shared = TextSubstitutionService()
 
     private init() {
@@ -100,6 +148,7 @@ class TextSubstitutionService: ObservableObject {
     func removeRule(id: UUID) {
         rules.removeAll { $0.id == id }
         regexCache.removeValue(forKey: id)
+        wholeWordRegexCache.removeValue(forKey: id)
         saveRules()
     }
 
@@ -146,12 +195,18 @@ class TextSubstitutionService: ObservableObject {
                 shift -= lenDiff
             }
 
-            // Apply replacements in reverse order so indices stay valid
+            // Apply replacements in reverse order so indices stay valid.
+            // NSRegularExpression returns ranges in UTF-16 code units, while
+            // `String.index(_:offsetBy:)` walks `Character` (grapheme
+            // clusters). Using offsetBy on an NSRange would crash on any
+            // text containing emoji or other surrogate-pair characters
+            // (e.g. "🙂 cat"). Range(_:in:) handles the unit conversion.
+            // If the conversion fails (would be a regex bug), skip the
+            // replacement rather than crash.
             var newText = current
             for rep in replacements.reversed() {
-                let startIdx = newText.index(newText.startIndex, offsetBy: rep.range.location)
-                let endIdx = newText.index(startIdx, offsetBy: rep.range.length)
-                newText.replaceSubrange(startIdx..<endIdx, with: rep.replacement)
+                guard let stringRange = Range(rep.range, in: newText) else { continue }
+                newText.replaceSubrange(stringRange, with: rep.replacement)
             }
             current = newText
         }
@@ -170,9 +225,11 @@ class TextSubstitutionService: ObservableObject {
     private func findReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
         if rule.isRegex {
             return findRegexReplacements(in: text, rule: rule)
-        } else {
-            return findPlainReplacements(in: text, rule: rule)
         }
+        if rule.isWholeWordEffective {
+            return findWholeWordReplacements(in: text, rule: rule)
+        }
+        return findPlainReplacements(in: text, rule: rule)
     }
 
     private func findPlainReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
@@ -202,6 +259,60 @@ class TextSubstitutionService: ObservableObject {
         }
     }
 
+    /// Whole-word matching for plain (non-regex) rules. The user-supplied
+    /// pattern is treated as literal text and wrapped with Unicode-aware
+    /// lookarounds so the match is rejected when adjacent to a letter,
+    /// digit, combining mark, or underscore.
+    ///
+    /// `\p{L}` is any Unicode letter (covers accented characters, CJK,
+    /// etc.), `\p{N}` is any Unicode number, `\p{M}` is any combining
+    /// mark — included so a base letter followed by a separately-encoded
+    /// diacritic is treated as one word, not as a letter followed by
+    /// punctuation. Plain `\b` would NOT work here because patterns like
+    /// "|" are non-word characters, so a regex word boundary doesn't
+    /// apply to them. The lookarounds work for both word and non-word
+    /// patterns.
+    ///
+    /// Replacement is taken literally — no `$1`/`\1` group expansion,
+    /// matching the behaviour of the existing plain-text path.
+    private func findWholeWordReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
+        guard let regex = wholeWordRegex(for: rule) else { return [] }
+        let nsText = text as NSString
+        let fullRange = NSRange(location: 0, length: nsText.length)
+        let matches = regex.matches(in: text, range: fullRange)
+
+        // Use the literal replacement string. Escape any regex metacharacters
+        // in the user's replacement before handing it to NSRegularExpression's
+        // template-expansion engine, otherwise a `$` or `\` in a pronunciation
+        // replacement would be interpreted as a back-reference and either
+        // silently disappear or throw at runtime.
+        let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replacement)
+        return matches.map { match in
+            let expanded = regex.replacementString(
+                for: match,
+                in: text,
+                offset: 0,
+                template: escapedReplacement
+            )
+            return Replacement(range: match.range, replacement: expanded)
+        }
+    }
+
+    /// Compile (and cache) the lookaround-wrapped regex for a whole-word
+    /// rule. Builds the pattern from the rule's literal text via
+    /// `escapedPattern(for:)` so regex metacharacters in the user's input
+    /// are taken literally.
+    private func wholeWordRegex(for rule: SubstitutionRule) -> NSRegularExpression? {
+        if let cached = wholeWordRegexCache[rule.id] { return cached }
+        let escaped = NSRegularExpression.escapedPattern(for: rule.pattern)
+        let wrapped = "(?<![\\p{L}\\p{N}\\p{M}_])\(escaped)(?![\\p{L}\\p{N}\\p{M}_])"
+        var options: NSRegularExpression.Options = []
+        if !rule.caseSensitive { options.insert(.caseInsensitive) }
+        guard let regex = try? NSRegularExpression(pattern: wrapped, options: options) else { return nil }
+        wholeWordRegexCache[rule.id] = regex
+        return regex
+    }
+
     private func compiledRegex(for rule: SubstitutionRule) -> NSRegularExpression? {
         if let cached = regexCache[rule.id] { return cached }
         var options: NSRegularExpression.Options = []
@@ -213,6 +324,7 @@ class TextSubstitutionService: ObservableObject {
 
     private func invalidateCache(for id: UUID) {
         regexCache.removeValue(forKey: id)
+        wholeWordRegexCache.removeValue(forKey: id)
     }
 
     // MARK: - Persistence
@@ -249,6 +361,7 @@ class TextSubstitutionService: ObservableObject {
     func resetToDefaults() {
         rules = Self.defaultRules
         regexCache.removeAll()
+        wholeWordRegexCache.removeAll()
         saveRules()
     }
 

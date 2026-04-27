@@ -152,6 +152,18 @@ struct SubstitutionRuleRow: View {
                         .background(Color.blue.opacity(0.2))
                         .cornerRadius(3)
                 }
+                // Show the "word" badge only when wholeWord is actually
+                // taking effect — same predicate as the editor toggle
+                // visibility, so the displayed state stays consistent
+                // with behaviour.
+                if rule.isWholeWordEffective {
+                    Text("word")
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.green.opacity(0.2))
+                        .cornerRadius(3)
+                }
             }
         }
         .opacity(rule.isEnabled ? 1.0 : 0.5)
@@ -172,6 +184,7 @@ struct SubstitutionRuleRow: View {
         }
         if rule.isRegex { parts.append("Regular expression") }
         if rule.caseSensitive { parts.append("Case sensitive") }
+        if rule.isWholeWordEffective { parts.append("Whole word only") }
         return parts.joined(separator: ", ")
     }
 }
@@ -215,10 +228,24 @@ struct SubstitutionRuleEditorView: View {
 
                 Toggle("Regular expression", isOn: $rule.isRegex)
                     .accessibilityLabel("Use regular expression matching")
+                    .accessibilityHint("When enabled, use \\b in the pattern for word boundaries")
                     .onChange(of: rule.isRegex) { _ in validatePattern() }
 
                 Toggle("Case sensitive", isOn: $rule.caseSensitive)
                     .accessibilityLabel("Case sensitive matching")
+
+                // "Match whole word only" only makes sense for plain
+                // (non-regex) patterns that don't already contain
+                // whitespace — for regex, the user can place \b directly
+                // in the pattern; for multi-word phrases, the notion of
+                // a single word boundary doesn't apply. The stored value
+                // on the rule is preserved across edits so that toggling
+                // regex off (or removing the space) brings it back.
+                if !rule.isRegex && !rule.pattern.contains(where: { $0.isWhitespace }) {
+                    Toggle("Match whole word only", isOn: $rule.wholeWord)
+                        .accessibilityLabel("Match whole word only")
+                        .accessibilityHint("Match only when the pattern is not adjacent to letters, digits, or underscores")
+                }
 
                 Section {
                     TextField("Test input", text: $testInput)
