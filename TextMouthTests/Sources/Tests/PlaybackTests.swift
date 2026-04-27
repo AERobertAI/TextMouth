@@ -468,6 +468,397 @@ test("Multiple rapid device changes only need one suppress") {
     try assertEqual(playCount, 1, "Should work after suppress cleared")
 }
 
+// ---- Devices-List Listener (Battery Drain) Tests ----
+print("\n--- Devices-List Listener (Battery Drain) Tests ---")
+
+// These tests cover the second listener added for the AirPods-battery-drain
+// case. Manual disconnect (case / phone switch) changes the system default
+// output and is handled by the original default-output listener. Battery
+// drain often does NOT change the default — macOS keeps the dead AirPods
+// listed as "default" — but it DOES remove them from the active device
+// list. The devices-list listener catches that transition.
+
+test("Devices list change: previous BT device removed arms suppress") {
+    // The exact battery-drain scenario: cached BT device disappears from
+    // the list, default output stays put. Listener should arm suppress.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var previousDeviceWasBluetooth = true
+    let previousDeviceID: UInt32 = 42  // imagined AirPods ID
+    var isPlaying = false  // user was paused — the buggy direction
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+        previousDeviceWasBluetooth = false  // clear cached state
+    }
+
+    // AirPods drain: device list now contains only the built-in speakers
+    handleDeviceListChange(currentDevices: [99])
+
+    try assertTrue(isSuppressed, "Suppress window must arm when BT device vanishes")
+    try assertEqual(pauseCallCount, 0, "No onPause when already paused")
+    try assertTrue(!previousDeviceWasBluetooth, "State should be cleared after handling")
+}
+
+test("Devices list change: BT device still in list does not arm suppress") {
+    // Some other device was added or removed, but our cached AirPods
+    // are still present. The listener should leave playback alone.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var previousDeviceWasBluetooth = true
+    let previousDeviceID: UInt32 = 42
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+    }
+
+    // List still contains AirPods (42) plus a newly added USB device (101)
+    handleDeviceListChange(currentDevices: [42, 99, 101])
+
+    try assertTrue(!isSuppressed, "Unrelated list change must not arm suppress")
+    try assertTrue(previousDeviceWasBluetooth, "Cached state should remain")
+}
+
+test("Devices list change: non-BT previous device does not arm suppress") {
+    // Previous default was built-in speakers. Even if some device is
+    // removed from the list, no spurious rcd toggle is expected — built-in
+    // speakers don't trigger the bug. Skip to avoid false positives.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    let previousDeviceWasBluetooth = false
+    let previousDeviceID: UInt32 = 99  // built-in speakers
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+    }
+
+    // Speakers somehow vanish (very unusual but possible with virtual
+    // audio drivers). Should still not arm — non-BT prior state.
+    handleDeviceListChange(currentDevices: [42])
+
+    try assertTrue(!isSuppressed, "Non-BT prior state must not arm suppress")
+}
+
+test("Devices list change: no cached device ID does not arm suppress") {
+    // Service started up with no audio output present (previousDeviceID=0).
+    // Subsequent list changes should not arm suppress until a real device
+    // baseline has been captured.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    let previousDeviceWasBluetooth = true  // suspicious leftover state
+    let previousDeviceID: UInt32 = 0       // but no cached ID
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+    }
+
+    handleDeviceListChange(currentDevices: [42])
+
+    try assertTrue(!isSuppressed, "No cached device ID must not arm suppress")
+}
+
+test("Battery drain end-to-end: paused stays paused through spurious toggle") {
+    // The bug-fix goal stated end-to-end. AirPods drain → device list
+    // listener fires → suppress armed → rcd's spurious toggle blocked.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var isPlaying = false
+    var previousDeviceWasBluetooth = true
+    let previousDeviceID: UInt32 = 42
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+        previousDeviceWasBluetooth = false
+    }
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                pauseCallCount += 1
+                isPlaying = false
+            }
+            return
+        }
+        isPlaying.toggle()
+    }
+
+    // Step 1: paused with AirPods active
+    try assertTrue(!isPlaying)
+
+    // Step 2: AirPods battery dies — they vanish from the device list
+    handleDeviceListChange(currentDevices: [99])
+    try assertTrue(isSuppressed, "Suppress armed by devices-list listener")
+
+    // Step 3: rcd delivers its spurious toggle
+    handleToggleCommand()
+    try assertTrue(!isPlaying, "Battery-drain toggle must not flip paused → playing")
+    try assertTrue(!isSuppressed, "Window consumed")
+    try assertEqual(pauseCallCount, 0, "No onPause fired (was already paused)")
+}
+
+test("Battery drain end-to-end: playing pauses and stays paused") {
+    // Same scenario but with playback active. The listener should pause
+    // immediately, and the subsequent spurious toggle should be a no-op.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var isPlaying = true
+    var previousDeviceWasBluetooth = true
+    let previousDeviceID: UInt32 = 42
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+        previousDeviceWasBluetooth = false
+    }
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                pauseCallCount += 1
+                isPlaying = false
+            }
+            return
+        }
+        isPlaying.toggle()
+    }
+
+    handleDeviceListChange(currentDevices: [99])
+    try assertEqual(pauseCallCount, 1, "Listener pauses running playback immediately")
+    try assertTrue(!isPlaying)
+
+    // Spurious toggle that follows: app already paused, suppress ignores it
+    handleToggleCommand()
+    try assertEqual(pauseCallCount, 1, "No double-pause from the suppressed toggle")
+    try assertTrue(!isPlaying)
+}
+
+test("Devices list change: cached state cleared prevents double-fire") {
+    // After a battery-drain detection, the default-output listener may
+    // also fire a moment later (when macOS finally switches the system
+    // default to speakers). Without clearing cached state, both listeners
+    // would each arm suppress and call onPause. The clear in
+    // handleDeviceListChange prevents that.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var isPlaying = true
+    var previousDeviceWasBluetooth = true
+    var previousDeviceID: UInt32 = 42
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    // Devices-list listener — clears cached state after handling
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+        previousDeviceWasBluetooth = false
+        previousDeviceID = 0
+    }
+
+    // Default-output listener — checks the same cached state
+    func handleDefaultOutputChange() {
+        let wasBluetooth = previousDeviceWasBluetooth
+        previousDeviceWasBluetooth = false  // refresh to new (speakers)
+        previousDeviceID = 99
+        guard wasBluetooth else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
+    // Battery drain: list listener fires first
+    handleDeviceListChange(currentDevices: [99])
+    try assertEqual(pauseCallCount, 1, "List listener pauses once")
+
+    // A moment later the default finally flips to speakers
+    handleDefaultOutputChange()
+    try assertEqual(pauseCallCount, 1, "Default listener should not double-fire")
+    try assertTrue(isSuppressed, "Suppress remains armed for any incoming command")
+}
+
+test("Refresh skips a stale 'default' that's no longer in the device list") {
+    // After AirPods drain, macOS sometimes keeps the dead device as the
+    // system default output even though the device is no longer in the
+    // active list. refreshPreviousDeviceInfo must NOT cache such a stale
+    // device — caching it would cause every subsequent unrelated
+    // devices-list event to detect "device not in list" and re-arm
+    // suppress, breaking legitimate play commands.
+    func refresh(currentDefault: UInt32?, currentDevices: [UInt32]) -> (UInt32, Bool) {
+        guard let deviceID = currentDefault else { return (0, false) }
+        let isLive = currentDevices.isEmpty || currentDevices.contains(deviceID)
+        if isLive {
+            // simulate isBluetoothDevice — true when ID is in the BT range
+            let isBT = deviceID == 42  // AirPods
+            return (deviceID, isBT)
+        }
+        return (0, false)
+    }
+
+    // Healthy state: AirPods are default and in the device list
+    let (id1, was1) = refresh(currentDefault: 42, currentDevices: [42, 99])
+    try assertEqual(id1, 42)
+    try assertTrue(was1, "Live BT default should cache as Bluetooth")
+
+    // Stale-default state: macOS reports AirPods as default but they're
+    // missing from the active list. Refresh must NOT cache them.
+    let (id2, was2) = refresh(currentDefault: 42, currentDevices: [99])
+    try assertEqual(id2, 0, "Stale default must not be cached")
+    try assertTrue(!was2)
+
+    // Empty list (query failed) — fall back to trusting the default
+    let (id3, was3) = refresh(currentDefault: 42, currentDevices: [])
+    try assertEqual(id3, 42, "Failed list query must not zero a valid default")
+    try assertTrue(was3)
+
+    // No default at all
+    let (id4, was4) = refresh(currentDefault: nil, currentDevices: [99])
+    try assertEqual(id4, 0)
+    try assertTrue(!was4)
+}
+
+test("Devices list refresh after drain re-establishes baseline on reconnect") {
+    // After the cache is cleared by a drain detection, an unrelated
+    // devices-list event (e.g. user reconnects AirPods, plugs in a USB
+    // device) should refresh the cache. Without this, a SECOND drain
+    // for a freshly-reconnected pair would be missed because
+    // previousDeviceID would still be zero.
+    var previousDeviceWasBluetooth = false
+    var previousDeviceID: UInt32 = 0  // post-drain cleared state
+
+    func refresh(currentDefault: UInt32?, currentDevices: [UInt32]) {
+        guard let deviceID = currentDefault else {
+            previousDeviceID = 0
+            previousDeviceWasBluetooth = false
+            return
+        }
+        let isLive = currentDevices.isEmpty || currentDevices.contains(deviceID)
+        if isLive {
+            previousDeviceID = deviceID
+            previousDeviceWasBluetooth = (deviceID == 42)  // AirPods
+        } else {
+            previousDeviceID = 0
+            previousDeviceWasBluetooth = false
+        }
+    }
+
+    func handleDeviceListChange(currentDefault: UInt32?, currentDevices: [UInt32]) {
+        // Skip the disconnect-detection branch (cache is already zeroed)
+        if previousDeviceWasBluetooth, previousDeviceID != 0,
+           !currentDevices.contains(previousDeviceID) {
+            // disconnect path — not exercised here
+            return
+        }
+        refresh(currentDefault: currentDefault, currentDevices: currentDevices)
+    }
+
+    // AirPods reconnect, become default again
+    handleDeviceListChange(currentDefault: 42, currentDevices: [42, 99])
+    try assertEqual(previousDeviceID, 42, "Reconnected AirPods should re-cache")
+    try assertTrue(previousDeviceWasBluetooth, "Cache marks them as Bluetooth")
+
+    // Now we're armed again to detect a future drain
+}
+
+test("Manual disconnect end-to-end remains intact (default-output path)") {
+    // Regression guard: the existing manual-disconnect path must keep
+    // working unchanged. Default-output listener fires, devices-list
+    // listener may also fire but its early-out (cached state cleared
+    // by the default-output listener) prevents double-action.
+    var suppressUntil: Date = .distantPast
+    var isSuppressed: Bool { Date() < suppressUntil }
+    var isPlaying = false  // paused — the buggy direction
+    var previousDeviceWasBluetooth = true
+    var previousDeviceID: UInt32 = 42
+    var pauseCallCount = 0
+    let isCurrentlyPlaying = { isPlaying }
+
+    func handleDefaultOutputChange() {
+        let wasBluetooth = previousDeviceWasBluetooth
+        previousDeviceWasBluetooth = false
+        previousDeviceID = 99
+        guard wasBluetooth else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+    }
+
+    func handleDeviceListChange(currentDevices: [UInt32]) {
+        guard previousDeviceWasBluetooth, previousDeviceID != 0 else { return }
+        guard !currentDevices.contains(previousDeviceID) else { return }
+        suppressUntil = Date().addingTimeInterval(2.0)
+        if isCurrentlyPlaying() {
+            pauseCallCount += 1
+            isPlaying = false
+        }
+        previousDeviceWasBluetooth = false
+        previousDeviceID = 0
+    }
+
+    func handleToggleCommand() {
+        if isSuppressed {
+            suppressUntil = .distantPast
+            if isPlaying {
+                pauseCallCount += 1
+                isPlaying = false
+            }
+            return
+        }
+        isPlaying.toggle()
+    }
+
+    // AirPods placed in case: default flips to speakers FIRST, list update follows
+    handleDefaultOutputChange()
+    try assertTrue(isSuppressed, "Default-output listener arms suppress")
+
+    // List listener fires next — but cache already cleared
+    handleDeviceListChange(currentDevices: [99])
+    try assertEqual(pauseCallCount, 0, "No double-action — default-output already cleared cache")
+
+    // rcd's spurious toggle
+    handleToggleCommand()
+    try assertTrue(!isPlaying, "Paused stays paused (existing fix still works)")
+}
+
 // ---- Speed Control Tests ----
 print("\n--- Speed Control Tests ---")
 

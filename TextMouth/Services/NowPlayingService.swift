@@ -14,6 +14,19 @@ import CoreAudio
 /// This service intercepts that spurious toggle by opening a short suppress
 /// window whenever the default audio output device changes, during which
 /// incoming `play` and `togglePlayPause` commands from the system are gated.
+///
+/// ## Two listeners for two disconnect modes
+/// 1. **Default-output listener** (`kAudioHardwarePropertyDefaultOutputDevice`)
+///    catches the common case: AirPods placed in case, or switched to a
+///    different host (phone/iPad) — macOS immediately switches the system
+///    default output to built-in speakers, firing this notification.
+/// 2. **Devices-list listener** (`kAudioHardwarePropertyDevices`) catches
+///    the battery-drain case. When AirPods run out of battery, macOS often
+///    does NOT change the system default output (the AirPods stay listed
+///    as "default" even though they've gone silent), but it DOES remove
+///    them from the active device list. Without this second listener, the
+///    suppress window would never arm and `rcd`'s spurious toggle would
+///    flip a paused book into playback through the speakers.
 class NowPlayingService {
     private var onPlay: (() -> Void)?
     private var onPause: (() -> Void)?
@@ -47,6 +60,10 @@ class NowPlayingService {
 
     /// Listener for default audio output device changes
     private var deviceChangeListenerBlock: AudioObjectPropertyListenerBlock?
+    /// Listener for system audio devices list changes (used to catch the
+    /// AirPods-battery-drain case where the default output stays put but
+    /// the device disappears from the list — see class doc comment).
+    private var deviceListListenerBlock: AudioObjectPropertyListenerBlock?
     private var isListeningForDeviceChanges = false
 
     /// Whether the previous default output device was a Bluetooth device.
@@ -57,6 +74,14 @@ class NowPlayingService {
     /// when the user is simply switching between wired/built-in devices —
     /// rcd only sends its spurious toggle on Bluetooth transitions.
     private var previousDeviceWasBluetooth: Bool = false
+
+    /// AudioDeviceID of the previously-known default output device. Cached
+    /// alongside `previousDeviceWasBluetooth` so the devices-list listener
+    /// can detect when this specific device is removed from the system —
+    /// the signal that an AirPods battery has drained out (or the device
+    /// has otherwise been ripped out from under us). Zero means "no cached
+    /// device yet" (e.g. service just started with no audio output present).
+    private var previousDeviceID: AudioDeviceID = 0
 
     init() {}
 
@@ -205,78 +230,148 @@ class NowPlayingService {
 
     // MARK: - Audio Device Change Monitoring
 
-    /// Listen for default audio output device changes via CoreAudio.
-    /// When the output device changes (e.g. AirPods disconnect, switching to speakers),
-    /// open the suppress window so the spurious toggle/play command that rcd
-    /// sends next can be gated. If playback was already running, preemptively
-    /// pause so audio doesn't bleed to the new device.
+    /// Listen for audio device changes via CoreAudio. Two complementary
+    /// listeners run side-by-side; see the class doc comment for the
+    /// reasoning behind each.
+    ///
+    /// 1. **Default output changed** — fires on the common manual disconnect:
+    ///    AirPods placed in case, switched to phone/iPad, headphones unplugged.
+    ///    The default switches to built-in speakers immediately.
+    /// 2. **Devices list changed** — fires when audio devices are added or
+    ///    removed system-wide. Catches the AirPods-battery-drain case where
+    ///    the default output may not change (macOS keeps the dead device as
+    ///    "default") but the device IS removed from the active list.
     private func startDeviceChangeListener() {
         guard !isListeningForDeviceChanges else { return }
 
-        // Capture the initial device's transport type so the first change
-        // notification has a meaningful baseline to compare against.
+        // Capture the initial device's transport type and ID so the first
+        // change notification has a meaningful baseline to compare against.
         refreshPreviousDeviceInfo()
 
-        var propertyAddress = AudioObjectPropertyAddress(
+        var defaultOutputAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
 
-        let listenerBlock: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            guard let self = self else { return }
+        let defaultOutputBlock: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            self?.handleDefaultOutputChange()
+        }
 
-            // Capture whether the *outgoing* device was Bluetooth BEFORE
-            // refreshing the cache to the new device. The spurious rcd
-            // toggle only fires on Bluetooth disconnects, so this gate
-            // eliminates false positives when the user simply switches
-            // between wired/built-in devices.
-            let wasBluetooth = self.previousDeviceWasBluetooth
+        var devicesAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
 
-            // Update the cache now so the next change notification has a
-            // fresh baseline for the device we just transitioned to.
-            self.refreshPreviousDeviceInfo()
-
-            guard wasBluetooth else {
-                // Non-Bluetooth departure: rcd will not send a spurious
-                // toggle. Leave playback untouched.
-                return
-            }
-
-            // Arm the suppress window so the incoming spurious system command
-            // (usually togglePlayPauseCommand on Bluetooth disconnect) is gated.
-            self.suppressUntil = Date().addingTimeInterval(self.suppressWindow)
-
-            // Preemptively pause only if we were actually playing. Calling
-            // onPause when already paused would fire the pause sound effect
-            // and needlessly thrash the reading-stats session.
-            //
-            // No explicit dispatch needed: the listener is registered on
-            // DispatchQueue.main below, which is the same queue that
-            // MPRemoteCommand handlers are invoked on. This both eliminates
-            // the data race on suppressUntil and guarantees deterministic
-            // ordering with the command handler if the events land close
-            // together.
-            if self.isCurrentlyPlaying?() == true {
-                self.onPause?()
-            }
+        let devicesBlock: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            self?.handleDeviceListChange()
         }
 
         // Dispatching on .main ensures we share a serial queue with the
         // MPRemoteCommand handlers. With nil here, CoreAudio's SDK header
         // says the block is "directly invoked" on the framework's internal
         // notification thread — which would introduce an unsynchronised
-        // race on suppressUntil against the command handlers.
-        let status = AudioObjectAddPropertyListenerBlock(
+        // race on suppressUntil against the command handlers. Sharing a
+        // queue across both listeners also serialises them with each
+        // other so they cannot interleave.
+        let defaultStatus = AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
+            &defaultOutputAddress,
             DispatchQueue.main,
-            listenerBlock
+            defaultOutputBlock
+        )
+        let devicesStatus = AudioObjectAddPropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &devicesAddress,
+            DispatchQueue.main,
+            devicesBlock
         )
 
-        if status == noErr {
-            deviceChangeListenerBlock = listenerBlock
+        // Each listener is registered independently so a failure on one
+        // does not orphan the other. We mark the service as "listening"
+        // if at least one succeeded — partial coverage is still better
+        // than none.
+        if defaultStatus == noErr {
+            deviceChangeListenerBlock = defaultOutputBlock
+        }
+        if devicesStatus == noErr {
+            deviceListListenerBlock = devicesBlock
+        }
+        if defaultStatus == noErr || devicesStatus == noErr {
             isListeningForDeviceChanges = true
+        }
+    }
+
+    /// Handler for the default-output-device-changed notification.
+    /// Common manual-disconnect path: AirPods → speakers, headphones → built-in,
+    /// switch external speaker, etc.
+    private func handleDefaultOutputChange() {
+        // Capture whether the *outgoing* device was Bluetooth BEFORE
+        // refreshing the cache to the new device. The spurious rcd
+        // toggle only fires on Bluetooth disconnects, so this gate
+        // eliminates false positives when the user simply switches
+        // between wired/built-in devices.
+        let wasBluetooth = previousDeviceWasBluetooth
+
+        // Update the cache now so the next change notification has a
+        // fresh baseline for the device we just transitioned to.
+        refreshPreviousDeviceInfo()
+
+        guard wasBluetooth else {
+            // Non-Bluetooth departure: rcd will not send a spurious
+            // toggle. Leave playback untouched.
+            return
+        }
+
+        armSuppressAndPauseIfPlaying()
+    }
+
+    /// Handler for the system-wide audio devices list change.
+    /// Catches the AirPods-battery-drain case where the default output
+    /// often stays put (macOS keeps the dead device as "default") but the
+    /// device disappears from the device list.
+    private func handleDeviceListChange() {
+        // Battery-drain detection: previously had a Bluetooth default,
+        // and that specific device is no longer in the active list.
+        if previousDeviceWasBluetooth, previousDeviceID != 0 {
+            let currentDevices = allAudioDeviceIDs()
+            if !currentDevices.contains(previousDeviceID) {
+                // The Bluetooth device we'd been using has vanished from
+                // the system. Arm the suppress window and pre-pause
+                // exactly as the default-output handler would, then
+                // clear cached state so the same vanished device doesn't
+                // re-trigger detection on every subsequent unrelated
+                // devices-list event (macOS may keep the dead device as
+                // the "default" indefinitely).
+                armSuppressAndPauseIfPlaying()
+                previousDeviceWasBluetooth = false
+                previousDeviceID = 0
+                return
+            }
+        }
+
+        // Not a Bluetooth-disconnect signal — but a devices-list change
+        // is still a useful trigger to keep our cache fresh. If the
+        // cache was zeroed by an earlier drain detection, this gives us
+        // a chance to re-establish a baseline (e.g. when a new audio
+        // device comes online, or when the user reconnects AirPods that
+        // become the default). Without this, a SECOND drain after a
+        // first drain would be missed when the default-output listener
+        // never fires for the reconnect.
+        refreshPreviousDeviceInfo()
+    }
+
+    /// Arm the suppress window for the configured duration, and call
+    /// `onPause` if playback is currently running. Shared by the two
+    /// disconnect handlers so the response to either trigger is identical.
+    /// onPause is only fired when actually playing — calling it on a paused
+    /// session would needlessly fire the pause sound effect and reset the
+    /// reading-stats session.
+    private func armSuppressAndPauseIfPlaying() {
+        suppressUntil = Date().addingTimeInterval(suppressWindow)
+        if isCurrentlyPlaying?() == true {
+            onPause?()
         }
     }
 
@@ -327,39 +422,119 @@ class NowPlayingService {
             || transportType == kAudioDeviceTransportTypeBluetoothLE
     }
 
-    /// Refresh the cached `previousDeviceWasBluetooth` flag from the
-    /// current default output device. Called at setup and at the end of
-    /// every change notification so the next notification has an
-    /// up-to-date baseline that's still queryable.
+    /// Refresh the cached `previousDeviceWasBluetooth` flag and
+    /// `previousDeviceID` from the current default output device. Called
+    /// at setup and at the end of every change notification so the next
+    /// notification has an up-to-date baseline that's still queryable.
+    ///
+    /// Includes a liveness check: if the system reports a default
+    /// output that is no longer in the active devices list — a state
+    /// macOS sometimes leaves us in after AirPods battery drain — we
+    /// cache zeros instead. Caching a vanished device would cause every
+    /// subsequent unrelated devices-list event to re-detect it as
+    /// "gone" and spuriously re-arm the suppress window.
     private func refreshPreviousDeviceInfo() {
-        if let deviceID = currentDefaultOutputDeviceID() {
-            previousDeviceWasBluetooth = isBluetoothDevice(deviceID)
-        } else {
+        guard let deviceID = currentDefaultOutputDeviceID() else {
             // No default output — unusual; treat as non-Bluetooth so we
             // don't spuriously arm the suppress window on nothing.
+            previousDeviceID = 0
+            previousDeviceWasBluetooth = false
+            return
+        }
+
+        // If allAudioDeviceIDs() returns empty (query failed), skip the
+        // liveness check rather than treat it as "device gone" — losing
+        // the cache on transient query failures is worse than caching a
+        // device that's still likely valid.
+        let currentDevices = allAudioDeviceIDs()
+        let deviceIsLive = currentDevices.isEmpty || currentDevices.contains(deviceID)
+        if deviceIsLive {
+            previousDeviceID = deviceID
+            previousDeviceWasBluetooth = isBluetoothDevice(deviceID)
+        } else {
+            previousDeviceID = 0
             previousDeviceWasBluetooth = false
         }
     }
 
-    private func stopDeviceChangeListener() {
-        guard isListeningForDeviceChanges, let block = deviceChangeListenerBlock else { return }
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+    /// Read the full list of audio device IDs known to the system.
+    /// Used by the devices-list listener to detect when the device we
+    /// last cached as the default output has been removed (e.g. AirPods
+    /// battery drained, taking them out of the active device list even
+    /// though macOS may still report them as the "default" output).
+    /// Returns an empty array on query failure.
+    private func allAudioDeviceIDs() -> [AudioDeviceID] {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
+        var size: UInt32 = 0
+        let sizeStatus = AudioObjectGetPropertyDataSize(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address,
+            0,
+            nil,
+            &size
+        )
+        guard sizeStatus == noErr, size > 0 else { return [] }
+
+        // Allocate based on the size reported by the size query, then
+        // truncate the result to the byte count the data query actually
+        // wrote back (CoreAudio updates `size` in place — if the device
+        // list shrank between the two calls, trailing slots would
+        // otherwise be zero-filled and read as bogus device IDs).
+        let allocatedCount = Int(size) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: allocatedCount)
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address,
+            0,
+            nil,
+            &size,
+            &deviceIDs
+        )
+        guard status == noErr else { return [] }
+
+        let actualCount = Int(size) / MemoryLayout<AudioDeviceID>.size
+        return Array(deviceIDs.prefix(actualCount))
+    }
+
+    private func stopDeviceChangeListener() {
+        guard isListeningForDeviceChanges else { return }
 
         // The dispatch queue must match the one used in
         // startDeviceChangeListener(), otherwise the unregistration fails.
-        AudioObjectRemovePropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            DispatchQueue.main,
-            block
-        )
+        if let block = deviceChangeListenerBlock {
+            var defaultOutputAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            AudioObjectRemovePropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &defaultOutputAddress,
+                DispatchQueue.main,
+                block
+            )
+            deviceChangeListenerBlock = nil
+        }
 
-        deviceChangeListenerBlock = nil
+        if let block = deviceListListenerBlock {
+            var devicesAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwarePropertyDevices,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            AudioObjectRemovePropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &devicesAddress,
+                DispatchQueue.main,
+                block
+            )
+            deviceListListenerBlock = nil
+        }
+
         isListeningForDeviceChanges = false
     }
 
