@@ -32,7 +32,25 @@ extension ReaderViewModel {
     }
 
     /// Pause the current playback (TTS or audio) and save position.
+    /// No-op for the persisted-state side-effects when nothing was actually
+    /// playing — that guard prevents a stray pause (e.g. a sleep-timer
+    /// expiry that races with a user-initiated stop, or a Bluetooth-
+    /// suppress toggle that lands in pause-direction while nothing is
+    /// playing) from clobbering `book.lastPlaybackStopped`, which the
+    /// rewind-on-resume threshold reads to decide how far back to rewind
+    /// on the next play.
     func pause() {
+        // Capture pre-pause playing state BEFORE we issue any pause calls.
+        // The audio / speech services flip their flags synchronously, so
+        // checking after would always return "not playing" and the guard
+        // would never apply.
+        let wasPlaying: Bool
+        if isAudioBook {
+            wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
+        } else {
+            wasPlaying = speechService.isSpeaking && !speechService.isPaused
+        }
+
         soundEffectService?.play(for: .pause)
         // Pause audio output FIRST so any volume changes below
         // are inaudible. Previously, restoreVolume() was called
@@ -40,8 +58,14 @@ extension ReaderViewModel {
         // at the end of a sleep timer fade-out.
         if isAudioBook {
             audioPlaybackService.pause()
-            isCurrentlyPlaying = true // still "playing" but paused
-            isCurrentlyPaused = true
+            // Only advertise the "playing-but-paused" state when there
+            // was something to pause. Otherwise (book stopped or never
+            // started, but pause() called by a stray notification) we'd
+            // falsely tell the UI a paused track is loaded.
+            if wasPlaying {
+                isCurrentlyPlaying = true // still "playing" but paused
+                isCurrentlyPaused = true
+            }
         } else {
             speechService.pause()
         }
@@ -63,8 +87,17 @@ extension ReaderViewModel {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )
-        recordPlaybackStopped()
-        savePosition()
+        // Only record the stopped timestamp / persist position if we
+        // actually transitioned from playing to paused. A no-op pause
+        // (e.g. spurious media-key event when already paused, or a
+        // toggle that landed in pause-direction during the BT suppress
+        // window with nothing playing) should not update
+        // book.lastPlaybackStopped — the rewind-on-resume threshold
+        // depends on it being the moment the user stopped real playback.
+        if wasPlaying {
+            recordPlaybackStopped()
+            savePosition()
+        }
     }
 
     /// Toggle between play and pause states. Handles Where Am I interruption,
@@ -119,7 +152,19 @@ extension ReaderViewModel {
     }
 
     /// Stop all playback completely and clear Now Playing info.
+    /// Same gating principle as `pause()`: only persist
+    /// `lastPlaybackStopped` and the current position when something was
+    /// actually playing or paused. A redundant stop on a stopped/empty
+    /// reader (cleanup paths, deinit, lifecycle handlers) shouldn't
+    /// clobber the timestamp that drives smart rewind.
     func stop() {
+        let wasActive: Bool
+        if isAudioBook {
+            wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused
+        } else {
+            wasActive = speechService.isSpeaking || speechService.isPaused
+        }
+
         if sleepTimerService.isFadingOut {
             sleepTimerService.stop()
         }
@@ -137,8 +182,10 @@ extension ReaderViewModel {
         }
         readingStatsService.endSession()
         nowPlayingService.clearNowPlaying()
-        recordPlaybackStopped()
-        savePosition()
+        if wasActive {
+            recordPlaybackStopped()
+            savePosition()
+        }
     }
 
     /// Speak the current chapter's text from the current character offset.

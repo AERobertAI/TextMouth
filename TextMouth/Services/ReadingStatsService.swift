@@ -176,6 +176,12 @@ class ReadingStatsService: ObservableObject {
     }
 
     private func startAutoSave() {
+        // Defensive invalidate-before-assign: this is currently called once
+        // from init on the shared singleton, but the pattern protects
+        // against a future refactor that calls it twice (which would
+        // otherwise leak a Timer onto the run loop with both copies firing
+        // every 60s).
+        saveTimer?.invalidate()
         saveTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             self?.save()
         }

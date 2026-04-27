@@ -14,8 +14,18 @@ class SpeechService: NSObject, ObservableObject {
 
     /// Tracks whether we were cancelled/paused/stopped during async rendering
     private var renderGeneration: Int = 0
-    /// Counts how many directSynth.didFinish callbacks to ignore (e.g. from internal stop during mode switch)
-    private var ignoreDirectFinishCount: Int = 0
+
+    /// Identity of the AVSpeechUtterance currently considered "live" by us.
+    /// Set when we hand an utterance to `directSynth` in `speakDirect(_:fromCharOffset:)`,
+    /// cleared whenever we deliberately stop the synthesizer or the utterance
+    /// finishes naturally. The `didFinish` delegate compares the incoming
+    /// `utterance` parameter to this — a mismatch means the callback is for
+    /// a previously-stopped utterance and must be ignored. This replaces an
+    /// older counter-based scheme that would silently swallow legitimate
+    /// finishes if the system ever delivered fewer didFinish events than we
+    /// expected (e.g. dropped under load), or let stale finishes through if
+    /// it delivered more.
+    private weak var liveDirectUtterance: AVSpeechUtterance?
 
     @Published var isSpeaking = false
     @Published var isPaused = false
@@ -56,6 +66,18 @@ class SpeechService: NSObject, ObservableObject {
     private static let directModeChunkSize = 5000
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
+
+    /// Generation counter for in-flight position-tracking dispatches. The
+    /// poll timer runs every 100 ms, captures the current offset on main,
+    /// hops to a background queue to extract the current word, then hops
+    /// back to main to publish via `currentWordRange` / `onWordSpoken`.
+    /// A seek that happens between the offset capture and the final main-
+    /// queue publish would otherwise cause the stale offset to overwrite
+    /// the now-correct one. Each tick captures the generation at the
+    /// start; the publish guard drops the result if the generation moved.
+    /// Bumped by `startPositionTracking`, `stopPositionTracking`, and any
+    /// path that seeks (`seek(toCharOffset:)`).
+    private var positionGeneration: Int = 0
 
     private var settingsCancellables = Set<AnyCancellable>()
 
@@ -262,7 +284,23 @@ class SpeechService: NSObject, ObservableObject {
         utterance.rate = Self.rateForWPM(wordsPerMinute)
         utterance.pitchMultiplier = Float(max(0.5, min(pitchMultiplier, 2.0)))
         utterance.prefersAssistiveTechnologySettings = false
+        // Mark this utterance as live BEFORE handing it to the synth.
+        // The didFinish delegate compares against `liveDirectUtterance`
+        // to filter callbacks for previously-stopped utterances.
+        liveDirectUtterance = utterance
         directSynth.speak(utterance)
+    }
+
+    /// Stop the direct synthesizer and clear the live-utterance marker so
+    /// any pending `didFinish` callback for the stopped utterance is
+    /// recognised as stale and ignored. Replaces the older
+    /// `ignoreDirectFinishCount += 1; directSynth.stopSpeaking(...)` pair
+    /// at every internal stop site — that scheme could desync if the
+    /// system delivered a different number of didFinish events than we
+    /// expected. Identity comparison can't desync.
+    private func stopDirectSynthesizer() {
+        liveDirectUtterance = nil
+        directSynth.stopSpeaking(at: .immediate)
     }
 
     func pause() {
@@ -290,8 +328,7 @@ class SpeechService: NSObject, ObservableObject {
             // Paused in direct mode but engine is ready — switch to engine for better seeking/speed
             let offset = currentWordRange?.location ?? 0
             transitionLog("RESUME_SWITCH: direct→engine at offset=\(offset)")
-            ignoreDirectFinishCount += 1
-            directSynth.stopSpeaking(at: .immediate)
+            stopDirectSynthesizer()
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
             audioEngine.setPitch(multiplier: pitchMultiplier)
@@ -320,12 +357,12 @@ class SpeechService: NSObject, ObservableObject {
 
     func stop() {
         renderGeneration += 1  // Invalidate any in-flight render
-        // Suppress the didFinish callback that stopSpeaking triggers,
-        // so it doesn't fire after a new utterance starts and cause chapter-advance.
-        if directSynth.isSpeaking || directSynth.isPaused {
-            ignoreDirectFinishCount += 1
-        }
-        directSynth.stopSpeaking(at: .immediate)
+        // Clear the live-utterance marker so any pending didFinish for
+        // the in-flight direct-mode utterance is recognised as stale
+        // and ignored — without this, a finish callback delivered after
+        // a new utterance had started would cause an unwanted chapter
+        // advance.
+        stopDirectSynthesizer()
         // Cancel any in-progress background render so it doesn't compete
         // with the next direct-mode TTS for system resources
         audioEngine.cancelRender()
@@ -377,12 +414,17 @@ class SpeechService: NSObject, ObservableObject {
     /// If audio engine is ready, switches to it for instant seeking.
     /// Otherwise restarts direct speech from the new offset.
     func seek(toCharOffset offset: Int) {
+        // Bump the position-tracking generation so any in-flight 100ms
+        // polling dispatch (offset captured pre-seek, word extraction
+        // running on the background queue) is dropped on its way back
+        // to main and doesn't overwrite the now-correct position.
+        positionGeneration += 1
+
         if audioEngine.hasRenderedAudio {
             // Engine is ready — use it (switch from direct mode if needed)
             if usingDirectMode {
                 transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
-                ignoreDirectFinishCount += 1
-                directSynth.stopSpeaking(at: .immediate)
+                stopDirectSynthesizer()
                 usingDirectMode = false
                 let wasPlaying = isSpeaking && !isPaused
                 audioEngine.setSpeed(wpm: wordsPerMinute)
@@ -398,9 +440,11 @@ class SpeechService: NSObject, ObservableObject {
                 }
             }
         } else if usingDirectMode {
-            // No engine yet — restart direct mode from new position
-            ignoreDirectFinishCount += 1
-            directSynth.stopSpeaking(at: .immediate)
+            // No engine yet — restart direct mode from new position.
+            // stopDirectSynthesizer() clears the live-utterance marker so
+            // the OLD utterance's didFinish (if it fires after speakDirect
+            // assigns a new live utterance) is correctly seen as stale.
+            stopDirectSynthesizer()
             speakDirect(currentText, fromCharOffset: offset)
         }
         let range = NSRange(location: offset, length: 0)
@@ -440,7 +484,12 @@ class SpeechService: NSObject, ObservableObject {
     )
 
     private func startPositionTracking() {
+        // stopPositionTracking() invalidates the previous timer AND bumps
+        // the generation, so any in-flight dispatch from the old timer is
+        // dropped before the new timer starts. Capture the post-bump
+        // generation for the new timer's ticks.
         stopPositionTracking()
+        let myGeneration = positionGeneration
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, !self.usingDirectMode,
                   self.audioEngine.isPlaying || self.audioEngine.isPaused else { return }
@@ -467,6 +516,11 @@ class SpeechService: NSObject, ObservableObject {
                 }
                 DispatchQueue.main.async {
                     guard let self = self else { return }
+                    // Drop the publish if the position generation moved
+                    // while we were doing the off-main word extraction —
+                    // a seek or stop happened, and the captured offset
+                    // is now stale relative to the audio engine.
+                    guard self.positionGeneration == myGeneration else { return }
                     self.currentWordRange = range
                     if !word.isEmpty {
                         self.onWordSpoken?(range, word)
@@ -479,6 +533,10 @@ class SpeechService: NSObject, ObservableObject {
     }
 
     private func stopPositionTracking() {
+        // Bump the generation BEFORE invalidating so any dispatch already
+        // captured by the soon-to-be-invalidated tick is also dropped on
+        // its way back to main.
+        positionGeneration += 1
         positionTimer?.invalidate()
         positionTimer = nil
     }
@@ -553,12 +611,20 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            // Ignore finish callbacks caused by internal stopSpeaking (e.g. mode switch)
-            if self.ignoreDirectFinishCount > 0 {
-                self.ignoreDirectFinishCount -= 1
-                return
-            }
+            // Identity check: a finish for an utterance we no longer
+            // consider live is an artefact of an internal stopSpeaking
+            // (mode switch / seek / stop). Drop it so it doesn't trigger
+            // chapter advance after a new utterance has already started.
+            // Compares to `liveDirectUtterance` rather than counting calls,
+            // so we can't desync if the system delivers an unexpected
+            // number of didFinish events.
+            guard utterance === self.liveDirectUtterance else { return }
             guard self.usingDirectMode else { return }
+
+            // This utterance has finished naturally — clear the marker so
+            // a future stop-without-start doesn't accidentally process its
+            // own didFinish twice.
+            self.liveDirectUtterance = nil
 
             // If this was a chunked utterance, continue with next chunk or switch to engine
             if self.directModeChunked {
@@ -574,7 +640,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                     self.startPositionTracking()
                     return
                 } else if nextOffset < self.currentText.count {
-                    // Engine not ready yet — speak the next chunk
+                    // Engine not ready yet — speak the next chunk.
+                    // speakDirect assigns a fresh `liveDirectUtterance`
+                    // for the new chunk.
                     self.transitionLog("CHUNK_CONTINUE: next chunk at offset \(nextOffset)")
                     self.speakDirect(self.currentText, fromCharOffset: nextOffset)
                     return

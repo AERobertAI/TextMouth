@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct HeadingNavigatorView: View {
+    /// Static metadata for one heading row. Crucially does NOT include the
+    /// "currently reading" flag — that's tracked separately via
+    /// `currentHeadingID` so a moving playback cursor doesn't force the
+    /// whole list to be rebuilt (and the LazyVStack to be reconciled,
+    /// and VoiceOver focus to be lost) on every word spoken.
     struct HeadingListItem: Identifiable {
         let heading: Heading
-        let isCurrent: Bool
         let isSkipped: Bool
         let infoText: String
         let accessibilityDescription: String
@@ -18,6 +22,11 @@ struct HeadingNavigatorView: View {
     // Cache the rendered heading metadata in state so sheet presentation does
     // not repeatedly recompute timing/accessibility strings on the main thread.
     @State private var headingItems: [HeadingListItem] = []
+    /// The id of the heading the playback cursor is currently inside. Updated
+    /// independently of `headingItems` so the only thing that re-renders when
+    /// the cursor advances within a heading is the speaker-icon badge — the
+    /// full list (and its VoiceOver focus state) stays put.
+    @State private var currentHeadingID: String?
     @State private var sheetAppearedAt = Date()
     // VoiceOver would keep the segmented control as first responder until the
     // first heading also became the actual keyboard focus target.
@@ -90,9 +99,13 @@ struct HeadingNavigatorView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(headingItems.enumerated()), id: \.element.id) { index, item in
+                            // `isCurrent` is derived inline so updates to the
+                            // playback cursor only redraw the speaker badge,
+                            // not the whole list.
+                            let isCurrent = item.heading.id == currentHeadingID
                             let row = HeadingRow(
                                 heading: item.heading,
-                                isCurrent: item.isCurrent,
+                                isCurrent: isCurrent,
                                 isSkipped: item.isSkipped,
                                 infoText: item.infoText
                             )
@@ -113,7 +126,7 @@ struct HeadingNavigatorView: View {
                                 .focused($focusedHeadingID, equals: item.heading.id)
                                 .accessibilityLabel(item.accessibilityDescription)
                                 .accessibilityHint(row.accessibilityHintText)
-                                .accessibilityAddTraits(item.isCurrent ? [.isSelected] : [])
+                                .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
                                 .modifier(FirstItemFocusModifier(isFirst: true, delay: 0.2))
                                 .contextMenu {
                                     Button("Go To") {
@@ -138,7 +151,7 @@ struct HeadingNavigatorView: View {
                                 .buttonStyle(.plain)
                                 .accessibilityLabel(item.accessibilityDescription)
                                 .accessibilityHint(row.accessibilityHintText)
-                                .accessibilityAddTraits(item.isCurrent ? [.isSelected] : [])
+                                .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
                                 .contextMenu {
                                     Button("Go To") {
                                         viewModel.navigateToHeading(item.heading)
@@ -169,6 +182,7 @@ struct HeadingNavigatorView: View {
         .onAppear {
             sheetAppearedAt = Date()
             rebuildHeadingItems()
+            currentHeadingID = computedCurrentHeadingID()
             voiceOverFocusLog("headings sheet appeared with \(headingItems.count) rows")
             guard let firstHeading = headingItems.first?.heading else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -187,15 +201,29 @@ struct HeadingNavigatorView: View {
         }
         .onChange(of: maxHeadingLevel) { _, _ in
             rebuildHeadingItems()
+            // The filter scope changed — the cursor's heading may have just
+            // been filtered out (or back in). Recompute now so the badge
+            // is correct immediately, instead of waiting for the next
+            // playback tick to repair the state via updateCurrentHeadingIDIfChanged.
+            currentHeadingID = computedCurrentHeadingID()
         }
         .onChange(of: viewModel.headings) { _, _ in
             rebuildHeadingItems()
+            // Heading list changed entirely — the cached current id may be
+            // stale (e.g. the heading was renamed/removed), recompute.
+            currentHeadingID = computedCurrentHeadingID()
         }
+        // Position-driven changes never rebuild the list. They only update
+        // the lightweight `currentHeadingID` state — which feeds the inline
+        // `isCurrent` check in the ForEach. The list's identity, scroll
+        // position, and VoiceOver focus all stay put. Crossing a heading
+        // boundary updates a single row's speaker badge; cursor movement
+        // within a heading is a no-op.
         .onChange(of: viewModel.currentChapterIndex) { _, _ in
-            rebuildHeadingItems()
+            updateCurrentHeadingIDIfChanged()
         }
         .onChange(of: viewModel.currentCharacterOffset) { _, _ in
-            rebuildHeadingItems()
+            updateCurrentHeadingIDIfChanged()
         }
         .onChange(of: viewModel.book.skippedHeadingIDs ?? []) { _, _ in
             rebuildHeadingItems()
@@ -208,7 +236,6 @@ struct HeadingNavigatorView: View {
 
     private func makeHeadingItems() -> [HeadingListItem] {
         let filtered = filteredHeadings
-        let currentID = currentHeadingID(in: filtered)
         let skippedIDs = viewModel.skippedHeadingIDs
 
         guard let content = viewModel.content else {
@@ -216,7 +243,6 @@ struct HeadingNavigatorView: View {
                 let isSkipped = skippedIDs.contains(heading.id)
                 return HeadingListItem(
                     heading: heading,
-                    isCurrent: heading.id == currentID,
                     isSkipped: isSkipped,
                     infoText: "",
                     accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "")
@@ -263,7 +289,6 @@ struct HeadingNavigatorView: View {
                 }
                 return HeadingListItem(
                     heading: heading,
-                    isCurrent: heading.id == currentID,
                     isSkipped: isSkipped,
                     infoText: TimeFormatting.format(seconds),
                     accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: TimeFormatting.spoken(seconds))
@@ -280,7 +305,6 @@ struct HeadingNavigatorView: View {
                 }
                 return HeadingListItem(
                     heading: heading,
-                    isCurrent: heading.id == currentID,
                     isSkipped: isSkipped,
                     infoText: TimeFormatting.format(seconds),
                     accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "\(TimeFormatting.spoken(seconds)) in")
@@ -289,7 +313,6 @@ struct HeadingNavigatorView: View {
                 let percent = min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
                 return HeadingListItem(
                     heading: heading,
-                    isCurrent: heading.id == currentID,
                     isSkipped: isSkipped,
                     infoText: String(format: "%.1f%%", percent),
                     accessibilityDescription: describeHeading(
@@ -307,6 +330,26 @@ struct HeadingNavigatorView: View {
         headingItems = makeHeadingItems()
         let elapsed = CFAbsoluteTimeGetCurrent() - startedAt
         voiceOverFocusLog("rebuilt headings items in \(String(format: "%.3f", elapsed))s")
+    }
+
+    /// Compute which heading the playback cursor is currently inside, scoped
+    /// to the visible filter level. Used to drive the inline `isCurrent`
+    /// check on each row without rebuilding the cached `headingItems`.
+    private func computedCurrentHeadingID() -> String? {
+        currentHeadingID(in: filteredHeadings)
+    }
+
+    /// Update `currentHeadingID` only when the cursor has actually crossed a
+    /// heading boundary. `currentCharacterOffset` ticks ~10×/sec during
+    /// playback; the vast majority of those ticks land inside the same
+    /// heading and produce no change here, so SwiftUI doesn't re-render
+    /// anything. When the cursor does cross into a new heading, exactly
+    /// two rows redraw (the previous and new "currently reading" rows).
+    private func updateCurrentHeadingIDIfChanged() {
+        let newID = computedCurrentHeadingID()
+        if newID != currentHeadingID {
+            currentHeadingID = newID
+        }
     }
 
     /// Distinct heading levels present in this document (sorted), for building the filter picker

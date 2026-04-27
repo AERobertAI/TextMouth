@@ -356,6 +356,10 @@ extension LibraryViewModel {
 
     /// Start the periodic refresh timer that bumps refreshTick for time estimate updates
     func startRefreshTimer() {
+        // Defensive invalidate-before-assign so a second call doesn't leak
+        // a Timer (two copies firing every 10s — visible as accelerated
+        // refreshTick updates and double the wakeups).
+        refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.refreshTick &+= 1

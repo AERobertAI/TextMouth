@@ -306,6 +306,28 @@ class NowPlayingService {
     /// Handler for the default-output-device-changed notification.
     /// Common manual-disconnect path: AirPods → speakers, headphones → built-in,
     /// switch external speaker, etc.
+    ///
+    /// ## A noted omission: no debounce
+    /// A flaky Bluetooth connection that drops for a fraction of a second and
+    /// reconnects will still fire this handler, which arms the suppress window
+    /// and pre-pauses if playing. There is no "wait N ms to see if the device
+    /// comes back" grace period. Adding one would require careful design to
+    /// avoid re-introducing the very bug commit aeac7c1 fixed (the spurious
+    /// auto-resume on Bluetooth disconnect): if we delay our pause but `rcd`'s
+    /// togglePlayPauseCommand fires inside the delay window, we'd miss arming
+    /// the suppress window and a paused book would auto-play. Any future
+    /// debounce needs to:
+    ///   1. Arm the suppress window IMMEDIATELY (cheap, idempotent),
+    ///   2. Delay only the pre-emptive `onPause`, and
+    ///   3. Cancel that pending pause if the device returns within the window.
+    ///   4. Keep the suppress window's duration (`suppressWindow`) at least
+    ///      as long as the debounce delay — otherwise the suppress could
+    ///      expire before the debounce decides whether to fire `onPause`,
+    ///      and a late spurious toggle would slip through.
+    /// The combination keeps rcd's toggle blocked while letting transient
+    /// drops slide past without an audible pause, but the existing code is
+    /// correct without it — so leaving as-is until field reports show the
+    /// flicker is actually a problem.
     private func handleDefaultOutputChange() {
         // Capture whether the *outgoing* device was Bluetooth BEFORE
         // refreshing the cache to the new device. The spurious rcd

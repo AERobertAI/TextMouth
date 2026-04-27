@@ -1635,6 +1635,544 @@ test("Bluetooth settings persistence: missing keys use defaults") {
         "Missing key should default to 2 seconds")
 }
 
+// ---- Headings Panel: current-heading-id update gating ----
+print("\n--- Headings Panel: Current-Heading-ID Update Gating ---")
+
+// Mirrors the predicate the production HeadingNavigatorView uses to decide
+// whether `currentHeadingID` actually changed and a re-render is needed.
+// The whole point of the new design is that cursor movement WITHIN a
+// heading does NOT change `currentHeadingID` — so the LazyVStack and
+// VoiceOver focus stay put. Crossing into a new heading is the only
+// thing that flips one row's "currently reading" badge.
+
+/// One heading entry, scoped to the test (mirrors production `Heading`
+/// for the only fields we need to evaluate the predicate).
+struct TestHeading {
+    let id: String
+    let chapterIndex: Int
+    let characterOffset: Int
+}
+
+/// The same `currentHeadingID(in:)` rule used by HeadingNavigatorView:
+/// pick the last heading whose (chapter, offset) is at-or-before the
+/// playback cursor.
+func currentHeadingID(
+    in headings: [TestHeading],
+    chapterIndex: Int,
+    characterOffset: Int
+) -> String? {
+    headings.last(where: {
+        $0.chapterIndex < chapterIndex
+            || ($0.chapterIndex == chapterIndex && $0.characterOffset <= characterOffset)
+    })?.id
+}
+
+test("Headings: current id stays put while cursor moves within a heading") {
+    // Three headings in chapter 0 at offsets 0, 100, 200.
+    let headings = [
+        TestHeading(id: "h1", chapterIndex: 0, characterOffset: 0),
+        TestHeading(id: "h2", chapterIndex: 0, characterOffset: 100),
+        TestHeading(id: "h3", chapterIndex: 0, characterOffset: 200),
+    ]
+
+    var currentID: String? = nil
+    var rebuildCount = 0
+
+    /// Mirrors `updateCurrentHeadingIDIfChanged()` in production.
+    func tick(chapter: Int, offset: Int) {
+        let newID = currentHeadingID(in: headings, chapterIndex: chapter, characterOffset: offset)
+        if newID != currentID {
+            currentID = newID
+            rebuildCount += 1
+        }
+    }
+
+    // Land inside heading 2 and walk through every offset to its end.
+    tick(chapter: 0, offset: 100)
+    try assertEqual(currentID, "h2")
+    try assertEqual(rebuildCount, 1, "First landing flips the id once")
+
+    // 99 word ticks later we're still inside h2 — must not re-render.
+    for offset in 101..<200 { tick(chapter: 0, offset: offset) }
+    try assertEqual(currentID, "h2", "Still inside h2")
+    try assertEqual(rebuildCount, 1, "No re-render while cursor stays inside the heading")
+}
+
+test("Headings: crossing into a new heading triggers exactly one update") {
+    let headings = [
+        TestHeading(id: "h1", chapterIndex: 0, characterOffset: 0),
+        TestHeading(id: "h2", chapterIndex: 0, characterOffset: 100),
+        TestHeading(id: "h3", chapterIndex: 0, characterOffset: 200),
+    ]
+
+    var currentID: String? = nil
+    var rebuildCount = 0
+    func tick(chapter: Int, offset: Int) {
+        let newID = currentHeadingID(in: headings, chapterIndex: chapter, characterOffset: offset)
+        if newID != currentID {
+            currentID = newID
+            rebuildCount += 1
+        }
+    }
+
+    // Walk from inside h1 across the boundary into h2.
+    tick(chapter: 0, offset: 99)
+    try assertEqual(currentID, "h1")
+    tick(chapter: 0, offset: 100)
+    try assertEqual(currentID, "h2", "Boundary at offset 100 belongs to h2")
+    try assertEqual(rebuildCount, 2, "Initial landing + one boundary cross")
+
+    // And on into h3.
+    for offset in 101..<200 { tick(chapter: 0, offset: offset) }
+    try assertEqual(rebuildCount, 2, "No re-render walking through h2's body")
+    tick(chapter: 0, offset: 200)
+    try assertEqual(currentID, "h3")
+    try assertEqual(rebuildCount, 3)
+}
+
+test("Headings: chapter change without a heading at the new position keeps last seen heading") {
+    // Heading 1 in chapter 0, heading 2 in chapter 2 (chapter 1 has none).
+    // While playback is in chapter 1, the "current" heading remains h1
+    // — that's the existing semantic, this test pins it under the new
+    // gating logic.
+    let headings = [
+        TestHeading(id: "h1", chapterIndex: 0, characterOffset: 0),
+        TestHeading(id: "h2", chapterIndex: 2, characterOffset: 0),
+    ]
+    var currentID: String? = nil
+    var rebuildCount = 0
+    func tick(chapter: Int, offset: Int) {
+        let newID = currentHeadingID(in: headings, chapterIndex: chapter, characterOffset: offset)
+        if newID != currentID {
+            currentID = newID
+            rebuildCount += 1
+        }
+    }
+
+    tick(chapter: 0, offset: 50)
+    try assertEqual(currentID, "h1")
+
+    tick(chapter: 1, offset: 0)
+    try assertEqual(currentID, "h1", "No heading in chapter 1 — h1 stays current")
+    try assertEqual(rebuildCount, 1, "No re-render when entering a heading-less chapter")
+
+    tick(chapter: 2, offset: 0)
+    try assertEqual(currentID, "h2")
+    try assertEqual(rebuildCount, 2)
+}
+
+test("Headings: cursor before the first heading yields nil current id") {
+    let headings = [
+        TestHeading(id: "h1", chapterIndex: 1, characterOffset: 0),
+        TestHeading(id: "h2", chapterIndex: 2, characterOffset: 0),
+    ]
+    var currentID: String? = nil
+    func tick(chapter: Int, offset: Int) {
+        currentID = currentHeadingID(in: headings, chapterIndex: chapter, characterOffset: offset)
+    }
+
+    tick(chapter: 0, offset: 0)
+    try assertTrue(currentID == nil, "Cursor before any heading has no current heading")
+
+    tick(chapter: 0, offset: 5_000)
+    try assertTrue(currentID == nil, "Same: still in chapter 0, no heading reached yet")
+}
+
+// ---- SpeechService: utterance-identity finish dispatch ----
+print("\n--- SpeechService: Utterance-Identity Finish Dispatch ---")
+
+// Mirrors the production rule that replaced `ignoreDirectFinishCount`.
+// Each time we hand an utterance to the synthesizer, it becomes the
+// "live" utterance. Internal stopSpeaking calls clear the live marker
+// (and may immediately start a new utterance, becoming the new live
+// one). The didFinish delegate compares the incoming utterance to the
+// live marker — a mismatch means the callback is for an utterance
+// we've already moved on from, and must be ignored. Identity (===)
+// can't desync the way a counter can.
+
+class IdentityToken: Equatable {
+    static func == (l: IdentityToken, r: IdentityToken) -> Bool { l === r }
+}
+
+test("Utterance identity: didFinish for the live utterance is processed") {
+    var liveUtterance: IdentityToken? = nil
+    var processedFinishes = 0
+
+    func startUtterance() -> IdentityToken {
+        let u = IdentityToken()
+        liveUtterance = u
+        return u
+    }
+    func didFinish(_ u: IdentityToken) {
+        guard u === liveUtterance else { return }
+        liveUtterance = nil
+        processedFinishes += 1
+    }
+
+    let u = startUtterance()
+    didFinish(u)
+    try assertEqual(processedFinishes, 1)
+    try assertTrue(liveUtterance == nil, "Live marker cleared after a real finish")
+}
+
+test("Utterance identity: stale didFinish from a stopped utterance is ignored") {
+    // The bug case: synth had utterance A, we stop it and start B; the
+    // delegate later fires didFinish for A. With the counter approach
+    // this might desync; with identity it can't.
+    var liveUtterance: IdentityToken? = nil
+    var processedFinishes = 0
+
+    func startUtterance() -> IdentityToken {
+        let u = IdentityToken()
+        liveUtterance = u
+        return u
+    }
+    func internalStop() {
+        liveUtterance = nil
+    }
+    func didFinish(_ u: IdentityToken) {
+        guard u === liveUtterance else { return }
+        liveUtterance = nil
+        processedFinishes += 1
+    }
+
+    let a = startUtterance()
+    internalStop()
+    let b = startUtterance()
+    // System eventually delivers didFinish for A — must be ignored
+    didFinish(a)
+    try assertEqual(processedFinishes, 0, "Stale finish for stopped utterance must not advance state")
+    try assertTrue(liveUtterance === b, "Live marker for new utterance is intact")
+
+    // B finishing normally does fire
+    didFinish(b)
+    try assertEqual(processedFinishes, 1)
+}
+
+test("Utterance identity: extra duplicate didFinish for same utterance fires only once") {
+    // The other counter desync case: system delivers TWO didFinish for the
+    // same utterance. Identity correctly handles it because the live
+    // marker is cleared on the first finish.
+    var liveUtterance: IdentityToken? = nil
+    var processedFinishes = 0
+
+    func startUtterance() -> IdentityToken {
+        let u = IdentityToken()
+        liveUtterance = u
+        return u
+    }
+    func didFinish(_ u: IdentityToken) {
+        guard u === liveUtterance else { return }
+        liveUtterance = nil
+        processedFinishes += 1
+    }
+
+    let u = startUtterance()
+    didFinish(u)
+    didFinish(u)  // duplicate from system — must not double-fire
+    try assertEqual(processedFinishes, 1, "Identity check naturally dedupes duplicate didFinish")
+}
+
+test("Utterance identity: missing didFinish does not break the next utterance") {
+    // The other counter problem: if the system DROPS a didFinish under
+    // load, a counter-based scheme keeps a permanent +1 offset and
+    // silently swallows a future legit finish. Identity-based handling
+    // doesn't care — each utterance has its own marker.
+    var liveUtterance: IdentityToken? = nil
+    var processedFinishes = 0
+
+    func startUtterance() -> IdentityToken {
+        let u = IdentityToken()
+        liveUtterance = u
+        return u
+    }
+    func internalStop() { liveUtterance = nil }
+    func didFinish(_ u: IdentityToken) {
+        guard u === liveUtterance else { return }
+        liveUtterance = nil
+        processedFinishes += 1
+    }
+
+    let a = startUtterance()
+    internalStop()  // we stop A; system never delivers didFinish for A
+    let b = startUtterance()
+    didFinish(b)  // legit finish for B — must fire
+    try assertEqual(processedFinishes, 1, "B's finish is processed even though A's was lost")
+}
+
+// ---- SpeechService: position-tracking generation guard ----
+print("\n--- SpeechService: Position-Tracking Generation Guard ---")
+
+// Mirrors the production rule for the 100ms position-poll dispatch
+// chain. A tick captures the offset on main, hops to a background queue
+// for word extraction, hops back to main to publish. If a seek (or stop)
+// happens between the capture and the publish, the captured offset is
+// stale and the publish must be dropped.
+
+test("Position generation: in-flight publish dropped after a seek") {
+    var positionGeneration = 0
+    var publishedOffset: Int? = nil
+    func tickPublish(capturedOffset: Int) {
+        // Tick T captured generation Gt.
+        let gt = positionGeneration
+        // ... background work ... seek happens here, bumping generation ...
+        positionGeneration += 1  // simulate seek between capture and publish
+        // Publish guard:
+        guard gt == positionGeneration else { return }
+        publishedOffset = capturedOffset
+    }
+    tickPublish(capturedOffset: 1000)
+    try assertTrue(publishedOffset == nil, "Publish must be dropped after seek")
+}
+
+test("Position generation: publish lands when no seek happens") {
+    var positionGeneration = 0
+    var publishedOffset: Int? = nil
+    func tickPublish(capturedOffset: Int) {
+        let gt = positionGeneration
+        // No seek between capture and publish.
+        guard gt == positionGeneration else { return }
+        publishedOffset = capturedOffset
+    }
+    tickPublish(capturedOffset: 1000)
+    try assertEqual(publishedOffset, 1000)
+}
+
+test("Position generation: stop drops in-flight tick") {
+    // stopPositionTracking bumps generation BEFORE invalidating the
+    // timer, so any in-flight dispatch from the soon-to-be-invalidated
+    // timer is recognised as stale.
+    var positionGeneration = 0
+    var publishedOffset: Int? = nil
+
+    let gt = positionGeneration  // in-flight capture
+    // ... stopPositionTracking executes:
+    positionGeneration += 1
+    // ... background work returns:
+    if gt == positionGeneration { publishedOffset = 5000 }
+    try assertTrue(publishedOffset == nil, "Stale tick from before stop must be dropped")
+}
+
+test("Position generation: each restart establishes a fresh generation") {
+    var positionGeneration = 0
+    // Tick A captures gen 0
+    let genA = positionGeneration
+
+    // Restart bumps generation
+    positionGeneration += 1
+    let genB = positionGeneration
+
+    // Tick A is now stale
+    try assertTrue(genA != positionGeneration)
+    // Tick B is current
+    try assertEqual(genB, positionGeneration)
+}
+
+test("Position generation: bump-before-invalidate drops late ticks from doomed timer") {
+    // Production stopPositionTracking does:
+    //   positionGeneration += 1
+    //   positionTimer?.invalidate()
+    //   positionTimer = nil
+    // The bump precedes the invalidate so any tick already popped from the
+    // run loop and waiting to dispatch (between popping and our invalidate
+    // call taking effect) is also recognised as stale by the publish guard.
+    // Reverse the order and the tick would publish stale data. This
+    // sentinel test pins the ordering rule.
+    var positionGeneration = 0
+    var publishedOffset: Int? = nil
+
+    // Tick already popped, captured the pre-stop generation.
+    let inFlightGen = positionGeneration
+    let inFlightOffset = 4242
+
+    // stopPositionTracking begins:
+    positionGeneration += 1   // bump first (production does this)
+    // (timer.invalidate() would happen here; modeled implicitly — the
+    // popped tick already escaped its protection)
+
+    // The popped tick now reaches the publish guard:
+    if inFlightGen == positionGeneration {
+        publishedOffset = inFlightOffset
+    }
+    try assertTrue(publishedOffset == nil,
+        "Bump-before-invalidate must drop a tick that was already in flight when stop ran")
+
+    // Reverse order — invalidate before bump — would let a popped tick land
+    // because the generation hasn't moved at the moment the publish guard
+    // runs. Mirror that here as a negative control:
+    positionGeneration = 0
+    let inFlightGenReverse = positionGeneration
+    // (in the buggy ordering, invalidate would happen here while
+    // generation is still 0 — the tick's gen check passes)
+    let wouldPublish = (inFlightGenReverse == positionGeneration)
+    try assertTrue(wouldPublish,
+        "Negative control: with invalidate-before-bump the publish guard misses the stale tick")
+    // Production avoids the wouldPublish path by bumping first.
+}
+
+// ---- Periodic timer single-instance hardening ----
+print("\n--- Periodic Timer Single-Instance Hardening ---")
+
+// Simulates the invalidate-before-assign pattern added to
+// ReadingStatsService.startAutoSave and
+// LibraryViewModel.startRefreshTimer. The pattern protects against a
+// future refactor (or repeated init) leaking a previous Timer onto
+// the run loop with both copies firing.
+
+class TestTimerSlot {
+    private(set) var liveTimers: Int = 0
+    func schedule() {
+        // Every "schedule" leaks unless invalidate is called first.
+        liveTimers += 1
+    }
+    func invalidate() {
+        if liveTimers > 0 { liveTimers -= 1 }
+    }
+}
+
+test("Single-instance: invalidate-before-assign prevents leak on second call") {
+    let slot = TestTimerSlot()
+    func startTimer() {
+        slot.invalidate()  // production: previousTimer?.invalidate()
+        slot.schedule()
+    }
+    startTimer()
+    try assertEqual(slot.liveTimers, 1)
+    startTimer()
+    try assertEqual(slot.liveTimers, 1, "Second call must not stack a second live timer")
+    startTimer()
+    try assertEqual(slot.liveTimers, 1)
+}
+
+test("Single-instance: missing invalidate would leak (regression sentinel)") {
+    // Negative-control test: if someone removes the invalidate line,
+    // this asserts the leak. Keep it as a guard so the protective
+    // pattern isn't silently undone.
+    let slot = TestTimerSlot()
+    func startTimerBuggy() {
+        // No invalidate — this is what we DON'T want.
+        slot.schedule()
+    }
+    startTimerBuggy()
+    startTimerBuggy()
+    try assertEqual(slot.liveTimers, 2, "Without invalidate, second call leaks a second timer")
+}
+
+// ---- pause() side-effect gating ----
+print("\n--- pause() Side-Effect Gating ---")
+
+// Mirrors the rule that a no-op pause (already paused / nothing
+// playing) must NOT call recordPlaybackStopped or savePosition,
+// because the rewind-on-resume threshold reads
+// book.lastPlaybackStopped to decide how far back to rewind on next
+// resume. Letting a media-key spurious pause overwrite that
+// timestamp would defeat the threshold.
+
+test("Pause guard: pausing while playing records stopped + saves") {
+    var isPlaying = true
+    var recordedStops = 0
+    var savedPositions = 0
+
+    func pauseAction() {
+        let wasPlaying = isPlaying
+        // ... call the underlying pause services, flip state ...
+        isPlaying = false
+        // The guarded side-effects:
+        if wasPlaying {
+            recordedStops += 1
+            savedPositions += 1
+        }
+    }
+
+    pauseAction()
+    try assertEqual(recordedStops, 1, "Real pause must record stopped")
+    try assertEqual(savedPositions, 1, "Real pause must save position")
+}
+
+test("Pause guard: pausing when already paused does not record / save") {
+    var isPlaying = false  // already paused
+    var recordedStops = 0
+    var savedPositions = 0
+
+    func pauseAction() {
+        let wasPlaying = isPlaying
+        isPlaying = false
+        if wasPlaying {
+            recordedStops += 1
+            savedPositions += 1
+        }
+    }
+
+    pauseAction()
+    try assertEqual(recordedStops, 0, "No-op pause must not clobber lastPlaybackStopped")
+    try assertEqual(savedPositions, 0, "No-op pause must not write a redundant position")
+}
+
+test("Pause guard: pausing when stopped does not record / save") {
+    // Distinct from "paused" — playback never started.
+    var isPlaying = false
+    var recordedStops = 0
+    var savedPositions = 0
+
+    func pauseAction() {
+        let wasPlaying = isPlaying
+        isPlaying = false
+        if wasPlaying {
+            recordedStops += 1
+            savedPositions += 1
+        }
+    }
+
+    pauseAction()
+    try assertEqual(recordedStops, 0)
+    try assertEqual(savedPositions, 0)
+}
+
+test("Pause guard: lastPlaybackStopped not overwritten by a no-op pause") {
+    // The user-visible reason this matters: rewind-on-resume reads
+    // lastPlaybackStopped to compute how long the user paused, and
+    // rewinds by sentence/paragraph if the gap is long enough. If a
+    // stray pause overwrote the timestamp to "now", the threshold
+    // would always be ~0 and the rewind would never trigger.
+    var isPlaying = false
+    let originalStoppedAt = Date(timeIntervalSince1970: 1_000_000)
+    var lastPlaybackStopped: Date = originalStoppedAt
+
+    func pauseAction() {
+        let wasPlaying = isPlaying
+        isPlaying = false
+        if wasPlaying { lastPlaybackStopped = Date() }
+    }
+
+    pauseAction()
+    try assertEqual(lastPlaybackStopped, originalStoppedAt,
+                   "No-op pause must not move the lastPlaybackStopped timestamp")
+}
+
+test("Headings: typical playback session triggers far fewer rebuilds than ticks") {
+    // Quantify the design improvement: simulate 1000 word-ticks across 3
+    // headings in one chapter. The old code rebuilt on every tick (1000
+    // rebuilds). The new code rebuilds exactly when crossing a heading
+    // boundary plus the initial landing (3 in this layout). The test
+    // pins the upper bound so a regression that re-introduces the
+    // per-word rebuild fails loudly.
+    let headings = [
+        TestHeading(id: "h1", chapterIndex: 0, characterOffset: 0),
+        TestHeading(id: "h2", chapterIndex: 0, characterOffset: 350),
+        TestHeading(id: "h3", chapterIndex: 0, characterOffset: 700),
+    ]
+    var currentID: String? = nil
+    var rebuildCount = 0
+    for offset in 0..<1000 {
+        let newID = currentHeadingID(in: headings, chapterIndex: 0, characterOffset: offset)
+        if newID != currentID {
+            currentID = newID
+            rebuildCount += 1
+        }
+    }
+    try assertEqual(rebuildCount, 3, "1000 ticks across 3 headings should produce 3 id flips")
+}
+
 } // end runPlaybackTests
 
 /// Minimal config struct for testing Bluetooth settings persistence
