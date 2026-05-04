@@ -38,6 +38,15 @@ class NowPlayingService {
     /// should be converted into a pause or ignored entirely.
     private var isCurrentlyPlaying: (() -> Bool)?
 
+    /// Detector for the experimental "restart sleep timer via media
+    /// gesture" feature. Each command handler routes its event type
+    /// here before invoking the user-facing callback; if the detector
+    /// returns true, this command was the final piece of a matching
+    /// pattern and we suppress the original action and post the
+    /// restart-timer notification instead. The detector is configured
+    /// (or disabled) via `updateGestureSettings` from SettingsViewModel.
+    let gestureDetector = MediaGestureDetector()
+
     /// Timestamp until which incoming system play/toggle commands should be
     /// treated as spurious (Bluetooth-disconnect artefacts). `distantPast`
     /// means the window is inactive. Compared to `Date()` via `isSuppressed`.
@@ -110,6 +119,38 @@ class NowPlayingService {
         }
     }
 
+    /// Apply the latest gesture-detector settings. Called once at
+    /// `setup` and again whenever the user toggles or reconfigures
+    /// the experimental feature in Miscellaneous settings.
+    func updateGestureSettings(enabled: Bool, pattern: String, window: TimeInterval) {
+        gestureDetector.isEnabled = enabled
+        gestureDetector.pattern = MediaGestureDetector.patternFromString(pattern)
+        gestureDetector.window = window
+        // Drop any in-flight partial sequence — half-built gestures
+        // from the old config would be confusing if they completed
+        // under the new one.
+        gestureDetector.reset()
+    }
+
+    /// Pass an incoming media event through the gesture detector.
+    /// Returns true exactly when the event completed a configured
+    /// pattern; the caller then suppresses the original action and
+    /// posts the restart-sleep-timer notification. False means the
+    /// event should fire its usual callback.
+    /// Lives here (not inline at each call site) so the suppression
+    /// rule and the notification post stay in one place — easy to
+    /// tweak later if we add more gesture-driven actions.
+    private func consumeForGesture(_ event: MediaGestureDetector.EventType) -> Bool {
+        guard gestureDetector.recordEvent(event) else { return false }
+        // Posting on main keeps SwiftUI views and other main-bound
+        // observers safe regardless of which queue the command center
+        // dispatched the original handler on.
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .restartSleepTimer, object: nil)
+        }
+        return true
+    }
+
     /// Update Bluetooth monitoring settings at runtime (from Miscellaneous prefs).
     /// Starts or stops the device-change listener as needed.
     func updateBluetoothSettings(enabled: Bool, delay: TimeInterval) {
@@ -139,6 +180,13 @@ class NowPlayingService {
         commandCenter.nextTrackCommand.removeTarget(nil)
         commandCenter.previousTrackCommand.removeTarget(nil)
 
+        // Each handler funnels its event type through the gesture
+        // detector first via `consumeForGesture`. When that returns
+        // true, the event was the final piece of a matching pattern
+        // — we skip the usual callback so the user doesn't get an
+        // unwanted side effect (e.g. a "play" gesture would otherwise
+        // start playback in addition to restarting the timer).
+
         // Play command: only resume, never toggle. Suppressed after device changes
         // to prevent macOS from auto-starting playback when Bluetooth disconnects.
         commandCenter.playCommand.isEnabled = true
@@ -149,6 +197,7 @@ class NowPlayingService {
                 self.suppressUntil = .distantPast
                 return .success
             }
+            if self.consumeForGesture(.play) { return .success }
             self.onPlay?()
             return .success
         }
@@ -157,7 +206,9 @@ class NowPlayingService {
         // even during the suppress window, pausing is the correct behaviour.
         commandCenter.pauseCommand.isEnabled = true
         commandCenter.pauseCommand.addTarget { [weak self] _ in
-            self?.onPause?()
+            guard let self = self else { return .commandFailed }
+            if self.consumeForGesture(.pause) { return .success }
+            self.onPause?()
             return .success
         }
 
@@ -179,6 +230,7 @@ class NowPlayingService {
                 }
                 return .success
             }
+            if self.consumeForGesture(.togglePlayPause) { return .success }
             self.onTogglePlayPause?()
             return .success
         }
@@ -186,14 +238,18 @@ class NowPlayingService {
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [30]
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
-            self?.onSkipForward?()
+            guard let self = self else { return .commandFailed }
+            if self.consumeForGesture(.skipForward) { return .success }
+            self.onSkipForward?()
             return .success
         }
 
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
-            self?.onSkipBackward?()
+            guard let self = self else { return .commandFailed }
+            if self.consumeForGesture(.skipBackward) { return .success }
+            self.onSkipBackward?()
             return .success
         }
 
@@ -201,13 +257,17 @@ class NowPlayingService {
         // since that's the most common user expectation for a book reader
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-            self?.onSkipForward?()
+            guard let self = self else { return .commandFailed }
+            if self.consumeForGesture(.nextTrack) { return .success }
+            self.onSkipForward?()
             return .success
         }
 
         commandCenter.previousTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-            self?.onSkipBackward?()
+            guard let self = self else { return .commandFailed }
+            if self.consumeForGesture(.previousTrack) { return .success }
+            self.onSkipBackward?()
             return .success
         }
     }

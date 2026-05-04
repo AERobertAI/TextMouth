@@ -32,7 +32,10 @@ class ReaderViewModel: ObservableObject {
     @Published var currentWPM: Double = 200
 
     let speechService = SpeechService()
-    let sleepTimerService = SleepTimerService()
+    /// Shared singleton — there is exactly one sleep timer in the app.
+    /// Owner-scoped pause/resume calls pass `book.id` so other windows'
+    /// playback events don't accidentally affect this book's timer.
+    let sleepTimerService = SleepTimerService.shared
     let nowPlayingService = NowPlayingService()
     let substitutionService = TextSubstitutionService.shared
     let readingStatsService = ReadingStatsService.shared
@@ -283,7 +286,7 @@ class ReaderViewModel: ObservableObject {
             }
 
             self.savePosition()
-            self.sleepTimerService.notifyDocumentEnd()
+            self.sleepTimerService.notifyDocumentEnd(by: self.book.id)
             // Advance to next non-empty chapter if available
             if let content = self.content {
                 var nextIndex = self.currentChapterIndex + 1
@@ -326,32 +329,10 @@ class ReaderViewModel: ObservableObject {
             }
         }
 
-        sleepTimerService.onTimerExpired = { [weak self] in
-            guard let self = self else { return }
-            // Pause FIRST so audio output stops before we restore
-            // volume. Previously restoreVolume() ran before pause(),
-            // causing a brief pop of full-volume audio at the tail
-            // end of the fade-out.
-            self.pause()
-            if self.isAudioBook {
-                self.audioPlaybackService.restoreVolume()
-            } else {
-                self.speechService.audioEngine.restoreVolume()
-            }
-            self.announceToVoiceOver("Sleep timer expired. Playback paused.")
-        }
-
-        sleepTimerService.onFadeStep = { [weak self] volume in
-            guard let self = self else { return }
-            if self.isAudioBook {
-                self.audioPlaybackService.setVolume(volume)
-            } else {
-                self.speechService.audioEngine.setVolume(volume)
-            }
-        }
-
-        // Apply fade-out duration from settings
-        sleepTimerService.fadeOutDuration = settingsViewModel.sleepFadeOutDuration
+        // Sleep timer callbacks are no longer set here — they're passed
+        // when this VM starts a timer (see startSleepTimer below). This
+        // ensures the active callbacks always belong to whichever book
+        // most recently started a timer, since the service is shared.
 
         nowPlayingService.setup(
             onPlay: { [weak self] in self?.play() },
@@ -373,6 +354,13 @@ class ReaderViewModel: ObservableObject {
             },
             bluetoothMonitoring: settingsViewModel.bluetoothMonitoringEnabled,
             bluetoothDelay: settingsViewModel.bluetoothDisconnectDelay
+        )
+        // Apply the gesture-detector settings. Done after setup() so the
+        // detector is ready before the first media command can arrive.
+        nowPlayingService.updateGestureSettings(
+            enabled: settingsViewModel.restartTimerGestureEnabled,
+            pattern: settingsViewModel.restartTimerGesturePattern,
+            window: settingsViewModel.restartTimerGestureWindow
         )
     }
 
@@ -478,11 +466,45 @@ class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Restart-sleep-timer notification — fires from either the
+        // keyboard shortcut or the experimental media-gesture detector.
+        // The two paths target different windows:
+        // - Keyboard path always carries `sourceWindow`, so the usual
+        //   focused-window gate applies.
+        // - Gesture path carries no sourceWindow because media keys
+        //   don't belong to a window. AirPods presses also commonly
+        //   arrive when the app is backgrounded (no key window). The
+        //   right reader to respond is whichever one most recently
+        //   owned a timer — the user is restarting THAT timer.
+        //   Falls back to the focused window when no prior timer
+        //   exists yet (first-ever press).
+        nc.publisher(for: .restartSleepTimer)
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                if notification.userInfo?["sourceWindow"] != nil {
+                    guard self.isTargetedNotification(notification) else { return }
+                } else if let lastOwner = self.sleepTimerService.lastOwnerID {
+                    guard lastOwner == self.book.id else { return }
+                } else {
+                    // No prior timer history — only the focused or
+                    // sole window should respond.
+                    guard self.hostWindow == nil
+                          || self.hostWindow?.isKeyWindow == true
+                          || self.hostWindow?.isMainWindow == true
+                    else { return }
+                }
+                self.restartOrStartLastSleepTimer()
+            }
+            .store(in: &cancellables)
+
         // Settings changes apply to all reader windows (not window-specific)
         nc.publisher(for: .speechSettingsChanged)
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                self.sleepTimerService.fadeOutDuration = self.settingsViewModel.sleepFadeOutDuration
+                // sleepTimerService.fadeOutDuration is captured at start()
+                // time, so changing it mid-timer is intentionally a no-op:
+                // the user committed to a fade duration when they started.
+                // The next timer will pick up the new value automatically.
                 // Re-apply per-book overrides (they take priority over global)
                 if let localWPM = self.book.localWPM {
                     self.speechService.setSpeedRealtime(localWPM)
@@ -505,6 +527,21 @@ class ReaderViewModel: ObservableObject {
                 self.nowPlayingService.updateBluetoothSettings(
                     enabled: self.settingsViewModel.bluetoothMonitoringEnabled,
                     delay: self.settingsViewModel.bluetoothDisconnectDelay
+                )
+            }
+            .store(in: &cancellables)
+
+        // Observe gesture settings and push them to NowPlayingService.
+        // Without this, toggling the feature on or changing the pattern
+        // wouldn't take effect until the next book window opened.
+        nc.publisher(for: .restartTimerGestureSettingsChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.nowPlayingService.updateGestureSettings(
+                    enabled: self.settingsViewModel.restartTimerGestureEnabled,
+                    pattern: self.settingsViewModel.restartTimerGesturePattern,
+                    window: self.settingsViewModel.restartTimerGestureWindow
                 )
             }
             .store(in: &cancellables)
@@ -692,6 +729,15 @@ class ReaderViewModel: ObservableObject {
         audioPlaybackService.stop()
         whereAmISynth.stopSpeaking(at: .immediate)
         nowPlayingService.clearNowPlaying()
+        // Stop the shared sleep timer iff this book owned it. With the
+        // singleton service, the timer would otherwise keep ticking
+        // after our window closed — its callbacks captured `self`
+        // weakly so they'd no-op, but the wall-clock countdown would
+        // still run pointlessly until expiration. Owner check keeps us
+        // from cancelling a timer Book B started after Book A closed.
+        if sleepTimerService.ownerID == book.id {
+            sleepTimerService.stop()
+        }
         libraryViewModel.unregisterOpenBook(book.id)
     }
 }

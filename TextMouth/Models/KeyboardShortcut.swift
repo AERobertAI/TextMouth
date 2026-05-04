@@ -18,6 +18,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case showHeadingList = "Show Headings"
     case showBookmarkList = "Show Bookmarks"
     case showSleepTimer = "Show Sleep Timer"
+    case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
     case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
@@ -52,6 +53,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .showHeadingList: return .showHeadingList
         case .showBookmarkList: return .showBookmarkList
         case .showSleepTimer: return .showSleepTimer
+        case .restartSleepTimer: return .restartSleepTimer
         case .whereAmI: return .whereAmI
         case .openSelectedBook: return .openSelectedBook
         case .showBookInfo: return .showBookInfo
@@ -74,7 +76,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
-        case .showHeadingList, .showSleepTimer:
+        case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
         case .whereAmI:
             return "Information"
@@ -259,6 +261,13 @@ extension ShortcutAction {
             ],
             .showSleepTimer: [
                 KeyBinding(key: "t", command: true, shift: true)
+            ],
+            .restartSleepTimer: [
+                // Cmd+Shift+R — chosen to avoid existing bindings.
+                // KeyboardShortcutManager.addBinding strips this from
+                // any other action automatically if a user reassigns
+                // it later, so conflicts resolve themselves.
+                KeyBinding(key: "r", command: true, shift: true)
             ],
             .whereAmI: [
                 KeyBinding(key: "w")

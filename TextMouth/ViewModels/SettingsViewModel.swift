@@ -125,6 +125,31 @@ class SettingsViewModel: ObservableObject {
         didSet { broadcastBluetoothChanges(); syncToConfig() }
     }
 
+    // MARK: - Restart Sleep Timer Gesture (Experimental)
+
+    /// Whether the experimental media-gesture detector for restarting
+    /// the sleep timer is active. Off by default — the feature is
+    /// opt-in because it monitors every media-key press and could
+    /// surprise users who just want their headphone buttons to do
+    /// what they normally do.
+    @AppStorage("restartTimerGestureEnabled") var restartTimerGestureEnabled: Bool = false {
+        didSet { broadcastGestureChanges(); syncToConfig() }
+    }
+    /// Comma-separated event-type sequence (see `MediaGestureDetector.EventType`).
+    /// Default "previousTrack,previousTrack,previousTrack" — three
+    /// previous-track presses in a row, picked because it's
+    /// vanishingly unlikely to occur accidentally during normal use.
+    @AppStorage("restartTimerGesturePattern") var restartTimerGesturePattern: String = "previousTrack,previousTrack,previousTrack" {
+        didSet { broadcastGestureChanges(); syncToConfig() }
+    }
+    /// Maximum total elapsed time (seconds) for the gesture to count
+    /// as a match. 0.5–10s; 2.0 is the default — long enough for a
+    /// deliberate sequence, short enough that real navigation use
+    /// won't accidentally trigger.
+    @AppStorage("restartTimerGestureWindow") var restartTimerGestureWindow: Double = 2.0 {
+        didSet { broadcastGestureChanges(); syncToConfig() }
+    }
+
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
     @Published var availableLanguages: [String] = []
 
@@ -224,6 +249,9 @@ class SettingsViewModel: ObservableObject {
         configService.config.autoPlayOnNavigate = autoPlayOnNavigate
         configService.config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
         configService.config.bluetoothDisconnectDelay = bluetoothDisconnectDelay
+        configService.config.restartTimerGestureEnabled = restartTimerGestureEnabled
+        configService.config.restartTimerGesturePattern = restartTimerGesturePattern
+        configService.config.restartTimerGestureWindow = restartTimerGestureWindow
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         configService.saveToDisk()
@@ -290,6 +318,17 @@ class SettingsViewModel: ObservableObject {
         if config.bluetoothDisconnectDelay > 0 && config.bluetoothDisconnectDelay != bluetoothDisconnectDelay {
             bluetoothDisconnectDelay = config.bluetoothDisconnectDelay
         }
+        if config.restartTimerGestureEnabled != restartTimerGestureEnabled {
+            restartTimerGestureEnabled = config.restartTimerGestureEnabled
+        }
+        if !config.restartTimerGesturePattern.isEmpty &&
+           config.restartTimerGesturePattern != restartTimerGesturePattern {
+            restartTimerGesturePattern = config.restartTimerGesturePattern
+        }
+        if config.restartTimerGestureWindow > 0 &&
+           config.restartTimerGestureWindow != restartTimerGestureWindow {
+            restartTimerGestureWindow = config.restartTimerGestureWindow
+        }
         // Handle external change to dataDirectoryPath
         let currentCustom = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         if config.dataDirectoryPath != currentCustom {
@@ -309,9 +348,14 @@ class SettingsViewModel: ObservableObject {
     private func broadcastBluetoothChanges() {
         NotificationCenter.default.post(name: .bluetoothSettingsChanged, object: nil)
     }
+
+    private func broadcastGestureChanges() {
+        NotificationCenter.default.post(name: .restartTimerGestureSettingsChanged, object: nil)
+    }
 }
 
 extension Notification.Name {
     static let speechSettingsChanged = Notification.Name("speechSettingsChanged")
     static let bluetoothSettingsChanged = Notification.Name("bluetoothSettingsChanged")
+    static let restartTimerGestureSettingsChanged = Notification.Name("restartTimerGestureSettingsChanged")
 }

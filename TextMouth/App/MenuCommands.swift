@@ -235,4 +235,9 @@ extension Notification.Name {
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")
+    /// Posted by either the Restart Sleep Timer keyboard shortcut or
+    /// the experimental media-gesture detector. ReaderViewModel
+    /// listens and either restarts a running timer or re-arms a new
+    /// one with the previous duration.
+    static let restartSleepTimer = Notification.Name("restartSleepTimer")
 }

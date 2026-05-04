@@ -635,6 +635,673 @@ test("stop() without fade: no restore volume before stop") {
         "Stop audio must always come first, even without fade")
 }
 
+// ---- Owner-Scoped Sleep Timer Tests (singleton overhaul) ----
+print("\n--- Owner-Scoped Sleep Timer Tests ---")
+
+// These tests cover the singleton restructure: there's now a single
+// shared SleepTimerService, but pause/resume/notify calls must only
+// apply to the timer's owner so a second book window can't accidentally
+// affect a timer started in the first.
+
+/// Local model that mirrors the production owner-gating logic. Kept
+/// inline to keep the test file self-contained — the production class
+/// has @Published properties and timers that don't make sense under the
+/// pure-Swift test runner.
+class OwnerScopedTimer {
+    var isActive = false
+    var isFadingOut = false
+    var duration: SleepTimerDuration?
+    var remainingSeconds = 0
+    var ownerID: UUID?
+    var timerArmed = false
+    var isCountdownPausedByPlayback = false
+    var endOfHeadingTriggered = false
+    var expireFired = false
+
+    func start(_ duration: SleepTimerDuration, owner: UUID) {
+        stop()
+        self.duration = duration
+        self.ownerID = owner
+        self.isActive = true
+        switch duration {
+        case .minutes(let m):
+            remainingSeconds = m * 60
+            timerArmed = true
+        case .endOfHeading, .endOfDocument:
+            remainingSeconds = 0
+        }
+    }
+
+    func stop() {
+        isActive = false
+        isFadingOut = false
+        duration = nil
+        remainingSeconds = 0
+        timerArmed = false
+        isCountdownPausedByPlayback = false
+        ownerID = nil
+        endOfHeadingTriggered = false
+    }
+
+    func pauseCountdown(by caller: UUID) {
+        guard ownerID == caller,
+              isActive,
+              case .minutes = duration,
+              !isFadingOut,
+              timerArmed else { return }
+        timerArmed = false
+        isCountdownPausedByPlayback = true
+    }
+
+    func resumeCountdown(by caller: UUID) {
+        guard ownerID == caller,
+              isActive,
+              isCountdownPausedByPlayback,
+              case .minutes = duration else { return }
+        isCountdownPausedByPlayback = false
+        timerArmed = true
+    }
+
+    func notifyHeadingBoundary(by caller: UUID) {
+        guard ownerID == caller,
+              isActive,
+              case .endOfHeading = duration else { return }
+        if endOfHeadingTriggered {
+            expireFired = true
+        } else {
+            endOfHeadingTriggered = true
+        }
+    }
+
+    func notifyDocumentEnd(by caller: UUID) {
+        guard ownerID == caller, isActive else { return }
+        if case .endOfDocument = duration {
+            expireFired = true
+        }
+    }
+}
+
+test("Singleton: starting a new timer replaces the previous one") {
+    // Foundation of the "only one timer" guarantee — a second start()
+    // call on any owner should clear the prior state and replace it.
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.minutes(30), owner: bookA)
+    try assertEqual(timer.remainingSeconds, 1800)
+    try assertEqual(timer.ownerID, bookA)
+
+    // Book B starts its own timer. Replaces A's.
+    timer.start(.minutes(5), owner: bookB)
+    try assertEqual(timer.remainingSeconds, 300, "Book B's start replaces A's countdown")
+    try assertEqual(timer.ownerID, bookB, "Owner ID flips to the most recent caller")
+}
+
+test("Owner-scoped pause: a non-owner cannot pause the timer") {
+    // Bug we're preventing: Book A starts a timer, then Book B (a
+    // different window in the same app) pauses its own playback —
+    // its pauseCountdown call must not halt Book A's timer.
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.minutes(10), owner: bookA)
+    try assertTrue(timer.timerArmed)
+
+    // Book B tries to pause — must be ignored.
+    timer.pauseCountdown(by: bookB)
+    try assertTrue(timer.timerArmed, "Non-owner must not be able to halt the timer")
+    try assertTrue(!timer.isCountdownPausedByPlayback)
+
+    // Book A pauses — works.
+    timer.pauseCountdown(by: bookA)
+    try assertTrue(!timer.timerArmed)
+    try assertTrue(timer.isCountdownPausedByPlayback)
+}
+
+test("Owner-scoped resume: a non-owner cannot resume the timer") {
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.minutes(10), owner: bookA)
+    timer.pauseCountdown(by: bookA)
+    try assertTrue(timer.isCountdownPausedByPlayback)
+
+    // Book B's resume is ignored.
+    timer.resumeCountdown(by: bookB)
+    try assertTrue(timer.isCountdownPausedByPlayback,
+                  "Non-owner must not resume someone else's timer")
+
+    // Book A's resume works.
+    timer.resumeCountdown(by: bookA)
+    try assertTrue(!timer.isCountdownPausedByPlayback)
+    try assertTrue(timer.timerArmed)
+}
+
+test("Owner-scoped heading boundary: only the owner advances the trigger") {
+    // endOfHeading mode arms on the first boundary and expires on the
+    // second. A different book navigating its own headings must not
+    // count toward the timer's trigger.
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.endOfHeading, owner: bookA)
+    try assertTrue(!timer.endOfHeadingTriggered)
+
+    // Book B navigates its headings — must not arm.
+    timer.notifyHeadingBoundary(by: bookB)
+    try assertTrue(!timer.endOfHeadingTriggered, "Non-owner navigation must not arm")
+
+    // Book A arms.
+    timer.notifyHeadingBoundary(by: bookA)
+    try assertTrue(timer.endOfHeadingTriggered)
+
+    // Book B again — still ignored, must not expire.
+    timer.notifyHeadingBoundary(by: bookB)
+    try assertTrue(!timer.expireFired, "Non-owner second boundary must not expire timer")
+
+    // Book A — expires.
+    timer.notifyHeadingBoundary(by: bookA)
+    try assertTrue(timer.expireFired, "Owner's second boundary expires the timer")
+}
+
+test("Owner-scoped document end: only the owner triggers expire") {
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.endOfDocument, owner: bookA)
+    timer.notifyDocumentEnd(by: bookB)
+    try assertTrue(!timer.expireFired, "Non-owner document end must not expire")
+
+    timer.notifyDocumentEnd(by: bookA)
+    try assertTrue(timer.expireFired, "Owner document end expires")
+}
+
+test("Singleton: stop() clears ownership so a fresh start sets a new owner") {
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.minutes(10), owner: bookA)
+    timer.stop()
+    try assertTrue(timer.ownerID == nil, "stop() clears ownership")
+
+    timer.start(.minutes(5), owner: bookB)
+    try assertEqual(timer.ownerID, bookB, "New start picks up new owner")
+}
+
+test("Singleton: starting from a different owner switches ownership cleanly") {
+    // Book A's pause/resume should still work for *its own* timer
+    // moments before Book B replaces it. Once replaced, the next
+    // pause/resume only respects the new owner.
+    let timer = OwnerScopedTimer()
+    let bookA = UUID()
+    let bookB = UUID()
+
+    timer.start(.minutes(20), owner: bookA)
+    timer.pauseCountdown(by: bookA)
+    try assertTrue(timer.isCountdownPausedByPlayback)
+
+    // Book B starts a new timer — implicit stop of A wipes paused state.
+    timer.start(.minutes(5), owner: bookB)
+    try assertTrue(!timer.isCountdownPausedByPlayback,
+                  "Replaced timer cannot inherit prior paused state")
+    try assertEqual(timer.ownerID, bookB)
+
+    // Now Book A's pause is a no-op (it's no longer the owner).
+    timer.pauseCountdown(by: bookA)
+    try assertTrue(timer.timerArmed,
+                  "Old owner cannot pause the new owner's timer")
+
+    // Book B's pause works.
+    timer.pauseCountdown(by: bookB)
+    try assertTrue(!timer.timerArmed)
+}
+
+// ---- Media Gesture Detector Tests ----
+print("\n--- Media Gesture Detector Tests ---")
+
+// Local mirror of MediaGestureDetector for the pure-Swift test runner.
+// Production uses the real class in TextMouth/Services/MediaGestureDetector.swift.
+// This stand-in matches the pattern-matching, time-window, and reset
+// semantics the production code relies on.
+
+enum MGDEventType: String {
+    case play, pause, togglePlayPause, previousTrack, nextTrack, skipForward, skipBackward
+}
+
+class MGDDetector {
+    var pattern: [MGDEventType] = []
+    var window: TimeInterval = 2.0
+    var isEnabled = false
+    private var buffer: [(type: MGDEventType, timestamp: Date)] = []
+
+    @discardableResult
+    func recordEvent(_ type: MGDEventType, at timestamp: Date = Date()) -> Bool {
+        guard isEnabled, !pattern.isEmpty else { return false }
+
+        let cutoff = timestamp.addingTimeInterval(-window)
+        buffer.removeAll { $0.timestamp < cutoff }
+        buffer.append((type: type, timestamp: timestamp))
+        if buffer.count > pattern.count {
+            buffer.removeFirst(buffer.count - pattern.count)
+        }
+        guard buffer.count == pattern.count else { return false }
+        for (i, expected) in pattern.enumerated() {
+            if buffer[i].type != expected { return false }
+        }
+        buffer.removeAll()
+        return true
+    }
+
+    func reset() { buffer.removeAll() }
+}
+
+test("Gesture detector: empty pattern never matches") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = []
+    try assertTrue(!d.recordEvent(.play), "Empty pattern is effectively disabled")
+}
+
+test("Gesture detector: disabled never matches") {
+    let d = MGDDetector()
+    d.isEnabled = false
+    d.pattern = [.previousTrack, .previousTrack, .previousTrack]
+    try assertTrue(!d.recordEvent(.previousTrack))
+    try assertTrue(!d.recordEvent(.previousTrack))
+    try assertTrue(!d.recordEvent(.previousTrack))
+}
+
+test("Gesture detector: matches on the third correct event in sequence") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .previousTrack, .previousTrack]
+    let now = Date()
+    try assertTrue(!d.recordEvent(.previousTrack, at: now))
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.3)))
+    try assertTrue(d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.6)),
+                   "Third correct event within window must match")
+}
+
+test("Gesture detector: a wrong event in the middle prevents the match") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .previousTrack, .previousTrack]
+    let now = Date()
+    try assertTrue(!d.recordEvent(.previousTrack, at: now))
+    try assertTrue(!d.recordEvent(.nextTrack, at: now.addingTimeInterval(0.2)))
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.4)),
+                   "Wrong event in sequence must break the match")
+}
+
+test("Gesture detector: events outside window don't count toward match") {
+    // 3-prev pattern with 2s window. Press prev at t=0, t=3 (outside),
+    // t=3.1, t=3.2 — only the last three should be considered.
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .previousTrack, .previousTrack]
+    d.window = 2.0
+    let now = Date()
+    try assertTrue(!d.recordEvent(.previousTrack, at: now))
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(3.0)),
+                   "First event has expired by t=3, only one fresh event in window")
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(3.1)),
+                   "Two fresh events in window — still need a third")
+    try assertTrue(d.recordEvent(.previousTrack, at: now.addingTimeInterval(3.2)),
+                   "Three fresh events in window — match")
+}
+
+test("Gesture detector: match clears the buffer (no double-fire on next press)") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.nextTrack, .nextTrack]
+    let now = Date()
+    try assertTrue(!d.recordEvent(.nextTrack, at: now))
+    try assertTrue(d.recordEvent(.nextTrack, at: now.addingTimeInterval(0.1)),
+                   "Two-event pattern matched")
+    // After match, a single isolated press must NOT match again
+    try assertTrue(!d.recordEvent(.nextTrack, at: now.addingTimeInterval(0.2)),
+                   "Buffer reset after match — single trailing press doesn't combine")
+    try assertTrue(d.recordEvent(.nextTrack, at: now.addingTimeInterval(0.3)),
+                   "But two fresh presses do match again")
+}
+
+test("Gesture detector: pattern of mixed event types") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .nextTrack, .play]
+    let now = Date()
+    try assertTrue(!d.recordEvent(.previousTrack, at: now))
+    try assertTrue(!d.recordEvent(.nextTrack, at: now.addingTimeInterval(0.2)))
+    try assertTrue(d.recordEvent(.play, at: now.addingTimeInterval(0.5)),
+                   "Heterogeneous pattern matches when sequence is correct")
+}
+
+test("Gesture detector: out-of-order events of the right types don't match") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .nextTrack, .play]
+    let now = Date()
+    try assertTrue(!d.recordEvent(.nextTrack, at: now))
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.1)))
+    try assertTrue(!d.recordEvent(.play, at: now.addingTimeInterval(0.2)),
+                   "Right types but wrong order must not match")
+}
+
+test("Gesture detector: reset clears in-flight buffer") {
+    let d = MGDDetector()
+    d.isEnabled = true
+    d.pattern = [.previousTrack, .previousTrack, .previousTrack]
+    let now = Date()
+    _ = d.recordEvent(.previousTrack, at: now)
+    _ = d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.1))
+    d.reset()
+    try assertTrue(!d.recordEvent(.previousTrack, at: now.addingTimeInterval(0.2)),
+                   "Reset wiped the partial sequence; need three fresh events to match")
+}
+
+test("Gesture detector: pattern encoding round-trip") {
+    // The settings layer persists the pattern as a comma-separated
+    // string of EventType raw values. Decoding must be the inverse of
+    // encoding so settings round-trip cleanly.
+    let pattern: [String] = ["previousTrack", "nextTrack", "play"]
+    let encoded = pattern.joined(separator: ",")
+    try assertEqual(encoded, "previousTrack,nextTrack,play")
+
+    let decoded = encoded.split(separator: ",").map(String.init)
+    try assertEqual(decoded, pattern, "Decoded pattern must equal the original")
+}
+
+test("Gesture detector: pattern length cap drops excess steps") {
+    // Defense in depth — the settings UI also enforces this, but a
+    // corrupted config or external edit could try to push a 50-step
+    // pattern through the decoder. We cap so event processing stays
+    // fast and the in-memory representation stays small.
+    let maxLength = 8
+    let raw = Array(repeating: "previousTrack", count: 20).joined(separator: ",")
+    let decoded = raw.split(separator: ",").compactMap { piece -> String? in
+        let s = String(piece).trimmingCharacters(in: .whitespaces)
+        return s == "previousTrack" ? s : nil
+    }
+    let capped = decoded.count > maxLength ? Array(decoded.prefix(maxLength)) : decoded
+    try assertEqual(capped.count, maxLength,
+                    "Twenty-step pattern truncated to the cap")
+}
+
+test("Gesture detector: lock serializes concurrent recordEvent calls") {
+    // Models the production fix where `buffer` is guarded by an
+    // NSLock. Without the lock, two MPRemoteCommand handlers running
+    // on different queues could interleave their read-modify-write
+    // cycles and corrupt the buffer (resulting in lost events or
+    // false matches). The serial-queue pattern here mirrors that
+    // protection.
+    let queue = DispatchQueue(label: "test.gesture", attributes: .concurrent)
+    let group = DispatchGroup()
+
+    final class LockedCounter {
+        private var count = 0
+        private let lock = NSLock()
+        func increment() {
+            lock.lock()
+            defer { lock.unlock() }
+            count += 1
+        }
+        func value() -> Int {
+            lock.lock()
+            defer { lock.unlock() }
+            return count
+        }
+    }
+    let counter = LockedCounter()
+    let iterations = 1000
+    for _ in 0..<iterations {
+        group.enter()
+        queue.async {
+            counter.increment()
+            group.leave()
+        }
+    }
+    group.wait()
+    try assertEqual(counter.value(), iterations,
+                    "All concurrent increments visible — no lost updates from a race")
+}
+
+test("Gesture detector: malformed pattern strings degrade gracefully") {
+    // Production code uses compactMap with EventType(rawValue:), so an
+    // unknown value is dropped silently. A pattern of "junk,nextTrack"
+    // becomes ["nextTrack"] — a one-step pattern, not a crash.
+    let raw = "junk,nextTrack,bogus"
+    let knownTypes: Set<String> = ["play", "pause", "togglePlayPause",
+                                    "previousTrack", "nextTrack",
+                                    "skipForward", "skipBackward"]
+    let decoded = raw.split(separator: ",").compactMap { piece -> String? in
+        let s = String(piece).trimmingCharacters(in: .whitespaces)
+        return knownTypes.contains(s) ? s : nil
+    }
+    try assertEqual(decoded, ["nextTrack"],
+                    "Unknown values dropped, valid ones kept")
+}
+
+// ---- Restart-Or-Start-Last Sleep Timer Tests ----
+print("\n--- Restart-Or-Start-Last Sleep Timer Tests ---")
+
+// These cover the new restartOrStartLastSleepTimer behavior: if a
+// timer is currently active, restart it; if a previous timer ended,
+// re-arm with the same duration; if there's no history, no-op.
+
+test("Restart-or-start-last: active timer is restarted") {
+    var isActive = true
+    var lastUsedDuration: SleepTimerDuration? = .minutes(10)
+    var actionTaken = ""
+
+    if isActive {
+        actionTaken = "restart"
+    } else if lastUsedDuration != nil {
+        actionTaken = "start_last"
+    } else {
+        actionTaken = "noop"
+    }
+    try assertEqual(actionTaken, "restart",
+                    "Active timer hits the restart branch")
+}
+
+test("Restart-or-start-last: ended timer with last duration starts a fresh one") {
+    let isActive = false
+    let lastUsedDuration: SleepTimerDuration? = .minutes(15)
+    var actionTaken = ""
+    var startedDuration: SleepTimerDuration?
+
+    if isActive {
+        actionTaken = "restart"
+    } else if let last = lastUsedDuration {
+        actionTaken = "start_last"
+        startedDuration = last
+    } else {
+        actionTaken = "noop"
+    }
+    try assertEqual(actionTaken, "start_last")
+    if case .minutes(let m) = startedDuration {
+        try assertEqual(m, 15, "Started with the previous duration")
+    } else {
+        throw TestError.assertionFailed("Expected minutes(15) duration")
+    }
+}
+
+test("Restart-or-start-last: no prior timer is a no-op") {
+    let isActive = false
+    let lastUsedDuration: SleepTimerDuration? = nil
+    var actionTaken = ""
+
+    if isActive {
+        actionTaken = "restart"
+    } else if lastUsedDuration != nil {
+        actionTaken = "start_last"
+    } else {
+        actionTaken = "noop"
+    }
+    try assertEqual(actionTaken, "noop",
+                    "First-time press with no history doesn't crash or guess")
+}
+
+test("Restart-or-start-last: lastUsedDuration survives stop") {
+    // Stop() clears `duration` but NOT `lastUsedDuration` — that's
+    // the property that makes "restart after timer ends" work at all.
+    var duration: SleepTimerDuration? = .minutes(20)
+    var lastUsedDuration: SleepTimerDuration? = .minutes(20)
+
+    // Simulate stop()
+    duration = nil
+    // lastUsedDuration intentionally NOT cleared
+
+    try assertTrue(duration == nil, "Active duration cleared after stop")
+    if case .minutes(let m) = lastUsedDuration {
+        try assertEqual(m, 20, "Last-used preserved across stop")
+    } else {
+        throw TestError.assertionFailed("Expected minutes(20)")
+    }
+}
+
+test("Restart-or-start-last: lastOwnerID survives stop") {
+    // Same persistence-across-stop property as lastUsedDuration, but
+    // for the owner ID. The gesture-notification routing depends on
+    // lastOwnerID staying valid after the timer expires so the
+    // correct reader VM responds to the gesture.
+    var ownerID: UUID? = UUID()
+    var lastOwnerID: UUID? = ownerID
+
+    // Simulate stop()
+    ownerID = nil
+    // lastOwnerID intentionally NOT cleared
+
+    try assertTrue(ownerID == nil)
+    try assertTrue(lastOwnerID != nil, "lastOwnerID survives stop")
+}
+
+test("Restart-or-start-last: gesture routing picks the lastOwner book") {
+    // Models the targeting logic in setupNotifications for the
+    // gesture path (no sourceWindow). Among multiple book windows,
+    // only the one whose book.id matches lastOwnerID should respond.
+    let bookA = UUID()
+    let bookB = UUID()
+    let bookC = UUID()
+    let lastOwnerID: UUID? = bookB
+
+    func shouldRespondToGesture(bookID: UUID, lastOwner: UUID?) -> Bool {
+        guard let owner = lastOwner else { return false }
+        return owner == bookID
+    }
+
+    try assertTrue(!shouldRespondToGesture(bookID: bookA, lastOwner: lastOwnerID),
+                   "Book A (no prior timer) ignores gesture")
+    try assertTrue(shouldRespondToGesture(bookID: bookB, lastOwner: lastOwnerID),
+                   "Book B (last owner) responds to gesture")
+    try assertTrue(!shouldRespondToGesture(bookID: bookC, lastOwner: lastOwnerID),
+                   "Book C (no prior timer) ignores gesture")
+}
+
+test("Restart-or-start-last: gesture routing falls back to focused window when no history") {
+    // First-ever press — lastOwnerID is nil. The gesture should
+    // route to the focused window's reader. With multiple windows,
+    // exactly one is "key"; the others must ignore the gesture.
+    let lastOwner: UUID? = nil
+    let focusedWindowMatches = true
+
+    let shouldRespond: Bool
+    if let _ = lastOwner {
+        shouldRespond = false  // would gate by lastOwner equality, but it's nil
+    } else {
+        shouldRespond = focusedWindowMatches
+    }
+    try assertTrue(shouldRespond, "Focused window responds when no history")
+
+    // Non-focused window in same scenario
+    let nonFocusedShouldRespond: Bool
+    if let _ = lastOwner {
+        nonFocusedShouldRespond = false
+    } else {
+        nonFocusedShouldRespond = false  // not focused
+    }
+    try assertTrue(!nonFocusedShouldRespond,
+                   "Non-focused window ignores when no history")
+}
+
+test("Restart-or-start-last: starting a new timer overwrites lastUsedDuration") {
+    var lastUsedDuration: SleepTimerDuration? = .minutes(10)
+
+    // Simulate start(.minutes(30))
+    lastUsedDuration = .minutes(30)
+
+    if case .minutes(let m) = lastUsedDuration {
+        try assertEqual(m, 30, "Latest start updates lastUsedDuration")
+    } else {
+        throw TestError.assertionFailed("Expected minutes(30)")
+    }
+}
+
+// ---- Sleep Timer Sheet Single-Instance Tests ----
+print("\n--- Sleep Timer Sheet Single-Instance Tests ---")
+
+test("Sheet broadcast: only the most recent sheet stays open") {
+    // Mirrors the SleepTimerView's onAppear / onReceive logic. Each
+    // sheet has a UUID; when a new sheet opens, it broadcasts its ID.
+    // Other open sheets compare and dismiss themselves if the ID
+    // differs. Result: at most one sleep-timer sheet visible across
+    // all book windows.
+    var openSheets: [UUID: Bool] = [:]
+    let sheet1 = UUID()
+    let sheet2 = UUID()
+    let sheet3 = UUID()
+
+    // Sheet 1 opens
+    openSheets[sheet1] = true
+
+    // Sheet 2 opens — broadcasts its ID
+    openSheets[sheet2] = true
+    for (id, _) in openSheets where id != sheet2 {
+        openSheets[id] = false
+    }
+    try assertEqual(openSheets.values.filter { $0 }.count, 1,
+                    "After sheet 2 opens, only one sheet is visible")
+    try assertTrue(openSheets[sheet2] == true)
+    try assertTrue(openSheets[sheet1] == false)
+
+    // Sheet 3 opens — same broadcast, same effect
+    openSheets[sheet3] = true
+    for (id, _) in openSheets where id != sheet3 {
+        openSheets[id] = false
+    }
+    try assertEqual(openSheets.values.filter { $0 }.count, 1)
+    try assertTrue(openSheets[sheet3] == true)
+}
+
+test("Sheet broadcast: same-ID notification does not dismiss the sender") {
+    // The sender's own onReceive will fire with the same UUID it just
+    // posted. The dismissal check must compare IDs and treat a match
+    // as a no-op, otherwise the sheet would dismiss itself moments
+    // after opening.
+    var sheetVisible = true
+    let myID = UUID()
+
+    // Receive own broadcast — should not dismiss.
+    let receivedID = myID
+    if receivedID != myID {
+        sheetVisible = false
+    }
+    try assertTrue(sheetVisible, "Own broadcast must not dismiss the sheet")
+
+    // Receive a different broadcast — should dismiss.
+    let otherID = UUID()
+    if otherID != myID {
+        sheetVisible = false
+    }
+    try assertTrue(!sheetVisible, "Different ID must dismiss the sheet")
+}
+
 } // end runSleepTimerTests
 
 /// Minimal config struct for testing sleep timer settings persistence

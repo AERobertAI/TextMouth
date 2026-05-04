@@ -20,7 +20,7 @@ extension ReaderViewModel {
         // Resume any sleep-timer countdown that was halted at the
         // matching pause(). No-op when no countdown was paused (cold
         // start, expired/cancelled timer, heading/document mode).
-        sleepTimerService.resumeCountdown()
+        sleepTimerService.resumeCountdown(by: book.id)
         if isAudioBook {
             playAudioChapter()
         } else {
@@ -81,7 +81,7 @@ extension ReaderViewModel {
             // taking a break. Mid-fade pauses fall through the branch
             // above and do not reach here. Heading/document-end modes
             // are no-ops — the service guards on duration kind.
-            sleepTimerService.pauseCountdown()
+            sleepTimerService.pauseCountdown(by: book.id)
         }
         readingStatsService.endSession()
         nowPlayingService.updateNowPlayingInfo(
@@ -119,7 +119,7 @@ extension ReaderViewModel {
                 soundEffectService?.play(for: .play)
                 recordPlaybackStarted()
                 readingStatsService.startSession(bookID: book.id)
-                sleepTimerService.resumeCountdown()
+                sleepTimerService.resumeCountdown(by: book.id)
                 audioPlaybackService.resume()
                 isCurrentlyPaused = false
                 nowPlayingService.updateNowPlayingInfo(
@@ -139,7 +139,7 @@ extension ReaderViewModel {
             applyRewindOnResume()
             recordPlaybackStarted()
             readingStatsService.startSession(bookID: book.id)
-            sleepTimerService.resumeCountdown()
+            sleepTimerService.resumeCountdown(by: book.id)
             speechService.resume()
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
@@ -285,7 +285,7 @@ extension ReaderViewModel {
         audioPlaybackService.onPlaybackFinished = { [weak self] in
             guard let self = self else { return }
             self.savePosition()
-            self.sleepTimerService.notifyDocumentEnd()
+            self.sleepTimerService.notifyDocumentEnd(by: self.book.id)
 
             // Advance to next chapter (audio file)
             if let content = self.content {
@@ -427,6 +427,87 @@ extension ReaderViewModel {
     func setLocalEndOfBookBehavior(_ behavior: EndOfBookBehavior?) {
         book.localEndOfBookBehavior = behavior?.rawValue
         libraryViewModel.updateEndOfBookBehavior(bookID: book.id, behavior: behavior?.rawValue)
+    }
+
+    // MARK: - Sleep Timer
+
+    /// Start a sleep timer owned by this book. Replaces any timer that
+    /// might be running for another book. The provided duration is
+    /// captured along with this book's pause/fade callbacks so the
+    /// shared service knows what to do when the timer fires.
+    /// Calling this with a timer already running just restarts it
+    /// (the singleton's start() implicitly stops any previous timer).
+    func startSleepTimer(duration: SleepTimerDuration) {
+        sleepTimerService.start(
+            duration: duration,
+            ownerID: book.id,
+            onExpire: { [weak self] in
+                guard let self = self else { return }
+                // Pause FIRST so audio output stops before we restore
+                // volume. Otherwise restoreVolume() would briefly play
+                // audio at full volume at the tail of the fade-out.
+                self.pause()
+                if self.isAudioBook {
+                    self.audioPlaybackService.restoreVolume()
+                } else {
+                    self.speechService.audioEngine.restoreVolume()
+                }
+                self.announceToVoiceOver("Sleep timer expired. Playback paused.")
+            },
+            onFadeStep: { [weak self] volume in
+                guard let self = self else { return }
+                if self.isAudioBook {
+                    self.audioPlaybackService.setVolume(volume)
+                } else {
+                    self.speechService.audioEngine.setVolume(volume)
+                }
+            },
+            fadeOutDuration: settingsViewModel.sleepFadeOutDuration
+        )
+    }
+
+    /// Cancel the sleep timer if one is running. Anyone may cancel —
+    /// no owner check, since "Cancel" should always work even if the
+    /// user is in a different window from the one that started it.
+    func cancelSleepTimer() {
+        sleepTimerService.stop()
+    }
+
+    /// Restart the running timer with its original duration. Used by
+    /// the "Reset Timer" button in the sleep timer sheet.
+    func restartSleepTimer() {
+        sleepTimerService.restart()
+    }
+
+    /// Reset a running timer or — if the previous one already ended —
+    /// arm a fresh timer with the same duration the user last picked.
+    /// Wired to the "Restart Sleep Timer" keyboard shortcut and the
+    /// experimental media-gesture detector. Both paths funnel through
+    /// here so the user-visible behavior matches regardless of how
+    /// they triggered it.
+    /// No-op (with a VoiceOver announcement) when there's no prior
+    /// duration to restore from — the user has never set a timer in
+    /// this install, so we have nothing to repeat.
+    func restartOrStartLastSleepTimer() {
+        if sleepTimerService.isActive {
+            // Existing timer running — same as Reset Timer.
+            sleepTimerService.restart()
+            announceToVoiceOver("Timer reset.")
+        } else if let last = sleepTimerService.lastUsedDuration {
+            // Previous timer ended — re-arm with that duration.
+            startSleepTimer(duration: last)
+            // startSleepTimer doesn't auto-start playback (that's a
+            // sheet-only courtesy). Match the sheet behavior here:
+            // if not currently playing, kick off playback so the
+            // re-armed timer has something to count against.
+            if !isCurrentlyPlaying || isCurrentlyPaused {
+                togglePlayPause()
+            }
+            announceToVoiceOver("Timer restarted: \(last.displayName).")
+        } else {
+            // First-ever press — nothing to repeat.
+            announceToVoiceOver("No previous sleep timer to restart.")
+        }
     }
 
     // MARK: - Rewind on Resume

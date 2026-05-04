@@ -172,6 +172,7 @@ struct ReaderView: View {
         }
         .sheet(isPresented: $showSleepTimer) {
             SleepTimerView(
+                viewModel: viewModel,
                 sleepTimerService: viewModel.sleepTimerService,
                 onStartPlayback: {
                     if !viewModel.isCurrentlyPlaying || viewModel.isCurrentlyPaused {

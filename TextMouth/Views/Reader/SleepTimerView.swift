@@ -1,88 +1,161 @@
 import SwiftUI
 
+/// The unified sleep-timer sheet. One sheet, two sections:
+///
+/// 1. **New Timer** — always shown. Tapping a preset starts (or restarts)
+///    the timer with that duration. If a timer is already running, the
+///    underlying `SleepTimerService.start(...)` call replaces it — the
+///    user's mental model is "set the timer to X minutes", not
+///    "start a fresh timer if and only if none is running".
+/// 2. **Current Timer** — visible only while a timer is running. Shows
+///    the remaining time and exposes Reset (restart with the same
+///    duration) and Cancel buttons.
+///
+/// ## Why merged
+/// Previously the active and idle states were separate views with
+/// different keyboard focus, different Close behavior, and different
+/// tab orders. The sheet would also race with playback transitions:
+/// pressing a preset dismissed the sheet, but if the timer expired
+/// quickly the next reopen put the user back into a different layout.
+/// Merging both states into one persistent layout makes the behavior
+/// predictable and gives VoiceOver users a single, stable focus order.
+///
+/// ## Single-sheet enforcement
+/// When this view appears, it broadcasts `.sleepTimerSheetOpened` with
+/// its own `viewID`. Any other open sheet receives the notification,
+/// compares IDs, and if mismatched, closes itself. This stops the
+/// "two book windows = two timer sheets" duplication the user reported.
 struct SleepTimerView: View {
+    @ObservedObject var viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
+    /// Closure to start playback when a timer is set. Only called when
+    /// the user starts a NEW timer (not when restarting). Existing
+    /// audio doesn't need to be re-armed.
     var onStartPlayback: (() -> Void)?
-    /// Whether to dismiss the sheet after setting a timer.
+    /// Whether to dismiss the sheet after starting a NEW timer.
+    /// Restart and Cancel never auto-close — the user is interacting
+    /// with the running timer, not setting one up.
     var autoClose: Bool = true
+
     @Environment(\.dismiss) private var dismiss
+
     @State private var customMinutes: Int = 30
-    /// True when the sheet opened with a timer already running.
-    /// Used to gate VoiceOverFocus — we only auto-focus when the user
-    /// opens the sheet to an existing timer, not when isActive changes
-    /// from a button press inside the sheet (which causes a focus race
-    /// with dismiss() and corrupts VoiceOver state).
-    @State private var openedWithActiveTimer = false
+    /// Unique identifier for this sheet instance. Other sheets close
+    /// themselves when they receive a `sleepTimerSheetOpened`
+    /// notification with a different ID — so only one timer sheet is
+    /// ever open across all book windows.
+    @State private var viewID = UUID()
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Sleep Timer")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
+            // Current timer section — only when a timer is running
             if sleepTimerService.isActive {
-                activeTimerContent
-            } else {
-                presetContent
+                currentTimerSection
+                Divider()
             }
 
-            Button("Close") { dismiss() }
-                .keyboardShortcut(.escape, modifiers: [])
-        }
-        .padding()
-        .frame(width: 300)
-        .navigationTitle("Sleep Timer")
-        .onAppear {
-            openedWithActiveTimer = sleepTimerService.isActive
-        }
-    }
-
-    // MARK: - Active Timer State
-
-    private var activeTimerContent: some View {
-        VStack(spacing: 8) {
-            Text("Timer active")
-                .font(.subheadline)
-            Text(sleepTimerService.formattedRemaining)
-                .font(.system(.title, design: .monospaced))
-                .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
-
-            Button("Cancel Timer", role: .destructive) {
-                sleepTimerService.stop()
-            }
-            .accessibilityLabel("Cancel sleep timer")
-            // Only apply VoiceOverFocus if the sheet OPENED with a timer running.
-            // When the user just pressed a preset button (startTimerAndPlay),
-            // the sheet is either dismissing or the user is already here — don't
-            // retrigger focus, which races with dismiss and corrupts VO state.
-            .modifier(ConditionalFocusModifier(shouldFocus: openedWithActiveTimer))
-
-            Button("Reset Timer") {
-                sleepTimerService.restart()
-            }
-            .accessibilityLabel("Restart timer with the same duration")
-            .accessibilityHint("Resets the countdown to the original time")
-        }
-    }
-
-    // MARK: - Preset Content (No Active Timer)
-
-    private var presetContent: some View {
-        VStack(spacing: 8) {
-            Text("Pause playback after:")
-                .foregroundColor(.secondary)
-
-            // Preset durations — first button gets VoiceOver focus only
-            // when the sheet opens to this state (not on in-sheet transitions)
-            ForEach(Array([10, 15, 30, 45, 60].enumerated()), id: \.element) { index, minutes in
-                Button("\(minutes) minutes") {
-                    startTimerAndPlay(duration: .minutes(minutes))
-                }
-                .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
-                .modifier(ConditionalFocusModifier(shouldFocus: index == 0 && !openedWithActiveTimer))
-            }
+            // New timer section — always visible
+            newTimerSection
 
             Divider()
+
+            HStack {
+                Spacer()
+                Button("Close") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding()
+        .frame(width: 320)
+        .navigationTitle("Sleep Timer")
+        .onAppear {
+            // Tell any other open sleep-timer sheets to close themselves —
+            // only one sheet visible at a time across all book windows.
+            NotificationCenter.default.post(
+                name: .sleepTimerSheetOpened,
+                object: nil,
+                userInfo: ["sheetID": viewID]
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .sleepTimerSheetOpened)) { notif in
+            // Another sheet opened. If it's not us, dismiss ourselves.
+            if let otherID = notif.userInfo?["sheetID"] as? UUID, otherID != viewID {
+                dismiss()
+            }
+        }
+    }
+
+    // MARK: - Current Timer Section
+
+    /// Shown while `sleepTimerService.isActive`. Heading, remaining time,
+    /// Reset and Cancel buttons. The Reset/Cancel actions go through the
+    /// view-model wrappers so they always touch the shared service via
+    /// the same code path the timer sheet uses to start a new timer.
+    private var currentTimerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Current Timer")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 8) {
+                Image(systemName: "moon.fill")
+                    .foregroundColor(.orange)
+                    .accessibilityHidden(true)
+                Text(sleepTimerService.formattedRemaining)
+                    .font(.system(.title3, design: .monospaced))
+                    .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
+            }
+
+            HStack(spacing: 12) {
+                Button("Reset Timer") {
+                    viewModel.restartSleepTimer()
+                    viewModel.announceToVoiceOver(
+                        "Timer reset. \(sleepTimerService.formattedRemaining) remaining."
+                    )
+                }
+                .accessibilityHint("Restart the timer with its original duration")
+
+                Button("Cancel Timer", role: .destructive) {
+                    viewModel.cancelSleepTimer()
+                    viewModel.announceToVoiceOver("Sleep timer cancelled.")
+                }
+                .accessibilityHint("Stop the timer and discard the remaining time")
+            }
+        }
+    }
+
+    // MARK: - New Timer Section
+
+    /// Always visible. Lists preset durations + a custom-minutes field +
+    /// the heading-end / document-end options. Selecting any of these
+    /// calls `viewModel.startSleepTimer(duration:)` which ALWAYS replaces
+    /// any timer already running — the sheet's UI for "set a new timer"
+    /// is the same whether or not one is currently running.
+    private var newTimerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("New Timer")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(sleepTimerService.isActive
+                 ? "Setting a new timer replaces the current one."
+                 : "Pause playback after:")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            // Preset minute durations
+            ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in
+                Button("\(minutes) minutes") {
+                    setNewTimer(.minutes(minutes))
+                }
+                .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+            }
 
             // Custom duration
             HStack(spacing: 8) {
@@ -93,7 +166,7 @@ struct SleepTimerView: View {
                     .multilineTextAlignment(.center)
                     .onSubmit {
                         customMinutes = max(1, min(customMinutes, 480))
-                        startTimerAndPlay(duration: .minutes(customMinutes))
+                        setNewTimer(.minutes(customMinutes))
                     }
                     .accessibilityLabel("Custom timer minutes")
                     .accessibilityValue("\(customMinutes) minutes")
@@ -107,48 +180,53 @@ struct SleepTimerView: View {
 
                 Button("Set") {
                     customMinutes = max(1, min(customMinutes, 480))
-                    startTimerAndPlay(duration: .minutes(customMinutes))
+                    setNewTimer(.minutes(customMinutes))
                 }
                 .accessibilityLabel("Set timer for \(customMinutes) minutes and start playing")
             }
 
-            Divider()
-
-            // End of heading / document
             Button("End of current heading") {
-                startTimerAndPlay(duration: .endOfHeading)
+                setNewTimer(.endOfHeading)
             }
             .accessibilityLabel("Stop at end of current heading and start playing")
 
             Button("End of document") {
-                startTimerAndPlay(duration: .endOfDocument)
+                setNewTimer(.endOfDocument)
             }
             .accessibilityLabel("Stop at end of document and start playing")
         }
     }
 
-    private func startTimerAndPlay(duration: SleepTimerDuration) {
-        sleepTimerService.start(duration: duration)
-        onStartPlayback?()
+    /// Start (or restart) the timer and optionally dismiss the sheet.
+    /// Plays the book if it isn't already playing — the user clearly
+    /// intends to read until the timer fires.
+    private func setNewTimer(_ duration: SleepTimerDuration) {
+        let wasActive = sleepTimerService.isActive
+        viewModel.startSleepTimer(duration: duration)
+        // Only auto-start playback when this is a fresh new timer.
+        // If the user is just adjusting an existing one, leave playback
+        // state alone (they may have paused intentionally).
+        if !wasActive {
+            onStartPlayback?()
+        }
+        // Announce so VoiceOver users know the timer was set even if
+        // the sheet auto-dismisses immediately.
+        viewModel.announceToVoiceOver(
+            wasActive
+            ? "Timer replaced. Now \(duration.displayName)."
+            : "Timer set for \(duration.displayName)."
+        )
         if autoClose {
             dismiss()
         }
     }
 }
 
-/// Applies VoiceOverFocus only when the condition is true.
-/// Prevents focus attempts from firing on in-sheet state transitions
-/// that race with sheet dismissal.
-private struct ConditionalFocusModifier: ViewModifier {
-    let shouldFocus: Bool
+// MARK: - Notification Bridge
 
-    func body(content: Content) -> some View {
-        if shouldFocus {
-            content
-                .accessibilityIdentifier(voiceOverFocusID)
-                .background(VoiceOverFocus(delay: 1.2))
-        } else {
-            content
-        }
-    }
+extension Notification.Name {
+    /// Posted when any sleep-timer sheet appears. Other open sheets
+    /// listen and dismiss themselves so only one is visible at a time
+    /// across all book windows. UserInfo carries `sheetID: UUID`.
+    static let sleepTimerSheetOpened = Notification.Name("sleepTimerSheetOpened")
 }

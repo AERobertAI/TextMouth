@@ -53,6 +53,18 @@ class ConfigService: ObservableObject {
         var bluetoothMonitoringEnabled: Bool = true
         /// Suppress window duration (seconds) after Bluetooth disconnect
         var bluetoothDisconnectDelay: Double = 2.0
+        /// Whether the experimental "restart sleep timer via media
+        /// gesture" detector is enabled. Off by default — see
+        /// MediaGestureDetector for rationale.
+        var restartTimerGestureEnabled: Bool = false
+        /// Comma-separated event-type sequence (see
+        /// MediaGestureDetector.EventType) that triggers a sleep timer
+        /// restart when matched within the configured time window.
+        var restartTimerGesturePattern: String = "previousTrack,previousTrack,previousTrack"
+        /// Maximum elapsed time in seconds across the gesture's event
+        /// sequence. Anything longer breaks the match and starts the
+        /// pattern over.
+        var restartTimerGestureWindow: Double = 2.0
 
         /// Custom decoder to handle missing keys from older config.json files.
         /// Without this, adding new fields would break loading of existing configs.
@@ -81,6 +93,9 @@ class ConfigService: ObservableObject {
             moveToTrashInsteadOfDeleting = try container.decodeIfPresent(Bool.self, forKey: .moveToTrashInsteadOfDeleting) ?? true
             bluetoothMonitoringEnabled = try container.decodeIfPresent(Bool.self, forKey: .bluetoothMonitoringEnabled) ?? true
             bluetoothDisconnectDelay = try container.decodeIfPresent(Double.self, forKey: .bluetoothDisconnectDelay) ?? 2.0
+            restartTimerGestureEnabled = try container.decodeIfPresent(Bool.self, forKey: .restartTimerGestureEnabled) ?? false
+            restartTimerGesturePattern = try container.decodeIfPresent(String.self, forKey: .restartTimerGesturePattern) ?? "previousTrack,previousTrack,previousTrack"
+            restartTimerGestureWindow = try container.decodeIfPresent(Double.self, forKey: .restartTimerGestureWindow) ?? 2.0
         }
 
         init() {}

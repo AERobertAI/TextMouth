@@ -62,6 +62,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case showHeadingList = "Show Headings"
     case showBookmarkList = "Show Bookmarks"
     case showSleepTimer = "Show Sleep Timer"
+    case restartSleepTimer = "Restart Sleep Timer"
     case whereAmI = "Where Am I?"
     case navigateUpLevel = "Up One Level"
     case openSelectedBook = "Open Selected Book"
@@ -82,7 +83,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
-        case .showHeadingList, .showSleepTimer:
+        case .showHeadingList, .showSleepTimer, .restartSleepTimer:
             return "Panels"
         case .whereAmI:
             return "Information"
@@ -109,6 +110,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .showHeadingList: [KeyBinding(key: "h", command: true, shift: true)],
             .showBookmarkList: [KeyBinding(key: "b", command: true, shift: true)],
             .showSleepTimer: [KeyBinding(key: "t", command: true, shift: true)],
+            .restartSleepTimer: [KeyBinding(key: "r", command: true, shift: true)],
             .whereAmI: [KeyBinding(key: "w")],
             .navigateUpLevel: [KeyBinding(key: "upArrow", command: true)],
             .openSelectedBook: [KeyBinding(key: "return")],
@@ -296,7 +298,37 @@ test("Action categories are correct") {
     try assertEqual(ShortcutAction.nextHeading.category, "Navigation")
     try assertEqual(ShortcutAction.addBookmark.category, "Bookmarks")
     try assertEqual(ShortcutAction.whereAmI.category, "Information")
+    try assertEqual(ShortcutAction.restartSleepTimer.category, "Panels",
+                    "Restart Sleep Timer is grouped with the other timer-related panel actions")
     print("    Categories verified for all action types")
+}
+
+test("Restart Sleep Timer defaults to Cmd+Shift+R") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.restartSleepTimer]!
+    try assertEqual(bindings.count, 1, "Single default binding")
+    try assertEqual(bindings[0].key, "r")
+    try assertTrue(bindings[0].command, "Default uses Command")
+    try assertTrue(bindings[0].shift, "Default uses Shift")
+    try assertTrue(!bindings[0].option, "Default does not use Option")
+    try assertTrue(!bindings[0].control, "Default does not use Control")
+}
+
+test("Restart Sleep Timer default doesn't collide with any existing binding") {
+    // Cmd+Shift+R must not match any other action's default — the
+    // KeyboardShortcutManager.addBinding logic strips conflicting
+    // bindings when a user reassigns, but the DEFAULTS need to be
+    // collision-free out of the box.
+    let target = KeyBinding(key: "r", command: true, shift: true)
+    let defaults = ShortcutAction.defaultBindings
+    var collisions: [String] = []
+    for (action, bindings) in defaults where action != .restartSleepTimer {
+        if bindings.contains(target) {
+            collisions.append(action.rawValue)
+        }
+    }
+    try assertEqual(collisions, [],
+                    "Cmd+Shift+R must be unique across default bindings; collides with: \(collisions)")
 }
 
 test("No duplicate bindings across actions in defaults") {
