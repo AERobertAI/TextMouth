@@ -64,6 +64,41 @@ struct DocumentContent {
         guard totalCharacterCount > 0 else { return 0 }
         return min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
     }
+
+    /// Reverse of `globalOffset(chapterIndex:localOffset:)` — given a
+    /// global character offset, find which chapter contains it and the
+    /// position within that chapter. Used by jump-to-percent and
+    /// jump-to-time to translate a target into a (chapter, offset)
+    /// pair the navigation system can act on.
+    /// Clamps out-of-range inputs: a negative target returns
+    /// (0, 0); a target past the end returns the last chapter's last
+    /// position. An empty document returns (0, 0).
+    func location(forGlobalOffset globalOffset: Int) -> (chapterIndex: Int, localOffset: Int) {
+        guard !chapters.isEmpty else { return (0, 0) }
+        let clampedTarget = max(0, min(globalOffset, totalCharacterCount))
+
+        // Walk chapters accumulating their lengths until the target
+        // falls within the current one. Chapters with empty text count
+        // as zero-length so they don't trap the cursor.
+        var cumulative = 0
+        for (index, chapter) in chapters.enumerated() {
+            let chapterLen = chapter.text.count
+            // Target inside this chapter: localOffset is the residual.
+            // Use < (not <=) so a target exactly at a chapter boundary
+            // lands on the START of the next chapter, not the END of
+            // the previous one — that matches the user expectation
+            // when jumping to a chapter boundary.
+            if clampedTarget < cumulative + chapterLen {
+                return (index, clampedTarget - cumulative)
+            }
+            cumulative += chapterLen
+        }
+
+        // Target is at or past the end — clamp to the last chapter.
+        let lastIndex = chapters.count - 1
+        let lastLen = chapters[lastIndex].text.count
+        return (lastIndex, max(0, lastLen - 1))
+    }
 }
 
 struct Chapter {

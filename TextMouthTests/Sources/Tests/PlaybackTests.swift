@@ -962,6 +962,150 @@ test("Segmented audio seek adds segment start time") {
                    "Seek time should include the segment's absolute start time")
 }
 
+// ---- Jump Validation Tests ----
+print("\n--- Jump Validation Tests ---")
+
+// These mirror the parse/validate logic in JumpToPercentPanel and
+// JumpToTimePanel in ReaderView.swift. The panels use plain text
+// fields (no character filter while typing) and rely on this
+// validation at submit time to reject bad input with an error message
+// instead of silently clamping or jumping to zero.
+
+/// Result of validating a percent input. Mirrors the View's
+/// performJump logic — empty input, non-numeric input, and out-of-
+/// range each produce a distinct error message.
+enum PercentValidation: Equatable {
+    case ok(Double)
+    case empty
+    case notNumber(String)
+    case outOfRange
+}
+
+func validatePercent(_ raw: String) -> PercentValidation {
+    let trimmed = raw.trimmingCharacters(in: .whitespaces)
+    if trimmed.isEmpty { return .empty }
+    guard let value = Double(trimmed) else { return .notNumber(trimmed) }
+    if value < 0 || value > 100 { return .outOfRange }
+    return .ok(value)
+}
+
+test("validatePercent: empty input rejected") {
+    try assertEqual(validatePercent(""), .empty, "Empty string surfaces an error")
+    try assertEqual(validatePercent("   "), .empty, "Whitespace-only is empty too")
+}
+
+test("validatePercent: non-numeric rejected with the offending text") {
+    try assertEqual(validatePercent("abc"), .notNumber("abc"))
+    try assertEqual(validatePercent("47abc"), .notNumber("47abc"),
+                    "Partial parse still rejected — Swift's Double init is strict")
+}
+
+test("validatePercent: out of range rejected") {
+    try assertEqual(validatePercent("-1"), .outOfRange)
+    try assertEqual(validatePercent("101"), .outOfRange)
+    try assertEqual(validatePercent("999"), .outOfRange)
+}
+
+test("validatePercent: in-range accepted including decimals and edges") {
+    try assertEqual(validatePercent("0"), .ok(0))
+    try assertEqual(validatePercent("100"), .ok(100), "Exactly 100 is allowed")
+    try assertEqual(validatePercent("47.5"), .ok(47.5))
+    try assertEqual(validatePercent("  50  "), .ok(50), "Whitespace trimmed")
+}
+
+/// Result of validating an H/M/S time input. Mirrors the View's
+/// JumpToTimePanel.performJump logic.
+enum TimeValidation: Equatable {
+    case ok(TimeInterval)
+    case fieldNotNumber(String)
+    case minutesOver59
+    case secondsOver59
+    case beyondBookEnd
+}
+
+func validateTime(
+    hours: String,
+    minutes: String,
+    seconds: String,
+    bookLengthSeconds: TimeInterval
+) -> TimeValidation {
+    /// Empty input → 0; non-numeric → nil so the caller can name
+    /// the offending field. Returning Optional avoids needing a
+    /// custom Error-conforming type just for the test stand-in.
+    func parse(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { return 0 }
+        guard let v = Int(trimmed), v >= 0 else { return nil }
+        return v
+    }
+    guard let h = parse(hours) else { return .fieldNotNumber("hours") }
+    guard let m = parse(minutes) else { return .fieldNotNumber("minutes") }
+    guard let s = parse(seconds) else { return .fieldNotNumber("seconds") }
+    if m >= 60 { return .minutesOver59 }
+    if s >= 60 { return .secondsOver59 }
+    let total = TimeInterval(h * 3600 + m * 60 + s)
+    if total > bookLengthSeconds { return .beyondBookEnd }
+    return .ok(total)
+}
+
+test("validateTime: empty fields treated as zero") {
+    // Typing only minutes shouldn't fail because the seconds field
+    // happens to be blank.
+    try assertEqual(validateTime(hours: "", minutes: "", seconds: "",
+                                 bookLengthSeconds: 3600), .ok(0))
+    try assertEqual(validateTime(hours: "", minutes: "5", seconds: "",
+                                 bookLengthSeconds: 3600), .ok(300))
+}
+
+test("validateTime: non-numeric in any field rejected") {
+    try assertEqual(
+        validateTime(hours: "abc", minutes: "0", seconds: "0", bookLengthSeconds: 3600),
+        .fieldNotNumber("hours"))
+    try assertEqual(
+        validateTime(hours: "0", minutes: "5x", seconds: "0", bookLengthSeconds: 3600),
+        .fieldNotNumber("minutes"))
+    try assertEqual(
+        validateTime(hours: "0", minutes: "0", seconds: "..", bookLengthSeconds: 3600),
+        .fieldNotNumber("seconds"))
+}
+
+test("validateTime: minutes >= 60 rejected") {
+    try assertEqual(
+        validateTime(hours: "0", minutes: "60", seconds: "0", bookLengthSeconds: 999_999),
+        .minutesOver59,
+        "60 minutes should be entered as 1 hour 0 minutes")
+}
+
+test("validateTime: seconds >= 60 rejected") {
+    try assertEqual(
+        validateTime(hours: "0", minutes: "0", seconds: "75", bookLengthSeconds: 999_999),
+        .secondsOver59)
+}
+
+test("validateTime: beyond book end rejected") {
+    // 1-hour book; user enters 2 hours.
+    try assertEqual(
+        validateTime(hours: "2", minutes: "0", seconds: "0", bookLengthSeconds: 3600),
+        .beyondBookEnd)
+}
+
+test("validateTime: at book end accepted") {
+    // Exact end is a valid jump target — useful for "skip to end"
+    // testing.
+    try assertEqual(
+        validateTime(hours: "1", minutes: "0", seconds: "0", bookLengthSeconds: 3600),
+        .ok(3600))
+}
+
+test("validateTime: ordinary in-range values accepted") {
+    try assertEqual(
+        validateTime(hours: "1", minutes: "30", seconds: "45", bookLengthSeconds: 7200),
+        .ok(5445))
+    try assertEqual(
+        validateTime(hours: "0", minutes: "5", seconds: "30", bookLengthSeconds: 7200),
+        .ok(330))
+}
+
 test("Segmented audio chapter offset clamps near clip end") {
     let charsPerSecond = 10.0
     let segmentStartTime = 30.0

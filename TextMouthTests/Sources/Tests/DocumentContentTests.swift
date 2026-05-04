@@ -385,4 +385,186 @@ test("SleepTimerDuration presets count") {
     try assertEqual(presetCount, 7, "Should have 7 presets")
 }
 
+// ---- location(forGlobalOffset:) Reverse Lookup Tests ----
+print("\n--- location(forGlobalOffset:) Reverse Lookup Tests ---")
+
+// These cover the new reverse-lookup helper added for jump-to-percent /
+// jump-to-time. The forward function is globalOffset(chapterIndex:
+// localOffset:); this test set verifies the inverse round-trips and
+// handles edge cases (out-of-range, empty document, exact chapter
+// boundaries) without crashing.
+
+test("location(forGlobalOffset:) round-trips with globalOffset") {
+    // Building blocks: three chapters of 100, 200, 150 chars.
+    let doc = DocumentContent(
+        title: "Test",
+        author: "Author",
+        chapters: [
+            Chapter(title: "A", text: String(repeating: "a", count: 100)),
+            Chapter(title: "B", text: String(repeating: "b", count: 200)),
+            Chapter(title: "C", text: String(repeating: "c", count: 150)),
+        ]
+    )
+
+    // Round-trip a handful of positions across all three chapters.
+    for (chapterIndex, localOffset) in [
+        (0, 0), (0, 50), (0, 99),
+        (1, 0), (1, 100), (1, 199),
+        (2, 0), (2, 75), (2, 149),
+    ] {
+        let global = doc.globalOffset(chapterIndex: chapterIndex, localOffset: localOffset)
+        let recovered = doc.location(forGlobalOffset: global)
+        try assertEqual(recovered.chapterIndex, chapterIndex,
+                        "Chapter index round-trip from offset \(global)")
+        try assertEqual(recovered.localOffset, localOffset,
+                        "Local offset round-trip from offset \(global)")
+    }
+}
+
+test("location(forGlobalOffset:) maps chapter boundary to next chapter's start") {
+    // Boundary semantics: a target exactly at the end of a chapter
+    // should land on the START of the next chapter, not the end of
+    // the previous one. Otherwise jumping to "end of chapter 1" would
+    // get stuck at the very last character of chapter 1 instead of
+    // moving on.
+    let doc = DocumentContent(
+        title: "Test",
+        author: "Author",
+        chapters: [
+            Chapter(title: "A", text: String(repeating: "a", count: 100)),
+            Chapter(title: "B", text: String(repeating: "b", count: 200)),
+        ]
+    )
+    // Offset 100 = end of chapter 0 = start of chapter 1
+    let result = doc.location(forGlobalOffset: 100)
+    try assertEqual(result.chapterIndex, 1, "Boundary lands on next chapter")
+    try assertEqual(result.localOffset, 0, "Boundary lands at offset 0 of next chapter")
+}
+
+test("location(forGlobalOffset:) clamps a negative target to (0, 0)") {
+    let doc = DocumentContent(
+        title: "Test",
+        author: "Author",
+        chapters: [Chapter(title: "A", text: "abcdef")]
+    )
+    let result = doc.location(forGlobalOffset: -42)
+    try assertEqual(result.chapterIndex, 0)
+    try assertEqual(result.localOffset, 0, "Negative offset clamps to 0")
+}
+
+test("location(forGlobalOffset:) clamps a too-large target to last chapter end") {
+    let doc = DocumentContent(
+        title: "Test",
+        author: "Author",
+        chapters: [
+            Chapter(title: "A", text: String(repeating: "a", count: 100)),
+            Chapter(title: "B", text: String(repeating: "b", count: 200)),
+        ]
+    )
+    // Total chars = 300; target 999 should clamp to last chapter, last
+    // valid offset (199 — chapter B is 200 chars, last index is 199).
+    let result = doc.location(forGlobalOffset: 999)
+    try assertEqual(result.chapterIndex, 1, "Out-of-range lands in last chapter")
+    try assertTrue(result.localOffset >= 0 && result.localOffset < 200,
+                  "Local offset stays inside last chapter bounds")
+}
+
+test("location(forGlobalOffset:) returns (0, 0) for an empty document") {
+    let doc = DocumentContent(title: "Test", author: "Author", chapters: [])
+    let result = doc.location(forGlobalOffset: 50)
+    try assertEqual(result.chapterIndex, 0)
+    try assertEqual(result.localOffset, 0, "Empty document never crashes — returns (0, 0)")
+}
+
+test("location(forGlobalOffset:) skips empty chapters cleanly") {
+    // Empty chapters in the middle of a document (zero-length spacers)
+    // shouldn't trap the cursor — a target inside a real chapter
+    // afterwards still resolves correctly.
+    let doc = DocumentContent(
+        title: "Test",
+        author: "Author",
+        chapters: [
+            Chapter(title: "A", text: String(repeating: "a", count: 50)),
+            Chapter(title: "Empty", text: ""),
+            Chapter(title: "B", text: String(repeating: "b", count: 100)),
+        ]
+    )
+    // Total = 50 + 0 + 100 = 150. Offset 80 is in chapter 2 (B),
+    // local offset 30.
+    let result = doc.location(forGlobalOffset: 80)
+    try assertEqual(result.chapterIndex, 2,
+                    "Skipped past zero-length chapter to land in B")
+    try assertEqual(result.localOffset, 30)
+}
+
+// ---- Jump-to-Percent / Jump-to-Time Math Tests ----
+print("\n--- Jump-to-Percent / Jump-to-Time Math Tests ---")
+
+// These mirror the formulas in ReaderViewModel+Jump.swift. Keeping
+// them in this test file (rather than in PlaybackTests) groups them
+// with the rest of the position-math tests they share inputs with.
+
+test("jumpToPercent: 50% of a 1000-char book lands at offset 500") {
+    let totalChars = 1000
+    let percent = 50.0
+    let target = Int((percent / 100.0 * Double(totalChars)).rounded())
+    try assertEqual(target, 500, "Halfway through a 1000-char book is offset 500")
+}
+
+test("jumpToPercent: clamps inputs outside [0, 100]") {
+    func clamp(_ p: Double) -> Double { max(0.0, min(p, 100.0)) }
+    try assertEqual(clamp(-10), 0.0, "Negative percent clamps to 0")
+    try assertEqual(clamp(150), 100.0, "Over-100 percent clamps to 100")
+    try assertEqual(clamp(47.5), 47.5, "In-range value passes through")
+}
+
+test("jumpToPercent: 100% lands at the end of the book") {
+    let totalChars = 12345
+    let target = Int((100.0 / 100.0 * Double(totalChars)).rounded())
+    try assertEqual(target, totalChars, "100% maps to the total character count exactly")
+}
+
+test("jumpToTime audio: 30 seconds is 300 character offset") {
+    // Audio mapping is fixed at 10 chars per second.
+    let seconds = 30.0
+    let charsPerSec = 10.0
+    let target = Int((seconds * charsPerSec).rounded())
+    try assertEqual(target, 300, "30s of audio = 300 char offset")
+}
+
+test("jumpToTime TTS: scales by total time") {
+    // For TTS, target = (elapsed / totalTime) * totalChars.
+    let totalChars = 50000
+    let totalTime = 1500.0  // 25 minutes
+    let elapsed = 750.0     // halfway
+    let target = Int((elapsed / totalTime * Double(totalChars)).rounded())
+    try assertEqual(target, 25000, "Halfway through TTS book by time = halfway by chars")
+}
+
+test("jumpToTime TTS: WPM-independent target for the same elapsed fraction") {
+    // The elapsed-fraction-to-char-fraction relationship doesn't
+    // depend on WPM — both sides scale the same way. Verifying this
+    // catches a class of regression where someone "fixes" the audio
+    // mapping by accidentally hardcoding a WPM into the TTS jump.
+    let totalChars = 10000
+    let elapsedFraction = 0.3
+
+    let totalTimeAt200 = Double(totalChars) / 5.0 / 200.0 * 60.0   // some WPM-derived total
+    let totalTimeAt400 = Double(totalChars) / 5.0 / 400.0 * 60.0   // half as long
+
+    let elapsedAt200 = elapsedFraction * totalTimeAt200
+    let elapsedAt400 = elapsedFraction * totalTimeAt400
+
+    let targetAt200 = Int((elapsedAt200 / totalTimeAt200 * Double(totalChars)).rounded())
+    let targetAt400 = Int((elapsedAt400 / totalTimeAt400 * Double(totalChars)).rounded())
+
+    try assertEqual(targetAt200, targetAt400,
+                    "30% elapsed in either WPM lands on the same offset")
+}
+
+test("jumpToTime: clamps negative seconds to 0") {
+    let clamped = max(0.0, -5.0)
+    try assertEqual(clamped, 0.0)
+}
+
 } // end runDocumentContentTests

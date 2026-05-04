@@ -111,6 +111,24 @@ struct DocumentContent {
         guard totalCharacterCount > 0 else { return 0 }
         return min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
     }
+
+    /// Reverse of globalOffset(chapterIndex:localOffset:) — mirrored
+    /// from the app for jump-to-percent / jump-to-time round-trip tests.
+    func location(forGlobalOffset globalOffset: Int) -> (chapterIndex: Int, localOffset: Int) {
+        guard !chapters.isEmpty else { return (0, 0) }
+        let clampedTarget = max(0, min(globalOffset, totalCharacterCount))
+        var cumulative = 0
+        for (index, chapter) in chapters.enumerated() {
+            let chapterLen = chapter.text.count
+            if clampedTarget < cumulative + chapterLen {
+                return (index, clampedTarget - cumulative)
+            }
+            cumulative += chapterLen
+        }
+        let lastIndex = chapters.count - 1
+        let lastLen = chapters[lastIndex].text.count
+        return (lastIndex, max(0, lastLen - 1))
+    }
 }
 
 struct Bookmark: Identifiable, Codable, Hashable {
