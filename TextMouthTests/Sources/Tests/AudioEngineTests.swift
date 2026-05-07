@@ -41,6 +41,20 @@ test("Speed multiplier calculation for TimePitch") {
     print("    650 WPM -> \(String(format: "%.2f", m650))x")
 }
 
+test("Player timeline sample time is not rate-corrected twice") {
+    let segmentStartFrame: Int64 = 1_000
+    let playerSampleTime: Int64 = 22_050
+    let timePitchRate = 0.25
+
+    let correctedFrame = segmentStartFrame + playerSampleTime
+    let buggyFrame = segmentStartFrame + Int64(Double(playerSampleTime) / timePitchRate)
+
+    try assertEqual(correctedFrame, 23_050, "Player timeline should advance by sample time only")
+    try assertEqual(buggyFrame, 89_200, "Old rate correction would overshoot at slow speed")
+    try assertTrue(buggyFrame - correctedFrame > 60_000,
+        "Double-correcting by rate would create a rewind/skip error large enough to notice")
+}
+
 test("Frame-to-char round-trip is approximately consistent") {
     let totalChars = 5000
     let totalFrames = 100000

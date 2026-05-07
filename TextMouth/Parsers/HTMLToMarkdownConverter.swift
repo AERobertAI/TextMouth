@@ -6,19 +6,34 @@ import SwiftSoup
 enum HTMLToMarkdownConverter {
 
     /// Convert an HTML string to Markdown, preserving headings, emphasis, links, and lists.
-    static func convert(_ html: String) throws -> String {
+    static func convert(_ html: String, stripDuplicateNavigation: Bool = false) throws -> String {
         let doc = try SwiftSoup.parse(html)
 
         // Remove script and style elements — they shouldn't appear in Markdown output
         try doc.select("script, style").remove()
 
         let body = doc.body() ?? doc
+        if stripDuplicateNavigation {
+            try removeDuplicateNavigation(from: body)
+        }
+
         var result = ""
         convertNode(body, into: &result)
 
         // Clean up excessive blank lines (collapse 3+ newlines to 2)
         result = collapseBlankLines(result)
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
+    /// chapter has real heading elements outside nav, so nav-only headings
+    /// remain available for sparse documents.
+    private static func removeDuplicateNavigation(from body: Element) throws {
+        let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
+        let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+        if allHeadingCount > navHeadingCount {
+            try body.select("nav").remove()
+        }
     }
 
     // MARK: - Node Conversion

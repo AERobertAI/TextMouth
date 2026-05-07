@@ -178,7 +178,6 @@ enum DAISYAudioConverter {
         let opfData = try provider.readFile(at: opfPath)
         let opfParser = DAISYOPFParser(data: opfData)
         let opfResult = opfParser.parse()
-        let opfDir = (opfPath as NSString).deletingLastPathComponent
 
         // Parse NCX for heading structure
         guard let ncxPath = allFiles.first(where: { $0.lowercased().hasSuffix(".ncx") }) else {
@@ -204,10 +203,13 @@ enum DAISYAudioConverter {
 
         for navPoint in navPoints {
             let smilRef = navPoint.contentSrc
-            let parts = smilRef.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
-            let smilFile = String(parts[0])
-            let fragmentID = parts.count > 1 ? String(parts[1]) : ""
-            let smilPath = opfDir.isEmpty ? smilFile : "\(opfDir)/\(smilFile)"
+            let split = ParserUtilities.splitFragment(smilRef)
+            let fragmentID = split.fragment
+            let smilPath = ParserUtilities.resolvedPackagePath(
+                smilRef,
+                relativeTo: ncxPath,
+                preserveFragment: false
+            )
 
             // Parse the SMIL file once and cache it
             if smilCache[smilPath] == nil {
@@ -222,8 +224,11 @@ enum DAISYAudioConverter {
 
         // Build segments. For each navPoint, find its fragment's clip start time.
         // The segment's end time is determined by the NEXT navPoint's clip start
-        // (if they share the same audio file), or the SMIL's last clip end.
+        // (if they share the same resolved audio file), or this resolved audio
+        // file's last clip end in the SMIL.
         var segments: [AudioSegment] = []
+        var copiedAudioFileNamesByPath: [String: String] = [:]
+        var usedAudioFileNames: Set<String> = []
 
         for (i, ref) in navRefs.enumerated() {
             guard let smilParser = smilCache[ref.smilPath] else { continue }
@@ -235,39 +240,34 @@ enum DAISYAudioConverter {
             let segmentClip = clipForFragment ?? clips[0]
             let startTime = segmentClip.startTime
 
-            // Determine end time: use the next navPoint's clip start if it references
-            // the same audio file, otherwise use the last clip's end in this SMIL.
-            var endTime = clips.last!.endTime
+            var nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
             if i + 1 < navRefs.count {
                 let nextRef = navRefs[i + 1]
                 if let nextParser = smilCache[nextRef.smilPath] {
                     let nextClips = nextParser.audioClips
-                    let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first
-                    if let nextClip = nextClip {
-                        let nextAudioFile = (nextClip.file as NSString).lastPathComponent
-                        let thisAudioFile = (segmentClip.file as NSString).lastPathComponent
-                        // If the next navPoint references the same audio file,
-                        // this segment ends where the next one begins
-                        if nextAudioFile == thisAudioFile {
-                            endTime = nextClip.startTime
-                        }
+                    if let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first {
+                        nextClipAndPath = (clip: nextClip, smilPath: nextRef.smilPath)
                     }
                 }
             }
 
-            // Copy the audio file to the output directory
-            let audioFileName = (segmentClip.file as NSString).lastPathComponent
-            let audioSrcPath = opfDir.isEmpty ? segmentClip.file : "\(opfDir)/\(segmentClip.file)"
-            let destPath = audioDir.appendingPathComponent(audioFileName)
+            let endTime = segmentEndTime(
+                for: segmentClip,
+                clips: clips,
+                smilPath: ref.smilPath,
+                nextClipAndPath: nextClipAndPath
+            )
 
-            if !fm.fileExists(atPath: destPath.path) {
-                do {
-                    let audioData = try provider.readFile(at: audioSrcPath)
-                    try audioData.write(to: destPath)
-                } catch {
-                    print("Warning: Failed to copy audio file \(audioSrcPath): \(error.localizedDescription)")
-                }
-            }
+            // Copy the audio file to the output directory
+            let audioSrcPath = resolvedAudioPath(for: segmentClip, smilPath: ref.smilPath)
+            let audioFileName = copyAudioFile(
+                from: audioSrcPath,
+                provider: provider,
+                toDirectory: audioDir,
+                fileNamesBySourcePath: &copiedAudioFileNamesByPath,
+                usedFileNames: &usedAudioFileNames,
+                fileManager: fm
+            )
 
             segments.append(AudioSegment(
                 title: ref.navPoint.label,
@@ -309,7 +309,6 @@ enum DAISYAudioConverter {
 
         let nccParser = DAISY202NCCParser(html: nccHTML)
         let nccResult = nccParser.parse()
-        let nccDir = (nccPath as NSString).deletingLastPathComponent
 
         // Pre-parse all referenced SMIL files for fragment-aware clip lookup
         var smilCache: [String: DAISYAudioSMILParser] = [:]
@@ -324,10 +323,13 @@ enum DAISYAudioConverter {
 
         for heading in nccResult.headings {
             let smilRef = heading.href
-            let parts = smilRef.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
-            let smilFile = String(parts[0])
-            let fragmentID = parts.count > 1 ? String(parts[1]) : ""
-            let smilPath = nccDir.isEmpty ? smilFile : "\(nccDir)/\(smilFile)"
+            let split = ParserUtilities.splitFragment(smilRef)
+            let fragmentID = split.fragment
+            let smilPath = ParserUtilities.resolvedPackagePath(
+                smilRef,
+                relativeTo: nccPath,
+                preserveFragment: false
+            )
 
             if smilCache[smilPath] == nil {
                 guard let smilData = try? provider.readFile(at: smilPath) else { continue }
@@ -341,6 +343,8 @@ enum DAISYAudioConverter {
 
         // Build segments with correct per-heading boundaries
         var segments: [AudioSegment] = []
+        var copiedAudioFileNamesByPath: [String: String] = [:]
+        var usedAudioFileNames: Set<String> = []
 
         for (i, ref) in headingRefs.enumerated() {
             guard let smilParser = smilCache[ref.smilPath] else { continue }
@@ -351,37 +355,34 @@ enum DAISYAudioConverter {
             let segmentClip = clipForFragment ?? clips[0]
             let startTime = segmentClip.startTime
 
-            // Determine end time from the next heading's clip if same audio file
-            var endTime = clips.last!.endTime
+            var nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
             if i + 1 < headingRefs.count {
                 let nextRef = headingRefs[i + 1]
                 if let nextParser = smilCache[nextRef.smilPath] {
                     let nextClips = nextParser.audioClips
-                    let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first
-                    if let nextClip = nextClip {
-                        let nextAudioFile = (nextClip.file as NSString).lastPathComponent
-                        let thisAudioFile = (segmentClip.file as NSString).lastPathComponent
-                        if nextAudioFile == thisAudioFile {
-                            endTime = nextClip.startTime
-                        }
+                    if let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first {
+                        nextClipAndPath = (clip: nextClip, smilPath: nextRef.smilPath)
                     }
                 }
             }
 
-            // Copy the audio file
-            let audioFileName = (segmentClip.file as NSString).lastPathComponent
-            let smilDir = (ref.smilPath as NSString).deletingLastPathComponent
-            let audioSrcPath = smilDir.isEmpty ? segmentClip.file : "\(smilDir)/\(segmentClip.file)"
-            let destPath = audioDir.appendingPathComponent(audioFileName)
+            let endTime = segmentEndTime(
+                for: segmentClip,
+                clips: clips,
+                smilPath: ref.smilPath,
+                nextClipAndPath: nextClipAndPath
+            )
 
-            if !fm.fileExists(atPath: destPath.path) {
-                do {
-                    let audioData = try provider.readFile(at: audioSrcPath)
-                    try audioData.write(to: destPath)
-                } catch {
-                    print("Warning: Failed to copy audio file \(audioSrcPath): \(error.localizedDescription)")
-                }
-            }
+            // Copy the audio file
+            let audioSrcPath = resolvedAudioPath(for: segmentClip, smilPath: ref.smilPath)
+            let audioFileName = copyAudioFile(
+                from: audioSrcPath,
+                provider: provider,
+                toDirectory: audioDir,
+                fileNamesBySourcePath: &copiedAudioFileNamesByPath,
+                usedFileNames: &usedAudioFileNames,
+                fileManager: fm
+            )
 
             segments.append(AudioSegment(
                 title: ref.heading.text,
@@ -402,6 +403,87 @@ enum DAISYAudioConverter {
     }
 
     // MARK: - Helpers
+
+    private static func resolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String {
+        ParserUtilities.resolvedPackagePath(
+            clip.file,
+            relativeTo: smilPath,
+            preserveFragment: false
+        )
+    }
+
+    private static func segmentEndTime(
+        for segmentClip: DAISYAudioClip,
+        clips: [DAISYAudioClip],
+        smilPath: String,
+        nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
+    ) -> Double {
+        let currentAudioPath = resolvedAudioPath(for: segmentClip, smilPath: smilPath)
+        let sameAudioClips = clips.filter {
+            resolvedAudioPath(for: $0, smilPath: smilPath) == currentAudioPath
+        }
+
+        var endTime = sameAudioClips.last?.endTime ?? segmentClip.endTime
+
+        if let nextClipAndPath,
+           resolvedAudioPath(for: nextClipAndPath.clip, smilPath: nextClipAndPath.smilPath) == currentAudioPath {
+            endTime = nextClipAndPath.clip.startTime
+        }
+
+        return endTime
+    }
+
+    private static func copyAudioFile(
+        from sourcePath: String,
+        provider: DAISYFileProvider,
+        toDirectory audioDir: URL,
+        fileNamesBySourcePath: inout [String: String],
+        usedFileNames: inout Set<String>,
+        fileManager fm: FileManager
+    ) -> String {
+        if let existing = fileNamesBySourcePath[sourcePath] {
+            return existing
+        }
+
+        let fileName = uniqueAudioFileName(
+            for: (sourcePath as NSString).lastPathComponent,
+            usedFileNames: usedFileNames
+        )
+        usedFileNames.insert(fileName)
+        fileNamesBySourcePath[sourcePath] = fileName
+
+        let destPath = audioDir.appendingPathComponent(fileName)
+        if !fm.fileExists(atPath: destPath.path) {
+            do {
+                let audioData = try provider.readFile(at: sourcePath)
+                try audioData.write(to: destPath)
+            } catch {
+                print("Warning: Failed to copy audio file \(sourcePath): \(error.localizedDescription)")
+            }
+        }
+
+        return fileName
+    }
+
+    private static func uniqueAudioFileName(
+        for baseName: String,
+        usedFileNames: Set<String>
+    ) -> String {
+        guard usedFileNames.contains(baseName) else { return baseName }
+
+        let nsBase = baseName as NSString
+        let stem = nsBase.deletingPathExtension
+        let ext = nsBase.pathExtension
+
+        var index = 2
+        while true {
+            let candidate = ext.isEmpty ? "\(stem)-\(index)" : "\(stem)-\(index).\(ext)"
+            if !usedFileNames.contains(candidate) {
+                return candidate
+            }
+            index += 1
+        }
+    }
 
     /// Copy any audio files from the DAISY package that haven't been copied yet
     private static func copyRemainingAudioFiles(

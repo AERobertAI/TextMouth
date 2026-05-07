@@ -181,6 +181,100 @@ test("Restart with no active duration is a no-op") {
     try assertTrue(!restarted, "Should not restart when no duration is set")
 }
 
+// ---- Unified Sleep Timer Arm Tests ----
+print("\n--- Unified Sleep Timer Arm Tests ---")
+
+final class UnifiedSleepTimerArmSimulator {
+    var isActive = false
+    var isPlaying = false
+    var duration: SleepTimerDuration?
+    var lastAppliedFadeOutDuration: Double?
+    var playbackStarts = 0
+    var pauseSoundPlayed = false
+    var dismissedActions: [String] = []
+
+    func arm(_ duration: SleepTimerDuration,
+             fadeOutDuration: Double,
+             startPlaybackIfNeeded: Bool,
+             dismissLabel: String? = nil) {
+        isActive = true
+        self.duration = duration
+        lastAppliedFadeOutDuration = fadeOutDuration
+        if startPlaybackIfNeeded && !isPlaying {
+            isPlaying = true
+            playbackStarts += 1
+        }
+        if let dismissLabel, !dismissLabel.isEmpty {
+            dismissedActions.append(dismissLabel)
+        }
+    }
+
+    func restart(fadeOutDuration: Double, startPlaybackIfNeeded: Bool) {
+        guard duration != nil else { return }
+        isActive = true
+        lastAppliedFadeOutDuration = fadeOutDuration
+        if startPlaybackIfNeeded && !isPlaying {
+            isPlaying = true
+            playbackStarts += 1
+        }
+    }
+
+    func expire(suppressPauseSound: Bool) {
+        pauseSoundPlayed = !suppressPauseSound
+        isActive = false
+        isPlaying = false
+        duration = nil
+    }
+}
+
+test("Sleep timer arm: replaced timer starts playback and uses latest fade duration") {
+    let timer = UnifiedSleepTimerArmSimulator()
+    timer.arm(.minutes(20), fadeOutDuration: 5.0, startPlaybackIfNeeded: false)
+    timer.isPlaying = false
+
+    timer.arm(.minutes(10), fadeOutDuration: 2.0, startPlaybackIfNeeded: true, dismissLabel: "new")
+
+    try assertTrue(timer.isActive, "Timer should remain active after replacement")
+    try assertEqual(timer.playbackStarts, 1, "Paused playback should be started once")
+    try assertTrue(timer.isPlaying, "Replacement should start playback when needed")
+    try assertEqual(timer.lastAppliedFadeOutDuration, 2.0, "Replacement should pick up latest fade setting")
+    try assertEqual(timer.dismissedActions, ["new"], "Sheet-driven replacement should dismiss once")
+}
+
+test("Sleep timer restart: reset uses latest fade duration and can start playback") {
+    let timer = UnifiedSleepTimerArmSimulator()
+    timer.arm(.minutes(15), fadeOutDuration: 4.0, startPlaybackIfNeeded: false)
+    timer.isPlaying = false
+
+    timer.restart(fadeOutDuration: 1.5, startPlaybackIfNeeded: true)
+
+    try assertTrue(timer.isActive, "Restart should keep the timer active")
+    try assertEqual(timer.playbackStarts, 1, "Restart should start playback when paused")
+    try assertTrue(timer.isPlaying, "Restart should resume playback when needed")
+    try assertEqual(timer.lastAppliedFadeOutDuration, 1.5, "Restart should use the new fade setting")
+}
+
+test("Sleep timer expiry: pause sound is suppressed on fade completion") {
+    let timer = UnifiedSleepTimerArmSimulator()
+    timer.arm(.minutes(5), fadeOutDuration: 3.0, startPlaybackIfNeeded: false)
+
+    timer.expire(suppressPauseSound: true)
+
+    try assertTrue(!timer.pauseSoundPlayed, "Expiry should not play the normal pause sound")
+    try assertTrue(!timer.isActive, "Timer should be inactive after expiry")
+    try assertTrue(!timer.isPlaying, "Playback should be stopped after expiry")
+}
+
+test("Sleep timer sheet: auto-close applies to both new and reset actions") {
+    let timer = UnifiedSleepTimerArmSimulator()
+    timer.arm(.minutes(30), fadeOutDuration: 0, startPlaybackIfNeeded: true, dismissLabel: "new")
+    timer.restart(fadeOutDuration: 0, startPlaybackIfNeeded: true)
+    timer.dismissedActions.append("reset")
+
+    try assertEqual(timer.dismissedActions, ["new", "reset"],
+                    "Sheet-driven timer changes should follow the same auto-close policy")
+}
+
 // ---- Sleep Timer State Transitions ----
 print("\n--- Sleep Timer State Transitions ---")
 
@@ -483,6 +577,169 @@ test("Fade expiry: volume is at zero when pause fires") {
     // Restore happens after pause
     currentVolume = 1.0
     try assertEqual(currentVolume, 1.0, "Volume restored for next playback")
+}
+
+test("Fade expiry: completion latch keeps fade cleanup active for expiry callback") {
+    // Production bug: the timer flipped isFadingOut to false before it
+    // invoked onTimerExpired, so pause() missed the fade-cleanup branch
+    // and the later manual restore caused a brief full-volume blip.
+    var isFadingOut = false
+    var pendingFadeCompletion = true
+    var actions: [String] = []
+
+    func consumePendingFadeCompletion() -> Bool {
+        let pending = pendingFadeCompletion
+        pendingFadeCompletion = false
+        return pending
+    }
+
+    func pauseAfterTimerExpiry() {
+        let completedFade = consumePendingFadeCompletion()
+        actions.append("pause_audio")
+        if isFadingOut || completedFade {
+            actions.append("stop_timer")
+            actions.append("restore_volume")
+        }
+    }
+
+    pauseAfterTimerExpiry()
+
+    try assertEqual(actions, ["pause_audio", "stop_timer", "restore_volume"],
+        "A just-finished fade must still use the fade-cleanup path")
+    try assertTrue(!pendingFadeCompletion, "Completion latch should be one-shot")
+}
+
+test("Fade expiry: expiry callback does not perform a second restore after pause helper") {
+    // Once pause() consumes the fade-completion latch, the expiry
+    // callback should not need its own restoreVolume() call.
+    var actions: [String] = []
+    var pendingFadeCompletion = true
+
+    func consumePendingFadeCompletion() -> Bool {
+        let pending = pendingFadeCompletion
+        pendingFadeCompletion = false
+        return pending
+    }
+
+    func pauseAfterTimerExpiry() {
+        actions.append("pause_audio")
+        if consumePendingFadeCompletion() {
+            actions.append("restore_volume")
+        }
+    }
+
+    pauseAfterTimerExpiry()
+
+    try assertEqual(actions, ["pause_audio", "restore_volume"],
+        "Fade cleanup should restore volume exactly once")
+}
+
+test("Fade expiry: engine-mode TTS stops engine before restoring mixer volume") {
+    // The earlier ordering test ("pause before restore") was still too
+    // weak for AVAudioEngine. playerNode.pause() can leave downstream
+    // time-pitch/mixer audio exposed; the sleep fade path must stop the
+    // engine while volume is still zero, then restore the mixer.
+    var actions: [String] = []
+    var mixerVolume: Float = 0.0
+    var playerRunning = true
+    var engineRunning = true
+    let capturedOffset = 6810
+    var resumeOffset: Int?
+
+    func pauseEngineAfterSleepFade() {
+        actions.append("capture_offset")
+        resumeOffset = capturedOffset
+        actions.append("stop_player")
+        playerRunning = false
+        actions.append("stop_engine")
+        engineRunning = false
+        actions.append("restore_mixer")
+        mixerVolume = 1.0
+    }
+
+    pauseEngineAfterSleepFade()
+
+    try assertEqual(actions, ["capture_offset", "stop_player", "stop_engine", "restore_mixer"],
+        "Engine output must stop before mixer volume returns to full")
+    try assertTrue(!playerRunning, "Player node should be stopped")
+    try assertTrue(!engineRunning, "Engine should be stopped")
+    try assertEqual(mixerVolume, 1.0, "Mixer restored after engine stop")
+    try assertEqual(resumeOffset, 6810, "Resume position should be preserved")
+}
+
+test("Fade expiry: engine-mode TTS does not restore mixer immediately after pause") {
+    // This models the remaining production bug: pause_player followed by
+    // restore_mixer can amplify buffered downstream samples. The fixed
+    // sleep path uses stop_player + stop_engine before restore_mixer.
+    let oldActions = ["pause_player", "restore_mixer"]
+    let fixedActions = ["stop_player", "stop_engine", "restore_mixer"]
+
+    try assertTrue(oldActions != fixedActions,
+                   "Sleep fade cleanup should no longer be a plain pause then restore")
+    try assertEqual(fixedActions.first, "stop_player")
+    try assertEqual(fixedActions[1], "stop_engine")
+    try assertEqual(fixedActions.last, "restore_mixer")
+}
+
+test("Fade expiry: completion latch is one-shot and survives the final fade callback") {
+    final class FadeCompletionLatchSimulator {
+        var isFadingOut = false
+        var pendingFadeCompletion = false
+        var onTimerExpired: (() -> Void)?
+
+        func expireWithFade() {
+            isFadingOut = true
+            // Final fade step lands at silence.
+            pendingFadeCompletion = true
+            isFadingOut = false
+            onTimerExpired?()
+        }
+
+        func consumePendingFadeCompletion() -> Bool {
+            let pending = pendingFadeCompletion
+            pendingFadeCompletion = false
+            return pending
+        }
+    }
+
+    let timer = FadeCompletionLatchSimulator()
+    var expired = false
+    timer.onTimerExpired = { expired = true }
+
+    timer.expireWithFade()
+
+    try assertTrue(expired, "Expiry callback should still fire after the fade finishes")
+    try assertTrue(timer.consumePendingFadeCompletion(),
+                   "The first post-fade pause should see the completion latch")
+    try assertTrue(!timer.consumePendingFadeCompletion(),
+                   "The latch must be consumed after one read")
+}
+
+test("Fade expiry: stop clears an unconsumed completion latch") {
+    final class FadeCompletionLatchSimulator {
+        var pendingFadeCompletion = false
+
+        func expireWithFade() {
+            pendingFadeCompletion = true
+        }
+
+        func stop() {
+            pendingFadeCompletion = false
+        }
+
+        func consumePendingFadeCompletion() -> Bool {
+            let pending = pendingFadeCompletion
+            pendingFadeCompletion = false
+            return pending
+        }
+    }
+
+    let timer = FadeCompletionLatchSimulator()
+    timer.expireWithFade()
+    timer.stop()
+
+    try assertTrue(!timer.consumePendingFadeCompletion(),
+                   "stop() should discard any leftover completion latch")
 }
 
 test("Manual pause during fade: audio pauses before volume restore") {

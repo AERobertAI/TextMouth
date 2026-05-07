@@ -13,12 +13,15 @@ extension ReaderViewModel {
     }
 
     /// Skip forward by the configured unit (or shift-unit if shift is held).
-    /// Debounces rapid-fire calls within 0.3 seconds.
+    /// Debounces rapid-fire calls. The window is wide enough to absorb
+    /// a single physical press that arrives via two paths
+    /// (NowPlayingService skip command + KeyboardShortcutManager
+    /// notification, in cases where macOS routes a single media key to
+    /// both) without dropping a deliberate second press.
+    /// `lastSkipTime` is updated BEFORE running the skip so a re-entrant
+    /// call inside the same main-loop tick is reliably blocked.
     func skipForward(useShiftUnit: Bool = false) {
-        // Debounce: ignore if called again within 0.3 seconds
-        let now = Date()
-        guard now.timeIntervalSince(lastSkipTime) > 0.3 else { return }
-        lastSkipTime = now
+        guard acquireSkipToken() else { return }
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipForward)
         let unit = useShiftUnit ? settingsViewModel.shiftSkipForwardUnit : settingsViewModel.skipForwardUnit
@@ -27,16 +30,36 @@ extension ReaderViewModel {
     }
 
     /// Skip backward by the configured unit (or shift-unit if shift is held).
-    /// Debounces rapid-fire calls within 0.3 seconds.
+    /// Debounces rapid-fire calls. See `skipForward` for the rationale.
     func skipBackward(useShiftUnit: Bool = false) {
-        let now = Date()
-        guard now.timeIntervalSince(lastSkipTime) > 0.3 else { return }
-        lastSkipTime = now
+        guard acquireSkipToken() else { return }
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipBackward)
         let unit = useShiftUnit ? settingsViewModel.shiftSkipBackwardUnit : settingsViewModel.skipBackwardUnit
         debugLog("skipBackward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
         performSkip(unit: unit, forward: false)
+    }
+
+    /// Atomically check the debounce window and update `lastSkipTime`.
+    /// Returns true if the caller may proceed with a skip; false if the
+    /// call should be dropped as a duplicate. The 0.4s window is
+    /// deliberately a bit larger than the time between a media-key
+    /// press hitting MPRemoteCommandCenter and the same key hitting an
+    /// NSEvent local monitor on systems where both paths fire — the
+    /// observed worst case is ~50–150ms, but I want margin so a brief
+    /// macOS scheduling hiccup doesn't slip through. A user pressing
+    /// rewind twice deliberately can wait 400ms.
+    private func acquireSkipToken() -> Bool {
+        let now = Date()
+        if now.timeIntervalSince(lastSkipTime) <= Self.skipDebounceWindow {
+            return false
+        }
+        // Update BEFORE running so a re-entrant call (e.g. a hook fires
+        // synchronously from cancelWhereAmIIfActive() that re-posts a
+        // skip notification) sees the updated timestamp on its next
+        // check.
+        lastSkipTime = now
+        return true
     }
 
     /// Dispatch a skip action based on the skip unit type.
@@ -481,6 +504,14 @@ extension ReaderViewModel {
 
         if chapIdx != currentChapterIndex {
             audioPlaybackService.stop()
+            // Pre-rendered next-chapter engine is meaningless once we
+            // jump away — discard it so a stale render doesn't get
+            // adopted later. Same cleanup pattern as skipByTime() and
+            // navigateTo().
+            nextChapterEngine?.cancelRender()
+            nextChapterEngine = nil
+            nextChapterIndex = nil
+
             currentChapterIndex = chapIdx
             currentCharacterOffset = charOffset
             if wasPlaying {
@@ -488,7 +519,14 @@ extension ReaderViewModel {
             }
         } else {
             currentCharacterOffset = charOffset
+            // Translate chapter-relative offset to absolute seek target
+            // via chapterStartTime — handles segmented DAISY, m4b with
+            // chapter markers, multi-file, and single-file uniformly.
+            // Without this every layout other than multi-file/single-
+            // file landed at the wrong absolute time when the user did
+            // a same-chapter skip.
             let timeOffset = Double(charOffset) / Self.audioCharsPerSecond
+                + chapterStartTime(currentChapterIndex)
             audioPlaybackService.seek(to: timeOffset)
         }
 
@@ -556,7 +594,14 @@ extension ReaderViewModel {
                 }
             } else {
                 currentCharacterOffset = characterOffset
-                let timeOffset = Double(characterOffset) / 10.0
+                // Translate chapter-relative offset to absolute via
+                // chapterStartTime, which knows about all four audio
+                // layouts (multi-file, segmented DAISY, m4b chapter
+                // markers, single-file). This was the same bug as in
+                // skipCharacters — same-chapter seeks landed at the
+                // wrong global time on m4b chapter books.
+                let timeOffset = Double(characterOffset) / Self.audioCharsPerSecond
+                    + chapterStartTime(currentChapterIndex)
                 audioPlaybackService.seek(to: timeOffset)
             }
             savePosition()

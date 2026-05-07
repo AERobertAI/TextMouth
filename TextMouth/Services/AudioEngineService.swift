@@ -300,6 +300,22 @@ class AudioEngineService: ObservableObject {
         isPaused = true
     }
 
+    /// Stop engine output at the current playback position while keeping
+    /// rendered audio available for a later resume. Used after a sleep
+    /// timer fade has already brought the mixer to silence; stopping the
+    /// engine before volume restoration prevents any buffered downstream
+    /// samples from being heard at full volume.
+    func stopAfterFadePreservingPosition() -> Int {
+        let offset = currentCharOffset()
+        playbackGeneration += 1
+        playerNode.stop()
+        if engine.isRunning { engine.stop() }
+        segmentStartFrame = frameForCharOffset(offset)
+        isPlaying = false
+        isPaused = false
+        return offset
+    }
+
     func resume() {
         guard isPaused else { return }
         playerNode.play()
@@ -368,15 +384,25 @@ class AudioEngineService: ObservableObject {
             return charOffsetForFrame(segmentStartFrame)
         }
 
-        // playerTime.sampleTime = frames played in the current schedule (resets on stop+play)
-        // Note: TimePitch changes the playback speed but playerTime reports frames
-        // at the OUTPUT rate, so we need to account for the speed multiplier
-        let framesPlayedAtOutputRate = playerTime.sampleTime
-        // The TimePitch node means 1 output frame corresponds to (1/rate) input frames
-        let inputFramesPlayed = Double(framesPlayedAtOutputRate) / Double(timePitch.rate)
-        let currentFrame = segmentStartFrame + AVAudioFramePosition(inputFramesPlayed)
+        // `playerTime.sampleTime` is already on the player node timeline.
+        // The time-pitch unit changes audible speed, not the player's sample
+        // progression through the scheduled buffer, so do not scale it again.
+        let currentFrame = Self.currentFrame(
+            segmentStartFrame: segmentStartFrame,
+            playerSampleTime: playerTime.sampleTime
+        )
 
         return charOffsetForFrame(currentFrame)
+    }
+
+    /// Combine the segment start and player-node sample time on the player
+    /// timeline. Exposed for tests so the offset math can be exercised through
+    /// the production type instead of duplicating the calculation there.
+    static func currentFrame(
+        segmentStartFrame: AVAudioFramePosition,
+        playerSampleTime: AVAudioFramePosition
+    ) -> AVAudioFramePosition {
+        segmentStartFrame + playerSampleTime
     }
 
     var renderedDuration: TimeInterval {

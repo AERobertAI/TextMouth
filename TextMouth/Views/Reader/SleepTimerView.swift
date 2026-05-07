@@ -28,13 +28,10 @@ import SwiftUI
 struct SleepTimerView: View {
     @ObservedObject var viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
-    /// Closure to start playback when a timer is set. Only called when
-    /// the user starts a NEW timer (not when restarting). Existing
-    /// audio doesn't need to be re-armed.
     var onStartPlayback: (() -> Void)?
     /// Whether to dismiss the sheet after starting a NEW timer.
-    /// Restart and Cancel never auto-close — the user is interacting
-    /// with the running timer, not setting one up.
+    /// Current-timer actions honor the same sheet auto-close policy so
+    /// reset/restart behave the same way as a fresh timer selection.
     var autoClose: Bool = true
 
     @Environment(\.dismiss) private var dismiss
@@ -94,7 +91,7 @@ struct SleepTimerView: View {
     /// Shown while `sleepTimerService.isActive`. Heading, remaining time,
     /// Reset and Cancel buttons. The Reset/Cancel actions go through the
     /// view-model wrappers so they always touch the shared service via
-    /// the same code path the timer sheet uses to start a new timer.
+    /// the same code path the timer sheet uses to arm a timer.
     private var currentTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Current Timer")
@@ -113,10 +110,13 @@ struct SleepTimerView: View {
 
             HStack(spacing: 12) {
                 Button("Reset Timer") {
-                    viewModel.restartSleepTimer()
+                    viewModel.restartSleepTimer(startPlaybackIfNeeded: true)
                     viewModel.announceToVoiceOver(
                         "Timer reset. \(sleepTimerService.formattedRemaining) remaining."
                     )
+                    if autoClose {
+                        dismiss()
+                    }
                 }
                 .accessibilityHint("Restart the timer with its original duration")
 
@@ -133,9 +133,10 @@ struct SleepTimerView: View {
 
     /// Always visible. Lists preset durations + a custom-minutes field +
     /// the heading-end / document-end options. Selecting any of these
-    /// calls `viewModel.startSleepTimer(duration:)` which ALWAYS replaces
-    /// any timer already running — the sheet's UI for "set a new timer"
-    /// is the same whether or not one is currently running.
+    /// calls `viewModel.startSleepTimer(duration:startPlaybackIfNeeded:)`
+    /// which ALWAYS replaces any timer already running — the sheet's UI
+    /// for "set a new timer" is the same whether or not one is currently
+    /// running.
     private var newTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("New Timer")
@@ -201,21 +202,10 @@ struct SleepTimerView: View {
     /// Plays the book if it isn't already playing — the user clearly
     /// intends to read until the timer fires.
     private func setNewTimer(_ duration: SleepTimerDuration) {
-        let wasActive = sleepTimerService.isActive
-        viewModel.startSleepTimer(duration: duration)
-        // Only auto-start playback when this is a fresh new timer.
-        // If the user is just adjusting an existing one, leave playback
-        // state alone (they may have paused intentionally).
-        if !wasActive {
-            onStartPlayback?()
-        }
+        viewModel.startSleepTimer(duration: duration, startPlaybackIfNeeded: true)
         // Announce so VoiceOver users know the timer was set even if
         // the sheet auto-dismisses immediately.
-        viewModel.announceToVoiceOver(
-            wasActive
-            ? "Timer replaced. Now \(duration.displayName)."
-            : "Timer set for \(duration.displayName)."
-        )
+        viewModel.announceToVoiceOver("Timer set for \(duration.displayName).")
         if autoClose {
             dismiss()
         }

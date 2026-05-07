@@ -38,8 +38,8 @@ struct ReaderView: View {
                             .fontWeight(.bold)
                             .accessibilityAddTraits(.isHeader)
 
-                        if viewModel.currentChapterIndex < content.chapters.count {
-                            let chapter = content.chapters[viewModel.currentChapterIndex]
+                        if viewModel.displayChapterIndex < content.chapters.count {
+                            let chapter = content.chapters[viewModel.displayChapterIndex]
                             if !chapter.title.isEmpty {
                                 Text(chapter.title)
                                     .font(.title3)
@@ -47,7 +47,7 @@ struct ReaderView: View {
                             }
                         }
 
-                        Text("Chapter \(viewModel.currentChapterIndex + 1) of \(content.chapters.count)")
+                        Text("Chapter \(viewModel.displayChapterIndex + 1) of \(content.chapters.count)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -67,14 +67,28 @@ struct ReaderView: View {
                 // Text view freezes the main thread.
                 ScrollView {
                     if let content = viewModel.content,
-                       viewModel.currentChapterIndex < content.chapters.count {
-                        let chapterText = content.chapters[viewModel.currentChapterIndex].text
-                        Text(viewModel.visibleTextWindow(chapterText))
-                            .font(.body)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
-                            .accessibilityLabel("Book content")
+                       viewModel.displayChapterIndex < content.chapters.count {
+                        if viewModel.isPlaybackActivelyAdvancing {
+                            // Keep selection disabled while the playback
+                            // window is still capable of moving. A
+                            // constantly replaced selectable Text view was
+                            // the most likely trigger for the huge
+                            // VoiceOver/AppKit memory spike during live
+                            // playback.
+                            Text(viewModel.displayVisibleTextWindow)
+                                .font(.body)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.disabled)
+                                .accessibilityLabel("Book content")
+                        } else {
+                            Text(viewModel.displayVisibleTextWindow)
+                                .font(.body)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                                .accessibilityLabel("Book content")
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -512,7 +526,7 @@ struct BookInfoBar: View {
                 togglePanel(.percent)
             } label: {
                 Label {
-                    Text(viewModel.formattedPercentComplete)
+                    Text(viewModel.displayFormattedPercentComplete)
                 } icon: {
                     Image(systemName: "chart.bar.fill")
                         .foregroundColor(.blue)
@@ -521,7 +535,7 @@ struct BookInfoBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(viewModel.formattedPercentComplete) through the book")
+            .accessibilityLabel("\(viewModel.displayFormattedPercentComplete) through the book")
             .accessibilityHint(percentButtonHint)
 
             // Time remaining — click to open jump-to-time
@@ -529,7 +543,7 @@ struct BookInfoBar: View {
                 togglePanel(.time)
             } label: {
                 Label {
-                    Text("\(viewModel.formattedTimeRemaining) left")
+                    Text("\(viewModel.displayFormattedTimeRemaining) left")
                 } icon: {
                     Image(systemName: "clock")
                         .foregroundColor(.green)
@@ -538,7 +552,7 @@ struct BookInfoBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(TimeFormatting.spoken(viewModel.timeRemaining)) remaining at current speed")
+            .accessibilityLabel("\(TimeFormatting.spoken(viewModel.displayTimeRemaining)) remaining at current speed")
             .accessibilityHint(timeButtonHint)
 
             // Total book time — non-interactive
@@ -680,7 +694,7 @@ private struct JumpToPercentPanel: View {
             // Pre-fill with the current percent so the user can edit
             // an offset rather than typing from scratch when fine-
             // tuning their position.
-            percentInput = String(format: "%.1f", viewModel.percentComplete)
+            percentInput = String(format: "%.1f", viewModel.displayPercentComplete)
             errorMessage = ""
 
             // Auto-focus the input after the panel-appearance
@@ -819,7 +833,7 @@ private struct JumpToTimePanel: View {
             // Pre-fill with current elapsed (totalTime - timeRemaining)
             // so the user can adjust by a delta rather than typing
             // from zero.
-            let elapsed = max(0, viewModel.totalEstimatedTime - viewModel.timeRemaining)
+            let elapsed = max(0, viewModel.totalEstimatedTime - viewModel.displayTimeRemaining)
             let total = Int(elapsed)
             hoursText = "\(total / 3600)"
             minutesText = "\((total % 3600) / 60)"

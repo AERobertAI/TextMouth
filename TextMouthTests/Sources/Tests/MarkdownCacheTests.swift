@@ -1,5 +1,6 @@
 import Foundation
 import Markdown
+import ZIPFoundation
 
 func runMarkdownCacheTests() {
 print("\n--- Markdown Cache Service Tests ---")
@@ -316,6 +317,53 @@ test("Global offsets are consistent across cached chapters") {
     try assertEqual(ch2Start, content.chapters[0].text.count, "Chapter 2 start equals chapter 1 length")
 }
 
+test("EPUB cache extraction strips duplicate nav content") {
+    let epubURL = try makeTemporaryEPUBForCacheTest(entries: [
+        "META-INF/container.xml": """
+        <?xml version="1.0"?>
+        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+          <rootfiles>
+            <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+          </rootfiles>
+        </container>
+        """,
+        "OEBPS/content.opf": """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+          <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <dc:title>Cache Nav Test</dc:title>
+            <dc:creator>Tester</dc:creator>
+          </metadata>
+          <manifest>
+            <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+          </manifest>
+          <spine>
+            <itemref idref="ch1"/>
+          </spine>
+        </package>
+        """,
+        "OEBPS/ch1.xhtml": """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+          <nav epub:type="toc">
+            <ol>
+              <li><a href="#ch1">Chapter 1</a></li>
+              <li><a href="#ch2">Chapter 2</a></li>
+            </ol>
+          </nav>
+          <h1 id="ch1">Chapter 1</h1>
+          <p>Actual cached chapter content.</p>
+        </body></html>
+        """
+    ])
+    defer { try? FileManager.default.removeItem(at: epubURL) }
+
+    let markdown = try extractEPUBCacheMarkdownForTest(url: epubURL)
+    let chapterOneCount = markdown.components(separatedBy: "Chapter 1").count - 1
+    try assertEqual(chapterOneCount, 1, "Cached Markdown should contain the content heading once")
+    try assertTrue(!markdown.contains("Chapter 2"), "Cached Markdown should not include nav-only link labels")
+    try assertTrue(markdown.contains("Actual cached chapter content."), "Body content should remain")
+}
+
 // MARK: - Cache version system tests (semantic versioning)
 
 test("Book with nil cacheFormatVersion is considered outdated") {
@@ -509,4 +557,26 @@ func isCacheOutdated(stored: String?, current: String) -> Bool {
         if s[i] > c[i] { return false }
     }
     return false
+}
+
+private func makeTemporaryEPUBForCacheTest(entries: [String: String]) throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("TextMouthCacheTest-\(UUID().uuidString).epub")
+    let archive = try Archive(url: url, accessMode: .create)
+
+    for (path, contents) in entries {
+        let data = Data(contents.utf8)
+        try archive.addEntry(
+            with: path,
+            type: .file,
+            uncompressedSize: Int64(data.count),
+            provider: { position, size in
+                let start = Int(position)
+                let end = min(start + size, data.count)
+                return data[start..<end]
+            }
+        )
+    }
+
+    return url
 }

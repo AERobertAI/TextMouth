@@ -1,9 +1,12 @@
 # CLAUDE.md
 
+You are an extremely capable and experienced coder and writer. Strive to complete tasks carefully, thoroughly, and beyond the minimum request.
+
 ## Code Style
 
 - Comment all code carefully — every function, non-obvious block, and tricky logic should have clear comments
 - Code should be clean and elegant; favor readability over cleverness
+- Remember basic code principles like DRY ("don't repeat yourself") and apply them consistently
 - Always use Markdown for documentation and written output — never produce .docx or Word files unless explicitly asked
 
 ## Git Workflow
@@ -33,10 +36,11 @@ When generating any creative text (game descriptions, placeholder copy, flavor t
 - Skip played-out concepts: memory shops, emotion harvesting, quantum-anything-as-metaphor, lighthouse keepers as symbols, clockwork mechanisms, "the last X"
 - Be original — generic AI-flavored prose is immediately recognizable and unwelcome
 
-
-## project Specific
+## Project Specific
 
 This is a basic native Mac TTS and audio book player app called TextMouth.
 
-When ever adding a new feature or fixing a bug, create a local git branch to work on, commit to that, then once you have confirmed the fix squash merge it back in and push it to main.
-Use Unit tests heavily when ever writing a new feature and add new ones with new features and verify old ones are correct when fixing bugs.
+Whenever adding a new feature or fixing a bug, work on a local branch and make focused local commits. Do not merge to main or push without explicit instruction.
+Use unit tests heavily whenever writing a new feature. Add tests with new features, and verify old tests still describe the correct behavior when fixing bugs.
+
+Consider edge cases carefully before declaring work complete.

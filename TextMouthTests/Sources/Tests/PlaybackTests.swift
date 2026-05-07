@@ -54,6 +54,202 @@ test("Play command only plays, does not toggle") {
     try assertEqual(pauseCallCount, 0, "Pause should never have been called")
 }
 
+test("Remote play resumes paused playback instead of cold-starting") {
+    enum Mode {
+        case stopped
+        case speaking
+        case paused
+    }
+
+    var mode: Mode = .paused
+    var playCalls = 0
+    var resumeCalls = 0
+
+    func playOrResume() {
+        switch mode {
+        case .paused:
+            resumeCalls += 1
+            mode = .speaking
+        case .stopped:
+            playCalls += 1
+            mode = .speaking
+        case .speaking:
+            break
+        }
+    }
+
+    playOrResume()
+    try assertEqual(resumeCalls, 1, "Paused play should resume")
+    try assertEqual(playCalls, 0, "Paused play should not cold-start")
+    try assertTrue(mode == .speaking)
+}
+
+// ---- Playback UI Mirror Tests ----
+print("\n--- Playback UI Mirror Tests ---")
+
+final class PlaybackUIMirrorSimulator {
+    private let chapterStartOffsets: [Int]
+    var displayChapterIndex = 0
+    var displayCharacterOffset = 0
+
+    init(chapterLengths: [Int]) {
+        var starts: [Int] = []
+        starts.reserveCapacity(chapterLengths.count)
+        var running = 0
+        for length in chapterLengths {
+            starts.append(running)
+            running += length
+        }
+        self.chapterStartOffsets = starts
+    }
+
+    func refreshDisplay(chapterIndex: Int, offset: Int) {
+        displayChapterIndex = chapterIndex
+        displayCharacterOffset = offset
+    }
+
+    func displayCurrentGlobalOffset() -> Int {
+        guard displayChapterIndex >= 0,
+              displayChapterIndex < chapterStartOffsets.count else { return 0 }
+        return chapterStartOffsets[displayChapterIndex] + displayCharacterOffset
+    }
+}
+
+test("Playback UI mirror: chapter and offset are read from the same display snapshot") {
+    let mirror = PlaybackUIMirrorSimulator(chapterLengths: [100, 120, 140])
+
+    // Raw playback moved into chapter 2, but the UI should read the
+    // throttled display snapshot instead of mixing a stale chapter with
+    // a fresh offset.
+    mirror.refreshDisplay(chapterIndex: 1, offset: 5)
+    try assertEqual(mirror.displayCurrentGlobalOffset(), 105,
+                    "Display offset should use the mirrored chapter index")
+
+    mirror.refreshDisplay(chapterIndex: 2, offset: 12)
+    try assertEqual(mirror.displayCurrentGlobalOffset(), 232,
+                    "Mirror updates should stay internally consistent")
+}
+
+final class VisibleTextWindowRefreshSimulator {
+    struct WindowState {
+        let chapterIndex: Int
+        let startOffset: Int
+        let endOffset: Int
+    }
+
+    static let maxDisplayChars = 20_000
+    static let guardFraction = 0.25
+
+    private(set) var refreshCount = 0
+    private(set) var windowState: WindowState?
+
+    func refresh(chapterIndex: Int, offset: Int, text: String, force: Bool = false) {
+        if shouldRefresh(chapterIndex: chapterIndex, offset: offset, text: text, force: force) {
+            refreshCount += 1
+            if text.count <= Self.maxDisplayChars {
+                windowState = WindowState(
+                    chapterIndex: chapterIndex,
+                    startOffset: 0,
+                    endOffset: text.count
+                )
+                return
+            }
+
+            let halfWindow = Self.maxDisplayChars / 2
+            let center = min(max(offset, halfWindow), text.count - halfWindow)
+            let windowStart = max(center - halfWindow, 0)
+            let windowEnd = min(center + halfWindow, text.count)
+            let startIdx = text.index(text.startIndex, offsetBy: windowStart)
+            let endIdx = text.index(text.startIndex, offsetBy: windowEnd)
+
+            var adjustedStart = startIdx
+            if windowStart > 0,
+               let paraBreak = text.range(of: "\n\n", range: startIdx..<endIdx) {
+                adjustedStart = paraBreak.upperBound
+            }
+
+            var adjustedEnd = endIdx
+            if windowEnd < text.count,
+               let paraBreak = text.range(of: "\n\n", options: .backwards, range: adjustedStart..<endIdx) {
+                adjustedEnd = paraBreak.lowerBound
+            }
+
+            windowState = WindowState(
+                chapterIndex: chapterIndex,
+                startOffset: text.distance(from: text.startIndex, to: adjustedStart),
+                endOffset: text.distance(from: text.startIndex, to: adjustedEnd)
+            )
+        }
+    }
+
+    private func shouldRefresh(
+        chapterIndex: Int,
+        offset: Int,
+        text: String,
+        force: Bool
+    ) -> Bool {
+        if force || text.count <= Self.maxDisplayChars {
+            return true
+        }
+        guard let state = windowState else { return true }
+        guard state.chapterIndex == chapterIndex else { return true }
+
+        let guardSize = max(
+            1,
+            Int(Double(state.endOffset - state.startOffset) * Self.guardFraction)
+        )
+        let lowerBound = state.startOffset + guardSize
+        let upperBound = max(lowerBound, state.endOffset - guardSize)
+        return offset < lowerBound || offset > upperBound
+    }
+}
+
+test("Playback text window stays stable while position moves inside guard band") {
+    let simulator = VisibleTextWindowRefreshSimulator()
+    let text = String(repeating: "A", count: 30_000)
+        + "\n\n"
+        + String(repeating: "B", count: 90_000)
+        + "\n\n"
+        + String(repeating: "C", count: 10_000)
+
+    simulator.refresh(chapterIndex: 0, offset: 10_000, text: text)
+    try assertEqual(simulator.refreshCount, 1)
+
+    simulator.refresh(chapterIndex: 0, offset: 14_500, text: text)
+    try assertEqual(simulator.refreshCount, 1,
+                    "Small playback advances inside the guard band should not rebuild the text window")
+}
+
+test("Playback text window rebuilds after leaving the guard band") {
+    let simulator = VisibleTextWindowRefreshSimulator()
+    let text = String(repeating: "A", count: 30_000)
+        + "\n\n"
+        + String(repeating: "B", count: 90_000)
+        + "\n\n"
+        + String(repeating: "C", count: 10_000)
+
+    simulator.refresh(chapterIndex: 0, offset: 10_000, text: text)
+    simulator.refresh(chapterIndex: 0, offset: 15_001, text: text)
+
+    try assertEqual(simulator.refreshCount, 2,
+                    "The reader should rebuild the visible text window once playback moves beyond the guard band")
+}
+
+test("Playback text window can be force-refreshed without a chapter change") {
+    let simulator = VisibleTextWindowRefreshSimulator()
+    let text = String(repeating: "A", count: 30_000)
+        + "\n\n"
+        + String(repeating: "B", count: 90_000)
+        + "\n\n"
+        + String(repeating: "C", count: 10_000)
+
+    simulator.refresh(chapterIndex: 0, offset: 10_000, text: text)
+    simulator.refresh(chapterIndex: 0, offset: 14_500, text: text, force: true)
+
+    try assertEqual(simulator.refreshCount, 2,
+                    "Pause or manual navigation should still be able to force a fresh text window")
+}
+
 test("Pause command only pauses, does not toggle") {
     var isPlaying = true
     var pauseCallCount = 0
@@ -192,6 +388,72 @@ test("Toggle after suppress window expires works normally") {
     handleToggleCommand()
     try assertTrue(isPlaying, "Toggle after window should flip state normally")
     try assertEqual(toggleForwarded, 1)
+}
+
+test("Paused direct seek defers speaking until resume") {
+    var isPaused = true
+    var usingDirectMode = true
+    var pendingSeekOffset: Int? = nil
+    var speakDirectOffsets: [Int] = []
+
+    func seek(_ offset: Int, engineReady: Bool) {
+        if usingDirectMode {
+            if isPaused {
+                pendingSeekOffset = offset
+            } else if engineReady {
+                usingDirectMode = false
+                speakDirectOffsets.append(offset)
+            } else {
+                speakDirectOffsets.append(offset)
+            }
+        }
+    }
+
+    func resume(engineReady: Bool) {
+        guard isPaused else { return }
+        isPaused = false
+        if let pending = pendingSeekOffset {
+            pendingSeekOffset = nil
+            if engineReady {
+                usingDirectMode = false
+            }
+            speakDirectOffsets.append(pending)
+        }
+    }
+
+    seek(120, engineReady: false)
+    try assertEqual(speakDirectOffsets.count, 0, "Seek while paused should not speak immediately")
+    try assertEqual(pendingSeekOffset, 120, "Seek offset should be deferred")
+
+    resume(engineReady: false)
+    try assertEqual(speakDirectOffsets, [120], "Resume should speak from deferred offset")
+}
+
+test("Chunked direct playback continues chunks instead of switching to engine") {
+    var directChunkOffsets: [Int] = []
+    var engineCalls = 0
+    let currentTextCount = 10_000
+    let directModeChunked = true
+    let directModeChunkEnd = 5_000
+    let audioEngineHasRenderedAudio = true
+
+    func didFinish() {
+        if directModeChunked {
+            let nextOffset = directModeChunkEnd
+            if nextOffset < currentTextCount {
+                directChunkOffsets.append(nextOffset)
+                return
+            }
+        }
+
+        if audioEngineHasRenderedAudio {
+            engineCalls += 1
+        }
+    }
+
+    didFinish()
+    try assertEqual(directChunkOffsets, [5_000], "Chunked direct playback should continue direct chunks")
+    try assertEqual(engineCalls, 0, "Chunk boundary should not switch to engine")
 }
 
 test("Device change with currently-paused state does not call onPause") {
@@ -1106,6 +1368,185 @@ test("validateTime: ordinary in-range values accepted") {
         .ok(330))
 }
 
+// ---- Audio Layout / Multi-Chapter m4b Position Tests ----
+print("\n--- Audio Layout / Multi-Chapter m4b Position Tests ---")
+
+// These tests cover the bug where a single-file audio book with
+// chapter metadata (typical m4b) had its time observer storing
+// ABSOLUTE file time in currentCharacterOffset, while skipCharacters
+// walked chapter boundaries assuming the offset was CHAPTER-RELATIVE.
+// The mismatch produced wildly wrong skip targets — a 15-second
+// rewind from chapter 3 could land in chapter 0.
+
+/// Cumulative chapter start time helper, mirroring chapterStartTime()
+/// in ReaderViewModel+Playback.swift for the m4b chapter layout.
+func chapterStartTimeForM4B(chapterIndex: Int, chapterCharCounts: [Int]) -> Double {
+    let charsPerSec = 10.0
+    let preceding = chapterCharCounts.prefix(chapterIndex).reduce(0, +)
+    return Double(preceding) / charsPerSec
+}
+
+test("m4b chapters: chapterStartTime sums preceding chapter durations") {
+    let chapterCharCounts = [6000, 9000, 4500]  // 600s, 900s, 450s
+    try assertEqual(chapterStartTimeForM4B(chapterIndex: 0, chapterCharCounts: chapterCharCounts), 0.0)
+    try assertEqual(chapterStartTimeForM4B(chapterIndex: 1, chapterCharCounts: chapterCharCounts), 600.0)
+    try assertEqual(chapterStartTimeForM4B(chapterIndex: 2, chapterCharCounts: chapterCharCounts), 1500.0)
+}
+
+test("m4b chapters: skip backward 15s mid-chapter lands at correct absolute time") {
+    // Pre-fix scenario: user at time 1500s in chapter 2 (which starts
+    // at 1500s). currentCharacterOffset was absolute (15000), chapter
+    // walk with chapter lengths [6000, 9000, ...] would treat 14850
+    // as falling in chapter 1 — wrong jump.
+    // Post-fix: position observer uses location(forGlobalOffset:) to
+    // store (chapter, localOffset). At time 1500s, that's
+    // (chapter 2, local 0). 15s rewind targets local -150, which
+    // falls into chapter 1. Same chapter walk now produces the
+    // correct chapter and local offset.
+    let chapterCharCounts = [6000, 9000, 4500]
+    let totalChars = chapterCharCounts.reduce(0, +)
+
+    // location(forGlobalOffset: 15000) for chapters [6000, 9000, 4500]
+    let absoluteAt1500s = 15000
+    var cumulative = 0
+    var startChapter = 0
+    var startLocal = 0
+    for (i, len) in chapterCharCounts.enumerated() {
+        if absoluteAt1500s < cumulative + len {
+            startChapter = i
+            startLocal = absoluteAt1500s - cumulative
+            break
+        }
+        cumulative += len
+    }
+    try assertEqual(startChapter, 2, "Time 1500s falls in chapter 2 (starts at 1500s)")
+    try assertEqual(startLocal, 0, "Exactly at chapter 2 start")
+
+    // Rewind 15s = -150 chars chapter-relative, but since localOffset
+    // is 0 and the chapter walk goes backward, we end up in chapter 1
+    // at offset (9000 - 150) = 8850.
+    var charOffset = startLocal - 150
+    var chapIdx = startChapter
+    while charOffset < 0 && chapIdx > 0 {
+        chapIdx -= 1
+        charOffset += chapterCharCounts[chapIdx]
+    }
+    try assertEqual(chapIdx, 1, "15s rewind from chapter 2 start lands in chapter 1")
+    try assertEqual(charOffset, 8850, "150 chars before end of chapter 1 = 8850 local")
+
+    // Convert back to absolute via chapterStartTime + local offset
+    let absoluteSeek = chapterStartTimeForM4B(chapterIndex: chapIdx, chapterCharCounts: chapterCharCounts)
+                       + Double(charOffset) / 10.0
+    try assertTrue(abs(absoluteSeek - 1485.0) < 0.001,
+                   "Final seek target = 600 + 885 = 1485s = 15s before original 1500s")
+
+    _ = totalChars
+}
+
+test("m4b chapters: time observer auto-advances chapter index") {
+    // The position observer used to leave currentChapterIndex pinned
+    // to wherever it was at playback start. Now it uses
+    // location(forGlobalOffset:) so the index follows the playhead.
+    let chapterCharCounts = [6000, 9000, 4500]
+
+    // Player crosses chapter boundary at time 600.1s
+    let absoluteOffset = 6001
+    var cumulative = 0
+    var observedChapter = 0
+    var observedLocal = 0
+    for (i, len) in chapterCharCounts.enumerated() {
+        if absoluteOffset < cumulative + len {
+            observedChapter = i
+            observedLocal = absoluteOffset - cumulative
+            break
+        }
+        cumulative += len
+    }
+    try assertEqual(observedChapter, 1, "1s past chapter 0 boundary lands in chapter 1")
+    try assertEqual(observedLocal, 1, "Local offset is 1 char into chapter 1")
+}
+
+test("Audio layout: segmented DAISY translates time observer correctly") {
+    // For DAISY segments, chapter start = segment.startTime. The
+    // observer subtracts startTime so the stored offset is
+    // chapter-relative.
+    let segmentStartTime = 600.0
+    let absoluteTime = 615.0  // 15s into the segment
+    let charsPerSec = 10.0
+    let chapterRelativeTime = max(0, absoluteTime - segmentStartTime)
+    let storedOffset = Int(chapterRelativeTime * charsPerSec)
+    try assertEqual(storedOffset, 150, "DAISY segment-relative offset is 150 chars")
+}
+
+test("Audio layout: multi-file stores chapter-relative directly") {
+    // Multi-file audio plays each chapter from its own file. The
+    // player's reported time is already chapter-relative, no
+    // adjustment needed.
+    let absoluteTime = 42.0
+    let storedOffset = Int(absoluteTime * 10)
+    try assertEqual(storedOffset, 420)
+}
+
+test("Audio layout: single-file (one chapter) stores absolute time*10") {
+    // No chapter boundaries; chapter 0 starts at 0; offset == time*10.
+    let absoluteTime = 1234.5
+    let storedOffset = Int(absoluteTime * 10)
+    try assertEqual(storedOffset, 12345)
+}
+
+test("Same-chapter seek for segmented audio adds segment.startTime") {
+    // Pre-existing bug surfaced by review: navigateTo and skipCharacters
+    // both did `audioPlaybackService.seek(to: charOffset / 10)` on the
+    // same-chapter branch. For DAISY segmented audio (multiple chapters
+    // share one file), this is missing segment.startTime so the user
+    // lands at the wrong global timestamp — typically way before the
+    // chapter starts. Fix mirrors the formula playAudioChapter has used
+    // since DAISY support shipped.
+    let charsPerSecond = 10.0
+    let charOffset = 250
+    let segmentStartTime = 600.0  // Chapter 5 starts 10 minutes in
+    var audioSegmentsActive = true
+
+    func computeSeekTime() -> Double {
+        var t = Double(charOffset) / charsPerSecond
+        if audioSegmentsActive { t += segmentStartTime }
+        return t
+    }
+
+    let seekTime = computeSeekTime()
+    try assertTrue(abs(seekTime - 625.0) < 0.001,
+                   "Same-chapter seek must add segment.startTime: 25s relative + 600s start = 625s absolute")
+
+    // Sanity: when segments are absent (regular audio book), the
+    // adjustment is skipped — the offset alone is the absolute time.
+    audioSegmentsActive = false
+    let seekTimeNoSegment = computeSeekTime()
+    try assertTrue(abs(seekTimeNoSegment - 25.0) < 0.001,
+                   "Without segments, charOffset/10 IS the absolute time")
+}
+
+test("skipCharacters same-chapter seek for segmented audio") {
+    // Same fix applies to the audio book skipCharacters path (used by
+    // 15s/30s/60s skip on audio books). Without the segment.startTime
+    // adjustment a 15-second rewind would skip backward past the
+    // segment boundary into the previous chapter's audio.
+    let charsPerSecond = 10.0
+    let currentOffset = 800
+    let segmentStartTime = 1200.0  // Chapter starts 20 minutes in
+    let skipDelta = -150  // 15 seconds backward
+
+    let newOffset = currentOffset + skipDelta  // 650
+    let seekTime = Double(newOffset) / charsPerSecond + segmentStartTime
+    // 65s relative + 1200s segment start = 1265s absolute
+    try assertTrue(abs(seekTime - 1265.0) < 0.001,
+                   "Time-based skip must apply segment.startTime offset")
+
+    // Invariant: the seek time must be inside the segment, not before
+    // segmentStartTime.
+    try assertTrue(seekTime >= segmentStartTime,
+                   "Skip target must remain at or after the segment start")
+}
+
 test("Segmented audio chapter offset clamps near clip end") {
     let charsPerSecond = 10.0
     let segmentStartTime = 30.0
@@ -1297,7 +1738,7 @@ test("Skip debounce rejects rapid-fire calls") {
 
     func skip() {
         let now = Date()
-        guard now.timeIntervalSince(lastSkipTime) > 0.3 else { return }
+        guard now.timeIntervalSince(lastSkipTime) > 0.4 else { return }
         lastSkipTime = now
         skipCount += 1
     }
@@ -1307,6 +1748,203 @@ test("Skip debounce rejects rapid-fire calls") {
     skip()  // Should be debounced
 
     try assertEqual(skipCount, 1, "Only first skip should succeed within debounce window")
+}
+
+test("Skip debounce: timestamp updates BEFORE running so re-entrance is blocked") {
+    // Defends against the case where running the skip body itself
+    // re-posts a skip notification (cancelWhereAmIIfActive() can
+    // synchronously fire a callback that calls skipBackward again).
+    // The acquireSkipToken pattern updates lastSkipTime BEFORE the
+    // body runs, so the recursive call sees the updated timestamp on
+    // its own check and is correctly dropped.
+    var lastSkipTime = Date.distantPast
+    var skipCount = 0
+    var reentrantSkipFired = false
+
+    func skip() {
+        let now = Date()
+        guard now.timeIntervalSince(lastSkipTime) > 0.4 else { return }
+        lastSkipTime = now
+        skipCount += 1
+        // Simulate a synchronous re-entrant skip from a side-effect
+        // (matches the structure of cancelWhereAmIIfActive firing a
+        // resume that re-posts a skip notification). The recursive
+        // call must be blocked by the just-updated timestamp.
+        if !reentrantSkipFired {
+            reentrantSkipFired = true
+            skip()
+        }
+    }
+
+    skip()
+    try assertEqual(skipCount, 1, "Re-entrant skip from inside the body must be debounced")
+}
+
+test("Skip debounce: 0.4s window absorbs media-key + keyboard double fire") {
+    // Models the user-reported scenario: a single physical media-key
+    // press that arrives via two paths (NowPlayingService skip command
+    // + KeyboardShortcutManager NSEvent monitor), separated by ~50–150ms
+    // of macOS routing delay. Both paths call the same skip method.
+    // The 0.4s window must absorb the second fire.
+    var lastSkipTime = Date.distantPast
+    var skipCount = 0
+
+    func skip() {
+        let now = Date()
+        guard now.timeIntervalSince(lastSkipTime) > 0.4 else { return }
+        lastSkipTime = now
+        skipCount += 1
+    }
+
+    // First path (e.g. NowPlayingService) fires
+    skip()
+    try assertEqual(skipCount, 1)
+
+    // Second path (e.g. KeyboardShortcutManager) fires ~100ms later —
+    // simulated by setting lastSkipTime to (now - 100ms).
+    let now = Date()
+    lastSkipTime = now.addingTimeInterval(-0.1)
+    // Try the second path
+    let stillNow = Date()
+    if stillNow.timeIntervalSince(lastSkipTime) > 0.4 {
+        skipCount += 1  // Should NOT happen with 0.4s window
+    }
+    try assertEqual(skipCount, 1, "0.4s window must absorb 100ms-late duplicate path")
+}
+
+test("Skip debounce: deliberate second press after window passes still works") {
+    // The widened window is 0.4s — a deliberate second press at, say,
+    // 0.5s elapsed must still go through. Otherwise users perceive
+    // their input being eaten.
+    var lastSkipTime = Date.distantPast
+    var skipCount = 0
+
+    func skip() {
+        let now = Date()
+        guard now.timeIntervalSince(lastSkipTime) > 0.4 else { return }
+        lastSkipTime = now
+        skipCount += 1
+    }
+
+    skip()
+    // Wait 0.5s (simulated)
+    let now = Date()
+    lastSkipTime = now.addingTimeInterval(-0.5)
+    skip()
+    try assertEqual(skipCount, 2, "Second skip after the window must succeed")
+}
+
+// ---- Audio Position Observer Seek-Suppression Tests ----
+print("\n--- Audio Position Observer Seek-Suppression Tests ---")
+
+// These tests cover the AudioPlaybackService time observer's behavior
+// while a seek is in progress. The bug fix: the observer must NOT
+// publish position updates while isSeeking == true, because the player
+// can report stale pre-seek positions during the seek window. A stale
+// publish overwrites the ReaderViewModel's currentCharacterOffset back
+// to the old position immediately after a skip — so a second skip
+// press starts from the wrong baseline and either does nothing
+// (rewind feels stuck) or jumps further than expected.
+
+test("Position observer suppression: skips publish while isSeeking") {
+    var isSeeking = false
+    var publishedTimes: [Double] = []
+
+    func observerTick(reportedTime: Double) {
+        // Pre-fix: would have published unconditionally.
+        // Post-fix: suppressed during seek.
+        guard !isSeeking else { return }
+        publishedTimes.append(reportedTime)
+    }
+
+    isSeeking = true
+    observerTick(reportedTime: 100.0)  // Stale pre-seek
+    observerTick(reportedTime: 99.5)   // Stale (player still moving)
+    try assertEqual(publishedTimes.count, 0, "No publishes while seeking")
+
+    isSeeking = false
+    observerTick(reportedTime: 50.0)  // Post-seek, real position
+    try assertEqual(publishedTimes.count, 1)
+    try assertEqual(publishedTimes.first, 50.0, "First post-seek tick is the real new position")
+}
+
+test("Position observer suppression: clip-end check is also suppressed during seek") {
+    // The clip-end check is gated by isSeeking too — without that, a
+    // stale time observation past the new segment's clipEndTime would
+    // falsely fire onPlaybackFinished and skip the user to the next
+    // chapter mid-seek.
+    var isSeeking = true
+    var clipEndTime: Double? = 60.0
+    var clipEndFired = false
+
+    func observerTick(reportedTime: Double) {
+        guard !isSeeking else { return }
+        if let endTime = clipEndTime, reportedTime >= endTime {
+            clipEndFired = true
+        }
+    }
+
+    // Stale time observation during seek — pre-seek time was 75s.
+    // Without seek suppression this would fire clip-end immediately.
+    observerTick(reportedTime: 75.0)
+    try assertTrue(!clipEndFired, "Stale tick during seek must not fire clip-end")
+
+    // Seek lands. Real position is 30s.
+    isSeeking = false
+    observerTick(reportedTime: 30.0)
+    try assertTrue(!clipEndFired, "Real position 30s is below 60s clip end, no fire")
+
+    // Eventually playback reaches the clip end.
+    observerTick(reportedTime: 60.5)
+    try assertTrue(clipEndFired, "Real clip-end crossing fires after seek lands")
+}
+
+test("Skip from old offset bug: observer doesn't overwrite skip target") {
+    // End-to-end scenario the fix prevents:
+    // 1. currentCharacterOffset = 1000 (offset 100s into chapter)
+    // 2. User presses skipBackward (-15s = -150 chars)
+    // 3. ReaderViewModel sets currentCharacterOffset = 850, calls seek
+    // 4. AVPlayer starts seeking; isSeeking flips true
+    // 5. (Old bug) Time observer fires within 250ms, reports 100s
+    //    (pre-seek), calls onPositionUpdate(100), and the
+    //    ReaderViewModel callback would overwrite currentCharacterOffset
+    //    back to 1000 — invalidating the skip.
+    // 6. (New) isSeeking gates the publish, so no overwrite.
+    var currentCharacterOffset = 1000
+    var isSeeking = false
+
+    func skipBackward(seconds: Int) {
+        // Compute new target
+        let charDelta = -seconds * 10  // 10 chars/sec
+        let newOffset = currentCharacterOffset + charDelta
+        currentCharacterOffset = newOffset
+        // Begin seek
+        isSeeking = true
+    }
+
+    func observerTick(reportedTime: Double) {
+        guard !isSeeking else { return }
+        currentCharacterOffset = Int(reportedTime * 10)
+    }
+
+    func seekCompletes(realTime: Double) {
+        isSeeking = false
+        observerTick(reportedTime: realTime)
+    }
+
+    skipBackward(seconds: 15)
+    try assertEqual(currentCharacterOffset, 850, "Skip target set immediately")
+
+    // Observer ticks while seek in progress with stale time
+    observerTick(reportedTime: 100.0)
+    try assertEqual(currentCharacterOffset, 850,
+                    "Stale tick during seek must not overwrite skip target")
+    observerTick(reportedTime: 99.0)
+    try assertEqual(currentCharacterOffset, 850, "Multiple stale ticks all suppressed")
+
+    // Seek lands
+    seekCompletes(realTime: 85.0)
+    try assertEqual(currentCharacterOffset, 850, "Post-seek tick reports new position")
 }
 
 // ---- Rewind on Resume: Sentence Boundary ----

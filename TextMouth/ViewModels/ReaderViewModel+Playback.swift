@@ -31,6 +31,49 @@ extension ReaderViewModel {
         }
     }
 
+    /// Resume playback if the book is already paused, otherwise fall
+    /// back to a cold start when nothing is active.
+    func playOrResume() {
+        if isAudioBook {
+            if audioPlaybackService.isPaused {
+                resumeAudioPlayback()
+            } else if !audioPlaybackService.isPlaying {
+                play()
+            }
+            return
+        }
+
+        if speechService.isPaused {
+            resumeSpeechPlayback()
+        } else if !speechService.isSpeaking {
+            play()
+        }
+    }
+
+    private func resumeAudioPlayback() {
+        soundEffectService?.play(for: .play)
+        recordPlaybackStarted()
+        readingStatsService.startSession(bookID: book.id)
+        sleepTimerService.resumeCountdown(by: book.id)
+        audioPlaybackService.resume()
+        isCurrentlyPaused = false
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
+    }
+
+    private func resumeSpeechPlayback() {
+        soundEffectService?.play(for: .play)
+        applyRewindOnResume()
+        recordPlaybackStarted()
+        readingStatsService.startSession(bookID: book.id)
+        sleepTimerService.resumeCountdown(by: book.id)
+        speechService.resume()
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
+    }
+
     /// Pause the current playback (TTS or audio) and save position.
     /// No-op for the persisted-state side-effects when nothing was actually
     /// playing — that guard prevents a stray pause (e.g. a sleep-timer
@@ -40,64 +83,7 @@ extension ReaderViewModel {
     /// rewind-on-resume threshold reads to decide how far back to rewind
     /// on the next play.
     func pause() {
-        // Capture pre-pause playing state BEFORE we issue any pause calls.
-        // The audio / speech services flip their flags synchronously, so
-        // checking after would always return "not playing" and the guard
-        // would never apply.
-        let wasPlaying: Bool
-        if isAudioBook {
-            wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
-        } else {
-            wasPlaying = speechService.isSpeaking && !speechService.isPaused
-        }
-
-        soundEffectService?.play(for: .pause)
-        // Pause audio output FIRST so any volume changes below
-        // are inaudible. Previously, restoreVolume() was called
-        // before pausing, causing a brief pop of full-volume audio
-        // at the end of a sleep timer fade-out.
-        if isAudioBook {
-            audioPlaybackService.pause()
-            // Only advertise the "playing-but-paused" state when there
-            // was something to pause. Otherwise (book stopped or never
-            // started, but pause() called by a stray notification) we'd
-            // falsely tell the UI a paused track is loaded.
-            if wasPlaying {
-                isCurrentlyPlaying = true // still "playing" but paused
-                isCurrentlyPaused = true
-            }
-        } else {
-            speechService.pause()
-        }
-        // Now safe to clean up fade state and restore volume —
-        // audio is paused so the volume change won't be heard
-        if sleepTimerService.isFadingOut {
-            sleepTimerService.stop()
-            if isAudioBook { audioPlaybackService.restoreVolume() }
-            else { speechService.audioEngine.restoreVolume() }
-        } else {
-            // Halt any minutes-based countdown so it doesn't keep
-            // ticking during the pause and expire while the user is
-            // taking a break. Mid-fade pauses fall through the branch
-            // above and do not reach here. Heading/document-end modes
-            // are no-ops — the service guards on duration kind.
-            sleepTimerService.pauseCountdown(by: book.id)
-        }
-        readingStatsService.endSession()
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: false
-        )
-        // Only record the stopped timestamp / persist position if we
-        // actually transitioned from playing to paused. A no-op pause
-        // (e.g. spurious media-key event when already paused, or a
-        // toggle that landed in pause-direction during the BT suppress
-        // window with nothing playing) should not update
-        // book.lastPlaybackStopped — the rewind-on-resume threshold
-        // depends on it being the moment the user stopped real playback.
-        if wasPlaying {
-            recordPlaybackStopped()
-            savePosition()
-        }
+        pause(playingPauseSound: true)
     }
 
     /// Toggle between play and pause states. Handles Where Am I interruption,
@@ -116,15 +102,7 @@ extension ReaderViewModel {
 
         if isAudioBook {
             if audioPlaybackService.isPaused {
-                soundEffectService?.play(for: .play)
-                recordPlaybackStarted()
-                readingStatsService.startSession(bookID: book.id)
-                sleepTimerService.resumeCountdown(by: book.id)
-                audioPlaybackService.resume()
-                isCurrentlyPaused = false
-                nowPlayingService.updateNowPlayingInfo(
-                    title: book.title, author: book.author, isPlaying: true
-                )
+                resumeAudioPlayback()
             } else if audioPlaybackService.isPlaying {
                 pause()
             } else {
@@ -135,15 +113,7 @@ extension ReaderViewModel {
 
         debugLog("togglePlayPause called, isSpeaking=\(speechService.isSpeaking) isPaused=\(speechService.isPaused)")
         if speechService.isPaused {
-            soundEffectService?.play(for: .play)
-            applyRewindOnResume()
-            recordPlaybackStarted()
-            readingStatsService.startSession(bookID: book.id)
-            sleepTimerService.resumeCountdown(by: book.id)
-            speechService.resume()
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            resumeSpeechPlayback()
         } else if speechService.isSpeaking {
             pause()
         } else {
@@ -271,15 +241,122 @@ extension ReaderViewModel {
 
     // MARK: - Audio Book Playback
 
+    /// Three audio-book layouts handled by this VM, each with a
+    /// different relationship between AVPlayer time and the
+    /// (chapter, characterOffset) pair the navigation system uses:
+    ///
+    /// - `multiFile`: each chapter is its own audio file. Player time
+    ///   is already chapter-relative; no offset needed.
+    /// - `segmented`: DAISY-style — chapters are time ranges within
+    ///   one shared file. Chapter start = `audioSegments[i].startTime`.
+    /// - `chaptersInOneFile`: an m4b (or similar) with chapter
+    ///   metadata. Chapter start is the cumulative duration of all
+    ///   preceding chapters' placeholder text divided by the
+    ///   chars-per-second constant.
+    /// - `singleFile`: no chapter splits at all (one mp3, one chapter).
+    ///   Player time = chapter-relative offset directly.
+    ///
+    /// Picking the right layout is what makes the time observer
+    /// store offsets the rest of the code can interpret correctly,
+    /// and what makes navigateTo / skipCharacters seek to the
+    /// right ABSOLUTE time for chapter-RELATIVE inputs.
+    enum AudioLayout {
+        case multiFile
+        case segmented
+        case chaptersInOneFile
+        case singleFile
+    }
+
+    /// Determine which layout this audio book uses. Pre-conditions:
+    /// `isAudioBook == true` and `content` is loaded.
+    var audioLayout: AudioLayout {
+        if !audioChapterFiles.isEmpty { return .multiFile }
+        if !audioSegments.isEmpty { return .segmented }
+        if let content = content, content.chapters.count > 1 {
+            return .chaptersInOneFile
+        }
+        return .singleFile
+    }
+
+    /// Absolute time (seconds) at which the given chapter starts in
+    /// the underlying audio file. Used both to translate
+    /// chapter-relative offsets into AVPlayer seek targets and to
+    /// translate the player's reported time back into a
+    /// chapter-relative offset.
+    ///
+    /// For multi-file audio every chapter starts at 0 of its own
+    /// file. For DAISY segments, it's `audioSegments[idx].startTime`.
+    /// For an m4b with chapter metadata, it's the sum of preceding
+    /// chapter placeholder lengths converted from chars to seconds.
+    func chapterStartTime(_ chapterIndex: Int) -> TimeInterval {
+        guard let content = content,
+              chapterIndex >= 0,
+              chapterIndex < content.chapters.count else { return 0 }
+        switch audioLayout {
+        case .multiFile, .singleFile:
+            return 0
+        case .segmented:
+            guard chapterIndex < audioSegments.count else { return 0 }
+            return audioSegments[chapterIndex].startTime
+        case .chaptersInOneFile:
+            // Sum preceding chapter durations (in placeholder chars
+            // converted to seconds) — that's the chapter's start
+            // offset in the underlying single audio file.
+            let precedingChars = (0..<chapterIndex)
+                .map { content.chapters[$0].text.count }
+                .reduce(0, +)
+            return Double(precedingChars) / Self.audioCharsPerSecond
+        }
+    }
+
     /// Wire up audio playback service callbacks for position tracking and chapter advancement.
     func setupAudioCallbacks() {
         audioPlaybackService.onPositionUpdate = { [weak self] time in
             // AVPlayer time observer fires on main queue (setupTimeObserver uses queue: .main),
             // so this is already on the main thread
             guard let self = self, self.isAudioBook else { return }
-            // Convert time position to character offset for position tracking
-            let charOffset = Int(time * 10) // 10 chars per second in placeholder text
-            self.currentCharacterOffset = charOffset
+
+            // Convert AVPlayer time → (chapterIndex, chapter-relative
+            // offset) according to this book's layout. Without this
+            // conversion, an m4b with chapter markers would store
+            // ABSOLUTE offsets in `currentCharacterOffset`, which the
+            // skip / navigation code (which walks chapters by
+            // text.count) interprets as chapter-relative — producing
+            // wildly wrong skip targets. This was the root cause of
+            // the user-reported "rewind 15s sometimes goes 60s+".
+            switch self.audioLayout {
+            case .multiFile, .singleFile:
+                // Player time is chapter-relative directly.
+                self.currentCharacterOffset = Int(time * Self.audioCharsPerSecond)
+            case .segmented:
+                // DAISY: subtract the segment's start time so the
+                // stored offset is chapter-relative.
+                if self.currentChapterIndex < self.audioSegments.count {
+                    let segStart = self.audioSegments[self.currentChapterIndex].startTime
+                    let relativeTime = max(0, time - segStart)
+                    self.currentCharacterOffset = Int(relativeTime * Self.audioCharsPerSecond)
+                } else {
+                    self.currentCharacterOffset = Int(time * Self.audioCharsPerSecond)
+                }
+            case .chaptersInOneFile:
+                // m4b-style: convert absolute time to a global character
+                // offset, then look up which chapter contains it. This
+                // ALSO advances `currentChapterIndex` automatically as
+                // playback crosses chapter boundaries — without this,
+                // the index stayed pinned to whatever it was set to at
+                // playback start (the underlying issue behind random-
+                // looking skip behavior in m4b chapter books).
+                let absoluteOffset = Int(time * Self.audioCharsPerSecond)
+                if let content = self.content {
+                    let location = content.location(forGlobalOffset: absoluteOffset)
+                    if location.chapterIndex != self.currentChapterIndex {
+                        self.currentChapterIndex = location.chapterIndex
+                    }
+                    self.currentCharacterOffset = location.localOffset
+                } else {
+                    self.currentCharacterOffset = absoluteOffset
+                }
+            }
         }
 
         audioPlaybackService.onPlaybackFinished = { [weak self] in
@@ -320,19 +397,41 @@ extension ReaderViewModel {
         audioPlaybackService.load(url: audioURL)
         audioPlaybackService.setSpeed(audioSpeed)
 
-        // For segmented audio (DAISY), the clip starts at the segment's startTime
-        // rather than 0. The characterOffset is relative to the segment.
-        var timeOffset = Double(currentCharacterOffset) / 10.0
-        if !audioSegments.isEmpty && currentChapterIndex < audioSegments.count {
-            let segment = audioSegments[currentChapterIndex]
-            timeOffset += segment.startTime
+        // Translate chapter-relative offset to an absolute seek target.
+        // chapterStartTime() handles all four layouts: 0 for multi-file
+        // and single-file, segment.startTime for DAISY, and cumulative
+        // preceding-chapter durations for an m4b with chapter markers.
+        var timeOffset = Double(currentCharacterOffset) / Self.audioCharsPerSecond
+        timeOffset += chapterStartTime(currentChapterIndex)
 
-            // Set up a clip end boundary — when playback reaches endTime,
-            // treat it as chapter finished
-            let clipEnd = segment.endTime
-            if clipEnd > segment.startTime {
-                audioPlaybackService.setClipEndTime(clipEnd)
+        // Set up a clip-end boundary so the chapter-finished callback
+        // fires when playback crosses the chapter boundary, matching
+        // the multi-file behaviour where the file simply ends.
+        // Without this, an m4b with chapter markers would play
+        // straight through every chapter as one continuous stream
+        // and never auto-advance currentChapterIndex via the
+        // playback-finished path. (The position observer also
+        // advances it, so this is a defense-in-depth — the clip-end
+        // callback is the canonical "chapter done" signal.)
+        switch audioLayout {
+        case .segmented:
+            if currentChapterIndex < audioSegments.count {
+                let segment = audioSegments[currentChapterIndex]
+                if segment.endTime > segment.startTime {
+                    audioPlaybackService.setClipEndTime(segment.endTime)
+                }
             }
+        case .chaptersInOneFile:
+            // Clip end = this chapter's absolute end time.
+            let chapterChars = content.chapters[currentChapterIndex].text.count
+            let clipEnd = chapterStartTime(currentChapterIndex)
+                + Double(chapterChars) / Self.audioCharsPerSecond
+            audioPlaybackService.setClipEndTime(clipEnd)
+        case .multiFile, .singleFile:
+            // No clip end — the file's natural end IS the chapter's end
+            // (or the whole book's end). Clear any clip end inherited
+            // from a previous load() call so it doesn't stale-trigger.
+            audioPlaybackService.setClipEndTime(nil)
         }
 
         audioPlaybackService.play(fromTime: timeOffset)
@@ -435,23 +534,24 @@ extension ReaderViewModel {
     /// might be running for another book. The provided duration is
     /// captured along with this book's pause/fade callbacks so the
     /// shared service knows what to do when the timer fires.
-    /// Calling this with a timer already running just restarts it
+    /// Calling this with a timer already running just replaces it
     /// (the singleton's start() implicitly stops any previous timer).
-    func startSleepTimer(duration: SleepTimerDuration) {
+    /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
+    /// resumed or started so the armed timer has audio to count against.
+    func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
         sleepTimerService.start(
             duration: duration,
             ownerID: book.id,
             onExpire: { [weak self] in
                 guard let self = self else { return }
-                // Pause FIRST so audio output stops before we restore
-                // volume. Otherwise restoreVolume() would briefly play
-                // audio at full volume at the tail of the fade-out.
-                self.pause()
-                if self.isAudioBook {
-                    self.audioPlaybackService.restoreVolume()
-                } else {
-                    self.speechService.audioEngine.restoreVolume()
-                }
+                // Use the sleep-timer-specific pause path so the
+                // end-of-fade completion does not play the normal
+                // pause sound. The pause helper still stops audio
+                // before restoring volume, and it also consumes the
+                // service's one-shot fade-completion latch so the
+                // "just finished fading" case is treated the same as
+                // a still-in-progress fade.
+                self.pause(playingPauseSound: false)
                 self.announceToVoiceOver("Sleep timer expired. Playback paused.")
             },
             onFadeStep: { [weak self] volume in
@@ -464,6 +564,9 @@ extension ReaderViewModel {
             },
             fadeOutDuration: settingsViewModel.sleepFadeOutDuration
         )
+        if startPlaybackIfNeeded {
+            startSleepTimerPlaybackIfNeeded()
+        }
     }
 
     /// Cancel the sleep timer if one is running. Anyone may cancel —
@@ -473,10 +576,14 @@ extension ReaderViewModel {
         sleepTimerService.stop()
     }
 
-    /// Restart the running timer with its original duration. Used by
-    /// the "Reset Timer" button in the sleep timer sheet.
-    func restartSleepTimer() {
-        sleepTimerService.restart()
+    /// Restart the running timer with its original duration using the
+    /// latest fade-out settings. Used by the "Reset Timer" button in
+    /// the sleep timer sheet.
+    func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
+        sleepTimerService.restart(fadeOutDuration: settingsViewModel.sleepFadeOutDuration)
+        if startPlaybackIfNeeded {
+            startSleepTimerPlaybackIfNeeded()
+        }
     }
 
     /// Reset a running timer or — if the previous one already ended —
@@ -491,22 +598,96 @@ extension ReaderViewModel {
     func restartOrStartLastSleepTimer() {
         if sleepTimerService.isActive {
             // Existing timer running — same as Reset Timer.
-            sleepTimerService.restart()
+            restartSleepTimer(startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer reset.")
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
-            startSleepTimer(duration: last)
-            // startSleepTimer doesn't auto-start playback (that's a
-            // sheet-only courtesy). Match the sheet behavior here:
-            // if not currently playing, kick off playback so the
-            // re-armed timer has something to count against.
-            if !isCurrentlyPlaying || isCurrentlyPaused {
-                togglePlayPause()
-            }
+            startSleepTimer(duration: last, startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer restarted: \(last.displayName).")
         } else {
             // First-ever press — nothing to repeat.
             announceToVoiceOver("No previous sleep timer to restart.")
+        }
+    }
+
+    /// Start playback if the reader is currently paused or stopped.
+    /// The sleep timer uses this after arming a new or reset timer so
+    /// the timer's countdown matches the user's "read until it ends"
+    /// intent, regardless of whether the timer was replaced or newly
+    /// created.
+    private func startSleepTimerPlaybackIfNeeded() {
+        guard !isCurrentlyPlaying || isCurrentlyPaused else { return }
+        togglePlayPause()
+    }
+
+    private func pause(playingPauseSound: Bool) {
+        // Capture pre-pause playing state BEFORE we issue any pause calls.
+        // The audio / speech services flip their flags synchronously, so
+        // checking after would always return "not playing" and the guard
+        // would never apply.
+        let wasPlaying: Bool
+        if isAudioBook {
+            wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
+        } else {
+            wasPlaying = speechService.isSpeaking && !speechService.isPaused
+        }
+
+        if playingPauseSound {
+            soundEffectService?.play(for: .pause)
+        }
+        // `AVPlayer.pause()` / `AVAudioPlayerNode.pause()` do not
+        // restore volume on their own. The only explicit volume reset
+        // lives in the fade-cleanup branch below, which is why the
+        // sleep timer must keep a one-shot "fade just completed"
+        // marker until this helper runs.
+        let completedSleepTimerFade = sleepTimerService.consumePendingFadeCompletion()
+        let completingSleepFade = sleepTimerService.isFadingOut || completedSleepTimerFade
+        // Halt audio output before any volume restoration. For TTS engine
+        // playback, a sleep fade needs stronger handling than pause(): the
+        // engine is stopped at volume 0 so downstream time-pitch/mixer
+        // buffers cannot be exposed when volume is restored.
+        if isAudioBook {
+            audioPlaybackService.pause()
+            // Only advertise the "playing-but-paused" state when there
+            // was something to pause. Otherwise (book stopped or never
+            // started, but pause() called by a stray notification) we'd
+            // falsely tell the UI a paused track is loaded.
+            if wasPlaying {
+                isCurrentlyPlaying = true // still "playing" but paused
+                isCurrentlyPaused = true
+            }
+        } else if completingSleepFade {
+            speechService.pauseForSleepTimerFadeCompletion()
+        } else {
+            speechService.pause()
+        }
+        // Now safe to clean up fade state. Audio books still restore here;
+        // TTS restores inside SpeechService after the engine has stopped.
+        if completingSleepFade {
+            sleepTimerService.stop()
+            if isAudioBook { audioPlaybackService.restoreVolume() }
+        } else {
+            // Halt any minutes-based countdown so it doesn't keep
+            // ticking during the pause and expire while the user is
+            // taking a break. Mid-fade pauses fall through the branch
+            // above and do not reach here. Heading/document-end modes
+            // are no-ops — the service guards on duration kind.
+            sleepTimerService.pauseCountdown(by: book.id)
+        }
+        readingStatsService.endSession()
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        // Only record the stopped timestamp / persist position if we
+        // actually transitioned from playing to paused. A no-op pause
+        // (e.g. spurious media-key event when already paused, or a
+        // toggle that landed in pause-direction during the BT suppress
+        // window with nothing playing) should not update
+        // book.lastPlaybackStopped — the rewind-on-resume threshold
+        // depends on it being the moment the user stopped real playback.
+        if wasPlaying {
+            recordPlaybackStopped()
+            savePosition()
         }
     }
 

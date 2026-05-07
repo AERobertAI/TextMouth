@@ -12,8 +12,26 @@ class ReaderViewModel: ObservableObject {
     var soundEffectService: SoundEffectService?
 
     @Published var content: DocumentContent?
-    @Published var currentChapterIndex = 0
-    @Published var currentCharacterOffset = 0
+    @Published var currentChapterIndex = 0 {
+        didSet {
+            schedulePlaybackUIRefresh()
+        }
+    }
+    /// Raw reading cursor used for playback, seeking, and persistence.
+    /// UI surfaces observe throttled display mirrors instead of this value
+    /// directly so word-level callbacks do not rebuild the reader view on
+    /// every spoken word.
+    var currentCharacterOffset = 0 {
+        didSet {
+            schedulePlaybackUIRefresh()
+        }
+    }
+    /// Throttled mirror of the current chapter index for SwiftUI/VoiceOver.
+    @Published private(set) var displayChapterIndex = 0
+    /// Throttled mirror of the current character offset for SwiftUI/VoiceOver.
+    @Published private(set) var displayCharacterOffset = 0
+    /// Cached visible text window for the reader surface.
+    @Published private(set) var displayVisibleTextWindow = ""
     @Published var isLoading = true
     @Published var errorMessage: String?
     @Published var headings: [Heading] = []
@@ -87,6 +105,24 @@ class ReaderViewModel: ObservableObject {
     /// Base offset for word-spoken callback tracking
     var utteranceBaseOffset: Int = 0
     private var cancellables = Set<AnyCancellable>()
+    /// Coalesces rapid playback cursor changes into a single UI refresh.
+    private var playbackUIRefreshWorkItem: DispatchWorkItem?
+    private struct PlaybackUIRefreshSnapshot {
+        let chapterIndex: Int
+        let offset: Int
+    }
+    private struct VisibleTextWindowState {
+        let chapterIndex: Int
+        let startOffset: Int
+        let endOffset: Int
+    }
+    private struct VisibleTextWindow {
+        let text: String
+        let startOffset: Int
+        let endOffset: Int
+    }
+    private var pendingPlaybackUIRefresh: PlaybackUIRefreshSnapshot?
+    private var visibleTextWindowState: VisibleTextWindowState?
     /// Debounce skip calls — ignore rapid-fire duplicates.
     /// Accessed from Navigation extension.
     var lastSkipTime: Date = .distantPast
@@ -107,6 +143,17 @@ class ReaderViewModel: ObservableObject {
     /// For audio books, 10 characters = 1 second of audio.
     /// All time calculations use this constant to convert character offsets to/from seconds.
     static let audioCharsPerSecond: Double = 10.0
+    /// How often playback-driven UI mirrors should refresh while speech is active.
+    static let playbackUIRefreshInterval: TimeInterval = 0.12
+    /// How much of the current visible text window should remain as a guard band
+    /// before the reader surface is rebuilt around a new center point.
+    static let visibleTextWindowGuardFraction = 0.25
+
+    /// Minimum gap between successive skip operations. Shared by
+    /// `skipForward` and `skipBackward`. Wider than the previous 0.3s
+    /// to defend against media-key + keyboard double-fire that the
+    /// older window left vulnerable to a brief macOS scheduling hiccup.
+    static let skipDebounceWindow: TimeInterval = 0.4
 
     init(book: Book, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
         self.book = book
@@ -160,6 +207,18 @@ class ReaderViewModel: ObservableObject {
         speechService.$wordsPerMinute
             .receive(on: DispatchQueue.main)
             .assign(to: &$currentWPM)
+
+        $isCurrentlyPlaying
+            .combineLatest($isCurrentlyPaused)
+            .dropFirst()
+            .removeDuplicates { lhs, rhs in
+                lhs.0 == rhs.0 && lhs.1 == rhs.1
+            }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _, _ in
+                self?.refreshPlaybackUI(forceVisibleTextRefresh: true)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Time & Progress Calculations
@@ -335,7 +394,7 @@ class ReaderViewModel: ObservableObject {
         // most recently started a timer, since the service is shared.
 
         nowPlayingService.setup(
-            onPlay: { [weak self] in self?.play() },
+            onPlay: { [weak self] in self?.playOrResume() },
             onPause: { [weak self] in self?.pause() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
             onSkipForward: { [weak self] in self?.skipForward() },
@@ -654,6 +713,7 @@ class ReaderViewModel: ObservableObject {
 
                     // Save position with global offset now that we have chapter data
                     self.savePosition()
+                    self.refreshPlaybackUI()
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
@@ -675,11 +735,17 @@ class ReaderViewModel: ObservableObject {
     /// Return the text to display in the reader view. For small chapters,
     /// returns the full text. For large chapters, returns a window of text
     /// centred on the current character offset.
-    func visibleTextWindow(_ fullText: String) -> String {
-        guard fullText.count > Self.maxDisplayChars else { return fullText }
+    private func makeVisibleTextWindow(_ fullText: String, centeredAt offset: Int) -> VisibleTextWindow {
+        guard fullText.count > Self.maxDisplayChars else {
+            return VisibleTextWindow(
+                text: fullText,
+                startOffset: 0,
+                endOffset: fullText.count
+            )
+        }
 
         let halfWindow = Self.maxDisplayChars / 2
-        let center = min(max(currentCharacterOffset, halfWindow), fullText.count - halfWindow)
+        let center = min(max(offset, halfWindow), fullText.count - halfWindow)
         let windowStart = max(center - halfWindow, 0)
         let windowEnd = min(center + halfWindow, fullText.count)
 
@@ -700,7 +766,179 @@ class ReaderViewModel: ObservableObject {
             }
         }
 
-        return String(fullText[adjustedStart..<adjustedEnd])
+        return VisibleTextWindow(
+            text: String(fullText[adjustedStart..<adjustedEnd]),
+            startOffset: fullText.distance(from: fullText.startIndex, to: adjustedStart),
+            endOffset: fullText.distance(from: fullText.startIndex, to: adjustedEnd)
+        )
+    }
+
+    /// Refresh the throttled UI mirrors of playback position and visible text.
+    /// This keeps the raw cursor precise while letting SwiftUI update on a
+    /// slower cadence that is easier on VoiceOver.
+    private func schedulePlaybackUIRefresh() {
+        guard !isLoading else { return }
+
+        let chapterIndex = currentChapterIndex
+        let offset = currentCharacterOffset
+        pendingPlaybackUIRefresh = PlaybackUIRefreshSnapshot(
+            chapterIndex: chapterIndex,
+            offset: offset
+        )
+
+        guard playbackUIRefreshWorkItem == nil else { return }
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.drainPlaybackUIRefresh()
+        }
+        playbackUIRefreshWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Self.playbackUIRefreshInterval,
+            execute: workItem
+        )
+    }
+
+    /// Apply the latest pending snapshot, then reschedule if more updates
+    /// arrived while the refresh was running.
+    private func drainPlaybackUIRefresh() {
+        playbackUIRefreshWorkItem = nil
+        guard let snapshot = pendingPlaybackUIRefresh else { return }
+        pendingPlaybackUIRefresh = nil
+        refreshPlaybackUI(
+            chapterIndex: snapshot.chapterIndex,
+            offset: snapshot.offset
+        )
+
+        if pendingPlaybackUIRefresh != nil {
+            schedulePlaybackUIRefresh()
+        }
+    }
+
+    /// Update the displayed offset and cached reader text using a snapshot of
+    /// the current playback position.
+    private func refreshPlaybackUI(
+        chapterIndex: Int? = nil,
+        offset: Int? = nil,
+        forceVisibleTextRefresh: Bool = false
+    ) {
+        guard let content = content,
+              !content.chapters.isEmpty else {
+            if displayChapterIndex != 0 { displayChapterIndex = 0 }
+            if displayCharacterOffset != 0 { displayCharacterOffset = 0 }
+            if !displayVisibleTextWindow.isEmpty { displayVisibleTextWindow = "" }
+            visibleTextWindowState = nil
+            return
+        }
+
+        let resolvedChapterIndex = chapterIndex ?? currentChapterIndex
+        guard resolvedChapterIndex >= 0,
+              resolvedChapterIndex < content.chapters.count else {
+            if displayChapterIndex != 0 { displayChapterIndex = 0 }
+            if displayCharacterOffset != 0 { displayCharacterOffset = 0 }
+            if !displayVisibleTextWindow.isEmpty { displayVisibleTextWindow = "" }
+            visibleTextWindowState = nil
+            return
+        }
+
+        let resolvedChapterText = content.chapters[resolvedChapterIndex].text
+        let resolvedOffset = max(0, min(offset ?? currentCharacterOffset, resolvedChapterText.count))
+
+        if displayChapterIndex != resolvedChapterIndex {
+            displayChapterIndex = resolvedChapterIndex
+        }
+        if displayCharacterOffset != resolvedOffset {
+            displayCharacterOffset = resolvedOffset
+        }
+
+        let shouldRefreshVisibleText = forceVisibleTextRefresh
+            || shouldRefreshVisibleTextWindow(
+                chapterIndex: resolvedChapterIndex,
+                offset: resolvedOffset,
+                chapterTextLength: resolvedChapterText.count
+            )
+        if shouldRefreshVisibleText {
+            let window = makeVisibleTextWindow(resolvedChapterText, centeredAt: resolvedOffset)
+            let nextState = VisibleTextWindowState(
+                chapterIndex: resolvedChapterIndex,
+                startOffset: window.startOffset,
+                endOffset: window.endOffset
+            )
+            visibleTextWindowState = nextState
+            if displayVisibleTextWindow != window.text {
+                displayVisibleTextWindow = window.text
+            }
+        } else if visibleTextWindowState == nil {
+            let window = makeVisibleTextWindow(resolvedChapterText, centeredAt: resolvedOffset)
+            visibleTextWindowState = VisibleTextWindowState(
+                chapterIndex: resolvedChapterIndex,
+                startOffset: window.startOffset,
+                endOffset: window.endOffset
+            )
+            if displayVisibleTextWindow != window.text {
+                displayVisibleTextWindow = window.text
+            }
+        }
+    }
+
+    private func shouldRefreshVisibleTextWindow(
+        chapterIndex: Int,
+        offset: Int,
+        chapterTextLength: Int
+    ) -> Bool {
+        guard chapterTextLength > Self.maxDisplayChars else { return true }
+        guard let state = visibleTextWindowState else { return true }
+        guard state.chapterIndex == chapterIndex else { return true }
+
+        // Keep the rendered text stable while playback advances through
+        // the middle of the current window. Rebuilding the whole
+        // selectable text view every 120ms was the change that stopped
+        // the old main-thread freeze, but it also created the runaway
+        // memory pattern the user reported because AppKit/VoiceOver kept
+        // seeing a brand-new large text payload. The guard band lets the
+        // cursor move freely for a while before we swap in a new window.
+        let guardSize = max(
+            1,
+            Int(Double(max(state.endOffset - state.startOffset, 0)) * Self.visibleTextWindowGuardFraction)
+        )
+        let lowerBound = state.startOffset + guardSize
+        let upperBound = max(lowerBound, state.endOffset - guardSize)
+        return offset < lowerBound || offset > upperBound
+    }
+
+    var isPlaybackActivelyAdvancing: Bool {
+        isCurrentlyPlaying && !isCurrentlyPaused
+    }
+
+    /// UI-facing global offset, derived from the throttled display cursor.
+    var displayCurrentGlobalOffset: Int {
+        content?.globalOffset(chapterIndex: displayChapterIndex, localOffset: displayCharacterOffset) ?? 0
+    }
+
+    /// UI-facing percent complete, derived from the throttled display cursor.
+    var displayPercentComplete: Double {
+        content?.percentComplete(globalOffset: displayCurrentGlobalOffset) ?? 0
+    }
+
+    /// UI-facing remaining time, derived from the throttled display cursor.
+    var displayTimeRemaining: TimeInterval {
+        if isAudioBook {
+            let totalChars = Double(content?.totalCharacterCount ?? 0)
+            guard totalChars > 0 else { return 0 }
+            let remainingChars = Double(max(Int(totalChars) - displayCurrentGlobalOffset, 0))
+            return remainingChars / Self.audioCharsPerSecond / audioSpeed
+        }
+        return content?.estimatedTimeRemaining(
+            fromGlobalOffset: displayCurrentGlobalOffset,
+            wpm: speechService.wordsPerMinute
+        ) ?? 0
+    }
+
+    var displayFormattedTimeRemaining: String {
+        TimeFormatting.format(displayTimeRemaining)
+    }
+
+    var displayFormattedPercentComplete: String {
+        String(format: "%.1f%%", displayPercentComplete)
     }
 
     // MARK: - Position Saving

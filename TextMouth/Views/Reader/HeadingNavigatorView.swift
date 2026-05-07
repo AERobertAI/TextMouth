@@ -219,10 +219,10 @@ struct HeadingNavigatorView: View {
         // position, and VoiceOver focus all stay put. Crossing a heading
         // boundary updates a single row's speaker badge; cursor movement
         // within a heading is a no-op.
-        .onChange(of: viewModel.currentChapterIndex) { _, _ in
+        .onChange(of: viewModel.displayChapterIndex) { _, _ in
             updateCurrentHeadingIDIfChanged()
         }
-        .onChange(of: viewModel.currentCharacterOffset) { _, _ in
+        .onChange(of: viewModel.displayCharacterOffset) { _, _ in
             updateCurrentHeadingIDIfChanged()
         }
         .onChange(of: viewModel.book.skippedHeadingIDs ?? []) { _, _ in
@@ -340,8 +340,8 @@ struct HeadingNavigatorView: View {
     }
 
     /// Update `currentHeadingID` only when the cursor has actually crossed a
-    /// heading boundary. `currentCharacterOffset` ticks ~10×/sec during
-    /// playback; the vast majority of those ticks land inside the same
+    /// heading boundary. The throttled display offset still advances during
+    /// playback, but the vast majority of those updates land inside the same
     /// heading and produce no change here, so SwiftUI doesn't re-render
     /// anything. When the cursor does cross into a new heading, exactly
     /// two rows redraw (the previous and new "currently reading" rows).
@@ -359,8 +359,8 @@ struct HeadingNavigatorView: View {
 
     private func currentHeadingID(in headings: [Heading]) -> String? {
         headings.last(where: {
-            $0.chapterIndex < viewModel.currentChapterIndex ||
-            ($0.chapterIndex == viewModel.currentChapterIndex && $0.characterOffset <= viewModel.currentCharacterOffset)
+            $0.chapterIndex < viewModel.displayChapterIndex ||
+            ($0.chapterIndex == viewModel.displayChapterIndex && $0.characterOffset <= viewModel.displayCharacterOffset)
         })?.id
     }
 

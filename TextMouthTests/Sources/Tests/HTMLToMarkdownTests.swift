@@ -80,6 +80,34 @@ test("Horizontal rule conversion") {
     try assertTrue(md.contains("---"), "Should convert hr to ---")
 }
 
+test("Duplicate nav stripping removes EPUB TOC when body headings exist") {
+    let html = """
+    <html><body>
+    <nav><ol>
+    <li><a href="#ch1">Chapter 1</a></li>
+    <li><a href="#ch2">Chapter 2</a></li>
+    </ol></nav>
+    <h1 id="ch1">Chapter 1</h1>
+    <p>Actual chapter content.</p>
+    </body></html>
+    """
+    let md = try convertHTMLToMarkdown(html, stripDuplicateNavigation: true)
+    let count = md.components(separatedBy: "Chapter 1").count - 1
+    try assertEqual(count, 1, "Chapter heading should appear once")
+    try assertTrue(!md.contains("Chapter 2"), "Link-only nav entries should be stripped")
+}
+
+test("Duplicate nav stripping preserves nav-only headings") {
+    let html = """
+    <html><body>
+    <nav><h1>Contents</h1></nav>
+    <p>No heading exists outside nav.</p>
+    </body></html>
+    """
+    let md = try convertHTMLToMarkdown(html, stripDuplicateNavigation: true)
+    try assertTrue(md.contains("# Contents"), "Nav heading should be preserved when it is the only heading")
+}
+
 test("Frankenstein HTML converts to Markdown") {
     let url = try requireFile("frankenstein.html")
     let html = try String(contentsOf: url, encoding: .utf8)
@@ -94,14 +122,25 @@ test("Frankenstein HTML converts to Markdown") {
 
 // MARK: - HTML to Markdown Converter (copied from app)
 
-func convertHTMLToMarkdown(_ html: String) throws -> String {
+func convertHTMLToMarkdown(_ html: String, stripDuplicateNavigation: Bool = false) throws -> String {
     let doc = try SwiftSoup.parse(html)
     try doc.select("script, style").remove()
     let body = doc.body() ?? doc
+    if stripDuplicateNavigation {
+        try stripDuplicateNavigationFromHTML(body)
+    }
     var result = ""
     convertHTMLNode(body, into: &result)
     result = result.replacingOccurrences(of: "\\n{3,}", with: "\n\n", options: .regularExpression)
     return result.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private func stripDuplicateNavigationFromHTML(_ body: Element) throws {
+    let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
+    let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+    if allHeadingCount > navHeadingCount {
+        try body.select("nav").remove()
+    }
 }
 
 private func convertHTMLNode(_ node: Node, into result: inout String) {

@@ -3,6 +3,31 @@ import Foundation
 func runOffsetMapTests() {
 print("\n--- OffsetMap Tests ---")
 
+func linearToSource(_ targetOffset: Int, points: [(targetPos: Int, cumulativeDelta: Int)]) -> Int {
+    var delta = 0
+    for point in points {
+        if point.targetPos <= targetOffset {
+            delta = point.cumulativeDelta
+        } else {
+            break
+        }
+    }
+    return targetOffset + delta
+}
+
+func linearToTarget(_ sourceOffset: Int, points: [(targetPos: Int, cumulativeDelta: Int)]) -> Int {
+    var delta = 0
+    for point in points {
+        let sourceAtPoint = point.targetPos + point.cumulativeDelta
+        if sourceAtPoint <= sourceOffset {
+            delta = point.cumulativeDelta
+        } else {
+            break
+        }
+    }
+    return max(0, sourceOffset - delta)
+}
+
 // MARK: - Identity Map
 
 test("Identity map toSource returns input unchanged") {
@@ -322,6 +347,71 @@ test("OffsetMap multiple points increasing deltas") {
     try assertEqual(map.toSource(0), 0)
     try assertEqual(map.toSource(2), 2)
     try assertEqual(map.toSource(3), 11, "target 3 → past all removed chars")
+}
+
+test("OffsetMap binary search preserves boundary equivalence") {
+    let points: [(targetPos: Int, cumulativeDelta: Int)] = [
+        (targetPos: 0, cumulativeDelta: 5),
+        (targetPos: 3, cumulativeDelta: 8),
+        (targetPos: 10, cumulativeDelta: 4),
+        (targetPos: 18, cumulativeDelta: -2),
+        (targetPos: 25, cumulativeDelta: 0),
+    ]
+    let map = OffsetMap(points: points)
+
+    for targetOffset in [-1, 0, 2, 3, 4, 9, 10, 11, 17, 18, 19, 24, 25, 26, 100] {
+        try assertEqual(
+            map.toSource(targetOffset),
+            linearToSource(targetOffset, points: points),
+            "target offset \(targetOffset)"
+        )
+    }
+
+    for sourceOffset in [-1, 0, 4, 5, 6, 10, 11, 12, 13, 14, 15, 16, 17, 24, 25, 26, 100] {
+        try assertEqual(
+            map.toTarget(sourceOffset),
+            linearToTarget(sourceOffset, points: points),
+            "source offset \(sourceOffset)"
+        )
+    }
+}
+
+test("OffsetMap large target map preserves toSource order") {
+    let pointCount = 10_000
+    let points: [(targetPos: Int, cumulativeDelta: Int)] = (0..<pointCount).map { index in
+        (targetPos: index * 10, cumulativeDelta: index)
+    }
+    let map = OffsetMap(points: points)
+    var sampledTargets = [-1, 0, 1, pointCount * 10 - 1, pointCount * 10, pointCount * 10 + 1]
+
+    for index in stride(from: 0, to: pointCount, by: 997) {
+        sampledTargets.append(contentsOf: [index * 10 - 1, index * 10, index * 10 + 1])
+    }
+
+    var previousSource = Int.min
+    for targetOffset in sampledTargets.sorted() {
+        let expectedDelta = targetOffset >= 0 ? min(targetOffset / 10, pointCount - 1) : 0
+        let mappedSource = map.toSource(targetOffset)
+        try assertEqual(mappedSource, targetOffset + expectedDelta, "target offset \(targetOffset)")
+        try assertTrue(mappedSource >= previousSource, "toSource monotonic at target \(targetOffset)")
+        previousSource = mappedSource
+    }
+}
+
+test("OffsetMap toTarget preserves target-sorted linear semantics") {
+    let points: [(targetPos: Int, cumulativeDelta: Int)] = [
+        (targetPos: 10, cumulativeDelta: 10),
+        (targetPos: 15, cumulativeDelta: -10),
+    ]
+    let map = OffsetMap(points: points)
+
+    for sourceOffset in [-1, 0, 6, 20, 21, 100] {
+        try assertEqual(
+            map.toTarget(sourceOffset),
+            linearToTarget(sourceOffset, points: points),
+            "source offset \(sourceOffset)"
+        )
+    }
 }
 
 // MARK: - Punctuation Pause Offset Map Simulation

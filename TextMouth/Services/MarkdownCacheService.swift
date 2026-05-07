@@ -13,7 +13,7 @@ enum MarkdownCacheService {
     /// on the next app launch. Books with a stored version lower than this
     /// (or nil for pre-versioning books) will have their content.md rebuilt.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "2.0.0"
+    static let currentCacheVersion: String = "2.0.1"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -172,8 +172,12 @@ enum MarkdownCacheService {
                 continue
             }
 
-            // Convert chapter HTML to Markdown
-            var chapterMD = (try? HTMLToMarkdownConverter.convert(chapterHTML)) ?? ""
+            // Convert chapter HTML to Markdown. EPUB cache generation uses the
+            // same duplicate nav/TOC stripping rule as direct EPUB parsing.
+            var chapterMD = (try? HTMLToMarkdownConverter.convert(
+                chapterHTML,
+                stripDuplicateNavigation: true
+            )) ?? ""
             guard !chapterMD.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 continue
             }

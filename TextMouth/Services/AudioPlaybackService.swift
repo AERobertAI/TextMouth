@@ -293,21 +293,29 @@ class AudioPlaybackService: NSObject, ObservableObject {
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let secs = CMTimeGetSeconds(time)
-            if secs.isFinite {
-                // Skip clip-end check while a seek is in progress — the
-                // reported time may be stale (pre-seek) and would falsely
-                // trigger onPlaybackFinished for the new segment.
-                if !self.isSeeking, let endTime = self.clipEndTime, secs >= endTime {
-                    self.player?.pause()
-                    self.isPlaying = false
-                    self.isPaused = false
-                    self.clipEndTime = nil
-                    self.onPlaybackFinished?()
-                    return
-                }
-                self.currentTime = secs
-                self.onPositionUpdate?(secs)
+            guard secs.isFinite else { return }
+
+            // While a seek is in progress, the player may report stale
+            // pre-seek positions. Suppress ALL observer side-effects
+            // (clip-end check, currentTime mutation, and the
+            // onPositionUpdate callback) until the seek lands. Otherwise
+            // a stale observation can overwrite `currentTime` and the
+            // ReaderViewModel's `currentCharacterOffset` back to the old
+            // position immediately after a skip, which makes a second
+            // press read from the stale offset and produce a "rewind
+            // does nothing" or "rewind goes too far" perception.
+            guard !self.isSeeking else { return }
+
+            if let endTime = self.clipEndTime, secs >= endTime {
+                self.player?.pause()
+                self.isPlaying = false
+                self.isPaused = false
+                self.clipEndTime = nil
+                self.onPlaybackFinished?()
+                return
             }
+            self.currentTime = secs
+            self.onPositionUpdate?(secs)
         }
     }
 

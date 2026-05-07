@@ -61,6 +61,10 @@ class SpeechService: NSObject, ObservableObject {
     private var directModeChunked: Bool = false
     /// The character offset where the current direct-mode chunk ends (for continuing to next chunk)
     private var directModeChunkEnd: Int = 0
+    /// If the user seeks while paused before the audio engine is ready,
+    /// keep the requested offset here and restart from it on resume
+    /// instead of immediately speaking a new utterance.
+    private var pendingDirectSeekOffset: Int?
     /// Max characters to pass to direct-mode TTS at once. Keeps startup latency low
     /// while providing enough audio buffer for the engine to render in the background.
     private static let directModeChunkSize = 5000
@@ -316,11 +320,47 @@ class SpeechService: NSObject, ObservableObject {
         stopPositionTracking()
     }
 
+    /// Complete a sleep-timer fade by halting the active TTS backend before
+    /// restoring engine volume. In engine mode, `pause()` alone is not enough:
+    /// the time-pitch/mixer path can still have downstream audio after the
+    /// player node pauses, so restoring the mixer immediately can produce a
+    /// final full-volume tail.
+    func pauseForSleepTimerFadeCompletion() {
+        defer {
+            audioEngine.restoreVolume()
+        }
+
+        guard isSpeaking && !isPaused else { return }
+
+        if usingDirectMode {
+            directSynth.pauseSpeaking(at: .immediate)
+        } else if audioEngine.isPlaying || audioEngine.isPaused {
+            let offset = audioEngine.stopAfterFadePreservingPosition()
+            currentWordRange = NSRange(location: offset, length: 0)
+        }
+
+        isPaused = true
+        stopPositionTracking()
+    }
+
     func resume() {
         guard isPaused else { return }
         isPaused = false
 
-        if !usingDirectMode && audioEngine.isPaused {
+        if usingDirectMode, let pendingOffset = pendingDirectSeekOffset {
+            pendingDirectSeekOffset = nil
+            if audioEngine.hasRenderedAudio {
+                transitionLog("RESUME_SWITCH: direct→engine at offset=\(pendingOffset)")
+                stopDirectSynthesizer()
+                usingDirectMode = false
+                audioEngine.setSpeed(wpm: wordsPerMinute)
+                audioEngine.setPitch(multiplier: pitchMultiplier)
+                audioEngine.play(fromCharOffset: pendingOffset)
+                startPositionTracking()
+            } else {
+                speakDirect(currentText, fromCharOffset: pendingOffset)
+            }
+        } else if !usingDirectMode && audioEngine.isPaused {
             // Already in engine mode and paused — just resume
             audioEngine.resume()
             startPositionTracking()
@@ -374,6 +414,7 @@ class SpeechService: NSObject, ObservableObject {
         directModeBaseOffset = 0
         directModeChunked = false
         directModeChunkEnd = 0
+        pendingDirectSeekOffset = nil
         stopPositionTracking()
     }
 
@@ -423,13 +464,14 @@ class SpeechService: NSObject, ObservableObject {
         if audioEngine.hasRenderedAudio {
             // Engine is ready — use it (switch from direct mode if needed)
             if usingDirectMode {
-                transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
                 stopDirectSynthesizer()
-                usingDirectMode = false
-                let wasPlaying = isSpeaking && !isPaused
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                if wasPlaying {
+                if isPaused {
+                    pendingDirectSeekOffset = offset
+                } else {
+                    transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
+                    usingDirectMode = false
+                    audioEngine.setSpeed(wpm: wordsPerMinute)
+                    audioEngine.setPitch(multiplier: pitchMultiplier)
                     audioEngine.play(fromCharOffset: offset)
                     startPositionTracking()
                 }
@@ -445,7 +487,11 @@ class SpeechService: NSObject, ObservableObject {
             // the OLD utterance's didFinish (if it fires after speakDirect
             // assigns a new live utterance) is correctly seen as stale.
             stopDirectSynthesizer()
-            speakDirect(currentText, fromCharOffset: offset)
+            if isPaused {
+                pendingDirectSeekOffset = offset
+            } else {
+                speakDirect(currentText, fromCharOffset: offset)
+            }
         }
         let range = NSRange(location: offset, length: 0)
         currentWordRange = range
@@ -590,7 +636,16 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         willSpeakRangeOfSpeechString characterRange: NSRange,
         utterance: AVSpeechUtterance
     ) {
-        guard usingDirectMode else { return }
+        // Identity check mirrors the one in didFinish — a willSpeak
+        // for an utterance we no longer consider live is the tail of
+        // an internal stopSpeaking (mode switch / seek / new chunk).
+        // Without this guard, a stale willSpeak could combine its
+        // characterRange (relative to the OLD utterance) with the
+        // CURRENT directModeBaseOffset (which already advanced for the
+        // NEW utterance) and emit a wildly wrong absolute position —
+        // exactly the symptom that makes seeks feel like they jumped
+        // to a random place.
+        guard usingDirectMode, utterance === liveDirectUtterance else { return }
         let baseOffset = directModeBaseOffset
         let word = (utterance.speechString as NSString).substring(with: characterRange)
         DispatchQueue.main.async { [weak self] in
@@ -626,21 +681,10 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // own didFinish twice.
             self.liveDirectUtterance = nil
 
-            // If this was a chunked utterance, continue with next chunk or switch to engine
+            // If this was a chunked utterance, continue with the next direct chunk.
             if self.directModeChunked {
                 let nextOffset = self.directModeChunkEnd
-                if self.audioEngine.hasRenderedAudio {
-                    // Engine is ready — switch to it for the rest of the chapter
-                    self.transitionLog("CHUNK_SWITCH: direct chunk ended at \(nextOffset), switching to engine")
-                    self.usingDirectMode = false
-                    self.directModeChunked = false
-                    self.audioEngine.setSpeed(wpm: self.wordsPerMinute)
-                    self.audioEngine.setPitch(multiplier: self.pitchMultiplier)
-                    self.audioEngine.play(fromCharOffset: nextOffset)
-                    self.startPositionTracking()
-                    return
-                } else if nextOffset < self.currentText.count {
-                    // Engine not ready yet — speak the next chunk.
+                if nextOffset < self.currentText.count {
                     // speakDirect assigns a fresh `liveDirectUtterance`
                     // for the new chunk.
                     self.transitionLog("CHUNK_CONTINUE: next chunk at offset \(nextOffset)")

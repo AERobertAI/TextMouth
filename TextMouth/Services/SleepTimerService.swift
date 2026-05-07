@@ -76,6 +76,13 @@ class SleepTimerService: ObservableObject {
     private var endOfHeadingTriggered = false
     /// Generation counter to prevent stale fade/expire callbacks from firing after stop()
     private var generation: Int = 0
+    /// One-shot latch set after the final fade step lands at volume 0
+    /// but before the owner callback pauses playback and restores volume.
+    /// `isFadingOut` must flip back to false so UI state and formatted
+    /// status stop saying "Fading out", yet the playback layer still
+    /// needs to know this expiry came from a fade-completion path rather
+    /// than an ordinary pause. Consumed by ReaderViewModel.pause().
+    private var pendingFadeCompletion = false
     /// True when the minutes-based countdown is currently halted because
     /// playback is paused. The repeating Timer is invalidated and
     /// `remainingSeconds` is preserved; `resumeCountdown()` re-arms it
@@ -194,6 +201,7 @@ class SleepTimerService: ObservableObject {
         persistLastUsedDuration(duration)
         self.isActive = true
         self.endOfHeadingTriggered = false
+        self.pendingFadeCompletion = false
 
         switch duration {
         case .minutes(let minutes):
@@ -208,16 +216,18 @@ class SleepTimerService: ObservableObject {
     }
 
     /// Restart the current timer with the same duration, owner, and
-    /// callbacks. No-op when no timer is running. Used by the "Reset
-    /// Timer" button in the timer sheet.
-    func restart() {
+    /// callbacks. No-op when no timer is running.
+    ///
+    /// `fadeOutDuration` can be overridden so callers that want a
+    /// restart to pick up the latest settings can do so explicitly.
+    func restart(fadeOutDuration: TimeInterval? = nil) {
         guard let current = duration,
               let onExpire = onTimerExpired else { return }
         // Capture the existing callbacks/owner so start() can re-install
         // them after the implicit stop() inside it clears them.
         let owner = ownerID
         let onFade = onFadeStep
-        let fadeDuration = fadeOutDuration
+        let fadeDuration = fadeOutDuration ?? self.fadeOutDuration
         start(
             duration: current,
             ownerID: owner,
@@ -241,9 +251,20 @@ class SleepTimerService: ObservableObject {
         duration = nil
         endOfHeadingTriggered = false
         isCountdownPausedByPlayback = false
+        pendingFadeCompletion = false
         ownerID = nil
         onTimerExpired = nil
         onFadeStep = nil
+    }
+
+    /// Returns true once after a fade reaches silence and the timer is
+    /// about to invoke its expiry callback. This lets the playback
+    /// layer run the "pause first, then restore volume" cleanup even
+    /// though `isFadingOut` has already been cleared for UI purposes.
+    func consumePendingFadeCompletion() -> Bool {
+        let pending = pendingFadeCompletion
+        pendingFadeCompletion = false
+        return pending
     }
 
     // MARK: - Owner-Scoped Countdown Pause / Resume
@@ -362,6 +383,7 @@ class SleepTimerService: ObservableObject {
                 if currentStep >= totalSteps {
                     timer.invalidate()
                     self.fadeTimer = nil
+                    self.pendingFadeCompletion = true
                     self.isFadingOut = false
                     self.isActive = false
                     self.onTimerExpired?()

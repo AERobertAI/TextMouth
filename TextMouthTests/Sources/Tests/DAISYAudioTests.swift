@@ -166,6 +166,90 @@ test("Text-only DAISY does not have audio") {
     try assertTrue(!hasAudio, "Hyperion (text-only) should not have audio files")
 }
 
+test("DAISY audio boundary compares resolved paths, not basenames") {
+    let smil = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="a"><audio src="dirA/shared.mp3" clipBegin="10.0" clipEnd="60.0"/></par>
+      <par id="b"><audio src="dirB/shared.mp3" clipBegin="5.0" clipEnd="45.0"/></par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
+    let clips = parser.parse()
+    let currentClip = parser.clip(forFragment: "a")!
+    let nextClip = parser.clip(forFragment: "b")!
+
+    let currentPath = testResolvedAudioPath(for: currentClip, smilPath: "OPS/nav.smil")
+    let nextPath = testResolvedAudioPath(for: nextClip, smilPath: "OPS/nav.smil")
+    try assertEqual((currentPath as NSString).lastPathComponent,
+                    (nextPath as NSString).lastPathComponent,
+                    "Basenames intentionally match")
+    try assertTrue(currentPath != nextPath, "Resolved paths should distinguish directories")
+
+    let endTime = testSegmentEndTime(
+        for: currentClip,
+        clips: clips,
+        smilPath: "OPS/nav.smil",
+        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
+    )
+
+    try assertTrue(abs(endTime - 60.0) < 0.001,
+                   "Different resolved audio files should not use next clip start as boundary")
+    try assertTrue(endTime > currentClip.startTime, "Segment should not be truncated by basename collision")
+}
+
+test("DAISY audio boundary uses canonical same-file next clip") {
+    let smil = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="a"><audio src="./audio/../audio/book.mp3" clipBegin="0.0" clipEnd="25.0"/></par>
+      <par id="b"><audio src="audio/book.mp3" clipBegin="25.0" clipEnd="50.0"/></par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
+    let clips = parser.parse()
+    let currentClip = parser.clip(forFragment: "a")!
+    let nextClip = parser.clip(forFragment: "b")!
+
+    let currentPath = testResolvedAudioPath(for: currentClip, smilPath: "OPS/nav.smil")
+    let nextPath = testResolvedAudioPath(for: nextClip, smilPath: "OPS/nav.smil")
+    try assertEqual(currentPath, nextPath, "Dot segments should canonicalize to the same package path")
+
+    let endTime = testSegmentEndTime(
+        for: currentClip,
+        clips: clips,
+        smilPath: "OPS/nav.smil",
+        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
+    )
+
+    try assertTrue(abs(endTime - 25.0) < 0.001,
+                   "Same resolved audio file should end at the next segment start")
+}
+
+test("DAISY audio boundary defaults to current audio file last clip") {
+    let smil = """
+    <?xml version="1.0"?>
+    <smil><body><seq>
+      <par id="a1"><audio src="partA.mp3" clipBegin="0.0" clipEnd="20.0"/></par>
+      <par id="b1"><audio src="partB.mp3" clipBegin="0.0" clipEnd="90.0"/></par>
+    </seq></body></smil>
+    """
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
+    let clips = parser.parse()
+    let currentClip = parser.clip(forFragment: "a1")!
+    let nextClip = parser.clip(forFragment: "b1")!
+
+    let endTime = testSegmentEndTime(
+        for: currentClip,
+        clips: clips,
+        smilPath: "OPS/nav.smil",
+        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
+    )
+
+    try assertTrue(abs(endTime - 20.0) < 0.001,
+                   "A segment should end at the current audio file's last clip, not the SMIL's last clip")
+}
+
 }
 
 // MARK: - Test helpers
@@ -314,4 +398,32 @@ class TestFragmentAwareSMILParser: NSObject, XMLParserDelegate {
             ))
         }
     }
+}
+
+func testResolvedAudioPath(for clip: TestFragmentAudioClip, smilPath: String) -> String {
+    ParserUtilities.resolvedPackagePath(
+        clip.file,
+        relativeTo: smilPath,
+        preserveFragment: false
+    )
+}
+
+func testSegmentEndTime(
+    for segmentClip: TestFragmentAudioClip,
+    clips: [TestFragmentAudioClip],
+    smilPath: String,
+    nextClipAndPath: (clip: TestFragmentAudioClip, smilPath: String)?
+) -> Double {
+    let currentAudioPath = testResolvedAudioPath(for: segmentClip, smilPath: smilPath)
+    let sameAudioClips = clips.filter {
+        testResolvedAudioPath(for: $0, smilPath: smilPath) == currentAudioPath
+    }
+
+    var endTime = sameAudioClips.last?.endTime ?? segmentClip.endTime
+    if let nextClipAndPath,
+       testResolvedAudioPath(for: nextClipAndPath.clip, smilPath: nextClipAndPath.smilPath) == currentAudioPath {
+        endTime = nextClipAndPath.clip.startTime
+    }
+
+    return endTime
 }

@@ -30,24 +30,18 @@ struct OffsetMap: Equatable {
     /// target + delta = source
     func toSource(_ targetOffset: Int) -> Int {
         guard !points.isEmpty else { return targetOffset }
-        var delta = 0
-        for point in points {
-            if point.targetPos <= targetOffset {
-                delta = point.cumulativeDelta
-            } else {
-                break
-            }
-        }
-        return targetOffset + delta
+        return targetOffset + deltaForTargetOffset(targetOffset)
     }
 
     /// Convert a source-text offset to the corresponding target-text offset.
     /// target = source - delta  (we search for the right delta by walking source positions)
     func toTarget(_ sourceOffset: Int) -> Int {
         guard !points.isEmpty else { return sourceOffset }
-        // For each point, the source position where this delta kicks in is:
-        //   sourceAtPoint = point.targetPos + point.cumulativeDelta
-        // We want the last point where sourceAtPoint <= sourceOffset.
+        // `points` are sorted by target position, not by source position.
+        // Source-side breakpoints can move backward when mixed insertions
+        // and deletions occur, so this path intentionally remains linear
+        // to preserve the "last target-sorted point whose source position
+        // is <= sourceOffset" semantics.
         var delta = 0
         for point in points {
             let sourceAtPoint = point.targetPos + point.cumulativeDelta
@@ -58,6 +52,23 @@ struct OffsetMap: Equatable {
             }
         }
         return max(0, sourceOffset - delta)
+    }
+
+    private func deltaForTargetOffset(_ targetOffset: Int) -> Int {
+        var low = 0
+        var high = points.count
+
+        while low < high {
+            let mid = low + (high - low) / 2
+            if points[mid].targetPos <= targetOffset {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+
+        guard low > 0 else { return 0 }
+        return points[low - 1].cumulativeDelta
     }
 
     // MARK: - Equatable (synthesized for tuples)

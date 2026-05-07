@@ -1,5 +1,6 @@
 import Foundation
 import ZIPFoundation
+import SwiftSoup
 
 // MARK: - Error Types
 
@@ -408,48 +409,39 @@ enum DAISYParser {
         let nccParser = DAISY202NCCParser(html: nccHTML)
         let nccResult = nccParser.parse()
 
-        let nccDir = (nccPath as NSString).deletingLastPathComponent
-
-        // Collect all text content files referenced by SMIL files, preserving
-        // the NCC heading order (which defines the reading order). Using an
-        // ordered array with deduplication instead of a Set avoids losing the
-        // document's intended sequence.
-        var contentFiles: [String] = []
-        var seenFiles: Set<String> = []
+        // Collect text fragments referenced by SMIL files, preserving NCC
+        // heading order. Do not collapse "book.html#p1" down to "book.html":
+        // many DAISY 2.02 books repeat wrapper/title text at the file level,
+        // while SMIL points at the precise spoken fragment.
+        var textReferences: [String] = []
+        var seenReferences: Set<String> = []
         for heading in nccResult.headings {
             // Heading href → SMIL file → text content file
-            let smilRef = heading.href
-            let smilPath = nccDir.isEmpty ? smilRef : "\(nccDir)/\(smilRef)"
-            let smilFile = smilPath.components(separatedBy: "#").first ?? smilPath
+            let smilFile = ParserUtilities.resolvedPackagePath(
+                heading.href,
+                relativeTo: nccPath,
+                preserveFragment: false
+            )
 
             if let smilData = try? provider.readFile(at: smilFile) {
                 let smilParser = DAISYSMILParser(data: smilData)
                 let textRefs = smilParser.parseTextReferences()
                 for ref in textRefs {
-                    let textFile = ref.components(separatedBy: "#").first ?? ref
-                    let fullPath = (smilFile as NSString).deletingLastPathComponent
-                    let textPath = fullPath.isEmpty ? textFile : "\(fullPath)/\(textFile)"
-                    if seenFiles.insert(textPath).inserted {
-                        contentFiles.append(textPath)
+                    let textPath = ParserUtilities.resolvedPackagePath(
+                        ref,
+                        relativeTo: smilFile,
+                        preserveFragment: true
+                    )
+                    if seenReferences.insert(textPath).inserted {
+                        textReferences.append(textPath)
                     }
                 }
             }
         }
 
-        // If we found text content files, extract and convert them
-        if !contentFiles.isEmpty {
-            var markdown = ""
-            let sortedFiles = contentFiles
-            for filePath in sortedFiles {
-                if let data = try? provider.readFile(at: filePath),
-                   let html = String(data: data, encoding: .utf8)
-                    ?? String(data: data, encoding: .isoLatin1) {
-                    let converted = (try? HTMLToMarkdownConverter.convert(html)) ?? ""
-                    if !converted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        markdown += converted + "\n\n"
-                    }
-                }
-            }
+        // If we found text references, extract and convert only those fragments.
+        if !textReferences.isEmpty {
+            let markdown = try extractDAISY202Fragments(from: textReferences, provider: provider)
             if !markdown.isEmpty { return markdown }
         }
 
@@ -462,6 +454,76 @@ enum DAISYParser {
         }
 
         return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Extract DAISY 2.02 text references from their HTML fragments.
+    /// Fragment-less references still convert the whole file, but SMIL
+    /// references with #ids are narrowed to that element so content.md does not
+    /// bake in duplicate wrapper text or unrelated file-level content.
+    private static func extractDAISY202Fragments(
+        from references: [String],
+        provider: DAISYFileProvider
+    ) throws -> String {
+        var documents: [String: SwiftSoup.Document] = [:]
+        var htmlByPath: [String: String] = [:]
+        var fragments: [String] = []
+        var lastNormalized = ""
+
+        for reference in references {
+            let split = ParserUtilities.splitFragment(reference)
+            guard !split.path.isEmpty else { continue }
+
+            let doc: SwiftSoup.Document
+            let html: String
+            if let cachedDoc = documents[split.path], let cachedHTML = htmlByPath[split.path] {
+                doc = cachedDoc
+                html = cachedHTML
+            } else {
+                guard let data = try? provider.readFile(at: split.path),
+                      let decodedHTML = String(data: data, encoding: .utf8)
+                        ?? String(data: data, encoding: .isoLatin1),
+                      !decodedHTML.isEmpty else {
+                    continue
+                }
+                html = decodedHTML
+                doc = try SwiftSoup.parse(decodedHTML)
+                documents[split.path] = doc
+                htmlByPath[split.path] = decodedHTML
+            }
+
+            let fragmentMarkdown: String
+            if split.fragment.isEmpty {
+                fragmentMarkdown = (try? HTMLToMarkdownConverter.convert(html)) ?? ""
+            } else if let element = try doc.getElementById(split.fragment) {
+                fragmentMarkdown = try convertDAISY202FragmentElement(element)
+            } else {
+                continue
+            }
+
+            let normalized = ParserUtilities.normalizeMarkdownWhitespace(fragmentMarkdown)
+            guard !normalized.isEmpty, normalized != lastNormalized else { continue }
+            fragments.append(normalized)
+            lastNormalized = normalized
+        }
+
+        return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
+    }
+
+    private static func convertDAISY202FragmentElement(_ element: SwiftSoup.Element) throws -> String {
+        let tag = element.tagName().lowercased()
+        if tag == "a" {
+            return try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        let childElements = element.children().array()
+        if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
+           let firstChild = childElements.first {
+            return try convertDAISY202FragmentElement(firstChild)
+        }
+
+        let html = try element.outerHtml()
+        return try HTMLToMarkdownConverter.convert(html)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Read metadata from a DAISY 2.02 ncc.html

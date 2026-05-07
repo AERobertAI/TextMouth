@@ -281,6 +281,43 @@ test("DAISY 2.02 fragment extraction avoids whole-file duplicate wrapper text") 
                    "Fragment extraction should not repeat the title wrapper text")
 }
 
+test("DAISY 2.02 Markdown extraction follows SMIL text fragments") {
+    let daisyURL = try makeTemporaryDAISY202FragmentZip(entries: [
+        "ncc.html": """
+        <html><head>
+        <meta name="dc:title" content="Fragment Test"/>
+        <meta name="dc:creator" content="Tester"/>
+        </head><body>
+        <h1><a href="part1.smil#nav_1">Opening Title</a></h1>
+        </body></html>
+        """,
+        "part1.smil": """
+        <?xml version="1.0"?>
+        <smil><body><seq>
+          <par id="nav_1"><text src="book.html#title_heading"/></par>
+          <par id="nav_2"><text src="book.html#body_sentence"/></par>
+        </seq></body></smil>
+        """,
+        "book.html": """
+        <html><body>
+        <h1 id="title_heading"><a href="part1.smil#nav_1">Opening Title</a></h1>
+        <div class="doctitle"><span id="title_sentence"><a href="part1.smil#nav_2">Opening Title</a></span></div>
+        <p id="body_1"><span id="body_sentence">First real sentence.</span></p>
+        <p id="unreferenced">This unreferenced paragraph should not be cached.</p>
+        </body></html>
+        """
+    ])
+    defer { try? FileManager.default.removeItem(at: daisyURL) }
+
+    let markdown = try parseDAISY202ToMarkdown(url: daisyURL)
+    try assertTrue(markdown.contains("Opening Title"), "Referenced title fragment should be present")
+    try assertTrue(markdown.contains("First real sentence."), "Referenced body fragment should be present")
+    try assertTrue(!markdown.contains("This unreferenced paragraph"),
+                   "Unreferenced file-level text should not be included")
+    try assertTrue(!markdown.contains("Opening Title Opening Title"),
+                   "Wrapper title duplication should not be baked into content.md")
+}
+
 test("Real DAISY 2.02 (WIPO Treaty) exists") {
     let url = try requireFile("wipo-treaty-d202-text-only.zip")
     try assertTrue(FileManager.default.fileExists(atPath: url.path))
@@ -477,4 +514,26 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
     try assertTrue(abs(clips[1].endTime - 38.228) < 0.001)
 }
 
+}
+
+private func makeTemporaryDAISY202FragmentZip(entries: [String: String]) throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("TextMouthDAISYFragmentTest-\(UUID().uuidString).zip")
+    let archive = try Archive(url: url, accessMode: .create)
+
+    for (path, contents) in entries {
+        let data = Data(contents.utf8)
+        try archive.addEntry(
+            with: path,
+            type: .file,
+            uncompressedSize: Int64(data.count),
+            provider: { position, size in
+                let start = Int(position)
+                let end = min(start + size, data.count)
+                return data[start..<end]
+            }
+        )
+    }
+
+    return url
 }

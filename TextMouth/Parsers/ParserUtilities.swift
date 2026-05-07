@@ -28,6 +28,51 @@ enum ParserUtilities {
         elementName.components(separatedBy: ":").last ?? elementName
     }
 
+    /// Split an archive/package reference into path and fragment parts.
+    /// e.g. "chapter.html#p1" -> ("chapter.html", "p1")
+    static func splitFragment(_ reference: String) -> (path: String, fragment: String) {
+        let parts = reference.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+        let path = String(parts.first ?? "")
+        let fragment = parts.count > 1 ? String(parts[1]) : ""
+        return (
+            path.removingPercentEncoding ?? path,
+            fragment.removingPercentEncoding ?? fragment
+        )
+    }
+
+    /// Resolve a package-internal reference against the file that contains it.
+    ///
+    /// DAISY and EPUB references are paths inside ZIP archives or extracted
+    /// package directories, so URL.standardizedFileURL is the wrong tool here:
+    /// it treats paths as host filesystem URLs. This keeps paths package-relative
+    /// while normalizing ".", "..", duplicate slashes, percent encoding, and
+    /// optional fragments.
+    static func resolvedPackagePath(
+        _ reference: String,
+        relativeTo sourcePath: String,
+        preserveFragment: Bool = true
+    ) -> String {
+        let split = splitFragment(reference)
+        let sourceDirectory = (sourcePath as NSString).deletingLastPathComponent
+
+        let combined: String
+        if split.path.hasPrefix("/") {
+            combined = String(split.path.drop(while: { $0 == "/" }))
+        } else if split.path.isEmpty {
+            combined = sourceDirectory
+        } else if sourceDirectory.isEmpty {
+            combined = split.path
+        } else {
+            combined = "\(sourceDirectory)/\(split.path)"
+        }
+
+        let normalizedPath = normalizePackagePath(combined)
+        guard preserveFragment, !split.fragment.isEmpty else {
+            return normalizedPath
+        }
+        return "\(normalizedPath)#\(split.fragment)"
+    }
+
     /// Normalize whitespace in Markdown output:
     /// - Trim trailing whitespace from each line
     /// - Collapse 3+ consecutive blank lines down to 2
@@ -55,5 +100,22 @@ enum ParserUtilities {
 
         return result.joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func normalizePackagePath(_ path: String) -> String {
+        var stack: [String] = []
+        for component in path.split(separator: "/", omittingEmptySubsequences: true) {
+            switch component {
+            case ".":
+                continue
+            case "..":
+                if !stack.isEmpty {
+                    stack.removeLast()
+                }
+            default:
+                stack.append(String(component))
+            }
+        }
+        return stack.joined(separator: "/")
     }
 }

@@ -141,6 +141,49 @@ func parseEPUB(url: URL) throws -> DocumentContent {
     return DocumentContent(title: opfData.title, author: opfData.author, chapters: chapters)
 }
 
+func extractEPUBCacheMarkdownForTest(url: URL) throws -> String {
+    let archive: Archive
+    do {
+        archive = try Archive(url: url, accessMode: .read)
+    } catch {
+        throw EPUBParserError.invalidArchive
+    }
+
+    let containerXML = try extractStringFromArchive(archive, path: "META-INF/container.xml")
+    let opfPath = try parseContainerForOPFPath(containerXML)
+    let opfXML = try extractStringFromArchive(archive, path: opfPath)
+    let opfDirectory = (opfPath as NSString).deletingLastPathComponent
+    let opfData = try parseOPF(opfXML)
+
+    var markdownParts: [String] = []
+    for itemRef in opfData.spineItemRefs {
+        guard let manifestItem = opfData.manifest[itemRef],
+              manifestItem.mediaType.contains("html") || manifestItem.mediaType.contains("xml") else { continue }
+
+        let chapterPath = opfDirectory.isEmpty ? manifestItem.href : "\(opfDirectory)/\(manifestItem.href)"
+        let decodedPath = chapterPath.removingPercentEncoding ?? chapterPath
+        guard !decodedPath.contains(".."), !decodedPath.hasPrefix("/") else { continue }
+        guard let chapterHTML = try? extractStringFromArchive(archive, path: decodedPath) else { continue }
+
+        let chapterMD = (try? convertHTMLToMarkdown(chapterHTML, stripDuplicateNavigation: true)) ?? ""
+        guard !chapterMD.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+
+        let chapterTitle = extractFirstMarkdownHeading(chapterMD)
+        markdownParts.append("<!-- chapter: \(chapterTitle) -->\n\(chapterMD)")
+    }
+
+    if markdownParts.count == 1, let single = markdownParts.first {
+        let lines = single.components(separatedBy: "\n")
+        if lines.first?.hasPrefix("<!-- chapter: ") == true {
+            return lines.dropFirst().joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return single
+    }
+
+    return markdownParts.joined(separator: "\n\n")
+}
+
 // MARK: - HTML Parser
 
 func parseHTML(html: String, title: String = "Untitled") throws -> DocumentContent {
@@ -934,6 +977,42 @@ enum ParserUtilities {
         elementName.components(separatedBy: ":").last ?? elementName
     }
 
+    static func splitFragment(_ reference: String) -> (path: String, fragment: String) {
+        let parts = reference.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+        let path = String(parts.first ?? "")
+        let fragment = parts.count > 1 ? String(parts[1]) : ""
+        return (
+            path.removingPercentEncoding ?? path,
+            fragment.removingPercentEncoding ?? fragment
+        )
+    }
+
+    static func resolvedPackagePath(
+        _ reference: String,
+        relativeTo sourcePath: String,
+        preserveFragment: Bool = true
+    ) -> String {
+        let split = splitFragment(reference)
+        let sourceDirectory = (sourcePath as NSString).deletingLastPathComponent
+
+        let combined: String
+        if split.path.hasPrefix("/") {
+            combined = String(split.path.drop(while: { $0 == "/" }))
+        } else if split.path.isEmpty {
+            combined = sourceDirectory
+        } else if sourceDirectory.isEmpty {
+            combined = split.path
+        } else {
+            combined = "\(sourceDirectory)/\(split.path)"
+        }
+
+        let normalizedPath = normalizePackagePath(combined)
+        guard preserveFragment, !split.fragment.isEmpty else {
+            return normalizedPath
+        }
+        return "\(normalizedPath)#\(split.fragment)"
+    }
+
     static func normalizeMarkdownWhitespace(_ text: String) -> String {
         var lines = text.components(separatedBy: "\n")
         lines = lines.map {
@@ -952,6 +1031,23 @@ enum ParserUtilities {
         }
         return result.joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func normalizePackagePath(_ path: String) -> String {
+        var stack: [String] = []
+        for component in path.split(separator: "/", omittingEmptySubsequences: true) {
+            switch component {
+            case ".":
+                continue
+            case "..":
+                if !stack.isEmpty {
+                    stack.removeLast()
+                }
+            default:
+                stack.append(String(component))
+            }
+        }
+        return stack.joined(separator: "/")
     }
 }
 
@@ -1319,12 +1415,7 @@ func parseDAISY202ToMarkdown(url: URL) throws -> String {
 }
 
 private func resolveDAISYTestPath(_ ref: String, relativeTo sourcePath: String) -> String {
-    let sourceDir = (sourcePath as NSString).deletingLastPathComponent
-    let filePart = ref.components(separatedBy: "#").first ?? ref
-    let fragmentPart = ref.contains("#") ? String(ref.split(separator: "#", maxSplits: 1)[1]) : ""
-    let fullFilePath = sourceDir.isEmpty ? filePart : "\(sourceDir)/\(filePart)"
-    guard !fragmentPart.isEmpty else { return fullFilePath }
-    return "\(fullFilePath)#\(fragmentPart)"
+    ParserUtilities.resolvedPackagePath(ref, relativeTo: sourcePath, preserveFragment: true)
 }
 
 private func extractDAISY202TestFragments(from refs: [String], archive: Archive) throws -> String {
