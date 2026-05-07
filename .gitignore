@@ -56,8 +56,18 @@ fastlane/test_output
 .idea/
 .vscode/
 
+# Ignore .md and .txt text files by default
+*.md
+*.txt
+
+## but allowing
+!README.md
+!CHANGELOG.md
+!docs/getting-started.txt
+
 # Claude Code
 .claude/
+!CLAUDE.md
 
 # Comparison analysis (not part of the app)
 Comparisons/
