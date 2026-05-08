@@ -14,6 +14,7 @@ extension ReaderViewModel {
     func play() {
         // Don't start playback while Where Am I is speaking
         if isWhereAmISpeaking { return }
+        restartPlaybackBackendOnNextResume = false
         soundEffectService?.play(for: .play)
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
@@ -55,6 +56,12 @@ extension ReaderViewModel {
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
         sleepTimerService.resumeCountdown(by: book.id)
+        if restartPlaybackBackendOnNextResume {
+            restartPlaybackBackendOnNextResume = false
+            audioPlaybackService.stop()
+            playAudioChapter()
+            return
+        }
         audioPlaybackService.resume()
         isCurrentlyPaused = false
         nowPlayingService.updateNowPlayingInfo(
@@ -68,6 +75,15 @@ extension ReaderViewModel {
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
         sleepTimerService.resumeCountdown(by: book.id)
+        if restartPlaybackBackendOnNextResume {
+            restartPlaybackBackendOnNextResume = false
+            speechService.stop()
+            speakCurrentChapter()
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+            return
+        }
         speechService.resume()
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
@@ -83,6 +99,15 @@ extension ReaderViewModel {
     /// rewind-on-resume threshold reads to decide how far back to rewind
     /// on the next play.
     func pause() {
+        pause(playingPauseSound: true)
+    }
+
+    /// Pause because CoreAudio reported an output-route change. A normal
+    /// resume may keep using a synthesizer/engine graph bound to the old
+    /// Bluetooth device, so the next resume cold-starts the backend at the
+    /// saved cursor while preserving the user-facing paused state.
+    func pauseForAudioRouteChange() {
+        restartPlaybackBackendOnNextResume = true
         pause(playingPauseSound: true)
     }
 

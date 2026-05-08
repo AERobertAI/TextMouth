@@ -30,6 +30,7 @@ import CoreAudio
 class NowPlayingService {
     private var onPlay: (() -> Void)?
     private var onPause: (() -> Void)?
+    private var onAudioRouteChangePause: (() -> Void)?
     private var onTogglePlayPause: (() -> Void)?
     private var onSkipForward: (() -> Void)?
     private var onSkipBackward: (() -> Void)?
@@ -97,6 +98,7 @@ class NowPlayingService {
     func setup(
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
+        onAudioRouteChangePause: @escaping () -> Void,
         onTogglePlayPause: @escaping () -> Void,
         onSkipForward: @escaping () -> Void,
         onSkipBackward: @escaping () -> Void,
@@ -106,6 +108,7 @@ class NowPlayingService {
     ) {
         self.onPlay = onPlay
         self.onPause = onPause
+        self.onAudioRouteChangePause = onAudioRouteChangePause
         self.onTogglePlayPause = onTogglePlayPause
         self.onSkipForward = onSkipForward
         self.onSkipBackward = onSkipBackward
@@ -208,6 +211,10 @@ class NowPlayingService {
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.pause) { return .success }
+            if self.isSuppressed, self.isCurrentlyPlaying?() == true {
+                self.onAudioRouteChangePause?()
+                return .success
+            }
             self.onPause?()
             return .success
         }
@@ -226,7 +233,7 @@ class NowPlayingService {
                 // - Paused  → ignore: blocks macOS's spurious auto-resume.
                 self.suppressUntil = .distantPast
                 if self.isCurrentlyPlaying?() == true {
-                    self.onPause?()
+                    self.onAudioRouteChangePause?()
                 }
                 return .success
             }
@@ -453,7 +460,7 @@ class NowPlayingService {
     private func armSuppressAndPauseIfPlaying() {
         suppressUntil = Date().addingTimeInterval(suppressWindow)
         if isCurrentlyPlaying?() == true {
-            onPause?()
+            onAudioRouteChangePause?()
         }
     }
 

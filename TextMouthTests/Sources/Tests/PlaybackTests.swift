@@ -1121,6 +1121,99 @@ test("Manual disconnect end-to-end remains intact (default-output path)") {
     try assertTrue(!isPlaying, "Paused stays paused (existing fix still works)")
 }
 
+test("Bluetooth route-change pause makes next TTS resume recreate backend") {
+    // Regression for the remote Play change from play() to playOrResume():
+    // ordinary media-key Play should resume, but after an AirPods route
+    // change we need a fresh TTS backend so audio binds to the new output.
+    var restartBackendOnNextResume = false
+    var speechPaused = false
+    var continueCalls = 0
+    var stopCalls = 0
+    var speakCurrentChapterCalls = 0
+
+    func pauseForAudioRouteChange() {
+        restartBackendOnNextResume = true
+        speechPaused = true
+    }
+
+    func resumeSpeechPlayback() {
+        if restartBackendOnNextResume {
+            restartBackendOnNextResume = false
+            stopCalls += 1
+            speechPaused = false
+            speakCurrentChapterCalls += 1
+            return
+        }
+        continueCalls += 1
+        speechPaused = false
+    }
+
+    pauseForAudioRouteChange()
+    try assertTrue(speechPaused, "Route-change pause leaves UI/service paused")
+
+    resumeSpeechPlayback()
+    try assertEqual(stopCalls, 1, "Route-change resume should stop the old backend")
+    try assertEqual(speakCurrentChapterCalls, 1, "Route-change resume should cold-start TTS")
+    try assertEqual(continueCalls, 0, "Route-change resume must not continue the old synth/engine")
+    try assertTrue(!restartBackendOnNextResume, "Restart flag is one-shot")
+}
+
+test("Ordinary paused TTS remote Play still resumes without backend restart") {
+    var restartBackendOnNextResume = false
+    var continueCalls = 0
+    var stopCalls = 0
+    var speakCurrentChapterCalls = 0
+
+    func resumeSpeechPlayback() {
+        if restartBackendOnNextResume {
+            restartBackendOnNextResume = false
+            stopCalls += 1
+            speakCurrentChapterCalls += 1
+            return
+        }
+        continueCalls += 1
+    }
+
+    resumeSpeechPlayback()
+
+    try assertEqual(continueCalls, 1, "Ordinary remote Play should keep resume parity")
+    try assertEqual(stopCalls, 0, "Ordinary resume should not stop the backend")
+    try assertEqual(speakCurrentChapterCalls, 0, "Ordinary resume should not cold-start")
+}
+
+test("Bluetooth route-change pause makes next audio-book resume recreate player") {
+    var restartBackendOnNextResume = false
+    var audioPaused = false
+    var avPlayerResumeCalls = 0
+    var stopCalls = 0
+    var playAudioChapterCalls = 0
+
+    func pauseForAudioRouteChange() {
+        restartBackendOnNextResume = true
+        audioPaused = true
+    }
+
+    func resumeAudioPlayback() {
+        if restartBackendOnNextResume {
+            restartBackendOnNextResume = false
+            stopCalls += 1
+            audioPaused = false
+            playAudioChapterCalls += 1
+            return
+        }
+        avPlayerResumeCalls += 1
+        audioPaused = false
+    }
+
+    pauseForAudioRouteChange()
+    try assertTrue(audioPaused, "Route-change pause leaves audio paused")
+
+    resumeAudioPlayback()
+    try assertEqual(stopCalls, 1, "Route-change resume should discard old AVPlayer route")
+    try assertEqual(playAudioChapterCalls, 1, "Route-change resume should recreate player")
+    try assertEqual(avPlayerResumeCalls, 0, "Route-change resume must not resume old AVPlayer")
+}
+
 // ---- Speed Control Tests ----
 print("\n--- Speed Control Tests ---")
 

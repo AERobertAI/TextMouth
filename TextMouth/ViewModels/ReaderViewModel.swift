@@ -98,6 +98,12 @@ class ReaderViewModel: ObservableObject {
     /// Whether playback was active before "Where Am I?" interrupted it.
     /// Accessed from WhereAmI and Playback extensions.
     var wasPlayingBeforeWhereAmI = false
+    /// Set when playback was paused because the system audio route changed
+    /// (for example AirPods disconnecting). The next resume must recreate
+    /// the active playback backend so audio binds to the newly-current
+    /// output device instead of continuing a graph/synth paused on the old
+    /// route.
+    var restartPlaybackBackendOnNextResume = false
     /// Track when "Where Am I?" was last triggered for brief->full escalation.
     /// Accessed from WhereAmI extension.
     var lastWhereAmITime: Date = .distantPast
@@ -396,6 +402,7 @@ class ReaderViewModel: ObservableObject {
         nowPlayingService.setup(
             onPlay: { [weak self] in self?.playOrResume() },
             onPause: { [weak self] in self?.pause() },
+            onAudioRouteChangePause: { [weak self] in self?.pauseForAudioRouteChange() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
             onSkipForward: { [weak self] in self?.skipForward() },
             onSkipBackward: { [weak self] in self?.skipBackward() },
