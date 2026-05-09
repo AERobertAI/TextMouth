@@ -2,12 +2,9 @@ import SwiftUI
 
 // MARK: - Window Type Tracking
 
-/// Identifies which type of window currently has focus, used for two purposes:
-/// 1. Each CommandMenu below conditionally populates its items based on this
-///    value via @FocusedValue — this controls menu *contents*.
-/// 2. MenuVisibilityManager uses this to hide/show the menu bar *titles*
-///    themselves via NSMenuItem.isHidden — see that file for full details
-///    and instructions on adding new window types.
+/// Identifies which type of window currently has focus. The AppKit-backed
+/// MenuVisibilityManager uses the same cases to hide/show context menu titles
+/// without depending on SwiftUI focused values for the menu contents.
 enum ActiveWindowType {
     case library
     case reader
@@ -28,111 +25,103 @@ extension FocusedValues {
 // MARK: - Menu Commands
 
 struct PlaybackCommands: Commands {
-    @FocusedValue(\.activeWindowType) var windowType
     var body: some Commands {
         CommandMenu("Playback") {
-            if windowType == .reader {
-                Button("Play / Pause") {
-                    NotificationCenter.default.post(name: .togglePlayback, object: nil)
-                }
-
-                Divider()
-
-                Button("Skip Forward") {
-                    NotificationCenter.default.post(name: .skipForward, object: nil)
-                }
-
-                Button("Skip Backward") {
-                    NotificationCenter.default.post(name: .skipBackward, object: nil)
-                }
-
-                Divider()
-
-                Button("Increase Speed") {
-                    NotificationCenter.default.post(name: .increaseSpeed, object: nil)
-                }
-
-                Button("Decrease Speed") {
-                    NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
-                }
-
-                Divider()
-
-                Button("Where Am I?") {
-                    NotificationCenter.default.post(name: .whereAmI, object: nil)
-                }
-
-                Divider()
-
-                Button("Copy Reading Position") {
-                    NotificationCenter.default.post(name: .copyReadingPosition, object: nil)
-                }
-                .keyboardShortcut("p", modifiers: [.command, .shift])
-
-                Button("Search in Book") {
-                    NotificationCenter.default.post(name: .searchInBook, object: nil)
-                }
-                .keyboardShortcut("f", modifiers: .command)
+            Button("Play / Pause") {
+                NotificationCenter.default.post(name: .togglePlayback, object: nil)
             }
+
+            Divider()
+
+            Button("Skip Forward") {
+                NotificationCenter.default.post(name: .skipForward, object: nil)
+            }
+
+            Button("Skip Backward") {
+                NotificationCenter.default.post(name: .skipBackward, object: nil)
+            }
+
+            Divider()
+
+            Button("Increase Speed") {
+                NotificationCenter.default.post(name: .increaseSpeed, object: nil)
+            }
+
+            Button("Decrease Speed") {
+                NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
+            }
+
+            Divider()
+
+            Button("Where Am I?") {
+                NotificationCenter.default.post(name: .whereAmI, object: nil)
+            }
+
+            Divider()
+
+            Button("Copy Reading Position") {
+                NotificationCenter.default.post(name: .copyReadingPosition, object: nil)
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+
+            Button("Search in Book") {
+                NotificationCenter.default.post(name: .searchInBook, object: nil)
+            }
+            .keyboardShortcut("f", modifiers: .command)
         }
     }
 }
 
 struct NavigationCommands: Commands {
-    @FocusedValue(\.activeWindowType) var windowType
     var body: some Commands {
         CommandMenu("Navigate") {
-            if windowType == .reader {
-                Button("Go to Library") {
-                    NotificationCenter.default.post(name: .goToLibrary, object: nil)
-                }
-
-                Button("Go Back") {
-                    NotificationCenter.default.post(name: .goBack, object: nil)
-                }
-
-                Button("Go Forward") {
-                    NotificationCenter.default.post(name: .goForward, object: nil)
-                }
-
-                Divider()
-
-                Button("Next Heading") {
-                    NotificationCenter.default.post(name: .nextHeading, object: nil)
-                }
-
-                Button("Previous Heading") {
-                    NotificationCenter.default.post(name: .previousHeading, object: nil)
-                }
-
-                Divider()
-
-                Button("Show Headings") {
-                    NotificationCenter.default.post(name: .showHeadingList, object: nil)
-                }
-
-                Button("Show Sleep Timer") {
-                    NotificationCenter.default.post(name: .showSleepTimer, object: nil)
-                }
-
-                Divider()
-
-                Button("Book Info") {
-                    NotificationCenter.default.post(name: .showBookInfo, object: nil)
-                }
-                // Cmd+I is handled by KeyboardShortcutManager which includes window focus
-                // info in the notification. Adding .keyboardShortcut here would cause
-                // a second notification without focus info, opening dialogs in every window.
+            Button("Go to Library") {
+                NotificationCenter.default.post(name: .goToLibrary, object: nil)
             }
+
+            Button("Go Back") {
+                NotificationCenter.default.post(name: .goBack, object: nil)
+            }
+
+            Button("Go Forward") {
+                NotificationCenter.default.post(name: .goForward, object: nil)
+            }
+
+            Divider()
+
+            Button("Next Heading") {
+                NotificationCenter.default.post(name: .nextHeading, object: nil)
+            }
+
+            Button("Previous Heading") {
+                NotificationCenter.default.post(name: .previousHeading, object: nil)
+            }
+
+            Divider()
+
+            Button("Show Headings") {
+                NotificationCenter.default.post(name: .showHeadingList, object: nil)
+            }
+
+            Button("Show Sleep Timer") {
+                NotificationCenter.default.post(name: .showSleepTimer, object: nil)
+            }
+
+            Divider()
+
+            Button("Book Info") {
+                NotificationCenter.default.post(name: .showBookInfo, object: nil)
+            }
+            // Cmd+I is handled by KeyboardShortcutManager which includes window focus
+            // info in the notification. Adding .keyboardShortcut here would cause
+            // a second notification without focus info, opening dialogs in every window.
         }
     }
 }
 
 struct LibraryCommands: Commands {
-    @FocusedValue(\.activeWindowType) var windowType
     var body: some Commands {
         CommandMenu("Library") {
-            if windowType == .library {
             Button("Edit Mode") {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }
@@ -168,33 +157,29 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
             // Cmd+Delete handled by KeyboardShortcutManager for window targeting
-            }
         }
     }
 }
 
 struct BookmarkCommands: Commands {
-    @FocusedValue(\.activeWindowType) var windowType
     var body: some Commands {
         CommandMenu("Bookmarks") {
-            if windowType == .reader {
-                Button("Toggle Bookmark") {
-                    NotificationCenter.default.post(name: .addBookmark, object: nil)
-                }
+            Button("Toggle Bookmark") {
+                NotificationCenter.default.post(name: .addBookmark, object: nil)
+            }
 
-                Button("Show Bookmarks") {
-                    NotificationCenter.default.post(name: .showBookmarkList, object: nil)
-                }
+            Button("Show Bookmarks") {
+                NotificationCenter.default.post(name: .showBookmarkList, object: nil)
+            }
 
-                Divider()
+            Divider()
 
-                Button("Next Bookmark") {
-                    NotificationCenter.default.post(name: .nextBookmark, object: nil)
-                }
+            Button("Next Bookmark") {
+                NotificationCenter.default.post(name: .nextBookmark, object: nil)
+            }
 
-                Button("Previous Bookmark") {
-                    NotificationCenter.default.post(name: .previousBookmark, object: nil)
-                }
+            Button("Previous Bookmark") {
+                NotificationCenter.default.post(name: .previousBookmark, object: nil)
             }
         }
     }
@@ -203,6 +188,7 @@ struct BookmarkCommands: Commands {
 // MARK: - Notification Names
 
 extension Notification.Name {
+    static let refreshContextMenus = Notification.Name("refreshContextMenus")
     static let togglePlayback = Notification.Name("togglePlayback")
     static let skipForward = Notification.Name("skipForward")
     static let skipBackward = Notification.Name("skipBackward")

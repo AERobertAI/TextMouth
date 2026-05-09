@@ -18,9 +18,11 @@ import AppKit
 //
 // HOW IT WORKS
 // ------------
-// 1. Each CommandMenu in MenuCommands.swift already conditionally populates
-//    its items based on @FocusedValue(\.activeWindowType). This handles the
-//    menu *contents* — items appear/disappear correctly.
+// 1. Each CommandMenu in MenuCommands.swift keeps real contents in its body.
+//    The menu title visibility below decides whether those contents are
+//    reachable for the active window type. Keeping bodies populated avoids
+//    the SwiftUI/AppKit timing bug where a title is visible but its body is
+//    empty after the app deactivates and reactivates.
 //
 // 2. This manager handles the menu *titles* in the menu bar. It reads
 //    NSApp.mainWindow, determines which ActiveWindowType it is, and sets
@@ -139,6 +141,44 @@ final class MenuVisibilityManager {
         }
         observers.append(resignedMain)
 
+        // App activation/deactivation can leave NSApp.mainWindow and SwiftUI
+        // focused values briefly out of phase. Refresh on both edges so
+        // returning from another app does not leave context menus hidden or
+        // visible with stale contents.
+        let becameActive = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateMenuVisibility()
+            }
+        }
+        observers.append(becameActive)
+
+        let resignedActive = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateMenuVisibility()
+        }
+        observers.append(resignedActive)
+
+        // SwiftUI may construct or refresh a window's focused values after
+        // AppKit has already delivered the window-main notification. Views can
+        // post this once they know their host window exists.
+        let explicitRefresh = NotificationCenter.default.addObserver(
+            forName: .refreshContextMenus,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateMenuVisibility()
+            }
+        }
+        observers.append(explicitRefresh)
+
         // Initial update after SwiftUI has built the menu bar
         DispatchQueue.main.async { [weak self] in
             self?.updateMenuVisibility()
@@ -162,7 +202,8 @@ final class MenuVisibilityManager {
     /// Reads the current main window, determines its type, and applies
     /// visibility rules to all menu bar items.
     func updateMenuVisibility() {
-        let windowType = Self.detectWindowType(for: NSApp.mainWindow)
+        let activeWindow = NSApp.mainWindow ?? NSApp.keyWindow
+        let windowType = Self.detectWindowType(for: activeWindow)
         Self.applyVisibility(for: windowType, to: NSApp.mainMenu)
     }
 

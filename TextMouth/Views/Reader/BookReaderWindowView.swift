@@ -28,11 +28,13 @@ struct BookReaderWindowView: View {
         ReaderView(viewModel: viewModel)
             .background(WindowAccessor(onWindowFound: { window in
                 viewModel.hostWindow = window
+                NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }))
             .focusedValue(\.activeWindowType, .reader)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
+                NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
                 viewModel.stop()

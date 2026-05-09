@@ -58,8 +58,12 @@ struct LibraryWindowView: View {
         }
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
+            NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }))
         .focusedValue(\.activeWindowType, .library)
+        .onAppear {
+            NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
+        }
         .navigationTitle(windowTitle)
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
