@@ -3,6 +3,7 @@ import AppKit
 /// All actions that can have keyboard shortcuts
 enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case togglePlayback = "Play / Pause"
+    case releaseMediaControls = "Release Media Controls"
     case skipForward = "Skip Forward"
     case skipBackward = "Skip Backward"
     case increaseSpeed = "Increase Speed"
@@ -37,6 +38,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     var notificationName: Notification.Name {
         switch self {
         case .togglePlayback: return .togglePlayback
+        case .releaseMediaControls: return .releaseMediaControls
         case .skipForward: return .skipForward
         case .skipBackward: return .skipBackward
         case .increaseSpeed: return .increaseSpeed
@@ -70,7 +72,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Category for grouping in settings
     var category: String {
         switch self {
-        case .togglePlayback, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
+        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
@@ -212,6 +214,7 @@ extension ShortcutAction {
                 KeyBinding(key: "space"),
                 KeyBinding(key: "k")
             ],
+            .releaseMediaControls: [],
             .skipForward: [
                 KeyBinding(key: "rightArrow", command: true),
                 KeyBinding(key: "l")

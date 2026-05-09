@@ -75,6 +75,7 @@ class NowPlayingService {
     /// the device disappears from the list — see class doc comment).
     private var deviceListListenerBlock: AudioObjectPropertyListenerBlock?
     private var isListeningForDeviceChanges = false
+    private(set) var remoteCommandsActive = false
 
     /// Whether the previous default output device was a Bluetooth device.
     /// Cached while the device is still queryable (at setup and at the end
@@ -116,10 +117,22 @@ class NowPlayingService {
         self.bluetoothMonitoringEnabled = bluetoothMonitoring
         self.suppressWindow = bluetoothDelay
 
-        setupRemoteCommands()
+        activateRemoteCommandsIfNeeded()
         if bluetoothMonitoringEnabled {
             startDeviceChangeListener()
         }
+    }
+
+    func activateRemoteCommandsIfNeeded() {
+        guard !remoteCommandsActive else { return }
+        setupRemoteCommands()
+        remoteCommandsActive = true
+    }
+
+    func releaseMediaControls() {
+        clearNowPlaying()
+        removeRemoteCommandTargets()
+        remoteCommandsActive = false
     }
 
     /// Apply the latest gesture-detector settings. Called once at
@@ -174,14 +187,8 @@ class NowPlayingService {
     private func setupRemoteCommands() {
         let commandCenter = MPRemoteCommandCenter.shared()
 
-        // Remove any previous targets before adding new ones
-        commandCenter.playCommand.removeTarget(nil)
-        commandCenter.pauseCommand.removeTarget(nil)
-        commandCenter.togglePlayPauseCommand.removeTarget(nil)
-        commandCenter.skipForwardCommand.removeTarget(nil)
-        commandCenter.skipBackwardCommand.removeTarget(nil)
-        commandCenter.nextTrackCommand.removeTarget(nil)
-        commandCenter.previousTrackCommand.removeTarget(nil)
+        // Remove any previous targets before adding new ones.
+        removeRemoteCommandTargets()
 
         // Each handler funnels its event type through the gesture
         // detector first via `consumeForGesture`. When that returns
@@ -293,6 +300,17 @@ class NowPlayingService {
     func clearNowPlaying() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         MPNowPlayingInfoCenter.default().playbackState = .stopped
+    }
+
+    private func removeRemoteCommandTargets() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.togglePlayPauseCommand.removeTarget(nil)
+        commandCenter.skipForwardCommand.removeTarget(nil)
+        commandCenter.skipBackwardCommand.removeTarget(nil)
+        commandCenter.nextTrackCommand.removeTarget(nil)
+        commandCenter.previousTrackCommand.removeTarget(nil)
     }
 
     // MARK: - Audio Device Change Monitoring
@@ -629,14 +647,6 @@ class NowPlayingService {
 
     deinit {
         stopDeviceChangeListener()
-
-        let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.playCommand.removeTarget(nil)
-        commandCenter.pauseCommand.removeTarget(nil)
-        commandCenter.togglePlayPauseCommand.removeTarget(nil)
-        commandCenter.skipForwardCommand.removeTarget(nil)
-        commandCenter.skipBackwardCommand.removeTarget(nil)
-        commandCenter.nextTrackCommand.removeTarget(nil)
-        commandCenter.previousTrackCommand.removeTarget(nil)
+        removeRemoteCommandTargets()
     }
 }

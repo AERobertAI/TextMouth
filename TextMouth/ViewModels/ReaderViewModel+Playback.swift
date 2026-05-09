@@ -15,6 +15,8 @@ extension ReaderViewModel {
         // Don't start playback while Where Am I is speaking
         if isWhereAmISpeaking { return }
         restartPlaybackBackendOnNextResume = false
+        mediaControlsReleased = false
+        nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
@@ -52,6 +54,8 @@ extension ReaderViewModel {
     }
 
     private func resumeAudioPlayback() {
+        mediaControlsReleased = false
+        nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
@@ -70,6 +74,8 @@ extension ReaderViewModel {
     }
 
     private func resumeSpeechPlayback() {
+        mediaControlsReleased = false
+        nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
         applyRewindOnResume()
         recordPlaybackStarted()
@@ -109,6 +115,17 @@ extension ReaderViewModel {
     func pauseForAudioRouteChange() {
         restartPlaybackBackendOnNextResume = true
         pause(playingPauseSound: true)
+    }
+
+    /// Stop TextMouth's current media session and release Now Playing /
+    /// headphone media controls while keeping the reader window open.
+    /// Starting playback from TextMouth again reclaims the controls.
+    func releaseMediaControls() {
+        guard canReleaseMediaControls else { return }
+        stop()
+        mediaControlsReleased = true
+        nowPlayingService.releaseMediaControls()
+        announceToVoiceOver("Media controls released")
     }
 
     /// Toggle between play and pause states. Handles Where Am I interruption,

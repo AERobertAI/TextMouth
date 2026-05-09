@@ -478,11 +478,14 @@ test("Every ShortcutAction has a non-empty category") {
     }
 }
 
-test("Every ShortcutAction has at least one default binding") {
+test("Every ShortcutAction has a default binding entry") {
     let defaults = ShortcutAction.defaultBindings
     for action in ShortcutAction.allCases {
         let bindings = defaults[action]
-        try assertTrue(bindings != nil && !bindings!.isEmpty, "\(action.rawValue) should have at least one default binding")
+        try assertTrue(bindings != nil, "\(action.rawValue) should have a default binding entry")
+        if action != .releaseMediaControls {
+            try assertTrue(!bindings!.isEmpty, "\(action.rawValue) should have at least one default binding")
+        }
     }
 }
 

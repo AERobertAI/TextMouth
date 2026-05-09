@@ -104,6 +104,9 @@ class ReaderViewModel: ObservableObject {
     /// output device instead of continuing a graph/synth paused on the old
     /// route.
     var restartPlaybackBackendOnNextResume = false
+    /// True after the user explicitly releases Now Playing / headphone media
+    /// controls for this open reader. Starting playback in TextMouth clears it.
+    @Published var mediaControlsReleased = false
     /// Track when "Where Am I?" was last triggered for brief->full escalation.
     /// Accessed from WhereAmI extension.
     var lastWhereAmITime: Date = .distantPast
@@ -450,6 +453,13 @@ class ReaderViewModel: ObservableObject {
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
                 self.togglePlayPause()
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .releaseMediaControls)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.releaseMediaControls()
             }
             .store(in: &cancellables)
 
@@ -914,6 +924,20 @@ class ReaderViewModel: ObservableObject {
 
     var isPlaybackActivelyAdvancing: Bool {
         isCurrentlyPlaying && !isCurrentlyPaused
+    }
+
+    var canReleaseMediaControls: Bool {
+        guard !mediaControlsReleased else { return false }
+        if isAudioBook {
+            return audioPlaybackService.isPlaying
+                || audioPlaybackService.isPaused
+                || isCurrentlyPlaying
+                || isCurrentlyPaused
+        }
+        return speechService.isSpeaking
+            || speechService.isPaused
+            || isCurrentlyPlaying
+            || isCurrentlyPaused
     }
 
     /// UI-facing global offset, derived from the throttled display cursor.

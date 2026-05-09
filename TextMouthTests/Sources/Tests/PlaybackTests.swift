@@ -1214,6 +1214,54 @@ test("Bluetooth route-change pause makes next audio-book resume recreate player"
     try assertEqual(avPlayerResumeCalls, 0, "Route-change resume must not resume old AVPlayer")
 }
 
+test("Release media controls stops session until TextMouth playback starts again") {
+    var isPlaying = false
+    var isPaused = true
+    var mediaControlsReleased = false
+    var stopCalls = 0
+    var releaseCalls = 0
+    var activateCalls = 0
+
+    var canReleaseMediaControls: Bool {
+        !mediaControlsReleased && (isPlaying || isPaused)
+    }
+
+    func stop() {
+        stopCalls += 1
+        isPlaying = false
+        isPaused = false
+    }
+
+    func releaseMediaControls() {
+        guard canReleaseMediaControls else { return }
+        stop()
+        mediaControlsReleased = true
+        releaseCalls += 1
+    }
+
+    func playFromTextMouth() {
+        mediaControlsReleased = false
+        activateCalls += 1
+        isPlaying = true
+        isPaused = false
+    }
+
+    try assertTrue(canReleaseMediaControls, "Paused TextMouth media should be releasable")
+
+    releaseMediaControls()
+    try assertEqual(stopCalls, 1, "Release should stop the loaded session")
+    try assertEqual(releaseCalls, 1, "Release should clear Now Playing / command ownership once")
+    try assertTrue(!canReleaseMediaControls, "Released media should hide the menu command")
+
+    releaseMediaControls()
+    try assertEqual(stopCalls, 1, "Repeat release should be a no-op")
+    try assertEqual(releaseCalls, 1, "Repeat release should not re-clear controls")
+
+    playFromTextMouth()
+    try assertEqual(activateCalls, 1, "Starting playback in TextMouth should reclaim commands")
+    try assertTrue(canReleaseMediaControls, "Active TextMouth playback should be releasable again")
+}
+
 // ---- Speed Control Tests ----
 print("\n--- Speed Control Tests ---")
 

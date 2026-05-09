@@ -47,6 +47,7 @@ struct KeyBinding: Codable, Equatable, Hashable {
 // Mirror ShortcutAction for testing
 enum ShortcutAction: String, CaseIterable, Codable {
     case togglePlayback = "Play / Pause"
+    case releaseMediaControls = "Release Media Controls"
     case skipForward = "Skip Forward"
     case skipBackward = "Skip Backward"
     case increaseSpeed = "Increase Speed"
@@ -77,7 +78,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
 
     var category: String {
         switch self {
-        case .togglePlayback, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
+        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
@@ -95,6 +96,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
     static var defaultBindings: [ShortcutAction: [KeyBinding]] {
         [
             .togglePlayback: [KeyBinding(key: "space"), KeyBinding(key: "k")],
+            .releaseMediaControls: [],
             .skipForward: [KeyBinding(key: "rightArrow", command: true), KeyBinding(key: "l")],
             .skipBackward: [KeyBinding(key: "leftArrow", command: true), KeyBinding(key: "j")],
             .increaseSpeed: [KeyBinding(key: "+", command: true)],
@@ -238,14 +240,16 @@ test("KeyBinding array JSON round-trip") {
 // ---- ShortcutAction Tests ----
 print("\n--- ShortcutAction Tests ---")
 
-test("All actions have default bindings") {
+test("All actions have default binding entries") {
     let defaults = ShortcutAction.defaultBindings
     for action in ShortcutAction.allCases {
         let bindings = defaults[action]
-        try assertTrue(bindings != nil, "\(action.rawValue) should have default bindings")
-        try assertGreater(bindings!.count, 0, "\(action.rawValue) should have at least one binding")
+        try assertTrue(bindings != nil, "\(action.rawValue) should have a default binding entry")
+        if action != .releaseMediaControls {
+            try assertGreater(bindings!.count, 0, "\(action.rawValue) should have at least one binding")
+        }
     }
-    print("    All \(ShortcutAction.allCases.count) actions have default bindings")
+    print("    All \(ShortcutAction.allCases.count) actions have default binding entries")
 }
 
 test("Where Am I action exists with W default binding") {
@@ -293,6 +297,7 @@ test("Skip Backward has both Cmd+Left and J bindings") {
 
 test("Action categories are correct") {
     try assertEqual(ShortcutAction.togglePlayback.category, "Playback")
+    try assertEqual(ShortcutAction.releaseMediaControls.category, "Playback")
     try assertEqual(ShortcutAction.skipForward.category, "Playback")
     try assertEqual(ShortcutAction.goToLibrary.category, "Navigation")
     try assertEqual(ShortcutAction.nextHeading.category, "Navigation")
@@ -301,6 +306,12 @@ test("Action categories are correct") {
     try assertEqual(ShortcutAction.restartSleepTimer.category, "Panels",
                     "Restart Sleep Timer is grouped with the other timer-related panel actions")
     print("    Categories verified for all action types")
+}
+
+test("Release Media Controls has no default shortcut") {
+    let defaults = ShortcutAction.defaultBindings
+    let bindings = defaults[.releaseMediaControls]!
+    try assertEqual(bindings.count, 0, "Release Media Controls should be user-assigned only")
 }
 
 test("Restart Sleep Timer defaults to Cmd+Shift+R") {

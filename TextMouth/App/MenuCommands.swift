@@ -15,16 +15,26 @@ struct ActiveWindowTypeKey: FocusedValueKey {
     typealias Value = ActiveWindowType
 }
 
+struct CanReleaseMediaControlsKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
 extension FocusedValues {
     var activeWindowType: ActiveWindowType? {
         get { self[ActiveWindowTypeKey.self] }
         set { self[ActiveWindowTypeKey.self] = newValue }
+    }
+
+    var canReleaseMediaControls: Bool? {
+        get { self[CanReleaseMediaControlsKey.self] }
+        set { self[CanReleaseMediaControlsKey.self] = newValue }
     }
 }
 
 // MARK: - Menu Commands
 
 struct PlaybackCommands: Commands {
+    @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
     var body: some Commands {
         CommandMenu("Playback") {
             Button("Play / Pause") {
@@ -55,6 +65,14 @@ struct PlaybackCommands: Commands {
 
             Button("Where Am I?") {
                 NotificationCenter.default.post(name: .whereAmI, object: nil)
+            }
+
+            if canReleaseMediaControls == true {
+                Divider()
+
+                Button("Release Media Controls") {
+                    NotificationCenter.default.post(name: .releaseMediaControls, object: nil)
+                }
             }
 
             Divider()
@@ -190,6 +208,7 @@ struct BookmarkCommands: Commands {
 extension Notification.Name {
     static let refreshContextMenus = Notification.Name("refreshContextMenus")
     static let togglePlayback = Notification.Name("togglePlayback")
+    static let releaseMediaControls = Notification.Name("releaseMediaControls")
     static let skipForward = Notification.Name("skipForward")
     static let skipBackward = Notification.Name("skipBackward")
     static let increaseSpeed = Notification.Name("increaseSpeed")

@@ -31,6 +31,7 @@ struct BookReaderWindowView: View {
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }))
             .focusedValue(\.activeWindowType, .reader)
+            .focusedValue(\.canReleaseMediaControls, viewModel.canReleaseMediaControls)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
