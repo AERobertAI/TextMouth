@@ -59,6 +59,15 @@ enum MarkdownCacheService {
         }
     }
 
+    /// Generate a cache and advance the stored format version only after the
+    /// cache file has been written successfully.
+    @discardableResult
+    static func generateCacheAndStampVersion(for book: inout Book) -> Bool {
+        guard generateCache(for: book) else { return false }
+        book.cacheFormatVersion = currentCacheVersion
+        return true
+    }
+
     /// Check whether a cached content.md exists for a book.
     static func cacheExists(for book: Book) -> Bool {
         guard !book.tmbDirectoryName.isEmpty else { return false }

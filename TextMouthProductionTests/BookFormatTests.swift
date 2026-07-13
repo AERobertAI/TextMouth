@@ -83,6 +83,40 @@ final class BookFormatTests: XCTestCase {
         XCTAssertNil(viewModel.pendingDuplicateOriginalURL)
     }
 
+    func testFailedCacheGenerationDoesNotStampCurrentVersion() {
+        var book = Book(
+            title: "Missing Source",
+            format: .markdown,
+            filePath: "/missing/\(UUID().uuidString).md",
+            md5Hash: UUID().uuidString,
+            tmbDirectoryName: "\(UUID().uuidString).tmb"
+        )
+
+        XCTAssertFalse(MarkdownCacheService.generateCacheAndStampVersion(for: &book))
+        XCTAssertNil(book.cacheFormatVersion)
+    }
+
+    func testSuccessfulCacheGenerationStampsCurrentVersion() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let packageName = "\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: package) }
+        let source = package.appendingPathComponent("book.md")
+        try Data("# Chapter\n\nText".utf8).write(to: source)
+        var book = Book(
+            title: "Cached",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: UUID().uuidString,
+            tmbDirectoryName: packageName
+        )
+
+        XCTAssertTrue(MarkdownCacheService.generateCacheAndStampVersion(for: &book))
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertTrue(MarkdownCacheService.cacheExists(for: book))
+    }
+
     private func makeBook(hash: String) -> Book {
         Book(
             title: UUID().uuidString,

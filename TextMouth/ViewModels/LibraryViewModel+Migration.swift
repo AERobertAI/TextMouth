@@ -220,8 +220,10 @@ extension LibraryViewModel {
                 if MarkdownCacheService.cacheExists(for: book) {
                     MarkdownCacheService.deleteCache(for: book)
                 }
-                MarkdownCacheService.generateCache(for: book)
-                updatedBookIDs.append((book.id, currentVersion))
+                var regeneratedBook = book
+                if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
+                    updatedBookIDs.append((book.id, currentVersion))
+                }
 
                 DispatchQueue.main.async {
                     self?.extractionProgressCurrent = index + 1
@@ -273,8 +275,10 @@ extension LibraryViewModel {
                 guard self != nil else { return }
                 // Delete existing cache first
                 MarkdownCacheService.deleteCache(for: book)
-                MarkdownCacheService.generateCache(for: book)
-                updatedBookIDs.append(book.id)
+                var regeneratedBook = book
+                if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
+                    updatedBookIDs.append(book.id)
+                }
 
                 DispatchQueue.main.async {
                     self?.extractionProgressCurrent = index + 1

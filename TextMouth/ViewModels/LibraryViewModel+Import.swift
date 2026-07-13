@@ -256,7 +256,7 @@ extension LibraryViewModel {
             // Compute hash from the written file
             let hash = (try? FileImportService.md5Hash(of: filePath)) ?? "text-\(text.count)"
 
-            let book = Book(
+            var book = Book(
                 id: bookID,
                 title: sanitizedTitle,
                 author: author.isEmpty ? "Unknown" : author,
@@ -267,12 +267,9 @@ extension LibraryViewModel {
                 dateAdded: dateAdded,
                 tmbDirectoryName: tmbName
             )
-            library.addBook(book)
             // Generate cached Markdown content and stamp version
-            MarkdownCacheService.generateCache(for: book)
-            if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
-                library.books[idx].cacheFormatVersion = MarkdownCacheService.currentCacheVersion
-            }
+            MarkdownCacheService.generateCacheAndStampVersion(for: &book)
+            library.addBook(book)
             save()
             LibraryPersistenceService.saveBookInfo(for: library.books.first(where: { $0.id == book.id }) ?? book)
         } catch {

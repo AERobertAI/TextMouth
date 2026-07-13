@@ -127,8 +127,7 @@ enum FileImportService {
 
         // Generate cached Markdown content (non-audio books only)
         if !format.isAudio {
-            MarkdownCacheService.generateCache(for: book)
-            book.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
+            MarkdownCacheService.generateCacheAndStampVersion(for: &book)
         }
 
         // Write bookInfo.json (after cache generation so version is included)
@@ -295,8 +294,7 @@ enum FileImportService {
 
         // Generate cached Markdown content for the migrated book
         if !migrated.format.isAudio {
-            MarkdownCacheService.generateCache(for: migrated)
-            migrated.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
+            MarkdownCacheService.generateCacheAndStampVersion(for: &migrated)
             migrated.saveBookInfo()
         }
 
