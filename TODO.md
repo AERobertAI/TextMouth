@@ -32,7 +32,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Complete bidirectional config synchronization and rearm the watcher after atomic replacement. *(Batch 1)*
 - [ ] Clear short reading-stat sessions correctly and flush an active session at termination.
 - [ ] Make duplicate-finder criteria follow the advertised combined-match behavior.
-- [ ] Remove unsupported legacy `.doc` import advertising or add a real parser. *(Batch 1)*
+- [x] Remove unsupported legacy `.doc` import advertising or add a real parser. *(Batch 1: removed unsupported advertising)*
 - [ ] Report per-file failures after ZIP imports.
 - [ ] Serialize ZIP imports or give every import independent progress/dialog state.
 - [ ] Stamp cache versions only after successful atomic cache generation.

@@ -41,3 +41,17 @@ targets:
       - package: SwiftSoup
       - package: swift-markdown
         product: Markdown
+  TextMouthProductionTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - TextMouthProductionTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthProductionTests
+        GENERATE_INFOPLIST_FILE: true
+        SWIFT_VERSION: "5"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    dependencies:
+      - target: TextMouth

@@ -29,7 +29,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .txt: return ["txt"]
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
-        case .docx: return ["docx", "doc"]
+        case .docx: return ["docx"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio: return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac"]

@@ -23,6 +23,7 @@
 		27ACC87E64625C7E0C136926 /* DocumentContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFCBACA33B07A5F3D5C2291 /* DocumentContent.swift */; };
 		2D478BE9B8B13B997292DECD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD7541C995663E4122E4183C /* SettingsView.swift */; };
 		2EC1F4F2D565E4927A8BDF17 /* MenuCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EEF0BE216857723A3BE5DF8 /* MenuCommands.swift */; };
+		2F7911236BE0CF19A0132967 /* BookFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A28B03E9C844032183F03A /* BookFormatTests.swift */; };
 		32E3EB8DE67D6AE9E93F7467 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = A4671730986C0B11EE16B32B /* Markdown */; };
 		34B1C427842260E05CAA4805 /* PDFTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D161A613B5D570B1FACBD40 /* PDFTextParser.swift */; };
 		37DCA1AD24C30D76D55AF07C /* BookInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B267ED889C499844904817F /* BookInfo.swift */; };
@@ -101,6 +102,16 @@
 		FBE5337D4DDE25A2349EB349 /* LibraryViewModel+FolderManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969830FA3CFFC902338D9B57 /* LibraryViewModel+FolderManagement.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		5E3F2C7D0B59CC86BAA38832 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 89F82D94D897820417C98192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B6C4B7D013F499991F5B7477;
+			remoteInfo = TextMouth;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0359EBDDABD0D02289EA4FC0 /* ReaderViewModel+WhereAmI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+WhereAmI.swift"; sourceTree = "<group>"; };
 		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
@@ -126,6 +137,7 @@
 		3A6F70F94BC31DE799BD148D /* DAISYParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYParser.swift; sourceTree = "<group>"; };
 		3EEF0BE216857723A3BE5DF8 /* MenuCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuCommands.swift; sourceTree = "<group>"; };
 		4044D8554F26BB7C74688F7E /* MediaGestureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaGestureDetector.swift; sourceTree = "<group>"; };
+		41A28B03E9C844032183F03A /* BookFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFormatTests.swift; sourceTree = "<group>"; };
 		41AA0E0E676B77D10639BD64 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		42F5595561D1F50CC4346C40 /* DAISYParser+TextExtraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+TextExtraction.swift"; sourceTree = "<group>"; };
 		44477438F518186462243E0D /* FileImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImportService.swift; sourceTree = "<group>"; };
@@ -162,6 +174,7 @@
 		A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPersistenceService.swift; sourceTree = "<group>"; };
 		A57F311CC37B3A3BCBA8C9D7 /* HTMLToMarkdownConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLToMarkdownConverter.swift; sourceTree = "<group>"; };
 		A7A4BAB023D70F975ADA702C /* DuplicateFinderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateFinderView.swift; sourceTree = "<group>"; };
+		A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TextMouthProductionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABD02911CFAA200C7454DD7F /* TextMouth.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TextMouth.entitlements; sourceTree = "<group>"; };
 		AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsView.swift; sourceTree = "<group>"; };
 		AD7541C995663E4122E4183C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -214,6 +227,7 @@
 			isa = PBXGroup;
 			children = (
 				56083D0B866F612061656ABF /* TextMouth */,
+				C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */,
 				9593FC299243D0E3B22FF8AC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -317,6 +331,7 @@
 			isa = PBXGroup;
 			children = (
 				304A2089880557ADA1ADFB08 /* TextMouth.app */,
+				A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -358,6 +373,14 @@
 				80A28928CD7C89E51F8F50F2 /* TextMouthApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
+			isa = PBXGroup;
+			children = (
+				41A28B03E9C844032183F03A /* BookFormatTests.swift */,
+			);
+			path = TextMouthProductionTests;
 			sourceTree = "<group>";
 		};
 		CC445C4E9DB5CABE5DB51B43 /* Views */ = {
@@ -407,6 +430,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5D1D9C2BEC95B5C28E83D5C5 /* TextMouthProductionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 06EB0D64F774E9231E4F751F /* Build configuration list for PBXNativeTarget "TextMouthProductionTests" */;
+			buildPhases = (
+				1A7D7F933DFFE6630874A751 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B317489040777CCCB261700 /* PBXTargetDependency */,
+			);
+			name = TextMouthProductionTests;
+			packageProductDependencies = (
+			);
+			productName = TextMouthProductionTests;
+			productReference = A9566353F0389A2A9393B2CB /* TextMouthProductionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		B6C4B7D013F499991F5B7477 /* TextMouth */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F5316024CE426EBB26E83F40 /* Build configuration list for PBXNativeTarget "TextMouth" */;
@@ -459,11 +500,20 @@
 			projectRoot = "";
 			targets = (
 				B6C4B7D013F499991F5B7477 /* TextMouth */,
+				5D1D9C2BEC95B5C28E83D5C5 /* TextMouthProductionTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1A7D7F933DFFE6630874A751 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2F7911236BE0CF19A0132967 /* BookFormatTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5FC640F02C1A3BAEB07508E0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -561,6 +611,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1B317489040777CCCB261700 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B6C4B7D013F499991F5B7477 /* TextMouth */;
+			targetProxy = 5E3F2C7D0B59CC86BAA38832 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		5B73DA46E3F141B7C02179E0 /* Debug */ = {
@@ -706,6 +764,42 @@
 			};
 			name = Release;
 		};
+		756C875F523B3E286843E2B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
+			};
+			name = Release;
+		};
+		B2A5A69917504AA26D90F147 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
+			};
+			name = Debug;
+		};
 		E6BA70A6D910CE502571E3F1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -738,6 +832,15 @@
 			buildConfigurations = (
 				5B73DA46E3F141B7C02179E0 /* Debug */,
 				6063715DEF0268E5103CA2D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		06EB0D64F774E9231E4F751F /* Build configuration list for PBXNativeTarget "TextMouthProductionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B2A5A69917504AA26D90F147 /* Debug */,
+				756C875F523B3E286843E2B0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

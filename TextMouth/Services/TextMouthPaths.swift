@@ -9,6 +9,17 @@ enum TextMouthPaths {
     /// UserDefaults key for the custom data directory path
     private static let customPathKey = "textMouthDataDirectory"
 
+    /// Hosted unit tests launch the application before the test bundle runs.
+    /// Give that process an isolated root immediately so application startup,
+    /// migrations, and cache maintenance cannot touch the user's real library.
+    private static let unitTestRoot: URL? = {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil else {
+            return nil
+        }
+        return FileManager.default.temporaryDirectory
+            .appendingPathComponent("TextMouthTests-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+    }()
+
     /// The default location: ~/.TextMouth
     static var defaultRoot: URL {
         // Use ProcessInfo to get the real home directory, bypassing any sandbox redirection
@@ -25,6 +36,9 @@ enum TextMouthPaths {
 
     /// The active data directory. Returns the custom path if set, otherwise the default.
     static var root: URL {
+        if let unitTestRoot {
+            return unitTestRoot
+        }
         if let customPath = UserDefaults.standard.string(forKey: customPathKey),
            !customPath.isEmpty {
             return URL(fileURLWithPath: customPath)

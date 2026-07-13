@@ -462,12 +462,10 @@ enum FileImportService {
         if let md = UTType("net.daringfireball.markdown") {
             types.append(md)
         }
-        // Word document formats (.docx and .doc)
+        // Office Open XML Word documents. Legacy binary .doc files are not
+        // ZIP-based DOCX documents and are not supported by DOCXParser.
         if let docx = UTType("org.openxmlformats.wordprocessingml.document") {
             types.append(docx)
-        }
-        if let doc = UTType("com.microsoft.word.doc") {
-            types.append(doc)
         }
         // PDF documents
         types.append(.pdf)

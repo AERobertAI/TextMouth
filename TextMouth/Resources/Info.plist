@@ -251,22 +251,6 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Word Document (DOC)</string>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>doc</string>
-			</array>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.microsoft.word.doc</string>
-			</array>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
 			<string>PDF Document</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
