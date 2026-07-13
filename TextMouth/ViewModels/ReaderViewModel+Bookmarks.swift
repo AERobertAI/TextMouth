@@ -18,8 +18,24 @@ extension ReaderViewModel {
     /// Only matches bookmarks in the same chapter. When multiple bookmarks fall
     /// within range, returns the one with the smallest distance.
     func nearbyBookmark(chapterIndex: Int, characterOffset: Int) -> Bookmark? {
-        let threshold = bookmarkProximityThreshold
-        return bookmarks
+        Self.nearbyBookmark(
+            in: bookmarks,
+            chapterIndex: chapterIndex,
+            characterOffset: characterOffset,
+            threshold: bookmarkProximityThreshold
+        )
+    }
+
+    /// Pure proximity matcher shared by the reader and regression tests.
+    /// Keeping the collection and threshold explicit makes audio/text behavior
+    /// independently verifiable without constructing an entire reader window.
+    nonisolated static func nearbyBookmark(
+        in bookmarks: [Bookmark],
+        chapterIndex: Int,
+        characterOffset: Int,
+        threshold: Int
+    ) -> Bookmark? {
+        bookmarks
             .filter { $0.chapterIndex == chapterIndex && abs($0.characterOffset - characterOffset) <= threshold }
             .min(by: { abs($0.characterOffset - characterOffset) < abs($1.characterOffset - characterOffset) })
     }

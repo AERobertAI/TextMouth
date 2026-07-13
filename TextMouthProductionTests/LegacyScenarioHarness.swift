@@ -119,3 +119,15 @@ final class LegacyParserEdgeCaseScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyBookmarkToggleScenarioTests: XCTestCase {
+    func testLegacyBookmarkToggleScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runBookmarkToggleTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            57,
+            "Every inventoried bookmark and shortcut scenario should remain registered"
+        )
+    }
+}

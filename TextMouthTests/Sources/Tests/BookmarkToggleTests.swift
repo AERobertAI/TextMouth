@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(TextMouth)
+@testable import TextMouth
+#endif
 
 // Mirror the Bookmark struct for testing proximity logic
 private struct TestBookmark {
@@ -16,9 +19,29 @@ private func nearbyBookmark(
     characterOffset: Int,
     threshold: Int
 ) -> TestBookmark? {
+#if canImport(TextMouth)
+    let productionBookmarks = bookmarks.enumerated().map { index, bookmark in
+        Bookmark(
+            id: bookmark.id,
+            number: index + 1,
+            chapterIndex: bookmark.chapterIndex,
+            characterOffset: bookmark.characterOffset
+        )
+    }
+    guard let match = ReaderViewModel.nearbyBookmark(
+        in: productionBookmarks,
+        chapterIndex: chapterIndex,
+        characterOffset: characterOffset,
+        threshold: threshold
+    ) else {
+        return nil
+    }
+    return bookmarks.first(where: { $0.id == match.id })
+#else
     bookmarks
         .filter { $0.chapterIndex == chapterIndex && abs($0.characterOffset - characterOffset) <= threshold }
         .min(by: { abs($0.characterOffset - characterOffset) < abs($1.characterOffset - characterOffset) })
+#endif
 }
 
 /// Adjust a bookmark offset so it doesn't land within the proximity zone
@@ -31,6 +54,23 @@ private func adjustedBookmarkOffset(
     characterOffset: Int,
     threshold: Int
 ) -> Int {
+#if canImport(TextMouth)
+    let productionBookmarks = bookmarks.enumerated().map { index, bookmark in
+        Bookmark(
+            id: bookmark.id,
+            number: index + 1,
+            chapterIndex: bookmark.chapterIndex,
+            characterOffset: bookmark.characterOffset
+        )
+    }
+    return ReaderViewModel.adjustedBookmarkOffset(
+        bookmarks: productionBookmarks,
+        chapterIndex: chapterIndex,
+        characterOffset: characterOffset,
+        threshold: threshold,
+        chapterLength: nil
+    )
+#else
     let sameChapter = bookmarks
         .filter { $0.chapterIndex == chapterIndex }
         .sorted(by: { $0.characterOffset < $1.characterOffset })
@@ -56,6 +96,7 @@ private func adjustedBookmarkOffset(
         }
     }
     return adjusted
+#endif
 }
 
 func runBookmarkToggleTests() {
