@@ -66,39 +66,82 @@ extension LibraryViewModel {
 
     /// Move one or more books to the specified folder path
     func moveBooks(_ books: [Book], toFolder path: String) {
-        for book in books {
-            guard let idx = library.books.firstIndex(where: { $0.id == book.id }) else { continue }
-            // Move .tmb on disk BEFORE updating folderPath, so book.tmbDirectory
-            // still points to the old location for the move source
-            moveTMBToFolder(book: &library.books[idx], newFolderPath: path)
-            library.books[idx].folderPath = path
+        var proposed = library
+        let ids = Set(books.map(\.id))
+        for index in proposed.books.indices where ids.contains(proposed.books[index].id) {
+            proposed.books[index].folderPath = path
         }
-        lastMovedFolderPath = path
-        save()
+        do {
+            try commitLibraryTransition(proposed, affectedBookIDs: ids)
+            lastMovedFolderPath = path
+        } catch {
+            presentFilesystemError("Could not move books", error: error)
+        }
     }
 
-    /// Move a .tmb package directory to a new library subfolder.
-    /// When oldFolderPath is provided, it overrides book.folderPath for computing
-    /// the source location (needed when folderPath was already updated by the model).
-    func moveTMBToFolder(book: inout Book, newFolderPath: String, oldFolderPath: String? = nil) {
-        guard !book.tmbDirectoryName.isEmpty else { return }
+    /// Move every changed package, persist its new metadata, and then commit the
+    /// proposed library model. Completed disk moves are reversed on any failure.
+    func commitLibraryTransition(_ proposedLibrary: Library, affectedBookIDs: Set<UUID>) throws {
+        struct Move {
+            let original: Book
+            var updated: Book
+            let source: URL
+            let destination: URL
+        }
 
-        let sourceFolderPath = oldFolderPath ?? book.folderPath
-        let oldTmbDir = TextMouthPaths.tmbPath(folderPath: sourceFolderPath, tmbName: book.tmbDirectoryName)
-        try? TextMouthPaths.ensureLibrarySubfolder(newFolderPath)
-        let newTmbDir = TextMouthPaths.tmbPath(folderPath: newFolderPath, tmbName: book.tmbDirectoryName)
+        var proposed = proposedLibrary
+        var moves: [Move] = []
+        for bookID in affectedBookIDs {
+            guard let original = library.books.first(where: { $0.id == bookID }),
+                  let proposedIndex = proposed.books.firstIndex(where: { $0.id == bookID }) else { continue }
+            var updated = proposed.books[proposedIndex]
+            guard !original.tmbDirectoryName.isEmpty else { continue }
 
-        guard oldTmbDir != newTmbDir else { return }
+            let source = original.tmbDirectory
+            let destination = TextMouthPaths.tmbPath(
+                folderPath: updated.folderPath,
+                tmbName: original.tmbDirectoryName
+            )
+            if source != destination {
+                guard FileManager.default.fileExists(atPath: source.path) else {
+                    throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: source.path])
+                }
+                guard !FileManager.default.fileExists(atPath: destination.path) else {
+                    throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: destination.path])
+                }
+                try TextMouthPaths.ensureLibrarySubfolder(updated.folderPath)
+            }
+            let fileName = URL(fileURLWithPath: original.filePath).lastPathComponent
+            updated.filePath = destination.appendingPathComponent(fileName).path
+            proposed.books[proposedIndex] = updated
+            moves.append(Move(original: original, updated: updated, source: source, destination: destination))
+        }
 
+        var completedMoves: [Move] = []
         do {
-            if FileManager.default.fileExists(atPath: oldTmbDir.path) {
-                try FileManager.default.moveItem(at: oldTmbDir, to: newTmbDir)
-                let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-                book.filePath = newTmbDir.appendingPathComponent(fileName).path
+            for move in moves where move.source != move.destination {
+                try FileManager.default.moveItem(at: move.source, to: move.destination)
+                completedMoves.append(move)
+            }
+            for move in moves {
+                try move.updated.saveBookInfoThrowing()
             }
         } catch {
-            print("Failed to move .tmb package: \(error)")
+            for move in completedMoves.reversed() {
+                try? FileManager.default.moveItem(at: move.destination, to: move.source)
+                try? move.original.saveBookInfoThrowing()
+            }
+            throw error
         }
+
+        library = proposed
+        save()
+        FileImportService.removeEmptyLibrarySubdirectories(library: library)
+    }
+
+    func presentFilesystemError(_ context: String, error: Error) {
+        errorMessage = "\(context): \(error.localizedDescription)"
+        showError = true
     }
 
     // MARK: - Metadata and State Updates

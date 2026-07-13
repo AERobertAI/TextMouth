@@ -98,17 +98,20 @@ extension LibraryViewModel {
     func moveZipBooksToFolder(folderName: String) {
         guard !folderName.isEmpty else { return }
         let parentPath = pendingZipFolderPath
-        if let folder = library.createFolder(name: folderName, parentPath: parentPath) {
-            for book in pendingZipBooks {
-                if let idx = library.books.firstIndex(where: { $0.md5Hash == book.md5Hash }) {
-                    // Move .tmb on disk BEFORE updating folderPath
-                    moveTMBToFolder(book: &library.books[idx], newFolderPath: folder.fullPath)
-                    library.books[idx].folderPath = folder.fullPath
-                }
-            }
+        var proposed = library
+        guard let folder = proposed.createFolder(name: folderName, parentPath: parentPath) else { return }
+        let hashes = Set(pendingZipBooks.map(\.md5Hash))
+        let affectedIDs = Set(proposed.books.filter { hashes.contains($0.md5Hash) }.map(\.id))
+        for index in proposed.books.indices where affectedIDs.contains(proposed.books[index].id) {
+            proposed.books[index].folderPath = folder.fullPath
         }
-        pendingZipBooks = []
-        save()
+        do {
+            try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+            try commitLibraryTransition(proposed, affectedBookIDs: affectedIDs)
+            pendingZipBooks = []
+        } catch {
+            presentFilesystemError("Could not organize imported ZIP books", error: error)
+        }
     }
 
     /// Handle deleting the original file based on user preference
