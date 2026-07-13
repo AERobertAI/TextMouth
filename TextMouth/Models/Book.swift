@@ -295,7 +295,17 @@ struct Book: Identifiable, Codable, Hashable {
 
     /// Save this book's data to its bookInfo.json
     func saveBookInfo() {
-        let info = BookInfo(
+        try? saveBookInfoThrowing()
+    }
+
+    /// Throwing variant used by filesystem transactions that must roll back if
+    /// metadata cannot be committed alongside a package move.
+    func saveBookInfoThrowing() throws {
+        try makeBookInfo().save(to: tmbDirectory)
+    }
+
+    func makeBookInfo() -> BookInfo {
+        BookInfo(
             metadata: BookMetadata(
                 title: title,
                 author: author,
@@ -336,7 +346,6 @@ struct Book: Identifiable, Codable, Hashable {
             ),
             bookmarks: bookmarks
         )
-        try? info.save(to: tmbDirectory)
     }
 }
 
