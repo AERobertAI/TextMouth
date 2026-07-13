@@ -54,7 +54,7 @@ class ReaderViewModel: ObservableObject {
     /// Owner-scoped pause/resume calls pass `book.id` so other windows'
     /// playback events don't accidentally affect this book's timer.
     let sleepTimerService = SleepTimerService.shared
-    let nowPlayingService = NowPlayingService()
+    lazy var nowPlayingService = NowPlayingSession(ownerID: book.id)
     let substitutionService = TextSubstitutionService.shared
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()

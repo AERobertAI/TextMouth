@@ -2,6 +2,77 @@ import Foundation
 import MediaPlayer
 import CoreAudio
 
+/// Reader-scoped facade over the one process-wide Now Playing coordinator.
+/// Keeping the existing call-site API local to a reader prevents an inactive
+/// window from clearing or replacing another window's media session.
+final class NowPlayingSession {
+    let ownerID: UUID
+    private let coordinator: NowPlayingService
+
+    init(ownerID: UUID, coordinator: NowPlayingService = .shared) {
+        self.ownerID = ownerID
+        self.coordinator = coordinator
+    }
+
+    func setup(
+        onPlay: @escaping () -> Void,
+        onPause: @escaping () -> Void,
+        onAudioRouteChangePause: @escaping () -> Void,
+        onTogglePlayPause: @escaping () -> Void,
+        onSkipForward: @escaping () -> Void,
+        onSkipBackward: @escaping () -> Void,
+        isCurrentlyPlaying: @escaping () -> Bool,
+        bluetoothMonitoring: Bool = true,
+        bluetoothDelay: TimeInterval = 2.0
+    ) {
+        coordinator.setup(
+            ownerID: ownerID,
+            onPlay: onPlay,
+            onPause: onPause,
+            onAudioRouteChangePause: onAudioRouteChangePause,
+            onTogglePlayPause: onTogglePlayPause,
+            onSkipForward: onSkipForward,
+            onSkipBackward: onSkipBackward,
+            isCurrentlyPlaying: isCurrentlyPlaying,
+            bluetoothMonitoring: bluetoothMonitoring,
+            bluetoothDelay: bluetoothDelay
+        )
+    }
+
+    func activateRemoteCommandsIfNeeded() {
+        coordinator.activate(ownerID: ownerID)
+    }
+
+    func releaseMediaControls() {
+        coordinator.clearNowPlaying(ownerID: ownerID)
+    }
+
+    func updateNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
+        coordinator.updateNowPlayingInfo(
+            ownerID: ownerID,
+            title: title,
+            author: author,
+            isPlaying: isPlaying
+        )
+    }
+
+    func clearNowPlaying() {
+        coordinator.clearNowPlaying(ownerID: ownerID)
+    }
+
+    func updateGestureSettings(enabled: Bool, pattern: String, window: TimeInterval) {
+        coordinator.updateGestureSettings(enabled: enabled, pattern: pattern, window: window)
+    }
+
+    func updateBluetoothSettings(enabled: Bool, delay: TimeInterval) {
+        coordinator.updateBluetoothSettings(enabled: enabled, delay: delay)
+    }
+
+    deinit {
+        coordinator.unregister(ownerID: ownerID)
+    }
+}
+
 /// Integrates with macOS Now Playing center for media key and AirPods control.
 /// Also monitors audio device changes to prevent phantom playback when
 /// Bluetooth devices disconnect.
@@ -28,16 +99,24 @@ import CoreAudio
 ///    suppress window would never arm and `rcd`'s spurious toggle would
 ///    flip a paused book into playback through the speakers.
 class NowPlayingService {
-    private var onPlay: (() -> Void)?
-    private var onPause: (() -> Void)?
-    private var onAudioRouteChangePause: (() -> Void)?
-    private var onTogglePlayPause: (() -> Void)?
-    private var onSkipForward: (() -> Void)?
-    private var onSkipBackward: (() -> Void)?
-    /// Returns true when playback is currently running (not paused and not stopped).
-    /// Used by the suppress-window logic to decide whether a spurious toggle
-    /// should be converted into a pause or ignored entirely.
-    private var isCurrentlyPlaying: (() -> Bool)?
+    static let shared = NowPlayingService()
+
+    struct Handlers {
+        let onPlay: () -> Void
+        let onPause: () -> Void
+        let onAudioRouteChangePause: () -> Void
+        let onTogglePlayPause: () -> Void
+        let onSkipForward: () -> Void
+        let onSkipBackward: () -> Void
+        let isCurrentlyPlaying: () -> Bool
+    }
+
+    private var handlersByOwner: [UUID: Handlers] = [:]
+    private(set) var activeOwnerID: UUID?
+    private var activeHandlers: Handlers? {
+        activeOwnerID.flatMap { handlersByOwner[$0] }
+    }
+    private let installsSystemIntegrations: Bool
 
     /// Detector for the experimental "restart sleep timer via media
     /// gesture" feature. Each command handler routes its event type
@@ -94,9 +173,12 @@ class NowPlayingService {
     /// device yet" (e.g. service just started with no audio output present).
     private var previousDeviceID: AudioDeviceID = 0
 
-    init() {}
+    init(installsSystemIntegrations: Bool = true) {
+        self.installsSystemIntegrations = installsSystemIntegrations
+    }
 
     func setup(
+        ownerID: UUID,
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
         onAudioRouteChangePause: @escaping () -> Void,
@@ -107,32 +189,43 @@ class NowPlayingService {
         bluetoothMonitoring: Bool = true,
         bluetoothDelay: TimeInterval = 2.0
     ) {
-        self.onPlay = onPlay
-        self.onPause = onPause
-        self.onAudioRouteChangePause = onAudioRouteChangePause
-        self.onTogglePlayPause = onTogglePlayPause
-        self.onSkipForward = onSkipForward
-        self.onSkipBackward = onSkipBackward
-        self.isCurrentlyPlaying = isCurrentlyPlaying
+        handlersByOwner[ownerID] = Handlers(
+            onPlay: onPlay,
+            onPause: onPause,
+            onAudioRouteChangePause: onAudioRouteChangePause,
+            onTogglePlayPause: onTogglePlayPause,
+            onSkipForward: onSkipForward,
+            onSkipBackward: onSkipBackward,
+            isCurrentlyPlaying: isCurrentlyPlaying
+        )
         self.bluetoothMonitoringEnabled = bluetoothMonitoring
         self.suppressWindow = bluetoothDelay
 
         activateRemoteCommandsIfNeeded()
-        if bluetoothMonitoringEnabled {
+        if bluetoothMonitoringEnabled, installsSystemIntegrations {
             startDeviceChangeListener()
         }
     }
 
+    func activate(ownerID: UUID) {
+        guard handlersByOwner[ownerID] != nil else { return }
+        activeOwnerID = ownerID
+        activateRemoteCommandsIfNeeded()
+    }
+
+    func unregister(ownerID: UUID) {
+        handlersByOwner.removeValue(forKey: ownerID)
+        if activeOwnerID == ownerID {
+            clearSystemNowPlaying()
+            activeOwnerID = nil
+        }
+    }
+
     func activateRemoteCommandsIfNeeded() {
+        guard installsSystemIntegrations else { return }
         guard !remoteCommandsActive else { return }
         setupRemoteCommands()
         remoteCommandsActive = true
-    }
-
-    func releaseMediaControls() {
-        clearNowPlaying()
-        removeRemoteCommandTargets()
-        remoteCommandsActive = false
     }
 
     /// Apply the latest gesture-detector settings. Called once at
@@ -208,7 +301,7 @@ class NowPlayingService {
                 return .success
             }
             if self.consumeForGesture(.play) { return .success }
-            self.onPlay?()
+            self.activeHandlers?.onPlay()
             return .success
         }
 
@@ -218,11 +311,11 @@ class NowPlayingService {
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.pause) { return .success }
-            if self.isSuppressed, self.isCurrentlyPlaying?() == true {
-                self.onAudioRouteChangePause?()
+            if self.isSuppressed, self.activeHandlers?.isCurrentlyPlaying() == true {
+                self.activeHandlers?.onAudioRouteChangePause()
                 return .success
             }
-            self.onPause?()
+            self.activeHandlers?.onPause()
             return .success
         }
 
@@ -239,13 +332,13 @@ class NowPlayingService {
                 // - Playing → pause: matches "headphones unplugged, stop audio".
                 // - Paused  → ignore: blocks macOS's spurious auto-resume.
                 self.suppressUntil = .distantPast
-                if self.isCurrentlyPlaying?() == true {
-                    self.onAudioRouteChangePause?()
+                if self.activeHandlers?.isCurrentlyPlaying() == true {
+                    self.activeHandlers?.onAudioRouteChangePause()
                 }
                 return .success
             }
             if self.consumeForGesture(.togglePlayPause) { return .success }
-            self.onTogglePlayPause?()
+            self.activeHandlers?.onTogglePlayPause()
             return .success
         }
 
@@ -254,7 +347,7 @@ class NowPlayingService {
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.skipForward) { return .success }
-            self.onSkipForward?()
+            self.activeHandlers?.onSkipForward()
             return .success
         }
 
@@ -263,7 +356,7 @@ class NowPlayingService {
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.skipBackward) { return .success }
-            self.onSkipBackward?()
+            self.activeHandlers?.onSkipBackward()
             return .success
         }
 
@@ -273,7 +366,7 @@ class NowPlayingService {
         commandCenter.nextTrackCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.nextTrack) { return .success }
-            self.onSkipForward?()
+            self.activeHandlers?.onSkipForward()
             return .success
         }
 
@@ -281,12 +374,15 @@ class NowPlayingService {
         commandCenter.previousTrackCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.previousTrack) { return .success }
-            self.onSkipBackward?()
+            self.activeHandlers?.onSkipBackward()
             return .success
         }
     }
 
-    func updateNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
+    func updateNowPlayingInfo(ownerID: UUID, title: String, author: String, isPlaying: Bool) {
+        guard handlersByOwner[ownerID] != nil else { return }
+        activeOwnerID = ownerID
+        guard installsSystemIntegrations else { return }
         var info = [String: Any]()
         info[MPMediaItemPropertyTitle] = title
         info[MPMediaItemPropertyArtist] = author
@@ -297,7 +393,14 @@ class NowPlayingService {
         MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused
     }
 
-    func clearNowPlaying() {
+    func clearNowPlaying(ownerID: UUID) {
+        guard activeOwnerID == ownerID else { return }
+        clearSystemNowPlaying()
+        activeOwnerID = nil
+    }
+
+    private func clearSystemNowPlaying() {
+        guard installsSystemIntegrations else { return }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         MPNowPlayingInfoCenter.default().playbackState = .stopped
     }
@@ -477,8 +580,8 @@ class NowPlayingService {
     /// reading-stats session.
     private func armSuppressAndPauseIfPlaying() {
         suppressUntil = Date().addingTimeInterval(suppressWindow)
-        if isCurrentlyPlaying?() == true {
-            onAudioRouteChangePause?()
+        if activeHandlers?.isCurrentlyPlaying() == true {
+            activeHandlers?.onAudioRouteChangePause()
         }
     }
 
@@ -647,6 +750,8 @@ class NowPlayingService {
 
     deinit {
         stopDeviceChangeListener()
-        removeRemoteCommandTargets()
+        if installsSystemIntegrations {
+            removeRemoteCommandTargets()
+        }
     }
 }
