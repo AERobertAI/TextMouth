@@ -1,6 +1,74 @@
 import AVFoundation
 import Combine
 
+/// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
+/// macOS resource even when callers use different synthesizer instances.
+/// Current-chapter and look-ahead renders must therefore never overlap.
+final class SpeechRenderCoordinator {
+    static let shared = SpeechRenderCoordinator()
+    static let maximumTextLength = 100_000
+
+    private let queue = DispatchQueue(
+        label: "com.textmouth.speech-render",
+        qos: .userInitiated
+    )
+
+    func render(
+        text: String,
+        engine: AudioEngineService,
+        voice: AVSpeechSynthesisVoice?,
+        wpm: Double,
+        shouldStart: @escaping () -> Bool,
+        completion: @escaping (Bool) -> Void
+    ) {
+        enqueue(
+            textLength: text.count,
+            shouldStart: shouldStart,
+            start: { finish in
+                engine.render(text: text, voice: voice, wpm: wpm, completion: finish)
+            },
+            completion: completion
+        )
+    }
+
+    /// The closure-based core keeps serialization and admission independently
+    /// testable without invoking the system speech synthesizer.
+    func enqueue(
+        textLength: Int,
+        shouldStart: @escaping () -> Bool,
+        start: @escaping (@escaping (Bool) -> Void) -> Void,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard textLength <= Self.maximumTextLength else {
+            DispatchQueue.main.async { completion(false) }
+            return
+        }
+
+        queue.async {
+            var admitted = false
+            DispatchQueue.main.sync { admitted = shouldStart() }
+            guard admitted else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+
+            let finished = DispatchSemaphore(value: 0)
+            var succeeded = false
+            DispatchQueue.main.async {
+                start { result in
+                    succeeded = result
+                    finished.signal()
+                }
+            }
+            finished.wait()
+
+            DispatchQueue.main.async {
+                completion(shouldStart() && succeeded)
+            }
+        }
+    }
+}
+
 /// Manages TTS playback using two modes:
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
 ///    plays through AVAudioEngine + AVAudioUnitTimePitch for real-time speed changes and instant seeking.
@@ -171,8 +239,6 @@ class SpeechService: NSObject, ObservableObject {
     /// very large texts (e.g. 900K+ chars) via AVSpeechSynthesizer.write()
     /// competes with the direct-mode .speak() for macOS speech synthesis
     /// resources, causing chunks to loop or stutter at boundaries.
-    private static let maxRenderTextLength = 100_000
-
     /// Speak text. Starts playback immediately in direct mode for zero latency.
     /// Pre-renders in background so audio engine is ready for seeking, speed changes,
     /// or to play the next chapter without delay. Does NOT switch mid-playback to avoid
@@ -196,14 +262,20 @@ class SpeechService: NSObject, ObservableObject {
         // .speak() for the macOS speech synthesis engine, causing chunk
         // transitions to loop or stutter. Direct mode chunking handles
         // arbitrarily long texts on its own.
-        guard text.count <= Self.maxRenderTextLength else {
-            transitionLog("RENDER_SKIP: text too large (\(text.count) chars > \(Self.maxRenderTextLength)), staying in direct mode")
+        guard text.count <= SpeechRenderCoordinator.maximumTextLength else {
+            transitionLog("RENDER_SKIP: text too large (\(text.count) chars > \(SpeechRenderCoordinator.maximumTextLength)), staying in direct mode")
             return
         }
 
         // Pre-render in background so engine is ready for seeks, pauses, or next chapter.
         // We do NOT switch mid-playback — direct mode runs until a natural break.
-        audioEngine.render(text: text, voice: currentVoice, wpm: wordsPerMinute) { [weak self] success in
+        SpeechRenderCoordinator.shared.render(
+            text: text,
+            engine: audioEngine,
+            voice: currentVoice,
+            wpm: wordsPerMinute,
+            shouldStart: { [weak self] in self?.renderGeneration == myGeneration },
+            completion: { [weak self] success in
             guard let self = self else { return }
             guard self.renderGeneration == myGeneration else { return }
 
@@ -216,7 +288,8 @@ class SpeechService: NSObject, ObservableObject {
             // - User seeks (seek() checks audioEngine.hasRenderedAudio)
             // - User pauses then resumes (resume() switches to engine)
             // - Chapter ends (next chapter can start directly in engine mode)
-        }
+            }
+        )
     }
 
     /// Speak text using the audio engine directly (no direct mode fallback).
@@ -242,13 +315,20 @@ class SpeechService: NSObject, ObservableObject {
             // Need to render first — start direct mode while waiting
             speakDirect(text, fromCharOffset: charOffset)
 
-            audioEngine.render(text: text, voice: currentVoice, wpm: wordsPerMinute) { [weak self] success in
+            SpeechRenderCoordinator.shared.render(
+                text: text,
+                engine: audioEngine,
+                voice: currentVoice,
+                wpm: wordsPerMinute,
+                shouldStart: { [weak self] in self?.renderGeneration == myGeneration },
+                completion: { [weak self] success in
                 guard let self = self else { return }
                 guard self.renderGeneration == myGeneration else { return }
                 if success {
                     self.transitionLog("RENDER_READY (speakWithEngine): rendered, direct still active=\(self.usingDirectMode)")
                 }
-            }
+                }
+            )
         }
     }
 

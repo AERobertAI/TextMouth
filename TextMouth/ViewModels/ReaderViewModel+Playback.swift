@@ -268,9 +268,24 @@ extension ReaderViewModel {
         let chapterText = substitutionService.transform(pausedText).modifiedText
         nextChapterIndex = nextIdx
 
+        // Keep look-ahead rendering under the same safety limit as the current
+        // chapter. Oversized chapters remain playable through direct chunking.
+        guard chapterText.count <= SpeechRenderCoordinator.maximumTextLength else {
+            nextChapterEngine = nil
+            nextChapterIndex = nil
+            debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.count) chars)")
+            return
+        }
+
         // Capture generation so stale renders from rapid navigation are discarded
         let renderGeneration = chapterPlaybackGeneration
-        engine.render(text: chapterText, voice: speechService.currentVoice, wpm: speechService.wordsPerMinute) { [weak self] success in
+        SpeechRenderCoordinator.shared.render(
+            text: chapterText,
+            engine: engine,
+            voice: speechService.currentVoice,
+            wpm: speechService.wordsPerMinute,
+            shouldStart: { [weak self] in self?.chapterPlaybackGeneration == renderGeneration },
+            completion: { [weak self] success in
             guard let self = self else { return }
             // Discard result if playback generation changed (user navigated elsewhere)
             guard self.chapterPlaybackGeneration == renderGeneration else { return }
@@ -278,7 +293,8 @@ extension ReaderViewModel {
                 self.nextChapterEngine = engine
                 self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.count) chars)")
             }
-        }
+            }
+        )
     }
 
     // MARK: - Audio Book Playback
