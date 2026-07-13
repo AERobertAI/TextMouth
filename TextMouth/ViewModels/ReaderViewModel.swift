@@ -709,7 +709,7 @@ class ReaderViewModel: ObservableObject {
                         self.currentCharacterOffset = 0
                     }
                     if self.currentChapterIndex < parsed.chapters.count {
-                        let chapterLen = parsed.chapters[self.currentChapterIndex].text.count
+                        let chapterLen = parsed.chapters[self.currentChapterIndex].text.utf16Length
                         if self.currentCharacterOffset > chapterLen {
                             self.currentCharacterOffset = 0
                         }
@@ -755,21 +755,21 @@ class ReaderViewModel: ObservableObject {
     /// returns the full text. For large chapters, returns a window of text
     /// centred on the current character offset.
     private func makeVisibleTextWindow(_ fullText: String, centeredAt offset: Int) -> VisibleTextWindow {
-        guard fullText.count > Self.maxDisplayChars else {
+        guard fullText.utf16Length > Self.maxDisplayChars else {
             return VisibleTextWindow(
                 text: fullText,
                 startOffset: 0,
-                endOffset: fullText.count
+                endOffset: fullText.utf16Length
             )
         }
 
         let halfWindow = Self.maxDisplayChars / 2
-        let center = min(max(offset, halfWindow), fullText.count - halfWindow)
+        let center = min(max(offset, halfWindow), fullText.utf16Length - halfWindow)
         let windowStart = max(center - halfWindow, 0)
-        let windowEnd = min(center + halfWindow, fullText.count)
+        let windowEnd = min(center + halfWindow, fullText.utf16Length)
 
-        let startIdx = fullText.index(fullText.startIndex, offsetBy: windowStart)
-        let endIdx = fullText.index(fullText.startIndex, offsetBy: windowEnd)
+        let startIdx = fullText.index(atUTF16Offset: windowStart)
+        let endIdx = fullText.index(atUTF16Offset: windowEnd)
 
         // Snap to paragraph boundaries so text doesn't start/end mid-word
         var adjustedStart = startIdx
@@ -779,7 +779,7 @@ class ReaderViewModel: ObservableObject {
             }
         }
         var adjustedEnd = endIdx
-        if windowEnd < fullText.count {
+        if windowEnd < fullText.utf16Length {
             if let paraBreak = fullText.range(of: "\n\n", options: .backwards, range: adjustedStart..<endIdx) {
                 adjustedEnd = paraBreak.lowerBound
             }
@@ -787,8 +787,8 @@ class ReaderViewModel: ObservableObject {
 
         return VisibleTextWindow(
             text: String(fullText[adjustedStart..<adjustedEnd]),
-            startOffset: fullText.distance(from: fullText.startIndex, to: adjustedStart),
-            endOffset: fullText.distance(from: fullText.startIndex, to: adjustedEnd)
+            startOffset: fullText.utf16Offset(of: adjustedStart),
+            endOffset: fullText.utf16Offset(of: adjustedEnd)
         )
     }
 
@@ -860,7 +860,7 @@ class ReaderViewModel: ObservableObject {
         }
 
         let resolvedChapterText = content.chapters[resolvedChapterIndex].text
-        let resolvedOffset = max(0, min(offset ?? currentCharacterOffset, resolvedChapterText.count))
+        let resolvedOffset = max(0, min(offset ?? currentCharacterOffset, resolvedChapterText.utf16Length))
 
         if displayChapterIndex != resolvedChapterIndex {
             displayChapterIndex = resolvedChapterIndex
@@ -873,7 +873,7 @@ class ReaderViewModel: ObservableObject {
             || shouldRefreshVisibleTextWindow(
                 chapterIndex: resolvedChapterIndex,
                 offset: resolvedOffset,
-                chapterTextLength: resolvedChapterText.count
+                chapterTextLength: resolvedChapterText.utf16Length
             )
         if shouldRefreshVisibleText {
             let window = makeVisibleTextWindow(resolvedChapterText, centeredAt: resolvedOffset)

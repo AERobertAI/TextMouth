@@ -42,7 +42,7 @@ extension ReaderViewModel {
         } else {
             // Add a new bookmark, adjusting position if it would overlap with an existing one
             let chapterLength = content?.chapters.indices.contains(currentChapterIndex) == true
-                ? content?.chapters[currentChapterIndex].text.count
+                ? content?.chapters[currentChapterIndex].text.utf16Length
                 : nil
             let adjustedOffset = Self.adjustedBookmarkOffset(
                 bookmarks: bookmarks,

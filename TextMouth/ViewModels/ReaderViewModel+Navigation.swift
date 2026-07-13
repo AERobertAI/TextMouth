@@ -140,8 +140,8 @@ extension ReaderViewModel {
         let sentenceEnders: Set<Character> = [".", "!", "?"]
 
         // Scan forward from current position for the end of a sentence
-        if currentCharacterOffset < text.count {
-            let startIdx = text.index(text.startIndex, offsetBy: currentCharacterOffset)
+        if currentCharacterOffset < text.utf16Length {
+            let startIdx = text.index(atUTF16Offset: currentCharacterOffset)
             var pos = startIdx
             while pos < text.endIndex {
                 if sentenceEnders.contains(text[pos]) {
@@ -150,7 +150,7 @@ extension ReaderViewModel {
                     while nextStart < text.endIndex && text[nextStart].isWhitespace {
                         nextStart = text.index(after: nextStart)
                     }
-                    let newOffset = text.distance(from: text.startIndex, to: nextStart)
+                    let newOffset = text.utf16Offset(of: nextStart)
                     // Only advance if we actually moved forward and there's text ahead
                     if newOffset > currentCharacterOffset && nextStart < text.endIndex {
                         navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
@@ -202,7 +202,7 @@ extension ReaderViewModel {
             }
             let prevText = content.chapters[prevChapter].text
             // Find the last sentence start in the previous chapter
-            let prevOffset = findSentenceStart(in: prevText, before: prevText.count)
+            let prevOffset = findSentenceStart(in: prevText, before: prevText.utf16Length)
             navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
             announceToVoiceOver("Previous chapter")
         }
@@ -220,8 +220,8 @@ extension ReaderViewModel {
         let text = content.chapters[currentChapterIndex].text
 
         // Scan forward for the next double-newline paragraph boundary
-        if currentCharacterOffset < text.count - 1 {
-            let startIdx = text.index(text.startIndex, offsetBy: currentCharacterOffset)
+        if currentCharacterOffset < text.utf16Length - 1 {
+            let startIdx = text.index(atUTF16Offset: currentCharacterOffset)
             var pos = startIdx
             while pos < text.endIndex {
                 let nextPos = text.index(after: pos)
@@ -235,7 +235,7 @@ extension ReaderViewModel {
                     while paragraphStart < text.endIndex && text[paragraphStart] == "\n" {
                         paragraphStart = text.index(after: paragraphStart)
                     }
-                    let newOffset = text.distance(from: text.startIndex, to: paragraphStart)
+                    let newOffset = text.utf16Offset(of: paragraphStart)
                     if newOffset > currentCharacterOffset && paragraphStart < text.endIndex {
                         navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
                         announceToVoiceOver("Next paragraph")
@@ -285,7 +285,7 @@ extension ReaderViewModel {
             }
             let prevText = content.chapters[prevChapter].text
             // Find the last paragraph start in the previous chapter
-            let prevOffset = findParagraphStart(in: prevText, before: prevText.count)
+            let prevOffset = findParagraphStart(in: prevText, before: prevText.utf16Length)
             navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
             announceToVoiceOver("Previous chapter")
         }
@@ -324,7 +324,7 @@ extension ReaderViewModel {
                         charOffset = 0
                     } else {
                         // At last chapter — clamp to end
-                        charOffset = max(0, chapterText.count - 1)
+                        charOffset = max(0, chapterText.utf16Length - 1)
                         break
                     }
                 } else {
@@ -340,7 +340,7 @@ extension ReaderViewModel {
                     // Hit start of chapter — go to previous
                     if chapIdx > 0 {
                         chapIdx -= 1
-                        charOffset = content.chapters[chapIdx].text.count
+                        charOffset = content.chapters[chapIdx].text.utf16Length
                     } else {
                         charOffset = 0
                         break
@@ -419,29 +419,29 @@ extension ReaderViewModel {
         if charOffset < 0 {
             while charOffset < 0 && chapIdx > 0 {
                 chapIdx -= 1
-                charOffset += content.chapters[chapIdx].text.count
+                charOffset += content.chapters[chapIdx].text.utf16Length
             }
             charOffset = max(0, charOffset)
         } else {
-            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.count {
-                charOffset -= content.chapters[chapIdx].text.count
+            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.utf16Length {
+                charOffset -= content.chapters[chapIdx].text.utf16Length
                 chapIdx += 1
             }
             if chapIdx >= content.chapters.count {
                 chapIdx = content.chapters.count - 1
-                charOffset = max(0, content.chapters[chapIdx].text.count - 1)
+                charOffset = max(0, content.chapters[chapIdx].text.utf16Length - 1)
             }
         }
 
         // Snap to nearest word boundary so playback doesn't start mid-word
         let text = content.chapters[chapIdx].text
-        if charOffset > 0 && charOffset < text.count {
-            let targetIndex = text.index(text.startIndex, offsetBy: charOffset)
+        if charOffset > 0 && charOffset < text.utf16Length {
+            let targetIndex = text.index(atUTF16Offset: charOffset)
             var wordStart = targetIndex
             while wordStart > text.startIndex && !text[text.index(before: wordStart)].isWhitespace {
                 wordStart = text.index(before: wordStart)
             }
-            charOffset = text.distance(from: text.startIndex, to: wordStart)
+            charOffset = text.utf16Offset(of: wordStart)
         }
 
         let sameChapter = (chapIdx == currentChapterIndex)
@@ -488,17 +488,17 @@ extension ReaderViewModel {
         if charOffset < 0 {
             while charOffset < 0 && chapIdx > 0 {
                 chapIdx -= 1
-                charOffset += content.chapters[chapIdx].text.count
+                charOffset += content.chapters[chapIdx].text.utf16Length
             }
             charOffset = max(0, charOffset)
         } else {
-            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.count {
-                charOffset -= content.chapters[chapIdx].text.count
+            while chapIdx < content.chapters.count && charOffset >= content.chapters[chapIdx].text.utf16Length {
+                charOffset -= content.chapters[chapIdx].text.utf16Length
                 chapIdx += 1
             }
             if chapIdx >= content.chapters.count {
                 chapIdx = content.chapters.count - 1
-                charOffset = max(0, content.chapters[chapIdx].text.count - 1)
+                charOffset = max(0, content.chapters[chapIdx].text.utf16Length - 1)
             }
         }
 
@@ -580,7 +580,7 @@ extension ReaderViewModel {
         // Clamp chapter index to valid range
         let chapterIndex = min(max(0, chapterIndex), content.chapters.count - 1)
         // Clamp character offset to chapter text length
-        let chapterLen = content.chapters[chapterIndex].text.count
+        let chapterLen = content.chapters[chapterIndex].text.utf16Length
         let characterOffset = min(max(0, characterOffset), max(0, chapterLen - 1))
 
         if isAudioBook {
@@ -643,11 +643,11 @@ extension ReaderViewModel {
     /// rather than using a fixed chars-per-word estimate.
     func offsetAfterSkippingWords(in text: String, from startOffset: Int, wordCount: Int) -> Int {
         guard !text.isEmpty else { return 0 }
-        let clampedStart = max(0, min(startOffset, text.count))
+        let clampedStart = max(0, min(startOffset, text.utf16Length))
 
         if wordCount > 0 {
             // Scan forward: find the start of the Nth next word
-            var idx = text.index(text.startIndex, offsetBy: clampedStart)
+            var idx = text.index(atUTF16Offset: clampedStart)
             var wordsFound = 0
 
             // Skip the rest of the current word (if we're in one)
@@ -670,11 +670,11 @@ extension ReaderViewModel {
                     }
                 }
             }
-            return text.distance(from: text.startIndex, to: idx)
+            return text.utf16Offset(of: idx)
         } else {
             // Scan backward: find the start of the Nth previous word
             let targetWords = abs(wordCount)
-            var idx = text.index(text.startIndex, offsetBy: clampedStart)
+            var idx = text.index(atUTF16Offset: clampedStart)
             var wordsFound = 0
 
             while wordsFound < targetWords && idx > text.startIndex {
@@ -688,7 +688,7 @@ extension ReaderViewModel {
                 }
                 wordsFound += 1
             }
-            return text.distance(from: text.startIndex, to: idx)
+            return text.utf16Offset(of: idx)
         }
     }
 
@@ -696,8 +696,8 @@ extension ReaderViewModel {
     /// Used to determine how many words were actually skipped within a chapter.
     func countWordsBetween(in text: String, from startOffset: Int, to endOffset: Int) -> Int {
         guard !text.isEmpty, startOffset < endOffset else { return 0 }
-        let start = text.index(text.startIndex, offsetBy: max(0, min(startOffset, text.count)))
-        let end = text.index(text.startIndex, offsetBy: max(0, min(endOffset, text.count)))
+        let start = text.index(atUTF16Offset: max(0, min(startOffset, text.utf16Length)))
+        let end = text.index(atUTF16Offset: max(0, min(endOffset, text.utf16Length)))
         guard start < end else { return 0 }
 
         // Count transitions from whitespace to non-whitespace (word starts) in the range

@@ -270,10 +270,10 @@ extension ReaderViewModel {
 
         // Keep look-ahead rendering under the same safety limit as the current
         // chapter. Oversized chapters remain playable through direct chunking.
-        guard chapterText.count <= SpeechRenderCoordinator.maximumTextLength else {
+        guard chapterText.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
             nextChapterEngine = nil
             nextChapterIndex = nil
-            debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.count) chars)")
+            debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.utf16Length) UTF-16 units)")
             return
         }
 
@@ -291,7 +291,7 @@ extension ReaderViewModel {
             guard self.chapterPlaybackGeneration == renderGeneration else { return }
             if success {
                 self.nextChapterEngine = engine
-                self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.count) chars)")
+                self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.utf16Length) UTF-16 units)")
             }
             }
         )
@@ -374,7 +374,7 @@ extension ReaderViewModel {
             // converted to seconds) — that's the chapter's start
             // offset in the underlying single audio file.
             let precedingChars = (0..<chapterIndex)
-                .map { content.chapters[$0].text.count }
+                .map { content.chapters[$0].text.utf16Length }
                 .reduce(0, +)
             return Double(precedingChars) / Self.audioCharsPerSecond
         }
@@ -494,7 +494,7 @@ extension ReaderViewModel {
             }
         case .chaptersInOneFile:
             // Clip end = this chapter's absolute end time.
-            let chapterChars = content.chapters[currentChapterIndex].text.count
+            let chapterChars = content.chapters[currentChapterIndex].text.utf16Length
             let clipEnd = chapterStartTime(currentChapterIndex)
                 + Double(chapterChars) / Self.audioCharsPerSecond
             audioPlaybackService.setClipEndTime(clipEnd)
@@ -837,9 +837,9 @@ extension ReaderViewModel {
 
     /// Find the start of the current sentence by scanning backward for sentence-ending punctuation.
     func findSentenceStart(in text: String, before offset: Int) -> Int {
-        guard offset > 0, offset <= text.count else { return 0 }
+        guard offset > 0, offset <= text.utf16Length else { return 0 }
         let sentenceEnders: Set<Character> = [".", "!", "?"]
-        let idx = text.index(text.startIndex, offsetBy: min(offset - 1, text.count - 1))
+        let idx = text.index(atUTF16Offset: min(offset - 1, text.utf16Length - 1))
 
         // Walk backward to find the end of the previous sentence
         var pos = idx
@@ -851,7 +851,7 @@ extension ReaderViewModel {
                 while start < text.endIndex && text[start].isWhitespace {
                     start = text.index(after: start)
                 }
-                return text.distance(from: text.startIndex, to: start)
+                return text.utf16Offset(of: start)
             }
         }
         return 0 // No sentence boundary found — rewind to start of chapter
@@ -859,9 +859,9 @@ extension ReaderViewModel {
 
     /// Find the start of the current paragraph by scanning backward for double newlines.
     func findParagraphStart(in text: String, before offset: Int) -> Int {
-        guard offset > 1, offset <= text.count else { return 0 }
-        let searchEnd = min(offset - 1, text.count - 1)
-        let idx = text.index(text.startIndex, offsetBy: searchEnd)
+        guard offset > 1, offset <= text.utf16Length else { return 0 }
+        let searchEnd = min(offset - 1, text.utf16Length - 1)
+        let idx = text.index(atUTF16Offset: searchEnd)
 
         var pos = idx
         while pos > text.startIndex {
@@ -872,7 +872,7 @@ extension ReaderViewModel {
                 while start < text.endIndex && text[start].isWhitespace && text[start] != "\n" {
                     start = text.index(after: start)
                 }
-                return text.distance(from: text.startIndex, to: start)
+                return text.utf16Offset(of: start)
             }
             pos = prev
         }
@@ -922,25 +922,25 @@ extension ReaderViewModel {
         var cumulativeDelta = 0
         var points: [(targetPos: Int, cumulativeDelta: Int)] = []
 
-        while sourcePos < text.count {
+        while sourcePos < text.utf16Length {
             var matched = false
 
             for (pattern, replacement) in replacements {
                 // Check if pattern matches at current source position
-                let patternLen = pattern.count
-                if sourcePos + patternLen > text.count { continue }
+                let patternLen = pattern.utf16Length
+                if sourcePos + patternLen > text.utf16Length { continue }
 
-                let startIdx = text.index(text.startIndex, offsetBy: sourcePos)
-                let endIdx = text.index(startIdx, offsetBy: patternLen)
+                let startIdx = text.index(atUTF16Offset: sourcePos)
+                let endIdx = text.index(atUTF16Offset: sourcePos + patternLen)
                 if text[startIdx..<endIdx] == pattern {
                     // Emit the full replacement string
                     result += replacement
 
                     // Record the offset delta at the target position after the replacement.
                     // The delta is negative because the target text is longer (extra chars inserted).
-                    let extraChars = replacement.count - patternLen
+                    let extraChars = replacement.utf16Length - patternLen
                     cumulativeDelta -= extraChars
-                    let targetPosAfter = result.count
+                    let targetPosAfter = result.utf16Length
                     points.append((targetPos: targetPosAfter, cumulativeDelta: cumulativeDelta))
 
                     sourcePos += patternLen
@@ -951,9 +951,10 @@ extension ReaderViewModel {
 
             if !matched {
                 // No pattern matched — copy one character as-is
-                let idx = text.index(text.startIndex, offsetBy: sourcePos)
-                result.append(text[idx])
-                sourcePos += 1
+                let idx = text.index(atUTF16Offset: sourcePos)
+                let character = text[idx]
+                result.append(character)
+                sourcePos += String(character).utf16Length
             }
         }
 

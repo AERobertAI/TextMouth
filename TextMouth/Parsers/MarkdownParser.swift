@@ -21,10 +21,10 @@ enum MarkdownDocParser {
         for (level, headingText) in collector.headings {
             let offset: Int
             if let range = plainText.range(of: headingText, range: searchStart..<plainText.endIndex) {
-                offset = plainText.distance(from: plainText.startIndex, to: range.lowerBound)
+                offset = plainText.utf16Offset(of: range.lowerBound)
                 searchStart = range.upperBound
             } else {
-                offset = plainText.distance(from: plainText.startIndex, to: searchStart)
+                offset = plainText.utf16Offset(of: searchStart)
             }
             headings.append(Heading(level: level, text: headingText, characterOffset: offset))
         }

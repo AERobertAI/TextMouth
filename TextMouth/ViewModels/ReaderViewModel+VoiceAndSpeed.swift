@@ -133,7 +133,7 @@ extension ReaderViewModel {
             if i + 1 < chapterHeadings.count {
                 end = chapterHeadings[i + 1].characterOffset
             } else {
-                end = text.count
+                end = text.utf16Length
             }
             excludeRanges.append(start..<end)
         }
@@ -149,8 +149,8 @@ extension ReaderViewModel {
 
         for range in excludeRanges.sorted(by: { $0.lowerBound < $1.lowerBound }) {
             if pos < range.lowerBound {
-                let startIdx = text.index(text.startIndex, offsetBy: pos)
-                let endIdx = text.index(text.startIndex, offsetBy: min(range.lowerBound, text.count))
+                let startIdx = text.index(atUTF16Offset: pos)
+                let endIdx = text.index(atUTF16Offset: min(range.lowerBound, text.utf16Length))
                 result += text[startIdx..<endIdx]
             }
             // Record the deletion: at the current target position, delta increases
@@ -162,8 +162,8 @@ extension ReaderViewModel {
 
             pos = range.upperBound
         }
-        if pos < text.count {
-            let startIdx = text.index(text.startIndex, offsetBy: pos)
+        if pos < text.utf16Length {
+            let startIdx = text.index(atUTF16Offset: pos)
             result += text[startIdx...]
         }
         return (result, OffsetMap(points: points))

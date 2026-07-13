@@ -178,7 +178,7 @@ class AudioEngineService: ObservableObject {
             // Build char-to-frame mapping using only the speech frames
             // (not the silence padding). Characters map to real audio;
             // the padding exists solely to let timePitch flush.
-            let charCount = text.count
+            let charCount = text.utf16Length
             let framesPerChar = charCount > 0 ? Double(speechFrameCount) / Double(charCount) : 0
             var map: [(charOffset: Int, frame: AVAudioFramePosition)] = []
             let step = max(1, charCount / 200)

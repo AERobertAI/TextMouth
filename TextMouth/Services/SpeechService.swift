@@ -22,7 +22,7 @@ final class SpeechRenderCoordinator {
         completion: @escaping (Bool) -> Void
     ) {
         enqueue(
-            textLength: text.count,
+            textLength: text.utf16Length,
             shouldStart: shouldStart,
             start: { finish in
                 engine.render(text: text, voice: voice, wpm: wpm, completion: finish)
@@ -262,8 +262,8 @@ class SpeechService: NSObject, ObservableObject {
         // .speak() for the macOS speech synthesis engine, causing chunk
         // transitions to loop or stutter. Direct mode chunking handles
         // arbitrarily long texts on its own.
-        guard text.count <= SpeechRenderCoordinator.maximumTextLength else {
-            transitionLog("RENDER_SKIP: text too large (\(text.count) chars > \(SpeechRenderCoordinator.maximumTextLength)), staying in direct mode")
+        guard text.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
+            transitionLog("RENDER_SKIP: text too large (\(text.utf16Length) UTF-16 units > \(SpeechRenderCoordinator.maximumTextLength)), staying in direct mode")
             return
         }
 
@@ -280,7 +280,7 @@ class SpeechService: NSObject, ObservableObject {
             guard self.renderGeneration == myGeneration else { return }
 
             if success {
-                self.transitionLog("RENDER_READY: engine rendered \(text.count) chars, direct mode still active=\(self.usingDirectMode)")
+                self.transitionLog("RENDER_READY: engine rendered \(text.utf16Length) UTF-16 units, direct mode still active=\(self.usingDirectMode)")
             } else {
                 self.transitionLog("RENDER_FAILED: engine render failed, staying in direct mode")
             }
@@ -334,32 +334,33 @@ class SpeechService: NSObject, ObservableObject {
 
     private func speakDirect(_ text: String, fromCharOffset charOffset: Int) {
         usingDirectMode = true
-        let startOffset = max(0, min(charOffset, text.count))
-        let startIdx = text.index(text.startIndex, offsetBy: startOffset)
-        let remainingCount = text.distance(from: startIdx, to: text.endIndex)
+        let startOffset = max(0, min(charOffset, text.utf16Length))
+        let startIdx = text.index(atUTF16Offset: startOffset)
+        let normalizedStartOffset = text.utf16Offset(of: startIdx)
+        let remainingCount = text.utf16Length - normalizedStartOffset
 
         let speakText: String
         if remainingCount > Self.directModeChunkSize {
             // Chunk: take only directModeChunkSize chars, snapped to a word boundary
-            var endIdx = text.index(startIdx, offsetBy: Self.directModeChunkSize)
+            var endIdx = text.index(atUTF16Offset: normalizedStartOffset + Self.directModeChunkSize)
             // Advance to end of current word so we don't cut mid-word
             while endIdx < text.endIndex && !text[endIdx].isWhitespace {
                 endIdx = text.index(after: endIdx)
             }
             speakText = String(text[startIdx..<endIdx])
-            directModeBaseOffset = startOffset
-            directModeChunkEnd = startOffset + speakText.count
+            directModeBaseOffset = normalizedStartOffset
+            directModeChunkEnd = text.utf16Offset(of: endIdx)
             directModeChunked = true
-            transitionLog("CHUNK_START: offset=\(startOffset) len=\(speakText.count) end=\(directModeChunkEnd) totalText=\(text.count)")
-        } else if startOffset > 0 {
+            transitionLog("CHUNK_START: offset=\(normalizedStartOffset) len=\(speakText.utf16Length) end=\(directModeChunkEnd) totalText=\(text.utf16Length)")
+        } else if normalizedStartOffset > 0 {
             speakText = String(text[startIdx...])
-            directModeBaseOffset = startOffset
-            directModeChunkEnd = text.count
+            directModeBaseOffset = normalizedStartOffset
+            directModeChunkEnd = text.utf16Length
             directModeChunked = false
         } else {
             speakText = text
             directModeBaseOffset = 0
-            directModeChunkEnd = text.count
+            directModeChunkEnd = text.utf16Length
             directModeChunked = false
         }
 
@@ -526,7 +527,7 @@ class SpeechService: NSObject, ObservableObject {
             self?.handleEngineFinished()
         }
 
-        transitionLog("PRE_RENDERED_START: playing chapter (\(text.count) chars) from offset \(charOffset)")
+        transitionLog("PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
     }
 
     // MARK: - Seeking
@@ -632,8 +633,8 @@ class SpeechService: NSObject, ObservableObject {
             // Unicode scalars from the start — expensive for large texts.
             Self.positionQueue.async { [weak self] in
                 var word = ""
-                if offset >= 0 && offset < text.count {
-                    let idx = text.index(text.startIndex, offsetBy: offset)
+                if offset >= 0 && offset < text.utf16Length {
+                    let idx = text.index(atUTF16Offset: offset)
                     var end = idx
                     while end < text.endIndex && !text[end].isWhitespace {
                         end = text.index(after: end)
@@ -764,7 +765,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // If this was a chunked utterance, continue with the next direct chunk.
             if self.directModeChunked {
                 let nextOffset = self.directModeChunkEnd
-                if nextOffset < self.currentText.count {
+                if nextOffset < self.currentText.utf16Length {
                     // speakDirect assigns a fresh `liveDirectUtterance`
                     // for the new chunk.
                     self.transitionLog("CHUNK_CONTINUE: next chunk at offset \(nextOffset)")

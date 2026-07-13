@@ -40,7 +40,7 @@ enum PlainTextParser {
 
             // Skip underline-only lines (they're part of setext headings)
             if setextLines.contains(index) {
-                currentOffset += line.count + 1
+                currentOffset += line.utf16Length + 1
                 continue
             }
 
@@ -85,7 +85,7 @@ enum PlainTextParser {
                 }
             }
 
-            currentOffset += line.count + 1
+            currentOffset += line.utf16Length + 1
         }
 
         return headings

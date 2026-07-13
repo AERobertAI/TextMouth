@@ -129,6 +129,13 @@ class TextSubstitutionService: ObservableObject {
         loadRules()
     }
 
+    /// Dependency-injected initializer for deterministic production-target
+    /// tests. It deliberately does not read or write the persisted rule file.
+    init(rules: [SubstitutionRule], isEnabled: Bool = true) {
+        self.rules = rules
+        self.isEnabled = isEnabled
+    }
+
     // MARK: - Rule Management
 
     func addRule(_ rule: SubstitutionRule) {
@@ -188,9 +195,10 @@ class TextSubstitutionService: ObservableObject {
             var shift = 0
             for rep in replacements {
                 let adjustedStart = rep.range.location + shift
-                let lenDiff = rep.range.length - rep.replacement.count
+                let replacementLength = rep.replacement.utf16Length
+                let lenDiff = rep.range.length - replacementLength
                 totalDelta += lenDiff
-                let afterInModified = adjustedStart + rep.replacement.count
+                let afterInModified = adjustedStart + replacementLength
                 points.append((modifiedPos: afterInModified, cumulativeDelta: totalDelta))
                 shift -= lenDiff
             }
@@ -234,14 +242,17 @@ class TextSubstitutionService: ObservableObject {
 
     private func findPlainReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
         var results: [Replacement] = []
-        let searchText = rule.caseSensitive ? text : text.lowercased()
-        let searchPattern = rule.caseSensitive ? rule.pattern : rule.pattern.lowercased()
+        let nsText = text as NSString
+        let fullLength = nsText.length
+        let options: NSString.CompareOptions = rule.caseSensitive ? [] : [.caseInsensitive]
+        var remaining = NSRange(location: 0, length: fullLength)
 
-        var searchStart = searchText.startIndex
-        while let range = searchText.range(of: searchPattern, range: searchStart..<searchText.endIndex) {
-            let nsRange = NSRange(range, in: text)
-            results.append(Replacement(range: nsRange, replacement: rule.replacement))
-            searchStart = range.upperBound
+        while remaining.length > 0 {
+            let match = nsText.range(of: rule.pattern, options: options, range: remaining)
+            guard match.location != NSNotFound else { break }
+            results.append(Replacement(range: match, replacement: rule.replacement))
+            let nextLocation = NSMaxRange(match)
+            remaining = NSRange(location: nextLocation, length: fullLength - nextLocation)
         }
         return results
     }

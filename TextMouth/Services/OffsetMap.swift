@@ -1,5 +1,29 @@
 import Foundation
 
+/// TextMouth persists and exchanges text positions as UTF-16 offsets. This is
+/// the coordinate system used by NSRange, NSRegularExpression, AppKit, and
+/// AVSpeechSynthesizer callbacks. Central helpers prevent accidental mixing
+/// with Swift's grapheme-cluster `String.count` and `offsetBy:` APIs.
+extension String {
+    var utf16Length: Int { utf16.count }
+
+    func index(atUTF16Offset offset: Int) -> String.Index {
+        let clamped = max(0, min(offset, utf16.count))
+        var utf16Index = utf16.index(utf16.startIndex, offsetBy: clamped)
+        while let index = String.Index(utf16Index, within: self) {
+            return index
+        }
+        repeat {
+            utf16.formIndex(before: &utf16Index)
+        } while String.Index(utf16Index, within: self) == nil
+        return String.Index(utf16Index, within: self) ?? startIndex
+    }
+
+    func utf16Offset(of index: String.Index) -> Int {
+        index.utf16Offset(in: self)
+    }
+}
+
 /// A bidirectional mapping between character offsets in two versions of a text
 /// (e.g., before and after a transformation like filtering, insertion, or substitution).
 ///

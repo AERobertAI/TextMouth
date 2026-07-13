@@ -37,10 +37,10 @@ enum HTMLParser {
 
             let offset: Int
             if let range = fullText.range(of: headingText, range: searchStart..<fullText.endIndex) {
-                offset = fullText.distance(from: fullText.startIndex, to: range.lowerBound)
+                offset = fullText.utf16Offset(of: range.lowerBound)
                 searchStart = range.upperBound
             } else {
-                offset = fullText.distance(from: fullText.startIndex, to: searchStart)
+                offset = fullText.utf16Offset(of: searchStart)
             }
 
             headings.append(Heading(level: level, text: headingText, characterOffset: offset))

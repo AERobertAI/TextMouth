@@ -30,7 +30,7 @@ struct DocumentContent {
 
     /// Returns the total character count across all chapters
     var totalCharacterCount: Int {
-        chapters.reduce(0) { $0 + $1.text.count }
+        chapters.reduce(0) { $0 + $1.text.utf16Length }
     }
 
     /// Cumulative character offset for the start of each chapter.
@@ -38,7 +38,7 @@ struct DocumentContent {
     func chapterStartOffset(_ chapterIndex: Int) -> Int {
         guard chapterIndex > 0 else { return 0 }
         let clamped = min(chapterIndex, chapters.count)
-        return chapters[0..<clamped].reduce(0) { $0 + $1.text.count }
+        return chapters[0..<clamped].reduce(0) { $0 + $1.text.utf16Length }
     }
 
     /// Global character offset for a position in (chapter, localOffset)
@@ -82,7 +82,7 @@ struct DocumentContent {
         // as zero-length so they don't trap the cursor.
         var cumulative = 0
         for (index, chapter) in chapters.enumerated() {
-            let chapterLen = chapter.text.count
+            let chapterLen = chapter.text.utf16Length
             // Target inside this chapter: localOffset is the residual.
             // Use < (not <=) so a target exactly at a chapter boundary
             // lands on the START of the next chapter, not the END of
@@ -96,7 +96,7 @@ struct DocumentContent {
 
         // Target is at or past the end — clamp to the last chapter.
         let lastIndex = chapters.count - 1
-        let lastLen = chapters[lastIndex].text.count
+        let lastLen = chapters[lastIndex].text.utf16Length
         return (lastIndex, max(0, lastLen - 1))
     }
 }

@@ -366,10 +366,10 @@ enum EPUBParser {
             // Find the next occurrence after our search position
             let offset: Int
             if let range = allText.range(of: headingText, range: searchStart..<allText.endIndex) {
-                offset = allText.distance(from: allText.startIndex, to: range.lowerBound)
+                offset = allText.utf16Offset(of: range.lowerBound)
                 searchStart = range.upperBound
             } else {
-                offset = allText.distance(from: allText.startIndex, to: searchStart)
+                offset = allText.utf16Offset(of: searchStart)
             }
 
             headings.append(Heading(level: level, text: headingText, characterOffset: offset))

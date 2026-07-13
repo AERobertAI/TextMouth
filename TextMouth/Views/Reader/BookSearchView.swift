@@ -1,6 +1,29 @@
 import SwiftUI
 import Foundation
 
+enum BookTextSearch {
+    static func ranges(in text: String, query: String, useRegex: Bool) throws -> [NSRange] {
+        guard !query.isEmpty else { return [] }
+        let fullRange = NSRange(location: 0, length: text.utf16Length)
+        if useRegex {
+            let regex = try NSRegularExpression(pattern: query, options: [.caseInsensitive])
+            return regex.matches(in: text, range: fullRange).map(\.range)
+        }
+
+        let nsText = text as NSString
+        var results: [NSRange] = []
+        var remaining = fullRange
+        while remaining.length > 0 {
+            let match = nsText.range(of: query, options: [.caseInsensitive], range: remaining)
+            guard match.location != NSNotFound else { break }
+            results.append(match)
+            let nextLocation = NSMaxRange(match)
+            remaining = NSRange(location: nextLocation, length: fullRange.length - nextLocation)
+        }
+        return results
+    }
+}
+
 struct BookSearchView: View {
     let chapterTexts: [String]
     let chapterTitles: [String]
@@ -166,50 +189,33 @@ struct BookSearchView: View {
         var cumulativeCount = 0
 
         for (chapterIndex, chapterText) in chapterTexts.enumerated() {
-            let matches: [(range: Range<String.Index>, matched: String)]
-
-            if useRegex {
-                let regex: NSRegularExpression
-                do {
-                    regex = try NSRegularExpression(pattern: searchText, options: [.caseInsensitive])
-                } catch {
-                    return .regexError("Invalid regex: \(error.localizedDescription)")
-                }
-                let nsRange = NSRange(chapterText.startIndex..., in: chapterText)
-                let nsMatches = regex.matches(in: chapterText, range: nsRange)
-                matches = nsMatches.compactMap { match in
-                    guard let range = Range(match.range, in: chapterText) else { return nil }
-                    return (range: range, matched: String(chapterText[range]))
-                }
-            } else {
-                var searchMatches: [(range: Range<String.Index>, matched: String)] = []
-                var searchStart = chapterText.startIndex
-                let lowercasedChapter = chapterText.lowercased()
-                let lowercasedSearch = searchText.lowercased()
-
-                while let range = lowercasedChapter.range(of: lowercasedSearch, range: searchStart..<lowercasedChapter.endIndex) {
-                    let originalRange = range.lowerBound..<range.upperBound
-                    searchMatches.append((range: originalRange, matched: String(chapterText[originalRange])))
-                    searchStart = range.upperBound
-                }
-                matches = searchMatches
+            let nsMatches: [NSRange]
+            do {
+                nsMatches = try BookTextSearch.ranges(
+                    in: chapterText,
+                    query: searchText,
+                    useRegex: useRegex
+                )
+            } catch {
+                return .regexError("Invalid regex: \(error.localizedDescription)")
             }
 
-            for match in matches {
-                let characterOffset = chapterText.distance(from: chapterText.startIndex, to: match.range.lowerBound)
+            for nsMatch in nsMatches {
+                guard let matchRange = Range(nsMatch, in: chapterText) else { continue }
+                let characterOffset = nsMatch.location
                 let globalOffset = cumulativeCount + characterOffset
-                let snippet = buildContextSnippet(text: chapterText, matchRange: match.range)
+                let snippet = buildContextSnippet(text: chapterText, matchRange: matchRange)
 
                 results.append(SearchResult(
                     chapterIndex: chapterIndex,
                     characterOffset: characterOffset,
-                    matchedText: match.matched,
+                    matchedText: String(chapterText[matchRange]),
                     contextSnippet: snippet,
                     globalOffset: globalOffset
                 ))
             }
 
-            cumulativeCount += chapterText.count
+            cumulativeCount += chapterText.utf16Length
         }
 
         return results.isEmpty ? .empty : .results(results)
