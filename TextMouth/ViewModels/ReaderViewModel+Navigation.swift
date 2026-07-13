@@ -313,8 +313,8 @@ extension ReaderViewModel {
 
             if forward {
                 // Scan forward through word boundaries in this chapter
-                let newOffset = offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: remainingWords)
-                let wordsSkipped = countWordsBetween(in: chapterText, from: charOffset, to: newOffset)
+                let newOffset = Self.offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: remainingWords)
+                let wordsSkipped = Self.countWordsBetween(in: chapterText, from: charOffset, to: newOffset)
                 remainingWords -= wordsSkipped
 
                 if remainingWords > 0 {
@@ -332,8 +332,8 @@ extension ReaderViewModel {
                 }
             } else {
                 // Scan backward through word boundaries in this chapter
-                let newOffset = offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: -remainingWords)
-                let wordsSkipped = countWordsBetween(in: chapterText, from: newOffset, to: charOffset)
+                let newOffset = Self.offsetAfterSkippingWords(in: chapterText, from: charOffset, wordCount: -remainingWords)
+                let wordsSkipped = Self.countWordsBetween(in: chapterText, from: newOffset, to: charOffset)
                 remainingWords -= wordsSkipped
 
                 if remainingWords > 0 && newOffset == 0 {
@@ -400,15 +400,13 @@ extension ReaderViewModel {
               currentChapterIndex < content.chapters.count else { return }
 
         let totalTime = content.estimatedReadingTime(wpm: speechService.wordsPerMinute)
-        guard totalTime > 0 else { return }
+        guard let charDelta = Self.timeSkipCharacterDelta(
+            seconds: seconds,
+            totalCharacterCount: content.totalCharacterCount,
+            totalTime: totalTime
+        ) else { return }
 
-        // Calculate character delta from the time display formula:
-        // timeRemaining = totalTime * (remainingChars / totalChars)
-        // So: deltaChars = deltaSeconds / totalTime * totalChars
-        let totalChars = Double(content.totalCharacterCount)
-        let charDelta = Int(seconds / totalTime * totalChars)
-
-        debugLog("skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(totalChars) charDelta=\(charDelta)")
+        debugLog("skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(content.totalCharacterCount) charDelta=\(charDelta)")
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 
@@ -435,14 +433,7 @@ extension ReaderViewModel {
 
         // Snap to nearest word boundary so playback doesn't start mid-word
         let text = content.chapters[chapIdx].text
-        if charOffset > 0 && charOffset < text.utf16Length {
-            let targetIndex = text.index(atUTF16Offset: charOffset)
-            var wordStart = targetIndex
-            while wordStart > text.startIndex && !text[text.index(before: wordStart)].isWhitespace {
-                wordStart = text.index(before: wordStart)
-            }
-            charOffset = text.utf16Offset(of: wordStart)
-        }
+        charOffset = Self.snappedWordStart(in: text, at: charOffset)
 
         let sameChapter = (chapIdx == currentChapterIndex)
 
@@ -536,13 +527,11 @@ extension ReaderViewModel {
     /// Jump to the next top-level heading after the current position
     func nextHeading() {
         guard let content = content else { return }
-        let allHeadings = content.allHeadings
-
-        if let nextIndex = allHeadings.firstIndex(where: {
-            $0.chapterIndex > currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset > currentCharacterOffset)
-        }) {
-            let heading = allHeadings[nextIndex]
+        if let heading = Self.nextHeading(
+            in: content.allHeadings,
+            chapterIndex: currentChapterIndex,
+            characterOffset: currentCharacterOffset
+        ) {
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
@@ -552,13 +541,11 @@ extension ReaderViewModel {
     /// Jump to the previous top-level heading before the current position
     func previousHeading() {
         guard let content = content else { return }
-        let allHeadings = content.allHeadings
-
-        if let prevIndex = allHeadings.lastIndex(where: {
-            $0.chapterIndex < currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset < currentCharacterOffset - 10)
-        }) {
-            let heading = allHeadings[prevIndex]
+        if let heading = Self.previousHeading(
+            in: content.allHeadings,
+            chapterIndex: currentChapterIndex,
+            characterOffset: currentCharacterOffset
+        ) {
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
@@ -641,7 +628,7 @@ extension ReaderViewModel {
     /// Find the character offset after skipping a given number of words forward (positive)
     /// or backward (negative) from a starting offset. Scans actual word boundaries in the text
     /// rather than using a fixed chars-per-word estimate.
-    func offsetAfterSkippingWords(in text: String, from startOffset: Int, wordCount: Int) -> Int {
+    nonisolated static func offsetAfterSkippingWords(in text: String, from startOffset: Int, wordCount: Int) -> Int {
         guard !text.isEmpty else { return 0 }
         let clampedStart = max(0, min(startOffset, text.utf16Length))
 
@@ -694,7 +681,7 @@ extension ReaderViewModel {
 
     /// Count the number of word boundaries between two offsets in a text.
     /// Used to determine how many words were actually skipped within a chapter.
-    func countWordsBetween(in text: String, from startOffset: Int, to endOffset: Int) -> Int {
+    nonisolated static func countWordsBetween(in text: String, from startOffset: Int, to endOffset: Int) -> Int {
         guard !text.isEmpty, startOffset < endOffset else { return 0 }
         let start = text.index(atUTF16Offset: max(0, min(startOffset, text.utf16Length)))
         let end = text.index(atUTF16Offset: max(0, min(endOffset, text.utf16Length)))
@@ -714,5 +701,68 @@ extension ReaderViewModel {
             idx = text.index(after: idx)
         }
         return count
+    }
+
+    /// Convert a time skip into the character delta used by the reader's
+    /// remaining-time model. Nil indicates content with no usable duration.
+    nonisolated static func timeSkipCharacterDelta(
+        seconds: Double,
+        totalCharacterCount: Int,
+        totalTime: TimeInterval
+    ) -> Int? {
+        guard totalTime > 0, totalCharacterCount > 0 else { return nil }
+        return Int(seconds / totalTime * Double(totalCharacterCount))
+    }
+
+    /// Snap a UTF-16 offset backward to the beginning of its current word.
+    /// Out-of-range offsets are clamped so navigation never creates an invalid index.
+    nonisolated static func snappedWordStart(in text: String, at offset: Int) -> Int {
+        guard !text.isEmpty else { return 0 }
+        let clampedOffset = min(max(0, offset), text.utf16Length)
+        guard clampedOffset > 0, clampedOffset < text.utf16Length else { return clampedOffset }
+
+        var wordStart = text.index(atUTF16Offset: clampedOffset)
+        while wordStart > text.startIndex && !text[text.index(before: wordStart)].isWhitespace {
+            wordStart = text.index(before: wordStart)
+        }
+        return text.utf16Offset(of: wordStart)
+    }
+
+    /// Return the heading at or immediately before the current reading position.
+    nonisolated static func currentHeading(
+        in headings: [Heading],
+        chapterIndex: Int,
+        characterOffset: Int
+    ) -> Heading? {
+        headings.last(where: {
+            $0.chapterIndex < chapterIndex ||
+            ($0.chapterIndex == chapterIndex && $0.characterOffset <= characterOffset)
+        })
+    }
+
+    /// Return the first heading strictly after the current reading position.
+    nonisolated static func nextHeading(
+        in headings: [Heading],
+        chapterIndex: Int,
+        characterOffset: Int
+    ) -> Heading? {
+        headings.first(where: {
+            $0.chapterIndex > chapterIndex ||
+            ($0.chapterIndex == chapterIndex && $0.characterOffset > characterOffset)
+        })
+    }
+
+    /// Return the prior heading, ignoring a heading immediately behind the cursor
+    /// so repeated Previous commands continue moving instead of selecting itself.
+    nonisolated static func previousHeading(
+        in headings: [Heading],
+        chapterIndex: Int,
+        characterOffset: Int,
+        graceZone: Int = 10
+    ) -> Heading? {
+        headings.last(where: {
+            $0.chapterIndex < chapterIndex ||
+            ($0.chapterIndex == chapterIndex && $0.characterOffset < characterOffset - graceZone)
+        })
     }
 }

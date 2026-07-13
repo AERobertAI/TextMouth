@@ -184,11 +184,11 @@ extension ReaderViewModel {
     /// Find the heading at or before the current reading position
     func currentHeadingAtPosition() -> Heading? {
         guard let content = content else { return nil }
-        let allHeadings = content.allHeadings
-        return allHeadings.last(where: {
-            $0.chapterIndex < currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset <= currentCharacterOffset)
-        })
+        return Self.currentHeading(
+            in: content.allHeadings,
+            chapterIndex: currentChapterIndex,
+            characterOffset: currentCharacterOffset
+        )
     }
 
     /// Estimated character count for a heading section (from heading start to next heading or end of book)
