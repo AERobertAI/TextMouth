@@ -362,14 +362,14 @@ struct BookVoicePickerView: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Pitch: \(pitchLabel(viewModel.speechService.pitchMultiplier))")
-                            .accessibilityLabel("Pitch: \(pitchLabel(viewModel.speechService.pitchMultiplier))")
+                        Text("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
+                            .accessibilityLabel("Pitch: \(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))")
 
                         Slider(
                             value: Binding(
                                 get: { viewModel.speechService.pitchMultiplier },
                                 set: { newPitch in
-                                    let clamped = max(0.5, min(newPitch, 2.0))
+                                    let clamped = SpeechService.clampedPitch(newPitch)
                                     if abs(clamped - viewModel.speechService.pitchMultiplier) >= 0.05 {
                                         viewModel.adjustPitch(to: clamped)
                                     }
@@ -381,7 +381,7 @@ struct BookVoicePickerView: View {
                             Text("Pitch")
                         }
                         .accessibilityLabel("Pitch slider")
-                        .accessibilityValue(pitchLabel(viewModel.speechService.pitchMultiplier))
+                        .accessibilityValue(SpeechService.pitchLabel(viewModel.speechService.pitchMultiplier))
                     }
                 } header: {
                     Text("Pitch")
@@ -461,14 +461,8 @@ struct BookVoicePickerView: View {
         let utterance = AVSpeechUtterance(string: "Hello! This is how I'll read for you.")
         utterance.voice = viewModel.speechService.currentVoice
         utterance.rate = SpeechService.rateForWPM(viewModel.speechService.wordsPerMinute)
-        utterance.pitchMultiplier = Float(max(0.5, min(viewModel.speechService.pitchMultiplier, 2.0)))
+        utterance.pitchMultiplier = Float(SpeechService.clampedPitch(viewModel.speechService.pitchMultiplier))
         previewSynthesizer.speak(utterance)
-    }
-
-    /// Format pitch multiplier for display
-    private func pitchLabel(_ value: Double) -> String {
-        if abs(value - 1.0) < 0.05 { return "Normal (1.0x)" }
-        return String(format: "%.1fx", value)
     }
 }
 

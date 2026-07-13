@@ -383,7 +383,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let utterance = AVSpeechUtterance(string: speakText)
         utterance.voice = currentVoice
         utterance.rate = Self.rateForWPM(wordsPerMinute)
-        utterance.pitchMultiplier = Float(max(0.5, min(pitchMultiplier, 2.0)))
+        utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
         utterance.prefersAssistiveTechnologySettings = false
         // Mark this utterance as live BEFORE handing it to the synth.
         // The didFinish delegate compares against `liveDirectUtterance`
@@ -603,8 +603,19 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// Change pitch in real-time without interrupting playback.
     func setPitchRealtime(_ newPitch: Double) {
-        pitchMultiplier = max(minimumPitch, min(newPitch, maximumPitch))
+        pitchMultiplier = Self.clampedPitch(newPitch)
         // pitchMultiplier didSet handles audioEngine.setPitch
+    }
+
+    /// Clamp a pitch multiplier to the range supported by both speech backends.
+    nonisolated static func clampedPitch(_ pitch: Double) -> Double {
+        max(0.5, min(pitch, 2.0))
+    }
+
+    /// User-facing pitch label shared by reader and global settings screens.
+    nonisolated static func pitchLabel(_ pitch: Double) -> String {
+        if abs(pitch - 1.0) < 0.05 { return "Normal (1.0x)" }
+        return String(format: "%.1fx", pitch)
     }
 
     // MARK: - Position Tracking

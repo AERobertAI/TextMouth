@@ -50,13 +50,14 @@ extension ReaderViewModel {
 
     /// Copy this book's local voice, speed, and pitch to the global settings
     func saveSettingsToGlobal() {
-        if let localWPM = book.localWPM {
+        let localSettings = book.localVoiceSettings
+        if let localWPM = localSettings.wordsPerMinute {
             settingsViewModel.wordsPerMinute = localWPM
         }
-        if let localPitch = book.localPitch {
+        if let localPitch = localSettings.pitch {
             settingsViewModel.pitchMultiplier = localPitch
         }
-        if let localVoiceID = book.localVoiceID {
+        if let localVoiceID = localSettings.voiceID {
             settingsViewModel.selectedVoiceID = localVoiceID
         }
         announceToVoiceOver("Settings saved to global defaults")
@@ -64,9 +65,7 @@ extension ReaderViewModel {
 
     /// Reset this book to use global voice, speed, and pitch settings
     func resetToGlobalSettings() {
-        book.localVoiceID = nil
-        book.localWPM = nil
-        book.localPitch = nil
+        book.clearLocalVoiceSettings()
         libraryViewModel.updateLocalVoiceAndSpeed(
             bookID: book.id,
             voiceID: nil,

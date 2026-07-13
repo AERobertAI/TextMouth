@@ -250,6 +250,24 @@ struct Book: Identifiable, Codable, Hashable {
         localVoiceID != nil || localWPM != nil || localPitch != nil
     }
 
+    struct LocalVoiceSettings: Equatable {
+        var voiceID: String? = nil
+        var wordsPerMinute: Double? = nil
+        var pitch: Double? = nil
+    }
+
+    /// Snapshot used when copying this book's overrides into global settings.
+    var localVoiceSettings: LocalVoiceSettings {
+        LocalVoiceSettings(voiceID: localVoiceID, wordsPerMinute: localWPM, pitch: localPitch)
+    }
+
+    /// Remove all per-book voice overrides atomically from the model.
+    mutating func clearLocalVoiceSettings() {
+        localVoiceID = nil
+        localWPM = nil
+        localPitch = nil
+    }
+
     /// Apply the metadata fields that can be edited by the library and reader
     /// metadata sheets. Keeping this mutation on Book makes the complete field
     /// set independently testable and prevents individual callers from silently

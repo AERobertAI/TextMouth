@@ -122,8 +122,8 @@ struct VoiceSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Default Pitch: \(pitchLabel(settingsViewModel.pitchMultiplier))")
-                        .accessibilityLabel("Default pitch: \(pitchLabel(settingsViewModel.pitchMultiplier))")
+                    Text("Default Pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
+                        .accessibilityLabel("Default pitch: \(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))")
 
                     Slider(
                         value: $settingsViewModel.pitchMultiplier,
@@ -133,7 +133,7 @@ struct VoiceSettingsView: View {
                         Text("Pitch")
                     }
                     .accessibilityLabel("Pitch slider")
-                    .accessibilityValue(pitchLabel(settingsViewModel.pitchMultiplier))
+                    .accessibilityValue(SpeechService.pitchLabel(settingsViewModel.pitchMultiplier))
 
                     Text("Default pitch for new books. 1.0 is normal. Each book can override this.")
                         .font(.caption)
@@ -151,14 +151,8 @@ struct VoiceSettingsView: View {
         let utterance = AVSpeechUtterance(string: "Hello! This is TextMouth, ready to read for you.")
         utterance.voice = AVSpeechSynthesisVoice(identifier: settingsViewModel.selectedVoiceID)
         utterance.rate = SpeechService.rateForWPM(settingsViewModel.wordsPerMinute)
-        utterance.pitchMultiplier = Float(max(0.5, min(settingsViewModel.pitchMultiplier, 2.0)))
+        utterance.pitchMultiplier = Float(SpeechService.clampedPitch(settingsViewModel.pitchMultiplier))
         previewSynthesizer.speak(utterance)
-    }
-
-    /// Format pitch multiplier for display (e.g. "1.0x" or "Normal")
-    private func pitchLabel(_ value: Double) -> String {
-        if abs(value - 1.0) < 0.05 { return "Normal (1.0x)" }
-        return String(format: "%.1fx", value)
     }
 }
 
