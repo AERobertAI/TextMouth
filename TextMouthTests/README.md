@@ -14,7 +14,7 @@ must use `@testable import TextMouth`.
 
 Migration progress is tracked in `../TODO-2026-07-12.md`. The historical
 runner executed 1,184 logical scenarios (1,091 literal registrations plus
-loop-generated cases). Two migration batches have moved 164 of those scenarios
+loop-generated cases). Three migration batches have moved 210 of those scenarios
 to the hosted suite without compiling copied app implementations. The hosted
-suite currently reports 124 XCTest methods and executes 231 logical cases when
+suite currently reports 170 XCTest methods and executes 277 logical cases when
 named scenarios inside compatibility activities are counted.
