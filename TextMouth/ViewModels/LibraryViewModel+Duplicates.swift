@@ -46,8 +46,13 @@ extension LibraryViewModel {
               let existing = pendingDuplicateExisting else { return }
         let originalURL = pendingDuplicateOriginalURL
 
-        // Delete old .tmb
-        FileImportService.deleteBookPackage(existing)
+        // Delete old .tmb before changing the library model.
+        do {
+            try FileImportService.deleteBookPackage(existing)
+        } catch {
+            presentFilesystemError("Could not replace duplicate", error: error)
+            return
+        }
         library.removeBook(id: existing.id)
 
         // Add new book (already has its own .tmb from import)
@@ -80,7 +85,12 @@ extension LibraryViewModel {
     /// Cancel the duplicate import — remove the newly created .tmb
     func cancelDuplicate() {
         if let newBook = pendingDuplicateBook {
-            FileImportService.deleteBookPackage(newBook)
+            do {
+                try FileImportService.deleteBookPackage(newBook)
+            } catch {
+                presentFilesystemError("Could not discard duplicate import", error: error)
+                return
+            }
         }
         clearDuplicateState()
     }

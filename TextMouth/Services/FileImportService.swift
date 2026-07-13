@@ -495,35 +495,39 @@ enum FileImportService {
     /// Delete a book's entire .tmb package.
     /// Respects the "Move to Trash" setting — uses Trash when enabled,
     /// permanent deletion otherwise.
-    static func deleteBookPackage(_ book: Book) {
+    static func deleteBookPackage(_ book: Book) throws {
         let tmbDir = book.tmbDirectory
-        removeItemRespectingTrashSetting(at: tmbDir)
+        try removeItemRespectingTrashSetting(at: tmbDir)
     }
 
     /// Delete just the book file from a .tmb (legacy compat - prefer deleteBookPackage)
-    static func deleteBookFile(at path: String) {
+    static func deleteBookFile(at path: String) throws {
         let url = URL(fileURLWithPath: path)
         let parent = url.deletingLastPathComponent()
         if parent.pathExtension == "tmb" {
-            removeItemRespectingTrashSetting(at: parent)
+            try removeItemRespectingTrashSetting(at: parent)
         } else {
-            removeItemRespectingTrashSetting(at: url)
+            try removeItemRespectingTrashSetting(at: url)
         }
     }
 
     /// Remove an item from disk, using Trash if the setting is enabled.
-    /// Falls back to permanent deletion if trashing fails (e.g. external volumes).
-    static func removeItemRespectingTrashSetting(at url: URL) {
+    /// A Trash failure is surfaced to the caller and never converted into an
+    /// unconfirmed permanent deletion.
+    static func removeItemRespectingTrashSetting(
+        at url: URL,
+        trashItem: (URL) throws -> Void = { item in
+            try FileManager.default.trashItem(at: item, resultingItemURL: nil)
+        },
+        removeItem: (URL) throws -> Void = { item in
+            try FileManager.default.removeItem(at: item)
+        }
+    ) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         if ConfigService.shared.config.moveToTrashInsteadOfDeleting {
-            do {
-                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
-            } catch {
-                // Trash failed (external volume, permissions, etc.) — fall back to permanent delete
-                try? FileManager.default.removeItem(at: url)
-            }
+            try trashItem(url)
         } else {
-            try? FileManager.default.removeItem(at: url)
+            try removeItem(url)
         }
     }
 

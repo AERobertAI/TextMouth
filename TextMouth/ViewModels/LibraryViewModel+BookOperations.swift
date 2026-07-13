@@ -48,14 +48,28 @@ extension LibraryViewModel {
     }
 
     /// Internal helper to remove books with optional .tmb deletion
-    func performRemoveBooks(_ books: [Book], deleteTMB: Bool) {
+    func performRemoveBooks(
+        _ books: [Book],
+        deleteTMB: Bool,
+        deletePackage: (Book) throws -> Void = { try FileImportService.deleteBookPackage($0) }
+    ) {
+        var failures: [String] = []
         for book in books {
             if deleteTMB {
-                FileImportService.deleteBookPackage(book)
+                do {
+                    try deletePackage(book)
+                } catch {
+                    failures.append("\(book.title): \(error.localizedDescription)")
+                    continue
+                }
             }
             library.removeBook(id: book.id)
         }
         save()
+        if !failures.isEmpty {
+            errorMessage = "Some books could not be moved to Trash and remain in the library:\n" + failures.joined(separator: "\n")
+            showError = true
+        }
     }
 
     // MARK: - Moving Books

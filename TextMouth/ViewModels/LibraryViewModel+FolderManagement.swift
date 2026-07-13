@@ -40,16 +40,35 @@ extension LibraryViewModel {
 
     /// Remove a folder and permanently delete all its contents (books, subfolders, .tmb files).
     func removeFolderAndEverything(_ folder: BookFolder) {
-        let removedBooks = library.removeFolderAndContents(id: folder.id)
-        // Delete .tmb packages from disk (respects trash setting)
-        for book in removedBooks {
-            FileImportService.deleteBookPackage(book)
+        let path = folder.fullPath
+        let booksToRemove = library.books.filter {
+            $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
         }
-        // Remove the folder's disk directory
+        var failures: [String] = []
+        for book in booksToRemove {
+            do {
+                try FileImportService.deleteBookPackage(book)
+                library.removeBook(id: book.id)
+            } catch {
+                failures.append("\(book.title): \(error.localizedDescription)")
+            }
+        }
+
         let folderDiskURL = TextMouthPaths.libraryDir
-            .appendingPathComponent(folder.fullPath, isDirectory: true)
-        FileImportService.removeItemRespectingTrashSetting(at: folderDiskURL)
+            .appendingPathComponent(path, isDirectory: true)
+        if failures.isEmpty {
+            do {
+                try FileImportService.removeItemRespectingTrashSetting(at: folderDiskURL)
+                _ = library.removeFolderAndContents(id: folder.id)
+            } catch {
+                failures.append("\(folder.name): \(error.localizedDescription)")
+            }
+        }
         save()
+        if !failures.isEmpty {
+            errorMessage = "Some items could not be moved to Trash and remain in the library:\n" + failures.joined(separator: "\n")
+            showError = true
+        }
     }
 
     /// Move a folder to a new parent, preserving its internal structure on disk.
