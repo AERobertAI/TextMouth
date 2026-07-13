@@ -1,5 +1,7 @@
 import Foundation
 
+#if !canImport(TextMouth)
+
 struct SubstitutionRule: Codable, Identifiable, Equatable {
     let id: UUID
     var name: String
@@ -133,6 +135,32 @@ struct TestOffsetMap {
         return max(0, original - delta)
     }
 }
+
+#else
+@testable import TextMouth
+
+/// Hosted-test adapter: every legacy substitution scenario is routed through
+/// the dependency-injected production service instead of the historical copy.
+func applyRules(_ rules: [SubstitutionRule], to text: String) -> String {
+    MainActor.assumeIsolated {
+        TextSubstitutionService(rules: rules).transform(text).modifiedText
+    }
+}
+
+/// Preserve the legacy scenario syntax while exercising production OffsetMap.
+struct TestOffsetMap {
+    private let map: OffsetMap
+
+    init(points: [(modifiedPos: Int, cumulativeDelta: Int)] = []) {
+        map = OffsetMap(points: points.map {
+            (targetPos: $0.modifiedPos, cumulativeDelta: $0.cumulativeDelta)
+        })
+    }
+
+    func toOriginal(_ modified: Int) -> Int { map.toSource(modified) }
+    func toModified(_ original: Int) -> Int { map.toTarget(original) }
+}
+#endif
 
 func runTextSubstitutionTests() {
 print("\n--- Text Substitution: Rule Model ---")

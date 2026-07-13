@@ -94,3 +94,16 @@ final class LegacyOffsetMapScenarioTests: XCTestCase {
         )
     }
 }
+
+@MainActor
+final class LegacyTextSubstitutionScenarioTests: XCTestCase {
+    func testLegacyTextSubstitutionScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runTextSubstitutionTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            76,
+            "Every inventoried text-substitution scenario should remain registered"
+        )
+    }
+}
