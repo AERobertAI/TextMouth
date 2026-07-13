@@ -793,8 +793,13 @@ extension ReaderViewModel {
         // Smart mode: only rewind if pause was long enough
         if settingsViewModel.rewindSmartMode {
             guard let stoppedAt = book.lastPlaybackStopped else { return }
-            let elapsed = Date().timeIntervalSince(stoppedAt)
-            if elapsed < settingsViewModel.rewindSmartThreshold {
+            let now = Date()
+            let elapsed = now.timeIntervalSince(stoppedAt)
+            if !Self.hasReachedSmartRewindThreshold(
+                lastStoppedAt: stoppedAt,
+                now: now,
+                threshold: settingsViewModel.rewindSmartThreshold
+            ) {
                 debugLog("rewindOnResume: smart mode skip, elapsed=\(Int(elapsed))s < threshold=\(Int(settingsViewModel.rewindSmartThreshold))s")
                 return
             }
@@ -833,6 +838,16 @@ extension ReaderViewModel {
                 }
             }
         }
+    }
+
+    /// Determine whether a paused book has been idle long enough for smart rewind.
+    /// The explicit clock makes boundary behavior deterministic in regression tests.
+    nonisolated static func hasReachedSmartRewindThreshold(
+        lastStoppedAt: Date,
+        now: Date,
+        threshold: TimeInterval
+    ) -> Bool {
+        now.timeIntervalSince(lastStoppedAt) >= threshold
     }
 
     /// Find the start of the current sentence by scanning backward for sentence-ending punctuation.

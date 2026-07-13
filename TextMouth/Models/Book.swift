@@ -241,6 +241,11 @@ struct Book: Identifiable, Codable, Hashable {
         localWPM ?? fallback
     }
 
+    /// Whether this book overrides any global voice, speed, or pitch setting.
+    var hasLocalVoiceSettings: Bool {
+        localVoiceID != nil || localWPM != nil || localPitch != nil
+    }
+
     /// Apply the metadata fields that can be edited by the library and reader
     /// metadata sheets. Keeping this mutation on Book makes the complete field
     /// set independently testable and prevents individual callers from silently

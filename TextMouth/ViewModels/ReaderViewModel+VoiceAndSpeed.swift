@@ -84,7 +84,7 @@ extension ReaderViewModel {
 
     /// Whether this book has local voice/speed/pitch overrides
     var hasLocalSettings: Bool {
-        book.localVoiceID != nil || book.localWPM != nil || book.localPitch != nil
+        book.hasLocalVoiceSettings
     }
 
     // MARK: - Skip Sections

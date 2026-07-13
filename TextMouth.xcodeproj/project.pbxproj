@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A90000000000000000000001 /* LegacyBookStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000000000000000000002 /* LegacyBookStateTests.swift */; };
 		A80000000000000000000001 /* BookmarkToggleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80000000000000000000002 /* BookmarkToggleTests.swift */; };
 		A70000000000000000000001 /* LegacyMarkdownCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */; };
 		A60000000000000000000001 /* LegacyLibraryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000002 /* LegacyLibraryModelTests.swift */; };
@@ -140,6 +141,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A90000000000000000000002 /* LegacyBookStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookStateTests.swift; sourceTree = "<group>"; };
 		A80000000000000000000002 /* BookmarkToggleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkToggleTests.swift; path = ../TextMouthTests/Sources/Tests/BookmarkToggleTests.swift; sourceTree = "<group>"; };
 		A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyMarkdownCacheTests.swift; sourceTree = "<group>"; };
 		A60000000000000000000002 /* LegacyLibraryModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyLibraryModelTests.swift; sourceTree = "<group>"; };
@@ -433,6 +435,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				A90000000000000000000002 /* LegacyBookStateTests.swift */,
 				A80000000000000000000002 /* BookmarkToggleTests.swift */,
 				A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */,
 				A60000000000000000000002 /* LegacyLibraryModelTests.swift */,
@@ -591,6 +594,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A90000000000000000000001 /* LegacyBookStateTests.swift in Sources */,
 				A80000000000000000000001 /* BookmarkToggleTests.swift in Sources */,
 				A70000000000000000000001 /* LegacyMarkdownCacheTests.swift in Sources */,
 				A60000000000000000000001 /* LegacyLibraryModelTests.swift in Sources */,

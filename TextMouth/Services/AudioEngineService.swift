@@ -338,9 +338,14 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// Set pitch using a multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch).
     /// Converts to cents for AVAudioUnitTimePitch: cents = 1200 * log2(multiplier)
     func setPitch(multiplier: Double) {
+        timePitch.pitch = Float(Self.pitchCents(for: multiplier))
+    }
+
+    /// Convert a user-facing pitch multiplier into AVAudioUnitTimePitch cents.
+    /// Values outside the supported half- to double-pitch range are clamped.
+    nonisolated static func pitchCents(for multiplier: Double) -> Double {
         let clamped = max(0.5, min(multiplier, 2.0))
-        let cents = 1200.0 * log2(clamped)
-        timePitch.pitch = Float(cents)
+        return 1200.0 * log2(clamped)
     }
 
     func setVolume(_ volume: Float) {
