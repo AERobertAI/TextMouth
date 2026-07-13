@@ -1,4 +1,10 @@
 import Foundation
+#if canImport(TextMouth)
+@testable import TextMouth
+
+/// Use the app's actual defaults when this legacy scenario file is hosted.
+let defaultSoundAssignments = SoundEffectService.defaultAssignments
+#else
 
 // Mirror the KeyBinding struct for testing
 struct KeyBinding: Codable, Equatable, Hashable {
@@ -146,6 +152,7 @@ let defaultSoundAssignments: [SoundEvent: String] = [
     .whereAmIStart: "Glass",
     .whereAmIEnd: "Submarine",
 ]
+#endif
 
 func runKeyboardShortcutTests() {
 print("\n--- KeyBinding Model Tests ---")

@@ -131,3 +131,15 @@ final class LegacyBookmarkToggleScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyKeyboardShortcutScenarioTests: XCTestCase {
+    func testLegacyKeyboardShortcutScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runKeyboardShortcutTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            36,
+            "Every inventoried keyboard-shortcut and sound scenario should remain registered"
+        )
+    }
+}
