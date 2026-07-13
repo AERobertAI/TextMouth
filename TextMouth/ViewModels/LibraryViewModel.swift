@@ -78,6 +78,7 @@ class LibraryViewModel: ObservableObject {
     @Published var pendingDuplicateBook: Book?
     @Published var pendingDuplicateExisting: Book?
     @Published var pendingDuplicateFolder: String = ""
+    @Published var pendingDuplicateOriginalURL: URL?
 
     /// Import progress tracking
     @Published var isImporting = false

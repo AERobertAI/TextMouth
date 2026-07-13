@@ -9,13 +9,18 @@ extension LibraryViewModel {
     /// Add a book, checking for duplicates by hash or source path.
     /// Returns true if added immediately, false if a duplicate dialog is shown.
     @discardableResult
-    func addBookCheckingDuplicate(_ book: Book, toFolder folderPath: String) -> Bool {
+    func addBookCheckingDuplicate(
+        _ book: Book,
+        toFolder folderPath: String,
+        originalURL: URL? = nil
+    ) -> Bool {
         // Check for existing book with same hash
         if let existing = library.books.first(where: { $0.md5Hash == book.md5Hash }) {
             // Same file content — show replace/duplicate dialog
             pendingDuplicateBook = book
             pendingDuplicateExisting = existing
             pendingDuplicateFolder = folderPath
+            pendingDuplicateOriginalURL = originalURL
             showDuplicateDialog = true
             return false
         }
@@ -26,6 +31,7 @@ extension LibraryViewModel {
             pendingDuplicateBook = book
             pendingDuplicateExisting = existing
             pendingDuplicateFolder = folderPath
+            pendingDuplicateOriginalURL = originalURL
             showDuplicateDialog = true
             return false
         }
@@ -38,6 +44,7 @@ extension LibraryViewModel {
     func replaceDuplicate() {
         guard let newBook = pendingDuplicateBook,
               let existing = pendingDuplicateExisting else { return }
+        let originalURL = pendingDuplicateOriginalURL
 
         // Delete old .tmb
         FileImportService.deleteBookPackage(existing)
@@ -48,11 +55,15 @@ extension LibraryViewModel {
         save()
 
         clearDuplicateState()
+        if let originalURL {
+            handleOriginalFileDeletion(url: originalURL)
+        }
     }
 
     /// Keep both the existing and the new book as separate entries
     func keepDuplicate() {
         guard let newBook = pendingDuplicateBook else { return }
+        let originalURL = pendingDuplicateOriginalURL
 
         // The new book was already imported to its .tmb by importFile,
         // but Library.addBook won't add it because the hash matches.
@@ -61,6 +72,9 @@ extension LibraryViewModel {
         save()
 
         clearDuplicateState()
+        if let originalURL {
+            handleOriginalFileDeletion(url: originalURL)
+        }
     }
 
     /// Cancel the duplicate import — remove the newly created .tmb
@@ -76,6 +90,7 @@ extension LibraryViewModel {
         pendingDuplicateBook = nil
         pendingDuplicateExisting = nil
         pendingDuplicateFolder = ""
+        pendingDuplicateOriginalURL = nil
         showDuplicateDialog = false
     }
 

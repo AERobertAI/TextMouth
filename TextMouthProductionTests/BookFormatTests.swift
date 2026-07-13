@@ -30,4 +30,72 @@ final class BookFormatTests: XCTestCase {
         XCTAssertEqual(BookFormat.detect(from: docxURL), .docx)
         XCTAssertTrue(BookFormat.docx.fileExtensions.contains("docx"))
     }
+
+    func testDuplicateImportDoesNotDeleteOriginalBeforeUserDecision() throws {
+        let viewModel = LibraryViewModel()
+        let existing = makeBook(hash: "same-content")
+        let duplicate = makeBook(hash: "same-content")
+        viewModel.library = Library(books: [existing])
+        let source = try makeTemporarySourceFile()
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let previousBehavior = ConfigService.shared.config.importDeleteBehavior
+        ConfigService.shared.config.importDeleteBehavior = .deleteAfterImport
+        defer { ConfigService.shared.config.importDeleteBehavior = previousBehavior }
+
+        XCTAssertFalse(
+            viewModel.addBookCheckingDuplicate(
+                duplicate,
+                toFolder: "",
+                originalURL: source
+            )
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+
+        viewModel.cancelDuplicate()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertNil(viewModel.pendingDuplicateOriginalURL)
+    }
+
+    func testAcceptedDuplicateProcessesOriginalDeletionPreference() throws {
+        let viewModel = LibraryViewModel()
+        let existing = makeBook(hash: "same-content")
+        let duplicate = makeBook(hash: "same-content")
+        viewModel.library = Library(books: [existing])
+        let source = try makeTemporarySourceFile()
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let previousBehavior = ConfigService.shared.config.importDeleteBehavior
+        ConfigService.shared.config.importDeleteBehavior = .deleteAfterImport
+        defer { ConfigService.shared.config.importDeleteBehavior = previousBehavior }
+
+        XCTAssertFalse(
+            viewModel.addBookCheckingDuplicate(
+                duplicate,
+                toFolder: "",
+                originalURL: source
+            )
+        )
+        viewModel.keepDuplicate()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertNil(viewModel.pendingDuplicateOriginalURL)
+    }
+
+    private func makeBook(hash: String) -> Book {
+        Book(
+            title: UUID().uuidString,
+            format: .txt,
+            filePath: "/tmp/book.txt",
+            md5Hash: hash,
+            tmbDirectoryName: "\(UUID().uuidString).tmb"
+        )
+    }
+
+    private func makeTemporarySourceFile() throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("source".utf8).write(to: url)
+        return url
+    }
 }

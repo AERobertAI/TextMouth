@@ -24,13 +24,13 @@ extension LibraryViewModel {
                 // Single file import
                 do {
                     let book = try FileImportService.importFile(from: url)
-                    if addBookCheckingDuplicate(book, toFolder: "") {
+                    if addBookCheckingDuplicate(book, toFolder: "", originalURL: url) {
                         save()
                         if let added = library.books.first(where: { $0.md5Hash == book.md5Hash }) {
                             NotificationCenter.default.post(name: .openBookWindow, object: added.id)
                         }
+                        handleOriginalFileDeletion(url: url)
                     }
-                    handleOriginalFileDeletion(url: url)
                 } catch {
                     errorMessage = error.localizedDescription
                     showError = true
@@ -294,8 +294,9 @@ extension LibraryViewModel {
             } else {
                 do {
                     let book = try FileImportService.importFile(from: url, toFolder: folderPath)
-                    addBookCheckingDuplicate(book, toFolder: folderPath)
-                    handleOriginalFileDeletion(url: url)
+                    if addBookCheckingDuplicate(book, toFolder: folderPath, originalURL: url) {
+                        handleOriginalFileDeletion(url: url)
+                    }
                 } catch {
                     errorMessage = error.localizedDescription
                     showError = true
