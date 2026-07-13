@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A70000000000000000000001 /* LegacyMarkdownCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */; };
 		A60000000000000000000001 /* LegacyLibraryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000002 /* LegacyLibraryModelTests.swift */; };
 		A50000000000000000000001 /* LegacyDocumentAndAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */; };
 		A40000000000000000000001 /* ParserEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000002 /* ParserEdgeCaseTests.swift */; };
@@ -138,6 +139,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyMarkdownCacheTests.swift; sourceTree = "<group>"; };
 		A60000000000000000000002 /* LegacyLibraryModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyLibraryModelTests.swift; sourceTree = "<group>"; };
 		A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDocumentAndAccessibilityTests.swift; sourceTree = "<group>"; };
 		A40000000000000000000002 /* ParserEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParserEdgeCaseTests.swift; path = ../TextMouthTests/Sources/Tests/ParserEdgeCaseTests.swift; sourceTree = "<group>"; };
@@ -429,6 +431,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				A70000000000000000000002 /* LegacyMarkdownCacheTests.swift */,
 				A60000000000000000000002 /* LegacyLibraryModelTests.swift */,
 				A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */,
 				A40000000000000000000002 /* ParserEdgeCaseTests.swift */,
@@ -585,6 +588,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A70000000000000000000001 /* LegacyMarkdownCacheTests.swift in Sources */,
 				A60000000000000000000001 /* LegacyLibraryModelTests.swift in Sources */,
 				A50000000000000000000001 /* LegacyDocumentAndAccessibilityTests.swift in Sources */,
 				A40000000000000000000001 /* ParserEdgeCaseTests.swift in Sources */,
