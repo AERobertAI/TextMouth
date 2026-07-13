@@ -151,7 +151,11 @@ enum EPUBParser {
 
     /// Write updated metadata back to the EPUB file in place.
     /// Returns the new MD5 hash of the modified file.
-    static func writeMetadata(_ metadata: EPUBMetadata, to url: URL) throws -> String {
+    static func writeMetadata(
+        _ metadata: EPUBMetadata,
+        to url: URL,
+        replacingWith replacement: ((URL, URL) throws -> Void)? = nil
+    ) throws -> String {
         let archive: Archive
         do {
             archive = try Archive(url: url, accessMode: .read)
@@ -199,9 +203,21 @@ enum EPUBParser {
             }
         )
 
-        // Replace original with modified
-        try FileManager.default.removeItem(at: url)
-        try FileManager.default.moveItem(at: tempURL, to: url)
+        // Reopen and parse the prepared archive before touching the original.
+        // This catches a corrupt update while the source EPUB is still intact.
+        guard let preparedArchive = try? Archive(url: tempURL, accessMode: .read),
+              let preparedOPF = try? extractString(archive: preparedArchive, path: opfPath) else {
+            throw EPUBParserError.writeFailed("Updated archive failed validation")
+        }
+        _ = try parseOPF(preparedOPF)
+
+        // Replace in one filesystem operation. Both files are in the same
+        // directory, allowing FileManager to perform an atomic swap instead of
+        // exposing a window where the original path does not exist.
+        let replace = replacement ?? { originalURL, preparedURL in
+            _ = try FileManager.default.replaceItemAt(originalURL, withItemAt: preparedURL)
+        }
+        try replace(url, tempURL)
 
         // Recalculate hash
         return try FileImportService.md5Hash(of: url)
