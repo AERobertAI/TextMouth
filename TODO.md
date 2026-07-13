@@ -4,7 +4,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 
 ## Critical
 
-- [ ] Defer original-file deletion until a duplicate import is accepted. **Difficulty: 3/10**
+- [x] Defer original-file deletion until a duplicate import is accepted. **Difficulty: 3/10** *(Batch 2)*
 - [ ] Make folder deletion with content relocation transactional so failed moves cannot delete books. **Difficulty: 8/10**
 - [ ] Make data-directory migration non-destructive, validated, and recoverable. **Difficulty: 9/10**
 - [x] Classify segmented DAISY audio before ordinary multi-file audio. **Difficulty: 2/10** *(Batch 1)*
@@ -30,18 +30,18 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Rewrite `bookInfo.json` after moving books or folders. **Difficulty: 4/10**
 - [ ] Never fall back from Trash to permanent deletion without explicit confirmation. **Difficulty: 5/10**
 - [ ] Complete bidirectional config synchronization and rearm the watcher after atomic replacement. **Difficulty: 4/10**
-- [ ] Clear short reading-stat sessions correctly and flush an active session at termination. **Difficulty: 4/10**
+- [x] Clear short reading-stat sessions correctly and flush an active session at termination. **Difficulty: 4/10** *(Batch 2)*
 - [ ] Make duplicate-finder criteria follow the advertised combined-match behavior. **Difficulty: 4/10**
 - [x] Remove unsupported legacy `.doc` import advertising or add a real parser. **Difficulty: 1/10** *(Batch 1: removed unsupported advertising)*
 - [ ] Report per-file failures after ZIP imports. **Difficulty: 5/10**
 - [ ] Serialize ZIP imports or give every import independent progress/dialog state. **Difficulty: 7/10**
-- [ ] Stamp cache versions only after successful atomic cache generation. **Difficulty: 4/10**
+- [x] Stamp cache versions only after successful atomic cache generation. **Difficulty: 4/10** *(Batch 2)*
 - [ ] Persist EPUB publisher and publication-date edits independently of file write-back. **Difficulty: 6/10**
 
 ## Low
 
-- [ ] Calculate recursive package size for directory-based audiobooks. **Difficulty: 3/10**
-- [ ] Clamp adjusted bookmark positions to chapter bounds. **Difficulty: 2/10**
+- [x] Calculate recursive package size for directory-based audiobooks. **Difficulty: 3/10** *(Batch 2)*
+- [x] Clamp adjusted bookmark positions to chapter bounds. **Difficulty: 2/10** *(Batch 2)*
 - [ ] Replace the copied standalone test implementations with tests that import production code. **Difficulty: 9/10** *(A production XCTest target now covers new regressions, but the legacy harness still uses copies.)*
 
 ## Verification Baseline
@@ -49,3 +49,9 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - Production Debug build succeeded before changes.
 - Standalone test harness passed 1,184 of 1,184 tests before changes.
 - Strict-concurrency diagnostics currently report isolation and sendability warnings; these are tracked by the concurrency item above.
+
+## Batch 2 Verification
+
+- Production XCTest target passed 24 of 24 tests.
+- Standalone test harness passed 1,184 of 1,184 tests.
+- Production Debug build succeeded.
