@@ -12,6 +12,7 @@
 		0CC6EFB85DAAFF35CCFB0725 /* BookmarkPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */; };
 		0D1366B31BB381F496114511 /* KeyboardShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0FAA2D62EBEDD1E25F851E /* KeyboardShortcut.swift */; };
 		0E0BDF8219D4913B5529E861 /* PlainTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */; };
+		114E75DE926A2EC57C47C062 /* BookMetadataUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C433436ED0C07B7E10290BB /* BookMetadataUpdateTests.swift */; };
 		129CBC20EF3DFAF2E7CEB779 /* AudioLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BAACF5B4626204168E4630 /* AudioLayoutTests.swift */; };
 		12F5EEA0E4B1E5FA546D8E40 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90FCAEB685DF6B9C3206D29 /* StorageSettingsView.swift */; };
 		14E7FBBCCAEE1BFC04987E3B /* ReadingStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */; };
@@ -116,6 +117,7 @@
 /* Begin PBXFileReference section */
 		0359EBDDABD0D02289EA4FC0 /* ReaderViewModel+WhereAmI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+WhereAmI.swift"; sourceTree = "<group>"; };
 		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
+		0C433436ED0C07B7E10290BB /* BookMetadataUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookMetadataUpdateTests.swift; sourceTree = "<group>"; };
 		0CE0B255A9734DCEC3F75947 /* DAISYParser+SMILParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+SMILParser.swift"; sourceTree = "<group>"; };
 		0D161A613B5D570B1FACBD40 /* PDFTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFTextParser.swift; sourceTree = "<group>"; };
 		0E6AEB1AF29767066AB7B08A /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
@@ -382,6 +384,7 @@
 			children = (
 				98BAACF5B4626204168E4630 /* AudioLayoutTests.swift */,
 				41A28B03E9C844032183F03A /* BookFormatTests.swift */,
+				0C433436ED0C07B7E10290BB /* BookMetadataUpdateTests.swift */,
 			);
 			path = TextMouthProductionTests;
 			sourceTree = "<group>";
@@ -515,6 +518,7 @@
 			files = (
 				129CBC20EF3DFAF2E7CEB779 /* AudioLayoutTests.swift in Sources */,
 				2F7911236BE0CF19A0132967 /* BookFormatTests.swift in Sources */,
+				114E75DE926A2EC57C47C062 /* BookMetadataUpdateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

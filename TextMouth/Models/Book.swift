@@ -215,6 +215,19 @@ struct Book: Identifiable, Codable, Hashable {
         localWPM ?? fallback
     }
 
+    /// Apply the metadata fields that can be edited by the library and reader
+    /// metadata sheets. Keeping this mutation on Book makes the complete field
+    /// set independently testable and prevents individual callers from silently
+    /// dropping format-specific values.
+    mutating func applyEditableMetadata(from updatedBook: Book) {
+        title = updatedBook.title
+        author = updatedBook.author
+        md5Hash = updatedBook.md5Hash
+        audioAlbum = updatedBook.audioAlbum
+        audioGenre = updatedBook.audioGenre
+        audioYear = updatedBook.audioYear
+    }
+
     /// Estimated time remaining in seconds, or nil if unknown.
     /// For audio books: uses actual duration adjusted by playback speed.
     /// For text books: uses WPM-based estimate with per-book override.

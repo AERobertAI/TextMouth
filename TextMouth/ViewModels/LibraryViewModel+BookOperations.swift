@@ -113,9 +113,7 @@ extension LibraryViewModel {
 
     func updateBookMetadata(_ updatedBook: Book) {
         updateBook(id: updatedBook.id) { book in
-            book.title = updatedBook.title
-            book.author = updatedBook.author
-            book.md5Hash = updatedBook.md5Hash
+            book.applyEditableMetadata(from: updatedBook)
         }
     }
 

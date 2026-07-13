@@ -17,7 +17,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Centralize global Now Playing and remote-command ownership across reader windows.
 - [ ] Copy and validate externally opened `.tmb` packages before adding them to the library.
 - [ ] Replace EPUB files atomically when writing metadata.
-- [ ] Persist editable audio album, genre, and year metadata. *(Batch 1)*
+- [x] Persist editable audio album, genre, and year metadata. *(Batch 1)*
 - [ ] Serialize current- and next-chapter TTS rendering and apply consistent size limits.
 - [ ] Use a strict, deterministic comparator for descending library sorting. *(Batch 1)*
 - [ ] Isolate UI and shared mutable services with actors or serial executors.
