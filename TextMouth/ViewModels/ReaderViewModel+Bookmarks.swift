@@ -41,9 +41,15 @@ extension ReaderViewModel {
             announceToVoiceOver("Bookmark \(number) removed")
         } else {
             // Add a new bookmark, adjusting position if it would overlap with an existing one
-            let adjustedOffset = adjustedBookmarkOffset(
+            let chapterLength = content?.chapters.indices.contains(currentChapterIndex) == true
+                ? content?.chapters[currentChapterIndex].text.count
+                : nil
+            let adjustedOffset = Self.adjustedBookmarkOffset(
+                bookmarks: bookmarks,
                 chapterIndex: currentChapterIndex,
-                characterOffset: currentCharacterOffset
+                characterOffset: currentCharacterOffset,
+                threshold: bookmarkProximityThreshold,
+                chapterLength: chapterLength
             )
             libraryViewModel.addBookmark(
                 bookID: book.id,
@@ -61,15 +67,25 @@ extension ReaderViewModel {
     /// if that still conflicts, scans forward through sorted bookmarks, jumping
     /// past each conflicting zone in turn. Guaranteed to terminate because the
     /// forward scan always advances.
-    private func adjustedBookmarkOffset(chapterIndex: Int, characterOffset: Int) -> Int {
-        let threshold = bookmarkProximityThreshold
+    static func adjustedBookmarkOffset(
+        bookmarks: [Bookmark],
+        chapterIndex: Int,
+        characterOffset: Int,
+        threshold: Int,
+        chapterLength: Int?
+    ) -> Int {
         let sameChapter = bookmarks
             .filter { $0.chapterIndex == chapterIndex }
             .sorted(by: { $0.characterOffset < $1.characterOffset })
 
+        func clamped(_ offset: Int) -> Int {
+            guard let chapterLength else { return max(0, offset) }
+            return min(max(0, offset), max(0, chapterLength - 1))
+        }
+
         // Quick check: no conflict at all
         guard sameChapter.contains(where: { abs($0.characterOffset - characterOffset) <= threshold }) else {
-            return characterOffset
+            return clamped(characterOffset)
         }
 
         // Try backward nudge first (only if position is before the first conflict)
@@ -77,7 +93,7 @@ extension ReaderViewModel {
            characterOffset < first.characterOffset {
             let candidate = max(0, first.characterOffset - threshold - 1)
             if !sameChapter.contains(where: { abs($0.characterOffset - candidate) <= threshold }) {
-                return candidate
+                return clamped(candidate)
             }
         }
 
@@ -88,7 +104,7 @@ extension ReaderViewModel {
                 adjusted = bm.characterOffset + threshold + 1
             }
         }
-        return adjusted
+        return clamped(adjusted)
     }
 
     /// Add a bookmark at the current reading position with an optional label
