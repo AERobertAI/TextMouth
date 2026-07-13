@@ -27,14 +27,115 @@ enum DuplicateFilter: String, CaseIterable, Identifiable {
 struct DuplicateGroup: Identifiable {
     let id: String
     let matchKey: String
-    let matchType: DuplicateFilter
+    let matchTypes: [DuplicateFilter]
     let books: [Book]
 
-    init(matchKey: String, matchType: DuplicateFilter, books: [Book]) {
-        self.id = "\(matchType.rawValue):\(matchKey)"
+    var matchDescription: String {
+        if matchTypes.count == 1 {
+            return matchTypes[0].rawValue
+        }
+        return "Combined: " + matchTypes.map(\.rawValue).joined(separator: ", ")
+    }
+
+    init(matchKey: String, matchTypes: [DuplicateFilter], books: [Book]) {
+        self.id = "\(matchTypes.map(\.rawValue).joined(separator: "+")):\(matchKey)"
         self.matchKey = matchKey
-        self.matchType = matchType
+        self.matchTypes = matchTypes
         self.books = books
+    }
+}
+
+/// Pure duplicate grouping used by the view and production tests. Multiple
+/// selected filters are an AND operation: a book is eligible only when every
+/// filter has a value, and books share a group only when every value matches.
+enum DuplicateFinderEngine {
+    static func findDuplicates(
+        books: [Book],
+        filters: Set<DuplicateFilter>,
+        isbnCache: [UUID: String]
+    ) -> [DuplicateGroup] {
+        let orderedFilters = DuplicateFilter.allCases.filter { filters.contains($0) }
+        guard !orderedFilters.isEmpty else { return [] }
+
+        var buckets: [[String]: [Book]] = [:]
+        for book in books {
+            var compositeKey: [String] = []
+            for filter in orderedFilters {
+                guard let component = keyComponent(for: book, filter: filter, isbnCache: isbnCache) else {
+                    compositeKey = []
+                    break
+                }
+                compositeKey.append(component)
+            }
+            guard compositeKey.count == orderedFilters.count else { continue }
+            buckets[compositeKey, default: []].append(book)
+        }
+
+        return buckets
+            .filter { $0.value.count >= 2 }
+            .map { key, matchingBooks in
+                DuplicateGroup(
+                    matchKey: displayKey(
+                        components: key,
+                        filters: orderedFilters,
+                        books: matchingBooks
+                    ),
+                    matchTypes: orderedFilters,
+                    books: matchingBooks
+                )
+            }
+            .sorted { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
+    }
+
+    private static func keyComponent(
+        for book: Book,
+        filter: DuplicateFilter,
+        isbnCache: [UUID: String]
+    ) -> String? {
+        switch filter {
+        case .md5Hash:
+            return book.md5Hash.isEmpty ? nil : book.md5Hash
+        case .isbn:
+            guard let isbn = isbnCache[book.id] else { return nil }
+            let normalized = normalize(isbn)
+            return normalized.isEmpty ? nil : normalized
+        case .title:
+            let normalized = normalize(book.title)
+            return normalized.isEmpty ? nil : normalized
+        case .author:
+            let normalized = normalize(book.author)
+            return normalized.isEmpty || normalized == "unknown" ? nil : normalized
+        case .titleAndAuthor:
+            let title = normalize(book.title)
+            let author = normalize(book.author)
+            guard !title.isEmpty else { return nil }
+            return "\(title)|\(author)"
+        }
+    }
+
+    private static func normalize(_ value: String) -> String {
+        value.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func displayKey(
+        components: [String],
+        filters: [DuplicateFilter],
+        books: [Book]
+    ) -> String {
+        let values = zip(filters, components).map { filter, component -> String in
+            switch filter {
+            case .md5Hash:
+                return books.first?.title ?? component
+            case .isbn:
+                return "ISBN: \(component.uppercased())"
+            case .titleAndAuthor:
+                let parts = component.split(separator: "|", maxSplits: 1)
+                return parts.count == 2 ? "\(parts[0]) by \(parts[1])" : component
+            default:
+                return component.capitalized
+            }
+        }
+        return values.joined(separator: "; ")
     }
 }
 
@@ -143,7 +244,7 @@ struct DuplicateFinderView: View {
                         ForEach(scanResults) { group in
                             // Group header
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(group.matchType.rawValue)
+                                Text(group.matchDescription)
                                     .font(.caption2)
                                     .foregroundColor(.accentColor)
                                 Text(group.matchKey)
@@ -200,78 +301,12 @@ struct DuplicateFinderView: View {
 
     /// Run the duplicate scan and cache results
     private func runScan() {
-        var allGroups: [DuplicateGroup] = []
-        var seenBookIDs: Set<UUID> = []
-
-        for filter in DuplicateFilter.allCases where activeFilters.contains(filter) {
-            let groups = findDuplicates(by: filter)
-            for group in groups {
-                let newBooks = group.books.filter { !seenBookIDs.contains($0.id) }
-                if newBooks.count >= 2 {
-                    allGroups.append(DuplicateGroup(
-                        matchKey: group.matchKey,
-                        matchType: group.matchType,
-                        books: newBooks
-                    ))
-                    for book in newBooks {
-                        seenBookIDs.insert(book.id)
-                    }
-                }
-            }
-        }
-
-        scanResults = allGroups
+        scanResults = DuplicateFinderEngine.findDuplicates(
+            books: libraryViewModel.library.books,
+            filters: activeFilters,
+            isbnCache: isbnCache
+        )
         hasScanned = true
-    }
-
-    /// Find groups of books matching the given filter criterion
-    private func findDuplicates(by filter: DuplicateFilter) -> [DuplicateGroup] {
-        var buckets: [String: [Book]] = [:]
-
-        for book in libraryViewModel.library.books {
-            let key: String
-            switch filter {
-            case .md5Hash:
-                guard !book.md5Hash.isEmpty else { continue }
-                key = book.md5Hash
-            case .isbn:
-                guard let isbn = isbnCache[book.id], !isbn.isEmpty else { continue }
-                key = isbn.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            case .title:
-                let normalized = book.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !normalized.isEmpty else { continue }
-                key = normalized
-            case .author:
-                let normalized = book.author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !normalized.isEmpty, normalized != "unknown" else { continue }
-                key = normalized
-            case .titleAndAuthor:
-                let t = book.title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                let a = book.author.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !t.isEmpty else { continue }
-                key = "\(t)|\(a)"
-            }
-            buckets[key, default: []].append(book)
-        }
-
-        return buckets
-            .filter { $0.value.count >= 2 }
-            .map { (key, books) in
-                let displayKey: String
-                switch filter {
-                case .md5Hash:
-                    displayKey = books.first?.title ?? key
-                case .isbn:
-                    displayKey = "ISBN: \(key.uppercased())"
-                case .titleAndAuthor:
-                    let parts = key.split(separator: "|", maxSplits: 1)
-                    displayKey = parts.count == 2 ? "\(parts[0]) by \(parts[1])" : key
-                default:
-                    displayKey = key.capitalized
-                }
-                return DuplicateGroup(matchKey: displayKey, matchType: filter, books: books)
-            }
-            .sorted { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
     }
 
     // MARK: - Helpers
