@@ -17,6 +17,24 @@ enum FileImportError: LocalizedError {
     }
 }
 
+struct ZipImportFailure: Equatable {
+    let fileName: String
+    let message: String
+}
+
+struct ZipImportResult {
+    let books: [Book]
+    let failures: [ZipImportFailure]
+
+    var failureSummary: String? {
+        guard !failures.isEmpty else { return nil }
+        let details = failures
+            .map { "\($0.fileName): \($0.message)" }
+            .joined(separator: "\n")
+        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(details)"
+    }
+}
+
 enum FileImportService {
 
     /// Import a single file into a .tmb package, returning a Book model.
@@ -148,13 +166,13 @@ enum FileImportService {
     /// Calls the progress callback with (completed, total) counts.
     /// Pass existingHashes to skip files whose content already exists in the library,
     /// preventing orphaned .tmb packages from being created for duplicates.
-    /// Returns the imported books.
+    /// Returns imported books together with any per-file failures.
     static func importZip(
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil
-    ) throws -> [Book] {
+    ) throws -> ZipImportResult {
         try TextMouthPaths.ensureDirectoryStructure()
 
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -207,8 +225,29 @@ enum FileImportService {
             }
         }
 
+        return importSupportedFiles(
+            supportedFiles,
+            toFolder: folderPath,
+            existingHashes: existingHashes,
+            progress: progress
+        )
+    }
+
+    /// Import files discovered inside a ZIP while retaining individual errors.
+    /// This is separate from archive discovery so partial-import behavior is
+    /// deterministic and independently testable.
+    static func importSupportedFiles(
+        _ supportedFiles: [URL],
+        toFolder folderPath: String,
+        existingHashes: Set<String> = [],
+        progress: ((Int, Int) -> Void)? = nil,
+        importer: (URL, String) throws -> Book = { url, folder in
+            try importFile(from: url, toFolder: folder)
+        }
+    ) -> ZipImportResult {
         let total = supportedFiles.count
         var books: [Book] = []
+        var failures: [ZipImportFailure] = []
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
@@ -221,14 +260,22 @@ enum FileImportService {
                 continue
             }
 
-            if let book = try? importFile(from: fileURL, toFolder: folderPath) {
+            do {
+                let book = try importer(fileURL, folderPath)
                 seenHashes.insert(book.md5Hash)
                 books.append(book)
+            } catch {
+                failures.append(
+                    ZipImportFailure(
+                        fileName: fileURL.lastPathComponent,
+                        message: error.localizedDescription
+                    )
+                )
             }
             progress?(index + 1, total)
         }
 
-        return books
+        return ZipImportResult(books: books, failures: failures)
     }
 
     /// Delete a book's entire .tmb package.

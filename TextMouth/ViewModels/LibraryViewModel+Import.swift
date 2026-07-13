@@ -209,7 +209,7 @@ extension LibraryViewModel {
                 // Pass existing library hashes so zip import can skip duplicates
                 // instead of creating orphaned .tmb packages
                 let existingHashes = Set(self.library.books.map { $0.md5Hash })
-                let books = try FileImportService.importZip(
+                let result = try FileImportService.importZip(
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes
@@ -220,6 +220,7 @@ extension LibraryViewModel {
                         self.importProgressMessage = "Importing book \(completed) of \(total)..."
                     }
                 }
+                let books = result.books
 
                 DispatchQueue.main.async {
                     for book in books {
@@ -228,6 +229,11 @@ extension LibraryViewModel {
                     self.save()
                     self.isImporting = false
                     self.importProgressMessage = ""
+
+                    if let failureSummary = result.failureSummary {
+                        self.errorMessage = failureSummary
+                        self.showError = true
+                    }
 
                     self.handleOriginalFileDeletion(url: url)
 
