@@ -169,32 +169,12 @@ extension LibraryViewModel {
             }
         }
 
-        return books.sorted { a, b in
-            let result: Bool
-            switch field {
-            case .title:
-                result = a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-            case .author:
-                result = a.author.localizedCaseInsensitiveCompare(b.author) == .orderedAscending
-            case .dateAdded:
-                result = a.dateAdded < b.dateAdded
-            case .lastOpened:
-                let aDate = a.lastOpened ?? Date.distantPast
-                let bDate = b.lastOpened ?? Date.distantPast
-                result = aDate < bDate
-            case .fileSize:
-                result = (sizeCache[a.id] ?? 0) < (sizeCache[b.id] ?? 0)
-            case .manual:
-                let orderA = a.manualSortOrder ?? Int.max
-                let orderB = b.manualSortOrder ?? Int.max
-                if orderA != orderB {
-                    result = orderA < orderB
-                } else {
-                    result = a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-                }
-            }
-            return ascending ? result : !result
-        }
+        return LibraryBookSorter.sorted(
+            books,
+            by: field,
+            ascending: ascending,
+            fileSizes: sizeCache
+        )
     }
 
     /// Return books matching the given library category within a folder path

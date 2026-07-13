@@ -19,7 +19,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Replace EPUB files atomically when writing metadata.
 - [x] Persist editable audio album, genre, and year metadata. *(Batch 1)*
 - [ ] Serialize current- and next-chapter TTS rendering and apply consistent size limits.
-- [ ] Use a strict, deterministic comparator for descending library sorting. *(Batch 1)*
+- [x] Use a strict, deterministic comparator for descending library sorting. *(Batch 1)*
 - [ ] Isolate UI and shared mutable services with actors or serial executors.
 - [ ] Route externally configured data-directory changes through the migration workflow.
 
