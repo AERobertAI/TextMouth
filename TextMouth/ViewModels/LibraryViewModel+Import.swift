@@ -81,7 +81,27 @@ extension LibraryViewModel {
                 bookmarks: info.bookmarks,
                 totalWordCount: info.state.totalWordCount,
                 totalCharacterCount: info.state.totalCharacterCount,
-                tmbDirectoryName: tmbName
+                tmbDirectoryName: tmbName,
+                sourceFilePath: info.metadata.sourceFilePath,
+                lastPlaybackStarted: info.state.lastPlaybackStarted,
+                lastPlaybackStopped: info.state.lastPlaybackStopped,
+                localVoiceID: info.state.localVoiceID,
+                localWPM: info.state.localWPM,
+                localPitch: info.state.localPitch,
+                skippedHeadingIDs: info.state.skippedHeadingIDs,
+                localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+                manualSortOrder: info.state.manualSortOrder,
+                audioDuration: info.state.audioDuration,
+                audioAlbum: info.metadata.audioAlbum,
+                audioGenre: info.metadata.audioGenre,
+                audioYear: info.metadata.audioYear,
+                epubPublisher: info.metadata.publisher,
+                epubPublicationDate: info.metadata.publicationDate,
+                epubISBN: info.metadata.isbn,
+                epubLanguage: info.metadata.language,
+                epubIdentifier: info.metadata.epubIdentifier,
+                epubVersion: info.metadata.epubVersion,
+                cacheFormatVersion: info.state.cacheFormatVersion
             )
 
             library.addBook(book)

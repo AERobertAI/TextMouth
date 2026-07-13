@@ -95,6 +95,14 @@ struct Book: Identifiable, Codable, Hashable {
     var audioAlbum: String?
     var audioGenre: String?
     var audioYear: String?
+    /// EPUB metadata is stored independently from optional file write-back so
+    /// library-only edits survive reopening the editor and saving reading state.
+    var epubPublisher: String?
+    var epubPublicationDate: String?
+    var epubISBN: String?
+    var epubLanguage: String?
+    var epubIdentifier: String?
+    var epubVersion: String?
     /// Version of the content.md cache format. When this is lower than
     /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
     /// on the next app launch to pick up parser improvements.
@@ -128,6 +136,12 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum: String? = nil,
         audioGenre: String? = nil,
         audioYear: String? = nil,
+        epubPublisher: String? = nil,
+        epubPublicationDate: String? = nil,
+        epubISBN: String? = nil,
+        epubLanguage: String? = nil,
+        epubIdentifier: String? = nil,
+        epubVersion: String? = nil,
         cacheFormatVersion: String? = nil
     ) {
         self.id = id
@@ -157,6 +171,12 @@ struct Book: Identifiable, Codable, Hashable {
         self.audioAlbum = audioAlbum
         self.audioGenre = audioGenre
         self.audioYear = audioYear
+        self.epubPublisher = epubPublisher
+        self.epubPublicationDate = epubPublicationDate
+        self.epubISBN = epubISBN
+        self.epubLanguage = epubLanguage
+        self.epubIdentifier = epubIdentifier
+        self.epubVersion = epubVersion
         self.cacheFormatVersion = cacheFormatVersion
     }
 
@@ -190,6 +210,12 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
         audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
         audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
+        epubPublisher = try container.decodeIfPresent(String.self, forKey: .epubPublisher)
+        epubPublicationDate = try container.decodeIfPresent(String.self, forKey: .epubPublicationDate)
+        epubISBN = try container.decodeIfPresent(String.self, forKey: .epubISBN)
+        epubLanguage = try container.decodeIfPresent(String.self, forKey: .epubLanguage)
+        epubIdentifier = try container.decodeIfPresent(String.self, forKey: .epubIdentifier)
+        epubVersion = try container.decodeIfPresent(String.self, forKey: .epubVersion)
         // Decode as String, falling back to converting old Int values for compatibility
         if let str = try? container.decodeIfPresent(String.self, forKey: .cacheFormatVersion) {
             cacheFormatVersion = str
@@ -226,6 +252,20 @@ struct Book: Identifiable, Codable, Hashable {
         audioAlbum = updatedBook.audioAlbum
         audioGenre = updatedBook.audioGenre
         audioYear = updatedBook.audioYear
+        epubPublisher = updatedBook.epubPublisher
+        epubPublicationDate = updatedBook.epubPublicationDate
+    }
+
+    /// Overlay metadata kept by TextMouth onto values extracted from the EPUB.
+    /// Optional fields distinguish an unedited legacy book from an intentional
+    /// empty-string edit that clears publisher or publication date.
+    func mergingEditableEPUBMetadata(_ extracted: EPUBMetadata) -> EPUBMetadata {
+        var merged = extracted
+        merged.title = title
+        merged.author = author
+        if let epubPublisher { merged.publisher = epubPublisher }
+        if let epubPublicationDate { merged.publicationDate = epubPublicationDate }
+        return merged
     }
 
     /// Estimated time remaining in seconds, or nil if unknown.
@@ -267,6 +307,12 @@ struct Book: Identifiable, Codable, Hashable {
                 folderPath: folderPath,
                 bookID: id,
                 sourceFilePath: sourceFilePath,
+                publisher: epubPublisher,
+                publicationDate: epubPublicationDate,
+                isbn: epubISBN,
+                language: epubLanguage,
+                epubIdentifier: epubIdentifier,
+                epubVersion: epubVersion,
                 audioAlbum: audioAlbum,
                 audioGenre: audioGenre,
                 audioYear: audioYear

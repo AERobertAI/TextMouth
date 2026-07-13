@@ -668,7 +668,9 @@ class ReaderViewModel: ObservableObject {
                 // Load EPUB metadata if applicable
                 var metadata: EPUBMetadata?
                 if format == .epub {
-                    metadata = try? EPUBParser.readMetadata(url: url)
+                    if let extracted = try? EPUBParser.readMetadata(url: url) {
+                        metadata = bookCopy.mergingEditableEPUBMetadata(extracted)
+                    }
                 }
 
                 // Load audio metadata from file tags, then overlay any user-edited fields

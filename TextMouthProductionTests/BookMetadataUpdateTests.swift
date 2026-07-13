@@ -16,7 +16,9 @@ final class BookMetadataUpdateTests: XCTestCase {
             md5Hash: "old-hash",
             audioAlbum: "Old Album",
             audioGenre: "Old Genre",
-            audioYear: "1999"
+            audioYear: "1999",
+            epubPublisher: "Old Publisher",
+            epubPublicationDate: "1999"
         )
         let edited = Book(
             id: id,
@@ -27,7 +29,9 @@ final class BookMetadataUpdateTests: XCTestCase {
             md5Hash: "new-hash",
             audioAlbum: "New Album",
             audioGenre: "New Genre",
-            audioYear: "2026"
+            audioYear: "2026",
+            epubPublisher: "New Publisher",
+            epubPublicationDate: "2026"
         )
 
         stored.applyEditableMetadata(from: edited)
@@ -38,6 +42,8 @@ final class BookMetadataUpdateTests: XCTestCase {
         XCTAssertEqual(stored.audioAlbum, "New Album")
         XCTAssertEqual(stored.audioGenre, "New Genre")
         XCTAssertEqual(stored.audioYear, "2026")
+        XCTAssertEqual(stored.epubPublisher, "New Publisher")
+        XCTAssertEqual(stored.epubPublicationDate, "2026")
     }
 
     /// Metadata editing must not replace identity, storage, or reading state.

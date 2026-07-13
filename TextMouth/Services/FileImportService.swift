@@ -37,10 +37,12 @@ enum FileImportService {
         var author = "Unknown"
         let dateAdded = Date()
         let bookID = UUID()
+        var epubMetadata: EPUBMetadata?
 
         // Extract metadata from EPUB files before creating the .tmb
         if format == .epub {
             if let metadata = try? EPUBParser.readMetadata(url: sourceURL) {
+                epubMetadata = metadata
                 if !metadata.title.isEmpty { title = metadata.title }
                 if !metadata.author.isEmpty { author = metadata.author }
             }
@@ -122,7 +124,13 @@ enum FileImportService {
             sourceFilePath: sourceURL.path,
             audioAlbum: audioAlbum,
             audioGenre: audioGenre,
-            audioYear: audioYear
+            audioYear: audioYear,
+            epubPublisher: epubMetadata?.publisher,
+            epubPublicationDate: epubMetadata?.publicationDate,
+            epubISBN: epubMetadata?.isbn,
+            epubLanguage: epubMetadata?.language,
+            epubIdentifier: epubMetadata?.identifier,
+            epubVersion: epubMetadata?.epubVersion
         )
 
         // Generate cached Markdown content (non-audio books only)
@@ -759,7 +767,14 @@ enum FileImportService {
                 audioDuration: info.state.audioDuration,
                 audioAlbum: info.metadata.audioAlbum,
                 audioGenre: info.metadata.audioGenre,
-                audioYear: info.metadata.audioYear
+                audioYear: info.metadata.audioYear,
+                epubPublisher: info.metadata.publisher,
+                epubPublicationDate: info.metadata.publicationDate,
+                epubISBN: info.metadata.isbn,
+                epubLanguage: info.metadata.language,
+                epubIdentifier: info.metadata.epubIdentifier,
+                epubVersion: info.metadata.epubVersion,
+                cacheFormatVersion: info.state.cacheFormatVersion
             )
 
             // addBook guards against duplicate hashes — only truly new books get added

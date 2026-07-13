@@ -203,6 +203,8 @@ extension ReaderViewModel {
 
         book.title = metadata.title
         book.author = metadata.author
+        book.epubPublisher = metadata.publisher
+        book.epubPublicationDate = metadata.publicationDate
 
         if writeToFile && book.format == .epub {
             do {

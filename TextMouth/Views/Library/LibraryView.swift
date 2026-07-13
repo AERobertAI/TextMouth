@@ -425,6 +425,8 @@ struct LibraryView: View {
                         var updatedBook = book
                         updatedBook.title = updated.title
                         updatedBook.author = updated.author
+                        updatedBook.epubPublisher = updated.publisher
+                        updatedBook.epubPublicationDate = updated.publicationDate
                         libraryViewModel.updateBookMetadata(updatedBook)
                         if writeToFile {
                             let url = URL(fileURLWithPath: book.filePath)
@@ -860,7 +862,9 @@ struct LibraryView: View {
         if book.format == .epub {
             // Load EPUB metadata from the file
             let url = URL(fileURLWithPath: book.filePath)
-            richInfoEPUBMetadata = try? EPUBParser.readMetadata(url: url)
+            if let extracted = try? EPUBParser.readMetadata(url: url) {
+                richInfoEPUBMetadata = book.mergingEditableEPUBMetadata(extracted)
+            }
         } else if book.format.isAudio {
             // Load audio metadata asynchronously, then show the sheet
             Task {
