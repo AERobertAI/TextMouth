@@ -3,6 +3,23 @@ import XCTest
 
 /// Regression coverage for safe EPUB metadata persistence.
 final class EPUBMetadataTests: XCTestCase {
+    func testLegacyAliceFixtureExtractsCoreMetadataThroughProductionParser() throws {
+        let metadata = try EPUBParser.readMetadata(url: repositoryFixture())
+
+        XCTAssertEqual(metadata.title, "Alice's Adventures in Wonderland")
+        XCTAssertEqual(metadata.author, "Lewis Carroll")
+        XCTAssertEqual(metadata.language, "en")
+        XCTAssertEqual(metadata.identifier, "http://www.gutenberg.org/11")
+        XCTAssertEqual(metadata.epubVersion, "2.0")
+    }
+
+    func testLegacyAliceFixtureExtractsOptionalPublisherAndPublicationDate() throws {
+        let metadata = try EPUBParser.readMetadata(url: repositoryFixture())
+
+        XCTAssertEqual(metadata.publisher, "")
+        XCTAssertEqual(metadata.publicationDate, "2008-06-27")
+    }
+
     func testReplacementFailureLeavesOriginalEPUBUnchanged() throws {
         let workingCopy = try makeWorkingCopy()
         defer { try? FileManager.default.removeItem(at: workingCopy) }
@@ -91,14 +108,18 @@ final class EPUBMetadataTests: XCTestCase {
     }
 
     private func makeWorkingCopy() throws -> URL {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let fixture = repositoryRoot.appendingPathComponent("TestData/alice.epub")
+        let fixture = repositoryFixture()
         let copy = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(UUID().uuidString).epub")
         try FileManager.default.copyItem(at: fixture, to: copy)
         return copy
+    }
+
+    private func repositoryFixture() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("TestData/alice.epub")
     }
 }
 
