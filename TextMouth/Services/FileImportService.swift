@@ -92,7 +92,12 @@ enum FileImportService {
         }
 
         // Create .tmb directory name
-        let tmbName = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded)
+        let tmbName = TextMouthPaths.tmbName(
+            title: title,
+            author: author,
+            dateAdded: dateAdded,
+            bookID: bookID
+        )
 
         // Create the .tmb package directory
         let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
@@ -266,7 +271,12 @@ enum FileImportService {
             throw FileImportError.importFailed("Original file not found at \(book.filePath)")
         }
 
-        let tmbName = TextMouthPaths.tmbName(title: book.title, author: book.author, dateAdded: book.dateAdded)
+        let tmbName = TextMouthPaths.tmbName(
+            title: book.title,
+            author: book.author,
+            dateAdded: book.dateAdded,
+            bookID: book.id
+        )
         let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: tmbName)
         try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
@@ -342,7 +352,12 @@ enum FileImportService {
             if !metadata.author.isEmpty { author = metadata.author }
         }
 
-        let tmbName = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded)
+        let tmbName = TextMouthPaths.tmbName(
+            title: title,
+            author: author,
+            dateAdded: dateAdded,
+            bookID: bookID
+        )
         let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
         try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
@@ -400,7 +415,12 @@ enum FileImportService {
         let zipName = zipURL.deletingPathExtension().lastPathComponent
         let dateAdded = Date()
         let bookID = UUID()
-        let tmbName = TextMouthPaths.tmbName(title: zipName, author: "Unknown", dateAdded: dateAdded)
+        let tmbName = TextMouthPaths.tmbName(
+            title: zipName,
+            author: "Unknown",
+            dateAdded: dateAdded,
+            bookID: bookID
+        )
         let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
         try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 

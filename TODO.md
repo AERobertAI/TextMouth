@@ -12,7 +12,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 ## High
 
 - [ ] Serialize library persistence and flush pending saves when the app terminates.
-- [ ] Include a stable unique identifier in every `.tmb` package name.
+- [x] Include a stable unique identifier in every `.tmb` package name. *(Batch 1)*
 - [ ] Move single-file import hashing, parsing, copying, and cache generation off the main thread.
 - [ ] Centralize global Now Playing and remote-command ownership across reader windows.
 - [ ] Copy and validate externally opened `.tmb` packages before adding them to the library.

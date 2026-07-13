@@ -238,7 +238,14 @@ extension LibraryViewModel {
 
             // Write text to a temp file
             let sanitizedTitle = title.isEmpty ? "Untitled" : title
-            let tmbName = TextMouthPaths.tmbName(title: sanitizedTitle, author: author, dateAdded: Date())
+            let bookID = UUID()
+            let dateAdded = Date()
+            let tmbName = TextMouthPaths.tmbName(
+                title: sanitizedTitle,
+                author: author,
+                dateAdded: dateAdded,
+                bookID: bookID
+            )
             let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
             try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
@@ -250,12 +257,14 @@ extension LibraryViewModel {
             let hash = (try? FileImportService.md5Hash(of: filePath)) ?? "text-\(text.count)"
 
             let book = Book(
+                id: bookID,
                 title: sanitizedTitle,
                 author: author.isEmpty ? "Unknown" : author,
                 format: .txt,
                 filePath: filePath.path,
                 md5Hash: hash,
                 folderPath: folderPath,
+                dateAdded: dateAdded,
                 tmbDirectoryName: tmbName
             )
             library.addBook(book)

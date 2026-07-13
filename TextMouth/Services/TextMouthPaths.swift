@@ -103,12 +103,14 @@ enum TextMouthPaths {
 
     // MARK: - TMB Package Helpers
 
-    /// Generate a .tmb package name: "Title-Author-timestamp.tmb"
-    static func tmbName(title: String, author: String, dateAdded: Date) -> String {
+    /// Generate a collision-resistant .tmb package name.
+    /// The UUID prevents same-title imports created within the same second from
+    /// sharing a directory and silently pointing at one another's book file.
+    static func tmbName(title: String, author: String, dateAdded: Date, bookID: UUID) -> String {
         let sanitizedTitle = sanitizeForFilename(title)
         let sanitizedAuthor = sanitizeForFilename(author)
         let timestamp = Int(dateAdded.timeIntervalSince1970)
-        return "\(sanitizedTitle)-\(sanitizedAuthor)-\(timestamp).tmb"
+        return "\(sanitizedTitle)-\(sanitizedAuthor)-\(timestamp)-\(bookID.uuidString.lowercased()).tmb"
     }
 
     /// Full path to a .tmb package in a given library folder
