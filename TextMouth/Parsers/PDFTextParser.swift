@@ -192,7 +192,7 @@ enum PDFTextParser {
     // MARK: - Text Page Extraction (with heading detection)
 
     /// A single line of text extracted from the PDF with its formatting metadata
-    private struct TextLine {
+    struct TextLine {
         var text: String
         var isHeading: Bool
         var headingLevel: Int
@@ -311,7 +311,7 @@ enum PDFTextParser {
 
     /// Join an array of text lines into Markdown, merging consecutive body-text
     /// lines into single paragraphs where appropriate.
-    private static func joinLinesIntoParagraphs(_ lines: [TextLine]) -> String {
+    static func joinLinesIntoParagraphs(_ lines: [TextLine]) -> String {
         var markdown = ""
         var i = 0
 
@@ -391,14 +391,18 @@ enum PDFTextParser {
             sizeCounts[roundedSize, default: 0] += charCount
         }
 
-        // Return the size used for the most characters
-        return sizeCounts.max(by: { $0.value < $1.value })?.key ?? 12.0
+        return mostCommonFontSize(in: sizeCounts)
+    }
+
+    /// Select the font size accounting for the most extracted characters.
+    static func mostCommonFontSize(in sizeCounts: [CGFloat: Int]) -> CGFloat {
+        sizeCounts.max(by: { $0.value < $1.value })?.key ?? 12.0
     }
 
     /// Map a font size to a heading level relative to the body font size.
     /// Thresholds calibrated against common PDF heading conventions:
     /// 24pt/11pt=2.18→h1, 18pt/11pt=1.64→h2, 14pt/11pt=1.27→h3
-    private static func headingLevelFromFontSize(_ fontSize: CGFloat, bodySize: CGFloat) -> Int {
+    static func headingLevelFromFontSize(_ fontSize: CGFloat, bodySize: CGFloat) -> Int {
         guard bodySize > 0 else { return 2 }
         let ratio = fontSize / bodySize
 
@@ -575,7 +579,7 @@ enum PDFTextParser {
     /// Remove a heading's duplicate text from page content.
     /// The outline heading is authoritative; the page text may contain the same
     /// words in different case (e.g. "PREFACE" vs outline "Preface").
-    private static func removeHeadingDuplicate(_ heading: String, from text: String) -> String {
+    static func removeHeadingDuplicate(_ heading: String, from text: String) -> String {
         let headingLower = heading.lowercased()
         let lines = text.components(separatedBy: "\n")
         var result: [String] = []
