@@ -4,8 +4,8 @@ struct HeadingNavigatorView: View {
     /// Static metadata for one heading row. Crucially does NOT include the
     /// "currently reading" flag — that's tracked separately via
     /// `currentHeadingID` so a moving playback cursor doesn't force the
-    /// whole list to be rebuilt (and the LazyVStack to be reconciled,
-    /// and VoiceOver focus to be lost) on every word spoken.
+    /// whole list and accessibility hierarchy to be rebuilt (and VoiceOver
+    /// focus to be lost) on every word spoken.
     struct HeadingListItem: Identifiable {
         let heading: Heading
         let isSkipped: Bool
@@ -27,10 +27,6 @@ struct HeadingNavigatorView: View {
     /// the cursor advances within a heading is the speaker-icon badge — the
     /// full list (and its VoiceOver focus state) stays put.
     @State private var currentHeadingID: String?
-    @State private var sheetAppearedAt = Date()
-    // VoiceOver would keep the segmented control as first responder until the
-    // first heading also became the actual keyboard focus target.
-    @FocusState private var focusedHeadingID: String?
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
         case timeIntoBook = "Time In"
@@ -97,7 +93,11 @@ struct HeadingNavigatorView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                    // Keep every heading row alive while the sheet is open.
+                    // LazyVStack recycles offscreen accessibility elements;
+                    // on long lists that can invalidate VoiceOver's current
+                    // element and send focus back toward the beginning.
+                    VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(headingItems.enumerated()), id: \.element.id) { index, item in
                             // `isCurrent` is derived inline so updates to the
                             // playback cursor only redraw the speaker badge,
@@ -110,56 +110,32 @@ struct HeadingNavigatorView: View {
                                 infoText: item.infoText
                             )
 
-                            if index == 0 {
-                                Button {
+                            Button {
+                                viewModel.navigateToHeading(item.heading)
+                                dismiss()
+                            } label: {
+                                row
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(item.accessibilityDescription)
+                            .accessibilityHint(row.accessibilityHintText)
+                            .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
+                            // This is the sole initial VoiceOver focus
+                            // mechanism. It posts a one-time accessibility
+                            // notification without persistently binding the
+                            // first row as the keyboard focus target.
+                            .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 0.2))
+                            .contextMenu {
+                                Button("Go To") {
                                     viewModel.navigateToHeading(item.heading)
                                     dismiss()
-                                } label: {
-                                    row
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 6)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
-                                .focusable()
-                                .focused($focusedHeadingID, equals: item.heading.id)
-                                .accessibilityLabel(item.accessibilityDescription)
-                                .accessibilityHint(row.accessibilityHintText)
-                                .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
-                                .modifier(FirstItemFocusModifier(isFirst: true, delay: 0.2))
-                                .contextMenu {
-                                    Button("Go To") {
-                                        viewModel.navigateToHeading(item.heading)
-                                        dismiss()
-                                    }
-                                    Button(item.isSkipped ? "Include Section" : "Skip Section") {
-                                        viewModel.toggleHeadingSkip(item.heading)
-                                    }
-                                }
-                            } else {
-                                Button {
-                                    viewModel.navigateToHeading(item.heading)
-                                    dismiss()
-                                } label: {
-                                    row
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 6)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(item.accessibilityDescription)
-                                .accessibilityHint(row.accessibilityHintText)
-                                .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
-                                .contextMenu {
-                                    Button("Go To") {
-                                        viewModel.navigateToHeading(item.heading)
-                                        dismiss()
-                                    }
-                                    Button(item.isSkipped ? "Include Section" : "Skip Section") {
-                                        viewModel.toggleHeadingSkip(item.heading)
-                                    }
+                                Button(item.isSkipped ? "Include Section" : "Skip Section") {
+                                    viewModel.toggleHeadingSkip(item.heading)
                                 }
                             }
                             Divider()
@@ -180,21 +156,9 @@ struct HeadingNavigatorView: View {
         .navigationTitle("Headings: \(viewModel.book.title)")
         .accessibilityLabel("Headings, \(headingItems.count) \(headingItems.count == 1 ? "heading" : "headings")")
         .onAppear {
-            sheetAppearedAt = Date()
             rebuildHeadingItems()
             currentHeadingID = computedCurrentHeadingID()
             voiceOverFocusLog("headings sheet appeared with \(headingItems.count) rows")
-            guard let firstHeading = headingItems.first?.heading else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                focusedHeadingID = firstHeading.id
-                let elapsed = Date().timeIntervalSince(sheetAppearedAt)
-                voiceOverFocusLog("headings sheet assigned keyboard focus after \(String(format: "%.3f", elapsed))s to '\(firstHeading.text)'")
-            }
-        }
-        .onChange(of: focusedHeadingID) { _, newValue in
-            guard let newValue else { return }
-            let elapsed = Date().timeIntervalSince(sheetAppearedAt)
-            voiceOverFocusLog("headings sheet focus binding changed after \(String(format: "%.3f", elapsed))s to id '\(newValue)'")
         }
         .onChange(of: displayMode) { _, _ in
             rebuildHeadingItems()
