@@ -137,29 +137,10 @@ extension ReaderViewModel {
               currentChapterIndex < content.chapters.count else { return }
 
         let text = content.chapters[currentChapterIndex].text
-        let sentenceEnders: Set<Character> = [".", "!", "?"]
-
-        // Scan forward from current position for the end of a sentence
-        if currentCharacterOffset < text.utf16Length {
-            let startIdx = text.index(atUTF16Offset: currentCharacterOffset)
-            var pos = startIdx
-            while pos < text.endIndex {
-                if sentenceEnders.contains(text[pos]) {
-                    // Found sentence end — move past punctuation and whitespace to next sentence start
-                    var nextStart = text.index(after: pos)
-                    while nextStart < text.endIndex && text[nextStart].isWhitespace {
-                        nextStart = text.index(after: nextStart)
-                    }
-                    let newOffset = text.utf16Offset(of: nextStart)
-                    // Only advance if we actually moved forward and there's text ahead
-                    if newOffset > currentCharacterOffset && nextStart < text.endIndex {
-                        navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-                        announceToVoiceOver("Next sentence")
-                        return
-                    }
-                }
-                pos = text.index(after: pos)
-            }
+        if let newOffset = Self.nextSentenceStart(in: text, after: currentCharacterOffset) {
+            navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
+            announceToVoiceOver("Next sentence")
+            return
         }
 
         // No next sentence in current chapter — advance to start of next non-empty chapter
@@ -218,32 +199,10 @@ extension ReaderViewModel {
               currentChapterIndex < content.chapters.count else { return }
 
         let text = content.chapters[currentChapterIndex].text
-
-        // Scan forward for the next double-newline paragraph boundary
-        if currentCharacterOffset < text.utf16Length - 1 {
-            let startIdx = text.index(atUTF16Offset: currentCharacterOffset)
-            var pos = startIdx
-            while pos < text.endIndex {
-                let nextPos = text.index(after: pos)
-                if nextPos < text.endIndex && text[pos] == "\n" && text[nextPos] == "\n" {
-                    // Found paragraph break — skip past newlines and leading whitespace
-                    var paragraphStart = text.index(after: nextPos)
-                    while paragraphStart < text.endIndex && text[paragraphStart].isWhitespace && text[paragraphStart] != "\n" {
-                        paragraphStart = text.index(after: paragraphStart)
-                    }
-                    // Skip any additional newlines (triple+ newlines)
-                    while paragraphStart < text.endIndex && text[paragraphStart] == "\n" {
-                        paragraphStart = text.index(after: paragraphStart)
-                    }
-                    let newOffset = text.utf16Offset(of: paragraphStart)
-                    if newOffset > currentCharacterOffset && paragraphStart < text.endIndex {
-                        navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-                        announceToVoiceOver("Next paragraph")
-                        return
-                    }
-                }
-                pos = text.index(after: pos)
-            }
+        if let newOffset = Self.nextParagraphStart(in: text, after: currentCharacterOffset) {
+            navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
+            announceToVoiceOver("Next paragraph")
+            return
         }
 
         // No next paragraph in current chapter — advance to next non-empty chapter
@@ -289,6 +248,87 @@ extension ReaderViewModel {
             navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
             announceToVoiceOver("Previous chapter")
         }
+    }
+
+    /// Find the next sentence start using the reader's persisted UTF-16 offsets.
+    nonisolated static func nextSentenceStart(in text: String, after offset: Int) -> Int? {
+        guard offset >= 0, offset < text.utf16Length else { return nil }
+        let sentenceEnders: Set<Character> = [".", "!", "?"]
+        var position = text.index(atUTF16Offset: offset)
+
+        while position < text.endIndex {
+            if sentenceEnders.contains(text[position]) {
+                var start = text.index(after: position)
+                while start < text.endIndex && text[start].isWhitespace {
+                    start = text.index(after: start)
+                }
+                let result = text.utf16Offset(of: start)
+                if result > offset && start < text.endIndex { return result }
+            }
+            position = text.index(after: position)
+        }
+        return nil
+    }
+
+    /// Find the sentence containing the cursor, or the chapter start when none precedes it.
+    nonisolated static func sentenceStart(in text: String, before offset: Int) -> Int {
+        guard offset > 0, offset <= text.utf16Length else { return 0 }
+        let sentenceEnders: Set<Character> = [".", "!", "?"]
+        var position = text.index(atUTF16Offset: min(offset - 1, text.utf16Length - 1))
+
+        while position > text.startIndex {
+            position = text.index(before: position)
+            if sentenceEnders.contains(text[position]) {
+                var start = text.index(after: position)
+                while start < text.endIndex && text[start].isWhitespace {
+                    start = text.index(after: start)
+                }
+                return text.utf16Offset(of: start)
+            }
+        }
+        return 0
+    }
+
+    /// Find the next paragraph start after a double-newline boundary.
+    nonisolated static func nextParagraphStart(in text: String, after offset: Int) -> Int? {
+        guard offset >= 0, offset < text.utf16Length - 1 else { return nil }
+        var position = text.index(atUTF16Offset: offset)
+
+        while position < text.endIndex {
+            let nextPosition = text.index(after: position)
+            if nextPosition < text.endIndex && text[position] == "\n" && text[nextPosition] == "\n" {
+                var start = text.index(after: nextPosition)
+                while start < text.endIndex && text[start].isWhitespace && text[start] != "\n" {
+                    start = text.index(after: start)
+                }
+                while start < text.endIndex && text[start] == "\n" {
+                    start = text.index(after: start)
+                }
+                let result = text.utf16Offset(of: start)
+                if result > offset && start < text.endIndex { return result }
+            }
+            position = nextPosition
+        }
+        return nil
+    }
+
+    /// Find the paragraph containing the cursor, or the chapter start when none precedes it.
+    nonisolated static func paragraphStart(in text: String, before offset: Int) -> Int {
+        guard offset > 1, offset <= text.utf16Length else { return 0 }
+        var position = text.index(atUTF16Offset: min(offset - 1, text.utf16Length - 1))
+
+        while position > text.startIndex {
+            let previous = text.index(before: position)
+            if text[position] == "\n" && text[previous] == "\n" {
+                var start = text.index(after: position)
+                while start < text.endIndex && text[start].isWhitespace && text[start] != "\n" {
+                    start = text.index(after: start)
+                }
+                return text.utf16Offset(of: start)
+            }
+            position = previous
+        }
+        return 0
     }
 
     /// Skip forward or backward by a number of words, scanning actual word boundaries

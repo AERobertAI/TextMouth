@@ -852,46 +852,12 @@ extension ReaderViewModel {
 
     /// Find the start of the current sentence by scanning backward for sentence-ending punctuation.
     func findSentenceStart(in text: String, before offset: Int) -> Int {
-        guard offset > 0, offset <= text.utf16Length else { return 0 }
-        let sentenceEnders: Set<Character> = [".", "!", "?"]
-        let idx = text.index(atUTF16Offset: min(offset - 1, text.utf16Length - 1))
-
-        // Walk backward to find the end of the previous sentence
-        var pos = idx
-        while pos > text.startIndex {
-            pos = text.index(before: pos)
-            if sentenceEnders.contains(text[pos]) {
-                // Move past the punctuation and any whitespace
-                var start = text.index(after: pos)
-                while start < text.endIndex && text[start].isWhitespace {
-                    start = text.index(after: start)
-                }
-                return text.utf16Offset(of: start)
-            }
-        }
-        return 0 // No sentence boundary found — rewind to start of chapter
+        Self.sentenceStart(in: text, before: offset)
     }
 
     /// Find the start of the current paragraph by scanning backward for double newlines.
     func findParagraphStart(in text: String, before offset: Int) -> Int {
-        guard offset > 1, offset <= text.utf16Length else { return 0 }
-        let searchEnd = min(offset - 1, text.utf16Length - 1)
-        let idx = text.index(atUTF16Offset: searchEnd)
-
-        var pos = idx
-        while pos > text.startIndex {
-            let prev = text.index(before: pos)
-            if text[pos] == "\n" && text[prev] == "\n" {
-                // Move past the newlines
-                var start = text.index(after: pos)
-                while start < text.endIndex && text[start].isWhitespace && text[start] != "\n" {
-                    start = text.index(after: start)
-                }
-                return text.utf16Offset(of: start)
-            }
-            pos = prev
-        }
-        return 0 // No paragraph boundary found — rewind to start of chapter
+        Self.paragraphStart(in: text, before: offset)
     }
 
     // MARK: - Punctuation Pauses

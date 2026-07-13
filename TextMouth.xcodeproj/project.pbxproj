@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AB0000000000000000000001 /* LegacyNavigationAlgorithmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000002 /* LegacyNavigationAlgorithmTests.swift */; };
 		AC0000000000000000000001 /* LegacyAudioMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0000000000000000000002 /* LegacyAudioMetadataTests.swift */; };
+		AD0000000000000000000001 /* LegacySentenceParagraphSkipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD0000000000000000000002 /* LegacySentenceParagraphSkipTests.swift */; };
 		AA0000000000000000000001 /* KeyboardShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* KeyboardShortcutTests.swift */; };
 		A90000000000000000000001 /* LegacyBookStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000000000000000000002 /* LegacyBookStateTests.swift */; };
 		A80000000000000000000001 /* BookmarkToggleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80000000000000000000002 /* BookmarkToggleTests.swift */; };
@@ -146,6 +147,7 @@
 /* Begin PBXFileReference section */
 		AB0000000000000000000002 /* LegacyNavigationAlgorithmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyNavigationAlgorithmTests.swift; sourceTree = "<group>"; };
 		AC0000000000000000000002 /* LegacyAudioMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyAudioMetadataTests.swift; sourceTree = "<group>"; };
+		AD0000000000000000000002 /* LegacySentenceParagraphSkipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacySentenceParagraphSkipTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* KeyboardShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeyboardShortcutTests.swift; path = ../TextMouthTests/Sources/Tests/KeyboardShortcutTests.swift; sourceTree = "<group>"; };
 		A90000000000000000000002 /* LegacyBookStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookStateTests.swift; sourceTree = "<group>"; };
 		A80000000000000000000002 /* BookmarkToggleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkToggleTests.swift; path = ../TextMouthTests/Sources/Tests/BookmarkToggleTests.swift; sourceTree = "<group>"; };
@@ -441,6 +443,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				AD0000000000000000000002 /* LegacySentenceParagraphSkipTests.swift */,
 				AC0000000000000000000002 /* LegacyAudioMetadataTests.swift */,
 				AB0000000000000000000002 /* LegacyNavigationAlgorithmTests.swift */,
 				AA0000000000000000000002 /* KeyboardShortcutTests.swift */,
@@ -603,6 +606,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD0000000000000000000001 /* LegacySentenceParagraphSkipTests.swift in Sources */,
 				AC0000000000000000000001 /* LegacyAudioMetadataTests.swift in Sources */,
 				AB0000000000000000000001 /* LegacyNavigationAlgorithmTests.swift in Sources */,
 				AA0000000000000000000001 /* KeyboardShortcutTests.swift in Sources */,
