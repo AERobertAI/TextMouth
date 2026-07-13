@@ -2,6 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// Regression coverage for filesystem-first library move transactions.
+@MainActor
 final class LibraryMoveTransactionTests: XCTestCase {
     func testBookMoveCommitsModelPathAndBookInfoAfterDiskMove() throws {
         let sourceFolder = uniqueFolder("Source")

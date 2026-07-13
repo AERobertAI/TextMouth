@@ -3,6 +3,7 @@ import AppKit
 @testable import TextMouth
 
 /// Regression coverage for the formats advertised by the production app.
+@MainActor
 final class BookFormatTests: XCTestCase {
     /// Hosted tests must never initialize services against the user's real data.
     func testProductionTestsUseIsolatedDataDirectory() {

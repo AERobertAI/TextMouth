@@ -2,6 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// Regression coverage for config/AppStorage mapping and watcher replacement.
+@MainActor
 final class ConfigSyncTests: XCTestCase {
     func testSettingsPushAllPreviouslyOmittedFieldsToConfig() {
         let viewModel = SettingsViewModel()

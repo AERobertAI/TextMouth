@@ -4,7 +4,8 @@ import Combine
 /// Manages customizable keyboard shortcuts using NSEvent monitoring.
 /// Posts notifications when shortcuts are triggered, so the rest of the app
 /// can respond via the same NotificationCenter pattern already in use.
-class KeyboardShortcutManager: ObservableObject {
+@MainActor
+final class KeyboardShortcutManager: ObservableObject {
     @Published var bindings: [ShortcutAction: [KeyBinding]] = [:]
 
     private var eventMonitor: Any?
@@ -13,10 +14,6 @@ class KeyboardShortcutManager: ObservableObject {
     init() {
         loadBindings()
         startMonitoring()
-    }
-
-    deinit {
-        stopMonitoring()
     }
 
     // MARK: - Persistence

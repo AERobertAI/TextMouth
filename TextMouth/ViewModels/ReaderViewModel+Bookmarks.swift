@@ -67,7 +67,7 @@ extension ReaderViewModel {
     /// if that still conflicts, scans forward through sorted bookmarks, jumping
     /// past each conflicting zone in turn. Guaranteed to terminate because the
     /// forward scan always advances.
-    static func adjustedBookmarkOffset(
+    nonisolated static func adjustedBookmarkOffset(
         bookmarks: [Bookmark],
         chapterIndex: Int,
         characterOffset: Int,

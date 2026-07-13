@@ -60,7 +60,8 @@ enum SkipUnit: String, CaseIterable, Codable {
     }
 }
 
-class SettingsViewModel: ObservableObject {
+@MainActor
+final class SettingsViewModel: ObservableObject {
     @AppStorage("selectedVoiceID") var selectedVoiceID: String = "" {
         didSet { broadcastChanges(); syncToConfig() }
     }

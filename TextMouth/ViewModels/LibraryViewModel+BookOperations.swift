@@ -51,8 +51,11 @@ extension LibraryViewModel {
     func performRemoveBooks(
         _ books: [Book],
         deleteTMB: Bool,
-        deletePackage: (Book) throws -> Void = { try FileImportService.deleteBookPackage($0) }
+        deletePackage: ((Book) throws -> Void)? = nil
     ) {
+        let deletePackage = deletePackage ?? { book in
+            try FileImportService.deleteBookPackage(book)
+        }
         var failures: [String] = []
         for book in books {
             if deleteTMB {

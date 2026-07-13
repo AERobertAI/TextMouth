@@ -1,9 +1,9 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Combine
 
 /// Plays audio files (mp3, m4a, m4b, wav, etc.) with variable speed and seeking.
 /// Used for audio book playback as an alternative to the TTS SpeechService.
-class AudioPlaybackService: NSObject, ObservableObject {
+final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var isPlaying = false
     @Published var isPaused = false
     @Published var currentTime: TimeInterval = 0

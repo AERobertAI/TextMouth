@@ -1,6 +1,7 @@
 import XCTest
 @testable import TextMouth
 
+@MainActor
 final class NowPlayingOwnershipTests: XCTestCase {
     func testInactiveOwnerCannotClearActiveSession() {
         let coordinator = NowPlayingService(installsSystemIntegrations: false)
@@ -33,6 +34,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         autoreleasepool {
             let inactive = makeSession(coordinator: coordinator)
             XCTAssertNotEqual(inactive.ownerID, active.ownerID)
+            inactive.close()
         }
 
         XCTAssertEqual(coordinator.activeOwnerID, active.ownerID)

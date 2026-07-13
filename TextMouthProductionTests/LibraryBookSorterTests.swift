@@ -3,6 +3,7 @@ import AppKit
 @testable import TextMouth
 
 /// Regression coverage for the production library sort comparator.
+@MainActor
 final class LibraryBookSorterTests: XCTestCase {
     func testDescendingTitleSortUsesExplicitReverseComparison() {
         let alpha = makeBook(title: "Alpha")

@@ -5,11 +5,17 @@ import CoreAudio
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
 /// Keeping the existing call-site API local to a reader prevents an inactive
 /// window from clearing or replacing another window's media session.
+@MainActor
 final class NowPlayingSession {
     let ownerID: UUID
     private let coordinator: NowPlayingService
 
-    init(ownerID: UUID, coordinator: NowPlayingService = .shared) {
+    init(ownerID: UUID) {
+        self.ownerID = ownerID
+        self.coordinator = .shared
+    }
+
+    init(ownerID: UUID, coordinator: NowPlayingService) {
         self.ownerID = ownerID
         self.coordinator = coordinator
     }
@@ -68,7 +74,7 @@ final class NowPlayingSession {
         coordinator.updateBluetoothSettings(enabled: enabled, delay: delay)
     }
 
-    deinit {
+    func close() {
         coordinator.unregister(ownerID: ownerID)
     }
 }
@@ -98,7 +104,8 @@ final class NowPlayingSession {
 ///    them from the active device list. Without this second listener, the
 ///    suppress window would never arm and `rcd`'s spurious toggle would
 ///    flip a paused book into playback through the speakers.
-class NowPlayingService {
+@MainActor
+final class NowPlayingService {
     static let shared = NowPlayingService()
 
     struct Handlers {
@@ -748,10 +755,4 @@ class NowPlayingService {
         isListeningForDeviceChanges = false
     }
 
-    deinit {
-        stopDeviceChangeListener()
-        if installsSystemIntegrations {
-            removeRemoteCommandTargets()
-        }
-    }
 }

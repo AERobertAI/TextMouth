@@ -4,7 +4,8 @@ import Combine
 /// Manages ~/.TextMouth/config.json, mirroring app settings.
 /// AppStorage is the primary source of truth. Config.json mirrors it and
 /// allows external editing — external changes are detected and synced back.
-class ConfigService: ObservableObject {
+@MainActor
+final class ConfigService: ObservableObject {
     static let shared = ConfigService()
 
     @Published var config: AppConfig = AppConfig()
@@ -120,14 +121,14 @@ class ConfigService: ObservableObject {
         loadFromDisk()
     }
 
-    deinit {
-        stopFileWatcher()
-    }
-
     /// Call after SettingsViewModel has initialized and populated config from AppStorage.
     /// This ensures the file watcher only starts after we have correct values on disk.
     func startWatching() {
         startFileWatcher()
+    }
+
+    func shutdown() {
+        stopFileWatcher()
     }
 
     // MARK: - Persistence

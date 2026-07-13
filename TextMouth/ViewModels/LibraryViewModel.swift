@@ -42,7 +42,8 @@ enum LibraryCategory: String, CaseIterable, Codable {
 
 /// App-level library data and operations.
 /// Per-window navigation state (folder path, category, search) lives in the views.
-class LibraryViewModel: ObservableObject {
+@MainActor
+final class LibraryViewModel: ObservableObject {
     @Published var library = Library()
     @Published var errorMessage: String?
     @Published var showError = false
@@ -129,7 +130,7 @@ class LibraryViewModel: ObservableObject {
     }
 
     deinit {
-        refreshTimer?.invalidate()
+        MainActor.assumeIsolated { refreshTimer?.invalidate() }
     }
 
     // MARK: - Book Update Helpers

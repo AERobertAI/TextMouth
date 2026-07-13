@@ -106,7 +106,8 @@ struct TextTransformation {
 }
 
 /// Manages text substitution rules and applies them to text before TTS.
-class TextSubstitutionService: ObservableObject {
+@MainActor
+final class TextSubstitutionService: ObservableObject {
     @Published var rules: [SubstitutionRule] = []
     @Published var isEnabled: Bool = true {
         didSet { UserDefaults.standard.set(isEnabled, forKey: "substitutionsEnabled") }

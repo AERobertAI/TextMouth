@@ -10,8 +10,10 @@ enum LibraryPersistenceService {
         label: "com.textmouth.libraryPersistence",
         qos: .utility
     )
-    private static var pendingLibrary: Library?
-    private static var saveGeneration: UInt = 0
+    // Access is confined to saveQueue. `nonisolated(unsafe)` documents that
+    // executor contract to Swift's global-state checker.
+    nonisolated(unsafe) private static var pendingLibrary: Library?
+    nonisolated(unsafe) private static var saveGeneration: UInt = 0
 
     private static var libraryFileURL: URL {
         TextMouthPaths.libraryIndexFile

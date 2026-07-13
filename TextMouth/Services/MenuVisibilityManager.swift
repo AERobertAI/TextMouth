@@ -91,6 +91,7 @@ import AppKit
 /// active window type, so VoiceOver users don't encounter empty menus.
 /// See the file-level comment above for architecture details and instructions
 /// on adding new window types.
+@MainActor
 final class MenuVisibilityManager {
 
     // MARK: - Menu Title Sets
@@ -117,13 +118,16 @@ final class MenuVisibilityManager {
     /// Starts observing window focus changes. Called once from AppDelegate
     /// in applicationDidFinishLaunching.
     func startObserving() {
+        let refresh: @MainActor @Sendable () -> Void = { [weak self] in
+            self?.updateMenuVisibility()
+        }
         // Window became main (gained focus) — update immediately
         let becameMain = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeMainNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.updateMenuVisibility()
+        ) { _ in
+            MainActor.assumeIsolated { refresh() }
         }
         observers.append(becameMain)
 
@@ -134,10 +138,8 @@ final class MenuVisibilityManager {
             forName: NSWindow.didResignMainNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.updateMenuVisibility()
-            }
+        ) { _ in
+            DispatchQueue.main.async { refresh() }
         }
         observers.append(resignedMain)
 
@@ -149,10 +151,8 @@ final class MenuVisibilityManager {
             forName: NSApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.updateMenuVisibility()
-            }
+        ) { _ in
+            DispatchQueue.main.async { refresh() }
         }
         observers.append(becameActive)
 
@@ -160,8 +160,8 @@ final class MenuVisibilityManager {
             forName: NSApplication.didResignActiveNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.updateMenuVisibility()
+        ) { _ in
+            MainActor.assumeIsolated { refresh() }
         }
         observers.append(resignedActive)
 
@@ -172,10 +172,8 @@ final class MenuVisibilityManager {
             forName: .refreshContextMenus,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.updateMenuVisibility()
-            }
+        ) { _ in
+            DispatchQueue.main.async { refresh() }
         }
         observers.append(explicitRefresh)
 
@@ -191,10 +189,6 @@ final class MenuVisibilityManager {
             NotificationCenter.default.removeObserver(observer)
         }
         observers.removeAll()
-    }
-
-    deinit {
-        stopObserving()
     }
 
     // MARK: - Core Logic

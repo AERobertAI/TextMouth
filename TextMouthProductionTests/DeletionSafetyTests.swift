@@ -2,6 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// Regression coverage for non-destructive Trash failures.
+@MainActor
 final class DeletionSafetyTests: XCTestCase {
     func testTrashFailureNeverFallsBackToPermanentDeletion() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Combine
 
 /// Pre-renders speech to audio buffers using AVSpeechSynthesizer.write(),
@@ -7,7 +7,7 @@ import Combine
 ///
 /// Position tracking uses the AVAudioEngine's node time (not wall clock)
 /// for accurate position reporting.
-class AudioEngineService: ObservableObject {
+final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var engine = AVAudioEngine()
     private var playerNode = AVAudioPlayerNode()
     private var timePitch = AVAudioUnitTimePitch()
@@ -82,7 +82,7 @@ class AudioEngineService: ObservableObject {
         isRendering = false
     }
 
-    func render(text: String, voice: AVSpeechSynthesisVoice?, wpm: Double, completion: @escaping (Bool) -> Void) {
+    func render(text: String, voice: AVSpeechSynthesisVoice?, wpm: Double, completion: @escaping @Sendable (Bool) -> Void) {
         // Cancel any in-progress render first to free TTS resources
         cancelRender()
 
@@ -186,6 +186,7 @@ class AudioEngineService: ObservableObject {
                 map.append((charOffset: i, frame: AVAudioFramePosition(Double(i) * framesPerChar)))
             }
             map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
+            let completedMap = map
 
             // Clear render synth reference now that we're done
             self.renderLock.lock()
@@ -197,7 +198,7 @@ class AudioEngineService: ObservableObject {
             DispatchQueue.main.async {
                 self.renderedBuffer = combinedBuffer
                 self.renderFormat = audioFormat
-                self.wordFrameMap = map
+                self.wordFrameMap = completedMap
                 // totalFrames tracks only the speech portion for position
                 // calculations. The buffer is longer (includes silence
                 // padding) but characters only map to speech frames.

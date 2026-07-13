@@ -163,8 +163,10 @@ extension LibraryViewModel {
     /// Generate content.md caches for any books that don't have one yet, or
     /// regenerate caches whose format version is older than the current version.
     /// Runs in the background with progress tracking so the UI stays responsive.
-    /// Calls the optional completion handler when finished (on the background queue).
-    func extractMissingContentCaches(then completion: (() -> Void)? = nil) {
+    /// Calls the optional completion handler on the main actor when finished.
+    func extractMissingContentCaches(
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
         let currentVersion = MarkdownCacheService.currentCacheVersion
         let booksNeedingCache = library.books.filter { book in
             guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
@@ -174,22 +176,40 @@ extension LibraryViewModel {
         }
         guard !booksNeedingCache.isEmpty else {
             // No extraction needed — run completion immediately
-            DispatchQueue.global(qos: .utility).async { completion?() }
+            completion?()
             return
         }
 
-        DispatchQueue.main.async {
-            self.isExtracting = true
-            self.extractionProgressTotal = booksNeedingCache.count
-            self.extractionProgressCurrent = 0
-            self.extractionProgressMessage = "Updating text cache for \(booksNeedingCache.count) book\(booksNeedingCache.count == 1 ? "" : "s")..."
+        isExtracting = true
+        extractionProgressTotal = booksNeedingCache.count
+        extractionProgressCurrent = 0
+        extractionProgressMessage = "Updating text cache for \(booksNeedingCache.count) book\(booksNeedingCache.count == 1 ? "" : "s")..."
+
+        let updateProgress: @MainActor @Sendable (Int) -> Void = { [weak self] completed in
+            self?.extractionProgressCurrent = completed
+            self?.extractionProgressMessage = "Updating text cache: \(completed) of \(booksNeedingCache.count)..."
+        }
+        let finish: @MainActor @Sendable ([(UUID, String)]) -> Void = { [weak self] updates in
+            guard let self else { return }
+            for (bookID, version) in updates {
+                if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
+                    self.library.books[idx].cacheFormatVersion = version
+                }
+            }
+            self.save()
+            for (bookID, _) in updates {
+                if let book = self.library.books.first(where: { $0.id == bookID }) {
+                    LibraryPersistenceService.saveBookInfo(for: book)
+                }
+            }
+            self.isExtracting = false
+            self.extractionProgressMessage = ""
         }
 
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        DispatchQueue.global(qos: .utility).async {
             var updatedBookIDs: [(UUID, String)] = []
 
             for (index, book) in booksNeedingCache.enumerated() {
-                guard self != nil else { return }
                 // Delete stale cache before regenerating
                 if MarkdownCacheService.cacheExists(for: book) {
                     MarkdownCacheService.deleteCache(for: book)
@@ -199,32 +219,15 @@ extension LibraryViewModel {
                     updatedBookIDs.append((book.id, currentVersion))
                 }
 
-                DispatchQueue.main.async {
-                    self?.extractionProgressCurrent = index + 1
-                    self?.extractionProgressMessage = "Updating text cache: \(index + 1) of \(booksNeedingCache.count)..."
-                }
+                let completed = index + 1
+                DispatchQueue.main.async { updateProgress(completed) }
             }
 
+            let completedUpdates = updatedBookIDs
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                // Stamp the new cache version on each regenerated book
-                for (bookID, version) in updatedBookIDs {
-                    if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
-                        self.library.books[idx].cacheFormatVersion = version
-                    }
-                }
-                self.save()
-                // Persist bookInfo.json for each updated book
-                for (bookID, _) in updatedBookIDs {
-                    if let book = self.library.books.first(where: { $0.id == bookID }) {
-                        LibraryPersistenceService.saveBookInfo(for: book)
-                    }
-                }
-                self.isExtracting = false
-                self.extractionProgressMessage = ""
+                finish(completedUpdates)
+                completion?()
             }
-
-            completion?()
         }
     }
 
@@ -241,12 +244,32 @@ extension LibraryViewModel {
         extractionProgressCurrent = 0
         extractionProgressMessage = "Re-extracting text from \(booksToExtract.count) book\(booksToExtract.count == 1 ? "" : "s")..."
 
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        let updateProgress: @MainActor @Sendable (Int) -> Void = { [weak self] completed in
+            self?.extractionProgressCurrent = completed
+            self?.extractionProgressMessage = "Re-extracting text: \(completed) of \(booksToExtract.count)..."
+        }
+        let finish: @MainActor @Sendable ([UUID], String) -> Void = { [weak self] updates, version in
+            guard let self else { return }
+            for bookID in updates {
+                if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
+                    self.library.books[idx].cacheFormatVersion = version
+                }
+            }
+            self.save()
+            for bookID in updates {
+                if let book = self.library.books.first(where: { $0.id == bookID }) {
+                    LibraryPersistenceService.saveBookInfo(for: book)
+                }
+            }
+            self.isExtracting = false
+            self.extractionProgressMessage = ""
+        }
+
+        DispatchQueue.global(qos: .utility).async {
             let currentVersion = MarkdownCacheService.currentCacheVersion
             var updatedBookIDs: [UUID] = []
 
             for (index, book) in booksToExtract.enumerated() {
-                guard self != nil else { return }
                 // Delete existing cache first
                 MarkdownCacheService.deleteCache(for: book)
                 var regeneratedBook = book
@@ -254,28 +277,13 @@ extension LibraryViewModel {
                     updatedBookIDs.append(book.id)
                 }
 
-                DispatchQueue.main.async {
-                    self?.extractionProgressCurrent = index + 1
-                    self?.extractionProgressMessage = "Re-extracting text: \(index + 1) of \(booksToExtract.count)..."
-                }
+                let completed = index + 1
+                DispatchQueue.main.async { updateProgress(completed) }
             }
 
+            let completedUpdates = updatedBookIDs
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                // Stamp new cache version on all re-extracted books
-                for bookID in updatedBookIDs {
-                    if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
-                        self.library.books[idx].cacheFormatVersion = currentVersion
-                    }
-                }
-                self.save()
-                for bookID in updatedBookIDs {
-                    if let book = self.library.books.first(where: { $0.id == bookID }) {
-                        LibraryPersistenceService.saveBookInfo(for: book)
-                    }
-                }
-                self.isExtracting = false
-                self.extractionProgressMessage = ""
+                finish(completedUpdates, currentVersion)
             }
         }
     }
@@ -341,9 +349,7 @@ extension LibraryViewModel {
         // refreshTick updates and double the wakeups).
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.refreshTick &+= 1
-            }
+            MainActor.assumeIsolated { self?.refreshTick &+= 1 }
         }
     }
 

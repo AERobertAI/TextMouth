@@ -228,7 +228,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         Coordinator(onKeyRecorded: onKeyRecorded, onCancel: onCancel)
     }
 
-    class Coordinator {
+    @MainActor
+    final class Coordinator {
         let onKeyRecorded: (KeyBinding) -> Void
         let onCancel: () -> Void
         private var monitor: Any?
@@ -244,12 +245,12 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
                     guard let self = self else { return event }
                     // Escape cancels recording
                     if event.keyCode == 53 {
-                        DispatchQueue.main.async { self.onCancel() }
+                        self.onCancel()
                         self.removeMonitor()
                         return nil
                     }
                     if let binding = KeyBinding.from(event: event) {
-                        DispatchQueue.main.async { self.onKeyRecorded(binding) }
+                        self.onKeyRecorded(binding)
                         self.removeMonitor()
                         return nil
                     }
@@ -267,8 +268,5 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
             }
         }
 
-        deinit {
-            removeMonitor()
-        }
     }
 }

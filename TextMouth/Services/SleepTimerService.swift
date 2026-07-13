@@ -22,7 +22,8 @@ import AppKit
 /// take effect when issued by the *owning* book — Book B pausing should
 /// not halt Book A's running timer. Each playback action passes its
 /// `ownerID`; mismatching IDs are silently ignored.
-class SleepTimerService: ObservableObject {
+@MainActor
+final class SleepTimerService: ObservableObject {
     /// The single shared instance. All book windows and views read and
     /// write timer state here so only one timer is ever active.
     static let shared = SleepTimerService()
@@ -370,10 +371,11 @@ class SleepTimerService: ObservableObject {
         var currentStep = 0
 
         let ft = Timer(timeInterval: stepInterval, repeats: true) { [weak self] timer in
-            guard let self = self else { timer.invalidate(); return }
-            DispatchQueue.main.async {
+            nonisolated(unsafe) let callbackTimer = timer
+            MainActor.assumeIsolated {
+                guard let self = self else { callbackTimer.invalidate(); return }
                 guard self.generation == gen else {
-                    timer.invalidate()
+                    callbackTimer.invalidate()
                     return
                 }
                 currentStep += 1
@@ -381,7 +383,7 @@ class SleepTimerService: ObservableObject {
                 self.onFadeStep?(volume)
 
                 if currentStep >= totalSteps {
-                    timer.invalidate()
+                    callbackTimer.invalidate()
                     self.fadeTimer = nil
                     self.pendingFadeCompletion = true
                     self.isFadingOut = false

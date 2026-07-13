@@ -5,7 +5,8 @@ import AVFoundation
 import os.log
 
 /// Manages the state for reading a single book
-class ReaderViewModel: ObservableObject {
+@MainActor
+final class ReaderViewModel: ObservableObject {
     @Published var book: Book
     let libraryViewModel: LibraryViewModel
     let settingsViewModel: SettingsViewModel
@@ -148,6 +149,7 @@ class ReaderViewModel: ObservableObject {
     /// Prevent Where Am I delegate from being deallocated.
     /// Accessed from WhereAmI extension.
     var whereAmIDelegate: WhereAmIDelegateHelper?
+    private var hasClosed = false
 
     /// For audio books, 10 characters = 1 second of audio.
     /// All time calculations use this constant to convert character offsets to/from seconds.
@@ -679,27 +681,31 @@ class ReaderViewModel: ObservableObject {
                 if format.isAudio {
                     var extracted = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
                     // Use the book's stored title/author (which may have been user-edited)
-                    extracted.title = self?.book.title ?? extracted.title
-                    extracted.artist = self?.book.author ?? extracted.artist
+                    extracted.title = bookCopy.title
+                    extracted.artist = bookCopy.author
                     // Overlay stored audio-specific fields if the user previously edited them
-                    if let album = self?.book.audioAlbum { extracted.album = album }
-                    if let genre = self?.book.audioGenre { extracted.genre = genre }
-                    if let year = self?.book.audioYear { extracted.year = year }
+                    if let album = bookCopy.audioAlbum { extracted.album = album }
+                    if let genre = bookCopy.audioGenre { extracted.genre = genre }
+                    if let year = bookCopy.audioYear { extracted.year = year }
                     audioMeta = extracted
                 }
 
+                let loadedAudioFiles = audioFiles
+                let loadedAudioSegments = audioSegments
+                let loadedMetadata = metadata
+                let loadedAudioMetadata = audioMeta
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
-                    if let audioFiles = audioFiles {
+                    if let audioFiles = loadedAudioFiles {
                         self.audioChapterFiles = audioFiles
                     }
-                    if let segs = audioSegments {
+                    if let segs = loadedAudioSegments {
                         self.audioSegments = segs
                     }
                     self.content = parsed
                     self.headings = parsed.allHeadings
-                    self.epubMetadata = metadata
-                    self.audioMetadata = audioMeta
+                    self.epubMetadata = loadedMetadata
+                    self.audioMetadata = loadedAudioMetadata
 
                     // Clamp saved reading position to valid range. The chapter
                     // count can change if the book was re-imported or the cache
@@ -995,11 +1001,17 @@ class ReaderViewModel: ObservableObject {
         TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: msg)
     }
 
-    deinit {
+    /// Perform actor-isolated window teardown explicitly. Swift deinitializers
+    /// are nonisolated, so shared UI services must be released while the view
+    /// model is still on the main actor.
+    func close() {
+        guard !hasClosed else { return }
+        hasClosed = true
         speechService.stop()
         audioPlaybackService.stop()
         whereAmISynth.stopSpeaking(at: .immediate)
         nowPlayingService.clearNowPlaying()
+        nowPlayingService.close()
         // Stop the shared sleep timer iff this book owned it. With the
         // singleton service, the timer would otherwise keep ticking
         // after our window closed — its callbacks captured `self`
@@ -1011,33 +1023,49 @@ class ReaderViewModel: ObservableObject {
         }
         libraryViewModel.unregisterOpenBook(book.id)
     }
+
 }
 
 // MARK: - Helpers
 
 /// Bridge async code to sync context
-private func waitForAsync<T>(_ block: @escaping () async throws -> T) throws -> T {
-    var result: T?
-    var error: Error?
+private func waitForAsync<T>(_ block: @escaping @Sendable () async throws -> T) throws -> T {
+    let box = ReaderAsyncResultBox<T>()
     let semaphore = DispatchSemaphore(value: 0)
-    Task {
+    Task.detached {
         do {
-            result = try await block()
+            box.store(.success(try await block()))
         } catch let e {
-            error = e
+            box.store(.failure(e))
         }
         semaphore.signal()
     }
     semaphore.wait()
-    if let error = error { throw error }
-    guard let value = result else {
+    guard let result = box.value else {
         throw NSError(domain: "TextMouth", code: -1, userInfo: [NSLocalizedDescriptionKey: "Async operation returned no result"])
     }
-    return value
+    return try result.get()
+}
+
+private final class ReaderAsyncResultBox<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var result: Result<Value, Error>?
+
+    var value: Result<Value, Error>? {
+        lock.lock()
+        defer { lock.unlock() }
+        return result
+    }
+
+    func store(_ value: Result<Value, Error>) {
+        lock.lock()
+        result = value
+        lock.unlock()
+    }
 }
 
 /// Helper delegate for the Where Am I synthesizer (separate from the book speech service)
-class WhereAmIDelegateHelper: NSObject, AVSpeechSynthesizerDelegate {
+final class WhereAmIDelegateHelper: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     let onFinished: () -> Void
 
     init(onFinished: @escaping () -> Void) {

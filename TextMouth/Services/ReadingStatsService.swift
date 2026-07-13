@@ -2,7 +2,8 @@ import Foundation
 import Combine
 
 /// Tracks reading/listening statistics.
-class ReadingStatsService: ObservableObject {
+@MainActor
+final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
 
     @Published var stats: ReadingStats
@@ -16,8 +17,9 @@ class ReadingStatsService: ObservableObject {
         startAutoSave()
     }
 
-    deinit {
+    func shutdown() {
         saveTimer?.invalidate()
+        saveTimer = nil
     }
 
     // MARK: - Session Tracking
@@ -194,7 +196,7 @@ class ReadingStatsService: ObservableObject {
         // every 60s).
         saveTimer?.invalidate()
         saveTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            self?.save()
+            MainActor.assumeIsolated { self?.save() }
         }
     }
 

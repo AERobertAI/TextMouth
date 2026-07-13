@@ -1,6 +1,7 @@
 import XCTest
 @testable import TextMouth
 
+@MainActor
 final class UnicodeCoordinateTests: XCTestCase {
     func testStringIndexUsesUTF16CoordinatesAndSnapsSafely() {
         let text = "A🙂 café"

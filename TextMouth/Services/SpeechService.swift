@@ -1,10 +1,27 @@
 import AVFoundation
 import Combine
 
+private final class RenderResultBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedValue = false
+
+    var value: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedValue
+    }
+
+    func store(_ value: Bool) {
+        lock.lock()
+        storedValue = value
+        lock.unlock()
+    }
+}
+
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
 /// Current-chapter and look-ahead renders must therefore never overlap.
-final class SpeechRenderCoordinator {
+final class SpeechRenderCoordinator: @unchecked Sendable {
     static let shared = SpeechRenderCoordinator()
     static let maximumTextLength = 100_000
 
@@ -18,8 +35,8 @@ final class SpeechRenderCoordinator {
         engine: AudioEngineService,
         voice: AVSpeechSynthesisVoice?,
         wpm: Double,
-        shouldStart: @escaping () -> Bool,
-        completion: @escaping (Bool) -> Void
+        shouldStart: @escaping @MainActor @Sendable () -> Bool,
+        completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
         enqueue(
             textLength: text.utf16Length,
@@ -35,9 +52,9 @@ final class SpeechRenderCoordinator {
     /// testable without invoking the system speech synthesizer.
     func enqueue(
         textLength: Int,
-        shouldStart: @escaping () -> Bool,
-        start: @escaping (@escaping (Bool) -> Void) -> Void,
-        completion: @escaping (Bool) -> Void
+        shouldStart: @escaping @MainActor @Sendable () -> Bool,
+        start: @escaping @MainActor @Sendable (@escaping @Sendable (Bool) -> Void) -> Void,
+        completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
         guard textLength <= Self.maximumTextLength else {
             DispatchQueue.main.async { completion(false) }
@@ -45,25 +62,24 @@ final class SpeechRenderCoordinator {
         }
 
         queue.async {
-            var admitted = false
-            DispatchQueue.main.sync { admitted = shouldStart() }
+            let admitted = DispatchQueue.main.sync { shouldStart() }
             guard admitted else {
                 DispatchQueue.main.async { completion(false) }
                 return
             }
 
             let finished = DispatchSemaphore(value: 0)
-            var succeeded = false
+            let result = RenderResultBox()
             DispatchQueue.main.async {
-                start { result in
-                    succeeded = result
+                start { succeeded in
+                    result.store(succeeded)
                     finished.signal()
                 }
             }
             finished.wait()
 
             DispatchQueue.main.async {
-                completion(shouldStart() && succeeded)
+                completion(shouldStart() && result.value)
             }
         }
     }
@@ -73,7 +89,7 @@ final class SpeechRenderCoordinator {
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
 ///    plays through AVAudioEngine + AVAudioUnitTimePitch for real-time speed changes and instant seeking.
 /// 2. **Direct mode** (fallback): Uses AVSpeechSynthesizer.speak() directly with word-by-word callbacks.
-class SpeechService: NSObject, ObservableObject {
+final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     let audioEngine = AudioEngineService()
 
     /// Fallback direct synthesizer
@@ -627,12 +643,20 @@ class SpeechService: NSObject, ObservableObject {
             // Capture the text for background processing. The text
             // doesn't change during playback so this reference is safe.
             let text = self.currentText
+            let publish: @MainActor @Sendable (String) -> Void = { [weak self] word in
+                guard let self else { return }
+                guard self.positionGeneration == myGeneration else { return }
+                self.currentWordRange = range
+                if !word.isEmpty {
+                    self.onWordSpoken?(range, word)
+                }
+            }
 
             // Move the O(n) string indexing off the main thread.
             // String.index(startIndex, offsetBy:) iterates through
             // Unicode scalars from the start — expensive for large texts.
-            Self.positionQueue.async { [weak self] in
-                var word = ""
+            Self.positionQueue.async {
+                let word: String
                 if offset >= 0 && offset < text.utf16Length {
                     let idx = text.index(atUTF16Offset: offset)
                     var end = idx
@@ -640,19 +664,12 @@ class SpeechService: NSObject, ObservableObject {
                         end = text.index(after: end)
                     }
                     word = String(text[idx..<end])
+                } else {
+                    word = ""
                 }
-                DispatchQueue.main.async {
-                    guard let self = self else { return }
-                    // Drop the publish if the position generation moved
-                    // while we were doing the off-main word extraction —
-                    // a seek or stop happened, and the captured offset
-                    // is now stale relative to the audio engine.
-                    guard self.positionGeneration == myGeneration else { return }
-                    self.currentWordRange = range
-                    if !word.isEmpty {
-                        self.onWordSpoken?(range, word)
-                    }
-                }
+                // Drop the publish if the position generation moved while
+                // extraction ran; the main-actor closure owns that check.
+                DispatchQueue.main.async { publish(word) }
             }
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -745,6 +762,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        let finishedUtteranceID = ObjectIdentifier(utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             // Identity check: a finish for an utterance we no longer
@@ -754,7 +772,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // Compares to `liveDirectUtterance` rather than counting calls,
             // so we can't desync if the system delivers an unexpected
             // number of didFinish events.
-            guard utterance === self.liveDirectUtterance else { return }
+            guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else { return }
             guard self.usingDirectMode else { return }
 
             // This utterance has finished naturally — clear the marker so

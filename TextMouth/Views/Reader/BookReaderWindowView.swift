@@ -38,7 +38,7 @@ struct BookReaderWindowView: View {
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
-                viewModel.stop()
+                viewModel.close()
             }
             .frame(minWidth: 600, minHeight: 400)
     }

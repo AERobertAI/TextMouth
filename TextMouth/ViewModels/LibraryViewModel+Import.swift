@@ -4,13 +4,13 @@ import ZIPFoundation
 
 /// Serial background executor for imports. Activity callbacks are delivered on
 /// the main queue, while operations always run off the UI thread.
-final class SerialImportQueue {
+final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
     private let stateLock = NSLock()
     private var activeCount = 0
-    var onActivityChanged: ((Int) -> Void)?
+    var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
 
-    func enqueue(_ operation: @escaping () -> Void) {
+    func enqueue(_ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
         queue.async { [weak self] in
             operation()
@@ -83,7 +83,7 @@ extension LibraryViewModel {
     // MARK: - Async Zip Import
 
     /// Check if a ZIP file contains audio files (for audio book ZIP import).
-    func isAudioZip(url: URL) -> Bool {
+    nonisolated static func isAudioZip(url: URL) -> Bool {
         guard let archive = Archive(url: url, accessMode: .read) else { return false }
         let audioExtensions = Set(BookFormat.audio.fileExtensions)
         var hasAudio = false
@@ -119,7 +119,7 @@ extension LibraryViewModel {
                     DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
                     return
                 }
-                if self.isAudioZip(url: url) {
+                if Self.isAudioZip(url: url) {
                     let book = try FileImportService.importAudioZip(from: url, toFolder: folderPath)
                     DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
                     return

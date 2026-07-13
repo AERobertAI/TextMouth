@@ -1,6 +1,7 @@
 import AppKit
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Hides context-specific menu bar items (Playback, Navigate, etc.) when
     /// the focused window doesn't support them, so VoiceOver doesn't encounter
     /// empty, non-interactive menus.
@@ -24,10 +25,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        menuVisibilityManager.stopObserving()
+        ConfigService.shared.shutdown()
         LibraryPersistenceService.flushPendingSave()
         let statsService = ReadingStatsService.shared
         statsService.endSession()
         statsService.flushPendingSaves()
+        statsService.shutdown()
     }
 
     /// Handle files opened via Finder "Open With" or drag-to-dock

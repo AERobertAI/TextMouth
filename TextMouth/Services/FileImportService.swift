@@ -3,6 +3,23 @@ import CryptoKit
 import UniformTypeIdentifiers
 import ZIPFoundation
 
+private final class SynchronousResultBox<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedValue: Value?
+
+    var value: Value? {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedValue
+    }
+
+    func store(_ value: Value) {
+        lock.lock()
+        storedValue = value
+        lock.unlock()
+    }
+}
+
 enum FileImportError: LocalizedError {
     case unsupportedFormat(String)
     case hashingFailed
@@ -310,13 +327,14 @@ enum FileImportService {
         var audioYear: String?
         if format.isAudio {
             let semaphore = DispatchSemaphore(value: 0)
-            var audioMeta: AudioMetadata?
-            Task {
-                audioMeta = await AudioPlaybackService.extractFullMetadata(from: sourceURL)
+            let metadataBox = SynchronousResultBox<AudioMetadata>()
+            Task.detached {
+                let metadata = await AudioPlaybackService.extractFullMetadata(from: sourceURL)
+                metadataBox.store(metadata)
                 semaphore.signal()
             }
             semaphore.wait()
-            if let meta = audioMeta {
+            if let meta = metadataBox.value {
                 if !meta.title.isEmpty { title = meta.title }
                 if !meta.artist.isEmpty { author = meta.artist }
                 if !meta.album.isEmpty { audioAlbum = meta.album }
@@ -495,12 +513,14 @@ enum FileImportService {
     /// Delete a book's entire .tmb package.
     /// Respects the "Move to Trash" setting — uses Trash when enabled,
     /// permanent deletion otherwise.
+    @MainActor
     static func deleteBookPackage(_ book: Book) throws {
         let tmbDir = book.tmbDirectory
         try removeItemRespectingTrashSetting(at: tmbDir)
     }
 
     /// Delete just the book file from a .tmb (legacy compat - prefer deleteBookPackage)
+    @MainActor
     static func deleteBookFile(at path: String) throws {
         let url = URL(fileURLWithPath: path)
         let parent = url.deletingLastPathComponent()
@@ -514,6 +534,7 @@ enum FileImportService {
     /// Remove an item from disk, using Trash if the setting is enabled.
     /// A Trash failure is surfaced to the caller and never converted into an
     /// unconfirmed permanent deletion.
+    @MainActor
     static func removeItemRespectingTrashSetting(
         at url: URL,
         trashItem: (URL) throws -> Void = { item in
