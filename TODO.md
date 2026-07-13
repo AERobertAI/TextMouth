@@ -29,7 +29,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Commit book and folder model moves only after their filesystem moves succeed.
 - [ ] Rewrite `bookInfo.json` after moving books or folders.
 - [ ] Never fall back from Trash to permanent deletion without explicit confirmation.
-- [ ] Complete bidirectional config synchronization and rearm the watcher after atomic replacement. *(Batch 1)*
+- [ ] Complete bidirectional config synchronization and rearm the watcher after atomic replacement.
 - [ ] Clear short reading-stat sessions correctly and flush an active session at termination.
 - [ ] Make duplicate-finder criteria follow the advertised combined-match behavior.
 - [x] Remove unsupported legacy `.doc` import advertising or add a real parser. *(Batch 1: removed unsupported advertising)*
@@ -42,7 +42,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 
 - [ ] Calculate recursive package size for directory-based audiobooks.
 - [ ] Clamp adjusted bookmark positions to chapter bounds.
-- [ ] Replace the copied standalone test implementations with tests that import production code.
+- [ ] Replace the copied standalone test implementations with tests that import production code. *(A production XCTest target now covers new regressions, but the legacy harness still uses copies.)*
 
 ## Verification Baseline
 
