@@ -24,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        LibraryPersistenceService.flushPendingSave()
         let statsService = ReadingStatsService.shared
         statsService.endSession()
         statsService.flushPendingSaves()

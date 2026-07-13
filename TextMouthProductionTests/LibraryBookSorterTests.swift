@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 @testable import TextMouth
 
 /// Regression coverage for the production library sort comparator.
@@ -56,6 +57,36 @@ final class LibraryBookSorterTests: XCTestCase {
         try Data(repeating: 0, count: 17).write(to: file)
 
         XCTAssertEqual(LibraryBookSorter.recursiveFileSize(at: file), 17)
+    }
+
+    func testLibraryPersistenceFlushWritesNewestPendingSnapshot() throws {
+        let first = makeBook(title: "Older Snapshot")
+        let newest = makeBook(title: "Newest Snapshot")
+
+        LibraryPersistenceService.save(Library(books: [first]))
+        LibraryPersistenceService.save(Library(books: [newest]))
+        LibraryPersistenceService.flushPendingSave()
+
+        let data = try Data(contentsOf: TextMouthPaths.libraryIndexFile)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let persisted = try decoder.decode(Library.self, from: data)
+        XCTAssertEqual(persisted.books.map(\.title), ["Newest Snapshot"])
+    }
+
+    func testApplicationTerminationFlushesPendingLibrarySave() throws {
+        let book = makeBook(title: "Saved at Termination")
+        LibraryPersistenceService.save(Library(books: [book]))
+
+        AppDelegate().applicationWillTerminate(
+            Notification(name: NSApplication.willTerminateNotification)
+        )
+
+        let data = try Data(contentsOf: TextMouthPaths.libraryIndexFile)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let persisted = try decoder.decode(Library.self, from: data)
+        XCTAssertEqual(persisted.books.map(\.title), ["Saved at Termination"])
     }
 
     private func makeBook(

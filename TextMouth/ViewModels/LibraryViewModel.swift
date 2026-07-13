@@ -146,18 +146,10 @@ class LibraryViewModel: ObservableObject {
 
     // MARK: - Persistence
 
-    private var saveWorkItem: DispatchWorkItem?
-
     /// Save the library index, debounced to avoid rapid repeated writes.
     /// Position updates happen very frequently; this coalesces them.
     func save() {
-        saveWorkItem?.cancel()
-        let lib = library
-        let workItem = DispatchWorkItem {
-            LibraryPersistenceService.save(lib)
-        }
-        saveWorkItem = workItem
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5, execute: workItem)
+        LibraryPersistenceService.save(library)
     }
 
 }

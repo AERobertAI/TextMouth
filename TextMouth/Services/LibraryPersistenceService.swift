@@ -4,6 +4,15 @@ import Foundation
 /// The library index now lives at ~/.TextMouth/library.json.
 enum LibraryPersistenceService {
 
+    /// All library-index writes and debounce state live on one queue so an
+    /// older snapshot can never finish after a newer one.
+    private static let saveQueue = DispatchQueue(
+        label: "com.textmouth.libraryPersistence",
+        qos: .utility
+    )
+    private static var pendingLibrary: Library?
+    private static var saveGeneration: UInt = 0
+
     private static var libraryFileURL: URL {
         TextMouthPaths.libraryIndexFile
     }
@@ -16,6 +25,31 @@ enum LibraryPersistenceService {
     /// Save the library index to disk. Does NOT write individual bookInfo.json files —
     /// use saveBookInfo(for:in:) for that when a specific book changes.
     static func save(_ library: Library) {
+        saveQueue.async {
+            pendingLibrary = library
+            saveGeneration &+= 1
+            let generation = saveGeneration
+
+            saveQueue.asyncAfter(deadline: .now() + 0.5) {
+                guard generation == saveGeneration, let library = pendingLibrary else { return }
+                write(library)
+                pendingLibrary = nil
+            }
+        }
+    }
+
+    /// Persist the newest pending snapshot before application termination.
+    /// The synchronous barrier also waits for any write already in progress.
+    static func flushPendingSave() {
+        saveQueue.sync {
+            saveGeneration &+= 1
+            guard let library = pendingLibrary else { return }
+            write(library)
+            pendingLibrary = nil
+        }
+    }
+
+    private static func write(_ library: Library) {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
 
