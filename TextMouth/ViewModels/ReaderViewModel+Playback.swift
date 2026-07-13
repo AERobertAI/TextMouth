@@ -302,22 +302,35 @@ extension ReaderViewModel {
     /// store offsets the rest of the code can interpret correctly,
     /// and what makes navigateTo / skipCharacters seek to the
     /// right ABSOLUTE time for chapter-RELATIVE inputs.
-    enum AudioLayout {
+    enum AudioLayout: Equatable {
         case multiFile
         case segmented
         case chaptersInOneFile
         case singleFile
+
+        /// Resolve an audiobook's storage layout from the parser outputs.
+        /// Segmented DAISY parsing also returns a file path for every segment,
+        /// so segment metadata must take precedence over the non-empty file list.
+        static func determine(
+            hasChapterFiles: Bool,
+            hasSegments: Bool,
+            chapterCount: Int
+        ) -> AudioLayout {
+            if hasSegments { return .segmented }
+            if hasChapterFiles { return .multiFile }
+            if chapterCount > 1 { return .chaptersInOneFile }
+            return .singleFile
+        }
     }
 
     /// Determine which layout this audio book uses. Pre-conditions:
     /// `isAudioBook == true` and `content` is loaded.
     var audioLayout: AudioLayout {
-        if !audioChapterFiles.isEmpty { return .multiFile }
-        if !audioSegments.isEmpty { return .segmented }
-        if let content = content, content.chapters.count > 1 {
-            return .chaptersInOneFile
-        }
-        return .singleFile
+        AudioLayout.determine(
+            hasChapterFiles: !audioChapterFiles.isEmpty,
+            hasSegments: !audioSegments.isEmpty,
+            chapterCount: content?.chapters.count ?? 0
+        )
     }
 
     /// Absolute time (seconds) at which the given chapter starts in

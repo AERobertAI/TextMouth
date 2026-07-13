@@ -7,7 +7,7 @@ This checklist tracks the issues identified in the July 2026 code audit. Items a
 - [ ] Defer original-file deletion until a duplicate import is accepted.
 - [ ] Make folder deletion with content relocation transactional so failed moves cannot delete books.
 - [ ] Make data-directory migration non-destructive, validated, and recoverable.
-- [ ] Classify segmented DAISY audio before ordinary multi-file audio. *(Batch 1)*
+- [x] Classify segmented DAISY audio before ordinary multi-file audio. *(Batch 1)*
 
 ## High
 
