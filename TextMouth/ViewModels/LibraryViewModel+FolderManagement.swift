@@ -165,7 +165,9 @@ extension LibraryViewModel {
         var sizeCache: [UUID: Int] = [:]
         if field == .fileSize {
             for book in books {
-                sizeCache[book.id] = (try? FileManager.default.attributesOfItem(atPath: book.filePath)[.size] as? Int) ?? 0
+                sizeCache[book.id] = LibraryBookSorter.recursiveFileSize(
+                    at: URL(fileURLWithPath: book.filePath)
+                )
             }
         }
 

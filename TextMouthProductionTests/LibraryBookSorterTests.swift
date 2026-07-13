@@ -37,6 +37,27 @@ final class LibraryBookSorterTests: XCTestCase {
         XCTAssertEqual(result.map(\.title), ["Alpha", "Beta"])
     }
 
+    func testRecursiveFileSizeIncludesNestedPackageContents() throws {
+        let package = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let nested = package.appendingPathComponent("Audio", isDirectory: true)
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: package) }
+
+        try Data(repeating: 1, count: 12).write(to: package.appendingPathComponent("cover.jpg"))
+        try Data(repeating: 2, count: 30).write(to: nested.appendingPathComponent("chapter.mp3"))
+
+        XCTAssertEqual(LibraryBookSorter.recursiveFileSize(at: package), 42)
+    }
+
+    func testRecursiveFileSizeStillHandlesOrdinaryFiles() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: file) }
+        try Data(repeating: 0, count: 17).write(to: file)
+
+        XCTAssertEqual(LibraryBookSorter.recursiveFileSize(at: file), 17)
+    }
+
     private func makeBook(
         id: UUID = UUID(),
         title: String,

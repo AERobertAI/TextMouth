@@ -7,6 +7,33 @@ import Foundation
 /// because equality then returns true in both directions. This helper compares
 /// values explicitly and adds stable title/UUID tie-breakers.
 enum LibraryBookSorter {
+    /// Return the logical size of a file or all regular files contained in a
+    /// directory package. Directory metadata alone does not include its contents.
+    static func recursiveFileSize(at url: URL, fileManager: FileManager = .default) -> Int {
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else { return 0 }
+
+        if !isDirectory.boolValue {
+            return (try? fileManager.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
+        }
+
+        let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: keys,
+            options: [],
+            errorHandler: { _, _ in true }
+        ) else { return 0 }
+
+        var total = 0
+        for case let childURL as URL in enumerator {
+            guard let values = try? childURL.resourceValues(forKeys: Set(keys)),
+                  values.isRegularFile == true else { continue }
+            total += values.fileSize ?? 0
+        }
+        return total
+    }
+
     static func sorted(
         _ books: [Book],
         by field: LibrarySortField,
