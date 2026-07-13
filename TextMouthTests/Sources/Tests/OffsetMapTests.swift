@@ -1,4 +1,5 @@
 import Foundation
+@testable import TextMouth
 
 func runOffsetMapTests() {
 print("\n--- OffsetMap Tests ---")

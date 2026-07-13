@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000001 /* LegacyScenarioHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* LegacyScenarioHarness.swift */; };
+		A10000000000000000000002 /* OffsetMapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* OffsetMapTests.swift */; };
 		051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D811A8124A1918F17347B0C /* SettingsViewModel.swift */; };
 		0AEB6C95A50C3F69F67AFEE0 /* HTMLToMarkdownConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57F311CC37B3A3BCBA8C9D7 /* HTMLToMarkdownConverter.swift */; };
 		0CC6EFB85DAAFF35CCFB0725 /* BookmarkPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243F4147A2962C65CF87E1 /* BookmarkPanelView.swift */; };
@@ -131,6 +133,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A10000000000000000000003 /* LegacyScenarioHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyScenarioHarness.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* OffsetMapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OffsetMapTests.swift; path = ../TextMouthTests/Sources/Tests/OffsetMapTests.swift; sourceTree = "<group>"; };
 		0359EBDDABD0D02289EA4FC0 /* ReaderViewModel+WhereAmI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+WhereAmI.swift"; sourceTree = "<group>"; };
 		0ADA01E6BE651B28BC03B976 /* BookParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookParser.swift; sourceTree = "<group>"; };
 		0C433436ED0C07B7E10290BB /* BookMetadataUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookMetadataUpdateTests.swift; sourceTree = "<group>"; };
@@ -415,6 +419,8 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000003 /* LegacyScenarioHarness.swift */,
+				A10000000000000000000004 /* OffsetMapTests.swift */,
 				98BAACF5B4626204168E4630 /* AudioLayoutTests.swift */,
 				62DE8313F4DD47E0926AD0EE /* BookmarkPlacementTests.swift */,
 				41A28B03E9C844032183F03A /* BookFormatTests.swift */,
@@ -564,6 +570,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000001 /* LegacyScenarioHarness.swift in Sources */,
+				A10000000000000000000002 /* OffsetMapTests.swift in Sources */,
 				5A771D7F57BD46BCAD903A02 /* UnicodeCoordinateTests.swift in Sources */,
 				40EAC947F56C414DB9CB3202 /* NowPlayingOwnershipTests.swift in Sources */,
 				306A0A9608A64235A9521F02 /* SpeechRenderCoordinatorTests.swift in Sources */,
