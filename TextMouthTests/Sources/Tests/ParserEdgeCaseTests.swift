@@ -1,13 +1,28 @@
 import Foundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+private func parseHTML(html: String, title: String) throws -> DocumentContent {
+    try HTMLParser.parse(html: html, title: title)
+}
+
+private func parseMarkdown(markdown: String, title: String) throws -> DocumentContent {
+    try MarkdownDocParser.parse(markdown: markdown, title: title)
+}
+
+private func parsePlainText(text: String, title: String) -> DocumentContent {
+    PlainTextParser.parse(text: text, title: title)
+}
+#endif
+
 func runParserEdgeCaseTests() {
 print("\n--- Parser Edge Cases ---")
 
-test("HTML parser handles empty heading tag name gracefully") {
-    // Simulate what happens if a heading tag name were empty — safe unwrap
-    let tag = ""
-    let level = tag.last.flatMap({ Int(String($0)) }) ?? 1
-    try assertEqual(level, 1, "Empty tag name should default to level 1")
+test("HTML parser handles an empty heading element gracefully") {
+    let content = try parseHTML(html: "<html><body><h1></h1></body></html>", title: "Empty Heading")
+    try assertEqual(content.title, "Empty Heading")
+    try assertEqual(content.chapters.count, 1)
 }
 
 test("HTML parser handles malformed heading levels") {

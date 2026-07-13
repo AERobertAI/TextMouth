@@ -107,3 +107,15 @@ final class LegacyTextSubstitutionScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyParserEdgeCaseScenarioTests: XCTestCase {
+    func testLegacyParserEdgeCaseScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runParserEdgeCaseTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            13,
+            "Every inventoried parser edge-case scenario should remain registered"
+        )
+    }
+}
