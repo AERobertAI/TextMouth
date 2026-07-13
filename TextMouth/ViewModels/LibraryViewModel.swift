@@ -85,6 +85,7 @@ class LibraryViewModel: ObservableObject {
     @Published var importProgressCurrent = 0
     @Published var importProgressTotal = 0
     @Published var importProgressMessage = ""
+    let importOperationQueue = SerialImportQueue()
 
     /// Text extraction progress tracking (for startup cache generation and re-extraction)
     @Published var isExtracting = false
@@ -110,6 +111,15 @@ class LibraryViewModel: ObservableObject {
         migrateOldBooksIfNeeded()
         setupFinderOpenHandler()
         setupDataDirectoryChangeHandler()
+        importOperationQueue.onActivityChanged = { [weak self] activeCount in
+            guard let self else { return }
+            self.isImporting = activeCount > 0
+            if activeCount == 0 {
+                self.importProgressCurrent = 0
+                self.importProgressTotal = 0
+                self.importProgressMessage = ""
+            }
+        }
         startRefreshTimer()
         // Extract caches first, then calculate stats (which can use the caches).
         // Both run on background queues; stats waits for extraction to finish.

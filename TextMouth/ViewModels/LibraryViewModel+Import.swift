@@ -2,6 +2,32 @@ import SwiftUI
 import Combine
 import ZIPFoundation
 
+/// Serial background executor for imports. Activity callbacks are delivered on
+/// the main queue, while operations always run off the UI thread.
+final class SerialImportQueue {
+    private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
+    private let stateLock = NSLock()
+    private var activeCount = 0
+    var onActivityChanged: ((Int) -> Void)?
+
+    func enqueue(_ operation: @escaping () -> Void) {
+        updateCount(by: 1)
+        queue.async { [weak self] in
+            operation()
+            self?.updateCount(by: -1)
+        }
+    }
+
+    private func updateCount(by delta: Int) {
+        stateLock.lock()
+        activeCount += delta
+        let count = activeCount
+        let callback = onActivityChanged
+        stateLock.unlock()
+        DispatchQueue.main.async { callback?(count) }
+    }
+}
+
 /// Extension for file import operations — importing from Finder, ZIP archives,
 /// TMB packages, and text input.
 extension LibraryViewModel {
@@ -9,32 +35,14 @@ extension LibraryViewModel {
     /// Import files and post notification to open them
     func importAndOpenFiles(urls: [URL]) {
         for url in urls {
-            let didAccess = url.startAccessingSecurityScopedResource()
-            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-
             let ext = url.pathExtension.lowercased()
 
             if ext == "tmb" {
-                // Opening a .tmb package — find and open the book
                 openTMBPackage(from: url)
             } else if ext == "zip" {
-                // Async zip import with progress
                 importZipAsync(from: url, toFolder: "")
             } else {
-                // Single file import
-                do {
-                    let book = try FileImportService.importFile(from: url)
-                    if addBookCheckingDuplicate(book, toFolder: "", originalURL: url) {
-                        save()
-                        if let added = library.books.first(where: { $0.md5Hash == book.md5Hash }) {
-                            NotificationCenter.default.post(name: .openBookWindow, object: added.id)
-                        }
-                        handleOriginalFileDeletion(url: url)
-                    }
-                } catch {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
+                importSingleFileAsync(from: url, toFolder: "", openAfterImport: true)
             }
         }
     }
@@ -43,27 +51,32 @@ extension LibraryViewModel {
 
     /// Open a .tmb package — find the matching book in library or import it, then open the reader
     func openTMBPackage(from url: URL) {
-        do {
-            let inspection = try FileImportService.inspectTMBPackage(at: url)
-            let info = inspection.info
-            // Check by book ID
-            if let existing = library.books.first(where: { $0.id == info.metadata.bookID }) {
-                NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
-                return
+        importOperationQueue.enqueue { [weak self] in
+            guard let self else { return }
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let inspection = try FileImportService.inspectTMBPackage(at: url)
+                let info = inspection.info
+                var shouldCopy = true
+                DispatchQueue.main.sync {
+                    if let existing = self.library.books.first(where: {
+                        $0.id == info.metadata.bookID || $0.md5Hash == info.metadata.md5Hash
+                    }) {
+                        shouldCopy = false
+                        NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
+                    }
+                }
+                guard shouldCopy else { return }
+                let book = try FileImportService.importTMBPackage(from: url)
+                DispatchQueue.main.sync {
+                    self.library.addBook(book)
+                    self.save()
+                    NotificationCenter.default.post(name: .openBookWindow, object: book.id)
+                }
+            } catch {
+                DispatchQueue.main.async { self.presentImportError(error) }
             }
-            // Check by hash
-            if let existing = library.books.first(where: { $0.md5Hash == info.metadata.md5Hash }) {
-                NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
-                return
-            }
-
-            let book = try FileImportService.importTMBPackage(from: url)
-            library.addBook(book)
-            save()
-            NotificationCenter.default.post(name: .openBookWindow, object: book.id)
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
         }
     }
 
@@ -89,127 +102,107 @@ extension LibraryViewModel {
 
     /// Import a zip file asynchronously with progress tracking
     func importZipAsync(from url: URL, toFolder folderPath: String) {
-        isImporting = true
-        importProgressCurrent = 0
-        importProgressTotal = 0
-        importProgressMessage = "Extracting archive..."
-
-        // Check if this is a DAISY ZIP (contains OPF or ncc.html)
-        if DAISYParser.isDAISYZip(url: url) {
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else { return }
-                do {
-                    let book: Book
-                    // Check if the DAISY package has audio content
-                    if let archive = try? Archive(url: url, accessMode: .read) {
-                        let provider = ArchiveFileProvider(archive: archive)
-                        if DAISYAudioConverter.hasAudio(in: provider) {
-                            book = try FileImportService.importDAISYAudioZip(
-                                from: url, toFolder: folderPath
-                            )
-                        } else {
-                            book = try FileImportService.importFile(
-                                from: url, toFolder: folderPath
-                            )
-                        }
-                    } else {
-                        book = try FileImportService.importFile(
-                            from: url, toFolder: folderPath
-                        )
-                    }
-                    DispatchQueue.main.async {
-                        self.library.addBook(book)
-                        self.save()
-                        self.isImporting = false
-                        self.importProgressMessage = ""
-                        self.handleOriginalFileDeletion(url: url)
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        self.isImporting = false
-                        self.errorMessage = error.localizedDescription
-                        self.showError = true
-                    }
-                }
-            }
-            return
-        }
-
-        // Check if this is an audio ZIP
-        if isAudioZip(url: url) {
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else { return }
-                do {
-                    let book = try FileImportService.importAudioZip(from: url, toFolder: folderPath)
-                    DispatchQueue.main.async {
-                        self.library.addBook(book)
-                        self.save()
-                        self.isImporting = false
-                        self.importProgressMessage = ""
-                        self.handleOriginalFileDeletion(url: url)
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        self.isImporting = false
-                        self.errorMessage = error.localizedDescription
-                        self.showError = true
-                    }
-                }
-            }
-            return
-        }
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        importOperationQueue.enqueue { [weak self] in
             guard let self = self else { return }
-
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
             do {
-                // Pass existing library hashes so zip import can skip duplicates
-                // instead of creating orphaned .tmb packages
-                let existingHashes = Set(self.library.books.map { $0.md5Hash })
+                if DAISYParser.isDAISYZip(url: url) {
+                    let book: Book
+                    if let archive = try? Archive(url: url, accessMode: .read),
+                       DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
+                        book = try FileImportService.importDAISYAudioZip(from: url, toFolder: folderPath)
+                    } else {
+                        book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                    }
+                    DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
+                    return
+                }
+                if self.isAudioZip(url: url) {
+                    let book = try FileImportService.importAudioZip(from: url, toFolder: folderPath)
+                    DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
+                    return
+                }
+
+                var existingHashes: Set<String> = []
+                DispatchQueue.main.sync {
+                    existingHashes = Set(self.library.books.map(\.md5Hash))
+                }
                 let result = try FileImportService.importZip(
                     from: url,
                     toFolder: folderPath,
-                    existingHashes: existingHashes
-                ) { completed, total in
-                    DispatchQueue.main.async {
-                        self.importProgressCurrent = completed
-                        self.importProgressTotal = total
-                        self.importProgressMessage = "Importing book \(completed) of \(total)..."
+                    existingHashes: existingHashes,
+                    progress: { completed, total in
+                        DispatchQueue.main.async {
+                            self.importProgressCurrent = completed
+                            self.importProgressTotal = total
+                            self.importProgressMessage = "Importing book \(completed) of \(total)..."
+                        }
                     }
-                }
-                let books = result.books
-
-                DispatchQueue.main.async {
-                    for book in books {
-                        self.library.addBook(book)
-                    }
+                )
+                DispatchQueue.main.sync {
+                    for book in result.books { self.library.addBook(book) }
                     self.save()
-                    self.isImporting = false
                     self.importProgressMessage = ""
-
                     if let failureSummary = result.failureSummary {
                         self.errorMessage = failureSummary
                         self.showError = true
                     }
-
                     self.handleOriginalFileDeletion(url: url)
-
-                    // Offer to create a folder for zip contents
-                    if books.count > 1 {
-                        self.pendingZipBooks = books
+                    if result.books.count > 1 {
+                        self.pendingZipBooks = result.books
                         self.pendingZipFolderPath = folderPath
                         self.showZipFolderDialog = true
                     }
                 }
             } catch {
-                DispatchQueue.main.async {
-                    self.isImporting = false
-                    self.importProgressMessage = ""
-                    self.errorMessage = error.localizedDescription
-                    self.showError = true
-                }
+                DispatchQueue.main.async { self.presentImportError(error) }
             }
         }
+    }
+
+    func importSingleFileAsync(from url: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
+        importOperationQueue.enqueue { [weak self] in
+            guard let self else { return }
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
+            do {
+                let book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                DispatchQueue.main.sync {
+                    if self.addBookCheckingDuplicate(book, toFolder: folderPath, originalURL: url) {
+                        self.save()
+                        self.handleOriginalFileDeletion(url: url)
+                        if openAfterImport {
+                            NotificationCenter.default.post(name: .openBookWindow, object: book.id)
+                        }
+                    }
+                    self.importProgressMessage = ""
+                }
+            } catch {
+                DispatchQueue.main.async { self.presentImportError(error) }
+            }
+        }
+    }
+
+    private func beginImportProgress(_ message: String) {
+        importProgressCurrent = 0
+        importProgressTotal = 0
+        importProgressMessage = message
+    }
+
+    private func completeSingleImportedBook(_ book: Book, originalURL: URL) {
+        library.addBook(book)
+        save()
+        importProgressMessage = ""
+        handleOriginalFileDeletion(url: originalURL)
+    }
+
+    private func presentImportError(_ error: Error) {
+        importProgressMessage = ""
+        errorMessage = error.localizedDescription
+        showError = true
     }
 
     // MARK: - Import
@@ -264,26 +257,13 @@ extension LibraryViewModel {
     /// Import one or more files from URLs into the specified folder.
     func importFiles(urls: [URL], toFolder folderPath: String = "") {
         for url in urls {
-            guard url.startAccessingSecurityScopedResource() else { continue }
-            defer { url.stopAccessingSecurityScopedResource() }
-
             let ext = url.pathExtension.lowercased()
-
             if ext == "zip" {
                 importZipAsync(from: url, toFolder: folderPath)
             } else {
-                do {
-                    let book = try FileImportService.importFile(from: url, toFolder: folderPath)
-                    if addBookCheckingDuplicate(book, toFolder: folderPath, originalURL: url) {
-                        handleOriginalFileDeletion(url: url)
-                    }
-                } catch {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
+                importSingleFileAsync(from: url, toFolder: folderPath)
             }
         }
-        save()
     }
 
     /// Listen for files opened via Finder "Open With" or drag-to-dock
