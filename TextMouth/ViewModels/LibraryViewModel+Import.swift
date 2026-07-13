@@ -43,15 +43,9 @@ extension LibraryViewModel {
 
     /// Open a .tmb package — find the matching book in library or import it, then open the reader
     func openTMBPackage(from url: URL) {
-        // First check if we already have this book by matching the tmb directory name
-        let tmbName = url.lastPathComponent
-        if let existing = library.books.first(where: { $0.tmbDirectoryName == tmbName }) {
-            NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
-            return
-        }
-
-        // Also try matching by bookInfo.json contents
-        if let info = try? BookInfo.load(from: url) {
+        do {
+            let inspection = try FileImportService.inspectTMBPackage(at: url)
+            let info = inspection.info
             // Check by book ID
             if let existing = library.books.first(where: { $0.id == info.metadata.bookID }) {
                 NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
@@ -63,50 +57,13 @@ extension LibraryViewModel {
                 return
             }
 
-            // Not in library — add it
-            let bookFilePath = url.appendingPathComponent(info.metadata.originalFileName).path
-            guard FileManager.default.fileExists(atPath: bookFilePath) else { return }
-
-            let book = Book(
-                id: info.metadata.bookID,
-                title: info.metadata.title,
-                author: info.metadata.author,
-                format: info.metadata.format,
-                filePath: bookFilePath,
-                md5Hash: info.metadata.md5Hash,
-                folderPath: info.metadata.folderPath,
-                dateAdded: info.metadata.dateAdded,
-                lastOpened: info.metadata.lastOpened,
-                readingPosition: info.state.readingPosition,
-                bookmarks: info.bookmarks,
-                totalWordCount: info.state.totalWordCount,
-                totalCharacterCount: info.state.totalCharacterCount,
-                tmbDirectoryName: tmbName,
-                sourceFilePath: info.metadata.sourceFilePath,
-                lastPlaybackStarted: info.state.lastPlaybackStarted,
-                lastPlaybackStopped: info.state.lastPlaybackStopped,
-                localVoiceID: info.state.localVoiceID,
-                localWPM: info.state.localWPM,
-                localPitch: info.state.localPitch,
-                skippedHeadingIDs: info.state.skippedHeadingIDs,
-                localEndOfBookBehavior: info.state.localEndOfBookBehavior,
-                manualSortOrder: info.state.manualSortOrder,
-                audioDuration: info.state.audioDuration,
-                audioAlbum: info.metadata.audioAlbum,
-                audioGenre: info.metadata.audioGenre,
-                audioYear: info.metadata.audioYear,
-                epubPublisher: info.metadata.publisher,
-                epubPublicationDate: info.metadata.publicationDate,
-                epubISBN: info.metadata.isbn,
-                epubLanguage: info.metadata.language,
-                epubIdentifier: info.metadata.epubIdentifier,
-                epubVersion: info.metadata.epubVersion,
-                cacheFormatVersion: info.state.cacheFormatVersion
-            )
-
+            let book = try FileImportService.importTMBPackage(from: url)
             library.addBook(book)
             save()
             NotificationCenter.default.post(name: .openBookWindow, object: book.id)
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
         }
     }
 

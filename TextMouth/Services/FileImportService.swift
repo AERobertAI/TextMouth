@@ -17,6 +17,25 @@ enum FileImportError: LocalizedError {
     }
 }
 
+enum TMBPackageImportError: LocalizedError {
+    case invalidPackage(String)
+    case destinationExists(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidPackage(let reason):
+            return "Invalid TextMouth package: \(reason)"
+        case .destinationExists(let name):
+            return "A managed package named \(name) already exists."
+        }
+    }
+}
+
+struct TMBPackageInspection {
+    let info: BookInfo
+    let contentURL: URL
+}
+
 struct ZipImportFailure: Equatable {
     let fileName: String
     let message: String
@@ -36,6 +55,201 @@ struct ZipImportResult {
 }
 
 enum FileImportService {
+
+    /// Validate a .tmb package without trusting paths from its metadata.
+    /// Package symlinks are rejected so copied content cannot continue to
+    /// depend on files outside the managed library.
+    static func inspectTMBPackage(at packageURL: URL) throws -> TMBPackageInspection {
+        var isDirectory: ObjCBool = false
+        guard packageURL.pathExtension.lowercased() == "tmb",
+              FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw TMBPackageImportError.invalidPackage("the selected item is not a .tmb directory")
+        }
+
+        let packageValues = try packageURL.resourceValues(forKeys: [.isSymbolicLinkKey])
+        guard packageValues.isSymbolicLink != true else {
+            throw TMBPackageImportError.invalidPackage("the package directory is a symbolic link")
+        }
+        if let enumerator = FileManager.default.enumerator(
+            at: packageURL,
+            includingPropertiesForKeys: [.isSymbolicLinkKey]
+        ) {
+            for case let child as URL in enumerator {
+                if try child.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                    throw TMBPackageImportError.invalidPackage("symbolic links are not allowed")
+                }
+            }
+        }
+
+        let info: BookInfo
+        do {
+            info = try BookInfo.load(from: packageURL)
+        } catch {
+            throw TMBPackageImportError.invalidPackage("bookInfo.json is missing or unreadable")
+        }
+
+        let fileName = info.metadata.originalFileName
+        guard !fileName.isEmpty,
+              URL(fileURLWithPath: fileName).lastPathComponent == fileName,
+              !fileName.contains("/") else {
+            throw TMBPackageImportError.invalidPackage("the content filename is unsafe")
+        }
+        let contentURL = packageURL.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: contentURL.path) else {
+            throw TMBPackageImportError.invalidPackage("the referenced content file is missing")
+        }
+
+        var contentIsDirectory: ObjCBool = false
+        FileManager.default.fileExists(atPath: contentURL.path, isDirectory: &contentIsDirectory)
+        if contentIsDirectory.boolValue {
+            guard info.metadata.format.isAudio else {
+                throw TMBPackageImportError.invalidPackage("only audiobook content may be a directory")
+            }
+        } else {
+            guard BookFormat.detect(from: contentURL) == info.metadata.format else {
+                throw TMBPackageImportError.invalidPackage("the content format does not match bookInfo.json")
+            }
+            let actualHash = try md5Hash(of: contentURL)
+            guard !info.metadata.md5Hash.isEmpty, actualHash == info.metadata.md5Hash else {
+                throw TMBPackageImportError.invalidPackage("the content hash does not match bookInfo.json")
+            }
+        }
+
+        return TMBPackageInspection(info: info, contentURL: contentURL)
+    }
+
+    /// Copy a validated external package into the managed library and return a
+    /// Book whose paths refer only to the managed copy.
+    static func importTMBPackage(from sourceURL: URL) throws -> Book {
+        let inspection = try inspectTMBPackage(at: sourceURL)
+        try TextMouthPaths.ensureDirectoryStructure()
+
+        let info = inspection.info
+        let tmbName = TextMouthPaths.tmbName(
+            title: info.metadata.title,
+            author: info.metadata.author,
+            dateAdded: info.metadata.dateAdded,
+            bookID: info.metadata.bookID
+        )
+        let destination = TextMouthPaths.tmbPath(folderPath: "", tmbName: tmbName)
+        guard !FileManager.default.fileExists(atPath: destination.path) else {
+            throw TMBPackageImportError.destinationExists(tmbName)
+        }
+
+        let staging = TextMouthPaths.libraryDir
+            .appendingPathComponent(".import-\(UUID().uuidString).tmb", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: staging) }
+        try FileManager.default.copyItem(at: sourceURL, to: staging)
+
+        // Revalidate the copy to ensure all subsequent paths and metadata come
+        // from the exact package that will be adopted.
+        let copiedInspection = try inspectTMBPackage(at: staging)
+        try FileManager.default.moveItem(at: staging, to: destination)
+
+        let book = bookFromPackageInfo(
+            copiedInspection.info,
+            packageURL: destination,
+            folderPath: "",
+            tmbName: tmbName
+        )
+        do {
+            try bookInfo(for: book).save(to: destination)
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            throw error
+        }
+        return book
+    }
+
+    private static func bookFromPackageInfo(
+        _ info: BookInfo,
+        packageURL: URL,
+        folderPath: String,
+        tmbName: String
+    ) -> Book {
+        let bookFilePath = packageURL.appendingPathComponent(info.metadata.originalFileName).path
+        return Book(
+            id: info.metadata.bookID,
+            title: info.metadata.title,
+            author: info.metadata.author,
+            format: info.metadata.format,
+            filePath: bookFilePath,
+            md5Hash: info.metadata.md5Hash,
+            folderPath: folderPath,
+            dateAdded: info.metadata.dateAdded,
+            lastOpened: info.metadata.lastOpened,
+            readingPosition: info.state.readingPosition,
+            bookmarks: info.bookmarks,
+            totalWordCount: info.state.totalWordCount,
+            totalCharacterCount: info.state.totalCharacterCount,
+            tmbDirectoryName: tmbName,
+            sourceFilePath: info.metadata.sourceFilePath,
+            lastPlaybackStarted: info.state.lastPlaybackStarted,
+            lastPlaybackStopped: info.state.lastPlaybackStopped,
+            localVoiceID: info.state.localVoiceID,
+            localWPM: info.state.localWPM,
+            localPitch: info.state.localPitch,
+            skippedHeadingIDs: info.state.skippedHeadingIDs,
+            localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+            manualSortOrder: info.state.manualSortOrder,
+            audioDuration: info.state.audioDuration,
+            audioAlbum: info.metadata.audioAlbum,
+            audioGenre: info.metadata.audioGenre,
+            audioYear: info.metadata.audioYear,
+            epubPublisher: info.metadata.publisher,
+            epubPublicationDate: info.metadata.publicationDate,
+            epubISBN: info.metadata.isbn,
+            epubLanguage: info.metadata.language,
+            epubIdentifier: info.metadata.epubIdentifier,
+            epubVersion: info.metadata.epubVersion,
+            cacheFormatVersion: info.state.cacheFormatVersion
+        )
+    }
+
+    private static func bookInfo(for book: Book) -> BookInfo {
+        BookInfo(
+            metadata: BookMetadata(
+                title: book.title,
+                author: book.author,
+                format: book.format,
+                md5Hash: book.md5Hash,
+                dateAdded: book.dateAdded,
+                lastOpened: book.lastOpened,
+                originalFileName: book.bookFileURL.lastPathComponent,
+                folderPath: book.folderPath,
+                bookID: book.id,
+                sourceFilePath: book.sourceFilePath,
+                publisher: book.epubPublisher,
+                publicationDate: book.epubPublicationDate,
+                isbn: book.epubISBN,
+                language: book.epubLanguage,
+                epubIdentifier: book.epubIdentifier,
+                epubVersion: book.epubVersion,
+                audioAlbum: book.audioAlbum,
+                audioGenre: book.audioGenre,
+                audioYear: book.audioYear
+            ),
+            state: BookState(
+                readingPosition: book.readingPosition,
+                totalWordCount: book.totalWordCount,
+                totalCharacterCount: book.totalCharacterCount,
+                isNew: book.lastOpened == nil,
+                tmbDirectoryName: book.tmbDirectoryName,
+                lastPlaybackStarted: book.lastPlaybackStarted,
+                lastPlaybackStopped: book.lastPlaybackStopped,
+                localVoiceID: book.localVoiceID,
+                localWPM: book.localWPM,
+                localPitch: book.localPitch,
+                skippedHeadingIDs: book.skippedHeadingIDs,
+                localEndOfBookBehavior: book.localEndOfBookBehavior,
+                manualSortOrder: book.manualSortOrder,
+                audioDuration: book.audioDuration,
+                cacheFormatVersion: book.cacheFormatVersion
+            ),
+            bookmarks: book.bookmarks
+        )
+    }
 
     /// Import a single file into a .tmb package, returning a Book model.
     /// Extracts EPUB metadata if available.
