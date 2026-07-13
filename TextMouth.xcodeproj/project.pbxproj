@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A50000000000000000000001 /* LegacyDocumentAndAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */; };
 		A40000000000000000000001 /* ParserEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000002 /* ParserEdgeCaseTests.swift */; };
 		A30000000000000000000001 /* TextSubstitutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* TextSubstitutionTests.swift */; };
 		A20000000000000000000001 /* LegacyParserAndHashTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* LegacyParserAndHashTests.swift */; };
@@ -136,6 +137,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDocumentAndAccessibilityTests.swift; sourceTree = "<group>"; };
 		A40000000000000000000002 /* ParserEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ParserEdgeCaseTests.swift; path = ../TextMouthTests/Sources/Tests/ParserEdgeCaseTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000002 /* TextSubstitutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TextSubstitutionTests.swift; path = ../TextMouthTests/Sources/Tests/TextSubstitutionTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* LegacyParserAndHashTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyParserAndHashTests.swift; sourceTree = "<group>"; };
@@ -425,6 +427,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				A50000000000000000000002 /* LegacyDocumentAndAccessibilityTests.swift */,
 				A40000000000000000000002 /* ParserEdgeCaseTests.swift */,
 				A30000000000000000000002 /* TextSubstitutionTests.swift */,
 				A20000000000000000000002 /* LegacyParserAndHashTests.swift */,
@@ -579,6 +582,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A50000000000000000000001 /* LegacyDocumentAndAccessibilityTests.swift in Sources */,
 				A40000000000000000000001 /* ParserEdgeCaseTests.swift in Sources */,
 				A30000000000000000000001 /* TextSubstitutionTests.swift in Sources */,
 				A20000000000000000000001 /* LegacyParserAndHashTests.swift in Sources */,
