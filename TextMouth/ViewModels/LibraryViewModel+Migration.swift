@@ -92,49 +92,23 @@ extension LibraryViewModel {
             .appendingPathComponent("Library/Containers/com.textmouth.TextMouth/Data", isDirectory: true)
         let containerTextMouth = containerBase.appendingPathComponent(".TextMouth", isDirectory: true)
 
-        // Migrate .TextMouth dir from container if it exists and real one doesn't
+        // Copy and validate the old sandbox directory. Keep the source as a
+        // recovery copy; startup migration must never be the operation that
+        // destroys the user's only known-good library.
         if fm.fileExists(atPath: containerTextMouth.path) && !fm.fileExists(atPath: realDefault.path) {
             do {
-                try fm.createDirectory(at: realDefault, withIntermediateDirectories: true)
-                let contents = try fm.contentsOfDirectory(at: containerTextMouth, includingPropertiesForKeys: nil)
-                for item in contents {
-                    let dest = realDefault.appendingPathComponent(item.lastPathComponent)
-                    try fm.moveItem(at: item, to: dest)
-                }
-
-                // Rewrite ALL container paths in library.json to real paths
-                let libraryFile = realDefault.appendingPathComponent("library.json")
-                if fm.fileExists(atPath: libraryFile.path) {
-                    if var json = try? String(contentsOf: libraryFile, encoding: .utf8) {
-                        // Replace the container data base path with real home
-                        json = json.replacingOccurrences(
-                            of: containerBase.path,
-                            with: home
-                        )
-                        try? json.data(using: .utf8)?.write(to: libraryFile, options: .atomic)
-                    }
-                }
-
-                try? fm.removeItem(at: containerTextMouth)
-                print("Migrated .TextMouth from sandbox container to \(realDefault.path)")
+                let data = try Data(contentsOf: containerTextMouth.appendingPathComponent("library.json"))
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let oldLibrary = try decoder.decode(Library.self, from: data)
+                _ = try DataDirectoryMigrator.prepareMigration(
+                    from: containerTextMouth,
+                    to: realDefault,
+                    library: oldLibrary
+                )
+                print("Copied and validated .TextMouth from sandbox container to \(realDefault.path); source retained")
             } catch {
                 print("Failed to migrate from sandbox container: \(error)")
-            }
-        }
-
-        // Clean up old container directories (Books dir, logs, etc.)
-        let oldContainerAppSupport = containerBase
-            .appendingPathComponent("Library/Application Support/TextMouth", isDirectory: true)
-        if fm.fileExists(atPath: oldContainerAppSupport.path) {
-            try? fm.removeItem(at: oldContainerAppSupport)
-            print("Cleaned up old container app support dir")
-        }
-
-        // Clean up stale log files in container root
-        for file in ["textmouth_debug.log", "textmouth_transition.log"] {
-            let path = containerBase.appendingPathComponent(file)
-            if fm.fileExists(atPath: path.path) {
-                try? fm.removeItem(at: path)
             }
         }
     }
@@ -351,6 +325,8 @@ extension LibraryViewModel {
             configService.saveToDisk()
             save()
         } catch {
+            configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
+            configService.saveToDisk()
             errorMessage = "Failed to move directory: \(error.localizedDescription)"
             showError = true
         }

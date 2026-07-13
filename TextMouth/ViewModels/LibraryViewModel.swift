@@ -109,6 +109,7 @@ class LibraryViewModel: ObservableObject {
         library = LibraryPersistenceService.load()
         migrateOldBooksIfNeeded()
         setupFinderOpenHandler()
+        setupDataDirectoryChangeHandler()
         startRefreshTimer()
         // Extract caches first, then calculate stats (which can use the caches).
         // Both run on background queues; stats waits for extraction to finish.
@@ -150,6 +151,22 @@ class LibraryViewModel: ObservableObject {
     /// Position updates happen very frequently; this coalesces them.
     func save() {
         LibraryPersistenceService.save(library)
+    }
+
+    /// Route externally edited config paths through the same validated migration
+    /// workflow as the Storage settings UI.
+    func setupDataDirectoryChangeHandler() {
+        NotificationCenter.default.publisher(for: .dataDirectoryChangeRequested)
+            .compactMap { $0.userInfo?["path"] as? String }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] path in
+                guard let self else { return }
+                let target = path.isEmpty
+                    ? TextMouthPaths.defaultRoot
+                    : URL(fileURLWithPath: path, isDirectory: true)
+                self.moveDataDirectory(to: target)
+            }
+            .store(in: &cancellables)
     }
 
 }

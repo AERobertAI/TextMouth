@@ -53,4 +53,19 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertTrue(actions.reload)
         XCTAssertTrue(actions.rearm)
     }
+
+    func testExternalDataPathRequestsMigrationWithoutImmediatelySwitchingRoot() {
+        let viewModel = SettingsViewModel()
+        var config = ConfigService.AppConfig()
+        config.dataDirectoryPath = "/tmp/TextMouth-External-Request"
+        let originalRoot = TextMouthPaths.root
+        let expectation = expectation(forNotification: .dataDirectoryChangeRequested, object: nil) { note in
+            note.userInfo?["path"] as? String == config.dataDirectoryPath
+        }
+
+        viewModel.applyConfigChanges(config)
+
+        wait(for: [expectation], timeout: 1)
+        XCTAssertEqual(TextMouthPaths.root, originalRoot)
+    }
 }

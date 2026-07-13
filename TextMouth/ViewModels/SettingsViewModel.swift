@@ -346,11 +346,11 @@ class SettingsViewModel: ObservableObject {
         // Handle external change to dataDirectoryPath
         let currentCustom = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         if config.dataDirectoryPath != currentCustom {
-            if config.dataDirectoryPath.isEmpty {
-                TextMouthPaths.setCustomRoot(nil)
-            } else {
-                TextMouthPaths.setCustomRoot(URL(fileURLWithPath: config.dataDirectoryPath))
-            }
+            NotificationCenter.default.post(
+                name: .dataDirectoryChangeRequested,
+                object: nil,
+                userInfo: ["path": config.dataDirectoryPath]
+            )
         }
         isSyncingFromConfig = false
     }
@@ -372,4 +372,5 @@ extension Notification.Name {
     static let speechSettingsChanged = Notification.Name("speechSettingsChanged")
     static let bluetoothSettingsChanged = Notification.Name("bluetoothSettingsChanged")
     static let restartTimerGestureSettingsChanged = Notification.Name("restartTimerGestureSettingsChanged")
+    static let dataDirectoryChangeRequested = Notification.Name("dataDirectoryChangeRequested")
 }

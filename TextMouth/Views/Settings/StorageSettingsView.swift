@@ -233,7 +233,7 @@ struct StorageSettingsView: View {
             }
         } message: {
             if let url = pendingMoveURL {
-                Text("Move all TextMouth data to \(url.path)? The app will use this location going forward.")
+                Text("Copy all TextMouth data to \(url.path), validate it, and use the new location? The current directory will be retained as recovery data.")
             }
         }
         .alert("Redo Text Extraction?", isPresented: $showRedoExtractionConfirmation) {
