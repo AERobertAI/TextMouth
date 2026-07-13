@@ -859,6 +859,11 @@ struct LibraryView: View {
         richInfoEPUBMetadata = nil
         richInfoAudioMetadata = nil
 
+        guard book.format.usesRichMetadataEditor else {
+            bookInfoTarget = book
+            return
+        }
+
         if book.format == .epub {
             // Load EPUB metadata from the file
             let url = URL(fileURLWithPath: book.filePath)

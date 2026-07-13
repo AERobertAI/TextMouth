@@ -38,6 +38,10 @@ enum BookFormat: String, Codable, CaseIterable {
 
     var isAudio: Bool { self == .audio }
 
+    /// Whether this format exposes format-specific fields in the rich metadata editor.
+    /// Other document formats only support the shared title and author fields.
+    var usesRichMetadataEditor: Bool { self == .epub || isAudio }
+
     static func detect(from url: URL) -> BookFormat? {
         let ext = url.pathExtension.lowercased()
         for format in BookFormat.allCases {

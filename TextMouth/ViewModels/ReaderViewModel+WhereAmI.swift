@@ -74,20 +74,38 @@ extension ReaderViewModel {
 
     /// Brief summary: title, chapter name, position, percentage
     func buildBriefWhereAmI(content: DocumentContent) -> String {
+        let chapterIsValid = content.chapters.indices.contains(currentChapterIndex)
+        let chapterTitle = chapterIsValid ? content.chapters[currentChapterIndex].title : nil
+        return Self.briefWhereAmISummary(
+            bookTitle: book.title,
+            headingTitle: currentHeadingAtPosition()?.text,
+            chapterTitle: chapterTitle,
+            chapterIndex: currentChapterIndex,
+            chapterCount: content.chapters.count,
+            percentComplete: percentComplete,
+            timeRemaining: timeRemaining
+        )
+    }
+
+    /// Pure formatter shared by the live announcement and regression tests.
+    nonisolated static func briefWhereAmISummary(
+        bookTitle: String,
+        headingTitle: String?,
+        chapterTitle: String?,
+        chapterIndex: Int,
+        chapterCount: Int,
+        percentComplete: Double,
+        timeRemaining: TimeInterval
+    ) -> String {
         var parts: [String] = []
-        parts.append(book.title)
-        // Include the current heading name so the user knows where they are semantically
-        if let currentHeading = currentHeadingAtPosition() {
-            parts.append(currentHeading.text)
-        } else if currentChapterIndex < content.chapters.count {
-            // Fall back to chapter title if no heading found
-            let chapter = content.chapters[currentChapterIndex]
-            if !chapter.title.isEmpty {
-                parts.append(chapter.title)
-            }
+        parts.append(bookTitle)
+        if let headingTitle, !headingTitle.isEmpty {
+            parts.append(headingTitle)
+        } else if let chapterTitle, !chapterTitle.isEmpty {
+            parts.append(chapterTitle)
         }
-        if currentChapterIndex < content.chapters.count {
-            parts.append("Chapter \(currentChapterIndex + 1) of \(content.chapters.count)")
+        if (0..<chapterCount).contains(chapterIndex) {
+            parts.append("Chapter \(chapterIndex + 1) of \(chapterCount)")
         }
         parts.append(String(format: "%.0f percent", percentComplete))
         parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining")
