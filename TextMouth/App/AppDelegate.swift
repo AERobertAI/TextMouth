@@ -23,6 +23,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        let statsService = ReadingStatsService.shared
+        statsService.endSession()
+        statsService.flushPendingSaves()
+    }
+
     /// Handle files opened via Finder "Open With" or drag-to-dock
     func application(_ application: NSApplication, open urls: [URL]) {
         NotificationCenter.default.post(

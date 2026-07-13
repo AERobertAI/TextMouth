@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 @testable import TextMouth
 
 /// Regression coverage for the formats advertised by the production app.
@@ -115,6 +116,49 @@ final class BookFormatTests: XCTestCase {
         XCTAssertTrue(MarkdownCacheService.generateCacheAndStampVersion(for: &book))
         XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
         XCTAssertTrue(MarkdownCacheService.cacheExists(for: book))
+    }
+
+    func testShortReadingSessionIsIgnoredAndCleared() {
+        let service = ReadingStatsService.shared
+        let previousStats = service.stats
+        service.stats = ReadingStats()
+        defer {
+            service.endSession()
+            service.stats = previousStats
+        }
+        let start = Date(timeIntervalSince1970: 1_000)
+
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(0.5))
+
+        XCTAssertFalse(service.hasActiveSession)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 0)
+    }
+
+    func testApplicationTerminationRecordsAndFlushesActiveSession() throws {
+        let service = ReadingStatsService.shared
+        service.endSession()
+        let previousStats = service.stats
+        service.stats = ReadingStats()
+        defer {
+            service.stats = previousStats
+            service.save()
+            service.flushPendingSaves()
+        }
+        let bookID = UUID()
+        service.startSession(bookID: bookID, at: Date().addingTimeInterval(-2))
+
+        AppDelegate().applicationWillTerminate(
+            Notification(name: NSApplication.willTerminateNotification)
+        )
+
+        let data = try Data(contentsOf: TextMouthPaths.readingStatsFile)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let persisted = try decoder.decode(ReadingStats.self, from: data)
+        XCTAssertGreaterThanOrEqual(persisted.totalListeningSeconds, 1.5)
+        XCTAssertGreaterThanOrEqual(persisted.bookListeningSeconds[bookID.uuidString] ?? 0, 1.5)
+        XCTAssertFalse(service.hasActiveSession)
     }
 
     private func makeBook(hash: String) -> Book {

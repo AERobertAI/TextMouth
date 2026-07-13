@@ -22,27 +22,31 @@ class ReadingStatsService: ObservableObject {
 
     // MARK: - Session Tracking
 
-    func startSession(bookID: UUID) {
-        endSession() // End any existing session first
-        sessionStartTime = Date()
+    func startSession(bookID: UUID, at startTime: Date = Date()) {
+        endSession(at: startTime) // End any existing session first
+        sessionStartTime = startTime
         sessionBookID = bookID
     }
 
-    func endSession() {
+    func endSession(at endTime: Date = Date()) {
         guard let start = sessionStartTime, let bookID = sessionBookID else { return }
-        let duration = Date().timeIntervalSince(start)
+        let duration = endTime.timeIntervalSince(start)
+        sessionStartTime = nil
+        sessionBookID = nil
         guard duration > 1 else { return } // Ignore sub-second sessions
 
-        let today = Self.dateKey(Date())
+        let today = Self.dateKey(endTime)
         stats.dailyListeningSeconds[today, default: 0] += duration
         stats.totalListeningSeconds += duration
 
         // Per-book tracking
         stats.bookListeningSeconds[bookID.uuidString, default: 0] += duration
 
-        sessionStartTime = nil
-        sessionBookID = nil
         save()
+    }
+
+    var hasActiveSession: Bool {
+        sessionStartTime != nil && sessionBookID != nil
     }
 
     func markBookFinished(bookID: UUID, title: String) {
@@ -157,6 +161,13 @@ class ReadingStatsService: ObservableObject {
                 print("Failed to save reading stats: \(error)")
             }
         }
+    }
+
+    /// Wait for previously queued writes to finish. Intended for application
+    /// termination, where returning before the asynchronous save completes can
+    /// lose the final reading session.
+    func flushPendingSaves() {
+        Self.saveQueue.sync {}
     }
 
     private static func load() -> ReadingStats {
