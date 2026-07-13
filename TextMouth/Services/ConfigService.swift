@@ -12,6 +12,21 @@ class ConfigService: ObservableObject {
     private var fileDescriptor: Int32 = -1
     private var isSaving = false
 
+    struct WatcherActions: Equatable {
+        let reload: Bool
+        let rearm: Bool
+    }
+
+    /// Atomic writes replace the watched inode. Rename/delete events therefore
+    /// always require a new watcher, including writes initiated by this process.
+    static func watcherActions(
+        for event: DispatchSource.FileSystemEvent,
+        isSaving: Bool
+    ) -> WatcherActions {
+        let replaced = event.contains(.rename) || event.contains(.delete)
+        return WatcherActions(reload: !isSaving, rearm: replaced)
+    }
+
     struct AppConfig: Codable, Equatable {
         var selectedVoiceID: String = ""
         var wordsPerMinute: Double = 0  // 0 means "not yet set by user"
@@ -160,29 +175,35 @@ class ConfigService: ObservableObject {
     // MARK: - File Watching
 
     private func startFileWatcher() {
+        stopFileWatcher()
         let path = TextMouthPaths.configFile.path
         guard FileManager.default.fileExists(atPath: path) else { return }
 
         fileDescriptor = open(path, O_EVTONLY)
         guard fileDescriptor >= 0 else { return }
 
+        let watchedDescriptor = fileDescriptor
         let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fileDescriptor,
-            eventMask: [.write, .rename],
+            fileDescriptor: watchedDescriptor,
+            eventMask: [.write, .rename, .delete],
             queue: DispatchQueue.global(qos: .utility)
         )
 
         source.setEventHandler { [weak self] in
-            guard let self = self, !self.isSaving else { return }
+            guard let self = self else { return }
+            let actions = Self.watcherActions(for: source.data, isSaving: self.isSaving)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.loadFromDisk()
+                if actions.reload {
+                    self.loadFromDisk()
+                }
+                if actions.rearm {
+                    self.startFileWatcher()
+                }
             }
         }
 
-        source.setCancelHandler { [weak self] in
-            if let fd = self?.fileDescriptor, fd >= 0 {
-                close(fd)
-            }
+        source.setCancelHandler {
+            close(watchedDescriptor)
         }
 
         source.resume()
@@ -192,6 +213,7 @@ class ConfigService: ObservableObject {
     private func stopFileWatcher() {
         fileMonitorSource?.cancel()
         fileMonitorSource = nil
+        fileDescriptor = -1
     }
 }
 

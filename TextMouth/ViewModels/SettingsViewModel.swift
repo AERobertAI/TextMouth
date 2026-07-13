@@ -231,7 +231,7 @@ class SettingsViewModel: ObservableObject {
     // MARK: - Config Sync
 
     /// Push current AppStorage settings to config.json
-    private func syncToConfig() {
+    func syncToConfig() {
         guard !isSyncingFromConfig else { return }
         configService.config.selectedVoiceID = selectedVoiceID
         configService.config.wordsPerMinute = wordsPerMinute
@@ -246,6 +246,8 @@ class SettingsViewModel: ObservableObject {
         configService.config.rewindSmartThreshold = rewindSmartThreshold
         configService.config.sleepFadeOutDuration = sleepFadeOutDuration
         configService.config.sleepTimerAutoClose = sleepTimerAutoClose
+        configService.config.endOfBookBehavior = endOfBookBehaviorRaw
+        configService.config.punctuationPauseLevel = punctuationPauseLevel
         configService.config.autoPlayOnNavigate = autoPlayOnNavigate
         configService.config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
         configService.config.bluetoothDisconnectDelay = bluetoothDisconnectDelay
@@ -274,7 +276,7 @@ class SettingsViewModel: ObservableObject {
 
     /// Sync local @AppStorage properties from a config snapshot.
     /// Used both on initial load and when config.json is externally modified.
-    private func applyConfigChanges(_ config: ConfigService.AppConfig) {
+    func applyConfigChanges(_ config: ConfigService.AppConfig) {
         isSyncingFromConfig = true
         if !config.selectedVoiceID.isEmpty && config.selectedVoiceID != selectedVoiceID {
             selectedVoiceID = config.selectedVoiceID
@@ -294,6 +296,12 @@ class SettingsViewModel: ObservableObject {
         if !config.skipBackwardUnit.isEmpty && config.skipBackwardUnit != skipBackwardUnitRaw {
             skipBackwardUnitRaw = config.skipBackwardUnit
         }
+        if !config.shiftSkipForwardUnit.isEmpty && config.shiftSkipForwardUnit != shiftSkipForwardUnitRaw {
+            shiftSkipForwardUnitRaw = config.shiftSkipForwardUnit
+        }
+        if !config.shiftSkipBackwardUnit.isEmpty && config.shiftSkipBackwardUnit != shiftSkipBackwardUnitRaw {
+            shiftSkipBackwardUnitRaw = config.shiftSkipBackwardUnit
+        }
         if !config.rewindOnResumeUnit.isEmpty && config.rewindOnResumeUnit != rewindOnResumeUnitRaw {
             rewindOnResumeUnitRaw = config.rewindOnResumeUnit
         }
@@ -308,6 +316,12 @@ class SettingsViewModel: ObservableObject {
         }
         if config.sleepTimerAutoClose != sleepTimerAutoClose {
             sleepTimerAutoClose = config.sleepTimerAutoClose
+        }
+        if !config.endOfBookBehavior.isEmpty && config.endOfBookBehavior != endOfBookBehaviorRaw {
+            endOfBookBehaviorRaw = config.endOfBookBehavior
+        }
+        if config.punctuationPauseLevel != punctuationPauseLevel {
+            punctuationPauseLevel = config.punctuationPauseLevel
         }
         if config.autoPlayOnNavigate != autoPlayOnNavigate {
             autoPlayOnNavigate = config.autoPlayOnNavigate
