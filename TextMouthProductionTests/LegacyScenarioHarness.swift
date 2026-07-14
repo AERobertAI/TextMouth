@@ -167,3 +167,15 @@ final class LegacyDOCXEdgeCaseScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyEPUBParserScenarioTests: XCTestCase {
+    func testLegacyEPUBParserScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runEPUBParserTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            16,
+            "Every inventoried EPUB parser scenario should remain registered"
+        )
+    }
+}

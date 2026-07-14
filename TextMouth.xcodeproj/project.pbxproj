@@ -14,6 +14,7 @@
 		AF0000000000000000000001 /* LegacyPDFParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0000000000000000000002 /* LegacyPDFParserTests.swift */; };
 		B00000000000000000000001 /* DOCXParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* DOCXParserTests.swift */; };
 		B00000000000000000000002 /* DOCXEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000004 /* DOCXEdgeCaseTests.swift */; };
+		B10000000000000000000001 /* EPUBParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* EPUBParserTests.swift */; };
 		AA0000000000000000000001 /* KeyboardShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* KeyboardShortcutTests.swift */; };
 		A90000000000000000000001 /* LegacyBookStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000000000000000000002 /* LegacyBookStateTests.swift */; };
 		A80000000000000000000001 /* BookmarkToggleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80000000000000000000002 /* BookmarkToggleTests.swift */; };
@@ -156,6 +157,7 @@
 		AF0000000000000000000002 /* LegacyPDFParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPDFParserTests.swift; sourceTree = "<group>"; };
 		B00000000000000000000003 /* DOCXParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DOCXParserTests.swift; path = ../TextMouthTests/Sources/Tests/DOCXParserTests.swift; sourceTree = "<group>"; };
 		B00000000000000000000004 /* DOCXEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DOCXEdgeCaseTests.swift; path = ../TextMouthTests/Sources/Tests/DOCXEdgeCaseTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000002 /* EPUBParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EPUBParserTests.swift; path = ../TextMouthTests/Sources/Tests/EPUBParserTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* KeyboardShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeyboardShortcutTests.swift; path = ../TextMouthTests/Sources/Tests/KeyboardShortcutTests.swift; sourceTree = "<group>"; };
 		A90000000000000000000002 /* LegacyBookStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookStateTests.swift; sourceTree = "<group>"; };
 		A80000000000000000000002 /* BookmarkToggleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkToggleTests.swift; path = ../TextMouthTests/Sources/Tests/BookmarkToggleTests.swift; sourceTree = "<group>"; };
@@ -451,6 +453,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				B10000000000000000000002 /* EPUBParserTests.swift */,
 				B00000000000000000000004 /* DOCXEdgeCaseTests.swift */,
 				B00000000000000000000003 /* DOCXParserTests.swift */,
 				AF0000000000000000000002 /* LegacyPDFParserTests.swift */,
@@ -618,6 +621,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B10000000000000000000001 /* EPUBParserTests.swift in Sources */,
 				B00000000000000000000002 /* DOCXEdgeCaseTests.swift in Sources */,
 				B00000000000000000000001 /* DOCXParserTests.swift in Sources */,
 				AF0000000000000000000001 /* LegacyPDFParserTests.swift in Sources */,

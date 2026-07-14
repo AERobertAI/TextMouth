@@ -2,6 +2,34 @@ import Foundation
 import SwiftSoup
 import ZIPFoundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+private func extractStringFromArchive(_ archive: Archive, path: String) throws -> String {
+    try EPUBParser.extractString(archive: archive, path: path)
+}
+
+private func parseContainerForOPFPath(_ xml: String) throws -> String {
+    try EPUBParser.parseContainerForOPFPath(xml)
+}
+
+private func parseOPF(_ xml: String) throws -> EPUBParser.OPFData {
+    try EPUBParser.parseOPF(xml)
+}
+
+private func parseEPUB(url: URL) throws -> DocumentContent {
+    try EPUBParser.parse(url: url)
+}
+
+private func parseChapterHTML(_ html: String) throws -> Chapter {
+    try EPUBParser.parseChapterHTML(html)
+}
+
+private func parseHTML(html: String, title: String) throws -> DocumentContent {
+    try HTMLParser.parse(html: html, title: title)
+}
+#endif
+
 func runEPUBParserTests() {
 print("\n--- EPUB Parser Tests (Alice in Wonderland) ---")
 

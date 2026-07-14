@@ -332,7 +332,8 @@ enum EPUBParser {
 
     // MARK: - Chapter HTML Parsing
 
-    private static func parseChapterHTML(_ html: String) throws -> Chapter {
+    /// Convert one EPUB spine document using the same navigation filtering as full parsing.
+    static func parseChapterHTML(_ html: String) throws -> Chapter {
         let doc = try SwiftSoup.parse(html)
 
         // Remove executable/presentational elements — never read aloud
