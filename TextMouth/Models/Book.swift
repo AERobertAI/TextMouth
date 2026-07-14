@@ -416,4 +416,11 @@ struct Bookmark: Identifiable, Codable, Hashable {
         self.label = label
         self.dateCreated = dateCreated
     }
+
+    /// Concise label shared by bookmark rows and accessibility rotors.
+    var accessibilityLabel: String {
+        var parts = ["Bookmark \(number)", "Chapter \(chapterIndex + 1)"]
+        if !label.isEmpty { parts.append("Note: \(label)") }
+        return parts.joined(separator: ", ")
+    }
 }

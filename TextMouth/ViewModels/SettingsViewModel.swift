@@ -15,6 +15,10 @@ enum EndOfBookBehavior: String, CaseIterable, Codable {
     case stop = "Stop"
     case loop = "Loop to Start"
     case continueNext = "Continue to Next Book"
+
+    static func effective(localRawValue: String?, global: Self) -> Self {
+        localRawValue.flatMap(Self.init(rawValue:)) ?? global
+    }
 }
 
 /// Units for skip forward / skip backward

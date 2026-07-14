@@ -6,6 +6,26 @@ import AVFoundation
 /// For multi-file audio books (from ZIP): each file becomes a chapter.
 enum AudioBookParser {
 
+    static func placeholderLength(for duration: TimeInterval) -> Int {
+        max(1, Int(duration * ReaderViewModel.audioCharsPerSecond))
+    }
+
+    static func time(forCharacterOffset offset: Int) -> TimeInterval {
+        Double(offset) / ReaderViewModel.audioCharsPerSecond
+    }
+
+    static func characterOffset(forTime time: TimeInterval) -> Int {
+        Int(time * ReaderViewModel.audioCharsPerSecond)
+    }
+
+    static func orderedFileNames(_ names: [String], manifestOrder: [String]? = nil) -> [String] {
+        let alphabetical = names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        guard let manifestOrder, !manifestOrder.isEmpty else { return alphabetical }
+        let requested = manifestOrder.compactMap { name in alphabetical.first { $0 == name } }
+        let requestedSet = Set(requested)
+        return requested + alphabetical.filter { !requestedSet.contains($0) }
+    }
+
     /// Parse a single audio file. Extracts chapters from M4B metadata if available.
     static func parse(url: URL) async throws -> DocumentContent {
         let asset = AVURLAsset(url: url)
@@ -26,7 +46,7 @@ enum AudioBookParser {
         if chapters.isEmpty {
             // Single chapter for the whole file
             // Use a placeholder text with duration info for character-based position tracking
-            let placeholderLength = Int(totalSeconds * 10) // 10 chars per second for position granularity
+            let placeholderLength = placeholderLength(for: totalSeconds)
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
 
             let chapter = Chapter(
@@ -40,7 +60,7 @@ enum AudioBookParser {
             var parsedChapters: [Chapter] = []
             for (index, ch) in chapters.enumerated() {
                 let chDuration = ch.duration > 0 ? ch.duration : 1
-                let placeholderLength = Int(chDuration * 10)
+                let placeholderLength = placeholderLength(for: chDuration)
                 let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
 
                 let heading = Heading(level: 1, text: ch.title, chapterIndex: index, characterOffset: 0)
@@ -111,7 +131,7 @@ enum AudioBookParser {
             let title = chapterTitles[fileURL.lastPathComponent] ?? fileName
 
             let dur = await AudioPlaybackService.getDuration(of: fileURL) ?? 1
-            let placeholderLength = Int(dur * 10)
+            let placeholderLength = placeholderLength(for: dur)
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
 
             let heading = Heading(level: 1, text: title, chapterIndex: index, characterOffset: 0)
@@ -152,7 +172,7 @@ enum AudioBookParser {
                 duration -= segment.startTime
             }
 
-            let placeholderLength = Int(max(1, duration) * 10)
+            let placeholderLength = placeholderLength(for: max(1, duration))
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
 
             let heading = Heading(level: 1, text: segment.title,

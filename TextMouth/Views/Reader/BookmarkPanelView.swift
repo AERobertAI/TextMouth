@@ -245,11 +245,7 @@ struct BookmarkRow: View {
     }
 
     var bookmarkAccessibilityLabel: String {
-        var parts = ["Bookmark \(bookmark.number)", "Chapter \(bookmark.chapterIndex + 1)"]
-        if !bookmark.label.isEmpty {
-            parts.append("Note: \(bookmark.label)")
-        }
-        return parts.joined(separator: ", ")
+        bookmark.accessibilityLabel
     }
 }
 

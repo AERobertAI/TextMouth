@@ -270,10 +270,14 @@ extension ReaderViewModel {
         parts.append(String(format: "%.1f%% through", percentComplete))
         parts.append("\(formattedTimeRemaining) remaining")
 
-        let positionText = parts.joined(separator: " | ")
+        let positionText = Self.readingPositionSummary(parts: parts)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(positionText, forType: .string)
         announceToVoiceOver("Reading position copied to clipboard")
+    }
+
+    nonisolated static func readingPositionSummary(parts: [String]) -> String {
+        parts.filter { !$0.isEmpty && $0 != "by Unknown" }.joined(separator: " | ")
     }
 
     // MARK: - VoiceOver Announcement

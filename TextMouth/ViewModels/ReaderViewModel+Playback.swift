@@ -885,7 +885,13 @@ extension ReaderViewModel {
     /// Returns the paused text and an OffsetMap tracking where insertions occurred.
     /// Level 0 = off, 1 = subtle (periods), 2 = moderate (periods + commas), 3 = heavy (+ paragraph breaks)
     func applyPunctuationPauses(_ text: String) -> (text: String, offsetMap: OffsetMap) {
-        let level = settingsViewModel.punctuationPauseLevel
+        Self.applyPunctuationPauses(text, level: settingsViewModel.punctuationPauseLevel)
+    }
+
+    static func applyPunctuationPauses(
+        _ text: String,
+        level: Double
+    ) -> (text: String, offsetMap: OffsetMap) {
         guard level > 0 else { return (text, .identity) }
 
         // Build the set of (pattern, replacement) pairs.

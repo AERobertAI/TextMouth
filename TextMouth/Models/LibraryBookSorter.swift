@@ -7,6 +7,17 @@ import Foundation
 /// because equality then returns true in both directions. This helper compares
 /// values explicitly and adds stable title/UUID tie-breakers.
 enum LibraryBookSorter {
+    /// Recent-library policy: omit unopened books, newest first, and cap the
+    /// quick-access list to a small stable count.
+    static func recent(_ books: [Book], limit: Int = 10) -> [Book] {
+        Array(
+            books
+                .filter { $0.lastOpened != nil }
+                .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
+                .prefix(max(0, limit))
+        )
+    }
+
     /// Return the logical size of a file or all regular files contained in a
     /// directory package. Directory metadata alone does not include its contents.
     static func recursiveFileSize(at url: URL, fileManager: FileManager = .default) -> Int {

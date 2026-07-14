@@ -97,13 +97,20 @@ final class ReadingStatsService: ObservableObject {
     }
 
     var currentStreak: Int {
-        let calendar = Calendar.current
+        Self.streak(in: stats.dailyListeningSeconds, through: Date())
+    }
+
+    static func streak(
+        in dailyListeningSeconds: [String: TimeInterval],
+        through now: Date,
+        calendar: Calendar = .current
+    ) -> Int {
         var streak = 0
-        var date = Date()
+        var date = now
         // Check today and each preceding day
         while true {
             let key = Self.dateKey(date)
-            if (stats.dailyListeningSeconds[key] ?? 0) > 60 { // At least 1 minute counts
+            if (dailyListeningSeconds[key] ?? 0) > 60 { // At least 1 minute counts
                 streak += 1
                 guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
                 date = prev
@@ -113,7 +120,7 @@ final class ReadingStatsService: ObservableObject {
                 date = prev
                 // Only allow one skip (today)
                 let key2 = Self.dateKey(date)
-                if (stats.dailyListeningSeconds[key2] ?? 0) > 60 {
+                if (dailyListeningSeconds[key2] ?? 0) > 60 {
                     streak += 1
                     guard let prev2 = calendar.date(byAdding: .day, value: -1, to: date) else { break }
                     date = prev2
@@ -138,7 +145,7 @@ final class ReadingStatsService: ObservableObject {
         qos: .utility
     )
 
-    private static func dateKey(_ date: Date) -> String {
+    static func dateKey(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)

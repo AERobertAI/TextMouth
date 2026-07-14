@@ -28,6 +28,14 @@ struct HeadingNavigatorView: View {
         return suffix.isEmpty ? base : "\(base), \(suffix)"
     }
 
+    static func filteredHeadings(_ headings: [Heading], maximumLevel: Int) -> [Heading] {
+        headings.filter { $0.level <= maximumLevel }
+    }
+
+    static func levelsPresent(in headings: [Heading]) -> [Int] {
+        Array(Set(headings.map(\.level))).sorted()
+    }
+
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
@@ -208,7 +216,7 @@ struct HeadingNavigatorView: View {
     }
 
     private var filteredHeadings: [Heading] {
-        viewModel.headings.filter { $0.level <= maxHeadingLevel }
+        Self.filteredHeadings(viewModel.headings, maximumLevel: maxHeadingLevel)
     }
 
     private func makeHeadingItems() -> [HeadingListItem] {
@@ -331,7 +339,7 @@ struct HeadingNavigatorView: View {
 
     /// Distinct heading levels present in this document (sorted), for building the filter picker
     private var headingLevelsPresent: [Int] {
-        Array(Set(viewModel.headings.map { $0.level })).sorted()
+        Self.levelsPresent(in: viewModel.headings)
     }
 
     private func currentHeadingID(in headings: [Heading]) -> String? {

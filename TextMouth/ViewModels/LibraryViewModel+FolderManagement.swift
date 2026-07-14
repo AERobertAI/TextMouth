@@ -147,11 +147,7 @@ extension LibraryViewModel {
         case .noFolder:
             return library.booksWithNoFolder()
         case .recent:
-            return library.books
-                .filter { $0.lastOpened != nil }
-                .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
-                .prefix(10)
-                .map { $0 }
+            return LibraryBookSorter.recent(library.books)
         }
     }
 }
