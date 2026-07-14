@@ -1,6 +1,9 @@
 import Foundation
 import AppKit
 
+#if canImport(TextMouth)
+@testable import TextMouth
+#else
 // MARK: - Mirrored MenuVisibilityManager (static logic only, for testing)
 
 /// Mirrors the static methods from the app's MenuVisibilityManager so we can
@@ -54,9 +57,13 @@ enum MenuVisibilityManager {
         return nil
     }
 }
+#endif
 
 // MARK: - Tests
 
+#if canImport(TextMouth)
+@MainActor
+#endif
 func runMenuVisibilityTests() {
 print("\n--- Menu Visibility Tests ---")
 

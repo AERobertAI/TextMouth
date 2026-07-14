@@ -18,6 +18,7 @@
 		B20000000000000000000001 /* DAISYParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* DAISYParserTests.swift */; };
 		B20000000000000000000002 /* DAISYEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* DAISYEdgeCaseTests.swift */; };
 		B20000000000000000000003 /* DAISYAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* DAISYAudioTests.swift */; };
+		B30000000000000000000001 /* MenuVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000002 /* MenuVisibilityTests.swift */; };
 		AA0000000000000000000001 /* KeyboardShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* KeyboardShortcutTests.swift */; };
 		A90000000000000000000001 /* LegacyBookStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000000000000000000002 /* LegacyBookStateTests.swift */; };
 		A80000000000000000000001 /* BookmarkToggleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80000000000000000000002 /* BookmarkToggleTests.swift */; };
@@ -164,6 +165,7 @@
 		B20000000000000000000004 /* DAISYParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DAISYParserTests.swift; path = ../TextMouthTests/Sources/Tests/DAISYParserTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000005 /* DAISYEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DAISYEdgeCaseTests.swift; path = ../TextMouthTests/Sources/Tests/DAISYEdgeCaseTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000006 /* DAISYAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DAISYAudioTests.swift; path = ../TextMouthTests/Sources/Tests/DAISYAudioTests.swift; sourceTree = "<group>"; };
+		B30000000000000000000002 /* MenuVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MenuVisibilityTests.swift; path = ../TextMouthTests/Sources/Tests/MenuVisibilityTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* KeyboardShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeyboardShortcutTests.swift; path = ../TextMouthTests/Sources/Tests/KeyboardShortcutTests.swift; sourceTree = "<group>"; };
 		A90000000000000000000002 /* LegacyBookStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyBookStateTests.swift; sourceTree = "<group>"; };
 		A80000000000000000000002 /* BookmarkToggleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkToggleTests.swift; path = ../TextMouthTests/Sources/Tests/BookmarkToggleTests.swift; sourceTree = "<group>"; };
@@ -459,6 +461,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				B30000000000000000000002 /* MenuVisibilityTests.swift */,
 				B20000000000000000000006 /* DAISYAudioTests.swift */,
 				B20000000000000000000005 /* DAISYEdgeCaseTests.swift */,
 				B20000000000000000000004 /* DAISYParserTests.swift */,
@@ -630,6 +633,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B30000000000000000000001 /* MenuVisibilityTests.swift in Sources */,
 				B20000000000000000000003 /* DAISYAudioTests.swift in Sources */,
 				B20000000000000000000002 /* DAISYEdgeCaseTests.swift in Sources */,
 				B20000000000000000000001 /* DAISYParserTests.swift in Sources */,

@@ -226,3 +226,16 @@ final class LegacyDAISYAudioScenarioTests: XCTestCase {
         )
     }
 }
+
+@MainActor
+final class LegacyMenuVisibilityScenarioTests: XCTestCase {
+    func testLegacyMenuVisibilityScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runMenuVisibilityTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            16,
+            "Every inventoried menu-visibility scenario should remain registered"
+        )
+    }
+}
