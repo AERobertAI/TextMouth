@@ -332,18 +332,25 @@ final class SleepTimerService: ObservableObject {
             guard let self = self else { return }
             DispatchQueue.main.async {
                 guard self.generation == gen else { return }
-                if self.remainingSeconds > 0 {
-                    self.remainingSeconds -= 1
-                }
-                // Announce key milestones for VoiceOver users
-                self.announceIfMilestone()
-                if self.remainingSeconds <= 0 {
-                    self.expire()
-                }
+                self.advanceCountdown()
             }
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+    }
+
+    /// Applies one tick from the currently armed countdown. Keeping the state
+    /// transition separate from `Timer` makes pause and expiry behavior
+    /// deterministic while retaining the same production execution path.
+    private func advanceCountdown() {
+        guard timer != nil, isActive, case .minutes = duration else { return }
+        if remainingSeconds > 0 {
+            remainingSeconds -= 1
+        }
+        announceIfMilestone()
+        if remainingSeconds <= 0 {
+            expire()
+        }
     }
 
     private func expire() {
@@ -432,6 +439,17 @@ final class SleepTimerService: ObservableObject {
     }
 
     // MARK: - Test Support
+
+    /// Advances the real countdown transition without waiting for wall-clock
+    /// time. Hosted tests use this to cover long pause/restart sequences.
+    func _advanceCountdownForTesting() {
+        advanceCountdown()
+    }
+
+    /// Starts the real expiry/fade path without waiting for a full countdown.
+    func _expireForTesting() {
+        expire()
+    }
 
     /// Reset shared state for unit tests. Production code must not
     /// call this. Clears the persisted last-used duration too so a
