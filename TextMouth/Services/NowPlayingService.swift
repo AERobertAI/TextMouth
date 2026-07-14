@@ -2,6 +2,42 @@ import Foundation
 import MediaPlayer
 import CoreAudio
 
+enum RemoteMediaCommandPolicy {
+    enum Action: Equatable {
+        case consume
+        case play
+        case pause
+        case routeChangePause
+        case toggle
+    }
+
+    static func play(isSuppressed: Bool) -> Action {
+        isSuppressed ? .consume : .play
+    }
+
+    static func pause(isSuppressed: Bool, isPlaying: Bool) -> Action {
+        isSuppressed && isPlaying ? .routeChangePause : .pause
+    }
+
+    static func toggle(isSuppressed: Bool, isPlaying: Bool) -> Action {
+        guard isSuppressed else { return .toggle }
+        return isPlaying ? .routeChangePause : .consume
+    }
+
+    static func isSuppressed(now: Date, until: Date) -> Bool {
+        now < until
+    }
+
+    static func suppressDeadline(now: Date, delay: TimeInterval) -> Date {
+        now.addingTimeInterval(max(0, delay))
+    }
+
+    static func isBluetoothTransport(_ transportType: UInt32) -> Bool {
+        transportType == kAudioDeviceTransportTypeBluetooth
+            || transportType == kAudioDeviceTransportTypeBluetoothLE
+    }
+}
+
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
 /// Keeping the existing call-site API local to a reader prevents an inactive
 /// window from clearing or replacing another window's media session.
@@ -152,7 +188,9 @@ final class NowPlayingService {
     private var bluetoothMonitoringEnabled: Bool = true
 
     /// True while the device-change suppress window is active.
-    private var isSuppressed: Bool { Date() < suppressUntil }
+    private var isSuppressed: Bool {
+        RemoteMediaCommandPolicy.isSuppressed(now: Date(), until: suppressUntil)
+    }
 
     /// Listener for default audio output device changes
     private var deviceChangeListenerBlock: AudioObjectPropertyListenerBlock?
@@ -302,10 +340,15 @@ final class NowPlayingService {
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.isSuppressed {
+            switch RemoteMediaCommandPolicy.play(isSuppressed: self.isSuppressed) {
+            case .consume:
                 // Consume the window — a single spurious command per disconnect.
                 self.suppressUntil = .distantPast
                 return .success
+            case .play:
+                break
+            default:
+                return .commandFailed
             }
             if self.consumeForGesture(.play) { return .success }
             self.activeHandlers?.onPlay()
@@ -318,7 +361,11 @@ final class NowPlayingService {
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.pause) { return .success }
-            if self.isSuppressed, self.activeHandlers?.isCurrentlyPlaying() == true {
+            let action = RemoteMediaCommandPolicy.pause(
+                isSuppressed: self.isSuppressed,
+                isPlaying: self.activeHandlers?.isCurrentlyPlaying() == true
+            )
+            if action == .routeChangePause {
                 self.activeHandlers?.onAudioRouteChangePause()
                 return .success
             }
@@ -334,12 +381,17 @@ final class NowPlayingService {
         commandCenter.togglePlayPauseCommand.isEnabled = true
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.isSuppressed {
+            let suppressed = self.isSuppressed
+            let action = RemoteMediaCommandPolicy.toggle(
+                isSuppressed: suppressed,
+                isPlaying: self.activeHandlers?.isCurrentlyPlaying() == true
+            )
+            if suppressed {
                 // Consume the window and only allow the pause direction.
                 // - Playing → pause: matches "headphones unplugged, stop audio".
                 // - Paused  → ignore: blocks macOS's spurious auto-resume.
                 self.suppressUntil = .distantPast
-                if self.activeHandlers?.isCurrentlyPlaying() == true {
+                if action == .routeChangePause {
                     self.activeHandlers?.onAudioRouteChangePause()
                 }
                 return .success
@@ -586,7 +638,9 @@ final class NowPlayingService {
     /// session would needlessly fire the pause sound effect and reset the
     /// reading-stats session.
     private func armSuppressAndPauseIfPlaying() {
-        suppressUntil = Date().addingTimeInterval(suppressWindow)
+        suppressUntil = RemoteMediaCommandPolicy.suppressDeadline(
+            now: Date(), delay: suppressWindow
+        )
         if activeHandlers?.isCurrentlyPlaying() == true {
             activeHandlers?.onAudioRouteChangePause()
         }
@@ -635,8 +689,7 @@ final class NowPlayingService {
             &transportType
         )
         guard status == noErr else { return true }
-        return transportType == kAudioDeviceTransportTypeBluetooth
-            || transportType == kAudioDeviceTransportTypeBluetoothLE
+        return RemoteMediaCommandPolicy.isBluetoothTransport(transportType)
     }
 
     /// Refresh the cached `previousDeviceWasBluetooth` flag and
