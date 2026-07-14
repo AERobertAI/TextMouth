@@ -6,6 +6,14 @@ import AVFoundation
 
 extension ReaderViewModel {
 
+    static let whereAmIEscalationInterval: TimeInterval = 3
+
+    /// A rapid repeat asks for the expanded announcement; the exact boundary
+    /// remains brief so a press at three seconds is deterministic.
+    nonisolated static func shouldUseFullWhereAmI(last: Date, now: Date) -> Bool {
+        now.timeIntervalSince(last) < whereAmIEscalationInterval
+    }
+
     // MARK: - Where Am I?
 
     /// Pauses the book (if playing), then speaks a summary of current position
@@ -34,8 +42,7 @@ extension ReaderViewModel {
 
         // Determine detail level: brief on first press, full on quick second press
         let now = Date()
-        let timeSinceLast = now.timeIntervalSince(lastWhereAmITime)
-        let useFull = timeSinceLast < 3.0
+        let useFull = Self.shouldUseFullWhereAmI(last: lastWhereAmITime, now: now)
         lastWhereAmITime = now
 
         if isAudioBook {
@@ -138,7 +145,14 @@ extension ReaderViewModel {
             }
         }
         parts.append("Total book time: \(TimeFormatting.spoken(totalEstimatedTime))")
-        return parts.joined(separator: ". ") + "."
+        return Self.fullWhereAmISummary(parts: parts)
+    }
+
+    /// Joins already-computed full-detail fields using the same cadence as
+    /// the live announcement. Keeping this pure also verifies required fields
+    /// without invoking platform speech synthesis.
+    nonisolated static func fullWhereAmISummary(parts: [String]) -> String {
+        parts.filter { !$0.isEmpty }.joined(separator: ". ") + "."
     }
 
     /// Cancel a Where Am I announcement if one is active, resuming book playback if it was playing before.
@@ -148,7 +162,10 @@ extension ReaderViewModel {
         whereAmISynth.stopSpeaking(at: .immediate)
         isWhereAmISpeaking = false
         // Resume book if it was playing before Where Am I interrupted it
-        if wasPlayingBeforeWhereAmI {
+        if WhereAmIInterruptionPolicy.shouldResume(
+            wasPlayingBeforeAnnouncement: wasPlayingBeforeWhereAmI,
+            reason: .navigationOrRepeatedCommand
+        ) {
             wasPlayingBeforeWhereAmI = false
             if isAudioBook {
                 audioPlaybackService.resume()
@@ -171,7 +188,10 @@ extension ReaderViewModel {
             guard let self = self else { return }
             self.isWhereAmISpeaking = false
             self.soundEffectService?.play(for: .whereAmIEnd)
-            if self.wasPlayingBeforeWhereAmI {
+            if WhereAmIInterruptionPolicy.shouldResume(
+                wasPlayingBeforeAnnouncement: self.wasPlayingBeforeWhereAmI,
+                reason: .naturalCompletion
+            ) {
                 self.wasPlayingBeforeWhereAmI = false
                 // Small delay to let sound effect play
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
@@ -269,5 +289,27 @@ extension ReaderViewModel {
                 .priority: NSAccessibilityPriorityLevel.high.rawValue
             ]
         )
+    }
+}
+
+/// Central decision table for interactions between the separate Where Am I
+/// synthesizer and book playback.
+enum WhereAmIInterruptionPolicy {
+    enum Reason: Equatable {
+        case playbackToggle
+        case navigationOrRepeatedCommand
+        case naturalCompletion
+    }
+
+    static func blocksBookPlayback(isAnnouncementSpeaking: Bool) -> Bool {
+        isAnnouncementSpeaking
+    }
+
+    static func shouldResume(
+        wasPlayingBeforeAnnouncement: Bool,
+        reason: Reason
+    ) -> Bool {
+        guard wasPlayingBeforeAnnouncement else { return false }
+        return reason != .playbackToggle
     }
 }

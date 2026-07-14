@@ -13,7 +13,9 @@ extension ReaderViewModel {
     /// For audio books, delegates to playAudioChapter().
     func play() {
         // Don't start playback while Where Am I is speaking
-        if isWhereAmISpeaking { return }
+        if WhereAmIInterruptionPolicy.blocksBookPlayback(
+            isAnnouncementSpeaking: isWhereAmISpeaking
+        ) { return }
         restartPlaybackBackendOnNextResume = false
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
@@ -134,7 +136,9 @@ extension ReaderViewModel {
         // If Where Am I is speaking, stop the announcement and resume/don't resume book.
         // Don't allow toggling playback while Where Am I is active — it would cause
         // both the book and the announcement to play simultaneously.
-        if isWhereAmISpeaking {
+        if WhereAmIInterruptionPolicy.blocksBookPlayback(
+            isAnnouncementSpeaking: isWhereAmISpeaking
+        ) {
             whereAmISynth.stopSpeaking(at: .immediate)
             isWhereAmISpeaking = false
             // Don't resume book — user explicitly pressed play/pause, not "dismiss Where Am I"
