@@ -284,17 +284,32 @@ extension ReaderViewModel {
             engine: engine,
             voice: speechService.currentVoice,
             wpm: speechService.wordsPerMinute,
-            shouldStart: { [weak self] in self?.chapterPlaybackGeneration == renderGeneration },
+            shouldStart: { [weak self] in
+                guard let self else { return false }
+                return Self.isCurrentPlaybackGeneration(
+                    captured: renderGeneration,
+                    current: self.chapterPlaybackGeneration
+                )
+            },
             completion: { [weak self] success in
             guard let self = self else { return }
             // Discard result if playback generation changed (user navigated elsewhere)
-            guard self.chapterPlaybackGeneration == renderGeneration else { return }
+            guard Self.isCurrentPlaybackGeneration(
+                captured: renderGeneration,
+                current: self.chapterPlaybackGeneration
+            ) else { return }
             if success {
                 self.nextChapterEngine = engine
                 self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.utf16Length) UTF-16 units)")
             }
             }
         )
+    }
+
+    /// A render may publish its result only while the playback generation it
+    /// captured is still current. Navigation increments the generation.
+    nonisolated static func isCurrentPlaybackGeneration(captured: Int, current: Int) -> Bool {
+        captured == current
     }
 
     // MARK: - Audio Book Playback

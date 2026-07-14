@@ -604,11 +604,13 @@ extension ReaderViewModel {
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
         guard let content = content, !content.chapters.isEmpty else { return }
 
-        // Clamp chapter index to valid range
-        let chapterIndex = min(max(0, chapterIndex), content.chapters.count - 1)
-        // Clamp character offset to chapter text length
-        let chapterLen = content.chapters[chapterIndex].text.utf16Length
-        let characterOffset = min(max(0, characterOffset), max(0, chapterLen - 1))
+        let clampedPosition = Self.clampedNavigationPosition(
+            in: content,
+            chapterIndex: chapterIndex,
+            characterOffset: characterOffset
+        )
+        let chapterIndex = clampedPosition.chapterIndex
+        let characterOffset = clampedPosition.characterOffset
 
         if isAudioBook {
             let wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
@@ -664,6 +666,21 @@ extension ReaderViewModel {
     }
 
     // MARK: - Word Boundary Scanning
+
+    /// Clamp a requested reader position to the document's valid UTF-16
+    /// coordinates. Keeping this pure prevents bookmark, search, and heading
+    /// navigation from drifting into subtly different boundary rules.
+    nonisolated static func clampedNavigationPosition(
+        in content: DocumentContent,
+        chapterIndex: Int,
+        characterOffset: Int
+    ) -> (chapterIndex: Int, characterOffset: Int) {
+        guard !content.chapters.isEmpty else { return (0, 0) }
+        let chapterIndex = min(max(0, chapterIndex), content.chapters.count - 1)
+        let chapterLength = content.chapters[chapterIndex].text.utf16Length
+        let characterOffset = min(max(0, characterOffset), max(0, chapterLength - 1))
+        return (chapterIndex, characterOffset)
+    }
 
     /// Find the character offset after skipping a given number of words forward (positive)
     /// or backward (negative) from a starting offset. Scans actual word boundaries in the text

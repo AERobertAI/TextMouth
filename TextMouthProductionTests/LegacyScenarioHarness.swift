@@ -252,3 +252,15 @@ final class LegacyIntegrationScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyBugRegressionScenarioTests: XCTestCase {
+    func testLegacyBugRegressionScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runBugRegressionTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            13,
+            "Every inventoried bug-regression scenario should remain registered"
+        )
+    }
+}

@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+#endif
+
 func runBugRegressionTests() {
 print("\n--- Bug Regression Tests ---")
 
@@ -151,15 +155,33 @@ test("NavigateTo: chapter index clamped to valid range") {
     let content = DocumentContent(title: "Test", author: "Author", chapters: chapters)
 
     // Test clamping: negative index → 0
+#if canImport(TextMouth)
+    let clampedNeg = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: -5, characterOffset: 0
+    ).chapterIndex
+#else
     let clampedNeg = min(max(0, -5), content.chapters.count - 1)
+#endif
     try assertEqual(clampedNeg, 0, "Negative chapter index should clamp to 0")
 
     // Test clamping: index beyond range → last chapter
+#if canImport(TextMouth)
+    let clampedHigh = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: 100, characterOffset: 0
+    ).chapterIndex
+#else
     let clampedHigh = min(max(0, 100), content.chapters.count - 1)
+#endif
     try assertEqual(clampedHigh, 2, "High chapter index should clamp to last chapter")
 
     // Test clamping: valid index unchanged
+#if canImport(TextMouth)
+    let clampedValid = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: 1, characterOffset: 0
+    ).chapterIndex
+#else
     let clampedValid = min(max(0, 1), content.chapters.count - 1)
+#endif
     try assertEqual(clampedValid, 1, "Valid chapter index should be unchanged")
 }
 
@@ -169,11 +191,24 @@ test("NavigateTo: character offset clamped to chapter length") {
 
     // Offset beyond text length → clamped to last char
     let chapterLen = chapter.text.count
+#if canImport(TextMouth)
+    let content = DocumentContent(title: "Test", author: "", chapters: [chapter])
+    let clampedHigh = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: 0, characterOffset: 9999
+    ).characterOffset
+#else
     let clampedHigh = min(max(0, 9999), max(0, chapterLen - 1))
+#endif
     try assertEqual(clampedHigh, text.count - 1, "High offset should clamp to text.count - 1")
 
     // Negative offset → 0
+#if canImport(TextMouth)
+    let clampedNeg = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: 0, characterOffset: -10
+    ).characterOffset
+#else
     let clampedNeg = min(max(0, -10), max(0, chapterLen - 1))
+#endif
     try assertEqual(clampedNeg, 0, "Negative offset should clamp to 0")
 }
 
@@ -181,7 +216,14 @@ test("NavigateTo: empty chapter text handles gracefully") {
     let chapter = Chapter(title: "", text: "", headings: [])
     let chapterLen = chapter.text.count
     // max(0, 0 - 1) = max(0, -1) = 0
+#if canImport(TextMouth)
+    let content = DocumentContent(title: "Test", author: "", chapters: [chapter])
+    let clampedOffset = ReaderViewModel.clampedNavigationPosition(
+        in: content, chapterIndex: 0, characterOffset: 5
+    ).characterOffset
+#else
     let clampedOffset = min(max(0, 5), max(0, chapterLen - 1))
+#endif
     try assertEqual(clampedOffset, 0, "Empty chapter should clamp offset to 0")
 }
 
@@ -202,12 +244,26 @@ test("Pre-render generation prevents stale overwrites") {
     chapterPlaybackGeneration += 1
 
     // When render completes, generation check rejects stale result
+#if canImport(TextMouth)
+    let isStale = !ReaderViewModel.isCurrentPlaybackGeneration(
+        captured: renderGeneration,
+        current: chapterPlaybackGeneration
+    )
+#else
     let isStale = chapterPlaybackGeneration != renderGeneration
+#endif
     try assertTrue(isStale, "Stale pre-render should be detected when generation changed")
 
     // Fresh render at current generation should be accepted
     let freshGeneration = chapterPlaybackGeneration
+#if canImport(TextMouth)
+    let isFresh = ReaderViewModel.isCurrentPlaybackGeneration(
+        captured: freshGeneration,
+        current: chapterPlaybackGeneration
+    )
+#else
     let isFresh = chapterPlaybackGeneration == freshGeneration
+#endif
     try assertTrue(isFresh, "Fresh pre-render should be accepted")
 }
 
