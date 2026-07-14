@@ -98,6 +98,21 @@ enum DOCXParser {
         return parser.parse()
     }
 
+    /// Read style semantics using the same archive path as full conversion.
+    /// Exposed internally so regression tests validate the production style parser.
+    static func readStyles(from url: URL) throws -> DOCXStyles {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw DOCXParserError.fileNotFound(url.path)
+        }
+        let archive: Archive
+        do {
+            archive = try Archive(url: url, accessMode: .read)
+        } catch {
+            throw DOCXParserError.invalidArchive
+        }
+        return parseStyles(from: archive)
+    }
+
     // MARK: - ZIP Extraction Helpers
 
     /// Extract raw data from a ZIP archive entry

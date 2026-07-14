@@ -1,6 +1,30 @@
 import Foundation
 import ZIPFoundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+/// Production-backed adapters retaining the legacy scenario bodies and names.
+private func parseDOCXMetadata(from url: URL) throws -> DOCXMetadata {
+    guard let metadata = try DOCXParser.readMetadata(from: url) else {
+        throw TestError.assertionFailed("Production DOCX parser returned no metadata")
+    }
+    return metadata
+}
+
+private func parseDOCXStyles(from url: URL) throws -> DOCXStyles {
+    try DOCXParser.readStyles(from: url)
+}
+
+private func parseDOCXToMarkdown(from url: URL) throws -> String {
+    try DOCXParser.extractMarkdown(from: url)
+}
+
+private func parseMarkdown(markdown: String, title: String) throws -> DocumentContent {
+    try MarkdownDocParser.parse(markdown: markdown, title: title)
+}
+#endif
+
 func runDOCXParserTests() {
 print("\n--- DOCX Parser Tests (test_book.docx) ---")
 

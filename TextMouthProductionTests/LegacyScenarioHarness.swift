@@ -143,3 +143,27 @@ final class LegacyKeyboardShortcutScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyDOCXParserScenarioTests: XCTestCase {
+    func testLegacyDOCXParserScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runDOCXParserTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            24,
+            "Every inventoried DOCX fixture scenario should remain registered"
+        )
+    }
+}
+
+final class LegacyDOCXEdgeCaseScenarioTests: XCTestCase {
+    func testLegacyDOCXEdgeCaseScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runDOCXEdgeCaseTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            20,
+            "Every inventoried DOCX conversion edge case should remain registered"
+        )
+    }
+}

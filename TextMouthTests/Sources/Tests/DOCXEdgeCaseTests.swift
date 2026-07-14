@@ -1,6 +1,16 @@
 import Foundation
 import ZIPFoundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+private func legacyListLevel(_ format: String) -> ListLevelFormat {
+    ListLevelFormat(numFmt: format)
+}
+#else
+private func legacyListLevel(_ format: String) -> String { format }
+#endif
+
 func runDOCXEdgeCaseTests() {
 print("\n--- DOCX Edge Case Tests ---")
 
@@ -24,8 +34,16 @@ func convertDOCXSnippet(_ bodyXML: String, styles: DOCXStyles = DOCXStyles(),
                          numbering: DOCXNumbering = DOCXNumbering(),
                          relationships: [String: String] = [:]) -> String {
     let xml = wrapDocumentXML(bodyXML)
+#if canImport(TextMouth)
+    let converter = DOCXToMarkdownConverter(
+        styles: styles,
+        numbering: numbering,
+        relationships: relationships
+    )
+#else
     let converter = TestDOCXConverter(styles: styles, numbering: numbering,
                                       relationships: relationships)
+#endif
     return converter.convert(xmlString: xml)
 }
 
@@ -156,7 +174,7 @@ test("DOCX heading style maps to markdown heading") {
 // Numbered list with counter reset
 test("DOCX numbered lists restart after non-list paragraph") {
     var numbering = DOCXNumbering()
-    numbering.abstractNums["1"] = ["decimal"]
+    numbering.abstractNums["1"] = [legacyListLevel("decimal")]
     numbering.numIdToAbstractId["1"] = "1"
 
     let xml = """
@@ -187,7 +205,7 @@ test("DOCX numbered lists restart after non-list paragraph") {
 // Bullet list
 test("DOCX bullet list uses dash prefix") {
     var numbering = DOCXNumbering()
-    numbering.abstractNums["2"] = ["bullet"]
+    numbering.abstractNums["2"] = [legacyListLevel("bullet")]
     numbering.numIdToAbstractId["2"] = "2"
 
     let xml = """
@@ -324,7 +342,7 @@ test("DOCX mixed content converts in order") {
     var styles = DOCXStyles()
     styles.headingLevels["Heading1"] = 1
     var numbering = DOCXNumbering()
-    numbering.abstractNums["1"] = ["bullet"]
+    numbering.abstractNums["1"] = [legacyListLevel("bullet")]
     numbering.numIdToAbstractId["1"] = "1"
 
     let xml = """
@@ -371,6 +389,7 @@ test("DOCX readMetadata returns title even without author") {
 
 }
 
+#if !canImport(TextMouth)
 // MARK: - Test DOCX Converter (mirrors app converter for direct XML testing)
 
 /// Minimal DOCX to Markdown converter for tests.
@@ -635,3 +654,9 @@ private class TestMetadataParser: NSObject, XMLParserDelegate {
         }
     }
 }
+#else
+/// Parse core properties through the production metadata parser.
+func parseMetadataXML(_ xml: String) -> DOCXMetadata {
+    DOCXMetadataParser(xml: xml).parse()
+}
+#endif
