@@ -102,6 +102,14 @@ class MediaGestureDetector {
     /// spurious second matches.
     @discardableResult
     func recordEvent(_ type: EventType) -> Bool {
+        recordEvent(type, at: Date())
+    }
+
+    /// Timestamp-injectable form of ``recordEvent(_:)``. Keeping time as an
+    /// input makes the window-boundary behavior deterministic to test while
+    /// the public call site continues to use the current wall-clock time.
+    @discardableResult
+    func recordEvent(_ type: EventType, at now: Date) -> Bool {
         guard isEnabled, !pattern.isEmpty else { return false }
 
         // Hold the lock for the whole read-modify-write cycle.
@@ -111,7 +119,6 @@ class MediaGestureDetector {
         lock.lock()
         defer { lock.unlock() }
 
-        let now = Date()
         // Trim entries older than the window measured from THIS event.
         // Using the latest event as the anchor (rather than the first
         // event in the buffer) means the user has the full window to
