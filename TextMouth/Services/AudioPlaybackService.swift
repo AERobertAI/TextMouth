@@ -60,7 +60,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             return
         }
 
+        // A chapter transition replaces the player but is not a user-visible
+        // full stop. Preserve an in-progress sleep-timer fade across the
+        // teardown; public stop() still resets volume for a future session.
+        let volumeBeforeLoad = currentVolume
         stop()
+        currentVolume = volumeBeforeLoad
         clipEndTime = nil
 
         let asset = AVURLAsset(url: normalizedURL)
@@ -182,6 +187,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         currentVolume = 1.0
         player?.volume = 1.0
     }
+
+    /// Intended volume and the current player's applied volume. These internal
+    /// read-only values let hosted tests verify chapter-load fade persistence.
+    var intendedVolume: Float { currentVolume }
+    var outputVolume: Float { player?.volume ?? currentVolume }
 
     // MARK: - Chapter/Marker Extraction
 

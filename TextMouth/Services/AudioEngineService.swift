@@ -48,7 +48,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// still have unplayed samples in its processing pipeline. Without
     /// padding, those final samples get discarded on chapter transitions,
     /// clipping the last word. 200ms provides enough runway at any rate.
-    private static let silencePaddingDuration: Double = 0.2
+    static let silencePaddingDuration: Double = 0.2
 
     /// Reference to the in-progress render synthesizer so we can cancel stale renders.
     /// Without cancellation, old write() calls keep synthesizing in the background,
@@ -144,7 +144,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             // because the playerNode reports "done" while timePitch still
             // has unplayed samples queued.
             let speechFrameCount = buffers.reduce(0) { $0 + Int($1.frameLength) }
-            let paddingFrames = Int(audioFormat.sampleRate * Self.silencePaddingDuration)
+            let paddingFrames = Self.silencePaddingFrameCount(sampleRate: audioFormat.sampleRate)
             let totalFrameCount = speechFrameCount + paddingFrames
             guard let combinedBuffer = AVAudioPCMBuffer(
                 pcmFormat: audioFormat,
@@ -332,7 +332,21 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     }
 
     func setSpeed(wpm: Double) {
-        timePitch.rate = Float(max(0.25, min(wpm / renderWPM, 4.0)))
+        timePitch.rate = Float(Self.speedMultiplier(wpm: wpm, renderWPM: renderWPM))
+    }
+
+    /// Computes the rate applied to the time-pitch unit, including the limits
+    /// supported by AVAudioUnitTimePitch. Shared with tests to prevent a copied
+    /// formula from drifting away from playback behavior.
+    static func speedMultiplier(wpm: Double, renderWPM: Double) -> Double {
+        guard renderWPM > 0 else { return 1 }
+        return max(0.25, min(wpm / renderWPM, 4.0))
+    }
+
+    /// Converts the fixed tail-padding duration into frames for a render's
+    /// actual sample rate.
+    static func silencePaddingFrameCount(sampleRate: Double) -> Int {
+        max(0, Int(sampleRate * silencePaddingDuration))
     }
 
     /// Set pitch using a multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch).
@@ -357,6 +371,11 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         currentVolume = 1.0
         engine.mainMixerNode.outputVolume = 1.0
     }
+
+    /// Intended and effective mixer volume. Internal visibility supports
+    /// hosted verification of fade persistence without exposing engine nodes.
+    var outputVolume: Float { engine.mainMixerNode.outputVolume }
+    var intendedVolume: Float { currentVolume }
 
     /// Seek within the current rendered buffer. No re-rendering, no engine restart.
     func seek(toCharOffset charOffset: Int) {
@@ -468,6 +487,27 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             }
         }
         return entry.charOffset
+    }
+
+    // MARK: - Test Support
+
+    /// Installs deterministic frame anchors without invoking platform TTS.
+    func _configureFrameMapForTesting(
+        _ map: [(charOffset: Int, frame: AVAudioFramePosition)],
+        totalFrames: AVAudioFrameCount
+    ) {
+        wordFrameMap = map
+        self.totalFrames = totalFrames
+    }
+
+    /// Runs the same interpolation used by production seeking.
+    func _frameForCharOffsetForTesting(_ offset: Int) -> AVAudioFramePosition {
+        frameForCharOffset(offset)
+    }
+
+    /// Runs the same reverse interpolation used by position reporting.
+    func _charOffsetForFrameForTesting(_ frame: AVAudioFramePosition) -> Int {
+        charOffsetForFrame(frame)
     }
 
     private func handlePlaybackComplete() {
