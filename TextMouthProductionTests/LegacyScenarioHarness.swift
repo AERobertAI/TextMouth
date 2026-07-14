@@ -239,3 +239,16 @@ final class LegacyMenuVisibilityScenarioTests: XCTestCase {
         )
     }
 }
+
+@MainActor
+final class LegacyIntegrationScenarioTests: XCTestCase {
+    func testLegacyIntegrationScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runIntegrationTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            36,
+            "Every inventoried integration scenario should remain registered"
+        )
+    }
+}
