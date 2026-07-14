@@ -656,7 +656,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             let text = self.currentText
             let publish: @MainActor @Sendable (String) -> Void = { [weak self] word in
                 guard let self else { return }
-                guard self.positionGeneration == myGeneration else { return }
+                guard Self.shouldPublishPosition(
+                    capturedGeneration: myGeneration,
+                    currentGeneration: self.positionGeneration
+                ) else { return }
                 self.currentWordRange = range
                 if !word.isEmpty {
                     self.onWordSpoken?(range, word)
@@ -740,6 +743,17 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
 extension SpeechService: AVSpeechSynthesizerDelegate {
 
+    nonisolated static func isLiveDirectUtterance(
+        _ utterance: AVSpeechUtterance,
+        liveUtterance: AVSpeechUtterance?
+    ) -> Bool {
+        liveUtterance.map(ObjectIdentifier.init) == ObjectIdentifier(utterance)
+    }
+
+    nonisolated static func shouldPublishPosition(capturedGeneration: Int, currentGeneration: Int) -> Bool {
+        capturedGeneration == currentGeneration
+    }
+
     func speechSynthesizer(
         _ synthesizer: AVSpeechSynthesizer,
         willSpeakRangeOfSpeechString characterRange: NSRange,
@@ -754,7 +768,8 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         // NEW utterance) and emit a wildly wrong absolute position —
         // exactly the symptom that makes seeks feel like they jumped
         // to a random place.
-        guard usingDirectMode, utterance === liveDirectUtterance else { return }
+        guard usingDirectMode,
+              Self.isLiveDirectUtterance(utterance, liveUtterance: liveDirectUtterance) else { return }
         let baseOffset = directModeBaseOffset
         let word = (utterance.speechString as NSString).substring(with: characterRange)
         DispatchQueue.main.async { [weak self] in

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C10000000000000000000001 /* PlaybackLifecyclePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000002 /* PlaybackLifecyclePolicyTests.swift */; };
 		BF0000000000000000000001 /* ImportAndShortcutPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF0000000000000000000002 /* ImportAndShortcutPolicyTests.swift */; };
 		BE0000000000000000000001 /* LibraryAndSectionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */; };
 		BD0000000000000000000001 /* PlaybackPolicyProductionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */; };
@@ -166,6 +167,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C10000000000000000000002 /* PlaybackLifecyclePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackLifecyclePolicyTests.swift; sourceTree = "<group>"; };
 		BF0000000000000000000002 /* ImportAndShortcutPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportAndShortcutPolicyTests.swift; sourceTree = "<group>"; };
 		BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAndSectionPolicyTests.swift; sourceTree = "<group>"; };
 		BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackPolicyProductionTests.swift; sourceTree = "<group>"; };
@@ -485,6 +487,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				C10000000000000000000002 /* PlaybackLifecyclePolicyTests.swift */,
 				BF0000000000000000000002 /* ImportAndShortcutPolicyTests.swift */,
 				BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */,
 				BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */,
@@ -669,6 +672,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10000000000000000000001 /* PlaybackLifecyclePolicyTests.swift in Sources */,
 				BF0000000000000000000001 /* ImportAndShortcutPolicyTests.swift in Sources */,
 				BE0000000000000000000001 /* LibraryAndSectionPolicyTests.swift in Sources */,
 				BD0000000000000000000001 /* PlaybackPolicyProductionTests.swift in Sources */,

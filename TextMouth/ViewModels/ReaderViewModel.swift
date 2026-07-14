@@ -4,6 +4,28 @@ import AppKit
 import AVFoundation
 import os.log
 
+enum VisibleTextWindowPolicy {
+    static func shouldRefresh(
+        chapterTextLength: Int,
+        maximumDisplayLength: Int,
+        cachedChapterIndex: Int?,
+        windowStart: Int?,
+        windowEnd: Int?,
+        chapterIndex: Int,
+        offset: Int,
+        guardFraction: Double
+    ) -> Bool {
+        guard chapterTextLength > maximumDisplayLength else { return true }
+        guard let cachedChapterIndex, let windowStart, let windowEnd else { return true }
+        guard cachedChapterIndex == chapterIndex else { return true }
+
+        let guardSize = max(1, Int(Double(max(windowEnd - windowStart, 0)) * guardFraction))
+        let lowerBound = windowStart + guardSize
+        let upperBound = max(lowerBound, windowEnd - guardSize)
+        return offset < lowerBound || offset > upperBound
+    }
+}
+
 /// Manages the state for reading a single book
 @MainActor
 final class ReaderViewModel: ObservableObject {
@@ -910,24 +932,17 @@ final class ReaderViewModel: ObservableObject {
         offset: Int,
         chapterTextLength: Int
     ) -> Bool {
-        guard chapterTextLength > Self.maxDisplayChars else { return true }
-        guard let state = visibleTextWindowState else { return true }
-        guard state.chapterIndex == chapterIndex else { return true }
-
-        // Keep the rendered text stable while playback advances through
-        // the middle of the current window. Rebuilding the whole
-        // selectable text view every 120ms was the change that stopped
-        // the old main-thread freeze, but it also created the runaway
-        // memory pattern the user reported because AppKit/VoiceOver kept
-        // seeing a brand-new large text payload. The guard band lets the
-        // cursor move freely for a while before we swap in a new window.
-        let guardSize = max(
-            1,
-            Int(Double(max(state.endOffset - state.startOffset, 0)) * Self.visibleTextWindowGuardFraction)
+        let state = visibleTextWindowState
+        return VisibleTextWindowPolicy.shouldRefresh(
+            chapterTextLength: chapterTextLength,
+            maximumDisplayLength: Self.maxDisplayChars,
+            cachedChapterIndex: state?.chapterIndex,
+            windowStart: state?.startOffset,
+            windowEnd: state?.endOffset,
+            chapterIndex: chapterIndex,
+            offset: offset,
+            guardFraction: Self.visibleTextWindowGuardFraction
         )
-        let lowerBound = state.startOffset + guardSize
-        let upperBound = max(lowerBound, state.endOffset - guardSize)
-        return offset < lowerBound || offset > upperBound
     }
 
     var isPlaybackActivelyAdvancing: Bool {

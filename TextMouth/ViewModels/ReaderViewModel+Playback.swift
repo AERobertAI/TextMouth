@@ -747,9 +747,15 @@ extension ReaderViewModel {
         // would never apply.
         let wasPlaying: Bool
         if isAudioBook {
-            wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
+            wasPlaying = Self.wasActivelyPlaying(
+                isPlaying: audioPlaybackService.isPlaying,
+                isPaused: audioPlaybackService.isPaused
+            )
         } else {
-            wasPlaying = speechService.isSpeaking && !speechService.isPaused
+            wasPlaying = Self.wasActivelyPlaying(
+                isPlaying: speechService.isSpeaking,
+                isPaused: speechService.isPaused
+            )
         }
 
         if playingPauseSound {
@@ -809,6 +815,10 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+    }
+
+    nonisolated static func wasActivelyPlaying(isPlaying: Bool, isPaused: Bool) -> Bool {
+        isPlaying && !isPaused
     }
 
     // MARK: - Rewind on Resume
