@@ -213,7 +213,7 @@ extension LibraryViewModel {
             try TextMouthPaths.ensureDirectoryStructure()
 
             // Write text to a temp file
-            let sanitizedTitle = title.isEmpty ? "Untitled" : title
+            let sanitizedTitle = TextImportPolicy.resolvedTitle(title)
             let bookID = UUID()
             let dateAdded = Date()
             let tmbName = TextMouthPaths.tmbName(
@@ -225,7 +225,7 @@ extension LibraryViewModel {
             let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
             try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
-            let fileName = "\(sanitizedTitle).txt"
+            let fileName = TextImportPolicy.textFilename(for: sanitizedTitle)
             let filePath = tmbDir.appendingPathComponent(fileName)
             try text.write(to: filePath, atomically: true, encoding: .utf8)
 

@@ -24,7 +24,11 @@ extension ReaderViewModel {
         guard acquireSkipToken() else { return }
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipForward)
-        let unit = useShiftUnit ? settingsViewModel.shiftSkipForwardUnit : settingsViewModel.skipForwardUnit
+        let unit = Self.selectedSkipUnit(
+            primary: settingsViewModel.skipForwardUnit,
+            secondary: settingsViewModel.shiftSkipForwardUnit,
+            useSecondary: useShiftUnit
+        )
         debugLog("skipForward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
         performSkip(unit: unit, forward: true)
     }
@@ -35,7 +39,11 @@ extension ReaderViewModel {
         guard acquireSkipToken() else { return }
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipBackward)
-        let unit = useShiftUnit ? settingsViewModel.shiftSkipBackwardUnit : settingsViewModel.skipBackwardUnit
+        let unit = Self.selectedSkipUnit(
+            primary: settingsViewModel.skipBackwardUnit,
+            secondary: settingsViewModel.shiftSkipBackwardUnit,
+            useSecondary: useShiftUnit
+        )
         debugLog("skipBackward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
         performSkip(unit: unit, forward: false)
     }
@@ -64,6 +72,14 @@ extension ReaderViewModel {
 
     nonisolated static func shouldAcquireSkipToken(lastSkipTime: Date, now: Date) -> Bool {
         now.timeIntervalSince(lastSkipTime) > skipDebounceWindow
+    }
+
+    nonisolated static func selectedSkipUnit(
+        primary: SkipUnit,
+        secondary: SkipUnit,
+        useSecondary: Bool
+    ) -> SkipUnit {
+        useSecondary ? secondary : primary
     }
 
     /// Dispatch a skip action based on the skip unit type.

@@ -1,6 +1,32 @@
 import SwiftUI
 import AppKit
 
+enum TextImportPolicy {
+    static func defaultTitle(for date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return "Paste \(formatter.string(from: date))"
+    }
+
+    static func canAdd(text: String) -> Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    static func resolvedTitle(_ title: String) -> String {
+        title.isEmpty ? "Untitled" : title
+    }
+
+    /// Produces a single safe path component while keeping the book's
+    /// display title unchanged in metadata.
+    static func textFilename(for title: String) -> String {
+        let forbidden = CharacterSet(charactersIn: "/\\:?%*|\"<>")
+        let pieces = resolvedTitle(title).components(separatedBy: forbidden)
+        let base = pieces.filter { !$0.isEmpty }.joined(separator: "-")
+        return "\(base.isEmpty ? "Untitled" : base).txt"
+    }
+}
+
 struct TextInputView: View {
     let onAdd: (String, String, String) -> Void  // title, author, text
     let onCancel: () -> Void
@@ -14,10 +40,7 @@ struct TextInputView: View {
     init(onAdd: @escaping (String, String, String) -> Void, onCancel: @escaping () -> Void) {
         self.onAdd = onAdd
         self.onCancel = onCancel
-        // Default title: "Paste YYYY-MM-DD HH:mm"
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        self._title = State(initialValue: "Paste \(formatter.string(from: Date()))")
+        self._title = State(initialValue: TextImportPolicy.defaultTitle())
     }
 
     var body: some View {
@@ -91,10 +114,10 @@ struct TextInputView: View {
                     onAdd(title, author, textContent)
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(textContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!TextImportPolicy.canAdd(text: textContent))
                 .accessibilityLabel("Add to Library")
                 .accessibilityHint(
-                    textContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    !TextImportPolicy.canAdd(text: textContent)
                         ? "Disabled. Enter some text content first."
                         : "Adds the new book to your library"
                 )

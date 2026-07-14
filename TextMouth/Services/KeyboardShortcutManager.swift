@@ -124,7 +124,10 @@ final class KeyboardShortcutManager: ObservableObject {
                 if binding.matches(event) {
                     // Pass whether Shift was held (for secondary skip amounts)
                     // Only count it as "extra shift" if the binding itself doesn't require Shift
-                    let shiftHeld = event.modifierFlags.contains(.shift) && !binding.shift
+                    let shiftHeld = Self.hasExtraShift(
+                        eventHasShift: event.modifierFlags.contains(.shift),
+                        bindingRequiresShift: binding.shift
+                    )
                     // Include the key window so only the focused book reader responds
                     var userInfo: [String: Any] = [:]
                     if shiftHeld { userInfo["shiftHeld"] = true }
@@ -137,6 +140,13 @@ final class KeyboardShortcutManager: ObservableObject {
             }
         }
         return false
+    }
+
+    nonisolated static func hasExtraShift(
+        eventHasShift: Bool,
+        bindingRequiresShift: Bool
+    ) -> Bool {
+        eventHasShift && !bindingRequiresShift
     }
 
     private func isTextInputFocused() -> Bool {
