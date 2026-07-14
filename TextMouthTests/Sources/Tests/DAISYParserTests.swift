@@ -2,6 +2,46 @@ import Foundation
 import ZIPFoundation
 import SwiftSoup
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+private func isDAISYZipFile(url: URL) -> Bool {
+    DAISYParser.isDAISYZip(url: url)
+}
+
+private func parseDAISYMetadata(from url: URL) throws -> DAISYMetadata {
+    guard let metadata = try DAISYParser.readMetadata(from: url) else {
+        throw TestError.assertionFailed("Production DAISY parser returned no metadata")
+    }
+    return metadata
+}
+
+private func parseDAISYToMarkdown(from url: URL) throws -> String {
+    try DAISYParser.extractMarkdown(from: url)
+}
+
+func convertDTBookSnippet(_ xml: String) -> String {
+    guard let data = xml.data(using: .utf8) else { return "" }
+    return DTBookToMarkdownConverter().convert(data: data)
+}
+
+private func parseDAISY202MetadataFromZip(url: URL) throws -> DAISYMetadata {
+    try parseDAISYMetadata(from: url)
+}
+
+private func parseDAISY202ToMarkdown(url: URL) throws -> String {
+    try DAISYParser.extractMarkdown(from: url)
+}
+
+private func parseMarkdown(markdown: String, title: String = "Untitled") throws -> DocumentContent {
+    try MarkdownDocParser.parse(markdown: markdown, title: title)
+}
+
+private func parseHTML(html: String, title: String = "Untitled") throws -> DocumentContent {
+    try HTMLParser.parse(html: html, title: title)
+}
+#endif
+
 func runDAISYParserTests() {
 print("\n--- DAISY 3 Parser Tests (Hyperion) ---")
 

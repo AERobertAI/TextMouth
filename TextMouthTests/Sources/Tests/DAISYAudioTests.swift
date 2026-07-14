@@ -1,6 +1,43 @@
 import Foundation
 import ZIPFoundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+
+typealias TestDAISYAudioClip = DAISYAudioClip
+typealias TestAudioManifest = AudioManifest
+typealias TestAudioSegment = AudioSegment
+typealias TestFragmentAudioClip = DAISYAudioClip
+typealias TestFragmentAwareSMILParser = DAISYAudioSMILParser
+
+func parseDAISYTimeString(_ value: String) -> Double {
+    DAISYAudioSMILParser.parseTime(value)
+}
+
+func parseDAISYAudioSMIL(_ xml: String) -> [DAISYAudioClip] {
+    guard let data = xml.data(using: .utf8) else { return [] }
+    return DAISYAudioSMILParser(data: data).parse()
+}
+
+func testResolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String {
+    DAISYAudioConverter.resolvedAudioPath(for: clip, smilPath: smilPath)
+}
+
+func testSegmentEndTime(
+    for segmentClip: DAISYAudioClip,
+    clips: [DAISYAudioClip],
+    smilPath: String,
+    nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
+) -> Double {
+    DAISYAudioConverter.segmentEndTime(
+        for: segmentClip,
+        clips: clips,
+        smilPath: smilPath,
+        nextClipAndPath: nextClipAndPath
+    )
+}
+#endif
+
 func runDAISYAudioTests() {
 print("\n--- DAISY Audio Tests ---")
 
@@ -254,6 +291,8 @@ test("DAISY audio boundary defaults to current audio file last clip") {
 
 // MARK: - Test helpers
 
+#if !canImport(TextMouth)
+
 /// Parse a DAISY time string to seconds (test implementation)
 func parseDAISYTimeString(_ timeStr: String) -> Double {
     var cleaned = timeStr.trimmingCharacters(in: .whitespaces)
@@ -427,3 +466,4 @@ func testSegmentEndTime(
 
     return endTime
 }
+#endif

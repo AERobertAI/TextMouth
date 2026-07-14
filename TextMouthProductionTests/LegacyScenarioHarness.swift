@@ -83,6 +83,17 @@ func requireFile(_ name: String) throws -> URL {
     return url
 }
 
+/// Return a fixture path without requiring that an optional fixture exists.
+/// Some legacy scenarios intentionally skip large, separately downloaded books.
+func testFilePath(_ name: String) -> String {
+    URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("TestData", isDirectory: true)
+        .appendingPathComponent(name)
+        .path
+}
+
 final class LegacyOffsetMapScenarioTests: XCTestCase {
     func testLegacyOffsetMapScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -176,6 +187,42 @@ final class LegacyEPUBParserScenarioTests: XCTestCase {
             LegacyScenarioRecorder.shared.count - initialCount,
             16,
             "Every inventoried EPUB parser scenario should remain registered"
+        )
+    }
+}
+
+final class LegacyDAISYParserScenarioTests: XCTestCase {
+    func testLegacyDAISYParserScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runDAISYParserTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            37,
+            "Every inventoried DAISY parser scenario should remain registered"
+        )
+    }
+}
+
+final class LegacyDAISYEdgeCaseScenarioTests: XCTestCase {
+    func testLegacyDAISYEdgeCaseScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runDAISYEdgeCaseTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            16,
+            "Every inventoried DAISY edge-case scenario should remain registered"
+        )
+    }
+}
+
+final class LegacyDAISYAudioScenarioTests: XCTestCase {
+    func testLegacyDAISYAudioScenarios() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runDAISYAudioTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            16,
+            "Every inventoried DAISY audio scenario should remain registered"
         )
     }
 }

@@ -67,16 +67,16 @@ class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
             var endTime: Double = 0
 
             if let begin = attributes["clipBegin"] {
-                startTime = parseDAISYTime(begin)
+                startTime = Self.parseTime(begin)
             } else if let begin = attributes["clip-begin"] {
                 // DAISY 2.02 format
-                startTime = parseDAISYTime(begin)
+                startTime = Self.parseTime(begin)
             }
 
             if let end = attributes["clipEnd"] {
-                endTime = parseDAISYTime(end)
+                endTime = Self.parseTime(end)
             } else if let end = attributes["clip-end"] {
-                endTime = parseDAISYTime(end)
+                endTime = Self.parseTime(end)
             }
 
             audioClips.append(DAISYAudioClip(
@@ -92,7 +92,9 @@ class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
     /// Supports both formats:
     ///   DAISY 2.02: "npt=SS.SSSs" (e.g. "npt=38.228s")
     ///   DAISY 3:    "H:MM:SS.mmm" (e.g. "0:02:43.650")
-    private func parseDAISYTime(_ timeStr: String) -> Double {
+    /// Kept as a pure internal operation so timing syntax can be regression
+    /// tested without constructing XML that obscures which value was parsed.
+    nonisolated static func parseTime(_ timeStr: String) -> Double {
         var cleaned = timeStr.trimmingCharacters(in: .whitespaces)
 
         // Strip DAISY 2.02 "npt=" prefix and trailing "s"
@@ -404,7 +406,9 @@ enum DAISYAudioConverter {
 
     // MARK: - Helpers
 
-    private static func resolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String {
+    /// Resolve a clip reference exactly as manifest construction does. Internal
+    /// visibility lets parser regression tests cover basename collisions.
+    static func resolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String {
         ParserUtilities.resolvedPackagePath(
             clip.file,
             relativeTo: smilPath,
@@ -412,7 +416,9 @@ enum DAISYAudioConverter {
         )
     }
 
-    private static func segmentEndTime(
+    /// Determine the boundary for a DAISY segment, accounting for clips in
+    /// different files that happen to share the same basename.
+    static func segmentEndTime(
         for segmentClip: DAISYAudioClip,
         clips: [DAISYAudioClip],
         smilPath: String,

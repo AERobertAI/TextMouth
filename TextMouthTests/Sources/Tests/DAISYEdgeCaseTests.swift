@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(TextMouth)
+@testable import TextMouth
+#endif
+
 func runDAISYEdgeCaseTests() {
 print("\n--- DAISY Edge Case Tests ---")
 
