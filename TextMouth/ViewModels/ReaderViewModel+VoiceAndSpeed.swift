@@ -117,24 +117,38 @@ extension ReaderViewModel {
     /// so downstream offset conversions can map back to original-text positions.
     func filterSkippedSections(chapterIndex: Int, text: String) -> (text: String, offsetMap: OffsetMap) {
         guard let content = content else { return (text, .identity) }
-        let skipped = skippedHeadingIDs
-        guard !skipped.isEmpty else { return (text, .identity) }
-
         let chapterHeadings = content.allHeadings.filter { $0.chapterIndex == chapterIndex }
-        guard !chapterHeadings.isEmpty else { return (text, .identity) }
+        return SkippedSectionFilter.apply(
+            text: text,
+            headings: chapterHeadings,
+            skippedIDs: skippedHeadingIDs
+        )
+    }
+}
+
+/// Removes excluded heading ranges while preserving the source/filtered offset
+/// relationship required by seeking and playback highlighting.
+enum SkippedSectionFilter {
+    static func apply(
+        text: String,
+        headings: [Heading],
+        skippedIDs: Set<String>
+    ) -> (text: String, offsetMap: OffsetMap) {
+        guard !skippedIDs.isEmpty, !headings.isEmpty else { return (text, .identity) }
 
         // Build ranges to exclude
         var excludeRanges: [Range<Int>] = []
-        for (i, heading) in chapterHeadings.enumerated() {
-            guard skipped.contains(heading.id) else { continue }
-            let start = heading.characterOffset
+        let sortedHeadings = headings.sorted { $0.characterOffset < $1.characterOffset }
+        for (i, heading) in sortedHeadings.enumerated() {
+            guard skippedIDs.contains(heading.id) else { continue }
+            let start = min(max(0, heading.characterOffset), text.utf16Length)
             let end: Int
-            if i + 1 < chapterHeadings.count {
-                end = chapterHeadings[i + 1].characterOffset
+            if i + 1 < sortedHeadings.count {
+                end = min(max(start, sortedHeadings[i + 1].characterOffset), text.utf16Length)
             } else {
                 end = text.utf16Length
             }
-            excludeRanges.append(start..<end)
+            if start < end { excludeRanges.append(start..<end) }
         }
 
         guard !excludeRanges.isEmpty else { return (text, .identity) }

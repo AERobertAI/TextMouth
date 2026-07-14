@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BE0000000000000000000001 /* LibraryAndSectionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */; };
 		BD0000000000000000000001 /* PlaybackPolicyProductionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */; };
 		BC0000000000000000000001 /* FeatureModelProductionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0000000000000000000002 /* FeatureModelProductionTests.swift */; };
 		BB0000000000000000000001 /* WhereAmIPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000002 /* WhereAmIPolicyTests.swift */; };
@@ -164,6 +165,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAndSectionPolicyTests.swift; sourceTree = "<group>"; };
 		BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackPolicyProductionTests.swift; sourceTree = "<group>"; };
 		BC0000000000000000000002 /* FeatureModelProductionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureModelProductionTests.swift; sourceTree = "<group>"; };
 		BB0000000000000000000002 /* WhereAmIPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereAmIPolicyTests.swift; sourceTree = "<group>"; };
@@ -481,6 +483,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				BE0000000000000000000002 /* LibraryAndSectionPolicyTests.swift */,
 				BD0000000000000000000002 /* PlaybackPolicyProductionTests.swift */,
 				BC0000000000000000000002 /* FeatureModelProductionTests.swift */,
 				BB0000000000000000000002 /* WhereAmIPolicyTests.swift */,
@@ -663,6 +666,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE0000000000000000000001 /* LibraryAndSectionPolicyTests.swift in Sources */,
 				BD0000000000000000000001 /* PlaybackPolicyProductionTests.swift in Sources */,
 				BC0000000000000000000001 /* FeatureModelProductionTests.swift in Sources */,
 				BB0000000000000000000001 /* WhereAmIPolicyTests.swift in Sources */,

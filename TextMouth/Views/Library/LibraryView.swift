@@ -30,6 +30,37 @@ enum LibraryFocusTarget: Equatable {
     }
 }
 
+/// Pure selection rules shared by mouse, keyboard, context-menu, and
+/// accessibility-driven library actions.
+enum LibrarySelectionPolicy {
+    static func toggled(_ selection: Set<UUID>, id: UUID) -> Set<UUID> {
+        var result = selection
+        if result.remove(id) == nil { result.insert(id) }
+        return result
+    }
+
+    static func effective(native: Set<UUID>, edit: Set<UUID>) -> Set<UUID> {
+        native.union(edit)
+    }
+
+    static func contextTargets(clickedID: UUID, effectiveSelection: Set<UUID>) -> Set<UUID> {
+        if effectiveSelection.contains(clickedID), effectiveSelection.count > 1 {
+            return effectiveSelection
+        }
+        return [clickedID]
+    }
+
+    static func clear(
+        native: inout Set<UUID>,
+        edit: inout Set<UUID>,
+        isEditMode: inout Bool
+    ) {
+        native.removeAll()
+        edit.removeAll()
+        isEditMode = false
+    }
+}
+
 struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
@@ -206,11 +237,11 @@ struct LibraryView: View {
                                 // use edit selection in edit mode, native selection otherwise,
                                 // falling back to just the clicked book.
                                 let targetBooks: [Book] = {
-                                    let ids = effectiveSelection
-                                    if ids.contains(book.id), ids.count > 1 {
-                                        return filteredBooks.filter { ids.contains($0.id) }
-                                    }
-                                    return [book]
+                                    let ids = LibrarySelectionPolicy.contextTargets(
+                                        clickedID: book.id,
+                                        effectiveSelection: effectiveSelection
+                                    )
+                                    return filteredBooks.filter { ids.contains($0.id) }
                                 }()
                                 let isMulti = targetBooks.count > 1
 
@@ -758,24 +789,22 @@ struct LibraryView: View {
 
     /// Toggle a book's membership in the edit selection set
     private func toggleEditSelection(_ id: UUID) {
-        if editSelection.contains(id) {
-            editSelection.remove(id)
-        } else {
-            editSelection.insert(id)
-        }
+        editSelection = LibrarySelectionPolicy.toggled(editSelection, id: id)
     }
 
     /// Clear all selections (both native and edit mode) and exit edit mode
     private func clearAllSelections() {
-        editSelection = []
-        selectedBookIDs = []
-        isEditMode = false
+        LibrarySelectionPolicy.clear(
+            native: &selectedBookIDs,
+            edit: &editSelection,
+            isEditMode: &isEditMode
+        )
     }
 
     /// The union of native List selection and edit mode selection.
     /// Shortcut handlers use this so either selection mechanism works.
     private var effectiveSelection: Set<UUID> {
-        selectedBookIDs.union(editSelection)
+        LibrarySelectionPolicy.effective(native: selectedBookIDs, edit: editSelection)
     }
 
     /// Books currently selected via either mechanism
