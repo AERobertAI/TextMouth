@@ -51,7 +51,7 @@ extension ReaderViewModel {
     /// rewind twice deliberately can wait 400ms.
     private func acquireSkipToken() -> Bool {
         let now = Date()
-        if now.timeIntervalSince(lastSkipTime) <= Self.skipDebounceWindow {
+        if !Self.shouldAcquireSkipToken(lastSkipTime: lastSkipTime, now: now) {
             return false
         }
         // Update BEFORE running so a re-entrant call (e.g. a hook fires
@@ -60,6 +60,10 @@ extension ReaderViewModel {
         // check.
         lastSkipTime = now
         return true
+    }
+
+    nonisolated static func shouldAcquireSkipToken(lastSkipTime: Date, now: Date) -> Bool {
+        now.timeIntervalSince(lastSkipTime) > skipDebounceWindow
     }
 
     /// Dispatch a skip action based on the skip unit type.

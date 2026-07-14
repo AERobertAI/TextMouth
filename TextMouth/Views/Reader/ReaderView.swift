@@ -623,6 +623,63 @@ struct BookInfoBar: View {
 
 // MARK: - Jump-To Panels
 
+enum JumpInputValidator {
+    enum PercentResult: Equatable {
+        case value(Double)
+        case error(String)
+    }
+
+    enum TimeResult: Equatable {
+        case value(TimeInterval)
+        case error(String)
+    }
+
+    static func percent(_ raw: String) -> PercentResult {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return .error("Enter a percent.") }
+        guard let value = Double(trimmed) else { return .error("\"\(trimmed)\" is not a number.") }
+        guard (0...100).contains(value) else {
+            return .error("Percent must be between 0 and 100.")
+        }
+        return .value(value)
+    }
+
+    static func time(
+        hours: String,
+        minutes: String,
+        seconds: String,
+        bookLength: TimeInterval
+    ) -> TimeResult {
+        func parse(_ text: String, field: String) -> (value: Int?, error: String?) {
+            let trimmed = text.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { return (0, nil) }
+            guard let value = Int(trimmed), value >= 0 else {
+                return (nil, "\(field) must be a whole number.")
+            }
+            return (value, nil)
+        }
+
+        let parsed = [
+            parse(hours, field: "Hours"),
+            parse(minutes, field: "Minutes"),
+            parse(seconds, field: "Seconds"),
+        ]
+        let values = parsed.compactMap(\.value)
+        if values.count != 3 {
+            let error = parsed.compactMap(\.error).first ?? "Enter a valid time."
+            return .error(error)
+        }
+        let (hoursValue, minutesValue, secondsValue) = (values[0], values[1], values[2])
+        guard minutesValue < 60 else { return .error("Minutes must be less than 60.") }
+        guard secondsValue < 60 else { return .error("Seconds must be less than 60.") }
+        let total = TimeInterval(hoursValue * 3_600 + minutesValue * 60 + secondsValue)
+        guard total <= bookLength else {
+            return .error("Time exceeds book length. Maximum is \(TimeFormatting.spoken(bookLength)).")
+        }
+        return .value(total)
+    }
+}
+
 /// Expanded panel below the info bar offering a single text input for
 /// jumping to a percent through the book.
 /// Stripped to a plain TextField — earlier iterations layered on
@@ -715,22 +772,14 @@ private struct JumpToPercentPanel: View {
     /// so blind users hear the failure even without focus on the
     /// error text.
     private func performJump() {
-        let trimmed = percentInput.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else {
-            showError("Enter a percent.")
-            return
+        switch JumpInputValidator.percent(percentInput) {
+        case .value(let value):
+            errorMessage = ""
+            viewModel.jumpToPercent(value)
+            onJump()
+        case .error(let message):
+            showError(message)
         }
-        guard let value = Double(trimmed) else {
-            showError("\"\(trimmed)\" is not a number.")
-            return
-        }
-        guard value >= 0, value <= 100 else {
-            showError("Percent must be between 0 and 100.")
-            return
-        }
-        errorMessage = ""
-        viewModel.jumpToPercent(value)
-        onJump()
     }
 
     private func showError(_ msg: String) {
@@ -858,49 +907,23 @@ private struct JumpToTimePanel: View {
     /// (typing only minutes shouldn't fail because the seconds field
     /// is blank). Non-numeric input returns nil so the caller can
     /// surface a precise error.
-    private func parseField(_ text: String, name: String) -> Int? {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        if trimmed.isEmpty { return 0 }
-        guard let value = Int(trimmed), value >= 0 else { return nil }
-        return value
-    }
-
     /// Validate H/M/S and jump or surface an error. The error message
     /// is mirrored to VoiceOver so blind users hear the failure even
     /// when their cursor stays in the input field.
     private func performJump() {
-        guard let h = parseField(hoursText, name: "hours") else {
-            showError("Hours must be a whole number.")
-            return
+        switch JumpInputValidator.time(
+            hours: hoursText,
+            minutes: minutesText,
+            seconds: secondsText,
+            bookLength: viewModel.totalEstimatedTime
+        ) {
+        case .value(let total):
+            errorMessage = ""
+            viewModel.jumpToTime(seconds: total)
+            onJump()
+        case .error(let message):
+            showError(message)
         }
-        guard let m = parseField(minutesText, name: "minutes") else {
-            showError("Minutes must be a whole number.")
-            return
-        }
-        guard let s = parseField(secondsText, name: "seconds") else {
-            showError("Seconds must be a whole number.")
-            return
-        }
-        guard m < 60 else {
-            showError("Minutes must be less than 60.")
-            return
-        }
-        guard s < 60 else {
-            showError("Seconds must be less than 60.")
-            return
-        }
-
-        let total = TimeInterval(h * 3600 + m * 60 + s)
-        let bookLength = viewModel.totalEstimatedTime
-        guard total <= bookLength else {
-            let max = TimeFormatting.spoken(bookLength)
-            showError("Time exceeds book length. Maximum is \(max).")
-            return
-        }
-
-        errorMessage = ""
-        viewModel.jumpToTime(seconds: total)
-        onJump()
     }
 
     private func showError(_ msg: String) {

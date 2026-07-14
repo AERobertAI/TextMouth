@@ -153,7 +153,7 @@ final class ReaderViewModel: ObservableObject {
 
     /// For audio books, 10 characters = 1 second of audio.
     /// All time calculations use this constant to convert character offsets to/from seconds.
-    static let audioCharsPerSecond: Double = 10.0
+    nonisolated static let audioCharsPerSecond: Double = 10.0
     /// How often playback-driven UI mirrors should refresh while speech is active.
     static let playbackUIRefreshInterval: TimeInterval = 0.12
     /// How much of the current visible text window should remain as a guard band
@@ -164,7 +164,7 @@ final class ReaderViewModel: ObservableObject {
     /// `skipForward` and `skipBackward`. Wider than the previous 0.3s
     /// to defend against media-key + keyboard double-fire that the
     /// older window left vulnerable to a brief macOS scheduling hiccup.
-    static let skipDebounceWindow: TimeInterval = 0.4
+    nonisolated static let skipDebounceWindow: TimeInterval = 0.4
 
     init(book: Book, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
         self.book = book

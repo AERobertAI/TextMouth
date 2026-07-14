@@ -373,7 +373,7 @@ final class SleepTimerService: ObservableObject {
 
         isFadingOut = true
         let gen = generation
-        let totalSteps = max(1, Int(fadeOutDuration * 10)) // 10 steps per second
+        let totalSteps = Self.fadeStepCount(duration: fadeOutDuration)
         let stepInterval = fadeOutDuration / Double(totalSteps)
         var currentStep = 0
 
@@ -386,7 +386,7 @@ final class SleepTimerService: ObservableObject {
                     return
                 }
                 currentStep += 1
-                let volume = Float(max(0, 1.0 - Double(currentStep) / Double(totalSteps)))
+                let volume = Self.fadeVolume(step: currentStep, totalSteps: totalSteps)
                 self.onFadeStep?(volume)
 
                 if currentStep >= totalSteps {
@@ -401,6 +401,15 @@ final class SleepTimerService: ObservableObject {
         }
         RunLoop.main.add(ft, forMode: .common)
         fadeTimer = ft
+    }
+
+    static func fadeStepCount(duration: TimeInterval) -> Int {
+        max(1, Int(duration * 10))
+    }
+
+    static func fadeVolume(step: Int, totalSteps: Int) -> Float {
+        guard totalSteps > 0 else { return 0 }
+        return Float(max(0, 1 - Double(step) / Double(totalSteps)))
     }
 
     /// Announce remaining time at key milestones so VoiceOver users know the timer is active

@@ -356,6 +356,46 @@ extension ReaderViewModel {
             if chapterCount > 1 { return .chaptersInOneFile }
             return .singleFile
         }
+
+        func chapterStartTime(
+            chapterIndex: Int,
+            chapterUTF16Lengths: [Int],
+            segmentStartTimes: [TimeInterval]
+        ) -> TimeInterval {
+            guard chapterUTF16Lengths.indices.contains(chapterIndex) else { return 0 }
+            switch self {
+            case .multiFile, .singleFile:
+                return 0
+            case .segmented:
+                return segmentStartTimes.indices.contains(chapterIndex)
+                    ? segmentStartTimes[chapterIndex]
+                    : 0
+            case .chaptersInOneFile:
+                return Double(chapterUTF16Lengths.prefix(chapterIndex).reduce(0, +))
+                    / ReaderViewModel.audioCharsPerSecond
+            }
+        }
+
+        func relativeCharacterOffset(playerTime: TimeInterval, chapterStartTime: TimeInterval) -> Int {
+            let relativeTime: TimeInterval
+            switch self {
+            case .segmented, .chaptersInOneFile:
+                relativeTime = max(0, playerTime - chapterStartTime)
+            case .multiFile, .singleFile:
+                relativeTime = max(0, playerTime)
+            }
+            return AudioBookParser.characterOffset(forTime: relativeTime)
+        }
+
+        func absoluteSeekTime(characterOffset: Int, chapterStartTime: TimeInterval) -> TimeInterval {
+            let relative = AudioBookParser.time(forCharacterOffset: characterOffset)
+            switch self {
+            case .segmented, .chaptersInOneFile:
+                return chapterStartTime + relative
+            case .multiFile, .singleFile:
+                return relative
+            }
+        }
     }
 
     /// Determine which layout this audio book uses. Pre-conditions:
@@ -382,21 +422,11 @@ extension ReaderViewModel {
         guard let content = content,
               chapterIndex >= 0,
               chapterIndex < content.chapters.count else { return 0 }
-        switch audioLayout {
-        case .multiFile, .singleFile:
-            return 0
-        case .segmented:
-            guard chapterIndex < audioSegments.count else { return 0 }
-            return audioSegments[chapterIndex].startTime
-        case .chaptersInOneFile:
-            // Sum preceding chapter durations (in placeholder chars
-            // converted to seconds) — that's the chapter's start
-            // offset in the underlying single audio file.
-            let precedingChars = (0..<chapterIndex)
-                .map { content.chapters[$0].text.utf16Length }
-                .reduce(0, +)
-            return Double(precedingChars) / Self.audioCharsPerSecond
-        }
+        return audioLayout.chapterStartTime(
+            chapterIndex: chapterIndex,
+            chapterUTF16Lengths: content.chapters.map { $0.text.utf16Length },
+            segmentStartTimes: audioSegments.map(\.startTime)
+        )
     }
 
     /// Wire up audio playback service callbacks for position tracking and chapter advancement.
