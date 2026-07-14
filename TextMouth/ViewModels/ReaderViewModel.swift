@@ -439,13 +439,13 @@ final class ReaderViewModel: ObservableObject {
     /// - Keyboard shortcuts include sourceWindow: only respond if it matches hostWindow.
     /// - Menu commands have no sourceWindow: only respond if this reader's window is key.
     private func isTargetedNotification(_ notification: Notification) -> Bool {
-        if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-            // Keyboard shortcut — only the window that had focus should respond
-            return sourceWindow === hostWindow
-        }
-        // Menu command — only the key (focused) window's reader should respond
-        guard let hostWindow = hostWindow else { return true }
-        return hostWindow.isKeyWindow
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        return WindowCommandRouting.shouldAccept(
+            hasSourceWindow: sourceWindow != nil,
+            sourceMatchesHost: sourceWindow === hostWindow,
+            hasHostWindow: hostWindow != nil,
+            hostWindowIsKey: hostWindow?.isKeyWindow == true
+        )
     }
 
     private func setupNotifications() {

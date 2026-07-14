@@ -15,6 +15,19 @@ struct HeadingNavigatorView: View {
         var id: String { heading.id }
     }
 
+    /// Shared row/rotor label format so VoiceOver speaks heading names before
+    /// structural level and optional status details.
+    static func accessibilityDescription(
+        text: String,
+        level: Int,
+        isSkipped: Bool = false,
+        suffix: String = ""
+    ) -> String {
+        let skipPrefix = isSkipped ? "Skipped, " : ""
+        let base = "\(skipPrefix)\(text) - level \(level)"
+        return suffix.isEmpty ? base : "\(base), \(suffix)"
+    }
+
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
@@ -145,7 +158,7 @@ struct HeadingNavigatorView: View {
                 .accessibilityRotor("Heading Levels") {
                     ForEach(filteredHeadings) { heading in
                         AccessibilityRotorEntry(
-                            "\(heading.text) - level \(heading.level)",
+                            Self.accessibilityDescription(text: heading.text, level: heading.level),
                             id: heading.id
                         )
                     }
@@ -340,9 +353,12 @@ struct HeadingNavigatorView: View {
     }
 
     private func describeHeading(_ heading: Heading, isSkipped: Bool, suffix: String) -> String {
-        let skipPrefix = isSkipped ? "Skipped, " : ""
-        let base = "\(skipPrefix)\(heading.text) - level \(heading.level)"
-        return suffix.isEmpty ? base : "\(base), \(suffix)"
+        Self.accessibilityDescription(
+            text: heading.text,
+            level: heading.level,
+            isSkipped: isSkipped,
+            suffix: suffix
+        )
     }
 }
 

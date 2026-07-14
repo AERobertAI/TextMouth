@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA0000000000000000000001 /* WindowFocusPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000002 /* WindowFocusPolicyTests.swift */; };
 		B90000000000000000000001 /* AudioEngineBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000002 /* AudioEngineBehaviorTests.swift */; };
 		B80000000000000000000001 /* SleepTimerServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000002 /* SleepTimerServiceTests.swift */; };
 		B70000000000000000000001 /* MediaGestureDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000002 /* MediaGestureDetectorTests.swift */; };
@@ -160,6 +161,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		BA0000000000000000000002 /* WindowFocusPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFocusPolicyTests.swift; sourceTree = "<group>"; };
 		B90000000000000000000002 /* AudioEngineBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngineBehaviorTests.swift; sourceTree = "<group>"; };
 		B80000000000000000000002 /* SleepTimerServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerServiceTests.swift; sourceTree = "<group>"; };
 		B70000000000000000000002 /* MediaGestureDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaGestureDetectorTests.swift; sourceTree = "<group>"; };
@@ -473,6 +475,7 @@
 		C7DEAD5728EFF3A9DF7ACA70 /* TextMouthProductionTests */ = {
 			isa = PBXGroup;
 			children = (
+				BA0000000000000000000002 /* WindowFocusPolicyTests.swift */,
 				B90000000000000000000002 /* AudioEngineBehaviorTests.swift */,
 				B80000000000000000000002 /* SleepTimerServiceTests.swift */,
 				B70000000000000000000002 /* MediaGestureDetectorTests.swift */,
@@ -651,6 +654,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA0000000000000000000001 /* WindowFocusPolicyTests.swift in Sources */,
 				B90000000000000000000001 /* AudioEngineBehaviorTests.swift in Sources */,
 				B80000000000000000000001 /* SleepTimerServiceTests.swift in Sources */,
 				B70000000000000000000001 /* MediaGestureDetectorTests.swift in Sources */,

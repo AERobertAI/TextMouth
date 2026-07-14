@@ -74,6 +74,27 @@ class StandardVoiceOverFocusTriggerView: NSView {
     /// pending work and let the latest instance win.
     private static var pendingWork: [ObjectIdentifier: DispatchWorkItem] = [:]
 
+    /// Pure focus-stealing guard used before posting accessibility events.
+    static func shouldPostFocus(
+        isSheet: Bool,
+        targetWindowIsKey: Bool,
+        anotherWindowIsKey: Bool
+    ) -> Bool {
+        isSheet || targetWindowIsKey || !anotherWindowIsKey
+    }
+
+    /// Sheets receive extra retries because their accessibility hierarchy is
+    /// commonly published later than a standard window's hierarchy.
+    static func focusAttemptCount(isSheet: Bool) -> Int {
+        isSheet ? 4 : 2
+    }
+
+    /// Defines which accessibility nodes are safe generic fallback targets.
+    static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
+        if role == "AXRow" || role == "AXCell" || role == "AXTextField" { return true }
+        return role == "AXButton" && !isScrollerPart && label?.isEmpty == false
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         guard let window = window, !hasFired else { return }
@@ -151,11 +172,14 @@ class StandardVoiceOverFocusTriggerView: NSView {
     func postFocusNotifications(target: Any, window: NSWindow) {
         let isSheet = window.title.isEmpty
 
-        if !isSheet && !window.isKeyWindow {
-            if let keyWindow = NSApp.keyWindow, keyWindow !== window {
-                voiceOverFocusLog("SKIPPED: another window '\(keyWindow.title)' is key, won't steal focus")
-                return
-            }
+        let anotherWindowIsKey = NSApp.keyWindow.map { $0 !== window } ?? false
+        guard Self.shouldPostFocus(
+            isSheet: isSheet,
+            targetWindowIsKey: window.isKeyWindow,
+            anotherWindowIsKey: anotherWindowIsKey
+        ) else {
+            voiceOverFocusLog("SKIPPED: another window is key, won't steal focus")
+            return
         }
 
         if !window.isKeyWindow {
@@ -164,7 +188,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
         }
         NSAccessibility.post(element: window, notification: .focusedWindowChanged)
 
-        let attempts = isSheet ? 4 : 2
+        let attempts = Self.focusAttemptCount(isSheet: isSheet)
 
         for attempt in 0..<attempts {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(attempt) * 0.3) {
@@ -228,13 +252,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
                 let className = NSStringFromClass(type(of: obj))
                 let isScrollerPart = className.contains("Scroller")
 
-                if role == "AXRow" || role == "AXCell" {
-                    return root
-                }
-                if role == "AXTextField" {
-                    return root
-                }
-                if role == "AXButton" && !isScrollerPart && label?.isEmpty == false {
+                if Self.acceptsFallback(role: role, label: label, isScrollerPart: isScrollerPart) {
                     return root
                 }
             }

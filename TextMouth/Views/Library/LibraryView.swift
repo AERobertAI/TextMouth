@@ -1,5 +1,35 @@
 import SwiftUI
 
+/// Shared decision table for routing keyboard and menu commands to one of
+/// several open windows. Source-tagged shortcuts follow their source window;
+/// source-less menu commands follow the key window. During initial window
+/// attachment a missing host is accepted so the first command is not lost.
+enum WindowCommandRouting {
+    static func shouldAccept(
+        hasSourceWindow: Bool,
+        sourceMatchesHost: Bool,
+        hasHostWindow: Bool,
+        hostWindowIsKey: Bool
+    ) -> Bool {
+        if hasSourceWindow {
+            return !hasHostWindow || sourceMatchesHost
+        }
+        return !hasHostWindow || hostWindowIsKey
+    }
+}
+
+enum LibraryFocusTarget: Equatable {
+    case continueListening
+    case timeSummary
+    case importButton
+
+    /// Chooses a single initial accessibility target for the library.
+    static func preferred(hasContinueListening: Bool, hasDisplayedBooks: Bool) -> Self {
+        if hasContinueListening { return .continueListening }
+        return hasDisplayedBooks ? .timeSummary : .importButton
+    }
+}
+
 struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
@@ -762,19 +792,13 @@ struct LibraryView: View {
         )
     }
 
-    private enum LibraryFocusTarget {
-        case timeSummary
-        case importButton
-    }
-
     private var preferredLibraryFocusTarget: LibraryFocusTarget? {
-        guard libraryViewModel.lastOpenedBook == nil else { return nil }
-        // The content summary above the table is a stable AX target in this view,
-        // while section headers were not reliably discoverable by the focus helper.
-        if !displayedBooks.isEmpty {
-            return .timeSummary
-        }
-        return .importButton
+        let target = LibraryFocusTarget.preferred(
+            hasContinueListening: libraryViewModel.lastOpenedBook != nil,
+            hasDisplayedBooks: !displayedBooks.isEmpty
+        )
+        // Continue Listening owns its own focus identifier and trigger.
+        return target == .continueListening ? nil : target
     }
 
     private var importBookButton: some View {
