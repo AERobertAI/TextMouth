@@ -160,6 +160,11 @@ final class NowPlayingService {
         activeOwnerID.flatMap { handlersByOwner[$0] }
     }
     private let installsSystemIntegrations: Bool
+    private let diagnosticSink: (String) -> Void
+    private let nowProvider: () -> Date
+    private let defaultOutputDeviceProvider: (() -> AudioDeviceID?)?
+    private let audioDeviceIDsProvider: (() -> [AudioDeviceID])?
+    private let bluetoothDeviceProvider: ((AudioDeviceID) -> Bool)?
 
     /// Detector for the experimental "restart sleep timer via media
     /// gesture" feature. Each command handler routes its event type
@@ -189,7 +194,7 @@ final class NowPlayingService {
 
     /// True while the device-change suppress window is active.
     private var isSuppressed: Bool {
-        RemoteMediaCommandPolicy.isSuppressed(now: Date(), until: suppressUntil)
+        RemoteMediaCommandPolicy.isSuppressed(now: nowProvider(), until: suppressUntil)
     }
 
     /// Listener for default audio output device changes
@@ -198,7 +203,7 @@ final class NowPlayingService {
     /// AirPods-battery-drain case where the default output stays put but
     /// the device disappears from the list — see class doc comment).
     private var deviceListListenerBlock: AudioObjectPropertyListenerBlock?
-    private var isListeningForDeviceChanges = false
+    private(set) var isListeningForDeviceChanges = false
     private(set) var remoteCommandsActive = false
 
     /// Whether the previous default output device was a Bluetooth device.
@@ -208,7 +213,7 @@ final class NowPlayingService {
     /// its transport type unreadable. Used to skip the suppress window
     /// when the user is simply switching between wired/built-in devices —
     /// rcd only sends its spurious toggle on Bluetooth transitions.
-    private var previousDeviceWasBluetooth: Bool = false
+    private(set) var previousDeviceWasBluetooth: Bool = false
 
     /// AudioDeviceID of the previously-known default output device. Cached
     /// alongside `previousDeviceWasBluetooth` so the devices-list listener
@@ -216,10 +221,28 @@ final class NowPlayingService {
     /// the signal that an AirPods battery has drained out (or the device
     /// has otherwise been ripped out from under us). Zero means "no cached
     /// device yet" (e.g. service just started with no audio output present).
-    private var previousDeviceID: AudioDeviceID = 0
+    private(set) var previousDeviceID: AudioDeviceID = 0
 
-    init(installsSystemIntegrations: Bool = true) {
+    init(
+        installsSystemIntegrations: Bool = true,
+        diagnosticSink: @escaping (String) -> Void = {
+            NSLog("MEDIA_ROUTE: %@", $0)
+            TextMouthPaths.appendLog(
+                to: TextMouthPaths.debugLogFile,
+                message: "MEDIA_ROUTE: \($0)"
+            )
+        },
+        now: @escaping () -> Date = Date.init,
+        defaultOutputDevice: (() -> AudioDeviceID?)? = nil,
+        audioDeviceIDs: (() -> [AudioDeviceID])? = nil,
+        isBluetoothDevice: ((AudioDeviceID) -> Bool)? = nil
+    ) {
         self.installsSystemIntegrations = installsSystemIntegrations
+        self.diagnosticSink = diagnosticSink
+        self.nowProvider = now
+        self.defaultOutputDeviceProvider = defaultOutputDevice
+        self.audioDeviceIDsProvider = audioDeviceIDs
+        self.bluetoothDeviceProvider = isBluetoothDevice
     }
 
     func setup(
@@ -246,6 +269,11 @@ final class NowPlayingService {
         self.bluetoothMonitoringEnabled = bluetoothMonitoring
         self.suppressWindow = bluetoothDelay
 
+        diagnostic(
+            "setup owner=\(shortOwnerID(ownerID)) monitoring=\(bluetoothMonitoring) "
+                + "delay=\(formatted(bluetoothDelay)) integrations=\(installsSystemIntegrations)"
+        )
+
         activateRemoteCommandsIfNeeded()
         if bluetoothMonitoringEnabled, installsSystemIntegrations {
             startDeviceChangeListener()
@@ -253,13 +281,20 @@ final class NowPlayingService {
     }
 
     func activate(ownerID: UUID) {
-        guard handlersByOwner[ownerID] != nil else { return }
+        guard handlersByOwner[ownerID] != nil else {
+            diagnostic("owner activation ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
+            return
+        }
         activeOwnerID = ownerID
+        diagnostic("owner activated owner=\(shortOwnerID(ownerID))")
         activateRemoteCommandsIfNeeded()
     }
 
     func unregister(ownerID: UUID) {
         handlersByOwner.removeValue(forKey: ownerID)
+        diagnostic(
+            "owner unregistered owner=\(shortOwnerID(ownerID)) wasActive=\(activeOwnerID == ownerID)"
+        )
         if activeOwnerID == ownerID {
             clearSystemNowPlaying()
             activeOwnerID = nil
@@ -308,16 +343,26 @@ final class NowPlayingService {
     /// Update Bluetooth monitoring settings at runtime (from Miscellaneous prefs).
     /// Starts or stops the device-change listener as needed.
     func updateBluetoothSettings(enabled: Bool, delay: TimeInterval) {
+        let oldEnabled = bluetoothMonitoringEnabled
+        let oldDelay = suppressWindow
         suppressWindow = delay
+
+        diagnostic(
+            "settings enabled=\(enabled) delay=\(formatted(delay)) "
+                + "previousEnabled=\(oldEnabled) previousDelay=\(formatted(oldDelay))"
+        )
 
         if enabled != bluetoothMonitoringEnabled {
             bluetoothMonitoringEnabled = enabled
             if enabled {
-                startDeviceChangeListener()
+                if installsSystemIntegrations {
+                    startDeviceChangeListener()
+                }
             } else {
                 stopDeviceChangeListener()
                 // Clear any active suppress window when disabling
                 suppressUntil = .distantPast
+                diagnostic("suppression cleared reason=monitoring-disabled")
             }
         }
     }
@@ -340,7 +385,10 @@ final class NowPlayingService {
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            switch RemoteMediaCommandPolicy.play(isSuppressed: self.isSuppressed) {
+            let suppressed = self.isSuppressed
+            let action = RemoteMediaCommandPolicy.play(isSuppressed: suppressed)
+            self.logCommand("play", suppressed: suppressed, action: action)
+            switch action {
             case .consume:
                 // Consume the window — a single spurious command per disconnect.
                 self.suppressUntil = .distantPast
@@ -361,10 +409,12 @@ final class NowPlayingService {
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.pause) { return .success }
+            let suppressed = self.isSuppressed
             let action = RemoteMediaCommandPolicy.pause(
-                isSuppressed: self.isSuppressed,
+                isSuppressed: suppressed,
                 isPlaying: self.activeHandlers?.isCurrentlyPlaying() == true
             )
+            self.logCommand("pause", suppressed: suppressed, action: action)
             if action == .routeChangePause {
                 self.activeHandlers?.onAudioRouteChangePause()
                 return .success
@@ -386,6 +436,7 @@ final class NowPlayingService {
                 isSuppressed: suppressed,
                 isPlaying: self.activeHandlers?.isCurrentlyPlaying() == true
             )
+            self.logCommand("toggle", suppressed: suppressed, action: action)
             if suppressed {
                 // Consume the window and only allow the pause direction.
                 // - Playing → pause: matches "headphones unplugged, stop audio".
@@ -489,7 +540,14 @@ final class NowPlayingService {
     ///    the default output may not change (macOS keeps the dead device as
     ///    "default") but the device IS removed from the active list.
     private func startDeviceChangeListener() {
-        guard !isListeningForDeviceChanges else { return }
+        guard installsSystemIntegrations else {
+            diagnostic("listener start ignored reason=system-integrations-disabled")
+            return
+        }
+        guard !isListeningForDeviceChanges else {
+            diagnostic("listener start ignored reason=already-listening")
+            return
+        }
 
         // Capture the initial device's transport type and ID so the first
         // change notification has a meaningful baseline to compare against.
@@ -548,6 +606,11 @@ final class NowPlayingService {
         if defaultStatus == noErr || devicesStatus == noErr {
             isListeningForDeviceChanges = true
         }
+        diagnostic(
+            "listeners registered defaultStatus=\(defaultStatus) devicesStatus=\(devicesStatus) "
+                + "defaultActive=\(deviceChangeListenerBlock != nil) "
+                + "devicesActive=\(deviceListListenerBlock != nil)"
+        )
     }
 
     /// Handler for the default-output-device-changed notification.
@@ -575,36 +638,55 @@ final class NowPlayingService {
     /// drops slide past without an audible pause, but the existing code is
     /// correct without it — so leaving as-is until field reports show the
     /// flicker is actually a problem.
-    private func handleDefaultOutputChange() {
+    func handleDefaultOutputChange() {
+        guard bluetoothMonitoringEnabled else {
+            diagnostic("default-output event ignored reason=monitoring-disabled")
+            return
+        }
         // Capture whether the *outgoing* device was Bluetooth BEFORE
         // refreshing the cache to the new device. The spurious rcd
         // toggle only fires on Bluetooth disconnects, so this gate
         // eliminates false positives when the user simply switches
         // between wired/built-in devices.
         let wasBluetooth = previousDeviceWasBluetooth
+        let outgoingID = previousDeviceID
 
         // Update the cache now so the next change notification has a
         // fresh baseline for the device we just transitioned to.
         refreshPreviousDeviceInfo()
 
+        diagnostic(
+            "default-output changed outgoingID=\(outgoingID) outgoingBluetooth=\(wasBluetooth) "
+                + "currentID=\(previousDeviceID) currentBluetooth=\(previousDeviceWasBluetooth)"
+        )
+
         guard wasBluetooth else {
             // Non-Bluetooth departure: rcd will not send a spurious
             // toggle. Leave playback untouched.
+            diagnostic("default-output action=ignore reason=outgoing-not-bluetooth")
             return
         }
 
-        armSuppressAndPauseIfPlaying()
+        armSuppressAndPauseIfPlaying(trigger: "default-output-changed")
     }
 
     /// Handler for the system-wide audio devices list change.
     /// Catches the AirPods-battery-drain case where the default output
     /// often stays put (macOS keeps the dead device as "default") but the
     /// device disappears from the device list.
-    private func handleDeviceListChange() {
+    func handleDeviceListChange() {
+        guard bluetoothMonitoringEnabled else {
+            diagnostic("device-list event ignored reason=monitoring-disabled")
+            return
+        }
+        let currentDevices = allAudioDeviceIDs()
+        diagnostic(
+            "device-list changed count=\(currentDevices.count) cachedID=\(previousDeviceID) "
+                + "cachedBluetooth=\(previousDeviceWasBluetooth)"
+        )
         // Battery-drain detection: previously had a Bluetooth default,
         // and that specific device is no longer in the active list.
         if previousDeviceWasBluetooth, previousDeviceID != 0 {
-            let currentDevices = allAudioDeviceIDs()
             if !currentDevices.contains(previousDeviceID) {
                 // The Bluetooth device we'd been using has vanished from
                 // the system. Arm the suppress window and pre-pause
@@ -613,9 +695,11 @@ final class NowPlayingService {
                 // re-trigger detection on every subsequent unrelated
                 // devices-list event (macOS may keep the dead device as
                 // the "default" indefinitely).
-                armSuppressAndPauseIfPlaying()
+                let removedID = previousDeviceID
+                armSuppressAndPauseIfPlaying(trigger: "cached-bluetooth-device-removed")
                 previousDeviceWasBluetooth = false
                 previousDeviceID = 0
+                diagnostic("device-list action=clear-removed-cache removedID=\(removedID)")
                 return
             }
         }
@@ -629,6 +713,10 @@ final class NowPlayingService {
         // first drain would be missed when the default-output listener
         // never fires for the reconnect.
         refreshPreviousDeviceInfo()
+        diagnostic(
+            "device-list action=refresh-baseline currentID=\(previousDeviceID) "
+                + "currentBluetooth=\(previousDeviceWasBluetooth)"
+        )
     }
 
     /// Arm the suppress window for the configured duration, and call
@@ -637,11 +725,19 @@ final class NowPlayingService {
     /// onPause is only fired when actually playing — calling it on a paused
     /// session would needlessly fire the pause sound effect and reset the
     /// reading-stats session.
-    private func armSuppressAndPauseIfPlaying() {
+    private func armSuppressAndPauseIfPlaying(trigger: String) {
+        let now = nowProvider()
         suppressUntil = RemoteMediaCommandPolicy.suppressDeadline(
-            now: Date(), delay: suppressWindow
+            now: now, delay: suppressWindow
         )
-        if activeHandlers?.isCurrentlyPlaying() == true {
+        let isPlaying = activeHandlers?.isCurrentlyPlaying() == true
+        let action = isPlaying ? "pause" : "remain-paused"
+        diagnostic(
+            "suppression armed trigger=\(trigger) delay=\(formatted(suppressWindow)) "
+                + "deadline=\(suppressUntil.timeIntervalSince1970) playing=\(isPlaying) "
+                + "owner=\(activeOwnerID.map(shortOwnerID) ?? "none") action=\(action)"
+        )
+        if isPlaying {
             activeHandlers?.onAudioRouteChangePause()
         }
     }
@@ -649,6 +745,9 @@ final class NowPlayingService {
     /// Read the current default output device ID from CoreAudio.
     /// Returns nil on query failure (e.g. no output device available).
     private func currentDefaultOutputDeviceID() -> AudioDeviceID? {
+        if let defaultOutputDeviceProvider {
+            return defaultOutputDeviceProvider()
+        }
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
         var address = AudioObjectPropertyAddress(
@@ -673,6 +772,9 @@ final class NowPlayingService {
     /// arming the suppress window is the safer default than missing the
     /// actual Bluetooth disconnect case.
     private func isBluetoothDevice(_ deviceID: AudioDeviceID) -> Bool {
+        if let bluetoothDeviceProvider {
+            return bluetoothDeviceProvider(deviceID)
+        }
         var transportType: UInt32 = 0
         var size = UInt32(MemoryLayout<UInt32>.size)
         var address = AudioObjectPropertyAddress(
@@ -703,12 +805,13 @@ final class NowPlayingService {
     /// cache zeros instead. Caching a vanished device would cause every
     /// subsequent unrelated devices-list event to re-detect it as
     /// "gone" and spuriously re-arm the suppress window.
-    private func refreshPreviousDeviceInfo() {
+    func refreshPreviousDeviceInfo() {
         guard let deviceID = currentDefaultOutputDeviceID() else {
             // No default output — unusual; treat as non-Bluetooth so we
             // don't spuriously arm the suppress window on nothing.
             previousDeviceID = 0
             previousDeviceWasBluetooth = false
+            diagnostic("baseline refreshed defaultID=none result=no-device")
             return
         }
 
@@ -721,9 +824,17 @@ final class NowPlayingService {
         if deviceIsLive {
             previousDeviceID = deviceID
             previousDeviceWasBluetooth = isBluetoothDevice(deviceID)
+            diagnostic(
+                "baseline refreshed defaultID=\(deviceID) live=true "
+                    + "bluetooth=\(previousDeviceWasBluetooth) deviceCount=\(currentDevices.count)"
+            )
         } else {
             previousDeviceID = 0
             previousDeviceWasBluetooth = false
+            diagnostic(
+                "baseline refreshed defaultID=\(deviceID) live=false bluetooth=false "
+                    + "deviceCount=\(currentDevices.count)"
+            )
         }
     }
 
@@ -734,6 +845,9 @@ final class NowPlayingService {
     /// though macOS may still report them as the "default" output).
     /// Returns an empty array on query failure.
     private func allAudioDeviceIDs() -> [AudioDeviceID] {
+        if let audioDeviceIDsProvider {
+            return audioDeviceIDsProvider()
+        }
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -771,7 +885,10 @@ final class NowPlayingService {
     }
 
     private func stopDeviceChangeListener() {
-        guard isListeningForDeviceChanges else { return }
+        guard isListeningForDeviceChanges else {
+            diagnostic("listener stop ignored reason=not-listening")
+            return
+        }
 
         // The dispatch queue must match the one used in
         // startDeviceChangeListener(), otherwise the unregistration fails.
@@ -806,6 +923,33 @@ final class NowPlayingService {
         }
 
         isListeningForDeviceChanges = false
+        diagnostic("listeners stopped")
+    }
+
+    var isRouteCommandSuppressed: Bool { isSuppressed }
+
+    private func diagnostic(_ message: String) {
+        diagnosticSink(message)
+    }
+
+    private func logCommand(
+        _ command: String,
+        suppressed: Bool,
+        action: RemoteMediaCommandPolicy.Action
+    ) {
+        diagnostic(
+            "command=\(command) suppressed=\(suppressed) "
+                + "playing=\(activeHandlers?.isCurrentlyPlaying() == true) "
+                + "owner=\(activeOwnerID.map(shortOwnerID) ?? "none") action=\(action)"
+        )
+    }
+
+    private func shortOwnerID(_ ownerID: UUID) -> String {
+        String(ownerID.uuidString.prefix(8))
+    }
+
+    private func formatted(_ interval: TimeInterval) -> String {
+        String(format: "%.3f", interval)
     }
 
 }

@@ -1,6 +1,64 @@
 @preconcurrency import AVFoundation
 import Combine
 
+/// Latest-wins gate for asynchronous AVPlayer seeks. AVPlayer may complete
+/// overlapping seeks out of order; a plain Boolean lets an older completion
+/// re-enable position observers while a newer seek is still pending.
+final class AudioSeekGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var generation = 0
+    private var pendingGeneration: Int?
+
+    @discardableResult
+    func begin() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        generation += 1
+        pendingGeneration = generation
+        return generation
+    }
+
+    func complete(_ token: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard pendingGeneration == token else { return }
+        pendingGeneration = nil
+    }
+
+    func cancelAll() {
+        lock.lock()
+        defer { lock.unlock() }
+        generation += 1
+        pendingGeneration = nil
+    }
+
+    var isSeeking: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return pendingGeneration != nil
+    }
+}
+
+enum AudioPositionObserverPolicy {
+    enum Action: Equatable {
+        case ignore
+        case finishClip
+        case publish(TimeInterval)
+    }
+
+    static func action(
+        seconds: TimeInterval,
+        isSeeking: Bool,
+        clipEndTime: TimeInterval?
+    ) -> Action {
+        guard seconds.isFinite, !isSeeking else { return .ignore }
+        if let clipEndTime, seconds >= clipEndTime {
+            return .finishClip
+        }
+        return .publish(seconds)
+    }
+}
+
 /// Plays audio files (mp3, m4a, m4b, wav, etc.) with variable speed and seeking.
 /// Used for audio book playback as an alternative to the TTS SpeechService.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
@@ -29,7 +87,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// still in progress. Set true before seek, cleared in the completion
     /// handler. Prevents the stale-time race that causes rapid looping
     /// when consecutive segments share the same audio file.
-    private var isSeeking = false
+    private let seekGate = AudioSeekGate()
 
     /// Tracks the intended output volume independently of the AVPlayer
     /// instance. When load() creates a new AVPlayer for a chapter
@@ -109,9 +167,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
         // Block clip-end checks until the seek lands, preventing the stale-time
         // race where the time observer sees the old position and re-triggers.
-        isSeeking = true
+        let seekToken = seekGate.begin()
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.isSeeking = false
+            self?.seekGate.complete(seekToken)
         }
         currentTime = clampedTime
         player.rate = Float(playbackSpeed)
@@ -140,7 +198,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         playerItem = nil
         loadedURL = nil
         clipEndTime = nil
-        isSeeking = false
+        seekGate.cancelAll()
         isPlaying = false
         isPaused = false
         currentTime = 0
@@ -152,9 +210,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         guard let player = player else { return }
         let clampedTime = max(0, duration > 0 ? min(time, duration) : time)
         let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
-        isSeeking = true
+        let seekToken = seekGate.begin()
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.isSeeking = false
+            self?.seekGate.complete(seekToken)
         }
         currentTime = clampedTime
     }
@@ -303,29 +361,28 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let secs = CMTimeGetSeconds(time)
-            guard secs.isFinite else { return }
 
-            // While a seek is in progress, the player may report stale
-            // pre-seek positions. Suppress ALL observer side-effects
-            // (clip-end check, currentTime mutation, and the
-            // onPositionUpdate callback) until the seek lands. Otherwise
-            // a stale observation can overwrite `currentTime` and the
-            // ReaderViewModel's `currentCharacterOffset` back to the old
-            // position immediately after a skip, which makes a second
-            // press read from the stale offset and produce a "rewind
-            // does nothing" or "rewind goes too far" perception.
-            guard !self.isSeeking else { return }
-
-            if let endTime = self.clipEndTime, secs >= endTime {
+            switch AudioPositionObserverPolicy.action(
+                seconds: secs,
+                isSeeking: self.seekGate.isSeeking,
+                clipEndTime: self.clipEndTime
+            ) {
+            case .ignore:
+                // While a seek is in progress, the player may report stale
+                // pre-seek positions. Suppress every observer side effect,
+                // including clip completion, until the latest seek lands.
+                return
+            case .finishClip:
                 self.player?.pause()
                 self.isPlaying = false
                 self.isPaused = false
                 self.clipEndTime = nil
                 self.onPlaybackFinished?()
                 return
+            case .publish(let seconds):
+                self.currentTime = seconds
+                self.onPositionUpdate?(seconds)
             }
-            self.currentTime = secs
-            self.onPositionUpdate?(secs)
         }
     }
 
