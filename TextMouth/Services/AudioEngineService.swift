@@ -437,6 +437,21 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     var hasRenderedAudio: Bool { renderedBuffer != nil }
 
+    /// Current retained PCM size. Used by the opt-in production profiling
+    /// harness to distinguish document-memory growth from rendered audio.
+    var renderedAudioByteCount: Int {
+        guard let buffer = renderedBuffer else { return 0 }
+        return Int(buffer.frameLength) * Int(buffer.format.streamDescription.pointee.mBytesPerFrame)
+    }
+
+    /// Size of the segment currently scheduled on the player node. After a
+    /// nonzero seek this is a separate PCM allocation in addition to the full
+    /// rendered buffer; the profiling harness reports both sizes explicitly.
+    var scheduledSegmentAudioByteCount: Int {
+        guard let format = renderFormat else { return 0 }
+        return Int(segmentFrameCount) * Int(format.streamDescription.pointee.mBytesPerFrame)
+    }
+
     /// Adopt pre-rendered audio from another AudioEngineService instance.
     /// Used for seamless chapter transitions where the next chapter was pre-rendered.
     func adoptRenderedAudio(from other: AudioEngineService) {
