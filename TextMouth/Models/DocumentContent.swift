@@ -5,40 +5,45 @@ struct DocumentContent {
     var title: String
     var author: String
     var chapters: [Chapter]
+    let contentIndex: BookContentIndex
+
+    init(
+        title: String,
+        author: String,
+        chapters: [Chapter],
+        contentIndex: BookContentIndex? = nil
+    ) {
+        self.title = title
+        self.author = author
+        self.chapters = chapters
+        self.contentIndex = contentIndex ?? BookContentIndex.build(
+            fromChapters: chapters,
+            format: .txt
+        )
+    }
 
     var allText: String {
         chapters.map { $0.text }.joined(separator: "\n\n")
     }
 
     var totalWordCount: Int {
-        chapters.reduce(0) { $0 + $1.wordCount }
+        contentIndex.totalWordCount
     }
 
     var allHeadings: [Heading] {
-        var result: [Heading] = []
-        for (chapterIndex, chapter) in chapters.enumerated() {
-            for heading in chapter.headings {
-                var h = heading
-                h.chapterIndex = chapterIndex
-                // Regenerate stable ID with the correct chapterIndex
-                h.id = "\(chapterIndex)-\(h.characterOffset)-\(h.level)-\(h.text)"
-                result.append(h)
-            }
-        }
-        return result
+        contentIndex.allHeadings
     }
 
     /// Returns the total character count across all chapters
     var totalCharacterCount: Int {
-        chapters.reduce(0) { $0 + $1.text.utf16Length }
+        contentIndex.totalCharacterCount
     }
 
     /// Cumulative character offset for the start of each chapter.
     /// Returns 0 for chapter 0 or invalid indices.
     func chapterStartOffset(_ chapterIndex: Int) -> Int {
         guard chapterIndex > 0 else { return 0 }
-        let clamped = min(chapterIndex, chapters.count)
-        return chapters[0..<clamped].reduce(0) { $0 + $1.text.utf16Length }
+        return contentIndex.chapterStartOffset(chapterIndex)
     }
 
     /// Global character offset for a position in (chapter, localOffset)
@@ -74,30 +79,7 @@ struct DocumentContent {
     /// (0, 0); a target past the end returns the last chapter's last
     /// position. An empty document returns (0, 0).
     func location(forGlobalOffset globalOffset: Int) -> (chapterIndex: Int, localOffset: Int) {
-        guard !chapters.isEmpty else { return (0, 0) }
-        let clampedTarget = max(0, min(globalOffset, totalCharacterCount))
-
-        // Walk chapters accumulating their lengths until the target
-        // falls within the current one. Chapters with empty text count
-        // as zero-length so they don't trap the cursor.
-        var cumulative = 0
-        for (index, chapter) in chapters.enumerated() {
-            let chapterLen = chapter.text.utf16Length
-            // Target inside this chapter: localOffset is the residual.
-            // Use < (not <=) so a target exactly at a chapter boundary
-            // lands on the START of the next chapter, not the END of
-            // the previous one — that matches the user expectation
-            // when jumping to a chapter boundary.
-            if clampedTarget < cumulative + chapterLen {
-                return (index, clampedTarget - cumulative)
-            }
-            cumulative += chapterLen
-        }
-
-        // Target is at or past the end — clamp to the last chapter.
-        let lastIndex = chapters.count - 1
-        let lastLen = chapters[lastIndex].text.utf16Length
-        return (lastIndex, max(0, lastLen - 1))
+        contentIndex.location(forGlobalOffset: globalOffset)
     }
 }
 

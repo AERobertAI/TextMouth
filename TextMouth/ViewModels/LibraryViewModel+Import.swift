@@ -209,48 +209,47 @@ extension LibraryViewModel {
 
     /// Create a new book from user-entered text (paste/type).
     func createBookFromText(title: String, author: String, text: String, toFolder folderPath: String = "") {
-        do {
-            try TextMouthPaths.ensureDirectoryStructure()
+        importOperationQueue.enqueue { [weak self] in
+            do {
+                try TextMouthPaths.ensureDirectoryStructure()
+                let sanitizedTitle = TextImportPolicy.resolvedTitle(title)
+                let bookID = UUID()
+                let dateAdded = Date()
+                let tmbName = TextMouthPaths.tmbName(
+                    title: sanitizedTitle,
+                    author: author,
+                    dateAdded: dateAdded,
+                    bookID: bookID
+                )
+                let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
+                try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
-            // Write text to a temp file
-            let sanitizedTitle = TextImportPolicy.resolvedTitle(title)
-            let bookID = UUID()
-            let dateAdded = Date()
-            let tmbName = TextMouthPaths.tmbName(
-                title: sanitizedTitle,
-                author: author,
-                dateAdded: dateAdded,
-                bookID: bookID
-            )
-            let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
-            try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+                let fileName = TextImportPolicy.textFilename(for: sanitizedTitle)
+                let filePath = tmbDir.appendingPathComponent(fileName)
+                try text.write(to: filePath, atomically: true, encoding: .utf8)
+                let hash = (try? FileImportService.md5Hash(of: filePath)) ?? "text-\(text.count)"
 
-            let fileName = TextImportPolicy.textFilename(for: sanitizedTitle)
-            let filePath = tmbDir.appendingPathComponent(fileName)
-            try text.write(to: filePath, atomically: true, encoding: .utf8)
-
-            // Compute hash from the written file
-            let hash = (try? FileImportService.md5Hash(of: filePath)) ?? "text-\(text.count)"
-
-            var book = Book(
-                id: bookID,
-                title: sanitizedTitle,
-                author: author.isEmpty ? "Unknown" : author,
-                format: .txt,
-                filePath: filePath.path,
-                md5Hash: hash,
-                folderPath: folderPath,
-                dateAdded: dateAdded,
-                tmbDirectoryName: tmbName
-            )
-            // Generate cached Markdown content and stamp version
-            MarkdownCacheService.generateCacheAndStampVersion(for: &book)
-            library.addBook(book)
-            save()
-            LibraryPersistenceService.saveBookInfo(for: library.books.first(where: { $0.id == book.id }) ?? book)
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
+                var book = Book(
+                    id: bookID,
+                    title: sanitizedTitle,
+                    author: author.isEmpty ? "Unknown" : author,
+                    format: .txt,
+                    filePath: filePath.path,
+                    md5Hash: hash,
+                    folderPath: folderPath,
+                    dateAdded: dateAdded,
+                    tmbDirectoryName: tmbName
+                )
+                let index = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
+                try book.saveBookInfoThrowing(contentIndex: index)
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.library.addBook(book)
+                    self.save()
+                }
+            } catch {
+                DispatchQueue.main.async { self?.presentImportError(error) }
+            }
         }
     }
 

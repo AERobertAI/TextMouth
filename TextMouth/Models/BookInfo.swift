@@ -6,15 +6,20 @@ struct BookInfo: Codable {
     var metadata: BookMetadata
     var state: BookState
     var bookmarks: [Bookmark]
+    /// Versioned chapter/heading/statistics index. Kept per package rather than
+    /// in library.json so startup does not decode every heading in the library.
+    var contentIndex: BookContentIndex?
 
     init(
         metadata: BookMetadata = BookMetadata(),
         state: BookState = BookState(),
-        bookmarks: [Bookmark] = []
+        bookmarks: [Bookmark] = [],
+        contentIndex: BookContentIndex? = nil
     ) {
         self.metadata = metadata
         self.state = state
         self.bookmarks = bookmarks
+        self.contentIndex = contentIndex
     }
 }
 
@@ -120,6 +125,8 @@ struct BookState: Codable {
     var audioDuration: TimeInterval?
     /// Version of the content.md cache format used when the cache was generated
     var cacheFormatVersion: String?
+    /// Version of the persisted BookContentIndex in this package.
+    var contentIndexVersion: String?
 
     init(
         readingPosition: ReadingPosition? = nil,
@@ -136,7 +143,8 @@ struct BookState: Codable {
         localEndOfBookBehavior: String? = nil,
         manualSortOrder: Int? = nil,
         audioDuration: TimeInterval? = nil,
-        cacheFormatVersion: String? = nil
+        cacheFormatVersion: String? = nil,
+        contentIndexVersion: String? = nil
     ) {
         self.readingPosition = readingPosition
         self.totalWordCount = totalWordCount
@@ -153,6 +161,7 @@ struct BookState: Codable {
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
         self.cacheFormatVersion = cacheFormatVersion
+        self.contentIndexVersion = contentIndexVersion
     }
 }
 

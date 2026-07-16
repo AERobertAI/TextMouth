@@ -657,37 +657,15 @@ final class ReaderViewModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let url = URL(fileURLWithPath: filePath)
-                let parsed: DocumentContent
-                var audioFiles: [String]?
-                var audioSegments: [AudioSegment]?
-
-                if format.isAudio {
-                    // Check if this is a multi-file audio book (directory of audio files)
-                    var isDir: ObjCBool = false
-                    if FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), isDir.boolValue {
-                        guard self != nil else { return }
-                        let result = try waitForAsync { try await AudioBookParser.parseDirectory(url: url) }
-                        parsed = result.content
-                        audioFiles = result.filePaths
-                        audioSegments = result.segments
-                    } else {
-                        parsed = try BookParser.parse(url: url, format: format)
-                    }
-                } else {
-                    // Generate cache if missing or outdated, then always load from
-                    // it so reading positions are consistent across sessions
-                    let cacheOutdated = MarkdownCacheService.isCacheOutdated(stored: bookCopy.cacheFormatVersion)
-                    if !MarkdownCacheService.cacheExists(for: bookCopy) || cacheOutdated {
-                        if cacheOutdated { MarkdownCacheService.deleteCache(for: bookCopy) }
-                        MarkdownCacheService.generateCache(for: bookCopy)
-                    }
-                    if MarkdownCacheService.cacheExists(for: bookCopy) {
-                        parsed = try MarkdownCacheService.loadFromCache(for: bookCopy)
-                    } else {
-                        // Cache generation failed — fall back to original parser
-                        parsed = try BookParser.parse(url: url, format: format)
-                    }
-                }
+                let cacheOutdated = !format.isAudio
+                    && MarkdownCacheService.isCacheOutdated(stored: bookCopy.cacheFormatVersion)
+                let analysis = try BookContentAnalysisService.load(
+                    book: bookCopy,
+                    regenerateTextCache: cacheOutdated
+                )
+                let parsed = analysis.content
+                let audioFiles = analysis.audioFilePaths
+                let audioSegments = analysis.audioSegments
 
                 // Load EPUB metadata if applicable
                 var metadata: EPUBMetadata?
@@ -716,6 +694,11 @@ final class ReaderViewModel: ObservableObject {
                 let loadedAudioSegments = audioSegments
                 let loadedMetadata = metadata
                 let loadedAudioMetadata = audioMeta
+                let loadedContentIndex = analysis.index
+                let shouldPersistContentIndex = !analysis.usedPersistedIndex
+                    || bookCopy.contentIndexVersion != BookContentIndex.currentVersion
+                    || (!format.isAudio
+                        && bookCopy.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     if let audioFiles = loadedAudioFiles {
@@ -745,17 +728,12 @@ final class ReaderViewModel: ObservableObject {
 
                     self.isLoading = false
 
-                    // Save word/char counts for library time estimation
-                    self.libraryViewModel.updateWordCounts(
-                        bookID: self.book.id,
-                        wordCount: parsed.totalWordCount,
-                        charCount: parsed.totalCharacterCount
-                    )
-
-                    // For audio books, save the total duration derived from character count
-                    if self.isAudioBook {
-                        let duration = Double(parsed.totalCharacterCount) / Self.audioCharsPerSecond
-                        self.libraryViewModel.updateAudioDuration(bookID: self.book.id, duration: duration)
+                    if shouldPersistContentIndex {
+                        self.libraryViewModel.updateContentIndex(
+                            bookID: self.book.id,
+                            index: loadedContentIndex,
+                            cacheFormatVersion: analysis.cacheFormatVersion
+                        )
                     }
 
                     // Save position with global offset now that we have chapter data

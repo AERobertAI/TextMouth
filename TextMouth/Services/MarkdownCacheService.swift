@@ -13,7 +13,7 @@ enum MarkdownCacheService {
     /// on the next app launch. Books with a stored version lower than this
     /// (or nil for pre-versioning books) will have their content.md rebuilt.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "2.0.1"
+    static let currentCacheVersion: String = "3.0.2"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -68,6 +68,16 @@ enum MarkdownCacheService {
         return true
     }
 
+    /// Import-time variant that also computes the persisted navigation index
+    /// while already executing on the serial import queue.
+    static func generateCacheAnalyzeAndStamp(for book: inout Book) -> BookContentIndex? {
+        guard generateCacheAndStampVersion(for: &book),
+              let content = try? loadFromCache(for: book) else { return nil }
+        let index = content.contentIndex.replacingFormat(book.format)
+        book.applyContentIndexSummary(index)
+        return index
+    }
+
     /// Check whether a cached content.md exists for a book.
     static func cacheExists(for book: Book) -> Bool {
         guard !book.tmbDirectoryName.isEmpty else { return false }
@@ -89,12 +99,20 @@ enum MarkdownCacheService {
     /// Load DocumentContent from the cached content.md file.
     /// Parses chapter markers and runs each chapter through the Markdown parser
     /// to produce plain text + headings for TTS consumption.
-    static func loadFromCache(for book: Book) throws -> DocumentContent {
+    static func loadFromCache(
+        for book: Book,
+        contentIndex: BookContentIndex? = nil
+    ) throws -> DocumentContent {
         let tmbDir = book.tmbDirectory
         let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
         let markdown = try String(contentsOf: cachePath, encoding: .utf8)
 
-        return parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author)
+        return parseMultiChapterMarkdown(
+            markdown,
+            bookTitle: book.title,
+            bookAuthor: book.author,
+            contentIndex: contentIndex
+        )
     }
 
     // MARK: - Format-Specific Extraction
@@ -335,26 +353,34 @@ enum MarkdownCacheService {
     /// Parse a cached Markdown file that may contain chapter markers into DocumentContent.
     /// Each chapter section is parsed through the Markdown parser for heading detection
     /// and plain text extraction.
-    static func parseMultiChapterMarkdown(_ markdown: String, bookTitle: String, bookAuthor: String) -> DocumentContent {
+    static func parseMultiChapterMarkdown(
+        _ markdown: String,
+        bookTitle: String,
+        bookAuthor: String,
+        contentIndex: BookContentIndex? = nil
+    ) -> DocumentContent {
         let sections = splitChapters(markdown)
 
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
-            let content = parseSingleChapter(markdown, title: bookTitle)
-            return DocumentContent(title: content.title.isEmpty ? bookTitle : content.title,
-                                   author: bookAuthor,
-                                   chapters: content.chapters)
+            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle))
+                ?? Chapter(title: bookTitle, text: markdown, headings: [])
+            return DocumentContent(
+                title: chapter.title.isEmpty ? bookTitle : chapter.title,
+                author: bookAuthor,
+                chapters: [chapter],
+                contentIndex: contentIndex
+            )
         }
 
         var chapters: [Chapter] = []
         for section in sections {
-            let parsed = try? MarkdownDocParser.parse(
+            let parsedChapter = try? MarkdownDocParser.parseChapter(
                 markdown: section.content,
                 title: section.title
             )
-            if let parsed = parsed, let chapter = parsed.chapters.first {
+            if var ch = parsedChapter {
                 // Use the chapter marker title, falling back to what the parser found
-                var ch = chapter
                 if !section.title.isEmpty {
                     ch.title = section.title
                 }
@@ -373,7 +399,12 @@ enum MarkdownCacheService {
         // Use the first chapter's title as the document title, or fall back to book title
         let docTitle = chapters.first?.title.isEmpty == false ? chapters.first!.title : bookTitle
 
-        return DocumentContent(title: docTitle, author: bookAuthor, chapters: chapters)
+        return DocumentContent(
+            title: docTitle,
+            author: bookAuthor,
+            chapters: chapters,
+            contentIndex: contentIndex
+        )
     }
 
     /// Split cached Markdown into chapter sections based on chapter markers.
@@ -416,14 +447,6 @@ enum MarkdownCacheService {
         }
 
         return sections
-    }
-
-    /// Parse a single Markdown string into a DocumentContent (single chapter).
-    private static func parseSingleChapter(_ markdown: String, title: String) -> DocumentContent {
-        (try? MarkdownDocParser.parse(markdown: markdown, title: title))
-            ?? DocumentContent(title: title, author: "Unknown", chapters: [
-                Chapter(title: title, text: markdown, headings: [])
-            ])
     }
 
     // MARK: - Helpers

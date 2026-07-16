@@ -9,9 +9,6 @@ enum HTMLToMarkdownConverter {
     static func convert(_ html: String, stripDuplicateNavigation: Bool = false) throws -> String {
         let doc = try SwiftSoup.parse(html)
 
-        // Remove script and style elements — they shouldn't appear in Markdown output
-        try doc.select("script, style").remove()
-
         let body = doc.body() ?? doc
         if stripDuplicateNavigation {
             try removeDuplicateNavigation(from: body)
@@ -29,10 +26,57 @@ enum HTMLToMarkdownConverter {
     /// chapter has real heading elements outside nav, so nav-only headings
     /// remain available for sparse documents.
     private static func removeDuplicateNavigation(from body: Element) throws {
-        let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
-        let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
+        var allHeadingCount = 0
+        var navHeadingCount = 0
+        var navigationElements: [Element] = []
+        collectNavigationDetails(
+            from: body,
+            insideNavigation: false,
+            allHeadingCount: &allHeadingCount,
+            navHeadingCount: &navHeadingCount,
+            navigationElements: &navigationElements
+        )
         if allHeadingCount > navHeadingCount {
-            try body.select("nav").remove()
+            for navigation in navigationElements {
+                try navigation.remove()
+            }
+        }
+    }
+
+    /// Avoid SwiftSoup's selector-result cache for one-shot conversion walks.
+    /// Cached `Elements` strongly reference their root and form a cycle for
+    /// every parsed EPUB chapter, which is catastrophic during library-wide
+    /// migrations. A direct DOM walk is both sufficient and leak-free here.
+    private static func collectNavigationDetails(
+        from node: Node,
+        insideNavigation: Bool,
+        allHeadingCount: inout Int,
+        navHeadingCount: inout Int,
+        navigationElements: inout [Element]
+    ) {
+        for child in node.getChildNodes() {
+            guard let element = child as? Element else { continue }
+            let tag = element.tagName().lowercased()
+            let isNavigation = insideNavigation || tag == "nav"
+            if tag == "nav" {
+                navigationElements.append(element)
+            }
+            switch tag {
+            case "h1", "h2", "h3", "h4", "h5", "h6":
+                allHeadingCount += 1
+                if isNavigation {
+                    navHeadingCount += 1
+                }
+            default:
+                break
+            }
+            collectNavigationDetails(
+                from: element,
+                insideNavigation: isNavigation,
+                allHeadingCount: &allHeadingCount,
+                navHeadingCount: &navHeadingCount,
+                navigationElements: &navigationElements
+            )
         }
     }
 
@@ -57,6 +101,10 @@ enum HTMLToMarkdownConverter {
         let tag = element.tagName().lowercased()
 
         switch tag {
+        // Non-content elements are ignored without running selector queries.
+        case "script", "style":
+            return
+
         // Headings
         case "h1", "h2", "h3", "h4", "h5", "h6":
             let level = Int(String(tag.last!)) ?? 1
@@ -180,8 +228,12 @@ enum HTMLToMarkdownConverter {
 
     /// Convert list item children of a <ul> or <ol> to Markdown.
     private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String) {
-        let items = (try? listElement.select(":root > li")) ?? Elements()
-        for (index, item) in items.array().enumerated() {
+        let items = listElement.getChildNodes().compactMap { node -> Element? in
+            guard let element = node as? Element,
+                  element.tagName().lowercased() == "li" else { return nil }
+            return element
+        }
+        for (index, item) in items.enumerated() {
             let bullet = ordered ? "\(index + 1). " : "- "
             result += bullet
             var itemContent = ""

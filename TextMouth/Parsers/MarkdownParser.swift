@@ -4,6 +4,18 @@ import Markdown
 enum MarkdownDocParser {
 
     static func parse(markdown: String, title: String = "Untitled") throws -> DocumentContent {
+        let chapter = try parseChapter(markdown: markdown, title: title)
+        return DocumentContent(
+            title: chapter.title,
+            author: "Unknown",
+            chapters: [chapter]
+        )
+    }
+
+    /// Parse one chapter without constructing an intermediate DocumentContent.
+    /// Multi-chapter cache loading uses this to avoid calculating book metrics
+    /// once per chapter and then again for the assembled document.
+    static func parseChapter(markdown: String, title: String = "Untitled") throws -> Chapter {
         let document = Document(parsing: markdown)
 
         // Collect headings
@@ -32,13 +44,7 @@ enum MarkdownDocParser {
         // Use first heading as title if available
         let docTitle = headings.first?.text ?? title
 
-        let chapter = Chapter(title: docTitle, text: plainText, headings: headings)
-
-        return DocumentContent(
-            title: docTitle,
-            author: "Unknown",
-            chapters: [chapter]
-        )
+        return Chapter(title: docTitle, text: plainText, headings: headings)
     }
 }
 

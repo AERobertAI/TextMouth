@@ -111,6 +111,8 @@ struct Book: Identifiable, Codable, Hashable {
     /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
     /// on the next app launch to pick up parser improvements.
     var cacheFormatVersion: String?
+    /// Compact validity marker for the full index stored in bookInfo.json.
+    var contentIndexVersion: String?
 
     init(
         id: UUID = UUID(),
@@ -146,7 +148,8 @@ struct Book: Identifiable, Codable, Hashable {
         epubLanguage: String? = nil,
         epubIdentifier: String? = nil,
         epubVersion: String? = nil,
-        cacheFormatVersion: String? = nil
+        cacheFormatVersion: String? = nil,
+        contentIndexVersion: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -182,6 +185,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.epubIdentifier = epubIdentifier
         self.epubVersion = epubVersion
         self.cacheFormatVersion = cacheFormatVersion
+        self.contentIndexVersion = contentIndexVersion
     }
 
     // Custom decoding to handle missing fields from old library.json
@@ -228,6 +232,7 @@ struct Book: Identifiable, Codable, Hashable {
         } else {
             cacheFormatVersion = nil
         }
+        contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
     }
 
     /// The .tmb package directory URL
@@ -243,6 +248,13 @@ struct Book: Identifiable, Codable, Hashable {
     /// The effective WPM for this book: local override if set, otherwise the provided fallback
     func effectiveWPM(fallback: Double) -> Double {
         localWPM ?? fallback
+    }
+
+    mutating func applyContentIndexSummary(_ index: BookContentIndex) {
+        totalWordCount = index.totalWordCount
+        totalCharacterCount = index.totalCharacterCount
+        audioDuration = index.totalAudioDuration
+        contentIndexVersion = index.version
     }
 
     /// Whether this book overrides any global voice, speed, or pitch setting.
@@ -327,8 +339,16 @@ struct Book: Identifiable, Codable, Hashable {
 
     /// Throwing variant used by filesystem transactions that must roll back if
     /// metadata cannot be committed alongside a package move.
-    func saveBookInfoThrowing() throws {
-        try makeBookInfo().save(to: tmbDirectory)
+    func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil) throws {
+        var info = makeBookInfo()
+        if let contentIndex {
+            info.contentIndex = contentIndex
+        } else if let existing = try? BookInfo.load(from: tmbDirectory) {
+            // Metadata/position saves must not erase an analysis produced by a
+            // background migration or import.
+            info.contentIndex = existing.contentIndex
+        }
+        try info.save(to: tmbDirectory)
     }
 
     func makeBookInfo() -> BookInfo {
@@ -369,7 +389,8 @@ struct Book: Identifiable, Codable, Hashable {
                 localEndOfBookBehavior: localEndOfBookBehavior,
                 manualSortOrder: manualSortOrder,
                 audioDuration: audioDuration,
-                cacheFormatVersion: cacheFormatVersion
+                cacheFormatVersion: cacheFormatVersion,
+                contentIndexVersion: contentIndexVersion
             ),
             bookmarks: bookmarks
         )

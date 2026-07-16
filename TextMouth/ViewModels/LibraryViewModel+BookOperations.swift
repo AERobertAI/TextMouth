@@ -212,6 +212,23 @@ extension LibraryViewModel {
         updateBook(id: bookID) { $0.audioDuration = duration }
     }
 
+    /// Publish only the compact analysis summary to the main-actor library.
+    /// The full chapter/heading index is encoded on the package persistence queue.
+    func updateContentIndex(
+        bookID: UUID,
+        index: BookContentIndex,
+        cacheFormatVersion: String? = nil
+    ) {
+        guard let bookIndex = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        library.books[bookIndex].applyContentIndexSummary(index)
+        if let cacheFormatVersion {
+            library.books[bookIndex].cacheFormatVersion = cacheFormatVersion
+        }
+        let updatedBook = library.books[bookIndex]
+        save()
+        LibraryPersistenceService.saveBookInfo(for: updatedBook, contentIndex: index)
+    }
+
     // MARK: - Queries
 
     func bookByID(_ id: UUID) -> Book? {

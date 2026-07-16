@@ -68,7 +68,9 @@ enum DataDirectoryMigrator {
                     .appendingPathComponent("Library", isDirectory: true)
                     .appendingPathComponent(migratedLibrary.books[index].folderPath, isDirectory: true)
                     .appendingPathComponent(migratedLibrary.books[index].tmbDirectoryName, isDirectory: true)
-                try migratedLibrary.books[index].makeBookInfo().save(to: stagedPackage)
+                var info = migratedLibrary.books[index].makeBookInfo()
+                info.contentIndex = (try? BookInfo.load(from: stagedPackage))?.contentIndex
+                try info.save(to: stagedPackage)
             }
         }
 

@@ -1,4 +1,44 @@
 import SwiftUI
+import Darwin
+
+/// Long parser batches can leave gigabytes of freed Swift/Foundation storage
+/// resident or compressed inside malloc's per-process regions. Give malloc a
+/// pressure-relief opportunity after each book so a library-wide migration has
+/// the memory profile of its largest book, rather than the sum of every book.
+private func releaseBatchParserMemory() {
+    _ = malloc_zone_pressure_relief(nil, 0)
+}
+
+/// Small value retained until the main actor publishes a completed batch. The
+/// full chapter/heading index is already on disk and can be released after each
+/// book instead of pinning parser allocation regions for the entire migration.
+private struct ContentAnalysisSummary: Sendable {
+    let bookID: UUID
+    let cacheFormatVersion: String?
+    let totalWordCount: Int
+    let totalCharacterCount: Int
+    let audioDuration: TimeInterval?
+    let contentIndexVersion: String
+
+    init(bookID: UUID, index: BookContentIndex, cacheFormatVersion: String?) {
+        self.bookID = bookID
+        self.cacheFormatVersion = cacheFormatVersion
+        totalWordCount = index.totalWordCount
+        totalCharacterCount = index.totalCharacterCount
+        audioDuration = index.totalAudioDuration
+        contentIndexVersion = index.version
+    }
+
+    func apply(to book: inout Book) {
+        book.totalWordCount = totalWordCount
+        book.totalCharacterCount = totalCharacterCount
+        book.audioDuration = audioDuration
+        book.contentIndexVersion = contentIndexVersion
+        if let cacheFormatVersion {
+            book.cacheFormatVersion = cacheFormatVersion
+        }
+    }
+}
 
 /// Extension for data migration, directory management, content cache extraction,
 /// statistics calculation, and periodic refresh timing.
@@ -59,6 +99,11 @@ extension LibraryViewModel {
             }
         }
 
+        // Repair legacy package-name collisions before background parsing can
+        // write two different books' caches and indexes into the same directory.
+        let separated = FileImportService.separateSharedTMBPackages(library: &library)
+        if separated > 0 { needsSave = true }
+
         // Move .tmb packages that are at the root but should be in a subfolder.
         // This fixes books whose folder was assigned in the UI without physically
         // moving the directory (a bug fixed in d6c6b2c but existing books need repair).
@@ -113,51 +158,55 @@ extension LibraryViewModel {
         }
     }
 
-    /// Parse any books that don't have word/char counts yet so the library
-    /// can show time estimates without requiring each book to be opened first.
+    /// Build any missing/outdated per-package content indexes. Parsing and word
+    /// counting stay on the utility queue; the main actor receives only compact
+    /// Book summary assignments and progress-independent persistence requests.
     func calculateMissingBookStats() {
-        let booksNeedingStats = library.books.filter { book in
-            if book.format.isAudio {
-                return book.audioDuration == nil
-            }
-            return book.totalWordCount == nil || book.totalCharacterCount == nil
-        }
+        let booksNeedingStats = library.books.filter(Self.needsContentAnalysis)
         guard !booksNeedingStats.isEmpty else { return }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             for book in booksNeedingStats {
-                guard let self = self else { return }
-                let url = URL(fileURLWithPath: book.filePath)
-                guard FileManager.default.fileExists(atPath: url.path) else { continue }
+                let shouldContinue = autoreleasepool {
+                    guard let self = self else { return false }
+                    guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
 
-                do {
-                    // Use cached Markdown content when available (much faster)
-                    let parsed: DocumentContent
-                    if !book.format.isAudio && MarkdownCacheService.cacheExists(for: book) {
-                        parsed = try MarkdownCacheService.loadFromCache(for: book)
-                    } else {
-                        parsed = try BookParser.parse(url: url, format: book.format)
-                    }
-                    let wordCount = parsed.totalWordCount
-                    let charCount = parsed.totalCharacterCount
+                    do {
+                        let analysis = try BookContentAnalysisService.load(book: book)
+                        try LibraryPersistenceService.saveContentAnalysis(
+                            for: book,
+                            index: analysis.index,
+                            cacheFormatVersion: analysis.cacheFormatVersion
+                        )
+                        let summary = ContentAnalysisSummary(
+                            bookID: book.id,
+                            index: analysis.index,
+                            cacheFormatVersion: analysis.cacheFormatVersion
+                        )
 
-                    DispatchQueue.main.async {
-                        self.library.updateWordCounts(bookID: book.id, wordCount: wordCount, charCount: charCount)
-
-                        if book.format.isAudio {
-                            if let index = self.library.books.firstIndex(where: { $0.id == book.id }) {
-                                self.library.books[index].audioDuration = Double(charCount) / 10.0
+                        DispatchQueue.main.async {
+                            guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
+                                return
                             }
+                            summary.apply(to: &self.library.books[index])
+                            self.save()
                         }
-
-                        self.save()
-                        LibraryPersistenceService.saveBookInfo(for: self.library.books.first(where: { $0.id == book.id }) ?? book)
+                    } catch {
+                        // Silently skip books that fail to parse — they'll be parsed when opened
                     }
-                } catch {
-                    // Silently skip books that fail to parse — they'll be parsed when opened
+                    return true
                 }
+                releaseBatchParserMemory()
+                guard shouldContinue else { return }
             }
         }
+    }
+
+    nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {
+        book.contentIndexVersion != BookContentIndex.currentVersion
+            || book.totalWordCount == nil
+            || book.totalCharacterCount == nil
+            || (book.format.isAudio && book.audioDuration == nil)
     }
 
     /// Generate content.md caches for any books that don't have one yet, or
@@ -189,41 +238,55 @@ extension LibraryViewModel {
             self?.extractionProgressCurrent = completed
             self?.extractionProgressMessage = "Updating text cache: \(completed) of \(booksNeedingCache.count)..."
         }
-        let finish: @MainActor @Sendable ([(UUID, String)]) -> Void = { [weak self] updates in
+        let finish: @MainActor @Sendable ([ContentAnalysisSummary]) -> Void = { [weak self] updates in
             guard let self else { return }
-            for (bookID, version) in updates {
-                if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
-                    self.library.books[idx].cacheFormatVersion = version
+            for update in updates {
+                if let idx = self.library.books.firstIndex(where: { $0.id == update.bookID }) {
+                    update.apply(to: &self.library.books[idx])
                 }
             }
             self.save()
-            for (bookID, _) in updates {
-                if let book = self.library.books.first(where: { $0.id == bookID }) {
-                    LibraryPersistenceService.saveBookInfo(for: book)
-                }
-            }
             self.isExtracting = false
             self.extractionProgressMessage = ""
         }
 
         DispatchQueue.global(qos: .utility).async {
-            var updatedBookIDs: [(UUID, String)] = []
+            var completedSummaries: [ContentAnalysisSummary] = []
 
             for (index, book) in booksNeedingCache.enumerated() {
-                // Delete stale cache before regenerating
-                if MarkdownCacheService.cacheExists(for: book) {
-                    MarkdownCacheService.deleteCache(for: book)
+                autoreleasepool {
+                    // generateCache writes atomically. Keep the previous cache if
+                    // extraction fails so a parser migration cannot strand a book.
+                    var regeneratedBook = book
+                    if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
+                        if let content = try? MarkdownCacheService.loadFromCache(for: regeneratedBook) {
+                            let contentIndex = content.contentIndex.replacingFormat(book.format)
+                            do {
+                                try LibraryPersistenceService.saveContentAnalysis(
+                                    for: regeneratedBook,
+                                    index: contentIndex,
+                                    cacheFormatVersion: currentVersion
+                                )
+                                completedSummaries.append(
+                                    ContentAnalysisSummary(
+                                        bookID: book.id,
+                                        index: contentIndex,
+                                        cacheFormatVersion: currentVersion
+                                    )
+                                )
+                            } catch {
+                                // Leave the library summary unchanged so startup retries this book.
+                            }
+                        }
+                    }
                 }
-                var regeneratedBook = book
-                if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
-                    updatedBookIDs.append((book.id, currentVersion))
-                }
+                releaseBatchParserMemory()
 
                 let completed = index + 1
                 DispatchQueue.main.async { updateProgress(completed) }
             }
 
-            let completedUpdates = updatedBookIDs
+            let completedUpdates = completedSummaries
             DispatchQueue.main.async {
                 finish(completedUpdates)
                 completion?()
@@ -248,42 +311,58 @@ extension LibraryViewModel {
             self?.extractionProgressCurrent = completed
             self?.extractionProgressMessage = "Re-extracting text: \(completed) of \(booksToExtract.count)..."
         }
-        let finish: @MainActor @Sendable ([UUID], String) -> Void = { [weak self] updates, version in
+        let finish: @MainActor @Sendable ([ContentAnalysisSummary]) -> Void = { [weak self] updates in
             guard let self else { return }
-            for bookID in updates {
-                if let idx = self.library.books.firstIndex(where: { $0.id == bookID }) {
-                    self.library.books[idx].cacheFormatVersion = version
+            for update in updates {
+                if let idx = self.library.books.firstIndex(where: { $0.id == update.bookID }) {
+                    update.apply(to: &self.library.books[idx])
                 }
             }
             self.save()
-            for bookID in updates {
-                if let book = self.library.books.first(where: { $0.id == bookID }) {
-                    LibraryPersistenceService.saveBookInfo(for: book)
-                }
-            }
             self.isExtracting = false
             self.extractionProgressMessage = ""
         }
 
         DispatchQueue.global(qos: .utility).async {
             let currentVersion = MarkdownCacheService.currentCacheVersion
-            var updatedBookIDs: [UUID] = []
+            var completedSummaries: [ContentAnalysisSummary] = []
 
             for (index, book) in booksToExtract.enumerated() {
-                // Delete existing cache first
-                MarkdownCacheService.deleteCache(for: book)
-                var regeneratedBook = book
-                if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
-                    updatedBookIDs.append(book.id)
+                autoreleasepool {
+                    // Atomic replacement preserves the last readable cache if a
+                    // manual re-extraction fails partway through.
+                    var regeneratedBook = book
+                    if MarkdownCacheService.generateCacheAndStampVersion(for: &regeneratedBook) {
+                        if let content = try? MarkdownCacheService.loadFromCache(for: regeneratedBook) {
+                            let contentIndex = content.contentIndex.replacingFormat(book.format)
+                            do {
+                                try LibraryPersistenceService.saveContentAnalysis(
+                                    for: regeneratedBook,
+                                    index: contentIndex,
+                                    cacheFormatVersion: currentVersion
+                                )
+                                completedSummaries.append(
+                                    ContentAnalysisSummary(
+                                        bookID: book.id,
+                                        index: contentIndex,
+                                        cacheFormatVersion: currentVersion
+                                    )
+                                )
+                            } catch {
+                                // Keep this book eligible for a later retry.
+                            }
+                        }
+                    }
                 }
+                releaseBatchParserMemory()
 
                 let completed = index + 1
                 DispatchQueue.main.async { updateProgress(completed) }
             }
 
-            let completedUpdates = updatedBookIDs
+            let completedUpdates = completedSummaries
             DispatchQueue.main.async {
-                finish(completedUpdates, currentVersion)
+                finish(completedUpdates)
             }
         }
     }

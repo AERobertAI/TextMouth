@@ -220,7 +220,8 @@ enum FileImportService {
             epubLanguage: info.metadata.language,
             epubIdentifier: info.metadata.epubIdentifier,
             epubVersion: info.metadata.epubVersion,
-            cacheFormatVersion: info.state.cacheFormatVersion
+            cacheFormatVersion: info.state.cacheFormatVersion,
+            contentIndexVersion: info.state.contentIndexVersion
         )
     }
 
@@ -262,7 +263,8 @@ enum FileImportService {
                 localEndOfBookBehavior: book.localEndOfBookBehavior,
                 manualSortOrder: book.manualSortOrder,
                 audioDuration: book.audioDuration,
-                cacheFormatVersion: book.cacheFormatVersion
+                cacheFormatVersion: book.cacheFormatVersion,
+                contentIndexVersion: book.contentIndexVersion
             ),
             bookmarks: book.bookmarks
         )
@@ -384,12 +386,16 @@ enum FileImportService {
         )
 
         // Generate cached Markdown content (non-audio books only)
+        var contentIndex: BookContentIndex?
         if !format.isAudio {
-            MarkdownCacheService.generateCacheAndStampVersion(for: &book)
+            contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
+        } else if let analysis = try? BookContentAnalysisService.load(book: book) {
+            contentIndex = analysis.index
+            book.applyContentIndexSummary(analysis.index)
         }
 
         // Write bookInfo.json (after cache generation so version is included)
-        book.saveBookInfo()
+        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
 
         return book
     }
@@ -588,8 +594,8 @@ enum FileImportService {
 
         // Generate cached Markdown content for the migrated book
         if !migrated.format.isAudio {
-            MarkdownCacheService.generateCacheAndStampVersion(for: &migrated)
-            migrated.saveBookInfo()
+            let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &migrated)
+            try? migrated.saveBookInfoThrowing(contentIndex: contentIndex)
         }
 
         return migrated
@@ -678,7 +684,7 @@ enum FileImportService {
         let manifestData = try encoder.encode(manifest)
         try manifestData.write(to: audioDir.appendingPathComponent("manifest.json"))
 
-        let book = Book(
+        var book = Book(
             id: bookID,
             title: title,
             author: author,
@@ -691,7 +697,9 @@ enum FileImportService {
             sourceFilePath: zipURL.path
         )
 
-        book.saveBookInfo()
+        let contentIndex = try? BookContentAnalysisService.load(book: book).index
+        if let contentIndex { book.applyContentIndexSummary(contentIndex) }
+        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
         return book
     }
 
@@ -748,7 +756,7 @@ enum FileImportService {
         }
 
         // Use the first audio file as the "main" file path
-        let book = Book(
+        var book = Book(
             id: bookID,
             title: title,
             author: author,
@@ -761,7 +769,9 @@ enum FileImportService {
             sourceFilePath: zipURL.path
         )
 
-        book.saveBookInfo()
+        let contentIndex = try? BookContentAnalysisService.load(book: book).index
+        if let contentIndex { book.applyContentIndexSummary(contentIndex) }
+        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
         return book
     }
 
@@ -823,6 +833,11 @@ enum FileImportService {
             }
         }
 
+        // Older package names only used title/author/timestamp and could collide
+        // when several books were imported together. Split those references
+        // before any cache or metadata maintenance writes into the shared path.
+        separateSharedTMBPackages(library: &library)
+
         // Move .tmb packages that are at the wrong location on disk
         // (e.g. sitting at root when they should be in a subfolder)
         relocateMisplacedTMBPackages(library: &library)
@@ -842,12 +857,141 @@ enum FileImportService {
         }
     }
 
+    /// Give every library book its own package when legacy records point at the
+    /// same `.tmb` directory. The package whose bookInfo owns the directory is
+    /// retained in place. Other records receive a complete recovery copy under
+    /// the current UUID-based name, with derived content invalidated so startup
+    /// analysis rebuilds it from that record's own source file.
+    @discardableResult
+    static func separateSharedTMBPackages(
+        library: inout Library,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> Int {
+        let fm = FileManager.default
+        var packageReferences: [String: [Int]] = [:]
+        for index in library.books.indices {
+            let book = library.books[index]
+            guard !book.tmbDirectoryName.isEmpty else { continue }
+            let key = book.folderPath + "\u{0}" + book.tmbDirectoryName
+            packageReferences[key, default: []].append(index)
+        }
+
+        var separated = 0
+        for indices in packageReferences.values where indices.count > 1 {
+            let firstBook = library.books[indices[0]]
+            let sharedPackage = libraryDirectory
+                .appendingPathComponent(firstBook.folderPath, isDirectory: true)
+                .appendingPathComponent(firstBook.tmbDirectoryName, isDirectory: true)
+            guard fm.fileExists(atPath: sharedPackage.path) else { continue }
+
+            let storedBookID = (try? BookInfo.load(from: sharedPackage))?.metadata.bookID
+            let keeper = indices.first { library.books[$0].id == storedBookID } ?? indices[0]
+
+            for index in indices where index != keeper {
+                let book = library.books[index]
+                let packageName = TextMouthPaths.tmbName(
+                    title: book.title,
+                    author: book.author,
+                    dateAdded: book.dateAdded,
+                    bookID: book.id
+                )
+                let parent = libraryDirectory.appendingPathComponent(
+                    book.folderPath,
+                    isDirectory: true
+                )
+                let destination = parent.appendingPathComponent(packageName, isDirectory: true)
+                guard !fm.fileExists(atPath: destination.path) else { continue }
+
+                let staging = parent.appendingPathComponent(
+                    ".textmouth-split-\(UUID().uuidString)",
+                    isDirectory: true
+                )
+                do {
+                    try fm.createDirectory(at: parent, withIntermediateDirectories: true)
+                    try fm.copyItem(at: sharedPackage, to: staging)
+
+                    var repaired = book
+                    repaired.tmbDirectoryName = packageName
+                    let sourceURL = URL(fileURLWithPath: book.filePath).standardizedFileURL
+                    let sharedPath = sharedPackage.standardizedFileURL.path + "/"
+                    if sourceURL.path.hasPrefix(sharedPath) {
+                        let relativePath = String(sourceURL.path.dropFirst(sharedPath.count))
+                        repaired.filePath = staging.appendingPathComponent(relativePath).path
+                    } else {
+                        let copiedSource = staging.appendingPathComponent(sourceURL.lastPathComponent)
+                        if !fm.fileExists(atPath: copiedSource.path) {
+                            try fm.copyItem(at: sourceURL, to: copiedSource)
+                        }
+                        repaired.filePath = copiedSource.path
+                    }
+                    repaired.cacheFormatVersion = nil
+                    repaired.contentIndexVersion = nil
+                    repaired.totalWordCount = nil
+                    repaired.totalCharacterCount = nil
+                    repaired.audioDuration = nil
+
+                    let copiedCache = TextMouthPaths.contentMarkdownPath(in: staging)
+                    if fm.fileExists(atPath: copiedCache.path) {
+                        try fm.removeItem(at: copiedCache)
+                    }
+                    var info = repaired.makeBookInfo()
+                    info.contentIndex = nil
+                    try info.save(to: staging)
+                    try fm.moveItem(at: staging, to: destination)
+
+                    // Replace the staging prefix only after the package is
+                    // published at its final location.
+                    repaired.filePath = repaired.filePath.replacingOccurrences(
+                        of: staging.path + "/",
+                        with: destination.path + "/"
+                    )
+                    library.books[index] = repaired
+                    separated += 1
+                } catch {
+                    try? fm.removeItem(at: staging)
+                    print("Failed to separate shared package for \(book.title): \(error)")
+                }
+            }
+
+            // If the existing metadata did not belong to any referencing book,
+            // force the selected keeper through the same normal cache rebuild.
+            if storedBookID == nil || !indices.contains(where: { library.books[$0].id == storedBookID }) {
+                var repaired = library.books[keeper]
+                repaired.cacheFormatVersion = nil
+                repaired.contentIndexVersion = nil
+                repaired.totalWordCount = nil
+                repaired.totalCharacterCount = nil
+                repaired.audioDuration = nil
+                var info = repaired.makeBookInfo()
+                info.contentIndex = nil
+                do {
+                    try info.save(to: sharedPackage)
+                    library.books[keeper] = repaired
+                    let cache = TextMouthPaths.contentMarkdownPath(in: sharedPackage)
+                    if fm.fileExists(atPath: cache.path) {
+                        try fm.removeItem(at: cache)
+                    }
+                } catch {
+                    print("Failed to invalidate unowned shared package for \(repaired.title): \(error)")
+                }
+            }
+        }
+
+        if separated > 0 {
+            print("Separated \(separated) book(s) from shared legacy .tmb packages")
+        }
+        return separated
+    }
+
     /// Move .tmb packages that exist on disk but aren't in the folder their
     /// book's folderPath says they should be in. Updates filePath to match.
     /// This fixes books whose folder assignment was updated in library.json
     /// without the physical .tmb directory being moved.
     @discardableResult
-    static func relocateMisplacedTMBPackages(library: inout Library) -> Int {
+    static func relocateMisplacedTMBPackages(
+        library: inout Library,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> Int {
         let fm = FileManager.default
         var relocated = 0
 
@@ -858,10 +1002,11 @@ enum FileImportService {
                   !book.folderPath.isEmpty
             else { continue }
 
-            let expectedDir = TextMouthPaths.tmbPath(
-                folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
-            let rootDir = TextMouthPaths.tmbPath(
-                folderPath: "", tmbName: book.tmbDirectoryName)
+            let expectedDir = libraryDirectory
+                .appendingPathComponent(book.folderPath, isDirectory: true)
+                .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+            let rootDir = libraryDirectory
+                .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
 
             // If the .tmb is already in the right place, nothing to do
             if fm.fileExists(atPath: expectedDir.path) { continue }
@@ -870,7 +1015,10 @@ enum FileImportService {
             guard fm.fileExists(atPath: rootDir.path) else { continue }
 
             do {
-                try TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
+                try fm.createDirectory(
+                    at: libraryDirectory.appendingPathComponent(book.folderPath, isDirectory: true),
+                    withIntermediateDirectories: true
+                )
                 try fm.moveItem(at: rootDir, to: expectedDir)
 
                 // Update the filePath to point to the new location
@@ -893,9 +1041,12 @@ enum FileImportService {
     /// Remove empty subdirectories from the library that aren't tracked as folders.
     /// These are left behind when folders are removed from the library model but
     /// the disk directory isn't cleaned up.
-    static func removeEmptyLibrarySubdirectories(library: Library) {
+    static func removeEmptyLibrarySubdirectories(
+        library: Library,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) {
         let fm = FileManager.default
-        let libraryDir = TextMouthPaths.libraryDir
+        let libraryDir = libraryDirectory
         let knownFolderPaths = Set(library.folders.map { $0.fullPath })
 
         // Walk the library directory looking for non-.tmb subdirectories
@@ -971,9 +1122,12 @@ enum FileImportService {
     /// This handles cases where the app was quit or crashed during import before
     /// the book could be saved to library.json, leaving orphaned .tmb packages.
     @discardableResult
-    static func adoptOrphanedTMBPackages(library: inout Library) -> Int {
+    static func adoptOrphanedTMBPackages(
+        library: inout Library,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> Int {
         let fm = FileManager.default
-        let libraryDir = TextMouthPaths.libraryDir
+        let libraryDir = libraryDirectory
 
         // Collect all .tmb directory names currently tracked in the library
         let knownTMBNames = Set(library.books.map { $0.tmbDirectoryName })
@@ -1060,7 +1214,8 @@ enum FileImportService {
                 epubLanguage: info.metadata.language,
                 epubIdentifier: info.metadata.epubIdentifier,
                 epubVersion: info.metadata.epubVersion,
-                cacheFormatVersion: info.state.cacheFormatVersion
+                cacheFormatVersion: info.state.cacheFormatVersion,
+                contentIndexVersion: info.state.contentIndexVersion
             )
 
             // addBook guards against duplicate hashes — only truly new books get added
@@ -1075,7 +1230,7 @@ enum FileImportService {
                     var updatedBook = book
                     updatedBook.folderPath = folderPath
                     library.books[library.books.count - 1] = updatedBook
-                    updatedBook.saveBookInfo()
+                    try? updatedBook.saveBookInfoThrowing()
                 }
             }
         }
