@@ -81,4 +81,17 @@ class FolderNavigationHistory: ObservableObject {
         }
         return ""
     }
+
+    /// VoiceOver announcement used after folder navigation. Keeping this
+    /// formatter beside the navigation model prevents view-only string copies
+    /// from drifting away from the behavior covered by hosted tests.
+    static func announcement(for path: String, library: Library) -> String {
+        let folderName = path.isEmpty
+            ? "Library"
+            : (path.components(separatedBy: "/").last ?? "Library")
+        let bookCount = path.isEmpty
+            ? library.books.count
+            : library.totalBooksInFolderTree(path)
+        return "\(folderName), \(bookCount) \(bookCount == 1 ? "book" : "books")"
+    }
 }

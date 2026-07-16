@@ -159,6 +159,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var availableLanguages: [String] = []
 
     private let configService = ConfigService.shared
+    private let notificationCenter: NotificationCenter
     private var configCancellable: AnyCancellable?
     private var isSyncingFromConfig = false
 
@@ -192,7 +193,12 @@ final class SettingsViewModel: ObservableObject {
         set { rewindOnResumeUnitRaw = newValue.rawValue }
     }
 
-    init() {
+    init(
+        notificationCenter: NotificationCenter = .default,
+        initializeServices: Bool = true
+    ) {
+        self.notificationCenter = notificationCenter
+        guard initializeServices else { return }
         refreshVoices()
 
         // AppStorage is the source of truth. If an existing config.json has
@@ -351,7 +357,7 @@ final class SettingsViewModel: ObservableObject {
         // Handle external change to dataDirectoryPath
         let currentCustom = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         if config.dataDirectoryPath != currentCustom {
-            NotificationCenter.default.post(
+            notificationCenter.post(
                 name: .dataDirectoryChangeRequested,
                 object: nil,
                 userInfo: ["path": config.dataDirectoryPath]
@@ -361,15 +367,15 @@ final class SettingsViewModel: ObservableObject {
     }
 
     private func broadcastChanges() {
-        NotificationCenter.default.post(name: .speechSettingsChanged, object: nil)
+        notificationCenter.post(name: .speechSettingsChanged, object: nil)
     }
 
     private func broadcastBluetoothChanges() {
-        NotificationCenter.default.post(name: .bluetoothSettingsChanged, object: nil)
+        notificationCenter.post(name: .bluetoothSettingsChanged, object: nil)
     }
 
     private func broadcastGestureChanges() {
-        NotificationCenter.default.post(name: .restartTimerGestureSettingsChanged, object: nil)
+        notificationCenter.post(name: .restartTimerGestureSettingsChanged, object: nil)
     }
 }
 

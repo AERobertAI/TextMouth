@@ -260,13 +260,10 @@ struct LibraryWindowView: View {
 
     /// Announce the new folder name and book count to VoiceOver when navigating.
     private func announceFolderChange(_ path: String) {
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        // At root, show total library count; in a folder, show recursive subtree count
-        let bookCount = path.isEmpty
-            ? libraryViewModel.library.books.count
-            : libraryViewModel.library.totalBooksInFolderTree(path)
-        let bookWord = bookCount == 1 ? "book" : "books"
-        let message = "\(folderName), \(bookCount) \(bookWord)"
+        let message = FolderNavigationHistory.announcement(
+            for: path,
+            library: libraryViewModel.library
+        )
 
         guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
         NSAccessibility.post(

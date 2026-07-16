@@ -10,16 +10,20 @@ final class KeyboardShortcutManager: ObservableObject {
 
     private var eventMonitor: Any?
     private let storageKey = "customKeyboardBindings"
+    private let userDefaults: UserDefaults
 
-    init() {
+    init(userDefaults: UserDefaults = .standard, installsEventMonitor: Bool = true) {
+        self.userDefaults = userDefaults
         loadBindings()
-        startMonitoring()
+        if installsEventMonitor {
+            startMonitoring()
+        }
     }
 
     // MARK: - Persistence
 
     private func loadBindings() {
-        if let data = UserDefaults.standard.data(forKey: storageKey),
+        if let data = userDefaults.data(forKey: storageKey),
            let saved = try? JSONDecoder().decode([String: [KeyBinding]].self, from: data) {
             var loaded: [ShortcutAction: [KeyBinding]] = [:]
             for (rawValue, keys) in saved {
@@ -46,7 +50,7 @@ final class KeyboardShortcutManager: ObservableObject {
             dict[action.rawValue] = keys
         }
         if let data = try? JSONEncoder().encode(dict) {
-            UserDefaults.standard.set(data, forKey: storageKey)
+            userDefaults.set(data, forKey: storageKey)
         }
     }
 

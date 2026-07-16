@@ -1,5 +1,59 @@
 import SwiftUI
 
+enum ManualBookOrder {
+    struct MoveResult {
+        let movedTitle: String
+        let adjacentTitle: String
+        let direction: Int
+        let newIndex: Int
+    }
+
+    static func orderedBooks(in library: Library, folderPath: String) -> [Book] {
+        LibraryBookSorter.sorted(
+            library.booksInFolder(folderPath),
+            by: .manual,
+            ascending: true
+        )
+    }
+
+    @discardableResult
+    static func move(
+        library: inout Library,
+        bookID: UUID,
+        direction: Int,
+        folderPath: String
+    ) -> MoveResult? {
+        var books = orderedBooks(in: library, folderPath: folderPath)
+        guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return nil }
+        let newIndex = currentIndex + direction
+        guard books.indices.contains(newIndex) else { return nil }
+
+        let result = MoveResult(
+            movedTitle: books[currentIndex].title,
+            adjacentTitle: books[newIndex].title,
+            direction: direction,
+            newIndex: newIndex
+        )
+        books.swapAt(currentIndex, newIndex)
+        for (order, book) in books.enumerated() {
+            guard let index = library.books.firstIndex(where: { $0.id == book.id }) else { continue }
+            library.books[index].manualSortOrder = order
+        }
+        return result
+    }
+
+    static func canMove(
+        in library: Library,
+        bookID: UUID,
+        direction: Int,
+        folderPath: String
+    ) -> Bool {
+        let books = orderedBooks(in: library, folderPath: folderPath)
+        guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return false }
+        return books.indices.contains(currentIndex + direction)
+    }
+}
+
 /// Extension for sorting, ordering, and reordering books within folders —
 /// manual sort order, folder sort settings, and next-book navigation.
 extension LibraryViewModel {
@@ -41,38 +95,30 @@ extension LibraryViewModel {
     }
 
     /// Result of a manual order move, containing info for VoiceOver announcements.
-    struct MoveResult {
-        let movedTitle: String
-        let adjacentTitle: String
-        let direction: Int  // -1 = up, +1 = down
-    }
+    typealias MoveResult = ManualBookOrder.MoveResult
 
     /// Move a book up or down by one position within its folder's manual sort order.
     /// direction: -1 for up, +1 for down.
     /// Returns a MoveResult for VoiceOver announcement, or nil if the move was not possible.
     @discardableResult
     func moveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> MoveResult? {
-        var folderBooks = sortedBooksInFolder(folderPath)
-        guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return nil }
-        let newIndex = currentIndex + direction
-        guard newIndex >= 0, newIndex < folderBooks.count else { return nil }
-
-        let movedTitle = folderBooks[currentIndex].title
-        let adjacentTitle = folderBooks[newIndex].title
-
-        // Swap the two books and reassign sequential sort orders
-        folderBooks.swapAt(currentIndex, newIndex)
-        for (i, book) in folderBooks.enumerated() {
-            updateManualSortOrder(bookID: book.id, order: i)
-        }
-        return MoveResult(movedTitle: movedTitle, adjacentTitle: adjacentTitle, direction: direction)
+        let result = ManualBookOrder.move(
+            library: &library,
+            bookID: bookID,
+            direction: direction,
+            folderPath: folderPath
+        )
+        if result != nil { save() }
+        return result
     }
 
     /// Check if a book can be moved up or down in manual sort order.
     func canMoveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> Bool {
-        let folderBooks = sortedBooksInFolder(folderPath)
-        guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return false }
-        let newIndex = currentIndex + direction
-        return newIndex >= 0 && newIndex < folderBooks.count
+        ManualBookOrder.canMove(
+            in: library,
+            bookID: bookID,
+            direction: direction,
+            folderPath: folderPath
+        )
     }
 }
