@@ -1,12 +1,7 @@
 import Foundation
+@testable import TextMouth
 
-/// Result of a manual order move, mirrored from app.
-struct TestMoveResult {
-    let movedTitle: String
-    let adjacentTitle: String
-    let direction: Int
-    let newIndex: Int
-}
+typealias TestMoveResult = ManualBookOrder.MoveResult
 
 /// Mirrors the app's moveBookInManualOrder logic for testing.
 /// direction: -1 for up, +1 for down.
@@ -17,41 +12,22 @@ func simulateMoveBookInManualOrder(
     direction: Int,
     folderPath: String
 ) -> TestMoveResult? {
-    var folderBooks = library.booksInFolder(folderPath)
-        .sorted { a, b in
-            let orderA = a.manualSortOrder ?? Int.max
-            let orderB = b.manualSortOrder ?? Int.max
-            if orderA != orderB { return orderA < orderB }
-            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-        }
-    guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return nil }
-    let newIndex = currentIndex + direction
-    guard newIndex >= 0, newIndex < folderBooks.count else { return nil }
-
-    let movedTitle = folderBooks[currentIndex].title
-    let adjacentTitle = folderBooks[newIndex].title
-
-    folderBooks.swapAt(currentIndex, newIndex)
-    for (i, book) in folderBooks.enumerated() {
-        if let idx = library.books.firstIndex(where: { $0.id == book.id }) {
-            library.books[idx].manualSortOrder = i
-        }
-    }
-    return TestMoveResult(movedTitle: movedTitle, adjacentTitle: adjacentTitle, direction: direction, newIndex: newIndex)
+    ManualBookOrder.move(
+        library: &library,
+        bookID: bookID,
+        direction: direction,
+        folderPath: folderPath
+    )
 }
 
 /// Mirrors the app's canMoveBookInManualOrder logic.
 func simulateCanMove(library: Library, bookID: UUID, direction: Int, folderPath: String) -> Bool {
-    let folderBooks = library.booksInFolder(folderPath)
-        .sorted { a, b in
-            let orderA = a.manualSortOrder ?? Int.max
-            let orderB = b.manualSortOrder ?? Int.max
-            if orderA != orderB { return orderA < orderB }
-            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-        }
-    guard let currentIndex = folderBooks.firstIndex(where: { $0.id == bookID }) else { return false }
-    let newIndex = currentIndex + direction
-    return newIndex >= 0 && newIndex < folderBooks.count
+    ManualBookOrder.canMove(
+        in: library,
+        bookID: bookID,
+        direction: direction,
+        folderPath: folderPath
+    )
 }
 
 func runManualOrderTests() {
@@ -266,6 +242,9 @@ private extension Book {
         self.init(
             id: id,
             title: title,
+            format: .txt,
+            filePath: "/tmp/\(title).txt",
+            md5Hash: "manual-order-\(id.uuidString)",
             folderPath: folderPath,
             manualSortOrder: manualSortOrder
         )

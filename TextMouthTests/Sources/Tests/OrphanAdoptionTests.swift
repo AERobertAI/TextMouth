@@ -1,4 +1,5 @@
 import Foundation
+@testable import TextMouth
 
 /// Tests for the orphaned .tmb package adoption feature.
 /// Verifies that .tmb directories on disk but not in library.json
@@ -113,7 +114,7 @@ func runOrphanAdoptionTests() {
         try assertEqual(library.books.count, 0, "Library starts empty")
 
         // Run adoption using the standalone function
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 1, "Should adopt 1 orphan")
         try assertEqual(library.books.count, 1, "Library should have 1 book")
@@ -147,7 +148,7 @@ func runOrphanAdoptionTests() {
             )
         ])
 
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 0, "Should not adopt already-known book")
         try assertEqual(library.books.count, 1, "Library still has 1 book")
@@ -168,7 +169,7 @@ func runOrphanAdoptionTests() {
         )
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 1, "Should adopt nested orphan")
         try assertEqual(library.books[0].folderPath, "Science Fiction/Space Opera",
@@ -204,7 +205,7 @@ func runOrphanAdoptionTests() {
         )
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 3, "Should adopt all 3 orphans")
         try assertEqual(library.books.count, 3, "Library has 3 books")
@@ -227,7 +228,7 @@ func runOrphanAdoptionTests() {
         fm.createFile(atPath: bookFile.path, contents: Data("dummy".utf8))
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 0, "Should skip .tmb without bookInfo.json")
         try assertEqual(library.books.count, 0, "Library still empty")
@@ -249,7 +250,7 @@ func runOrphanAdoptionTests() {
         )
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 0, "Should skip .tmb with no book file")
     }
@@ -279,7 +280,7 @@ func runOrphanAdoptionTests() {
             )
         ])
 
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 0, "Should not adopt duplicate hash")
         try assertEqual(library.books.count, 1, "Library still has 1 book")
@@ -325,7 +326,7 @@ func runOrphanAdoptionTests() {
         try! data.write(to: tmbDir.appendingPathComponent("bookInfo.json"))
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 1, "Should adopt stateful orphan")
         let book = library.books[0]
@@ -360,7 +361,7 @@ func runOrphanAdoptionTests() {
                  md5Hash: "hash1", tmbDirectoryName: knownTMB)
         ])
 
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         // Only the truly new orphan should be adopted; Known is tracked, Dupe has same hash
         try assertEqual(adopted, 1, "Should adopt only the unique orphan")
@@ -411,7 +412,7 @@ func runRelocationTests() {
                  tmbDirectoryName: tmbName)
         ])
 
-        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(relocated, 1, "Should relocate 1 book")
 
@@ -444,7 +445,7 @@ func runRelocationTests() {
                  tmbDirectoryName: tmbName)
         ])
 
-        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, libraryDirectory: libraryDir)
         try assertEqual(relocated, 0, "Should not relocate already-correct book")
     }
 
@@ -464,7 +465,7 @@ func runRelocationTests() {
                  tmbDirectoryName: tmbName)
         ])
 
-        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, libraryDirectory: libraryDir)
         try assertEqual(relocated, 0, "Should not move root-assigned book")
     }
 
@@ -494,7 +495,7 @@ func runRelocationTests() {
                  tmbDirectoryName: tmb3),
         ])
 
-        let relocated = relocateMisplacedTMBs(libraryDir: libraryDir, library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, libraryDirectory: libraryDir)
         try assertEqual(relocated, 3, "Should relocate all 3")
 
         // Verify they all ended up in the right places
@@ -506,149 +507,6 @@ func runRelocationTests() {
                           "\(book.title) moved to \(book.folderPath)")
         }
     }
-}
-
-// MARK: - Standalone relocation function (mirrors FileImportService.relocateMisplacedTMBPackages)
-
-/// Move .tmb packages from root to their assigned folder.
-/// Returns the number of packages relocated.
-func relocateMisplacedTMBs(libraryDir: URL, library: inout Library) -> Int {
-    let fm = FileManager.default
-    var relocated = 0
-
-    for i in library.books.indices {
-        let book = library.books[i]
-        guard !book.tmbDirectoryName.isEmpty,
-              !book.folderPath.isEmpty
-        else { continue }
-
-        let expectedDir = libraryDir
-            .appendingPathComponent(book.folderPath, isDirectory: true)
-            .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
-        let rootDir = libraryDir
-            .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
-
-        // Already in the right place
-        if fm.fileExists(atPath: expectedDir.path) { continue }
-
-        // Not at root either — nothing to fix
-        guard fm.fileExists(atPath: rootDir.path) else { continue }
-
-        do {
-            // Ensure the target subfolder exists
-            let parentDir = libraryDir
-                .appendingPathComponent(book.folderPath, isDirectory: true)
-            try fm.createDirectory(at: parentDir, withIntermediateDirectories: true)
-
-            try fm.moveItem(at: rootDir, to: expectedDir)
-
-            let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-            library.books[i].filePath = expectedDir
-                .appendingPathComponent(fileName).path
-            relocated += 1
-        } catch {
-            // Move failed — leave it where it is
-        }
-    }
-
-    return relocated
-}
-
-// MARK: - Standalone adoption function (mirrors FileImportService.adoptOrphanedTMBPackages)
-// This function duplicates the core logic for testing without depending on
-// TextMouthPaths or other app-specific singletons.
-
-/// Scan a library directory for .tmb packages not tracked in the library,
-/// reconstruct Book objects from their bookInfo.json, and add them.
-/// Returns the number of books adopted.
-func adoptOrphanedTMBs(libraryDir: URL, library: inout Library) -> Int {
-    let fm = FileManager.default
-    let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
-        return d
-    }()
-
-    let knownTMBNames = Set(library.books.map { $0.tmbDirectoryName })
-
-    var adopted = 0
-    guard let enumerator = fm.enumerator(
-        at: libraryDir,
-        includingPropertiesForKeys: [.isDirectoryKey],
-        options: [.skipsHiddenFiles]
-    ) else { return 0 }
-
-    while let url = enumerator.nextObject() as? URL {
-        guard url.pathExtension == "tmb",
-              (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
-        else { continue }
-
-        enumerator.skipDescendants()
-
-        let tmbName = url.lastPathComponent
-        if knownTMBNames.contains(tmbName) { continue }
-
-        // Load bookInfo.json
-        let infoPath = url.appendingPathComponent("bookInfo.json")
-        guard let data = try? Data(contentsOf: infoPath),
-              let info = try? decoder.decode(BookInfo.self, from: data)
-        else { continue }
-
-        // Find book file
-        let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-        let bookFileName = contents.first { name in
-            !name.hasPrefix(".")
-            && name != "bookInfo.json"
-            && name != "content.md"
-            && name != "cachedAudio"
-        }
-        guard let fileName = bookFileName else { continue }
-        let bookFilePath = url.appendingPathComponent(fileName).path
-        guard fm.fileExists(atPath: bookFilePath) else { continue }
-
-        // Derive folder path from disk location.
-        // Resolve symlinks so /tmp and /private/tmp match consistently.
-        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
-        let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
-        let relativePath = resolvedParent
-            .replacingOccurrences(of: resolvedLibrary, with: "")
-        let folderPath = relativePath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-
-        let book = Book(
-            id: info.metadata.bookID,
-            title: info.metadata.title,
-            author: info.metadata.author,
-            format: info.metadata.format,
-            filePath: bookFilePath,
-            md5Hash: info.metadata.md5Hash,
-            folderPath: folderPath,
-            dateAdded: info.metadata.dateAdded,
-            lastOpened: info.metadata.lastOpened,
-            bookmarks: info.bookmarks,
-            totalWordCount: info.state.totalWordCount,
-            totalCharacterCount: info.state.totalCharacterCount,
-            tmbDirectoryName: tmbName,
-            sourceFilePath: info.metadata.sourceFilePath,
-            localVoiceID: info.state.localVoiceID,
-            localWPM: info.state.localWPM,
-            localPitch: info.state.localPitch,
-            skippedHeadingIDs: info.state.skippedHeadingIDs,
-            localEndOfBookBehavior: info.state.localEndOfBookBehavior,
-            manualSortOrder: info.state.manualSortOrder,
-            audioDuration: info.state.audioDuration,
-            audioAlbum: info.metadata.audioAlbum,
-            audioGenre: info.metadata.audioGenre,
-            audioYear: info.metadata.audioYear
-        )
-
-        let countBefore = library.books.count
-        library.addBook(book)
-        if library.books.count > countBefore {
-            adopted += 1
-        }
-    }
-
-    return adopted
 }
 
 // MARK: - Empty Directory Cleanup Tests
@@ -678,7 +536,7 @@ func runEmptyDirectoryCleanupTests() {
 
         // Library has no folders
         let library = Library()
-        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+        FileImportService.removeEmptyLibrarySubdirectories(library: library, libraryDirectory: libraryDir)
 
         try assertTrue(!fm.fileExists(atPath: emptyDir1.path), "Empty dir 1 removed")
         try assertTrue(!fm.fileExists(atPath: emptyDir2.path), "Empty dir 2 removed")
@@ -692,8 +550,8 @@ func runEmptyDirectoryCleanupTests() {
         try! fm.createDirectory(at: keepDir, withIntermediateDirectories: true)
 
         // This folder IS tracked in the library
-        let knownPaths: Set<String> = ["ActiveFolder"]
-        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: knownPaths)
+        let library = Library(folders: [BookFolder(name: "ActiveFolder")])
+        FileImportService.removeEmptyLibrarySubdirectories(library: library, libraryDirectory: libraryDir)
 
         try assertTrue(fm.fileExists(atPath: keepDir.path), "Tracked folder preserved")
     }
@@ -708,7 +566,7 @@ func runEmptyDirectoryCleanupTests() {
         try! fm.createDirectory(at: tmbDir, withIntermediateDirectories: true)
 
         let library = Library()
-        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+        FileImportService.removeEmptyLibrarySubdirectories(library: library, libraryDirectory: libraryDir)
 
         try assertTrue(fm.fileExists(atPath: dirWithContent.path), "Non-empty dir preserved")
     }
@@ -722,7 +580,7 @@ func runEmptyDirectoryCleanupTests() {
         try! fm.createDirectory(at: emptyTmb, withIntermediateDirectories: true)
 
         let library = Library()
-        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+        FileImportService.removeEmptyLibrarySubdirectories(library: library, libraryDirectory: libraryDir)
 
         try assertTrue(fm.fileExists(atPath: emptyTmb.path), "Empty .tmb not removed by cleanup")
     }
@@ -736,7 +594,7 @@ func runEmptyDirectoryCleanupTests() {
         try! fm.createDirectory(at: nested, withIntermediateDirectories: true)
 
         let library = Library()
-        removeEmptySubdirectories(libraryDir: libraryDir, knownFolderPaths: Set(library.folders.map { $0.fullPath }))
+        FileImportService.removeEmptyLibrarySubdirectories(library: library, libraryDirectory: libraryDir)
 
         // All should be removed since they're all empty (deepest first makes parents empty)
         try assertTrue(!fm.fileExists(atPath: nested.path), "Deepest dir removed")
@@ -744,70 +602,6 @@ func runEmptyDirectoryCleanupTests() {
             atPath: libraryDir.appendingPathComponent("A/B").path), "Middle dir removed")
         try assertTrue(!fm.fileExists(
             atPath: libraryDir.appendingPathComponent("A").path), "Top dir removed")
-    }
-}
-
-// MARK: - Standalone empty directory cleanup function
-
-/// Remove empty subdirectories from a library dir that aren't known folders.
-func removeEmptySubdirectories(libraryDir: URL, knownFolderPaths: Set<String>) {
-    let fm = FileManager.default
-
-    guard let enumerator = fm.enumerator(
-        at: libraryDir,
-        includingPropertiesForKeys: [.isDirectoryKey],
-        options: [.skipsHiddenFiles]
-    ) else { return }
-
-    var candidates: [URL] = []
-
-    while let url = enumerator.nextObject() as? URL {
-        guard (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
-        else { continue }
-
-        if url.pathExtension == "tmb" {
-            enumerator.skipDescendants()
-            continue
-        }
-
-        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
-        let resolvedURL = url.resolvingSymlinksInPath().path
-        let relativePath = resolvedURL
-            .replacingOccurrences(of: resolvedLibrary, with: "")
-            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-
-        guard !relativePath.isEmpty else { continue }
-        if knownFolderPaths.contains(relativePath) { continue }
-
-        let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-        if contents.isEmpty {
-            candidates.append(url)
-        }
-    }
-
-    // Remove deepest first, then re-check parents that may have become empty
-    let sorted = candidates.sorted { $0.pathComponents.count > $1.pathComponents.count }
-    for url in sorted {
-        let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-        if contents.isEmpty {
-            try? fm.removeItem(at: url)
-        }
-    }
-
-    // After removing leaf directories, walk up and remove any newly empty parents
-    for url in sorted {
-        var parent = url.deletingLastPathComponent()
-        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
-        while parent.resolvingSymlinksInPath().path != resolvedLibrary {
-            let relativePath = parent.resolvingSymlinksInPath().path
-                .replacingOccurrences(of: resolvedLibrary, with: "")
-                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            if relativePath.isEmpty || knownFolderPaths.contains(relativePath) { break }
-            let contents = (try? fm.contentsOfDirectory(atPath: parent.path)) ?? []
-            guard contents.isEmpty else { break }
-            try? fm.removeItem(at: parent)
-            parent = parent.deletingLastPathComponent()
-        }
     }
 }
 
@@ -838,7 +632,7 @@ func runOrphanNonReAdoptionTests() {
         fm.createFile(atPath: bookFile.path, contents: Data("book data".utf8))
 
         var library = Library()
-        let adopted = adoptOrphanedTMBs(libraryDir: libraryDir, library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDir)
 
         try assertEqual(adopted, 0, "Should not adopt .tmb without bookInfo.json")
         try assertEqual(library.books.count, 0, "Library still empty")

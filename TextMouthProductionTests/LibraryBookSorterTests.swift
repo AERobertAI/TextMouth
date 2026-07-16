@@ -5,6 +5,42 @@ import AppKit
 /// Regression coverage for the production library sort comparator.
 @MainActor
 final class LibraryBookSorterTests: XCTestCase {
+    func testTitleSortAscendingUsesProductionComparator() {
+        let result = LibraryBookSorter.sorted(
+            [makeBook(title: "Zulu"), makeBook(title: "Alpha")],
+            by: .title,
+            ascending: true
+        )
+
+        XCTAssertEqual(result.map(\.title), ["Alpha", "Zulu"])
+    }
+
+    func testAuthorSortAscendingUsesProductionComparator() {
+        let result = LibraryBookSorter.sorted(
+            [
+                makeBook(title: "Book B", author: "Zulu"),
+                makeBook(title: "Book A", author: "Alpha")
+            ],
+            by: .author,
+            ascending: true
+        )
+
+        XCTAssertEqual(result.map(\.author), ["Alpha", "Zulu"])
+    }
+
+    func testDateAddedSortDescendingUsesProductionComparator() {
+        let older = makeBook(title: "Older", dateAdded: Date(timeIntervalSince1970: 1))
+        let newer = makeBook(title: "Newer", dateAdded: Date(timeIntervalSince1970: 2))
+
+        let result = LibraryBookSorter.sorted(
+            [older, newer],
+            by: .dateAdded,
+            ascending: false
+        )
+
+        XCTAssertEqual(result.map(\.title), ["Newer", "Older"])
+    }
+
     func testDescendingTitleSortUsesExplicitReverseComparison() {
         let alpha = makeBook(title: "Alpha")
         let zulu = makeBook(title: "Zulu")

@@ -46,10 +46,34 @@ targets:
     platform: macOS
     sources:
       - TextMouthProductionTests
+      # Production-backed compatibility scenarios still use the original
+      # scenario registration syntax while importing the TextMouth module.
+      # Keep this list explicit until these grouped activities are rewritten as
+      # individual XCTest methods. Every listed file imports the TextMouth module;
+      # the copied standalone harness and its implementations have been removed.
+      - TextMouthTests/Sources/Tests/OffsetMapTests.swift
+      - TextMouthTests/Sources/Tests/TextSubstitutionTests.swift
+      - TextMouthTests/Sources/Tests/ParserEdgeCaseTests.swift
+      - TextMouthTests/Sources/Tests/BookmarkToggleTests.swift
+      - TextMouthTests/Sources/Tests/KeyboardShortcutTests.swift
+      - TextMouthTests/Sources/Tests/DOCXParserTests.swift
+      - TextMouthTests/Sources/Tests/DOCXEdgeCaseTests.swift
+      - TextMouthTests/Sources/Tests/EPUBParserTests.swift
+      - TextMouthTests/Sources/Tests/DAISYParserTests.swift
+      - TextMouthTests/Sources/Tests/DAISYEdgeCaseTests.swift
+      - TextMouthTests/Sources/Tests/DAISYAudioTests.swift
+      - TextMouthTests/Sources/Tests/MenuVisibilityTests.swift
+      - TextMouthTests/Sources/Tests/IntegrationTests.swift
+      - TextMouthTests/Sources/Tests/BugRegressionTests.swift
+      - TextMouthTests/Sources/Tests/FolderNavigationHistoryTests.swift
+      - TextMouthTests/Sources/Tests/FolderSortSettingTests.swift
+      - TextMouthTests/Sources/Tests/ManualOrderTests.swift
+      - TextMouthTests/Sources/Tests/OrphanAdoptionTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthProductionTests
-        GENERATE_INFOPLIST_FILE: true
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         SWIFT_VERSION: "5"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"

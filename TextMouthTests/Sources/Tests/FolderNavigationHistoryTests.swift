@@ -1,61 +1,7 @@
 import Foundation
+@testable import TextMouth
 
-/// Mirrored from the app's FolderNavigationHistory for testing.
-/// Tracks Finder-style back/forward folder navigation.
-class TestFolderNavigationHistory {
-    private(set) var history: [String]
-    private(set) var index: Int
-    private(set) var isNavigating = false
-
-    init(startingAt path: String = "") {
-        self.history = [path]
-        self.index = 0
-    }
-
-    var canGoBack: Bool { index > 0 }
-    var canGoForward: Bool { index < history.count - 1 }
-    var currentPath: String { history[index] }
-
-    func recordVisit(to path: String) {
-        if isNavigating {
-            isNavigating = false
-            return
-        }
-        guard history[index] != path else { return }
-        if index < history.count - 1 {
-            history.removeSubrange((index + 1)...)
-        }
-        history.append(path)
-        index = history.count - 1
-    }
-
-    @discardableResult
-    func goBack() -> String? {
-        guard canGoBack else { return nil }
-        isNavigating = true
-        index -= 1
-        return history[index]
-    }
-
-    @discardableResult
-    func goForward() -> String? {
-        guard canGoForward else { return nil }
-        isNavigating = true
-        index += 1
-        return history[index]
-    }
-
-    static func parentPath(of path: String) -> String? {
-        guard !path.isEmpty else { return nil }
-        let parts = path.components(separatedBy: "/")
-        if parts.count > 1 {
-            return parts.dropLast().joined(separator: "/")
-        }
-        return ""
-    }
-
-    // MARK: - Test helpers
-
+private extension FolderNavigationHistory {
     /// Simulate the full SwiftUI cycle: goBack → set currentFolderPath → onChange → recordVisit
     @discardableResult
     func simulateGoBack() -> String? {
@@ -75,9 +21,21 @@ class TestFolderNavigationHistory {
     /// Simulate navigating up one level (Cmd+Up Arrow).
     /// Unlike back/forward, this creates a new history entry.
     func simulateUpOneLevel() {
-        guard let parent = TestFolderNavigationHistory.parentPath(of: currentPath) else { return }
+        guard let parent = FolderNavigationHistory.parentPath(of: currentPath) else { return }
         recordVisit(to: parent)
     }
+}
+
+private typealias TestFolderNavigationHistory = FolderNavigationHistory
+
+private func navigationBook(title: String, folderPath: String) -> Book {
+    Book(
+        title: title,
+        format: .txt,
+        filePath: "/tmp/\(title).txt",
+        md5Hash: "navigation-\(title)",
+        folderPath: folderPath
+    )
 }
 
 func runFolderNavigationHistoryTests() {
@@ -296,60 +254,50 @@ func runFolderNavigationHistoryTests() {
 
     test("Folder announcement: root shows Library with total book count") {
         let library = Library(books: [
-            Book(title: "A", folderPath: ""),
-            Book(title: "B", folderPath: "Fiction"),
-            Book(title: "C", folderPath: "Fiction/SciFi"),
+            navigationBook(title: "A", folderPath: ""),
+            navigationBook(title: "B", folderPath: "Fiction"),
+            navigationBook(title: "C", folderPath: "Fiction/SciFi"),
         ])
         let path = ""
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        // At root, count ALL books in the library
-        let bookCount = path.isEmpty ? library.books.count : library.totalBooksInFolderTree(path)
-        let bookWord = bookCount == 1 ? "book" : "books"
-        let message = "\(folderName), \(bookCount) \(bookWord)"
+        let message = FolderNavigationHistory.announcement(for: path, library: library)
         try assertEqual(message, "Library, 3 books")
     }
 
     test("Folder announcement: subfolder shows name and recursive count") {
         let library = Library(books: [
-            Book(title: "A", folderPath: "Fiction"),
-            Book(title: "B", folderPath: "Fiction/SciFi"),
-            Book(title: "C", folderPath: "Fiction/SciFi/Classics"),
-            Book(title: "D", folderPath: "Nonfiction"),
+            navigationBook(title: "A", folderPath: "Fiction"),
+            navigationBook(title: "B", folderPath: "Fiction/SciFi"),
+            navigationBook(title: "C", folderPath: "Fiction/SciFi/Classics"),
+            navigationBook(title: "D", folderPath: "Nonfiction"),
         ])
         let path = "Fiction"
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        let bookCount = library.totalBooksInFolderTree(path)
-        let bookWord = bookCount == 1 ? "book" : "books"
-        let message = "\(folderName), \(bookCount) \(bookWord)"
+        let message = FolderNavigationHistory.announcement(for: path, library: library)
         try assertEqual(message, "Fiction, 3 books")
     }
 
     test("Folder announcement: single book uses singular") {
         let library = Library(books: [
-            Book(title: "Alone", folderPath: "Solo"),
+            navigationBook(title: "Alone", folderPath: "Solo"),
         ])
         let path = "Solo"
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        let bookCount = library.totalBooksInFolderTree(path)
-        let bookWord = bookCount == 1 ? "book" : "books"
-        let message = "\(folderName), \(bookCount) \(bookWord)"
+        let message = FolderNavigationHistory.announcement(for: path, library: library)
         try assertEqual(message, "Solo, 1 book")
     }
 
     test("Folder announcement: empty folder shows 0 books") {
         let library = Library(books: [], folders: [BookFolder(name: "Empty")])
         let path = "Empty"
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        let bookCount = library.totalBooksInFolderTree(path)
-        let bookWord = bookCount == 1 ? "book" : "books"
-        let message = "\(folderName), \(bookCount) \(bookWord)"
+        let message = FolderNavigationHistory.announcement(for: path, library: library)
         try assertEqual(message, "Empty, 0 books")
     }
 
     test("Folder announcement: nested path uses last component") {
         let path = "Fiction/SciFi/Classics"
-        let folderName = path.isEmpty ? "Library" : (path.components(separatedBy: "/").last ?? "Library")
-        try assertEqual(folderName, "Classics")
+        let library = Library()
+        try assertEqual(
+            FolderNavigationHistory.announcement(for: path, library: library),
+            "Classics, 0 books"
+        )
     }
 
     // MARK: - Navigation + History continued

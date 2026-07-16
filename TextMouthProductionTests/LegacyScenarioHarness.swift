@@ -264,3 +264,65 @@ final class LegacyBugRegressionScenarioTests: XCTestCase {
         )
     }
 }
+
+final class LegacyFolderNavigationScenarioTests: XCTestCase {
+    func testFolderNavigationScenariosUseProductionHistory() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runFolderNavigationHistoryTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            22,
+            "Every folder-navigation scenario should use FolderNavigationHistory"
+        )
+    }
+}
+
+final class LegacyFolderSortSettingScenarioTests: XCTestCase {
+    func testFolderSortSettingScenariosUseProductionLibrary() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runFolderSortSettingTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            28,
+            "Every folder-sort scenario should use the production Library model"
+        )
+    }
+}
+
+final class LegacyManualOrderScenarioTests: XCTestCase {
+    func testManualOrderScenariosUseProductionPolicy() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runManualOrderTests()
+        XCTAssertEqual(
+            LegacyScenarioRecorder.shared.count - initialCount,
+            14,
+            "Every manual-order scenario should use ManualBookOrder"
+        )
+    }
+}
+
+final class LegacyOrphanRecoveryScenarioTests: XCTestCase {
+    func testOrphanAdoptionScenariosUseProductionRecovery() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runOrphanAdoptionTests()
+        XCTAssertEqual(LegacyScenarioRecorder.shared.count - initialCount, 9)
+    }
+
+    func testMisplacedPackageScenariosUseProductionRecovery() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runRelocationTests()
+        XCTAssertEqual(LegacyScenarioRecorder.shared.count - initialCount, 4)
+    }
+
+    func testEmptyDirectoryCleanupScenariosUseProductionRecovery() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runEmptyDirectoryCleanupTests()
+        XCTAssertEqual(LegacyScenarioRecorder.shared.count - initialCount, 5)
+    }
+
+    func testRemovedLibraryBookCannotBeReadopted() {
+        let initialCount = LegacyScenarioRecorder.shared.count
+        runOrphanNonReAdoptionTests()
+        XCTAssertEqual(LegacyScenarioRecorder.shared.count - initialCount, 1)
+    }
+}

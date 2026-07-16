@@ -1,4 +1,5 @@
 import Foundation
+@testable import TextMouth
 
 func runFolderSortSettingTests() {
     print("\n--- Folder Sort Setting Tests ---")

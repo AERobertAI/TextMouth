@@ -5,12 +5,30 @@ import XCTest
 @MainActor
 final class ConfigSyncTests: XCTestCase {
     func testSettingsPushAllPreviouslyOmittedFieldsToConfig() {
-        let viewModel = SettingsViewModel()
+        let defaults = UserDefaults.standard
+        let keys = [
+            "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
+            "endOfBookBehavior", "punctuationPauseLevel",
+        ]
+        let previousDefaults = Dictionary(uniqueKeysWithValues: keys.map {
+            ($0, defaults.object(forKey: $0))
+        })
+        let viewModel = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false
+        )
         let service = ConfigService.shared
         let previous = service.config
         defer {
             service.config = previous
             service.saveToDisk()
+            for key in keys {
+                if let value = previousDefaults[key] ?? nil {
+                    defaults.set(value, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
         }
 
         viewModel.shiftSkipForwardUnitRaw = SkipUnit.seconds60.rawValue
@@ -26,7 +44,27 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     func testExternalConfigAppliesAllPreviouslyOmittedFields() {
-        let viewModel = SettingsViewModel()
+        let defaults = UserDefaults.standard
+        let keys = [
+            "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
+            "endOfBookBehavior", "punctuationPauseLevel",
+        ]
+        let previousDefaults = Dictionary(uniqueKeysWithValues: keys.map {
+            ($0, defaults.object(forKey: $0))
+        })
+        defer {
+            for key in keys {
+                if let value = previousDefaults[key] ?? nil {
+                    defaults.set(value, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+        }
+        let viewModel = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false
+        )
         var config = ConfigService.AppConfig()
         config.shiftSkipForwardUnit = SkipUnit.heading.rawValue
         config.shiftSkipBackwardUnit = SkipUnit.paragraph.rawValue
@@ -56,11 +94,22 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     func testExternalDataPathRequestsMigrationWithoutImmediatelySwitchingRoot() {
-        let viewModel = SettingsViewModel()
+        let notificationCenter = NotificationCenter()
+        let viewModel = SettingsViewModel(
+            notificationCenter: notificationCenter,
+            initializeServices: false
+        )
         var config = ConfigService.AppConfig()
-        config.dataDirectoryPath = "/tmp/TextMouth-External-Request"
+        config.dataDirectoryPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TextMouth-External-Request-\(UUID().uuidString)")
+            .path
         let originalRoot = TextMouthPaths.root
-        let expectation = expectation(forNotification: .dataDirectoryChangeRequested, object: nil) { note in
+        let expectation = XCTNSNotificationExpectation(
+            name: .dataDirectoryChangeRequested,
+            object: nil,
+            notificationCenter: notificationCenter
+        )
+        expectation.handler = { note in
             note.userInfo?["path"] as? String == config.dataDirectoryPath
         }
 

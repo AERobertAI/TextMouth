@@ -21,7 +21,10 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertTrue(migrated.books[0].filePath.hasPrefix(destination.path + "/"))
         XCTAssertTrue(FileManager.default.fileExists(atPath: migrated.books[0].filePath))
         let package = destination.appendingPathComponent("Library/\(migrated.books[0].tmbDirectoryName)")
-        XCTAssertEqual(try BookInfo.load(from: package).metadata.folderPath, "")
+        let migratedInfo = try BookInfo.load(from: package)
+        XCTAssertEqual(migratedInfo.metadata.folderPath, "")
+        XCTAssertEqual(migratedInfo.contentIndex?.totalWordCount, 1)
+        XCTAssertEqual(migratedInfo.contentIndex?.version, BookContentIndex.currentVersion)
     }
 
     func testNonemptyDestinationIsNeverOverwritten() throws {
@@ -66,14 +69,21 @@ final class DataDirectoryMigrationTests: XCTestCase {
         )
         let content = package.appendingPathComponent("book.txt")
         try Data("migration".utf8).write(to: content)
-        let book = Book(
+        var book = Book(
             title: "Migrated Book",
             format: .txt,
             filePath: content.path,
             md5Hash: "hash",
             tmbDirectoryName: packageName
         )
-        try book.makeBookInfo().save(to: package)
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Migration", text: "migration")],
+            format: .txt
+        )
+        book.applyContentIndexSummary(index)
+        var info = book.makeBookInfo()
+        info.contentIndex = index
+        try info.save(to: package)
         return Library(books: [book])
     }
 }

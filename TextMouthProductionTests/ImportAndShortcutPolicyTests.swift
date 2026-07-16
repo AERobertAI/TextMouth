@@ -58,4 +58,49 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
             primary: .seconds15, secondary: .heading, useSecondary: true
         ), .heading)
     }
+
+    func testAddingBindingRemovesItFromPreviousAction() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        let manager = KeyboardShortcutManager(
+            userDefaults: defaults,
+            installsEventMonitor: false
+        )
+        let binding = KeyBinding(key: "k")
+        XCTAssertTrue(manager.bindingsFor(.togglePlayback).contains(binding))
+
+        manager.addBinding(binding, to: .skipForward)
+
+        XCTAssertFalse(manager.bindingsFor(.togglePlayback).contains(binding))
+        XCTAssertTrue(manager.bindingsFor(.skipForward).contains(binding))
+    }
+
+    func testRemovingAllBindingsLeavesActionUnassigned() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        let manager = KeyboardShortcutManager(
+            userDefaults: defaults,
+            installsEventMonitor: false
+        )
+
+        manager.updateBindings(for: .whereAmI, to: [])
+
+        XCTAssertTrue(manager.bindingsFor(.whereAmI).isEmpty)
+        XCTAssertEqual(manager.primaryDisplayString(for: .whereAmI), "None")
+        XCTAssertEqual(manager.allDisplayStrings(for: .whereAmI), "No shortcut")
+    }
+
+    func testModifierDisplayOrderIsControlOptionShiftCommand() {
+        let binding = KeyBinding(
+            key: "a",
+            command: true,
+            option: true,
+            shift: true,
+            control: true
+        )
+
+        XCTAssertEqual(binding.displayString, "⌃⌥⇧⌘A")
+        XCTAssertEqual(
+            binding.accessibleDisplayString,
+            "Control + Option + Shift + Command + A"
+        )
+    }
 }
