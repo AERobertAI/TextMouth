@@ -525,11 +525,22 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         charOffsetForFrame(frame)
     }
 
-    private func handlePlaybackComplete() {
-        guard isPlaying else { return }
+    @discardableResult
+    private func handlePlaybackComplete() -> Bool {
+        // AVAudioPlayerNode can report a scheduled buffer as played back when an
+        // output route disappears, even if the node was paused. Treating that as
+        // natural completion advances to the next chapter and starts playback.
+        guard isPlaying, !isPaused else { return false }
         isPlaying = false
         isPaused = false
         onPlaybackFinished?()
+        return true
+    }
+
+    /// Test support for deterministic playback-completion policy coverage.
+    @discardableResult
+    func _handlePlaybackCompleteForTesting() -> Bool {
+        handlePlaybackComplete()
     }
 
     deinit { stop() }

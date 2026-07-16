@@ -180,6 +180,40 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(playback.outputVolume, 0.5)
     }
 
+    func testPausedEngineIgnoresRouteTeardownCompletion() {
+        let engine = AudioEngineService()
+        engine.isPlaying = true
+        engine.isPaused = true
+        var finishCount = 0
+        engine.onPlaybackFinished = {
+            finishCount += 1
+        }
+
+        let accepted = engine._handlePlaybackCompleteForTesting()
+
+        XCTAssertFalse(accepted)
+        XCTAssertTrue(engine.isPlaying)
+        XCTAssertTrue(engine.isPaused)
+        XCTAssertEqual(finishCount, 0)
+    }
+
+    func testActivelyPlayingEngineAcceptsNaturalCompletion() {
+        let engine = AudioEngineService()
+        engine.isPlaying = true
+        engine.isPaused = false
+        var finishCount = 0
+        engine.onPlaybackFinished = {
+            finishCount += 1
+        }
+
+        let accepted = engine._handlePlaybackCompleteForTesting()
+
+        XCTAssertTrue(accepted)
+        XCTAssertFalse(engine.isPlaying)
+        XCTAssertFalse(engine.isPaused)
+        XCTAssertEqual(finishCount, 1)
+    }
+
     func testAudioPlaybackRestoreVolumeResetsToFull() {
         let playback = AudioPlaybackService()
         playback.setVolume(0.3)
