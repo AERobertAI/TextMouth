@@ -85,3 +85,6 @@ TestData/are-you-ready-d3-audio.zip
 
 # Feature experiments / research (not part of the app)
 featureExp/
+
+# Local app icon source archives
+/text_mouth_icon_v*.zip
