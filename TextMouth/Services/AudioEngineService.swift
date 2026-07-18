@@ -317,10 +317,32 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return offset
     }
 
-    func resume() {
-        guard isPaused else { return }
+    /// Resume a scheduled buffer, restarting the audio engine first when
+    /// macOS has stopped it during sleep or an output-device interruption.
+    /// Returns false only when there is no paused playback or the engine
+    /// cannot be restarted, allowing the caller to retain a recoverable state.
+    @discardableResult
+    func resume() -> Bool {
+        guard isPaused else { return false }
+
+        // A player node cannot resume while its containing engine is stopped.
+        // This state can arise after the Mac sleeps for several hours even
+        // though our scheduled buffer and logical pause state remain intact.
+        if !engine.isRunning {
+            do {
+                try engine.start()
+            } catch {
+                print("AudioEngine failed to restart while resuming: \(error)")
+                return false
+            }
+        }
+
+        // Engine restarts can reset mixer state, so preserve the user's
+        // current volume just as the normal play path does.
+        engine.mainMixerNode.outputVolume = currentVolume
         playerNode.play()
         isPaused = false
+        return true
     }
 
     func stop() {

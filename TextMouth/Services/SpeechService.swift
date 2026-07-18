@@ -458,9 +458,19 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 speakDirect(currentText, fromCharOffset: pendingOffset)
             }
         } else if !usingDirectMode && audioEngine.isPaused {
-            // Already in engine mode and paused — just resume
-            audioEngine.resume()
-            startPositionTracking()
+            // The Mac may have stopped AVAudioEngine while sleeping. The
+            // audio service restarts it before asking the player node to
+            // continue. If restart itself fails, direct speech provides a
+            // usable fallback at the same reading position.
+            let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
+            if audioEngine.resume() {
+                transitionLog("ENGINE_RESUME: resumed at offset=\(offset)")
+                startPositionTracking()
+            } else {
+                transitionLog("ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(offset)")
+                audioEngine.stop()
+                speakDirect(currentText, fromCharOffset: offset)
+            }
         } else if usingDirectMode && audioEngine.hasRenderedAudio {
             // Paused in direct mode but engine is ready — switch to engine for better seeking/speed
             let offset = currentWordRange?.location ?? 0
