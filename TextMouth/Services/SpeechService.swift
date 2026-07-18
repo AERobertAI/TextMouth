@@ -109,7 +109,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// finishes if the system ever delivered fewer didFinish events than we
     /// expected (e.g. dropped under load), or let stale finishes through if
     /// it delivered more.
-    private weak var liveDirectUtterance: AVSpeechUtterance?
+    ///
+    /// This reference is deliberately strong. Delegate callbacks are forwarded
+    /// to the main queue, and AVFoundation may release its final reference to
+    /// an utterance as soon as `didFinish` returns. A weak reference could
+    /// therefore become nil before the queued identity check ran, causing a
+    /// legitimate finish (and the next direct-speech chunk) to be discarded.
+    private var liveDirectUtterance: AVSpeechUtterance?
 
     @Published var isSpeaking = false
     @Published var isPaused = false
@@ -152,6 +158,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Max characters to pass to direct-mode TTS at once. Keeps startup latency low
     /// while providing enough audio buffer for the engine to render in the background.
     private static let directModeChunkSize = 5000
+    /// Polls AVFoundation's own playback state after direct speech has started.
+    /// Two consecutive idle observations leave time for a normal `didFinish`
+    /// callback to reach the main queue before recovery is attempted.
+    private static let directPlaybackWatchdogInterval: TimeInterval = 0.5
+    private static let directPlaybackWatchdogRequiredIdleChecks = 2
+    private var directPlaybackWatchdogTimer: Timer?
+    private var directPlaybackWatchdogIdleChecks = 0
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
 
@@ -392,6 +405,119 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directSynth.speak(utterance)
     }
 
+    /// Monitor a direct utterance after AVFoundation confirms that it started.
+    /// This does not estimate speech duration. It recovers only when both the
+    /// app and AVFoundation agree playback should be active, but the system
+    /// synthesizer remains idle for two consecutive checks.
+    private func startDirectPlaybackWatchdog(for utterance: AVSpeechUtterance) {
+        stopDirectPlaybackWatchdog()
+        let watchedUtteranceID = ObjectIdentifier(utterance)
+        let timer = Timer(timeInterval: Self.directPlaybackWatchdogInterval, repeats: true) { [weak self] timer in
+            guard let self else {
+                timer.invalidate()
+                return
+            }
+
+            guard self.liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID else {
+                // A newer utterance owns playback now. Its didStart callback
+                // installs a replacement watchdog, so this timer is obsolete.
+                timer.invalidate()
+                return
+            }
+
+            let shouldRecover = Self.shouldRecoverIdleDirectSpeech(
+                appIsSpeaking: self.isSpeaking,
+                appIsPaused: self.isPaused,
+                usingDirectMode: self.usingDirectMode,
+                synthesizerIsSpeaking: self.directSynth.isSpeaking,
+                synthesizerIsPaused: self.directSynth.isPaused,
+                hasLiveUtterance: self.liveDirectUtterance != nil
+            )
+            guard shouldRecover else {
+                self.directPlaybackWatchdogIdleChecks = 0
+                return
+            }
+
+            self.directPlaybackWatchdogIdleChecks += 1
+            guard self.directPlaybackWatchdogIdleChecks >= Self.directPlaybackWatchdogRequiredIdleChecks else {
+                return
+            }
+
+            timer.invalidate()
+            if self.directPlaybackWatchdogTimer === timer {
+                self.directPlaybackWatchdogTimer = nil
+            }
+            self.directPlaybackWatchdogIdleChecks = 0
+            self.recoverFromIdleDirectSynthesizer(watchedUtteranceID: watchedUtteranceID)
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        directPlaybackWatchdogTimer = timer
+    }
+
+    /// Cancel the direct-speech watchdog whenever playback deliberately stops,
+    /// switches backend, or completes normally.
+    private func stopDirectPlaybackWatchdog() {
+        directPlaybackWatchdogTimer?.invalidate()
+        directPlaybackWatchdogTimer = nil
+        directPlaybackWatchdogIdleChecks = 0
+    }
+
+    /// Recover an utterance for which AVFoundation became idle without sending
+    /// a usable finish callback. Prefer rendered audio when available. Without
+    /// rendered audio, continue a nearly-complete chunk at its known boundary;
+    /// otherwise restart at the last reported word so content is not skipped.
+    private func recoverFromIdleDirectSynthesizer(watchedUtteranceID: ObjectIdentifier) {
+        guard liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID,
+              usingDirectMode,
+              isSpeaking,
+              !isPaused else {
+            transitionLog("DIRECT_WATCHDOG_CANCELLED: playback state changed before recovery")
+            return
+        }
+
+        let reportedOffset = currentWordRange?.location ?? directModeBaseOffset
+        let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
+        if audioEngine.hasRenderedAudio {
+            transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
+            stopDirectSynthesizer()
+            usingDirectMode = false
+            audioEngine.setSpeed(wpm: wordsPerMinute)
+            audioEngine.setPitch(multiplier: pitchMultiplier)
+            audioEngine.play(fromCharOffset: safeOffset)
+            if audioEngine.isPlaying {
+                startPositionTracking()
+            } else {
+                // A rendered buffer can survive an engine-start failure. Fall
+                // back to direct speech rather than leaving the logical state
+                // active with a second silent backend.
+                transitionLog("DIRECT_WATCHDOG_ENGINE_FAILED: rendered audio did not start; restarting direct speech at offset=\(safeOffset)")
+                audioEngine.stop()
+                speakDirect(currentText, fromCharOffset: safeOffset)
+            }
+            return
+        }
+
+        // A final word callback near the expected chunk boundary means the
+        // chunk almost certainly played to completion. Continuing at the exact
+        // boundary avoids replaying a word while still refusing to skip a large
+        // unconfirmed span of text.
+        let unconfirmedChunkUnits = directModeChunkEnd - safeOffset
+        if directModeChunked,
+           directModeChunkEnd < currentText.utf16Length,
+           unconfirmedChunkUnits >= 0,
+           unconfirmedChunkUnits <= 200 {
+            let nextOffset = directModeChunkEnd
+            transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle near chunk end; continuing at offset=\(nextOffset) lastReportedOffset=\(safeOffset)")
+            stopDirectSynthesizer()
+            speakDirect(currentText, fromCharOffset: nextOffset)
+            return
+        }
+
+        transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle before confirmed finish; restarting direct speech at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
+        stopDirectSynthesizer()
+        speakDirect(currentText, fromCharOffset: safeOffset)
+    }
+
     /// Stop the direct synthesizer and clear the live-utterance marker so
     /// any pending `didFinish` callback for the stopped utterance is
     /// recognised as stale and ignored. Replaces the older
@@ -400,6 +526,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// system delivered a different number of didFinish events than we
     /// expected. Identity comparison can't desync.
     private func stopDirectSynthesizer() {
+        stopDirectPlaybackWatchdog()
         liveDirectUtterance = nil
         directSynth.stopSpeaking(at: .immediate)
     }
@@ -764,6 +891,26 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         capturedGeneration == currentGeneration
     }
 
+    /// Decide whether the system synthesizer is unexpectedly idle while the
+    /// app still considers direct speech active. Kept as a pure policy method
+    /// so every safety condition can be regression-tested without producing
+    /// real speech in the test process.
+    nonisolated static func shouldRecoverIdleDirectSpeech(
+        appIsSpeaking: Bool,
+        appIsPaused: Bool,
+        usingDirectMode: Bool,
+        synthesizerIsSpeaking: Bool,
+        synthesizerIsPaused: Bool,
+        hasLiveUtterance: Bool
+    ) -> Bool {
+        appIsSpeaking
+            && !appIsPaused
+            && usingDirectMode
+            && !synthesizerIsSpeaking
+            && !synthesizerIsPaused
+            && hasLiveUtterance
+    }
+
     func speechSynthesizer(
         _ synthesizer: AVSpeechSynthesizer,
         willSpeakRangeOfSpeechString characterRange: NSRange,
@@ -792,8 +939,16 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
-            self?.isSpeaking = true
-            self?.isPaused = false
+            guard let self else { return }
+            guard Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance),
+                  self.usingDirectMode else {
+                self.transitionLog("DIRECT_START_IGNORED: stale utterance or direct mode inactive")
+                return
+            }
+            self.transitionLog("DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizer.isSpeaking)")
+            self.isSpeaking = true
+            self.isPaused = false
+            self.startDirectPlaybackWatchdog(for: utterance)
         }
     }
 
@@ -808,8 +963,19 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // Compares to `liveDirectUtterance` rather than counting calls,
             // so we can't desync if the system delivers an unexpected
             // number of didFinish events.
-            guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else { return }
-            guard self.usingDirectMode else { return }
+            guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else {
+                let liveDescription = self.liveDirectUtterance
+                    .map { String(describing: ObjectIdentifier($0)) } ?? "nil"
+                self.transitionLog("DIRECT_FINISH_IGNORED: utterance mismatch finished=\(finishedUtteranceID) live=\(liveDescription) directMode=\(self.usingDirectMode) synthSpeaking=\(synthesizer.isSpeaking) synthPaused=\(synthesizer.isPaused)")
+                return
+            }
+            guard self.usingDirectMode else {
+                self.transitionLog("DIRECT_FINISH_IGNORED: matching utterance but direct mode inactive finished=\(finishedUtteranceID)")
+                return
+            }
+
+            self.transitionLog("DIRECT_FINISH_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) chunked=\(self.directModeChunked)")
+            self.stopDirectPlaybackWatchdog()
 
             // This utterance has finished naturally — clear the marker so
             // a future stop-without-start doesn't accidentally process its
@@ -837,17 +1003,43 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         }
     }
 
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
-        guard usingDirectMode else { return }
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        let cancelledUtteranceID = ObjectIdentifier(utterance)
         DispatchQueue.main.async { [weak self] in
-            self?.isPaused = true
+            guard let self else { return }
+            let isCurrent = self.liveDirectUtterance.map(ObjectIdentifier.init) == cancelledUtteranceID
+            if isCurrent, self.usingDirectMode, self.isSpeaking, !self.isPaused {
+                // Do not advance or restart directly from the callback. The
+                // watchdog verifies that the synthesizer remains idle before
+                // choosing a content-preserving recovery offset.
+                self.transitionLog("DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app expected playback; watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizer.isSpeaking) synthPaused=\(synthesizer.isPaused)")
+            } else {
+                self.transitionLog("DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
+            }
+        }
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            guard self.usingDirectMode,
+                  Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
+                self.transitionLog("DIRECT_PAUSE_IGNORED: stale utterance or direct mode inactive")
+                return
+            }
+            self.isPaused = true
         }
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
-        guard usingDirectMode else { return }
         DispatchQueue.main.async { [weak self] in
-            self?.isPaused = false
+            guard let self else { return }
+            guard self.usingDirectMode,
+                  Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
+                self.transitionLog("DIRECT_CONTINUE_IGNORED: stale utterance or direct mode inactive")
+                return
+            }
+            self.isPaused = false
         }
     }
 }

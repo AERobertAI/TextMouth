@@ -42,6 +42,36 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         XCTAssertFalse(SpeechService.shouldPublishPosition(capturedGeneration: 8, currentGeneration: 9))
     }
 
+    func testIdleDirectSpeechRecoveryRequiresEverySafetyCondition() {
+        XCTAssertTrue(SpeechService.shouldRecoverIdleDirectSpeech(
+            appIsSpeaking: true,
+            appIsPaused: false,
+            usingDirectMode: true,
+            synthesizerIsSpeaking: false,
+            synthesizerIsPaused: false,
+            hasLiveUtterance: true
+        ))
+
+        let unsafeStates: [(Bool, Bool, Bool, Bool, Bool, Bool)] = [
+            (false, false, true, false, false, true),  // App is stopped.
+            (true, true, true, false, true, true),     // Playback is paused.
+            (true, false, false, false, false, true),  // Audio engine owns playback.
+            (true, false, true, true, false, true),    // Synthesizer is still speaking.
+            (true, false, true, false, true, true),    // Synthesizer reports a pause.
+            (true, false, true, false, false, false),  // No current utterance exists.
+        ]
+        for state in unsafeStates {
+            XCTAssertFalse(SpeechService.shouldRecoverIdleDirectSpeech(
+                appIsSpeaking: state.0,
+                appIsPaused: state.1,
+                usingDirectMode: state.2,
+                synthesizerIsSpeaking: state.3,
+                synthesizerIsPaused: state.4,
+                hasLiveUtterance: state.5
+            ))
+        }
+    }
+
     func testGenerationMustBumpBeforeLatePublishCheck() {
         let captured = 12
         let bumpedBeforeInvalidation = 13
