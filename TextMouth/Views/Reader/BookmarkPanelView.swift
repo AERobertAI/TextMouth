@@ -99,7 +99,10 @@ struct BookmarkPanelView: View {
                                 .focused($focusedBookmarkID, equals: index == 0 ? bookmark.id : nil)
                                 .accessibilityLabel(row.bookmarkAccessibilityLabel)
                                 .accessibilityHint(row.accessibilityHintText)
-                                .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 1.2))
+                                .modifier(InitialVoiceOverFocusModifier(
+                                    isTarget: index == 0,
+                                    delay: 1.2
+                                ))
                                 .contextMenu {
                                     Button("Go To") {
                                         viewModel.navigateToBookmark(bookmark)

@@ -48,6 +48,11 @@ struct HeadingNavigatorView: View {
     /// the cursor advances within a heading is the speaker-icon badge — the
     /// full list (and its VoiceOver focus state) stays put.
     @State private var currentHeadingID: String?
+    /// The row that receives the sheet's one-time accessibility focus request.
+    /// Keep this separate from `currentHeadingID`: playback may cross into a
+    /// new section while the sheet is open, but it must not steal VoiceOver
+    /// focus from whichever control the user is currently exploring.
+    @State private var initialFocusHeadingID: String?
     enum HeadingDisplayMode: String, CaseIterable {
         case timeEstimate = "Duration"
         case timeIntoBook = "Time In"
@@ -79,8 +84,9 @@ struct HeadingNavigatorView: View {
                 .frame(width: 280)
                 .accessibilityLabel("Heading info display mode")
 
-                Button("Done") { dismiss() }
+                Button("Back to Book") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
+                    .accessibilityHint("Close the headings screen and return to the book")
             }
             .padding()
 
@@ -119,7 +125,7 @@ struct HeadingNavigatorView: View {
                     // on long lists that can invalidate VoiceOver's current
                     // element and send focus back toward the beginning.
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(headingItems.enumerated()), id: \.element.id) { index, item in
+                        ForEach(headingItems) { item in
                             // `isCurrent` is derived inline so updates to the
                             // playback cursor only redraw the speaker badge,
                             // not the whole list.
@@ -143,13 +149,22 @@ struct HeadingNavigatorView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(item.accessibilityDescription)
+                            // Keep an explicit spoken status in addition to
+                            // `.isSelected`. VoiceOver should announce the
+                            // selected trait, while the value still identifies
+                            // the reading position if a macOS version omits the
+                            // trait from a plain button's spoken summary.
+                            .accessibilityValue(isCurrent ? "Current heading" : "")
                             .accessibilityHint(row.accessibilityHintText)
                             .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
                             // This is the sole initial VoiceOver focus
-                            // mechanism. It posts a one-time accessibility
-                            // notification without persistently binding the
-                            // first row as the keyboard focus target.
-                            .modifier(FirstItemFocusModifier(isFirst: index == 0, delay: 0.2))
+                            // mechanism. It targets the current heading when
+                            // possible, while remaining fixed if playback
+                            // later advances into another heading.
+                            .modifier(InitialVoiceOverFocusModifier(
+                                isTarget: item.id == initialFocusHeadingID,
+                                delay: 0.2
+                            ))
                             .contextMenu {
                                 Button("Go To") {
                                     viewModel.navigateToHeading(item.heading)
@@ -179,6 +194,10 @@ struct HeadingNavigatorView: View {
         .onAppear {
             rebuildHeadingItems()
             currentHeadingID = computedCurrentHeadingID()
+            initialFocusHeadingID = Self.initialFocusHeadingID(
+                currentHeadingID: currentHeadingID,
+                headingItems: headingItems
+            )
             voiceOverFocusLog("headings sheet appeared with \(headingItems.count) rows")
         }
         .onChange(of: displayMode) { _, _ in
@@ -217,6 +236,16 @@ struct HeadingNavigatorView: View {
 
     private var filteredHeadings: [Heading] {
         Self.filteredHeadings(viewModel.headings, maximumLevel: maxHeadingLevel)
+    }
+
+    /// Prefer the currently read heading for initial accessibility focus.
+    /// Documents whose first heading begins after the saved reading position
+    /// have no current heading yet, so they intentionally fall back to row one.
+    static func initialFocusHeadingID(
+        currentHeadingID: String?,
+        headingItems: [HeadingListItem]
+    ) -> String? {
+        currentHeadingID ?? headingItems.first?.id
     }
 
     private func makeHeadingItems() -> [HeadingListItem] {

@@ -72,9 +72,9 @@ struct BookSearchView: View {
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("Done") { dismiss() }
+                Button("Back to Book") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
-                    .accessibilityLabel("Close search")
+                    .accessibilityHint("Close search and return to the book")
             }
             .padding()
 

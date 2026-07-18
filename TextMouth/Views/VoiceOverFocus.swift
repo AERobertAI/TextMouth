@@ -50,12 +50,15 @@ func voiceOverFocusLog(_ msg: String) {
     }
 }
 
-struct FirstItemFocusModifier: ViewModifier {
-    let isFirst: Bool
+/// Marks exactly one element as the target for a sheet's one-time VoiceOver
+/// focus request. The caller decides whether that target is the first item, a
+/// current item, or another contextually useful control.
+struct InitialVoiceOverFocusModifier: ViewModifier {
+    let isTarget: Bool
     var delay: TimeInterval = 1.2
 
     func body(content: Content) -> some View {
-        if isFirst {
+        if isTarget {
             content
                 .accessibilityIdentifier(voiceOverFocusID)
                 .background(VoiceOverFocus(delay: delay))

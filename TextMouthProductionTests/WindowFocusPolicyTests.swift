@@ -53,6 +53,37 @@ final class WindowFocusPolicyTests: XCTestCase {
         XCTAssertEqual(Set(items.map(\.id)).count, headings.count)
     }
 
+    func testHeadingInitialFocusPrefersCurrentHeading() {
+        let items = headingItems(count: 3)
+
+        XCTAssertEqual(
+            HeadingNavigatorView.initialFocusHeadingID(
+                currentHeadingID: items[1].id,
+                headingItems: items
+            ),
+            items[1].id
+        )
+    }
+
+    func testHeadingInitialFocusFallsBackToFirstHeading() {
+        let items = headingItems(count: 3)
+
+        XCTAssertEqual(
+            HeadingNavigatorView.initialFocusHeadingID(
+                currentHeadingID: nil,
+                headingItems: items
+            ),
+            items[0].id
+        )
+    }
+
+    func testHeadingInitialFocusIsNilForEmptyBook() {
+        XCTAssertNil(HeadingNavigatorView.initialFocusHeadingID(
+            currentHeadingID: nil,
+            headingItems: []
+        ))
+    }
+
     func testEmptyBookmarkControlHasInteractiveFocusMetadata() {
         XCTAssertEqual(voiceOverFocusID, "vo-focus-target")
         XCTAssertTrue(StandardVoiceOverFocusTriggerView.acceptsFallback(
@@ -162,5 +193,27 @@ final class WindowFocusPolicyTests: XCTestCase {
             hasHostWindow: host,
             hostWindowIsKey: key
         )
+    }
+
+    /// Build lightweight heading rows for focus-policy tests without needing a
+    /// reader model, parsed document, or rendered SwiftUI hierarchy.
+    private func headingItems(count: Int) -> [HeadingNavigatorView.HeadingListItem] {
+        (0..<count).map { index in
+            let heading = Heading(
+                level: 1,
+                text: "Heading \(index)",
+                chapterIndex: 0,
+                characterOffset: index
+            )
+            return HeadingNavigatorView.HeadingListItem(
+                heading: heading,
+                isSkipped: false,
+                infoText: "",
+                accessibilityDescription: HeadingNavigatorView.accessibilityDescription(
+                    text: heading.text,
+                    level: heading.level
+                )
+            )
+        }
     }
 }

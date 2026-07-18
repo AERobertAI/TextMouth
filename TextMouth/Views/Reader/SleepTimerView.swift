@@ -45,9 +45,17 @@ struct SleepTimerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Sleep Timer")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("Sleep Timer")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+
+                Spacer()
+
+                Button("Back to Book") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityHint("Close the sleep timer and return to the book")
+            }
 
             // Current timer section — only when a timer is running
             if sleepTimerService.isActive {
@@ -63,7 +71,6 @@ struct SleepTimerView: View {
             HStack {
                 Spacer()
                 Button("Close") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
             }
         }
         .padding()
