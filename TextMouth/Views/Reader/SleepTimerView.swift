@@ -33,6 +33,10 @@ struct SleepTimerView: View {
     @ObservedObject var viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
     var onStartPlayback: (() -> Void)?
+    /// The presenting reader supplies its sheet-binding close action. Using
+    /// the source-of-truth binding avoids relying solely on an environment
+    /// dismiss action after the timer's observed state changes.
+    var onClose: (() -> Void)?
     /// Whether to dismiss the sheet after starting a NEW timer.
     /// Current-timer actions honor the same sheet auto-close policy so
     /// reset/restart behave the same way as a fresh timer selection.
@@ -41,6 +45,11 @@ struct SleepTimerView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var customMinutes: Int = 30
+    /// Keep the VoiceOver request alive only for initial presentation. Setting
+    /// or cancelling a timer changes the sheet hierarchy; leaving the request
+    /// attached would create a new focus bridge that could reactivate a sheet
+    /// while it was being dismissed.
+    @State private var shouldRequestInitialFocus = true
     /// Unique identifier for this sheet instance. Other sheets close
     /// themselves when they receive a `sleepTimerSheetOpened`
     /// notification with a different ID — so only one timer sheet is
@@ -56,7 +65,7 @@ struct SleepTimerView: View {
 
                 Spacer()
 
-                Button("Back to Book") { dismiss() }
+                Button("Close") { closeSheet() }
                     .keyboardShortcut(.cancelAction)
                     .accessibilityHint("Close the sleep timer and return to the book")
             }
@@ -70,12 +79,6 @@ struct SleepTimerView: View {
             // New timer section — always visible
             newTimerSection
 
-            Divider()
-
-            HStack {
-                Spacer()
-                Button("Close") { dismiss() }
-            }
         }
         .padding()
         .frame(width: 320)
@@ -88,11 +91,18 @@ struct SleepTimerView: View {
                 object: nil,
                 userInfo: ["sheetID": viewID]
             )
+
+            // Once the initial focus attempts have had time to complete,
+            // remove the trigger so countdown updates cannot request focus
+            // again. Timer actions also clear it immediately.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                shouldRequestInitialFocus = false
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .sleepTimerSheetOpened)) { notif in
             // Another sheet opened. If it's not us, dismiss ourselves.
             if let otherID = notif.userInfo?["sheetID"] as? UUID, otherID != viewID {
-                dismiss()
+                closeSheet()
             }
         }
     }
@@ -121,17 +131,19 @@ struct SleepTimerView: View {
 
             HStack(spacing: 12) {
                 Button("Reset Timer") {
+                    shouldRequestInitialFocus = false
                     viewModel.restartSleepTimer(startPlaybackIfNeeded: true)
                     viewModel.announceToVoiceOver(
                         "Timer reset. \(sleepTimerService.formattedRemaining) remaining."
                     )
                     if autoClose {
-                        dismiss()
+                        closeSheet()
                     }
                 }
                 .accessibilityHint("Restart the timer with its original duration")
 
                 Button("Cancel Timer", role: .destructive) {
+                    shouldRequestInitialFocus = false
                     viewModel.cancelSleepTimer()
                     viewModel.announceToVoiceOver("Sleep timer cancelled.")
                 }
@@ -167,11 +179,14 @@ struct SleepTimerView: View {
                     setNewTimer(.minutes(minutes))
                 }
                 .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
-                // The top Back to Book control remains immediately
-                // available, but opening the sheet places VoiceOver on the
-                // first primary timer action instead of the dismiss action.
+                // The top Close control remains immediately available, but
+                // opening the sheet places VoiceOver on the first primary
+                // timer action instead of the dismiss action.
                 .modifier(InitialVoiceOverFocusModifier(
-                    isTarget: minutes == Self.initialFocusPresetMinutes,
+                    isTarget: Self.isInitialFocusTarget(
+                        minutes: minutes,
+                        shouldRequest: shouldRequestInitialFocus
+                    ),
                     delay: 0.2
                 ))
             }
@@ -220,13 +235,42 @@ struct SleepTimerView: View {
     /// Plays the book if it isn't already playing — the user clearly
     /// intends to read until the timer fires.
     private func setNewTimer(_ duration: SleepTimerDuration) {
+        // Disable the one-time focus bridge before publishing the active timer
+        // state. Otherwise SwiftUI may rebuild it for the new Current Timer
+        // section and reactivate the sheet during dismissal.
+        shouldRequestInitialFocus = false
         viewModel.startSleepTimer(duration: duration, startPlaybackIfNeeded: true)
         // Announce so VoiceOver users know the timer was set even if
         // the sheet auto-dismisses immediately.
         viewModel.announceToVoiceOver("Timer set for \(duration.displayName).")
         if autoClose {
+            closeSheet()
+        }
+    }
+
+    /// Centralize every close path so buttons, Escape, auto-close, and the
+    /// single-sheet notification all update the presenter's binding directly.
+    private func closeSheet() {
+        shouldRequestInitialFocus = false
+        Self.performDismiss(onClose: onClose) {
             dismiss()
         }
+    }
+
+    /// Pure routing helper used by tests to guarantee that an explicit parent
+    /// close action wins, with Environment dismiss retained as a safe fallback.
+    static func performDismiss(onClose: (() -> Void)?, fallback: () -> Void) {
+        if let onClose {
+            onClose()
+        } else {
+            fallback()
+        }
+    }
+
+    /// Identify the sole initial VoiceOver target only while the sheet's
+    /// one-time focus request remains active.
+    static func isInitialFocusTarget(minutes: Int, shouldRequest: Bool) -> Bool {
+        shouldRequest && minutes == initialFocusPresetMinutes
     }
 }
 

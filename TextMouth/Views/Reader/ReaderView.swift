@@ -193,6 +193,9 @@ struct ReaderView: View {
                         viewModel.togglePlayPause()
                     }
                 },
+                onClose: {
+                    showSleepTimer = false
+                },
                 autoClose: viewModel.settingsViewModel.sleepTimerAutoClose
             )
         }

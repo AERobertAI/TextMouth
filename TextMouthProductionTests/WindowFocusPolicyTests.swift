@@ -194,6 +194,35 @@ final class WindowFocusPolicyTests: XCTestCase {
         XCTAssertEqual(SleepTimerView.presetMinutes.first, SleepTimerView.initialFocusPresetMinutes)
     }
 
+    func testSleepTimerFocusRequestCanBeConsumedBeforeStateChanges() {
+        XCTAssertTrue(SleepTimerView.isInitialFocusTarget(minutes: 10, shouldRequest: true))
+        XCTAssertFalse(SleepTimerView.isInitialFocusTarget(minutes: 10, shouldRequest: false))
+        XCTAssertFalse(SleepTimerView.isInitialFocusTarget(minutes: 15, shouldRequest: true))
+    }
+
+    func testSleepTimerDismissPrefersPresenterBinding() {
+        var parentCloseCount = 0
+        var fallbackCount = 0
+
+        SleepTimerView.performDismiss(
+            onClose: { parentCloseCount += 1 },
+            fallback: { fallbackCount += 1 }
+        )
+
+        XCTAssertEqual(parentCloseCount, 1)
+        XCTAssertEqual(fallbackCount, 0)
+    }
+
+    func testSleepTimerDismissFallsBackWithoutPresenterBinding() {
+        var fallbackCount = 0
+
+        SleepTimerView.performDismiss(onClose: nil) {
+            fallbackCount += 1
+        }
+
+        XCTAssertEqual(fallbackCount, 1)
+    }
+
     func testHeadingRotorAndRowShareFormatter() {
         let row = HeadingNavigatorView.accessibilityDescription(text: "The Battle", level: 2)
         let rotor = HeadingNavigatorView.accessibilityDescription(text: "The Battle", level: 2)
