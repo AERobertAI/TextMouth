@@ -119,13 +119,24 @@ final class KeyboardShortcutManager: ObservableObject {
     }
 
     private func handleKeyEvent(_ event: NSEvent) -> Bool {
-        // Don't intercept keys when a text field/editor has focus
-        if isTextInputFocused() { return false }
+        let textInputIsFocused = isTextInputFocused()
 
         // Check each action's bindings
         for (action, actionBindings) in bindings {
             for binding in actionBindings {
                 if binding.matches(event) {
+                    // Plain typing must continue to reach text fields. Command-
+                    // and Control-based bindings represent explicit shortcuts,
+                    // however, and need to keep working from fields such as the
+                    // sleep timer's custom-minutes input so they can close the
+                    // panel they opened.
+                    guard Self.shouldHandle(
+                        binding: binding,
+                        whenTextInputIsFocused: textInputIsFocused
+                    ) else {
+                        continue
+                    }
+
                     // Pass whether Shift was held (for secondary skip amounts)
                     // Only count it as "extra shift" if the binding itself doesn't require Shift
                     let shiftHeld = Self.hasExtraShift(
@@ -144,6 +155,15 @@ final class KeyboardShortcutManager: ObservableObject {
             }
         }
         return false
+    }
+
+    /// Preserve normal text entry unless the binding uses a conventional
+    /// command modifier that clearly identifies it as an app shortcut.
+    nonisolated static func shouldHandle(
+        binding: KeyBinding,
+        whenTextInputIsFocused: Bool
+    ) -> Bool {
+        !whenTextInputIsFocused || binding.command || binding.control
     }
 
     nonisolated static func hasExtraShift(

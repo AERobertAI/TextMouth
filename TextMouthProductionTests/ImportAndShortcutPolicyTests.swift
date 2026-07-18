@@ -50,6 +50,24 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
         ))
     }
 
+    func testCommandPanelShortcutWorksFromTextInput() {
+        let binding = KeyBinding(key: "t", command: true, shift: true)
+
+        XCTAssertTrue(KeyboardShortcutManager.shouldHandle(
+            binding: binding,
+            whenTextInputIsFocused: true
+        ))
+    }
+
+    func testPlainLetterShortcutDoesNotInterruptTextInput() {
+        let binding = KeyBinding(key: "w")
+
+        XCTAssertFalse(KeyboardShortcutManager.shouldHandle(
+            binding: binding,
+            whenTextInputIsFocused: true
+        ))
+    }
+
     func testSkipUnitSelectionChoosesPrimaryOrSecondary() {
         XCTAssertEqual(ReaderViewModel.selectedSkipUnit(
             primary: .seconds15, secondary: .heading, useSecondary: false

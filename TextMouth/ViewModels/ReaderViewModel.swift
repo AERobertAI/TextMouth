@@ -458,15 +458,16 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Check whether a notification should be handled by this reader instance.
-    /// - Keyboard shortcuts include sourceWindow: only respond if it matches hostWindow.
-    /// - Menu commands have no sourceWindow: only respond if this reader's window is key.
+    /// - Keyboard shortcuts include `sourceWindow`: accept the reader or one
+    ///   of its attached sheets.
+    /// - Menu commands have no source window: follow the current key window,
+    ///   including a sheet attached to this reader.
     private func isTargetedNotification(_ notification: Notification) -> Bool {
         let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
         return WindowCommandRouting.shouldAccept(
-            hasSourceWindow: sourceWindow != nil,
-            sourceMatchesHost: sourceWindow === hostWindow,
-            hasHostWindow: hostWindow != nil,
-            hostWindowIsKey: hostWindow?.isKeyWindow == true
+            sourceWindow: sourceWindow,
+            hostWindow: hostWindow,
+            keyWindow: NSApp.keyWindow
         )
     }
 

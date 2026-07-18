@@ -239,33 +239,20 @@ struct ReaderView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showHeadingList)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard sourceWindow === viewModel.hostWindow else { return }
-            } else {
-                guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
-            }
+            guard shouldAcceptPanelCommand(notification) else { return }
             showHeadingNavigator.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookmarkList)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard sourceWindow === viewModel.hostWindow else { return }
-            } else {
-                guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
-            }
+            guard shouldAcceptPanelCommand(notification) else { return }
             showBookmarks.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .showSleepTimer)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard sourceWindow === viewModel.hostWindow else { return }
-            } else {
-                guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
-            }
+            guard shouldAcceptPanelCommand(notification) else { return }
             showSleepTimer.toggle()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { _ in
-            // Only open search in the focused reader window
-            guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
-            showSearch = true
+        .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { notification in
+            guard shouldAcceptPanelCommand(notification) else { return }
+            showSearch.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused reader window
@@ -276,6 +263,17 @@ struct ReaderView: View {
             }
             showMetadataEditor = true
         }
+    }
+
+    /// Accept panel commands from the reader window itself or from a sheet
+    /// attached to that reader. This makes each panel's opening shortcut a
+    /// reliable toggle while preserving correct routing between book windows.
+    private func shouldAcceptPanelCommand(_ notification: Notification) -> Bool {
+        WindowCommandRouting.shouldAccept(
+            sourceWindow: notification.userInfo?["sourceWindow"] as? NSWindow,
+            hostWindow: viewModel.hostWindow,
+            keyWindow: NSApp.keyWindow
+        )
     }
 }
 

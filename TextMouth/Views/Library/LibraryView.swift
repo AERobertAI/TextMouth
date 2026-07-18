@@ -16,6 +16,42 @@ enum WindowCommandRouting {
         }
         return !hasHostWindow || hostWindowIsKey
     }
+
+    /// Route a command from either a normal window or one of its presented
+    /// sheets. AppKit makes the sheet the key window while it is visible, so
+    /// comparing the key/source window directly with its reader host prevents
+    /// a panel's own shortcut from reaching the reader to close that panel.
+    @MainActor
+    static func shouldAccept(
+        sourceWindow: NSWindow?,
+        hostWindow: NSWindow?,
+        keyWindow: NSWindow?
+    ) -> Bool {
+        guard let hostWindow else { return true }
+
+        // A source-tagged keyboard shortcut follows its source. A menu command
+        // has no source tag, so it follows the window currently receiving keys.
+        guard let commandWindow = sourceWindow ?? keyWindow else {
+            return hostWindow.isKeyWindow
+        }
+
+        return rootWindow(for: commandWindow) === rootWindow(for: hostWindow)
+    }
+
+    /// Walk through nested sheets to the document window that owns them.
+    /// The visited set guards against a malformed AppKit relationship cycle.
+    @MainActor
+    static func rootWindow(for window: NSWindow) -> NSWindow {
+        var currentWindow = window
+        var visited: Set<ObjectIdentifier> = []
+
+        while visited.insert(ObjectIdentifier(currentWindow)).inserted,
+              let parent = currentWindow.sheetParent {
+            currentWindow = parent
+        }
+
+        return currentWindow
+    }
 }
 
 enum LibraryFocusTarget: Equatable {
