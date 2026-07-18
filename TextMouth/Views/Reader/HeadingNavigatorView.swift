@@ -10,9 +10,24 @@ struct HeadingNavigatorView: View {
         let heading: Heading
         let isSkipped: Bool
         let infoText: String
-        let accessibilityDescription: String
+        /// Timing or percentage detail appended after the structural label.
+        /// Store the suffix separately so the lightweight current-heading
+        /// state can update the spoken label without rebuilding every row.
+        let accessibilitySuffix: String
 
         var id: String { heading.id }
+
+        /// Build the final row label, inserting the current status directly
+        /// after the heading name as requested by VoiceOver users.
+        func accessibilityDescription(isCurrent: Bool) -> String {
+            HeadingNavigatorView.accessibilityDescription(
+                text: heading.text,
+                level: heading.level,
+                isSkipped: isSkipped,
+                isCurrent: isCurrent,
+                suffix: accessibilitySuffix
+            )
+        }
     }
 
     /// Shared row/rotor label format so VoiceOver speaks heading names before
@@ -21,10 +36,12 @@ struct HeadingNavigatorView: View {
         text: String,
         level: Int,
         isSkipped: Bool = false,
+        isCurrent: Bool = false,
         suffix: String = ""
     ) -> String {
         let skipPrefix = isSkipped ? "Skipped, " : ""
-        let base = "\(skipPrefix)\(text) - level \(level)"
+        let currentSuffix = isCurrent ? " (current heading)" : ""
+        let base = "\(skipPrefix)\(text)\(currentSuffix) - level \(level)"
         return suffix.isEmpty ? base : "\(base), \(suffix)"
     }
 
@@ -148,14 +165,11 @@ struct HeadingNavigatorView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(item.accessibilityDescription)
-                            // Keep an explicit spoken status in addition to
-                            // `.isSelected`. VoiceOver should announce the
-                            // selected trait, while the value still identifies
-                            // the reading position if a macOS version omits the
-                            // trait from a plain button's spoken summary.
-                            .accessibilityValue(isCurrent ? "Current heading" : "")
+                            .accessibilityLabel(item.accessibilityDescription(isCurrent: isCurrent))
                             .accessibilityHint(row.accessibilityHintText)
+                            // Preserve the semantic selected state while the
+                            // label controls exactly where VoiceOver speaks
+                            // the human-readable "current heading" status.
                             .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
                             // This is the sole initial VoiceOver focus
                             // mechanism. It targets the current heading when
@@ -259,7 +273,7 @@ struct HeadingNavigatorView: View {
                     heading: heading,
                     isSkipped: isSkipped,
                     infoText: "",
-                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "")
+                    accessibilitySuffix: ""
                 )
             }
         }
@@ -305,7 +319,7 @@ struct HeadingNavigatorView: View {
                     heading: heading,
                     isSkipped: isSkipped,
                     infoText: TimeFormatting.format(seconds),
-                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: TimeFormatting.spoken(seconds))
+                    accessibilitySuffix: TimeFormatting.spoken(seconds)
                 )
             case .timeIntoBook:
                 let seconds: TimeInterval
@@ -321,7 +335,7 @@ struct HeadingNavigatorView: View {
                     heading: heading,
                     isSkipped: isSkipped,
                     infoText: TimeFormatting.format(seconds),
-                    accessibilityDescription: describeHeading(heading, isSkipped: isSkipped, suffix: "\(TimeFormatting.spoken(seconds)) in")
+                    accessibilitySuffix: "\(TimeFormatting.spoken(seconds)) in"
                 )
             case .percentage:
                 let percent = min(Double(globalOffset) / Double(totalCharacterCount) * 100.0, 100.0)
@@ -329,11 +343,7 @@ struct HeadingNavigatorView: View {
                     heading: heading,
                     isSkipped: isSkipped,
                     infoText: String(format: "%.1f%%", percent),
-                    accessibilityDescription: describeHeading(
-                        heading,
-                        isSkipped: isSkipped,
-                        suffix: String(format: "%.1f percent", percent)
-                    )
+                    accessibilitySuffix: String(format: "%.1f percent", percent)
                 )
             }
         }
@@ -389,14 +399,6 @@ struct HeadingNavigatorView: View {
         return offsets
     }
 
-    private func describeHeading(_ heading: Heading, isSkipped: Bool, suffix: String) -> String {
-        Self.accessibilityDescription(
-            text: heading.text,
-            level: heading.level,
-            isSkipped: isSkipped,
-            suffix: suffix
-        )
-    }
 }
 
 struct HeadingRow: View {

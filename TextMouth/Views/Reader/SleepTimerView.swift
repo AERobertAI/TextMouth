@@ -26,6 +26,10 @@ import SwiftUI
 /// compares IDs, and if mismatched, closes itself. This stops the
 /// "two book windows = two timer sheets" duplication the user reported.
 struct SleepTimerView: View {
+    /// Presets share one source of truth for rendering and initial focus.
+    static let presetMinutes = [10, 15, 30, 45, 60]
+    static let initialFocusPresetMinutes = presetMinutes[0]
+
     @ObservedObject var viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
     var onStartPlayback: (() -> Void)?
@@ -158,11 +162,18 @@ struct SleepTimerView: View {
                 .foregroundColor(.secondary)
 
             // Preset minute durations
-            ForEach([10, 15, 30, 45, 60], id: \.self) { minutes in
+            ForEach(Self.presetMinutes, id: \.self) { minutes in
                 Button("\(minutes) minutes") {
                     setNewTimer(.minutes(minutes))
                 }
                 .accessibilityLabel("Set timer for \(minutes) minutes and start playing")
+                // The top Back to Book control remains immediately
+                // available, but opening the sheet places VoiceOver on the
+                // first primary timer action instead of the dismiss action.
+                .modifier(InitialVoiceOverFocusModifier(
+                    isTarget: minutes == Self.initialFocusPresetMinutes,
+                    delay: 0.2
+                ))
             }
 
             // Custom duration

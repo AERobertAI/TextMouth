@@ -43,9 +43,7 @@ final class WindowFocusPolicyTests: XCTestCase {
                 heading: $0,
                 isSkipped: false,
                 infoText: "",
-                accessibilityDescription: HeadingNavigatorView.accessibilityDescription(
-                    text: $0.text, level: $0.level
-                )
+                accessibilitySuffix: ""
             )
         }
 
@@ -179,6 +177,23 @@ final class WindowFocusPolicyTests: XCTestCase {
         XCTAssertLessThan(description.count, "Level 1 heading: Chapter 5".count)
     }
 
+    func testCurrentHeadingStatusImmediatelyFollowsHeadingName() {
+        XCTAssertEqual(
+            HeadingNavigatorView.accessibilityDescription(
+                text: "Chapter 3",
+                level: 1,
+                isCurrent: true,
+                suffix: "4 minutes"
+            ),
+            "Chapter 3 (current heading) - level 1, 4 minutes"
+        )
+    }
+
+    func testSleepTimerInitialFocusPrefersFirstPreset() {
+        XCTAssertEqual(SleepTimerView.initialFocusPresetMinutes, 10)
+        XCTAssertEqual(SleepTimerView.presetMinutes.first, SleepTimerView.initialFocusPresetMinutes)
+    }
+
     func testHeadingRotorAndRowShareFormatter() {
         let row = HeadingNavigatorView.accessibilityDescription(text: "The Battle", level: 2)
         let rotor = HeadingNavigatorView.accessibilityDescription(text: "The Battle", level: 2)
@@ -209,10 +224,7 @@ final class WindowFocusPolicyTests: XCTestCase {
                 heading: heading,
                 isSkipped: false,
                 infoText: "",
-                accessibilityDescription: HeadingNavigatorView.accessibilityDescription(
-                    text: heading.text,
-                    level: heading.level
-                )
+                accessibilitySuffix: ""
             )
         }
     }
