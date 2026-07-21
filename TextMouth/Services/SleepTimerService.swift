@@ -72,6 +72,11 @@ final class SleepTimerService: ObservableObject {
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
+    /// Preferences store used for the restart-timer duration. Production uses
+    /// the app's standard defaults; tests inject an isolated suite so resetting
+    /// a fixture can never remove the user's real saved duration.
+    private let userDefaults: UserDefaults
+
     private var timer: Timer?
     private var fadeTimer: Timer?
     private var endOfHeadingTriggered = false
@@ -92,10 +97,37 @@ final class SleepTimerService: ObservableObject {
     /// and halting the fade would leave audio at an arbitrary low volume.
     private var isCountdownPausedByPlayback = false
 
-    /// Private to enforce singleton access. Tests that need a fresh
-    /// instance should call `_resetForTesting()` between cases.
-    init() {
+    /// Production uses the shared instance. The internal initializer remains
+    /// injectable so hosted tests can use disposable preferences storage.
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
         loadLastUsedDuration()
+    }
+
+    /// Append a structured event to the dedicated timer log. This is also
+    /// available to shortcut routing and playback code so one file contains
+    /// the complete path from input event through expiration handling.
+    nonisolated static func appendDiagnosticLog(_ message: String) {
+        let logFile = TextMouthPaths.logsDir.appendingPathComponent("textmouth_timer.log")
+        TextMouthPaths.appendLog(to: logFile, message: message)
+    }
+
+    /// Short owner tokens make multi-window routing diagnosable without
+    /// filling every event with a full UUID.
+    private static func ownerToken(_ ownerID: UUID?) -> String {
+        ownerID.map { String($0.uuidString.prefix(8)) } ?? "none"
+    }
+
+    /// Record an event together with the state needed to reconstruct timer
+    /// behavior after the fact.
+    private func timerLog(_ event: String) {
+        let durationLabel = duration?.displayName ?? "none"
+        Self.appendDiagnosticLog(
+            "\(event) active=\(isActive) duration=\(durationLabel) "
+                + "remaining=\(remainingSeconds) fading=\(isFadingOut) "
+                + "countdownPaused=\(isCountdownPausedByPlayback) "
+                + "owner=\(Self.ownerToken(ownerID)) generation=\(generation)"
+        )
     }
 
     // MARK: - Last-Used-Duration Persistence
@@ -104,13 +136,20 @@ final class SleepTimerService: ObservableObject {
     /// Sleep Timer" gesture works even on the first launch after the
     /// app was relaunched mid-timer.
     private func loadLastUsedDuration() {
-        guard let data = UserDefaults.standard.data(forKey: Self.lastUsedDurationKey) else { return }
+        guard let data = userDefaults.data(forKey: Self.lastUsedDurationKey) else {
+            timerLog("RESTORE_LAST_DURATION result=missing")
+            return
+        }
         // Encoded as JSON for forward-compatibility — adding new
         // SleepTimerDuration cases later won't break decoding old
         // saved values, since unknown cases just fail to decode and
         // we treat that as "no last duration".
         if let decoded = try? JSONDecoder().decode(PersistedDuration.self, from: data) {
             lastUsedDuration = decoded.toModel()
+            let restoredLabel = lastUsedDuration?.displayName ?? "invalid"
+            timerLog("RESTORE_LAST_DURATION result=decoded value=\(restoredLabel)")
+        } else {
+            timerLog("RESTORE_LAST_DURATION result=decode-failed bytes=\(data.count)")
         }
     }
 
@@ -121,7 +160,10 @@ final class SleepTimerService: ObservableObject {
     private func persistLastUsedDuration(_ duration: SleepTimerDuration) {
         let model = PersistedDuration(from: duration)
         if let data = try? JSONEncoder().encode(model) {
-            UserDefaults.standard.set(data, forKey: Self.lastUsedDurationKey)
+            userDefaults.set(data, forKey: Self.lastUsedDurationKey)
+            timerLog("PERSIST_LAST_DURATION result=saved value=\(duration.displayName)")
+        } else {
+            timerLog("PERSIST_LAST_DURATION result=encode-failed value=\(duration.displayName)")
         }
     }
 
@@ -184,7 +226,7 @@ final class SleepTimerService: ObservableObject {
         // Capture lastUsedDuration BEFORE stop() so even though stop()
         // doesn't clear it (by design), we don't accidentally race a
         // partial state. Record it here, persist for later launches.
-        stop()
+        stop(reason: "replaced-before-start")
         self.ownerID = ownerID
         // Track the most recent owner separately from `ownerID` so it
         // survives stop() — the gesture notification routing depends
@@ -207,12 +249,15 @@ final class SleepTimerService: ObservableObject {
         switch duration {
         case .minutes(let minutes):
             remainingSeconds = minutes * 60
+            timerLog("START kind=minutes requestedMinutes=\(minutes) fadeSeconds=\(fadeOutDuration)")
             startCountdown()
         case .endOfHeading:
             remainingSeconds = 0
             endOfHeadingTriggered = false
+            timerLog("START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
         case .endOfDocument:
             remainingSeconds = 0
+            timerLog("START kind=end-of-document fadeSeconds=\(fadeOutDuration)")
         }
     }
 
@@ -223,7 +268,12 @@ final class SleepTimerService: ObservableObject {
     /// restart to pick up the latest settings can do so explicitly.
     func restart(fadeOutDuration: TimeInterval? = nil) {
         guard let current = duration,
-              let onExpire = onTimerExpired else { return }
+              let onExpire = onTimerExpired else {
+            timerLog("RESTART_IGNORED reason=missing-current-duration-or-expiry-handler")
+            return
+        }
+        let fadeOverrideLabel = fadeOutDuration.map { String($0) } ?? "none"
+        timerLog("RESTART_REQUESTED overrideFadeSeconds=\(fadeOverrideLabel)")
         // Capture the existing callbacks/owner so start() can re-install
         // them after the implicit stop() inside it clears them.
         let owner = ownerID
@@ -240,7 +290,10 @@ final class SleepTimerService: ObservableObject {
 
     /// Stop the timer, clearing all state and callbacks. Anyone may
     /// call this — tapping "Cancel Timer" in any window cancels.
-    func stop() {
+    func stop(reason: String = "requested") {
+        let previousDurationLabel = duration?.displayName ?? "none"
+        let previousSummary = "wasActive=\(isActive) wasDuration=\(previousDurationLabel) "
+            + "wasRemaining=\(remainingSeconds) wasFading=\(isFadingOut)"
         generation += 1
         timer?.invalidate()
         timer = nil
@@ -256,6 +309,7 @@ final class SleepTimerService: ObservableObject {
         ownerID = nil
         onTimerExpired = nil
         onFadeStep = nil
+        timerLog("STOP reason=\(reason) \(previousSummary)")
     }
 
     /// Returns true once after a fade reaches silence and the timer is
@@ -265,6 +319,9 @@ final class SleepTimerService: ObservableObject {
     func consumePendingFadeCompletion() -> Bool {
         let pending = pendingFadeCompletion
         pendingFadeCompletion = false
+        if pending {
+            timerLog("FADE_COMPLETION_CONSUMED")
+        }
         return pending
     }
 
@@ -279,48 +336,82 @@ final class SleepTimerService: ObservableObject {
     /// - No-op when called by a non-owner — Book B pausing must not
     ///   affect a timer owned by Book A.
     func pauseCountdown(by callerID: UUID) {
-        guard self.ownerID == callerID,
-              isActive,
-              case .minutes = duration,
-              !isFadingOut,
-              let activeTimer = timer else { return }
+        // Ordinary playback pauses happen frequently with no timer armed;
+        // keep the dedicated timer log focused on actual timer sessions.
+        guard isActive else { return }
+        guard self.ownerID == callerID else {
+            timerLog("COUNTDOWN_PAUSE_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            return
+        }
+        guard case .minutes = duration else {
+            timerLog("COUNTDOWN_PAUSE_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
+            return
+        }
+        guard !isFadingOut else {
+            timerLog("COUNTDOWN_PAUSE_IGNORED reason=fade-in-progress caller=\(Self.ownerToken(callerID))")
+            return
+        }
+        guard let activeTimer = timer else {
+            timerLog("COUNTDOWN_PAUSE_IGNORED reason=countdown-not-armed caller=\(Self.ownerToken(callerID))")
+            return
+        }
         activeTimer.invalidate()
         timer = nil
         isCountdownPausedByPlayback = true
+        timerLog("COUNTDOWN_PAUSED caller=\(Self.ownerToken(callerID))")
     }
 
     /// Resume a previously-paused countdown with its preserved remaining
     /// time. Called from the playback layer when the user resumes.
     /// No-op when there's nothing paused or the caller isn't the owner.
     func resumeCountdown(by callerID: UUID) {
-        guard self.ownerID == callerID,
-              isActive,
-              isCountdownPausedByPlayback,
-              case .minutes = duration else { return }
+        // As with pause, a normal play action with no timer is not a timer
+        // event and should not obscure the sessions under investigation.
+        guard isActive else { return }
+        guard self.ownerID == callerID else {
+            timerLog("COUNTDOWN_RESUME_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            return
+        }
+        guard isCountdownPausedByPlayback else {
+            timerLog("COUNTDOWN_RESUME_IGNORED reason=not-paused caller=\(Self.ownerToken(callerID))")
+            return
+        }
+        guard case .minutes = duration else {
+            timerLog("COUNTDOWN_RESUME_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
+            return
+        }
         isCountdownPausedByPlayback = false
+        timerLog("COUNTDOWN_RESUMED caller=\(Self.ownerToken(callerID))")
         startCountdown()
     }
 
     /// Notify the timer that a heading boundary was crossed in the
     /// owner book. Only the owner can advance an `endOfHeading` timer.
     func notifyHeadingBoundary(by callerID: UUID) {
-        guard self.ownerID == callerID,
-              isActive,
-              case .endOfHeading = duration else { return }
+        guard isActive, case .endOfHeading = duration else { return }
+        guard self.ownerID == callerID else {
+            timerLog("HEADING_BOUNDARY_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            return
+        }
         if endOfHeadingTriggered {
+            timerLog("HEADING_BOUNDARY_EXPIRING caller=\(Self.ownerToken(callerID))")
             expire()
         } else {
             endOfHeadingTriggered = true
+            timerLog("HEADING_BOUNDARY_ARMED caller=\(Self.ownerToken(callerID))")
         }
     }
 
     /// Notify the timer that the document ended in the owner book.
     /// Only the owner can trigger an `endOfDocument` timer.
     func notifyDocumentEnd(by callerID: UUID) {
-        guard self.ownerID == callerID, isActive else { return }
-        if case .endOfDocument = duration {
-            expire()
+        guard isActive, case .endOfDocument = duration else { return }
+        guard self.ownerID == callerID else {
+            timerLog("DOCUMENT_END_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            return
         }
+        timerLog("DOCUMENT_END_EXPIRING caller=\(Self.ownerToken(callerID))")
+        expire()
     }
 
     // MARK: - Internal Countdown / Fade
@@ -337,6 +428,7 @@ final class SleepTimerService: ObservableObject {
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+        timerLog("COUNTDOWN_ARMED")
     }
 
     /// Applies one tick from the currently armed countdown. Keeping the state
@@ -347,6 +439,11 @@ final class SleepTimerService: ObservableObject {
         if remainingSeconds > 0 {
             remainingSeconds -= 1
         }
+        // Minute boundaries and the final ten seconds provide enough detail
+        // to prove that a countdown remained live without writing every tick.
+        if remainingSeconds % 60 == 0 || remainingSeconds <= 10 {
+            timerLog("COUNTDOWN_PROGRESS")
+        }
         announceIfMilestone()
         if remainingSeconds <= 0 {
             expire()
@@ -354,15 +451,22 @@ final class SleepTimerService: ObservableObject {
     }
 
     private func expire() {
-        guard isActive else { return }
+        guard isActive else {
+            timerLog("EXPIRE_IGNORED reason=inactive")
+            return
+        }
         timer?.invalidate()
         timer = nil
+        timerLog("EXPIRE_REACHED_ZERO fadeSeconds=\(fadeOutDuration)")
 
         if fadeOutDuration > 0 && !isFadingOut {
             startFadeOut()
         } else if !isFadingOut {
             isActive = false
+            timerLog("EXPIRY_CALLBACK_BEGIN mode=instant")
             onTimerExpired?()
+        } else {
+            timerLog("EXPIRE_IGNORED reason=fade-already-running")
         }
     }
 
@@ -376,6 +480,7 @@ final class SleepTimerService: ObservableObject {
         let totalSteps = Self.fadeStepCount(duration: fadeOutDuration)
         let stepInterval = fadeOutDuration / Double(totalSteps)
         var currentStep = 0
+        timerLog("FADE_STARTED steps=\(totalSteps) stepInterval=\(stepInterval)")
 
         let ft = Timer(timeInterval: stepInterval, repeats: true) { [weak self] timer in
             nonisolated(unsafe) let callbackTimer = timer
@@ -395,6 +500,8 @@ final class SleepTimerService: ObservableObject {
                     self.pendingFadeCompletion = true
                     self.isFadingOut = false
                     self.isActive = false
+                    self.timerLog("FADE_COMPLETED finalVolume=\(volume)")
+                    self.timerLog("EXPIRY_CALLBACK_BEGIN mode=fade")
                     self.onTimerExpired?()
                 }
             }
@@ -464,9 +571,9 @@ final class SleepTimerService: ObservableObject {
     /// call this. Clears the persisted last-used duration too so a
     /// later test isn't surprised by leaked state from earlier ones.
     func _resetForTesting() {
-        stop()
+        stop(reason: "test-reset")
         lastUsedDuration = nil
         lastOwnerID = nil
-        UserDefaults.standard.removeObject(forKey: Self.lastUsedDurationKey)
+        userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }
 }

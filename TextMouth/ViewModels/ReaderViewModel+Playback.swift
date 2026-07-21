@@ -664,6 +664,18 @@ extension ReaderViewModel {
             ownerID: book.id,
             onExpire: { [weak self] in
                 guard let self = self else { return }
+                let bookToken = String(self.book.id.uuidString.prefix(8))
+                let wasPlaying = self.isAudioBook
+                    ? self.audioPlaybackService.isPlaying
+                    : self.speechService.isSpeaking
+                let wasPaused = self.isAudioBook
+                    ? self.audioPlaybackService.isPaused
+                    : self.speechService.isPaused
+                let backend = self.isAudioBook ? "audiobook" : "speech"
+                SleepTimerService.appendDiagnosticLog(
+                    "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
+                        + "playing=\(wasPlaying) paused=\(wasPaused)"
+                )
                 // Use the sleep-timer-specific pause path so the
                 // end-of-fade completion does not play the normal
                 // pause sound. The pause helper still stops audio
@@ -672,6 +684,16 @@ extension ReaderViewModel {
                 // "just finished fading" case is treated the same as
                 // a still-in-progress fade.
                 self.pause(playingPauseSound: false)
+                let isPlayingAfterPause = self.isAudioBook
+                    ? self.audioPlaybackService.isPlaying
+                    : self.speechService.isSpeaking
+                let isPausedAfterPause = self.isAudioBook
+                    ? self.audioPlaybackService.isPaused
+                    : self.speechService.isPaused
+                SleepTimerService.appendDiagnosticLog(
+                    "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
+                        + "paused=\(isPausedAfterPause)"
+                )
                 self.announceToVoiceOver("Sleep timer expired. Playback paused.")
             },
             onFadeStep: { [weak self] volume in
@@ -716,16 +738,26 @@ extension ReaderViewModel {
     /// duration to restore from — the user has never set a timer in
     /// this install, so we have nothing to repeat.
     func restartOrStartLastSleepTimer() {
+        let bookToken = String(book.id.uuidString.prefix(8))
         if sleepTimerService.isActive {
             // Existing timer running — same as Reset Timer.
+            SleepTimerService.appendDiagnosticLog(
+                "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(sleepTimerService.remainingSeconds)"
+            )
             restartSleepTimer(startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer reset.")
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
+            SleepTimerService.appendDiagnosticLog(
+                "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.displayName)"
+            )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer restarted: \(last.displayName).")
         } else {
             // First-ever press — nothing to repeat.
+            SleepTimerService.appendDiagnosticLog(
+                "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
+            )
             announceToVoiceOver("No previous sleep timer to restart.")
         }
     }

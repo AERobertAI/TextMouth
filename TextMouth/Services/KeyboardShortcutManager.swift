@@ -149,6 +149,13 @@ final class KeyboardShortcutManager: ObservableObject {
                     if let keyWindow = NSApp.keyWindow {
                         userInfo["sourceWindow"] = keyWindow
                     }
+                    if action == .restartSleepTimer {
+                        let windowNumber = NSApp.keyWindow.map { String($0.windowNumber) } ?? "none"
+                        SleepTimerService.appendDiagnosticLog(
+                            "SHORTCUT_RECEIVED action=restart-sleep-timer binding=\(binding.displayString) "
+                                + "sourceWindow=\(windowNumber)"
+                        )
+                    }
                     NotificationCenter.default.post(name: action.notificationName, object: nil, userInfo: userInfo)
                     return true
                 }

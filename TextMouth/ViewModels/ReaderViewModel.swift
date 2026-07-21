@@ -582,18 +582,44 @@ final class ReaderViewModel: ObservableObject {
         nc.publisher(for: .restartSleepTimer)
             .sink { [weak self] notification in
                 guard let self = self else { return }
+                let bookToken = String(self.book.id.uuidString.prefix(8))
+                let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
+                let lastOwnerToken = self.sleepTimerService.lastOwnerID
+                    .map { String($0.uuidString.prefix(8)) } ?? "none"
+                SleepTimerService.appendDiagnosticLog(
+                    "RESTART_ROUTE_RECEIVED book=\(bookToken) sourceWindow=\(hasSourceWindow) "
+                        + "lastOwner=\(lastOwnerToken)"
+                )
                 if notification.userInfo?["sourceWindow"] != nil {
-                    guard self.isTargetedNotification(notification) else { return }
+                    guard self.isTargetedNotification(notification) else {
+                        SleepTimerService.appendDiagnosticLog(
+                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=source-window-mismatch"
+                        )
+                        return
+                    }
                 } else if let lastOwner = self.sleepTimerService.lastOwnerID {
-                    guard lastOwner == self.book.id else { return }
+                    guard lastOwner == self.book.id else {
+                        SleepTimerService.appendDiagnosticLog(
+                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=last-owner-mismatch"
+                        )
+                        return
+                    }
                 } else {
                     // No prior timer history — only the focused or
                     // sole window should respond.
                     guard self.hostWindow == nil
                           || self.hostWindow?.isKeyWindow == true
                           || self.hostWindow?.isMainWindow == true
-                    else { return }
+                    else {
+                        SleepTimerService.appendDiagnosticLog(
+                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=no-focused-window"
+                        )
+                        return
+                    }
                 }
+                SleepTimerService.appendDiagnosticLog(
+                    "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(self.sleepTimerService.isActive)"
+                )
                 self.restartOrStartLastSleepTimer()
             }
             .store(in: &cancellables)
