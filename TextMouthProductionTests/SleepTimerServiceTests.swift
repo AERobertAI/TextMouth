@@ -5,10 +5,17 @@ import XCTest
 final class SleepTimerServiceTests: XCTestCase {
     private var service: SleepTimerService!
     private var owner: UUID!
+    private var testDefaults: UserDefaults!
+    private var testDefaultsSuiteName: String!
 
     override func setUp() {
         super.setUp()
-        service = SleepTimerService()
+        // A unique preferences suite prevents fixture cleanup from deleting
+        // the user's real `sleepTimer.lastUsedDuration` value.
+        testDefaultsSuiteName = "com.textmouth.tests.sleep-timer.\(UUID().uuidString)"
+        testDefaults = UserDefaults(suiteName: testDefaultsSuiteName)
+        testDefaults.removePersistentDomain(forName: testDefaultsSuiteName)
+        service = SleepTimerService(userDefaults: testDefaults)
         service._resetForTesting()
         owner = UUID()
     }
@@ -17,6 +24,9 @@ final class SleepTimerServiceTests: XCTestCase {
         service._resetForTesting()
         service = nil
         owner = nil
+        testDefaults.removePersistentDomain(forName: testDefaultsSuiteName)
+        testDefaults = nil
+        testDefaultsSuiteName = nil
         super.tearDown()
     }
 
@@ -402,10 +412,22 @@ final class SleepTimerServiceTests: XCTestCase {
     func testLastUsedDurationPersistsAcrossServiceInstances() {
         start(.endOfDocument)
 
-        let restored = SleepTimerService()
+        let restored = SleepTimerService(userDefaults: testDefaults)
 
         XCTAssertEqual(restored.lastUsedDuration, .endOfDocument)
         restored._resetForTesting()
+    }
+
+    func testFixturePersistenceDoesNotTouchStandardDefaults() {
+        let key = "sleepTimer.lastUsedDuration"
+        let standardValueBeforeTest = UserDefaults.standard.data(forKey: key)
+
+        start(.minutes(45))
+        XCTAssertNotNil(testDefaults.data(forKey: key))
+        service._resetForTesting()
+
+        XCTAssertNil(testDefaults.data(forKey: key))
+        XCTAssertEqual(UserDefaults.standard.data(forKey: key), standardValueBeforeTest)
     }
 
     func testFadeReachesZeroBeforeExpiryCallback() {

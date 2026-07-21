@@ -778,9 +778,20 @@ print("\n--- Integration: Sleep Timer + Heading Boundary ---")
 
 test("Sleep timer: end-of-heading fires on second heading boundary") {
 #if canImport(TextMouth)
-    let timer = SleepTimerService.shared
+    // Never exercise the production singleton in hosted tests: its reset
+    // helper clears persisted timer history. A disposable defaults suite keeps
+    // the scenario hermetic and protects the user's restart-timer duration.
+    let suiteName = "com.textmouth.tests.integration-timer.\(UUID().uuidString)"
+    guard let timerDefaults = UserDefaults(suiteName: suiteName) else {
+        throw TestError.assertionFailed("Could not create isolated sleep-timer defaults")
+    }
+    timerDefaults.removePersistentDomain(forName: suiteName)
+    let timer = SleepTimerService(userDefaults: timerDefaults)
     timer._resetForTesting()
-    defer { timer._resetForTesting() }
+    defer {
+        timer._resetForTesting()
+        timerDefaults.removePersistentDomain(forName: suiteName)
+    }
 
     let ownerID = UUID()
     var expired = false
@@ -828,9 +839,19 @@ test("Sleep timer: end-of-heading fires on second heading boundary") {
 
 test("Sleep timer: formatted output matches duration state") {
 #if canImport(TextMouth)
-    let timer = SleepTimerService.shared
+    // Use a separate disposable suite for this scenario as well; sharing the
+    // app singleton would couple the test to live application preferences.
+    let suiteName = "com.textmouth.tests.integration-timer.\(UUID().uuidString)"
+    guard let timerDefaults = UserDefaults(suiteName: suiteName) else {
+        throw TestError.assertionFailed("Could not create isolated sleep-timer defaults")
+    }
+    timerDefaults.removePersistentDomain(forName: suiteName)
+    let timer = SleepTimerService(userDefaults: timerDefaults)
     timer._resetForTesting()
-    defer { timer._resetForTesting() }
+    defer {
+        timer._resetForTesting()
+        timerDefaults.removePersistentDomain(forName: suiteName)
+    }
 
     try assertEqual(timer.formattedRemaining, "")
 
