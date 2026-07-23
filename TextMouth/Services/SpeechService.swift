@@ -274,6 +274,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// audible glitches — the engine is used on the next natural break (seek, pause, chapter end).
     func speak(_ text: String, fromCharOffset charOffset: Int = 0) {
         stop()
+        // `AudioEngineService.stop()` deliberately preserves a completed
+        // buffer for ordinary pause/resume flows. This call begins unrelated
+        // text, so keeping that buffer would let seek/resume play audio from
+        // the previous chapter when the new text is too large to render.
+        if audioEngine.discardRenderedAudio() {
+            transitionLog("RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
+        }
         currentText = text
 
         // Increment generation so stale render completions are ignored

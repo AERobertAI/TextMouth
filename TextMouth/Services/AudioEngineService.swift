@@ -82,6 +82,17 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         isRendering = false
     }
 
+    /// Claims the completion of the specified render if it still owns this
+    /// engine. Cancellation or a newer render clears/replaces that ownership,
+    /// preventing a late main-queue commit from restoring stale chapter audio.
+    private func claimRenderCompletion(for synth: AVSpeechSynthesizer) -> Bool {
+        renderLock.lock()
+        defer { renderLock.unlock() }
+        guard currentRenderSynth === synth else { return false }
+        currentRenderSynth = nil
+        return true
+    }
+
     func render(text: String, voice: AVSpeechSynthesisVoice?, wpm: Double, completion: @escaping @Sendable (Bool) -> Void) {
         // Cancel any in-progress render first to free TTS resources
         cancelRender()
@@ -131,7 +142,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
             guard result == .success, !wasCancelled, !buffers.isEmpty, let audioFormat = format else {
                 DispatchQueue.main.async {
-                    self.isRendering = false
+                    if self.claimRenderCompletion(for: renderSynth) {
+                        self.isRendering = false
+                    }
                     completion(false)
                 }
                 return
@@ -150,7 +163,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 pcmFormat: audioFormat,
                 frameCapacity: AVAudioFrameCount(totalFrameCount)
             ) else {
-                DispatchQueue.main.async { self.isRendering = false; completion(false) }
+                DispatchQueue.main.async {
+                    if self.claimRenderCompletion(for: renderSynth) {
+                        self.isRendering = false
+                    }
+                    completion(false)
+                }
                 return
             }
 
@@ -188,14 +206,14 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
             let completedMap = map
 
-            // Clear render synth reference now that we're done
-            self.renderLock.lock()
-            if self.currentRenderSynth === renderSynth {
-                self.currentRenderSynth = nil
-            }
-            self.renderLock.unlock()
-
             DispatchQueue.main.async {
+                // Recheck ownership on the queue that installs the buffer.
+                // A stop/new chapter can occur after the background render's
+                // earlier cancellation check but before this closure executes.
+                guard self.claimRenderCompletion(for: renderSynth) else {
+                    completion(false)
+                    return
+                }
                 self.renderedBuffer = combinedBuffer
                 self.renderFormat = audioFormat
                 self.wordFrameMap = completedMap
@@ -351,6 +369,22 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         if engine.isRunning { engine.stop() }
         isPlaying = false
         isPaused = false
+    }
+
+    /// Stops playback and releases all audio and position data retained from a
+    /// completed render. Starting unrelated text must call this before direct
+    /// speech so seek/resume cannot reuse the preceding chapter's buffer.
+    @discardableResult
+    func discardRenderedAudio() -> Bool {
+        let discardedAudio = renderedBuffer != nil
+        stop()
+        renderedBuffer = nil
+        renderFormat = nil
+        wordFrameMap = []
+        totalFrames = 0
+        segmentStartFrame = 0
+        segmentFrameCount = 0
+        return discardedAudio
     }
 
     func setSpeed(wpm: Double) {
@@ -535,6 +569,18 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     ) {
         wordFrameMap = map
         self.totalFrames = totalFrames
+    }
+
+    /// Installs a minimal deterministic buffer so tests can verify render
+    /// ownership and disposal without invoking the system speech synthesizer.
+    func _installRenderedAudioForTesting() {
+        let format = AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1)!
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1)!
+        buffer.frameLength = 1
+        renderedBuffer = buffer
+        renderFormat = format
+        wordFrameMap = [(charOffset: 0, frame: 0), (charOffset: 1, frame: 1)]
+        totalFrames = 1
     }
 
     /// Runs the same interpolation used by production seeking.

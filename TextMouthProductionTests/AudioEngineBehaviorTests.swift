@@ -160,6 +160,25 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(engine.intendedVolume, 0.4)
     }
 
+    func testDiscardRenderedAudioRemovesPreviousChapterBuffer() {
+        let engine = AudioEngineService()
+        engine._installRenderedAudioForTesting()
+
+        XCTAssertTrue(engine.hasRenderedAudio)
+        XCTAssertTrue(engine.discardRenderedAudio())
+
+        XCTAssertFalse(engine.hasRenderedAudio)
+        XCTAssertEqual(engine.renderedAudioByteCount, 0)
+        XCTAssertEqual(engine._frameForCharOffsetForTesting(1), 0)
+    }
+
+    func testDiscardRenderedAudioReportsWhenNoBufferWasRetained() {
+        let engine = AudioEngineService()
+
+        XCTAssertFalse(engine.discardRenderedAudio())
+        XCTAssertFalse(engine.hasRenderedAudio)
+    }
+
     func testAudioEngineAdoptionPreservesReceiverVolume() {
         let receiver = AudioEngineService()
         let source = AudioEngineService()
