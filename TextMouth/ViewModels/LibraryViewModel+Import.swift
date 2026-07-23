@@ -58,11 +58,42 @@ extension LibraryViewModel {
             do {
                 let inspection = try FileImportService.inspectTMBPackage(at: url)
                 let info = inspection.info
+                let managedPackageBook = FileImportService.bookFromManagedPackage(
+                    inspection: inspection,
+                    packageURL: url
+                )
                 var shouldCopy = true
                 DispatchQueue.main.sync {
-                    if let existing = self.library.books.first(where: {
-                        $0.id == info.metadata.bookID || $0.md5Hash == info.metadata.md5Hash
+                    if let existingIndex = self.library.books.firstIndex(where: {
+                        $0.id == info.metadata.bookID
                     }) {
+                        let existing = self.library.books[existingIndex]
+                        if let managedPackageBook {
+                            let repaired = FileImportService.reconciledLibraryBook(
+                                existing,
+                                with: managedPackageBook
+                            )
+                            self.library.books[existingIndex] = repaired
+                            if repaired.filePath != existing.filePath ||
+                               repaired.folderPath != existing.folderPath ||
+                               repaired.tmbDirectoryName != existing.tmbDirectoryName ||
+                               repaired.readingPosition != existing.readingPosition {
+                                self.save()
+                                let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
+                                TextMouthPaths.appendLog(
+                                    to: TextMouthPaths.logsDir.appendingPathComponent("textmouth_debug.log"),
+                                    message: message
+                                )
+                            }
+                        }
+                        shouldCopy = false
+                        NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
+                    } else if let existing = self.library.books.first(where: {
+                        $0.md5Hash == info.metadata.md5Hash
+                    }) {
+                        // A hash-only match can represent a deliberate second
+                        // package with a different ID. Open the known book
+                        // without relocating its Library record.
                         shouldCopy = false
                         NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
                     }

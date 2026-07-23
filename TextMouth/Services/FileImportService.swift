@@ -179,6 +179,8 @@ enum FileImportService {
         return book
     }
 
+    /// Builds a Book from validated package metadata and a trusted package
+    /// location. Callers must validate the package before using this helper.
     private static func bookFromPackageInfo(
         _ info: BookInfo,
         packageURL: URL,
@@ -223,6 +225,92 @@ enum FileImportService {
             cacheFormatVersion: info.state.cacheFormatVersion,
             contentIndexVersion: info.state.contentIndexVersion
         )
+    }
+
+    /// Reconstructs a Book for a package that already resides under the
+    /// managed Library directory. The folder is derived from the package's
+    /// actual parent path rather than trusting potentially stale metadata.
+    static func bookFromManagedPackage(
+        inspection: TMBPackageInspection,
+        packageURL: URL,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> Book? {
+        let resolvedLibrary = libraryDirectory
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let resolvedPackage = packageURL
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let libraryPrefix = resolvedLibrary.path + "/"
+
+        guard resolvedPackage.pathExtension.lowercased() == "tmb",
+              resolvedPackage.path.hasPrefix(libraryPrefix) else {
+            return nil
+        }
+
+        let resolvedParentPath = resolvedPackage.deletingLastPathComponent().path
+        guard resolvedParentPath == resolvedLibrary.path ||
+              resolvedParentPath.hasPrefix(libraryPrefix) else {
+            return nil
+        }
+
+        let folderPath: String
+        if resolvedParentPath == resolvedLibrary.path {
+            folderPath = ""
+        } else {
+            folderPath = String(resolvedParentPath.dropFirst(libraryPrefix.count))
+        }
+
+        return bookFromPackageInfo(
+            inspection.info,
+            packageURL: packageURL,
+            folderPath: folderPath,
+            tmbName: packageURL.lastPathComponent
+        )
+    }
+
+    /// Repairs storage fields from a validated managed package. Package state
+    /// is adopted only when it is demonstrably newer, so a delayed package
+    /// write cannot roll back the active Library reading position.
+    static func reconciledLibraryBook(
+        _ existing: Book,
+        with managedPackageBook: Book
+    ) -> Book {
+        guard existing.id == managedPackageBook.id else { return existing }
+
+        var repaired = existing
+        repaired.filePath = managedPackageBook.filePath
+        repaired.folderPath = managedPackageBook.folderPath
+        repaired.tmbDirectoryName = managedPackageBook.tmbDirectoryName
+
+        let existingPositionDate = existing.readingPosition?.lastUpdated ?? .distantPast
+        let packagePositionDate = managedPackageBook.readingPosition?.lastUpdated ?? .distantPast
+        if packagePositionDate > existingPositionDate {
+            repaired.readingPosition = managedPackageBook.readingPosition
+        }
+
+        // Restore package-backed fields only when the Library snapshot lacks
+        // them. User edits already present in the active Library remain intact.
+        if repaired.sourceFilePath == nil {
+            repaired.sourceFilePath = managedPackageBook.sourceFilePath
+        }
+        if repaired.totalWordCount == nil {
+            repaired.totalWordCount = managedPackageBook.totalWordCount
+        }
+        if repaired.totalCharacterCount == nil {
+            repaired.totalCharacterCount = managedPackageBook.totalCharacterCount
+        }
+        if repaired.bookmarks.isEmpty && !managedPackageBook.bookmarks.isEmpty {
+            repaired.bookmarks = managedPackageBook.bookmarks
+        }
+        if repaired.cacheFormatVersion == nil {
+            repaired.cacheFormatVersion = managedPackageBook.cacheFormatVersion
+        }
+        if repaired.contentIndexVersion == nil {
+            repaired.contentIndexVersion = managedPackageBook.contentIndexVersion
+        }
+
+        return repaired
     }
 
     private static func bookInfo(for book: Book) -> BookInfo {

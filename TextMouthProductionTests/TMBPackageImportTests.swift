@@ -45,11 +45,139 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertThrowsError(try FileImportService.inspectTMBPackage(at: external))
     }
 
+    func testManagedPackageUsesActualNestedFolder() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ManagedPackage-\(UUID().uuidString)", isDirectory: true)
+        let nestedFolder = root
+            .appendingPathComponent("Science Fiction", isDirectory: true)
+            .appendingPathComponent("Anthologies", isDirectory: true)
+        let package = try makePackage(in: nestedFolder)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let inspection = try FileImportService.inspectTMBPackage(at: package)
+
+        let book = try XCTUnwrap(
+            FileImportService.bookFromManagedPackage(
+                inspection: inspection,
+                packageURL: package,
+                libraryDirectory: root
+            )
+        )
+
+        XCTAssertEqual(book.folderPath, "Science Fiction/Anthologies")
+        XCTAssertEqual(book.filePath, package.appendingPathComponent("book.txt").path)
+        XCTAssertEqual(book.tmbDirectoryName, package.lastPathComponent)
+    }
+
+    func testExternalPackageIsNotTreatedAsManaged() throws {
+        let library = FileManager.default.temporaryDirectory
+            .appendingPathComponent("UnrelatedLibrary-\(UUID().uuidString)", isDirectory: true)
+        let external = try makePackage()
+        defer {
+            try? FileManager.default.removeItem(at: library)
+            try? FileManager.default.removeItem(at: external)
+        }
+        let inspection = try FileImportService.inspectTMBPackage(at: external)
+
+        XCTAssertNil(
+            FileImportService.bookFromManagedPackage(
+                inspection: inspection,
+                packageURL: external,
+                libraryDirectory: library
+            )
+        )
+    }
+
+    func testReconciliationRepairsLocationAndUsesNewerPackagePosition() {
+        let id = UUID()
+        let oldPosition = ReadingPosition(
+            chapterIndex: 0,
+            characterOffset: 10,
+            globalCharacterOffset: 10
+        )
+        var newerPosition = ReadingPosition(
+            chapterIndex: 2,
+            characterOffset: 2_496,
+            globalCharacterOffset: 950_157
+        )
+        newerPosition.lastUpdated = oldPosition.lastUpdated.addingTimeInterval(60)
+        let existing = Book(
+            id: id,
+            title: "Existing Title",
+            format: .epub,
+            filePath: "/missing/root/Book.tmb/book.epub",
+            md5Hash: "same-hash",
+            folderPath: "",
+            readingPosition: oldPosition,
+            tmbDirectoryName: "Book.tmb",
+            localWPM: 325
+        )
+        let managed = Book(
+            id: id,
+            title: "Package Title",
+            format: .epub,
+            filePath: "/Library/Science Fiction/Anthologies/Book.tmb/book.epub",
+            md5Hash: "same-hash",
+            folderPath: "Science Fiction/Anthologies",
+            readingPosition: newerPosition,
+            tmbDirectoryName: "Book.tmb"
+        )
+
+        let repaired = FileImportService.reconciledLibraryBook(
+            existing,
+            with: managed
+        )
+
+        XCTAssertEqual(repaired.folderPath, "Science Fiction/Anthologies")
+        XCTAssertEqual(repaired.filePath, managed.filePath)
+        XCTAssertEqual(repaired.readingPosition, newerPosition)
+        XCTAssertEqual(repaired.localWPM, 325)
+        XCTAssertEqual(repaired.title, "Existing Title")
+    }
+
+    func testReconciliationPreservesNewerLibraryPosition() {
+        let id = UUID()
+        var packagePosition = ReadingPosition(characterOffset: 10)
+        let libraryPosition = ReadingPosition(characterOffset: 20)
+        packagePosition.lastUpdated = libraryPosition.lastUpdated.addingTimeInterval(-60)
+        let existing = Book(
+            id: id,
+            title: "Book",
+            format: .txt,
+            filePath: "/old/book.txt",
+            md5Hash: "hash",
+            readingPosition: libraryPosition
+        )
+        let managed = Book(
+            id: id,
+            title: "Book",
+            format: .txt,
+            filePath: "/managed/Book.tmb/book.txt",
+            md5Hash: "hash",
+            folderPath: "Managed",
+            readingPosition: packagePosition,
+            tmbDirectoryName: "Book.tmb"
+        )
+
+        let repaired = FileImportService.reconciledLibraryBook(
+            existing,
+            with: managed
+        )
+
+        XCTAssertEqual(repaired.readingPosition, libraryPosition)
+        XCTAssertEqual(repaired.folderPath, "Managed")
+    }
+
     private func makePackage(
+        in parent: URL? = nil,
         originalFileName: String = "book.txt",
         metadataHash: String? = nil
     ) throws -> URL {
-        let package = FileManager.default.temporaryDirectory
+        let packageParent = parent ?? FileManager.default.temporaryDirectory
+        try FileManager.default.createDirectory(
+            at: packageParent,
+            withIntermediateDirectories: true
+        )
+        let package = packageParent
             .appendingPathComponent("\(UUID().uuidString).tmb", isDirectory: true)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
         let safeContent = package.appendingPathComponent("book.txt")
