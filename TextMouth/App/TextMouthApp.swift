@@ -7,6 +7,7 @@ struct TextMouthApp: App {
     @StateObject private var settingsViewModel = SettingsViewModel()
     @StateObject private var shortcutManager = KeyboardShortcutManager()
     @StateObject private var soundEffectService = SoundEffectService()
+    @StateObject private var libraryWindowRouter = LibraryWindowRouter()
 
     var body: some Scene {
         // Library window — only one opens on launch; Cmd+N can still create additional ones.
@@ -16,6 +17,7 @@ struct TextMouthApp: App {
                 .environmentObject(settingsViewModel)
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
+                .environmentObject(libraryWindowRouter)
         }
         .commands {
             // Keep "Open Book..." alongside the standard "New Window" (Cmd+N)

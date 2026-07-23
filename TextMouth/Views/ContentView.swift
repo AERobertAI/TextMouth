@@ -5,6 +5,7 @@ import Combine
 struct LibraryWindowView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
+    @EnvironmentObject var libraryWindowRouter: LibraryWindowRouter
     @Environment(\.openWindow) private var openWindow
 
     @State private var currentFolderPath = ""
@@ -57,12 +58,25 @@ struct LibraryWindowView: View {
             }
         }
         .background(WindowAccessor(onWindowFound: { window in
+            if let previousWindow = hostWindow, previousWindow !== window {
+                libraryWindowRouter.unregister(previousWindow)
+            }
             hostWindow = window
+            libraryWindowRouter.register(window)
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }))
+        // Tell SwiftUI that an existing Library scene can receive any incoming
+        // file URL. Without this registration, external book opens fall
+        // through to a newly-created instance of the first WindowGroup.
+        .handlesExternalEvents(preferring: [], allowing: ["*"])
         .focusedValue(\.activeWindowType, .library)
         .onAppear {
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
+        }
+        .onDisappear {
+            if let hostWindow {
+                libraryWindowRouter.unregister(hostWindow)
+            }
         }
         .navigationTitle(windowTitle)
         .frame(minWidth: 600, minHeight: 400)
@@ -160,15 +174,17 @@ struct LibraryWindowView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBookFile)) { _ in
-            // Only show the file importer in the key (focused) library window
-            // to prevent multiple file dialogs from appearing at once
-            if isKeyLibraryWindow {
+            // Route to one Library even when a reader window currently has
+            // focus, while still preventing duplicate file dialogs.
+            if shouldHandleGlobalLibraryAction {
                 showFileImporter = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBookWindow)) { notification in
-            // Only open from the key library window to prevent duplicate openWindow calls
-            if isKeyLibraryWindow, let bookID = notification.object as? UUID {
+            // Finder imports complete while a reader may be key. The shared
+            // router selects one existing Library as the openWindow host.
+            if shouldHandleGlobalLibraryAction,
+               let bookID = notification.object as? UUID {
                 openWindow(id: "book-reader", value: bookID)
             }
         }
@@ -205,7 +221,8 @@ struct LibraryWindowView: View {
             saveSortSettings()
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
-            if isKeyLibraryWindow, let bookID = notification.userInfo?["bookID"] as? UUID {
+            if shouldHandleGlobalLibraryAction,
+               let bookID = notification.userInfo?["bookID"] as? UUID {
                 openWindow(id: "book-reader", value: bookID)
             }
         }
@@ -282,6 +299,12 @@ struct LibraryWindowView: View {
     private var isKeyLibraryWindow: Bool {
         guard let hostWindow = hostWindow else { return true }
         return hostWindow.isKeyWindow
+    }
+
+    /// Selects one Library window for notifications that may originate while
+    /// a reader or another non-Library window has focus.
+    private var shouldHandleGlobalLibraryAction: Bool {
+        libraryWindowRouter.shouldHandleGlobalAction(in: hostWindow)
     }
 }
 
