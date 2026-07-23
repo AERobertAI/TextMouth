@@ -7,7 +7,7 @@ struct TextMouthApp: App {
     @StateObject private var settingsViewModel = SettingsViewModel()
     @StateObject private var shortcutManager = KeyboardShortcutManager()
     @StateObject private var soundEffectService = SoundEffectService()
-    @StateObject private var libraryWindowRouter = LibraryWindowRouter()
+    @StateObject private var libraryWindowRouter = LibraryWindowRouter.shared
 
     var body: some Scene {
         // Library window — only one opens on launch; Cmd+N can still create additional ones.

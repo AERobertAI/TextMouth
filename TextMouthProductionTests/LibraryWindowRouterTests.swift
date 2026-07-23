@@ -64,4 +64,16 @@ final class LibraryWindowRouterTests: XCTestCase {
         router.register(existingLibrary)
         XCTAssertFalse(router.shouldHandleGlobalAction(in: nil))
     }
+
+    func testAppDelegateAllowsInitialUntitledLibrary() {
+        XCTAssertTrue(
+            AppDelegate.shouldOpenUntitledLibrary(hasOpenLibraryWindow: false)
+        )
+    }
+
+    func testAppDelegateSuppressesUntitledLibraryWhenOneExists() {
+        XCTAssertFalse(
+            AppDelegate.shouldOpenUntitledLibrary(hasOpenLibraryWindow: true)
+        )
+    }
 }

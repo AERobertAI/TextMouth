@@ -24,6 +24,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    /// Allows SwiftUI to create its initial Library window, but suppresses the
+    /// extra untitled Library scene AppKit otherwise requests while opening a
+    /// document-style URL into an already-windowed application.
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        Self.shouldOpenUntitledLibrary(
+            hasOpenLibraryWindow: LibraryWindowRouter.shared.hasRegisteredWindow
+        )
+    }
+
+    /// Pure policy core keeps the AppKit delegate decision testable without
+    /// driving an application-launch Apple event.
+    static func shouldOpenUntitledLibrary(hasOpenLibraryWindow: Bool) -> Bool {
+        !hasOpenLibraryWindow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         menuVisibilityManager.stopObserving()
         ConfigService.shared.shutdown()

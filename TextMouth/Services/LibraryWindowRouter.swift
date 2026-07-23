@@ -6,6 +6,9 @@ import Combine
 /// opens a book, so routing cannot depend solely on a key Library window.
 @MainActor
 final class LibraryWindowRouter: ObservableObject {
+    /// Shared registry used by both SwiftUI views and the AppKit delegate.
+    static let shared = LibraryWindowRouter()
+
     /// Weak storage avoids extending an `NSWindow`'s lifetime after SwiftUI
     /// closes its scene.
     private final class WeakWindow {
@@ -17,6 +20,12 @@ final class LibraryWindowRouter: ObservableObject {
     }
 
     private var windows: [WeakWindow] = []
+
+    /// Whether at least one Library scene has supplied its hosting window.
+    var hasRegisteredWindow: Bool {
+        pruneClosedWindows()
+        return windows.contains { $0.value != nil }
+    }
 
     /// Registers a Library window once its hosting AppKit window is available.
     func register(_ window: NSWindow) {
