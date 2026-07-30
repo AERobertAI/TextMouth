@@ -68,11 +68,16 @@ extension ReaderViewModel {
             playAudioChapter()
             return
         }
-        audioPlaybackService.resume()
-        isCurrentlyPaused = false
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: true
-        )
+        if audioPlaybackService.resume() {
+            isCurrentlyPaused = false
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+        } else {
+            debugLog("audio resume rejected by backend; reloading current chapter")
+            audioPlaybackService.stop()
+            playAudioChapter()
+        }
     }
 
     private func resumeSpeechPlayback() {
@@ -92,10 +97,20 @@ extension ReaderViewModel {
             )
             return
         }
-        speechService.resume()
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: true
-        )
+        if speechService.resume() {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+        } else {
+            debugLog("speech resume rejected by backend; restarting current chapter at cursor")
+            speechService.stop()
+            speakCurrentChapter()
+            if speechService.isSpeaking && !speechService.isPaused {
+                nowPlayingService.updateNowPlayingInfo(
+                    title: book.title, author: book.author, isPlaying: true
+                )
+            }
+        }
     }
 
     /// Pause the current playback (TTS or audio) and save position.

@@ -4,6 +4,118 @@ import XCTest
 
 @MainActor
 final class PlaybackLifecyclePolicyTests: XCTestCase {
+    func testPausedDirectSpeechWithoutLiveSynthRestartsAtCurrentOffset() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: true,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: false,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: false,
+                currentOffset: 417,
+                hasText: true
+            ),
+            .restartDirect(offset: 417)
+        )
+    }
+
+    func testPausedDirectSpeechContinuesWhenSynthesizerStillOwnsUtterance() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: true,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: false,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: true,
+                currentOffset: 24,
+                hasText: true
+            ),
+            .continueDirect(offset: 24)
+        )
+    }
+
+    func testRenderedEngineTakesPriorityOverPausedDirectSynthesizer() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: true,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: true,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: true,
+                currentOffset: 88,
+                hasText: true
+            ),
+            .switchToEngine(offset: 88)
+        )
+    }
+
+    func testPendingSeekUsesDirectRestartUntilRenderIsReady() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: true,
+                pendingDirectSeekOffset: 901,
+                engineHasRenderedAudio: false,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: false,
+                currentOffset: 100,
+                hasText: true
+            ),
+            .restartDirect(offset: 901)
+        )
+    }
+
+    func testEnginePauseUsesEngineResume() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: false,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: true,
+                engineIsPaused: true,
+                engineIsPlaying: false,
+                directSynthIsPaused: false,
+                currentOffset: 72,
+                hasText: true
+            ),
+            .resumeEngine(offset: 72)
+        )
+    }
+
+    func testBackendlessStateWithTextColdStartsDirectSpeech() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: false,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: false,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: false,
+                currentOffset: 333,
+                hasText: true
+            ),
+            .restartDirect(offset: 333)
+        )
+    }
+
+    func testBackendlessStateWithoutTextReportsUnavailable() {
+        XCTAssertEqual(
+            SpeechResumePolicy.action(
+                usingDirectMode: false,
+                pendingDirectSeekOffset: nil,
+                engineHasRenderedAudio: false,
+                engineIsPaused: false,
+                engineIsPlaying: false,
+                directSynthIsPaused: false,
+                currentOffset: 0,
+                hasText: false
+            ),
+            .unavailable
+        )
+    }
+
     func testLiveUtteranceFinishIsAccepted() {
         let utterance = AVSpeechUtterance(string: "live")
         XCTAssertTrue(SpeechService.isLiveDirectUtterance(utterance, liveUtterance: utterance))

@@ -3,6 +3,15 @@ import XCTest
 @testable import TextMouth
 
 final class AudioEngineBehaviorTests: XCTestCase {
+    func testAudioResumeRejectsPausedStateWithoutLoadedPlayer() {
+        let playback = AudioPlaybackService()
+        playback.isPaused = true
+        playback.isPlaying = true
+
+        XCTAssertFalse(playback.resume())
+        XCTAssertTrue(playback.isPaused)
+    }
+
     private let map: [(charOffset: Int, frame: AVAudioFramePosition)] = [
         (0, 0), (100, 1_000), (200, 2_000),
     ]

@@ -183,10 +183,17 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         isPaused = true
     }
 
-    func resume() {
-        guard isPaused else { return }
-        player?.rate = Float(playbackSpeed)
+    /// Resumes only when a live AVPlayer item still exists. Returning false
+    /// lets the reader reload the chapter after route changes or player loss.
+    @discardableResult
+    func resume() -> Bool {
+        guard isPaused, let player, player.currentItem != nil, player.error == nil else {
+            return false
+        }
+        player.rate = Float(playbackSpeed)
         isPaused = false
+        isPlaying = true
+        return true
     }
 
     func stop() {

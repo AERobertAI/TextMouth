@@ -18,6 +18,63 @@ private final class RenderResultBox: @unchecked Sendable {
     }
 }
 
+/// Chooses a concrete recovery path for a paused TTS session. Keeping the
+/// decision independent from AVFoundation makes every desynchronized backend
+/// state testable, including the state seen in logs where TextMouth was paused
+/// but neither synthesizer nor audio engine could actually continue.
+enum SpeechResumePolicy {
+    enum Action: Equatable {
+        case switchToEngine(offset: Int)
+        case resumeEngine(offset: Int)
+        case continueDirect(offset: Int)
+        case restartDirect(offset: Int)
+        case startRenderedEngine(offset: Int)
+        case alreadyPlaying
+        case unavailable
+    }
+
+    static func action(
+        usingDirectMode: Bool,
+        pendingDirectSeekOffset: Int?,
+        engineHasRenderedAudio: Bool,
+        engineIsPaused: Bool,
+        engineIsPlaying: Bool,
+        directSynthIsPaused: Bool,
+        currentOffset: Int,
+        hasText: Bool
+    ) -> Action {
+        let safeOffset = max(0, currentOffset)
+
+        if let pendingOffset = pendingDirectSeekOffset {
+            if engineHasRenderedAudio {
+                return .switchToEngine(offset: max(0, pendingOffset))
+            }
+            return hasText ? .restartDirect(offset: max(0, pendingOffset)) : .unavailable
+        }
+        if !usingDirectMode, engineIsPaused {
+            return .resumeEngine(offset: safeOffset)
+        }
+        if usingDirectMode, engineHasRenderedAudio {
+            return .switchToEngine(offset: safeOffset)
+        }
+        if usingDirectMode, directSynthIsPaused {
+            return .continueDirect(offset: safeOffset)
+        }
+        if usingDirectMode {
+            // App state can remain paused after AVSpeechSynthesizer silently
+            // loses its utterance. A fresh utterance is the only useful path.
+            return hasText ? .restartDirect(offset: safeOffset) : .unavailable
+        }
+        if engineHasRenderedAudio, !engineIsPlaying {
+            return .startRenderedEngine(offset: safeOffset)
+        }
+        if engineIsPlaying {
+            return .alreadyPlaying
+        }
+        return hasText ? .restartDirect(offset: safeOffset) : .unavailable
+    }
+}
+
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
 /// Current-chapter and look-ahead renders must therefore never overlap.
@@ -574,58 +631,92 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopPositionTracking()
     }
 
-    func resume() {
-        guard isPaused else { return }
-        isPaused = false
+    /// Resumes a paused backend and reports whether an audible path was
+    /// accepted. Callers can cold-start the chapter when false is returned
+    /// instead of publishing a false "playing" state.
+    @discardableResult
+    func resume() -> Bool {
+        guard isPaused else { return false }
 
-        if usingDirectMode, let pendingOffset = pendingDirectSeekOffset {
-            pendingDirectSeekOffset = nil
-            if audioEngine.hasRenderedAudio {
-                transitionLog("RESUME_SWITCH: direct→engine at offset=\(pendingOffset)")
-                stopDirectSynthesizer()
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: pendingOffset)
-                startPositionTracking()
-            } else {
-                speakDirect(currentText, fromCharOffset: pendingOffset)
-            }
-        } else if !usingDirectMode && audioEngine.isPaused {
-            // The Mac may have stopped AVAudioEngine while sleeping. The
-            // audio service restarts it before asking the player node to
-            // continue. If restart itself fails, direct speech provides a
-            // usable fallback at the same reading position.
-            let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
-            if audioEngine.resume() {
-                transitionLog("ENGINE_RESUME: resumed at offset=\(offset)")
-                startPositionTracking()
-            } else {
-                transitionLog("ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(offset)")
-                audioEngine.stop()
-                speakDirect(currentText, fromCharOffset: offset)
-            }
-        } else if usingDirectMode && audioEngine.hasRenderedAudio {
-            // Paused in direct mode but engine is ready — switch to engine for better seeking/speed
-            let offset = currentWordRange?.location ?? 0
-            transitionLog("RESUME_SWITCH: direct→engine at offset=\(offset)")
+        let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
+        let action = SpeechResumePolicy.action(
+            usingDirectMode: usingDirectMode,
+            pendingDirectSeekOffset: pendingDirectSeekOffset,
+            engineHasRenderedAudio: audioEngine.hasRenderedAudio,
+            engineIsPaused: audioEngine.isPaused,
+            engineIsPlaying: audioEngine.isPlaying,
+            directSynthIsPaused: directSynth.isPaused,
+            currentOffset: offset,
+            hasText: !currentText.isEmpty
+        )
+        pendingDirectSeekOffset = nil
+
+        var resumed: Bool
+        switch action {
+        case .switchToEngine(let resumeOffset), .startRenderedEngine(let resumeOffset):
+            transitionLog("RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
             stopDirectSynthesizer()
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
             audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: offset)
-            startPositionTracking()
-        } else if usingDirectMode {
-            // Still in direct mode, engine not ready — just continue direct
-            directSynth.continueSpeaking()
-        } else if audioEngine.hasRenderedAudio && !audioEngine.isPlaying {
-            // Engine ready but not playing — start it
-            let offset = currentWordRange?.location ?? 0
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: offset)
-            startPositionTracking()
+            audioEngine.play(fromCharOffset: resumeOffset)
+            resumed = audioEngine.isPlaying
+            if resumed {
+                startPositionTracking()
+            }
+
+        case .resumeEngine(let resumeOffset):
+            // The Mac may have stopped AVAudioEngine while sleeping. The
+            // audio service restarts it before asking the player node to
+            // continue. If restart fails, restart direct speech below.
+            resumed = audioEngine.resume()
+            if resumed {
+                transitionLog("ENGINE_RESUME: resumed at offset=\(resumeOffset)")
+                startPositionTracking()
+            } else {
+                transitionLog(
+                    "ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(resumeOffset)"
+                )
+                audioEngine.stop()
+                resumed = restartDirectSpeech(at: resumeOffset)
+            }
+
+        case .continueDirect(let resumeOffset):
+            if directSynth.continueSpeaking() {
+                resumed = true
+            } else {
+                transitionLog(
+                    "DIRECT_RESUME_FAILED: restarting utterance at offset=\(resumeOffset)"
+                )
+                resumed = restartDirectSpeech(at: resumeOffset)
+            }
+
+        case .restartDirect(let resumeOffset):
+            transitionLog("DIRECT_RESUME_RECOVERY: restarting utterance at offset=\(resumeOffset)")
+            resumed = restartDirectSpeech(at: resumeOffset)
+
+        case .alreadyPlaying:
+            resumed = true
+
+        case .unavailable:
+            transitionLog("RESUME_UNAVAILABLE: no rendered audio, live utterance, or text")
+            resumed = false
         }
+
+        isPaused = !resumed
+        if resumed {
+            isSpeaking = true
+        }
+        return resumed
+    }
+
+    /// Recreates direct speech after AVFoundation loses the paused utterance.
+    /// The live-utterance marker provides a synchronous acceptance signal.
+    private func restartDirectSpeech(at offset: Int) -> Bool {
+        guard !currentText.isEmpty else { return false }
+        stopDirectSynthesizer()
+        speakDirect(currentText, fromCharOffset: offset)
+        return liveDirectUtterance != nil
     }
 
     func togglePlayPause() {
