@@ -11,6 +11,9 @@ INSTALL_DIR = /Applications
 
 # Where xcodebuild puts the built product
 DERIVED_BUILD_DIR = $(BUILD_DIR)/DerivedData
+GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 
 .PHONY: all clean build run install uninstall generate test open help
 
@@ -50,6 +53,9 @@ build: generate
 		-configuration $(CONFIG) \
 		-derivedDataPath $(DERIVED_BUILD_DIR) \
 		-destination 'platform=macOS' \
+		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
+		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
+		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
 		build \
 		| tail -5
 	@# Copy the .app bundle to build/ for easy access
@@ -72,6 +78,9 @@ debug: generate
 		-configuration Debug \
 		-derivedDataPath $(DERIVED_BUILD_DIR) \
 		-destination 'platform=macOS' \
+		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
+		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
+		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
 		build \
 		| tail -5
 	@APP_PATH=$$(find $(DERIVED_BUILD_DIR) -name "$(APP_NAME).app" -type d | head -1) && \

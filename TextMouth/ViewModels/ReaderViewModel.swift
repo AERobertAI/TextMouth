@@ -97,7 +97,10 @@ final class ReaderViewModel: ObservableObject {
     let sleepTimerService = SleepTimerService.shared
     /// Every reader window receives a unique media owner, even when two
     /// windows happen to show the same book.
-    lazy var nowPlayingService = NowPlayingSession(ownerID: UUID())
+    lazy var nowPlayingService = NowPlayingSession(
+        ownerID: UUID(),
+        diagnosticLabel: "book-\(book.id.uuidString.prefix(8))"
+    )
     let substitutionService = TextSubstitutionService.shared
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()

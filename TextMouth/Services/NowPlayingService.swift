@@ -51,15 +51,22 @@ enum RemoteCommandDispatchResult: Equatable {
 @MainActor
 final class NowPlayingSession {
     let ownerID: UUID
+    private let diagnosticLabel: String?
     private let coordinator: NowPlayingService
 
-    init(ownerID: UUID) {
+    init(ownerID: UUID, diagnosticLabel: String? = nil) {
         self.ownerID = ownerID
+        self.diagnosticLabel = diagnosticLabel
         self.coordinator = .shared
     }
 
-    init(ownerID: UUID, coordinator: NowPlayingService) {
+    init(
+        ownerID: UUID,
+        diagnosticLabel: String? = nil,
+        coordinator: NowPlayingService
+    ) {
         self.ownerID = ownerID
+        self.diagnosticLabel = diagnosticLabel
         self.coordinator = coordinator
     }
 
@@ -76,6 +83,7 @@ final class NowPlayingSession {
     ) {
         coordinator.setup(
             ownerID: ownerID,
+            diagnosticLabel: diagnosticLabel,
             onPlay: onPlay,
             onPause: onPause,
             onAudioRouteChangePause: onAudioRouteChangePause,
@@ -271,6 +279,7 @@ final class NowPlayingService {
 
     func setup(
         ownerID: UUID,
+        diagnosticLabel: String? = nil,
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
         onAudioRouteChangePause: @escaping () -> Void,
@@ -302,7 +311,8 @@ final class NowPlayingService {
         self.suppressWindow = bluetoothDelay
 
         diagnostic(
-            "setup owner=\(shortOwnerID(ownerID)) monitoring=\(bluetoothMonitoring) "
+            "setup owner=\(shortOwnerID(ownerID)) label=\(diagnosticLabel ?? "none") "
+                + "monitoring=\(bluetoothMonitoring) "
                 + "delay=\(formatted(bluetoothDelay)) integrations=\(installsSystemIntegrations)"
         )
 
@@ -538,7 +548,13 @@ final class NowPlayingService {
     func dispatchPlayCommand(isSuppressed suppressionOverride: Bool? = nil) -> RemoteCommandDispatchResult {
         let suppressed = suppressionOverride ?? isSuppressed
         let action = RemoteMediaCommandPolicy.play(isSuppressed: suppressed)
-        logCommand("play", suppressed: suppressed, action: action)
+        let targetOwnerID = focusedOwnerID ?? playingOwnerID
+        logCommand(
+            "play",
+            suppressed: suppressed,
+            action: action,
+            targetOwnerID: targetOwnerID
+        )
         if action == .consume {
             suppressUntil = .distantPast
             return .success
@@ -546,7 +562,7 @@ final class NowPlayingService {
         guard action == .play else { return .commandFailed }
         if consumeForGesture(.play) { return .success }
 
-        guard let ownerID = focusedOwnerID ?? playingOwnerID,
+        guard let ownerID = targetOwnerID,
               let handlers = handlersByOwner[ownerID] else {
             diagnostic("command play failed reason=no-owner")
             return .commandFailed
@@ -1097,12 +1113,15 @@ final class NowPlayingService {
     private func logCommand(
         _ command: String,
         suppressed: Bool,
-        action: RemoteMediaCommandPolicy.Action
+        action: RemoteMediaCommandPolicy.Action,
+        targetOwnerID: UUID? = nil
     ) {
         diagnostic(
             "command=\(command) suppressed=\(suppressed) "
                 + "playing=\(activeHandlers?.isCurrentlyPlaying() == true) "
-                + "owner=\(activeOwnerID.map(shortOwnerID) ?? "none") action=\(action)"
+                + "target=\((targetOwnerID ?? activeOwnerID).map(shortOwnerID) ?? "none") "
+                + "focused=\(focusedOwnerID.map(shortOwnerID) ?? "none") "
+                + "playingOwner=\(playingOwnerID.map(shortOwnerID) ?? "none") action=\(action)"
         )
     }
 
