@@ -26,10 +26,15 @@ struct BookReaderWindowView: View {
 
     var body: some View {
         ReaderView(viewModel: viewModel)
-            .background(WindowAccessor(onWindowFound: { window in
-                viewModel.hostWindow = window
-                NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
-            }))
+            .background(WindowAccessor(
+                onWindowFound: { window in
+                    viewModel.hostWindow = window
+                    NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
+                },
+                onWindowBecameKey: {
+                    viewModel.nowPlayingService.focus()
+                }
+            ))
             .focusedValue(\.activeWindowType, .reader)
             .focusedValue(\.canReleaseMediaControls, viewModel.canReleaseMediaControls)
             .navigationTitle(windowTitle)
@@ -57,24 +62,64 @@ struct BookReaderWindowView: View {
 /// to keyboard shortcut notifications.
 struct WindowAccessor: NSViewRepresentable {
     let onWindowFound: (NSWindow) -> Void
+    let onWindowBecameKey: () -> Void
+
+    init(
+        onWindowFound: @escaping (NSWindow) -> Void,
+        onWindowBecameKey: @escaping () -> Void = {}
+    ) {
+        self.onWindowFound = onWindowFound
+        self.onWindowBecameKey = onWindowBecameKey
+    }
 
     func makeNSView(context: Context) -> NSView {
         let view = WindowAccessorView()
         view.onWindowFound = onWindowFound
+        view.onWindowBecameKey = onWindowBecameKey
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let view = nsView as? WindowAccessorView else { return }
+        view.onWindowFound = onWindowFound
+        view.onWindowBecameKey = onWindowBecameKey
+    }
 }
 
-/// Helper NSView that reports its window once it appears in the view hierarchy.
+/// Helper NSView that reports attachment and every key-window transition.
 private class WindowAccessorView: NSView {
     var onWindowFound: ((NSWindow) -> Void)?
+    var onWindowBecameKey: (() -> Void)?
+    private var keyWindowObserver: NSObjectProtocol?
+
+    deinit {
+        removeKeyWindowObserver()
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        removeKeyWindowObserver()
         if let window = window {
             onWindowFound?(window)
+            if window.isKeyWindow {
+                onWindowBecameKey?()
+            }
+            keyWindowObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeKeyNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.onWindowBecameKey?()
+            }
+        }
+    }
+
+    /// Stops observing the previous host when SwiftUI moves or destroys the
+    /// representable, preventing a closed window from retaining callbacks.
+    private func removeKeyWindowObserver() {
+        if let keyWindowObserver {
+            NotificationCenter.default.removeObserver(keyWindowObserver)
+            self.keyWindowObserver = nil
         }
     }
 }

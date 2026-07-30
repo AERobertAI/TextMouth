@@ -77,7 +77,9 @@ final class ReaderViewModel: ObservableObject {
     /// Owner-scoped pause/resume calls pass `book.id` so other windows'
     /// playback events don't accidentally affect this book's timer.
     let sleepTimerService = SleepTimerService.shared
-    lazy var nowPlayingService = NowPlayingSession(ownerID: book.id)
+    /// Every reader window receives a unique media owner, even when two
+    /// windows happen to show the same book.
+    lazy var nowPlayingService = NowPlayingSession(ownerID: UUID())
     let substitutionService = TextSubstitutionService.shared
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
