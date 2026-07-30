@@ -26,6 +26,22 @@ enum VisibleTextWindowPolicy {
     }
 }
 
+/// Controls how often active playback becomes durable. Live library updates
+/// are separately throttled to a much shorter interval for responsive UI.
+enum PlaybackCheckpointPolicy {
+    static let persistenceInterval: TimeInterval = 30
+
+    static func shouldPersist(
+        isActivelyPlaying: Bool,
+        lastCheckpoint: Date?,
+        now: Date
+    ) -> Bool {
+        guard isActivelyPlaying else { return false }
+        guard let lastCheckpoint else { return true }
+        return now.timeIntervalSince(lastCheckpoint) >= persistenceInterval
+    }
+}
+
 /// Manages the state for reading a single book
 @MainActor
 final class ReaderViewModel: ObservableObject {
@@ -38,6 +54,7 @@ final class ReaderViewModel: ObservableObject {
     @Published var currentChapterIndex = 0 {
         didSet {
             schedulePlaybackUIRefresh()
+            scheduleLivePositionPublish()
         }
     }
     /// Raw reading cursor used for playback, seeking, and persistence.
@@ -47,6 +64,7 @@ final class ReaderViewModel: ObservableObject {
     var currentCharacterOffset = 0 {
         didSet {
             schedulePlaybackUIRefresh()
+            scheduleLivePositionPublish()
         }
     }
     /// Throttled mirror of the current chapter index for SwiftUI/VoiceOver.
@@ -141,6 +159,10 @@ final class ReaderViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     /// Coalesces rapid playback cursor changes into a single UI refresh.
     private var playbackUIRefreshWorkItem: DispatchWorkItem?
+    /// Coalesces word-level cursor changes before publishing to library rows.
+    private var livePositionWorkItem: DispatchWorkItem?
+    private var lastLivePositionPublish = Date.distantPast
+    private var lastPersistedCheckpoint: Date?
     private struct PlaybackUIRefreshSnapshot {
         let chapterIndex: Int
         let offset: Int
@@ -180,6 +202,8 @@ final class ReaderViewModel: ObservableObject {
     nonisolated static let audioCharsPerSecond: Double = 10.0
     /// How often playback-driven UI mirrors should refresh while speech is active.
     static let playbackUIRefreshInterval: TimeInterval = 0.12
+    /// Library rows need to feel current without rebuilding on every word.
+    static let livePositionPublishInterval: TimeInterval = 1
     /// How much of the current visible text window should remain as a guard band
     /// before the reader surface is rebuilt around a new center point.
     static let visibleTextWindowGuardFraction = 0.25
@@ -264,16 +288,22 @@ final class ReaderViewModel: ObservableObject {
 
     var totalEstimatedTime: TimeInterval {
         if isAudioBook {
-            // Audio book: character count / 10 = total seconds, adjusted by playback speed
-            let totalChars = Double(content?.totalCharacterCount ?? 0)
-            return totalChars / Self.audioCharsPerSecond / audioSpeed
+            return baseAudioDuration / audioSpeed
         }
         return content?.estimatedReadingTime(wpm: speechService.wordsPerMinute) ?? 0
     }
 
-    /// Total duration at 1x speed (not adjusted for playback speed), for progress displays
-    private var totalAudioDuration: TimeInterval {
-        Double(content?.totalCharacterCount ?? 0) / Self.audioCharsPerSecond
+    /// Prefer the analyzed media duration used by library rows. Character
+    /// placeholders remain a fallback for legacy audio packages.
+    private var baseAudioDuration: TimeInterval {
+        if let duration = book.audioDuration, duration > 0 {
+            return duration
+        }
+        if let indexedDuration = content?.contentIndex.totalAudioDuration,
+           indexedDuration > 0 {
+            return indexedDuration
+        }
+        return Double(content?.totalCharacterCount ?? 0) / Self.audioCharsPerSecond
     }
 
     var formattedTotalTime: String {
@@ -289,13 +319,11 @@ final class ReaderViewModel: ObservableObject {
     }
 
     var timeRemaining: TimeInterval {
-        if isAudioBook {
-            let totalChars = Double(content?.totalCharacterCount ?? 0)
-            guard totalChars > 0 else { return 0 }
-            let remainingChars = Double(max(Int(totalChars) - currentGlobalOffset, 0))
-            return remainingChars / Self.audioCharsPerSecond / audioSpeed
-        }
-        return content?.estimatedTimeRemaining(fromGlobalOffset: currentGlobalOffset, wpm: speechService.wordsPerMinute) ?? 0
+        ReadingTimeEstimator.remaining(
+            totalDuration: totalEstimatedTime,
+            globalOffset: currentGlobalOffset,
+            totalCharacterCount: content?.totalCharacterCount ?? 0
+        )
     }
 
     var formattedTimeRemaining: String {
@@ -323,7 +351,10 @@ final class ReaderViewModel: ObservableObject {
         let charCount = nextOffset - headingGlobalOffset
 
         if isAudioBook {
-            return Double(charCount) / Self.audioCharsPerSecond / audioSpeed
+            guard content.totalCharacterCount > 0 else { return 0 }
+            return totalEstimatedTime
+                * Double(charCount)
+                / Double(content.totalCharacterCount)
         }
 
         guard content.totalCharacterCount > 0, speechService.wordsPerMinute > 0 else { return 0 }
@@ -337,7 +368,9 @@ final class ReaderViewModel: ObservableObject {
         let globalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
 
         if isAudioBook {
-            return Double(globalOffset) / Self.audioCharsPerSecond / audioSpeed
+            return totalEstimatedTime
+                * Double(globalOffset)
+                / Double(content.totalCharacterCount)
         }
 
         guard speechService.wordsPerMinute > 0 else { return 0 }
@@ -982,16 +1015,11 @@ final class ReaderViewModel: ObservableObject {
 
     /// UI-facing remaining time, derived from the throttled display cursor.
     var displayTimeRemaining: TimeInterval {
-        if isAudioBook {
-            let totalChars = Double(content?.totalCharacterCount ?? 0)
-            guard totalChars > 0 else { return 0 }
-            let remainingChars = Double(max(Int(totalChars) - displayCurrentGlobalOffset, 0))
-            return remainingChars / Self.audioCharsPerSecond / audioSpeed
-        }
-        return content?.estimatedTimeRemaining(
-            fromGlobalOffset: displayCurrentGlobalOffset,
-            wpm: speechService.wordsPerMinute
-        ) ?? 0
+        ReadingTimeEstimator.remaining(
+            totalDuration: totalEstimatedTime,
+            globalOffset: displayCurrentGlobalOffset,
+            totalCharacterCount: content?.totalCharacterCount ?? 0
+        )
     }
 
     var displayFormattedTimeRemaining: String {
@@ -1006,12 +1034,58 @@ final class ReaderViewModel: ObservableObject {
 
     /// Persist the current reading position to the library
     func savePosition() {
-        let position = ReadingPosition(
+        guard content != nil else { return }
+        let position = makeCurrentReadingPosition()
+        libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
+        lastPersistedCheckpoint = position.lastUpdated
+    }
+
+    /// Builds the one canonical snapshot used by reader persistence and live
+    /// library estimates, preventing formula inputs from drifting apart.
+    private func makeCurrentReadingPosition() -> ReadingPosition {
+        ReadingPosition(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
             globalCharacterOffset: currentGlobalOffset
         )
-        libraryViewModel.updateReadingPosition(bookID: book.id, position: position)
+    }
+
+    /// Publishes at most once per second and periodically upgrades a live
+    /// snapshot to a durable checkpoint while playback remains active.
+    private func scheduleLivePositionPublish() {
+        guard !hasClosed, content != nil, livePositionWorkItem == nil else { return }
+        let elapsed = Date().timeIntervalSince(lastLivePositionPublish)
+        let delay = max(0, Self.livePositionPublishInterval - elapsed)
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, !self.hasClosed, self.content != nil else { return }
+            self.livePositionWorkItem = nil
+            self.publishLivePosition(now: Date())
+        }
+        livePositionWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    /// Applies the latest cursor to the shared library and persists every
+    /// thirty seconds during active playback to bound crash-related data loss.
+    private func publishLivePosition(now: Date) {
+        let position = makeCurrentReadingPosition()
+        let isActivelyPlaying: Bool
+        if isAudioBook {
+            isActivelyPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
+        } else {
+            isActivelyPlaying = speechService.isSpeaking && !speechService.isPaused
+        }
+        if PlaybackCheckpointPolicy.shouldPersist(
+            isActivelyPlaying: isActivelyPlaying,
+            lastCheckpoint: lastPersistedCheckpoint,
+            now: now
+        ) {
+            libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
+            lastPersistedCheckpoint = now
+        } else {
+            libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
+        }
+        lastLivePositionPublish = now
     }
 
     // MARK: - Debug Logging
@@ -1029,8 +1103,14 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
-        speechService.stop()
-        audioPlaybackService.stop()
+        playbackUIRefreshWorkItem?.cancel()
+        livePositionWorkItem?.cancel()
+        livePositionWorkItem = nil
+        // stop() records the stopped timestamp and persists when playback was
+        // active or paused. The explicit save also captures navigation made
+        // while stopped, and is a no-op until content has loaded.
+        stop()
+        savePosition()
         whereAmISynth.stopSpeaking(at: .immediate)
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()

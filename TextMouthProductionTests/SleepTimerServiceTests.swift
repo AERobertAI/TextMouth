@@ -90,6 +90,53 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 0)
     }
 
+    func testLibraryAndReaderTextEstimatesUseSameSnapshot() {
+        let totalWords = 12_000
+        let totalCharacters = 60_000
+        let cursor = 18_000
+        let wpm = 240.0
+        let totalDuration = Double(totalWords) / wpm * 60
+        let book = Book(
+            title: "Test",
+            format: .txt,
+            filePath: "test.txt",
+            md5Hash: "hash",
+            readingPosition: ReadingPosition(globalCharacterOffset: cursor),
+            totalWordCount: totalWords,
+            totalCharacterCount: totalCharacters
+        )
+        let readerEstimate = ReadingTimeEstimator.remaining(
+            totalDuration: totalDuration,
+            globalOffset: cursor,
+            totalCharacterCount: totalCharacters
+        )
+
+        XCTAssertEqual(book.estimatedTimeRemaining(wpm: wpm), readerEstimate)
+    }
+
+    func testAudioEstimateUsesAnalyzedDurationInsteadOfPlaceholderRounding() {
+        let analyzedDuration: TimeInterval = 7_321.75
+        let totalCharacters = 73_200
+        let cursor = 18_300
+        let book = Book(
+            title: "Audio",
+            format: .audio,
+            filePath: "audio.m4b",
+            md5Hash: "hash",
+            readingPosition: ReadingPosition(globalCharacterOffset: cursor),
+            totalCharacterCount: totalCharacters,
+            localWPM: 1.25,
+            audioDuration: analyzedDuration
+        )
+        let readerEstimate = ReadingTimeEstimator.remaining(
+            totalDuration: analyzedDuration / 1.25,
+            globalOffset: cursor,
+            totalCharacterCount: totalCharacters
+        )
+
+        XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), readerEstimate)
+    }
+
     func testMinuteCountdownExpiresAtZero() {
         var expirations = 0
         start(.minutes(1), onExpire: { expirations += 1 })

@@ -1,5 +1,20 @@
 import Foundation
 
+/// Shared proportional remaining-time calculation for library rows and reader
+/// windows. Both surfaces must provide the same total duration and cursor.
+enum ReadingTimeEstimator {
+    static func remaining(
+        totalDuration: TimeInterval,
+        globalOffset: Int,
+        totalCharacterCount: Int
+    ) -> TimeInterval {
+        guard totalDuration > 0, totalCharacterCount > 0 else { return 0 }
+        let clampedOffset = min(max(globalOffset, 0), totalCharacterCount)
+        let remainingFraction = 1 - Double(clampedOffset) / Double(totalCharacterCount)
+        return totalDuration * remainingFraction
+    }
+}
+
 enum BookFormat: String, Codable, CaseIterable {
     case epub
     case txt
@@ -318,8 +333,11 @@ struct Book: Identifiable, Codable, Hashable {
             guard let pos = readingPosition else { return adjustedDuration }
             let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
             guard let totalChars = totalCharacterCount, totalChars > 0 else { return adjustedDuration }
-            let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
-            return adjustedDuration * (1.0 - fraction)
+            return ReadingTimeEstimator.remaining(
+                totalDuration: adjustedDuration,
+                globalOffset: globalOffset,
+                totalCharacterCount: totalChars
+            )
         }
 
         let effectiveSpeed = effectiveWPM(fallback: wpm)
@@ -328,8 +346,11 @@ struct Book: Identifiable, Codable, Hashable {
         let totalTime = Double(totalWords) / effectiveSpeed * 60.0
         guard let pos = readingPosition else { return totalTime }
         let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
-        let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
-        return totalTime * (1.0 - fraction)
+        return ReadingTimeEstimator.remaining(
+            totalDuration: totalTime,
+            globalOffset: globalOffset,
+            totalCharacterCount: totalChars
+        )
     }
 
     /// Save this book's data to its bookInfo.json

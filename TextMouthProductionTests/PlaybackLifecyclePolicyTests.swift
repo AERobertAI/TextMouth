@@ -4,6 +4,97 @@ import XCTest
 
 @MainActor
 final class PlaybackLifecyclePolicyTests: XCTestCase {
+    func testActivePlaybackPersistsImmediatelyWithoutEarlierCheckpoint() {
+        XCTAssertTrue(PlaybackCheckpointPolicy.shouldPersist(
+            isActivelyPlaying: true,
+            lastCheckpoint: nil,
+            now: Date(timeIntervalSince1970: 1_000)
+        ))
+    }
+
+    func testActivePlaybackWaitsForThirtySecondCheckpointInterval() {
+        let last = Date(timeIntervalSince1970: 1_000)
+
+        XCTAssertFalse(PlaybackCheckpointPolicy.shouldPersist(
+            isActivelyPlaying: true,
+            lastCheckpoint: last,
+            now: last.addingTimeInterval(29.999)
+        ))
+        XCTAssertTrue(PlaybackCheckpointPolicy.shouldPersist(
+            isActivelyPlaying: true,
+            lastCheckpoint: last,
+            now: last.addingTimeInterval(30)
+        ))
+    }
+
+    func testStoppedReaderNeverCreatesPeriodicCheckpoint() {
+        XCTAssertFalse(PlaybackCheckpointPolicy.shouldPersist(
+            isActivelyPlaying: false,
+            lastCheckpoint: nil,
+            now: Date(timeIntervalSince1970: 1_000)
+        ))
+    }
+
+    func testLivePositionUpdatesSharedLibrarySnapshot() {
+        let book = Book(
+            title: "Live Position",
+            format: .txt,
+            filePath: "/tmp/live-position.txt",
+            md5Hash: UUID().uuidString
+        )
+        let libraryViewModel = LibraryViewModel()
+        libraryViewModel.library = Library(books: [book])
+        let position = ReadingPosition(
+            chapterIndex: 2,
+            characterOffset: 75,
+            globalCharacterOffset: 1_275
+        )
+
+        libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
+
+        XCTAssertEqual(libraryViewModel.bookByID(book.id)?.readingPosition, position)
+    }
+
+    func testClosingStoppedReaderPersistsLatestCursor() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString).txt")
+        try Data("First chapter\nSecond chapter".utf8).write(to: sourceURL)
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let book = Book(
+            title: "Close Checkpoint",
+            format: .txt,
+            filePath: sourceURL.path,
+            md5Hash: UUID().uuidString
+        )
+        let libraryViewModel = LibraryViewModel()
+        libraryViewModel.library = Library(books: [book])
+        let settingsViewModel = SettingsViewModel(initializeServices: false)
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: libraryViewModel,
+            settingsViewModel: settingsViewModel
+        )
+        reader.content = DocumentContent(
+            title: book.title,
+            author: book.author,
+            chapters: [
+                Chapter(title: "One", text: "First chapter"),
+                Chapter(title: "Two", text: "Second chapter"),
+            ]
+        )
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 6
+
+        reader.close()
+
+        let stored = try XCTUnwrap(libraryViewModel.bookByID(book.id)?.readingPosition)
+        XCTAssertEqual(stored.chapterIndex, 1)
+        XCTAssertEqual(stored.characterOffset, 6)
+        XCTAssertEqual(stored.globalCharacterOffset, "First chapter".utf16.count + 6)
+        XCTAssertFalse(libraryViewModel.openBookIDs.contains(book.id))
+    }
+
     func testPausedDirectSpeechWithoutLiveSynthRestartsAtCurrentOffset() {
         XCTAssertEqual(
             SpeechResumePolicy.action(
