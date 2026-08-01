@@ -124,6 +124,50 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(ReaderViewModel.currentHeading(in: filtered, chapterIndex: 0, characterOffset: 100)?.text, "Visible")
     }
 
+    func testHeadingDurationsEndAtNextDisplayedHeading() {
+        let positioned = [
+            Heading(level: 1, text: "Part One", characterOffset: 0),
+            Heading(level: 2, text: "Chapter One", characterOffset: 100),
+            Heading(level: 3, text: "Scene", characterOffset: 250),
+            Heading(level: 1, text: "Part Two", characterOffset: 400),
+            Heading(level: 2, text: "Chapter Two", characterOffset: 500),
+        ]
+        let displayed = HeadingNavigatorView.filteredHeadings(positioned, maximumLevel: 1)
+        let offsets = Dictionary(uniqueKeysWithValues: positioned.map { ($0.id, $0.characterOffset) })
+
+        let nextOffsets = HeadingNavigatorView.nextDisplayedHeadingOffsets(
+            displayed,
+            globalOffsetsByID: offsets,
+            totalCharacterCount: 700
+        )
+
+        // The hidden H2/H3 headings must remain inside Part One's 400-character
+        // duration rather than cutting it off at the first hidden H2.
+        XCTAssertEqual(nextOffsets[displayed[0].id], 400)
+        XCTAssertEqual(nextOffsets[displayed[1].id], 700)
+    }
+
+    func testHeadingDurationsRespectLessRestrictiveDisplayFilter() {
+        let positioned = [
+            Heading(level: 1, text: "Part One", characterOffset: 0),
+            Heading(level: 2, text: "Chapter One", characterOffset: 100),
+            Heading(level: 3, text: "Hidden Scene", characterOffset: 250),
+            Heading(level: 1, text: "Part Two", characterOffset: 400),
+        ]
+        let displayed = HeadingNavigatorView.filteredHeadings(positioned, maximumLevel: 2)
+        let offsets = Dictionary(uniqueKeysWithValues: positioned.map { ($0.id, $0.characterOffset) })
+
+        let nextOffsets = HeadingNavigatorView.nextDisplayedHeadingOffsets(
+            displayed,
+            globalOffsetsByID: offsets,
+            totalCharacterCount: 700
+        )
+
+        XCTAssertEqual(nextOffsets[displayed[0].id], 100)
+        XCTAssertEqual(nextOffsets[displayed[1].id], 400)
+        XCTAssertEqual(nextOffsets[displayed[2].id], 700)
+    }
+
     func testPlainSearchFindsAcrossRepresentativeChapterTexts() throws {
         XCTAssertEqual(try BookTextSearch.ranges(in: "one target two", query: "target", useRegex: false).count, 1)
         XCTAssertEqual(try BookTextSearch.ranges(in: "target again target", query: "target", useRegex: false).count, 2)
