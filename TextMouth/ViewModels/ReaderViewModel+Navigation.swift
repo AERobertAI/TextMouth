@@ -672,7 +672,10 @@ extension ReaderViewModel {
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
-            navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: heading.chapterIndex,
+                characterOffset: heading.characterOffset
+            )
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
         }
@@ -686,7 +689,10 @@ extension ReaderViewModel {
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
-            navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: heading.chapterIndex,
+                characterOffset: heading.characterOffset
+            )
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
         }
@@ -694,8 +700,10 @@ extension ReaderViewModel {
 
     /// Navigate to a specific heading (from table of contents), saving current position for return.
     func navigateToHeading(_ heading: Heading) {
-        savePositionForReturn()
-        navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+        navigatePreservingReturnPosition(
+            chapterIndex: heading.chapterIndex,
+            characterOffset: heading.characterOffset
+        )
         autoPlayIfEnabled()
     }
 

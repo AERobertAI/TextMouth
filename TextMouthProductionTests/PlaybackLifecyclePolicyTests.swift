@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -452,6 +453,131 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         XCTAssertEqual(changes, 3)
     }
 
+    /// Direct next/previous heading commands must capture their departure so
+    /// Command-Option-arrow navigation can be undone with Return.
+    func testDirectHeadingNavigationRecordsReturnPosition() {
+        let reader = makeNavigationReader()
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 200
+
+        reader.nextHeading()
+
+        XCTAssertTrue(reader.hasSavedPosition)
+        XCTAssertEqual(reader.savedChapterIndex, 0)
+        XCTAssertEqual(reader.savedCharacterOffset, 200)
+        XCTAssertEqual(reader.currentCharacterOffset, 500)
+
+        reader.returnToSavedPosition()
+        reader.previousHeading()
+
+        XCTAssertTrue(reader.hasSavedPosition)
+        XCTAssertEqual(reader.savedCharacterOffset, 200)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+    }
+
+    /// Keyboard-style next/previous bookmark navigation shares the same Return
+    /// behavior as choosing a bookmark from the panel.
+    func testDirectBookmarkNavigationRecordsReturnPosition() {
+        let reader = makeNavigationReader()
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 200
+
+        reader.goToNextBookmark()
+
+        XCTAssertTrue(reader.hasSavedPosition)
+        XCTAssertEqual(reader.savedCharacterOffset, 200)
+        XCTAssertEqual(reader.currentCharacterOffset, 700)
+
+        reader.returnToSavedPosition()
+        reader.goToPreviousBookmark()
+
+        XCTAssertTrue(reader.hasSavedPosition)
+        XCTAssertEqual(reader.savedCharacterOffset, 200)
+        XCTAssertEqual(reader.currentCharacterOffset, 100)
+    }
+
+    /// An unavailable destination is not a navigation event and must not
+    /// overwrite a previously useful Return point.
+    func testMissingHeadingDestinationPreservesExistingReturnPosition() {
+        let reader = makeNavigationReader()
+        defer { reader.close() }
+        reader.currentCharacterOffset = 42
+        reader.savePositionForReturn()
+        reader.currentCharacterOffset = 900
+
+        reader.nextHeading()
+
+        XCTAssertTrue(reader.hasSavedPosition)
+        XCTAssertEqual(reader.savedCharacterOffset, 42)
+        XCTAssertEqual(reader.currentCharacterOffset, 900)
+    }
+
+    /// Cycling edits the setting source active in each presentation mode and
+    /// immediately changes the effective unit used to draw the skip icons.
+    func testNavigationUnitCyclingRespectsGlobalSharedAndSeparateModes() {
+        let reader = makeNavigationReader()
+        let settings = reader.settingsViewModel
+        let originalMode = settings.playbackNavigationUnitControlMode
+        let originalGlobalForward = settings.skipForwardUnit
+        let originalGlobalBackward = settings.skipBackwardUnit
+        defer {
+            settings.playbackNavigationUnitControlMode = originalMode
+            settings.skipForwardUnit = originalGlobalForward
+            settings.skipBackwardUnit = originalGlobalBackward
+            reader.close()
+        }
+
+        // Hidden controls use global choices, so F advances only the global
+        // forward unit and publishes a settings refresh for every open reader.
+        settings.playbackNavigationUnitControlMode = .none
+        settings.skipForwardUnit = .seconds10
+        settings.skipBackwardUnit = .seconds30
+        reader.book.localSkipForwardUnit = SkipUnit.heading.rawValue
+        reader.book.localSkipBackwardUnit = SkipUnit.paragraph.rawValue
+        let revisionBeforeGlobalCycle = settings.playbackControlsSettingsRevision
+
+        reader.cyclePlaybackSkipUnit(direction: .forward)
+
+        XCTAssertEqual(settings.skipForwardUnit, .seconds15)
+        XCTAssertEqual(reader.playbackSkipForwardUnit, .seconds15)
+        XCTAssertEqual(reader.playbackSkipForwardUnit.iconName(forward: true), "goforward.15")
+        XCTAssertEqual(reader.book.localSkipForwardUnit, SkipUnit.heading.rawValue)
+        XCTAssertGreaterThan(settings.playbackControlsSettingsRevision, revisionBeforeGlobalCycle)
+
+        // Shared mode persists one per-book value to both directions. Observe
+        // the reader publication that causes both skip buttons to redraw.
+        settings.playbackNavigationUnitControlMode = .shared
+        reader.book.localSkipForwardUnit = SkipUnit.seconds30.rawValue
+        reader.book.localSkipBackwardUnit = SkipUnit.seconds30.rawValue
+        var readerPublishedChange = false
+        let publication = reader.objectWillChange.first().sink {
+            readerPublishedChange = true
+        }
+
+        reader.cyclePlaybackSkipUnit(direction: .backward)
+
+        XCTAssertTrue(readerPublishedChange)
+        XCTAssertEqual(reader.book.localSkipForwardUnit, SkipUnit.seconds60.rawValue)
+        XCTAssertEqual(reader.book.localSkipBackwardUnit, SkipUnit.seconds60.rawValue)
+        XCTAssertEqual(reader.playbackSkipForwardUnit.iconName(forward: true), "goforward.60")
+        XCTAssertEqual(reader.playbackSkipBackwardUnit.iconName(forward: false), "gobackward.60")
+        withExtendedLifetime(publication) {}
+
+        // Separate mode advances only the requested per-book direction.
+        settings.playbackNavigationUnitControlMode = .separate
+        reader.book.localSkipForwardUnit = SkipUnit.sentence.rawValue
+        reader.book.localSkipBackwardUnit = SkipUnit.paragraph.rawValue
+
+        reader.cyclePlaybackSkipUnit(direction: .backward)
+
+        XCTAssertEqual(reader.book.localSkipForwardUnit, SkipUnit.sentence.rawValue)
+        XCTAssertEqual(reader.book.localSkipBackwardUnit, SkipUnit.heading.rawValue)
+        XCTAssertEqual(reader.playbackSkipForwardUnit, .sentence)
+        XCTAssertEqual(reader.playbackSkipBackwardUnit, .heading)
+    }
+
     private func refresh(
         length: Int,
         chapter: Int,
@@ -470,5 +596,45 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
             offset: offset,
             guardFraction: 0.25
         )
+    }
+
+    /// Construct a loaded, in-memory reader fixture with destinations on both
+    /// sides of the starting cursor. The unique missing path prevents fixtures
+    /// from sharing persisted library state.
+    private func makeNavigationReader() -> ReaderViewModel {
+        let bookmarks = [
+            Bookmark(number: 1, chapterIndex: 0, characterOffset: 100),
+            Bookmark(number: 2, chapterIndex: 0, characterOffset: 700),
+        ]
+        let book = Book(
+            title: "Return Navigation",
+            format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-return-navigation.txt",
+            md5Hash: UUID().uuidString,
+            bookmarks: bookmarks
+        )
+        let libraryViewModel = LibraryViewModel()
+        libraryViewModel.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: libraryViewModel,
+            settingsViewModel: SettingsViewModel(initializeServices: false)
+        )
+        let text = String(repeating: "x", count: 1_000)
+        reader.content = DocumentContent(
+            title: book.title,
+            author: book.author,
+            chapters: [
+                Chapter(
+                    title: "One",
+                    text: text,
+                    headings: [
+                        Heading(level: 1, text: "Opening", characterOffset: 0),
+                        Heading(level: 1, text: "Middle", characterOffset: 500),
+                    ]
+                ),
+            ]
+        )
+        return reader
     }
 }
