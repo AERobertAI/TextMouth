@@ -2,6 +2,14 @@ import SwiftUI
 
 struct PlaybackControlsView: View {
     @ObservedObject var viewModel: ReaderViewModel
+    /// Settings are a separate observable object from the reader. Observing
+    /// both is required for already-open playback bars to reflect changes.
+    @ObservedObject private var settingsViewModel: SettingsViewModel
+
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        self.settingsViewModel = viewModel.settingsViewModel
+    }
 
     var body: some View {
         HStack(spacing: 20) {
@@ -15,7 +23,7 @@ struct PlaybackControlsView: View {
             .accessibilityLabel("Skip backward: \(viewModel.playbackSkipBackwardUnit.rawValue)")
             .buttonStyle(.plain)
 
-            if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .separate {
+            if settingsViewModel.playbackNavigationUnitControlMode == .separate {
                 navigationUnitMenu(direction: .backward)
             }
 
@@ -41,14 +49,14 @@ struct PlaybackControlsView: View {
             .accessibilityLabel("Skip forward: \(viewModel.playbackSkipForwardUnit.rawValue)")
             .buttonStyle(.plain)
 
-            if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .separate {
+            if settingsViewModel.playbackNavigationUnitControlMode == .separate {
                 navigationUnitMenu(direction: .forward)
-            } else if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .shared {
+            } else if settingsViewModel.playbackNavigationUnitControlMode == .shared {
                 sharedNavigationUnitMenu
             }
 
             // Bookmark toggle button (hidden by default, shown via settings)
-            if viewModel.settingsViewModel.showBookmarkInPlaybackControls {
+            if settingsViewModel.showBookmarkInPlaybackControls {
                 Button {
                     viewModel.toggleBookmarkAtCurrentPosition()
                 } label: {
@@ -62,7 +70,7 @@ struct PlaybackControlsView: View {
             Spacer()
 
             // Speed controls (can be hidden via settings)
-            if viewModel.settingsViewModel.showSpeedInPlaybackControls {
+            if settingsViewModel.showSpeedInPlaybackControls {
             HStack(spacing: 8) {
                 Button {
                     viewModel.adjustSpeed(delta: viewModel.isAudioBook ? -0.25 : -25)
@@ -153,9 +161,9 @@ struct PlaybackControlsView: View {
         viewModel.playbackSkipForwardUnit.iconName(forward: true)
     }
 
-    /// A single popup that changes both directions and displays their shared
-    /// unit in compact form. The nested Picker supplies native selected-item
-    /// semantics to both the visual menu and VoiceOver.
+    /// A single popup that changes both directions and displays the complete
+    /// unit name. The nested Picker supplies native selected-item semantics
+    /// when the menu opens.
     private var sharedNavigationUnitMenu: some View {
         Menu {
             Picker("Navigation unit", selection: Binding(
@@ -168,13 +176,16 @@ struct PlaybackControlsView: View {
             }
         } label: {
             Label(
-                viewModel.playbackSkipForwardUnit.compactLabel,
+                viewModel.playbackSkipForwardUnit.rawValue,
                 systemImage: "arrow.left.arrow.right.circle"
             )
         }
         .menuStyle(.borderlessButton)
-        .accessibilityLabel("Forward and backward navigation unit")
-        .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
+        // Override only the native Menu's spoken label. Keeping its original
+        // accessibility element preserves the popup role and activation.
+        .accessibilityLabel(
+            viewModel.playbackSkipForwardUnit.playbackMenuAccessibilityLabel()
+        )
         .help("Change this book's forward and backward navigation unit")
     }
 
@@ -199,12 +210,11 @@ struct PlaybackControlsView: View {
                 }
             }
         } label: {
-            Image(systemName: "chevron.down.circle")
+            Label(selected.rawValue, systemImage: "chevron.down.circle")
                 .font(.caption)
         }
         .menuStyle(.borderlessButton)
-        .accessibilityLabel("Skip \(directionLabel) navigation unit")
-        .accessibilityValue(selected.rawValue)
+        .accessibilityLabel(selected.playbackMenuAccessibilityLabel(direction: direction))
         .help("Change this book's skip \(directionLabel) unit")
     }
 }

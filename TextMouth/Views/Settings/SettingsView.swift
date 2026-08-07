@@ -359,11 +359,20 @@ struct PlaybackSettingsView: View {
                     "Choose no per-book menu, one menu for both directions, or a separate menu for each direction"
                 )
 
-                Toggle("Show bookmark button", isOn: $settingsViewModel.showBookmarkInPlaybackControls)
+                // Use an explicit binding so the SettingsViewModel setter
+                // publishes a playback-bar refresh. AppStorage's projected
+                // binding writes its storage directly and can bypass didSet.
+                Toggle("Show bookmark button", isOn: Binding(
+                    get: { settingsViewModel.showBookmarkInPlaybackControls },
+                    set: { settingsViewModel.showBookmarkInPlaybackControls = $0 }
+                ))
                     .accessibilityLabel("Show bookmark button in playback controls")
                     .accessibilityHint("Adds a button to add or remove a bookmark at the current position")
 
-                Toggle("Show speed controls", isOn: $settingsViewModel.showSpeedInPlaybackControls)
+                Toggle("Show speed controls", isOn: Binding(
+                    get: { settingsViewModel.showSpeedInPlaybackControls },
+                    set: { settingsViewModel.showSpeedInPlaybackControls = $0 }
+                ))
                     .accessibilityLabel("Show speed controls in playback controls")
                     .accessibilityHint("Shows the speed adjustment buttons and current speed display")
 

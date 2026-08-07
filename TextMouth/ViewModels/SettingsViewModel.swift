@@ -63,19 +63,17 @@ enum SkipUnit: String, CaseIterable, Codable {
         }
     }
 
-    /// Compact text used by the playback-bar popup without sacrificing the
-    /// full descriptive value exposed to assistive technologies.
-    var compactLabel: String {
-        switch self {
-        case .seconds10: return "10s"
-        case .seconds15: return "15s"
-        case .seconds30: return "30s"
-        case .seconds60: return "60s"
-        case .sentence: return "Sentence"
-        case .paragraph: return "Paragraph"
-        case .heading: return "Heading"
-        case .subheading: return "Subheading"
-        case .bookmark: return "Bookmark"
+    /// Complete, non-duplicated label for a playback-bar navigation menu.
+    /// The directionless form matches the shared menu; separate menus include
+    /// their direction so VoiceOver users can distinguish them immediately.
+    func playbackMenuAccessibilityLabel(direction: PlaybackSkipDirection? = nil) -> String {
+        switch direction {
+        case .forward:
+            return "Forward navigation unit: \(rawValue)"
+        case .backward:
+            return "Backward navigation unit: \(rawValue)"
+        case nil:
+            return "Navigation unit: \(rawValue)"
         }
     }
 
@@ -157,10 +155,10 @@ final class SettingsViewModel: ObservableObject {
         didSet { syncToConfig() }
     }
     @AppStorage("skipForwardUnit") var skipForwardUnitRaw: String = SkipUnit.seconds15.rawValue {
-        didSet { syncToConfig() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
     @AppStorage("skipBackwardUnit") var skipBackwardUnitRaw: String = SkipUnit.seconds15.rawValue {
-        didSet { syncToConfig() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
 
     @AppStorage("shiftSkipForwardUnit") var shiftSkipForwardUnitRaw: String = SkipUnit.seconds30.rawValue {
@@ -194,10 +192,16 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage("autoPlayOnNavigate") var autoPlayOnNavigate: Bool = false {
         didSet { syncToConfig() }
     }
-    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false
-    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true
+    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false {
+        didSet { publishPlaybackControlsChange() }
+    }
+    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true {
+        didSet { publishPlaybackControlsChange() }
+    }
     @AppStorage("playbackNavigationUnitControlMode")
-    var playbackNavigationUnitControlModeRaw: String = PlaybackNavigationUnitControlMode.none.rawValue
+    var playbackNavigationUnitControlModeRaw: String = PlaybackNavigationUnitControlMode.none.rawValue {
+        didSet { publishPlaybackControlsChange() }
+    }
 
     /// Whether to monitor Bluetooth device disconnections and suppress
     /// spurious media commands from macOS's rcd daemon.
@@ -237,6 +241,10 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
     @Published var availableLanguages: [String] = []
+    /// Changes whenever an option affecting the open playback bar changes.
+    /// `PlaybackControlsView` observes this model directly, so incrementing the
+    /// revision invalidates existing book windows without reopening them.
+    @Published private(set) var playbackControlsSettingsRevision = 0
 
     private let configService = ConfigService.shared
     private let notificationCenter: NotificationCenter
@@ -280,6 +288,13 @@ final class SettingsViewModel: ObservableObject {
     var rewindOnResumeUnit: RewindUnit {
         get { RewindUnit(rawValue: rewindOnResumeUnitRaw) ?? .none }
         set { rewindOnResumeUnitRaw = newValue.rawValue }
+    }
+
+    /// Publish one coalescible settings-model change for open playback bars.
+    /// The revision also gives tests a deterministic signal independent of
+    /// SwiftUI's rendering schedule.
+    private func publishPlaybackControlsChange() {
+        playbackControlsSettingsRevision &+= 1
     }
 
     init(

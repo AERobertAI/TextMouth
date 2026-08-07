@@ -205,6 +205,24 @@ final class LegacyBookStateTests: XCTestCase {
         XCTAssertEqual(SkipUnit.heading.iconName(forward: false), "backward.end.fill")
     }
 
+    /// Closed navigation menus expose one complete phrase without repeating
+    /// or abbreviating the selected time unit.
+    func testPlaybackNavigationMenuAccessibilityLabelsAreComplete() {
+        XCTAssertEqual(
+            SkipUnit.seconds15.playbackMenuAccessibilityLabel(),
+            "Navigation unit: 15 seconds"
+        )
+        XCTAssertEqual(
+            SkipUnit.seconds30.playbackMenuAccessibilityLabel(direction: .forward),
+            "Forward navigation unit: 30 seconds"
+        )
+        XCTAssertEqual(
+            SkipUnit.paragraph.playbackMenuAccessibilityLabel(direction: .backward),
+            "Backward navigation unit: Paragraph"
+        )
+        XCTAssertFalse(SkipUnit.seconds15.playbackMenuAccessibilityLabel().contains("15s"))
+    }
+
     /// A book-specific speed should override the supplied global fallback.
     func testEffectiveWPMUsesLocalOverride() {
         XCTAssertEqual(makeBook(localWPM: 350).effectiveWPM(fallback: 200), 350)

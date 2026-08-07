@@ -4,6 +4,50 @@ import XCTest
 /// Regression coverage for config/AppStorage mapping and watcher replacement.
 @MainActor
 final class ConfigSyncTests: XCTestCase {
+    func testPlaybackControlSettingsPublishRefreshesForOpenReaders() {
+        let defaults = UserDefaults.standard
+        let keys = [
+            "showBookmarkInPlaybackControls",
+            "showSpeedInPlaybackControls",
+            "playbackNavigationUnitControlMode",
+            "skipForwardUnit",
+            "skipBackwardUnit",
+        ]
+        let previousDefaults = Dictionary(uniqueKeysWithValues: keys.map {
+            ($0, defaults.object(forKey: $0))
+        })
+        defer {
+            for key in keys {
+                if let value = previousDefaults[key] ?? nil {
+                    defaults.set(value, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+        }
+
+        let viewModel = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false
+        )
+        let configService = ConfigService.shared
+        let previousConfig = configService.config
+        defer {
+            configService.config = previousConfig
+            configService.saveToDisk()
+        }
+        let initialRevision = viewModel.playbackControlsSettingsRevision
+
+        viewModel.playbackNavigationUnitControlMode =
+            viewModel.playbackNavigationUnitControlMode == .shared ? .separate : .shared
+        viewModel.showBookmarkInPlaybackControls.toggle()
+        viewModel.showSpeedInPlaybackControls.toggle()
+        viewModel.skipForwardUnit = viewModel.skipForwardUnit == .heading ? .seconds10 : .heading
+        viewModel.skipBackwardUnit = viewModel.skipBackwardUnit == .paragraph ? .seconds30 : .paragraph
+
+        XCTAssertEqual(viewModel.playbackControlsSettingsRevision, initialRevision + 5)
+    }
+
     func testSettingsPushAllPreviouslyOmittedFieldsToConfig() {
         let defaults = UserDefaults.standard
         let keys = [
