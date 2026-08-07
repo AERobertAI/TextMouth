@@ -154,8 +154,8 @@ struct PlaybackControlsView: View {
     }
 
     /// A single popup that changes both directions and displays their shared
-    /// unit in compact form. Menu items include a checkmark for sighted users;
-    /// the menu's accessibility value communicates the same state.
+    /// unit in compact form. The nested Picker supplies native selected-item
+    /// semantics to both the visual menu and VoiceOver.
     private var sharedNavigationUnitMenu: some View {
         Menu {
             Picker("Navigation unit", selection: Binding(

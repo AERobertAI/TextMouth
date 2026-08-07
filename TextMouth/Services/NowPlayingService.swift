@@ -845,8 +845,8 @@ final class NowPlayingService {
         )
 
         // Even a transition *to* Bluetooth can leave a paused AVAudioEngine
-        // graph attached to the former output. Notify the active reader for
-        // every default-output event so its next Play performs a cold start.
+        // graph attached to the former output. Notify every registered reader
+        // so any later Play performs a cold start on the current route.
         // This is deliberately separate from the Bluetooth-only pause below:
         // switching between built-in/wired outputs should repair the backend
         // without changing the user's current play/pause state.
