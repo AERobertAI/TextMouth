@@ -130,8 +130,17 @@ extension ReaderViewModel {
     /// Bluetooth device, so the next resume cold-starts the backend at the
     /// saved cursor while preserving the user-facing paused state.
     func pauseForAudioRouteChange() {
-        restartPlaybackBackendOnNextResume = true
+        invalidatePlaybackBackendForAudioRouteChange()
         pause(playingPauseSound: true)
+    }
+
+    /// Mark retained audio state as route-stale without altering playback.
+    /// CoreAudio sends this for transitions both to and from AirPods. A paused
+    /// engine can otherwise claim to resume successfully while remaining
+    /// attached to the old, now-silent output device.
+    func invalidatePlaybackBackendForAudioRouteChange() {
+        restartPlaybackBackendOnNextResume = true
+        debugLog("audio route changed; next resume will cold-start playback backend")
     }
 
     /// Stop TextMouth's current media session and release Now Playing /

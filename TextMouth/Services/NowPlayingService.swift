@@ -73,6 +73,7 @@ final class NowPlayingSession {
     func setup(
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
+        onAudioRouteInvalidated: @escaping () -> Void,
         onAudioRouteChangePause: @escaping () -> Void,
         onTogglePlayPause: @escaping () -> Void,
         onSkipForward: @escaping () -> Void,
@@ -86,6 +87,7 @@ final class NowPlayingSession {
             diagnosticLabel: diagnosticLabel,
             onPlay: onPlay,
             onPause: onPause,
+            onAudioRouteInvalidated: onAudioRouteInvalidated,
             onAudioRouteChangePause: onAudioRouteChangePause,
             onTogglePlayPause: onTogglePlayPause,
             onSkipForward: onSkipForward,
@@ -168,6 +170,8 @@ final class NowPlayingService {
     struct Handlers {
         let onPlay: () -> Void
         let onPause: () -> Void
+        /// Invalidates any backend graph prepared for the former output route.
+        let onAudioRouteInvalidated: () -> Void
         let onAudioRouteChangePause: () -> Void
         let onTogglePlayPause: () -> Void
         let onSkipForward: () -> Void
@@ -282,6 +286,7 @@ final class NowPlayingService {
         diagnosticLabel: String? = nil,
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
+        onAudioRouteInvalidated: @escaping () -> Void,
         onAudioRouteChangePause: @escaping () -> Void,
         onTogglePlayPause: @escaping () -> Void,
         onSkipForward: @escaping () -> Void,
@@ -293,6 +298,7 @@ final class NowPlayingService {
         handlersByOwner[ownerID] = Handlers(
             onPlay: onPlay,
             onPause: onPause,
+            onAudioRouteInvalidated: onAudioRouteInvalidated,
             onAudioRouteChangePause: onAudioRouteChangePause,
             onTogglePlayPause: onTogglePlayPause,
             onSkipForward: onSkipForward,
@@ -838,6 +844,14 @@ final class NowPlayingService {
                 + "currentID=\(previousDeviceID) currentBluetooth=\(previousDeviceWasBluetooth)"
         )
 
+        // Even a transition *to* Bluetooth can leave a paused AVAudioEngine
+        // graph attached to the former output. Notify the active reader for
+        // every default-output event so its next Play performs a cold start.
+        // This is deliberately separate from the Bluetooth-only pause below:
+        // switching between built-in/wired outputs should repair the backend
+        // without changing the user's current play/pause state.
+        invalidateRegisteredAudioBackends(trigger: "default-output-changed")
+
         guard wasBluetooth else {
             // Non-Bluetooth departure: rcd will not send a spurious
             // toggle. Leave playback untouched.
@@ -874,6 +888,9 @@ final class NowPlayingService {
                 // devices-list event (macOS may keep the dead device as
                 // the "default" indefinitely).
                 let removedID = previousDeviceID
+                invalidateRegisteredAudioBackends(
+                    trigger: "cached-bluetooth-device-removed"
+                )
                 armSuppressAndPauseIfPlaying(trigger: "cached-bluetooth-device-removed")
                 previousDeviceWasBluetooth = false
                 previousDeviceID = 0
@@ -918,6 +935,21 @@ final class NowPlayingService {
         if isPlaying {
             activeHandlers?.onAudioRouteChangePause()
         }
+    }
+
+    /// Invalidate every open reader's retained audio graph without changing
+    /// media focus or play/pause ownership. A route is process-wide: a paused,
+    /// background reader can be resumed later and must not retain the device
+    /// that disappeared while another window was active.
+    private func invalidateRegisteredAudioBackends(trigger: String) {
+        // Snapshot before invoking callbacks so a callback that closes a reader
+        // cannot mutate the dictionary while it is being traversed.
+        let handlers = Array(handlersByOwner.values)
+        handlers.forEach { $0.onAudioRouteInvalidated() }
+        diagnostic(
+            "audio backends invalidated trigger=\(trigger) count=\(handlers.count) "
+                + "activeOwner=\(activeOwnerID.map(shortOwnerID) ?? "none")"
+        )
     }
 
     /// Read the current default output device ID from CoreAudio.

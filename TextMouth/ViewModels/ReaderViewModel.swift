@@ -467,6 +467,9 @@ final class ReaderViewModel: ObservableObject {
         nowPlayingService.setup(
             onPlay: { [weak self] in self?.playOrResume() },
             onPause: { [weak self] in self?.pause() },
+            onAudioRouteInvalidated: {
+                [weak self] in self?.invalidatePlaybackBackendForAudioRouteChange()
+            },
             onAudioRouteChangePause: { [weak self] in self?.pauseForAudioRouteChange() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
             onSkipForward: { [weak self] in self?.skipForward() },

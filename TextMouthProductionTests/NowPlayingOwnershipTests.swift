@@ -169,6 +169,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         session.setup(
             onPlay: onPlay,
             onPause: onPause,
+            onAudioRouteInvalidated: {},
             onAudioRouteChangePause: {},
             onTogglePlayPause: {},
             onSkipForward: {},
