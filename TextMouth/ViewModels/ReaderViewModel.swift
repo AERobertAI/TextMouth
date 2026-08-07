@@ -545,6 +545,20 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        nc.publisher(for: .cycleForwardNavigationUnit)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.cyclePlaybackSkipUnit(direction: .forward)
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .cycleBackwardNavigationUnit)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.cyclePlaybackSkipUnit(direction: .backward)
+            }
+            .store(in: &cancellables)
+
         nc.publisher(for: .increaseSpeed)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }

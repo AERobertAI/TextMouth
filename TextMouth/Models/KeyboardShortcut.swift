@@ -6,6 +6,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case releaseMediaControls = "Release Media Controls"
     case skipForward = "Skip Forward"
     case skipBackward = "Skip Backward"
+    case cycleForwardNavigationUnit = "Cycle Forward Navigation Unit"
+    case cycleBackwardNavigationUnit = "Cycle Backward Navigation Unit"
     case increaseSpeed = "Increase Speed"
     case decreaseSpeed = "Decrease Speed"
     case goToLibrary = "Go to Library"
@@ -41,6 +43,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .releaseMediaControls: return .releaseMediaControls
         case .skipForward: return .skipForward
         case .skipBackward: return .skipBackward
+        case .cycleForwardNavigationUnit: return .cycleForwardNavigationUnit
+        case .cycleBackwardNavigationUnit: return .cycleBackwardNavigationUnit
         case .increaseSpeed: return .increaseSpeed
         case .decreaseSpeed: return .decreaseSpeed
         case .goToLibrary: return .goToLibrary
@@ -72,7 +76,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Category for grouping in settings
     var category: String {
         switch self {
-        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
+        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward,
+             .cycleForwardNavigationUnit, .cycleBackwardNavigationUnit,
+             .increaseSpeed, .decreaseSpeed:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
@@ -222,6 +228,15 @@ extension ShortcutAction {
             .skipBackward: [
                 KeyBinding(key: "leftArrow", command: true),
                 KeyBinding(key: "j")
+            ],
+            .cycleForwardNavigationUnit: [
+                // A plain key keeps unit changes as quick as J/K/L playback
+                // navigation while text-input focus protection prevents typing
+                // in search and metadata fields from triggering it.
+                KeyBinding(key: "f")
+            ],
+            .cycleBackwardNavigationUnit: [
+                KeyBinding(key: "b")
             ],
             .increaseSpeed: [
                 KeyBinding(key: "+", command: true)

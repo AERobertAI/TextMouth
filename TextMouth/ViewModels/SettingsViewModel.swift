@@ -77,6 +77,18 @@ enum SkipUnit: String, CaseIterable, Codable {
         }
     }
 
+    /// Advance through the same stable order shown by every navigation-unit
+    /// picker, wrapping from Bookmark back to 10 seconds.
+    var nextNavigationUnit: SkipUnit {
+        guard let index = Self.allCases.firstIndex(of: self) else {
+            return Self.allCases[0]
+        }
+        let nextIndex = Self.allCases.index(after: index)
+        return nextIndex == Self.allCases.endIndex
+            ? Self.allCases[0]
+            : Self.allCases[nextIndex]
+    }
+
     /// Return the direction-aware SF Symbol for a skip button. Keeping this
     /// mapping on the unit makes icon refresh behavior consistent everywhere.
     func iconName(forward: Bool) -> String {
@@ -112,6 +124,16 @@ enum PlaybackNavigationUnitControlMode: String, CaseIterable, Codable {
     case none = "None (Use Global)"
     case shared = "One Shared Menu"
     case separate = "Menu for Each Button"
+
+    /// Current user-facing wording. Raw values remain unchanged so existing
+    /// AppStorage selections continue to decode after the control redesign.
+    var displayName: String {
+        switch self {
+        case .none: return "None (Use Global)"
+        case .shared: return "One Unit for Both Directions"
+        case .separate: return "Separate Forward and Backward Units"
+        }
+    }
 }
 
 /// Pure policy for resolving global and per-book units under each playback-bar

@@ -56,6 +56,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case releaseMediaControls = "Release Media Controls"
     case skipForward = "Skip Forward"
     case skipBackward = "Skip Backward"
+    case cycleForwardNavigationUnit = "Cycle Forward Navigation Unit"
+    case cycleBackwardNavigationUnit = "Cycle Backward Navigation Unit"
     case increaseSpeed = "Increase Speed"
     case decreaseSpeed = "Decrease Speed"
     case goToLibrary = "Go to Library"
@@ -84,7 +86,9 @@ enum ShortcutAction: String, CaseIterable, Codable {
 
     var category: String {
         switch self {
-        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward, .increaseSpeed, .decreaseSpeed:
+        case .togglePlayback, .releaseMediaControls, .skipForward, .skipBackward,
+             .cycleForwardNavigationUnit, .cycleBackwardNavigationUnit,
+             .increaseSpeed, .decreaseSpeed:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading:
             return "Navigation"
@@ -105,6 +109,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
             .releaseMediaControls: [],
             .skipForward: [KeyBinding(key: "rightArrow", command: true), KeyBinding(key: "l")],
             .skipBackward: [KeyBinding(key: "leftArrow", command: true), KeyBinding(key: "j")],
+            .cycleForwardNavigationUnit: [KeyBinding(key: "f")],
+            .cycleBackwardNavigationUnit: [KeyBinding(key: "b")],
             .increaseSpeed: [KeyBinding(key: "+", command: true)],
             .decreaseSpeed: [KeyBinding(key: "-", command: true)],
             .goToLibrary: [KeyBinding(key: "l", command: true)],
@@ -302,10 +308,20 @@ test("Skip Backward has both Cmd+Left and J bindings") {
     print("    Skip Backward defaults: \(bindings.map { $0.displayString }.joined(separator: ", "))")
 }
 
+test("Navigation units cycle with F and B by default") {
+    let defaults = ShortcutAction.defaultBindings
+    let forward = defaults[.cycleForwardNavigationUnit]!
+    let backward = defaults[.cycleBackwardNavigationUnit]!
+    try assertEqual(forward, [KeyBinding(key: "f")])
+    try assertEqual(backward, [KeyBinding(key: "b")])
+}
+
 test("Action categories are correct") {
     try assertEqual(ShortcutAction.togglePlayback.category, "Playback")
     try assertEqual(ShortcutAction.releaseMediaControls.category, "Playback")
     try assertEqual(ShortcutAction.skipForward.category, "Playback")
+    try assertEqual(ShortcutAction.cycleForwardNavigationUnit.category, "Playback")
+    try assertEqual(ShortcutAction.cycleBackwardNavigationUnit.category, "Playback")
     try assertEqual(ShortcutAction.goToLibrary.category, "Navigation")
     try assertEqual(ShortcutAction.nextHeading.category, "Navigation")
     try assertEqual(ShortcutAction.addBookmark.category, "Bookmarks")

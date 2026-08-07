@@ -23,10 +23,6 @@ struct PlaybackControlsView: View {
             .accessibilityLabel("Skip backward: \(viewModel.playbackSkipBackwardUnit.rawValue)")
             .buttonStyle(.plain)
 
-            if settingsViewModel.playbackNavigationUnitControlMode == .separate {
-                navigationUnitMenu(direction: .backward)
-            }
-
             // Play/Pause
             Button {
                 viewModel.togglePlayPause()
@@ -50,9 +46,9 @@ struct PlaybackControlsView: View {
             .buttonStyle(.plain)
 
             if settingsViewModel.playbackNavigationUnitControlMode == .separate {
-                navigationUnitMenu(direction: .forward)
+                separateNavigationUnitsMenu
             } else if settingsViewModel.playbackNavigationUnitControlMode == .shared {
-                sharedNavigationUnitMenu
+                sharedNavigationUnitPicker
             }
 
             // Bookmark toggle button (hidden by default, shown via settings)
@@ -161,60 +157,59 @@ struct PlaybackControlsView: View {
         viewModel.playbackSkipForwardUnit.iconName(forward: true)
     }
 
-    /// A single popup that changes both directions and displays the complete
-    /// unit name. The nested Picker supplies native selected-item semantics
-    /// when the menu opens.
-    private var sharedNavigationUnitMenu: some View {
-        Menu {
-            Picker("Navigation unit", selection: Binding(
-                get: { viewModel.playbackSkipForwardUnit },
-                set: { viewModel.setSharedPlaybackSkipUnit($0) }
-            )) {
-                ForEach(SkipUnit.allCases, id: \.self) { unit in
-                    Text(unit.rawValue).tag(unit)
-                }
+    /// Match the settings-panel style in shared mode: one directly operable
+    /// popup picker, without an otherwise redundant one-item parent menu.
+    private var sharedNavigationUnitPicker: some View {
+        Picker("Navigation unit", selection: Binding(
+            get: { viewModel.playbackSkipForwardUnit },
+            set: { viewModel.setSharedPlaybackSkipUnit($0) }
+        )) {
+            ForEach(SkipUnit.allCases, id: \.self) { unit in
+                Text(unit.rawValue).tag(unit)
             }
-        } label: {
-            Label(
-                viewModel.playbackSkipForwardUnit.rawValue,
-                systemImage: "arrow.left.arrow.right.circle"
-            )
         }
-        .menuStyle(.borderlessButton)
-        // Override only the native Menu's spoken label. Keeping its original
-        // accessibility element preserves the popup role and activation.
-        .accessibilityLabel(
-            viewModel.playbackSkipForwardUnit.playbackMenuAccessibilityLabel()
-        )
+        .pickerStyle(.menu)
+        // Supplying label and value separately preserves the popup role while
+        // producing “Navigation unit, 15 seconds” without an abbreviated or
+        // duplicated native value.
+        .accessibilityLabel("Navigation unit")
+        .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
         .help("Change this book's forward and backward navigation unit")
     }
 
-    /// Popup for one direction in separate-menu mode.
-    private func navigationUnitMenu(direction: PlaybackSkipDirection) -> some View {
-        let selected = direction == .forward
-            ? viewModel.playbackSkipForwardUnit
-            : viewModel.playbackSkipBackwardUnit
-        let directionLabel = direction == .forward ? "forward" : "backward"
+    /// Separate mode uses one top-level control. Its two labeled picker
+    /// submenus keep independent values without scattering controls around
+    /// the rewind and fast-forward buttons.
+    private var separateNavigationUnitsMenu: some View {
+        Menu {
+            Picker("Forward navigation unit", selection: Binding(
+                get: { viewModel.playbackSkipForwardUnit },
+                set: { viewModel.setPlaybackSkipUnit($0, direction: .forward) }
+            )) {
+                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                    Text(unit.rawValue).tag(unit)
+                }
+            }
 
-        return Menu {
-            Picker("Skip \(directionLabel) unit", selection: Binding(
-                get: {
-                    direction == .forward
-                        ? viewModel.playbackSkipForwardUnit
-                        : viewModel.playbackSkipBackwardUnit
-                },
-                set: { viewModel.setPlaybackSkipUnit($0, direction: direction) }
+            Picker("Backward navigation unit", selection: Binding(
+                get: { viewModel.playbackSkipBackwardUnit },
+                set: { viewModel.setPlaybackSkipUnit($0, direction: .backward) }
             )) {
                 ForEach(SkipUnit.allCases, id: \.self) { unit in
                     Text(unit.rawValue).tag(unit)
                 }
             }
         } label: {
-            Label(selected.rawValue, systemImage: "chevron.down.circle")
+            Label("Navigation units", systemImage: "arrow.left.arrow.right.circle")
                 .font(.caption)
         }
         .menuStyle(.borderlessButton)
-        .accessibilityLabel(selected.playbackMenuAccessibilityLabel(direction: direction))
-        .help("Change this book's skip \(directionLabel) unit")
+        .accessibilityLabel("Navigation units")
+        .accessibilityValue(
+            "Forward navigation unit: \(viewModel.playbackSkipForwardUnit.rawValue); "
+                + "backward navigation unit: \(viewModel.playbackSkipBackwardUnit.rawValue)"
+        )
+        .accessibilityHint("Choose separate forward and backward navigation units for this book")
+        .help("Change this book's forward and backward navigation units")
     }
 }

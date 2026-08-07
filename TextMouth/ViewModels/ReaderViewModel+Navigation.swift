@@ -31,7 +31,7 @@ extension ReaderViewModel {
     /// Save one per-book unit for both playback directions.
     func setSharedPlaybackSkipUnit(_ unit: SkipUnit) {
         persistPlaybackSkipUnits(forward: unit, backward: unit)
-        announceToVoiceOver("Forward and backward navigation: \(unit.rawValue)")
+        announceToVoiceOver(unit.playbackMenuAccessibilityLabel())
     }
 
     /// Save a per-book unit for one playback direction while preserving the
@@ -40,10 +40,36 @@ extension ReaderViewModel {
         switch direction {
         case .forward:
             persistPlaybackSkipUnits(forward: unit, backward: playbackSkipBackwardUnit)
-            announceToVoiceOver("Skip forward: \(unit.rawValue)")
+            announceToVoiceOver(unit.playbackMenuAccessibilityLabel(direction: .forward))
         case .backward:
             persistPlaybackSkipUnits(forward: playbackSkipForwardUnit, backward: unit)
-            announceToVoiceOver("Skip backward: \(unit.rawValue)")
+            announceToVoiceOver(unit.playbackMenuAccessibilityLabel(direction: .backward))
+        }
+    }
+
+    /// Advance one direction through the unit picker and announce the complete
+    /// new value. Shared mode intentionally treats either key as editing the
+    /// one common unit. Hidden-control mode edits the corresponding global
+    /// fallback because no per-book choice is active in that mode.
+    func cyclePlaybackSkipUnit(direction: PlaybackSkipDirection) {
+        let currentUnit = direction == .forward
+            ? playbackSkipForwardUnit
+            : playbackSkipBackwardUnit
+        let nextUnit = currentUnit.nextNavigationUnit
+
+        switch settingsViewModel.playbackNavigationUnitControlMode {
+        case .none:
+            switch direction {
+            case .forward:
+                settingsViewModel.skipForwardUnit = nextUnit
+            case .backward:
+                settingsViewModel.skipBackwardUnit = nextUnit
+            }
+            announceToVoiceOver(nextUnit.playbackMenuAccessibilityLabel(direction: direction))
+        case .shared:
+            setSharedPlaybackSkipUnit(nextUnit)
+        case .separate:
+            setPlaybackSkipUnit(nextUnit, direction: direction)
         }
     }
 

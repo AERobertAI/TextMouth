@@ -351,12 +351,12 @@ struct PlaybackSettingsView: View {
                     set: { settingsViewModel.playbackNavigationUnitControlMode = $0 }
                 )) {
                     ForEach(PlaybackNavigationUnitControlMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
+                        Text(mode.displayName).tag(mode)
                     }
                 }
                 .accessibilityLabel("Navigation unit controls in playback bar")
                 .accessibilityHint(
-                    "Choose no per-book menu, one menu for both directions, or a separate menu for each direction"
+                    "Choose no per-book control, one picker for both directions, or one menu with separate forward and backward pickers"
                 )
 
                 // Use an explicit binding so the SettingsViewModel setter

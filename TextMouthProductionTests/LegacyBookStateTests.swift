@@ -223,6 +223,15 @@ final class LegacyBookStateTests: XCTestCase {
         XCTAssertFalse(SkipUnit.seconds15.playbackMenuAccessibilityLabel().contains("15s"))
     }
 
+    /// Updated labels describe the actual control layouts while persisted raw
+    /// values stay compatible with existing AppStorage data.
+    func testPlaybackNavigationControlModeDisplayNamesDescribeCurrentLayouts() {
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.shared.displayName, "One Unit for Both Directions")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.separate.displayName, "Separate Forward and Backward Units")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.shared.rawValue, "One Shared Menu")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.separate.rawValue, "Menu for Each Button")
+    }
+
     /// A book-specific speed should override the supplied global fallback.
     func testEffectiveWPMUsesLocalOverride() {
         XCTAssertEqual(makeBook(localWPM: 350).effectiveWPM(fallback: 200), 350)

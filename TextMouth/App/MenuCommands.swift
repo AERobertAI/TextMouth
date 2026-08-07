@@ -53,6 +53,18 @@ struct PlaybackCommands: Commands {
 
             Divider()
 
+            Button("Cycle Forward Navigation Unit") {
+                NotificationCenter.default.post(name: .cycleForwardNavigationUnit, object: nil)
+            }
+            // Customizable shortcuts are handled by KeyboardShortcutManager.
+            // A SwiftUI keyboardShortcut here would post an untargeted duplicate.
+
+            Button("Cycle Backward Navigation Unit") {
+                NotificationCenter.default.post(name: .cycleBackwardNavigationUnit, object: nil)
+            }
+
+            Divider()
+
             Button("Increase Speed") {
                 NotificationCenter.default.post(name: .increaseSpeed, object: nil)
             }
@@ -211,6 +223,8 @@ extension Notification.Name {
     static let releaseMediaControls = Notification.Name("releaseMediaControls")
     static let skipForward = Notification.Name("skipForward")
     static let skipBackward = Notification.Name("skipBackward")
+    static let cycleForwardNavigationUnit = Notification.Name("cycleForwardNavigationUnit")
+    static let cycleBackwardNavigationUnit = Notification.Name("cycleBackwardNavigationUnit")
     static let increaseSpeed = Notification.Name("increaseSpeed")
     static let decreaseSpeed = Notification.Name("decreaseSpeed")
     static let nextHeading = Notification.Name("nextHeading")
