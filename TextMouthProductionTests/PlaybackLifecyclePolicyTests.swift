@@ -283,6 +283,122 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         ))
     }
 
+    func testDirectSleepFadeBuildsDescendingPreconfiguredVolumes() throws {
+        let text = "one two three four five six seven eight nine ten eleven twelve"
+        let segments = DirectSpeechFadePlanner.segments(
+            in: text,
+            fromUTF16Offset: 0,
+            duration: 2,
+            wordsPerMinute: 240
+        )
+
+        XCTAssertEqual(segments.count, 4)
+        XCTAssertEqual(segments.first?.volume, 0.875)
+        XCTAssertEqual(segments.last?.volume, 0.125)
+        for pair in zip(segments, segments.dropFirst()) {
+            XCTAssertGreaterThan(pair.0.volume, pair.1.volume)
+            XCTAssertEqual(pair.0.endUTF16Offset, pair.1.baseUTF16Offset)
+        }
+    }
+
+    func testDirectSleepFadePreservesAbsoluteUnicodeOffsets() throws {
+        let text = "Preface 🎙️ café one two three four five six"
+        let requestedOffset = (text as NSString).range(of: "café").location
+        let segments = DirectSpeechFadePlanner.segments(
+            in: text,
+            fromUTF16Offset: requestedOffset,
+            duration: 2,
+            wordsPerMinute: 120
+        )
+
+        let first = try XCTUnwrap(segments.first)
+        XCTAssertEqual(first.baseUTF16Offset, requestedOffset)
+        XCTAssertTrue(first.text.hasPrefix("café"))
+        XCTAssertLessThanOrEqual(try XCTUnwrap(segments.last).endUTF16Offset, text.utf16.count)
+    }
+
+    func testDirectSleepFadeScalesEverySegmentFromCurrentTimerVolume() throws {
+        let segments = DirectSpeechFadePlanner.segments(
+            in: "one two three four five six seven eight",
+            fromUTF16Offset: 0,
+            duration: 2,
+            wordsPerMinute: 200,
+            startingVolume: 0.4
+        )
+
+        XCTAssertEqual(try XCTUnwrap(segments.first).volume, 0.35, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(segments.last).volume, 0.05, accuracy: 0.0001)
+    }
+
+    func testDirectSleepFadeQueueExhaustionContinuesBeforeTextEnd() {
+        XCTAssertEqual(
+            DirectSpeechFadePlanner.completionAction(
+                queueEndOffset: 250,
+                textUTF16Length: 1_000
+            ),
+            .continueFade(offset: 250)
+        )
+    }
+
+    func testDirectSleepFadeQueueExhaustionFinishesAtTextEnd() {
+        XCTAssertEqual(
+            DirectSpeechFadePlanner.completionAction(
+                queueEndOffset: 1_000,
+                textUTF16Length: 1_000
+            ),
+            .finishChapter
+        )
+        XCTAssertEqual(
+            DirectSpeechFadePlanner.completionAction(
+                queueEndOffset: 1_001,
+                textUTF16Length: 1_000
+            ),
+            .finishChapter
+        )
+    }
+
+    func testDirectSleepFadeHandlesPunctuationOnlyTail() throws {
+        let text = "Words already spoken ..."
+        let punctuationOffset = (text as NSString).range(of: "...").location
+        let segment = try XCTUnwrap(DirectSpeechFadePlanner.segments(
+            in: text,
+            fromUTF16Offset: punctuationOffset,
+            duration: 2,
+            wordsPerMinute: 200
+        ).first)
+
+        XCTAssertEqual(segment.baseUTF16Offset, punctuationOffset)
+        XCTAssertEqual(segment.text, "...")
+        XCTAssertEqual(segment.volume, 0.5)
+    }
+
+    func testDirectSleepFadePunctuationContinuationCannotBecomeLouder() throws {
+        let segment = try XCTUnwrap(DirectSpeechFadePlanner.segments(
+            in: "...",
+            fromUTF16Offset: 0,
+            duration: 2,
+            wordsPerMinute: 200,
+            startingVolume: 0.1
+        ).first)
+
+        XCTAssertEqual(segment.volume, 0.05, accuracy: 0.0001)
+    }
+
+    func testDirectSleepFadeRejectsEmptyOrCompletedInput() {
+        XCTAssertTrue(DirectSpeechFadePlanner.segments(
+            in: "",
+            fromUTF16Offset: 0,
+            duration: 2,
+            wordsPerMinute: 200
+        ).isEmpty)
+        XCTAssertTrue(DirectSpeechFadePlanner.segments(
+            in: "done",
+            fromUTF16Offset: 4,
+            duration: 2,
+            wordsPerMinute: 200
+        ).isEmpty)
+    }
+
     func testPauseWhilePlayingPersistsStoppedState() {
         XCTAssertTrue(ReaderViewModel.wasActivelyPlaying(isPlaying: true, isPaused: false))
     }

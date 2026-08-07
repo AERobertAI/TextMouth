@@ -205,9 +205,7 @@ extension ReaderViewModel {
             wasActive = speechService.isSpeaking || speechService.isPaused
         }
 
-        if sleepTimerService.isFadingOut {
-            sleepTimerService.stop()
-        }
+        let wasSleepTimerFading = sleepTimerService.isFadingOut
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
@@ -219,6 +217,12 @@ extension ReaderViewModel {
         } else {
             speechService.stop()
             speechService.audioEngine.restoreVolume()
+        }
+        // Cancel the timer after playback is stopped. Its fade-cancellation
+        // callback can now restore volume without briefly restarting direct
+        // speech that this stop operation would immediately halt again.
+        if wasSleepTimerFading {
+            sleepTimerService.stop()
         }
         readingStatsService.endSession()
         nowPlayingService.clearNowPlaying()
@@ -683,6 +687,10 @@ extension ReaderViewModel {
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
     /// resumed or started so the armed timer has audio to count against.
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
+        // Capture one value for both timer scheduling and direct-speech fade
+        // planning. A settings edit while the timer runs must not make the
+        // utterance queue disagree with the timer's already-armed duration.
+        let fadeOutDuration = settingsViewModel.sleepFadeOutDuration
         sleepTimerService.start(
             duration: duration,
             ownerID: book.id,
@@ -725,10 +733,21 @@ extension ReaderViewModel {
                 if self.isAudioBook {
                     self.audioPlaybackService.setVolume(volume)
                 } else {
-                    self.speechService.audioEngine.setVolume(volume)
+                    self.speechService.setSleepTimerFadeVolume(
+                        volume,
+                        duration: fadeOutDuration
+                    )
                 }
             },
-            fadeOutDuration: settingsViewModel.sleepFadeOutDuration
+            onFadeCancelled: { [weak self] in
+                guard let self else { return }
+                if self.isAudioBook {
+                    self.audioPlaybackService.restoreVolume()
+                } else {
+                    self.speechService.cancelSleepTimerFade()
+                }
+            },
+            fadeOutDuration: fadeOutDuration
         )
         if startPlaybackIfNeeded {
             startSleepTimerPlaybackIfNeeded()
@@ -746,10 +765,12 @@ extension ReaderViewModel {
     /// latest fade-out settings. Used by the "Reset Timer" button in
     /// the sleep timer sheet.
     func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
-        sleepTimerService.restart(fadeOutDuration: settingsViewModel.sleepFadeOutDuration)
-        if startPlaybackIfNeeded {
-            startSleepTimerPlaybackIfNeeded()
-        }
+        guard let duration = sleepTimerService.duration else { return }
+        // Rebuild every callback rather than asking the service to retain the
+        // old closures. The direct-speech callback captures the effective fade
+        // duration, so retaining it after a settings change would arm the new
+        // timer with stale utterance-planning input.
+        startSleepTimer(duration: duration, startPlaybackIfNeeded: startPlaybackIfNeeded)
     }
 
     /// Reset a running timer or — if the previous one already ended —

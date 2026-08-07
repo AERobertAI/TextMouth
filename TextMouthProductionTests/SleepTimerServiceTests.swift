@@ -330,6 +330,56 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertTrue(service.isActive)
     }
 
+    func testStoppingActiveFadeInvokesCancellationCleanupOnce() {
+        var cancellationCount = 0
+        service.start(
+            duration: .minutes(1),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { cancellationCount += 1 },
+            fadeOutDuration: 30
+        )
+        service._expireForTesting()
+
+        service.stop()
+        service.stop()
+
+        XCTAssertEqual(cancellationCount, 1)
+    }
+
+    func testReplacingActiveFadeCleansUpPreviousOwner() {
+        var previousOwnerCleanups = 0
+        service.start(
+            duration: .minutes(1),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { previousOwnerCleanups += 1 },
+            fadeOutDuration: 30
+        )
+        service._expireForTesting()
+
+        start(.minutes(5), ownerID: UUID())
+
+        XCTAssertEqual(previousOwnerCleanups, 1)
+        XCTAssertTrue(service.isActive)
+        XCTAssertFalse(service.isFadingOut)
+    }
+
+    func testOrdinaryTimerStopDoesNotInvokeFadeCancellationCleanup() {
+        var cancellationCount = 0
+        service.start(
+            duration: .minutes(10),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { cancellationCount += 1 },
+            fadeOutDuration: 30
+        )
+
+        service.stop()
+
+        XCTAssertEqual(cancellationCount, 0)
+    }
+
     func testStopClearsPausedStateForNextTimer() {
         start(.minutes(10))
         service.pauseCountdown(by: owner)
