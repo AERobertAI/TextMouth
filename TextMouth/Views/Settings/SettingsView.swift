@@ -346,6 +346,19 @@ struct PlaybackSettingsView: View {
             }
 
             Section {
+                Picker("Navigation unit controls", selection: Binding(
+                    get: { settingsViewModel.playbackNavigationUnitControlMode },
+                    set: { settingsViewModel.playbackNavigationUnitControlMode = $0 }
+                )) {
+                    ForEach(PlaybackNavigationUnitControlMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .accessibilityLabel("Navigation unit controls in playback bar")
+                .accessibilityHint(
+                    "Choose no per-book menu, one menu for both directions, or a separate menu for each direction"
+                )
+
                 Toggle("Show bookmark button", isOn: $settingsViewModel.showBookmarkInPlaybackControls)
                     .accessibilityLabel("Show bookmark button in playback controls")
                     .accessibilityHint("Adds a button to add or remove a bookmark at the current position")
@@ -354,7 +367,7 @@ struct PlaybackSettingsView: View {
                     .accessibilityLabel("Show speed controls in playback controls")
                     .accessibilityHint("Shows the speed adjustment buttons and current speed display")
 
-                Text("Choose which controls appear in the playback bar at the bottom of the reader.")
+                Text("Navigation menu changes are saved as defaults for the current book. Hiding the menus always uses the global skip choices while retaining book defaults for later.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } header: {

@@ -119,6 +119,10 @@ struct BookState: Codable {
     var skippedHeadingIDs: [String]?
     /// Per-book end-of-book behavior override (nil = use global setting)
     var localEndOfBookBehavior: String?
+    /// Per-book forward navigation unit override (nil = use global setting)
+    var localSkipForwardUnit: String?
+    /// Per-book backward navigation unit override (nil = use global setting)
+    var localSkipBackwardUnit: String?
     /// Manual sort order within folder (lower = earlier)
     var manualSortOrder: Int?
     /// Total audio duration in seconds (audio books only)
@@ -141,6 +145,8 @@ struct BookState: Codable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
+        localSkipForwardUnit: String? = nil,
+        localSkipBackwardUnit: String? = nil,
         manualSortOrder: Int? = nil,
         audioDuration: TimeInterval? = nil,
         cacheFormatVersion: String? = nil,
@@ -158,6 +164,8 @@ struct BookState: Codable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
+        self.localSkipForwardUnit = localSkipForwardUnit
+        self.localSkipBackwardUnit = localSkipBackwardUnit
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
         self.cacheFormatVersion = cacheFormatVersion

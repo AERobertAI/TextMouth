@@ -74,10 +74,7 @@ extension LibraryViewModel {
                                 with: managedPackageBook
                             )
                             self.library.books[existingIndex] = repaired
-                            if repaired.filePath != existing.filePath ||
-                               repaired.folderPath != existing.folderPath ||
-                               repaired.tmbDirectoryName != existing.tmbDirectoryName ||
-                               repaired.readingPosition != existing.readingPosition {
+                            if repaired != existing {
                                 self.save()
                                 let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
                                 TextMouthPaths.appendLog(

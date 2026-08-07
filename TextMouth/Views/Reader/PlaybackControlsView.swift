@@ -12,8 +12,12 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipBackwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip backward: \(viewModel.settingsViewModel.skipBackwardUnit.rawValue)")
+            .accessibilityLabel("Skip backward: \(viewModel.playbackSkipBackwardUnit.rawValue)")
             .buttonStyle(.plain)
+
+            if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .separate {
+                navigationUnitMenu(direction: .backward)
+            }
 
             // Play/Pause
             Button {
@@ -34,8 +38,14 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipForwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip forward: \(viewModel.settingsViewModel.skipForwardUnit.rawValue)")
+            .accessibilityLabel("Skip forward: \(viewModel.playbackSkipForwardUnit.rawValue)")
             .buttonStyle(.plain)
+
+            if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .separate {
+                navigationUnitMenu(direction: .forward)
+            } else if viewModel.settingsViewModel.playbackNavigationUnitControlMode == .shared {
+                sharedNavigationUnitMenu
+            }
 
             // Bookmark toggle button (hidden by default, shown via settings)
             if viewModel.settingsViewModel.showBookmarkInPlaybackControls {
@@ -136,30 +146,65 @@ struct PlaybackControlsView: View {
     }
 
     private var skipBackwardIcon: String {
-        let unit = viewModel.settingsViewModel.skipBackwardUnit
-        switch unit {
-        case .seconds10: return "gobackward.10"
-        case .seconds15: return "gobackward.15"
-        case .seconds30: return "gobackward.30"
-        case .seconds60: return "gobackward.60"
-        case .sentence: return "text.line.first.and.arrowtriangle.forward"
-        case .paragraph: return "text.justify.left"
-        case .heading, .subheading: return "backward.end.fill"
-        case .bookmark: return "bookmark.fill"
-        }
+        viewModel.playbackSkipBackwardUnit.iconName(forward: false)
     }
 
     private var skipForwardIcon: String {
-        let unit = viewModel.settingsViewModel.skipForwardUnit
-        switch unit {
-        case .seconds10: return "goforward.10"
-        case .seconds15: return "goforward.15"
-        case .seconds30: return "goforward.30"
-        case .seconds60: return "goforward.60"
-        case .sentence: return "text.line.last.and.arrowtriangle.forward"
-        case .paragraph: return "text.justify.right"
-        case .heading, .subheading: return "forward.end.fill"
-        case .bookmark: return "bookmark.fill"
+        viewModel.playbackSkipForwardUnit.iconName(forward: true)
+    }
+
+    /// A single popup that changes both directions and displays their shared
+    /// unit in compact form. Menu items include a checkmark for sighted users;
+    /// the menu's accessibility value communicates the same state.
+    private var sharedNavigationUnitMenu: some View {
+        Menu {
+            Picker("Navigation unit", selection: Binding(
+                get: { viewModel.playbackSkipForwardUnit },
+                set: { viewModel.setSharedPlaybackSkipUnit($0) }
+            )) {
+                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                    Text(unit.rawValue).tag(unit)
+                }
+            }
+        } label: {
+            Label(
+                viewModel.playbackSkipForwardUnit.compactLabel,
+                systemImage: "arrow.left.arrow.right.circle"
+            )
         }
+        .menuStyle(.borderlessButton)
+        .accessibilityLabel("Forward and backward navigation unit")
+        .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
+        .help("Change this book's forward and backward navigation unit")
+    }
+
+    /// Popup for one direction in separate-menu mode.
+    private func navigationUnitMenu(direction: PlaybackSkipDirection) -> some View {
+        let selected = direction == .forward
+            ? viewModel.playbackSkipForwardUnit
+            : viewModel.playbackSkipBackwardUnit
+        let directionLabel = direction == .forward ? "forward" : "backward"
+
+        return Menu {
+            Picker("Skip \(directionLabel) unit", selection: Binding(
+                get: {
+                    direction == .forward
+                        ? viewModel.playbackSkipForwardUnit
+                        : viewModel.playbackSkipBackwardUnit
+                },
+                set: { viewModel.setPlaybackSkipUnit($0, direction: direction) }
+            )) {
+                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                    Text(unit.rawValue).tag(unit)
+                }
+            }
+        } label: {
+            Image(systemName: "chevron.down.circle")
+                .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .accessibilityLabel("Skip \(directionLabel) navigation unit")
+        .accessibilityValue(selected.rawValue)
+        .help("Change this book's skip \(directionLabel) unit")
     }
 }

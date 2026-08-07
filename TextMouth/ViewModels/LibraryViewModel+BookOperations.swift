@@ -222,6 +222,15 @@ extension LibraryViewModel {
         }
     }
 
+    /// Persist both per-book navigation-unit overrides as one atomic update so
+    /// shared-menu changes cannot briefly leave the two directions out of sync.
+    func updateLocalSkipUnits(bookID: UUID, forward: String?, backward: String?) {
+        updateBook(id: bookID) { book in
+            book.localSkipForwardUnit = forward
+            book.localSkipBackwardUnit = backward
+        }
+    }
+
     func updateWordCounts(bookID: UUID, wordCount: Int, charCount: Int) {
         library.updateWordCounts(bookID: bookID, wordCount: wordCount, charCount: charCount)
         save()

@@ -211,6 +211,8 @@ enum FileImportService {
             localPitch: info.state.localPitch,
             skippedHeadingIDs: info.state.skippedHeadingIDs,
             localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+            localSkipForwardUnit: info.state.localSkipForwardUnit,
+            localSkipBackwardUnit: info.state.localSkipBackwardUnit,
             manualSortOrder: info.state.manualSortOrder,
             audioDuration: info.state.audioDuration,
             audioAlbum: info.metadata.audioAlbum,
@@ -309,6 +311,12 @@ enum FileImportService {
         if repaired.contentIndexVersion == nil {
             repaired.contentIndexVersion = managedPackageBook.contentIndexVersion
         }
+        if repaired.localSkipForwardUnit == nil {
+            repaired.localSkipForwardUnit = managedPackageBook.localSkipForwardUnit
+        }
+        if repaired.localSkipBackwardUnit == nil {
+            repaired.localSkipBackwardUnit = managedPackageBook.localSkipBackwardUnit
+        }
 
         return repaired
     }
@@ -349,6 +357,8 @@ enum FileImportService {
                 localPitch: book.localPitch,
                 skippedHeadingIDs: book.skippedHeadingIDs,
                 localEndOfBookBehavior: book.localEndOfBookBehavior,
+                localSkipForwardUnit: book.localSkipForwardUnit,
+                localSkipBackwardUnit: book.localSkipBackwardUnit,
                 manualSortOrder: book.manualSortOrder,
                 audioDuration: book.audioDuration,
                 cacheFormatVersion: book.cacheFormatVersion,
@@ -1291,6 +1301,8 @@ enum FileImportService {
                 localPitch: info.state.localPitch,
                 skippedHeadingIDs: info.state.skippedHeadingIDs,
                 localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+                localSkipForwardUnit: info.state.localSkipForwardUnit,
+                localSkipBackwardUnit: info.state.localSkipBackwardUnit,
                 manualSortOrder: info.state.manualSortOrder,
                 audioDuration: info.state.audioDuration,
                 audioAlbum: info.metadata.audioAlbum,

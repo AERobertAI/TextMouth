@@ -5,6 +5,60 @@ import AppKit
 
 extension ReaderViewModel {
 
+    /// Effective unit shown and used by the playback forward button. Hidden
+    /// menus intentionally ignore saved book overrides and use global choices.
+    var playbackSkipForwardUnit: SkipUnit {
+        playbackSkipUnits.forward
+    }
+
+    /// Effective unit shown and used by the playback backward button.
+    var playbackSkipBackwardUnit: SkipUnit {
+        playbackSkipUnits.backward
+    }
+
+    /// Resolve both directions once through the shared, independently-tested
+    /// policy so UI labels, button icons, and navigation actions cannot drift.
+    private var playbackSkipUnits: (forward: SkipUnit, backward: SkipUnit) {
+        PlaybackSkipUnitPolicy.resolve(
+            mode: settingsViewModel.playbackNavigationUnitControlMode,
+            localForwardRawValue: book.localSkipForwardUnit,
+            localBackwardRawValue: book.localSkipBackwardUnit,
+            globalForward: settingsViewModel.skipForwardUnit,
+            globalBackward: settingsViewModel.skipBackwardUnit
+        )
+    }
+
+    /// Save one per-book unit for both playback directions.
+    func setSharedPlaybackSkipUnit(_ unit: SkipUnit) {
+        persistPlaybackSkipUnits(forward: unit, backward: unit)
+        announceToVoiceOver("Forward and backward navigation: \(unit.rawValue)")
+    }
+
+    /// Save a per-book unit for one playback direction while preserving the
+    /// other direction's current effective choice.
+    func setPlaybackSkipUnit(_ unit: SkipUnit, direction: PlaybackSkipDirection) {
+        switch direction {
+        case .forward:
+            persistPlaybackSkipUnits(forward: unit, backward: playbackSkipBackwardUnit)
+            announceToVoiceOver("Skip forward: \(unit.rawValue)")
+        case .backward:
+            persistPlaybackSkipUnits(forward: playbackSkipForwardUnit, backward: unit)
+            announceToVoiceOver("Skip backward: \(unit.rawValue)")
+        }
+    }
+
+    /// Update the observable reader copy and the durable library/package copy
+    /// together so icons refresh immediately and values survive reopening.
+    private func persistPlaybackSkipUnits(forward: SkipUnit, backward: SkipUnit) {
+        book.localSkipForwardUnit = forward.rawValue
+        book.localSkipBackwardUnit = backward.rawValue
+        libraryViewModel.updateLocalSkipUnits(
+            bookID: book.id,
+            forward: forward.rawValue,
+            backward: backward.rawValue
+        )
+    }
+
     /// Convert an original-text offset to modified-text space and seek the speech service.
     /// Falls back to using the offset directly if no transformation pipeline is active.
     func seekSpeechService(toOriginalOffset offset: Int) {
@@ -25,7 +79,7 @@ extension ReaderViewModel {
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipForward)
         let unit = Self.selectedSkipUnit(
-            primary: settingsViewModel.skipForwardUnit,
+            primary: playbackSkipForwardUnit,
             secondary: settingsViewModel.shiftSkipForwardUnit,
             useSecondary: useShiftUnit
         )
@@ -40,7 +94,7 @@ extension ReaderViewModel {
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipBackward)
         let unit = Self.selectedSkipUnit(
-            primary: settingsViewModel.skipBackwardUnit,
+            primary: playbackSkipBackwardUnit,
             secondary: settingsViewModel.shiftSkipBackwardUnit,
             useSecondary: useShiftUnit
         )

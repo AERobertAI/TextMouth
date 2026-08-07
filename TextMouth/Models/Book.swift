@@ -106,6 +106,10 @@ struct Book: Identifiable, Codable, Hashable {
     var skippedHeadingIDs: [String]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
+    /// Per-book forward navigation unit (nil or invalid = use global).
+    var localSkipForwardUnit: String?
+    /// Per-book backward navigation unit (nil or invalid = use global).
+    var localSkipBackwardUnit: String?
     /// Manual sort order within folder (lower = earlier)
     var manualSortOrder: Int?
     /// Total audio duration in seconds (for audio books only)
@@ -152,6 +156,8 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
+        localSkipForwardUnit: String? = nil,
+        localSkipBackwardUnit: String? = nil,
         manualSortOrder: Int? = nil,
         audioDuration: TimeInterval? = nil,
         audioAlbum: String? = nil,
@@ -188,6 +194,8 @@ struct Book: Identifiable, Codable, Hashable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
+        self.localSkipForwardUnit = localSkipForwardUnit
+        self.localSkipBackwardUnit = localSkipBackwardUnit
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
         self.audioAlbum = audioAlbum
@@ -228,6 +236,8 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch = try container.decodeIfPresent(Double.self, forKey: .localPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
+        localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
+        localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
         manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
         audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
         audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
@@ -263,6 +273,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// The effective WPM for this book: local override if set, otherwise the provided fallback
     func effectiveWPM(fallback: Double) -> Double {
         localWPM ?? fallback
+    }
+
+    /// Resolve the saved forward unit, safely falling back for legacy or
+    /// manually edited state containing no value or an unknown value.
+    func effectiveSkipForwardUnit(fallback: SkipUnit) -> SkipUnit {
+        localSkipForwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
+    }
+
+    /// Resolve the saved backward unit with the same compatibility behavior.
+    func effectiveSkipBackwardUnit(fallback: SkipUnit) -> SkipUnit {
+        localSkipBackwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
     }
 
     mutating func applyContentIndexSummary(_ index: BookContentIndex) {
@@ -408,6 +429,8 @@ struct Book: Identifiable, Codable, Hashable {
                 localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
                 localEndOfBookBehavior: localEndOfBookBehavior,
+                localSkipForwardUnit: localSkipForwardUnit,
+                localSkipBackwardUnit: localSkipBackwardUnit,
                 manualSortOrder: manualSortOrder,
                 audioDuration: audioDuration,
                 cacheFormatVersion: cacheFormatVersion,
