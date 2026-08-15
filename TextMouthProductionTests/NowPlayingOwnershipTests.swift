@@ -159,6 +159,58 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.activeOwnerID, active.ownerID)
     }
 
+    func testSleepWakeCycleWithdrawsCommandsAndIgnoresStaleWakeWork() {
+        var commandEvents: [String] = []
+        var scheduledDelays: [TimeInterval] = []
+        var scheduledActions: [@MainActor () -> Void] = []
+        let coordinator = NowPlayingService(
+            installsSystemIntegrations: false,
+            observesSystemPowerEvents: false,
+            remoteCommandInstaller: { commandEvents.append("install") },
+            remoteCommandRemover: { commandEvents.append("remove") },
+            scheduleDelayedAction: { delay, action in
+                scheduledDelays.append(delay)
+                scheduledActions.append(action)
+            }
+        )
+        let session = makeSession(coordinator: coordinator)
+
+        XCTAssertEqual(commandEvents, ["install"])
+        XCTAssertTrue(coordinator.remoteCommandsActive)
+        XCTAssertFalse(coordinator.remoteCommandInstallationSuspended)
+
+        coordinator.handleSystemWillSleep()
+
+        XCTAssertEqual(commandEvents, ["install", "remove"])
+        XCTAssertFalse(coordinator.remoteCommandsActive)
+        XCTAssertTrue(coordinator.remoteCommandInstallationSuspended)
+
+        // Playback setup during the grace period must not bypass the wake gate.
+        session.activateRemoteCommandsIfNeeded()
+        XCTAssertEqual(commandEvents, ["install", "remove"])
+
+        // A repeated wake invalidates the first delayed callback. This models
+        // duplicate power notifications and rapid sleep/wake transitions.
+        coordinator.handleSystemDidWake()
+        coordinator.handleSystemDidWake()
+        XCTAssertEqual(
+            scheduledDelays,
+            [
+                NowPlayingService.wakeRemoteCommandReactivationDelay,
+                NowPlayingService.wakeRemoteCommandReactivationDelay
+            ]
+        )
+
+        scheduledActions[0]()
+        XCTAssertEqual(commandEvents, ["install", "remove"])
+        XCTAssertTrue(coordinator.remoteCommandInstallationSuspended)
+
+        scheduledActions[1]()
+        XCTAssertEqual(commandEvents, ["install", "remove", "install"])
+        XCTAssertTrue(coordinator.remoteCommandsActive)
+        XCTAssertFalse(coordinator.remoteCommandInstallationSuspended)
+    }
+
     private func makeSession(
         coordinator: NowPlayingService,
         onPlay: @escaping () -> Void = {},

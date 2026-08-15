@@ -1,6 +1,7 @@
 import Foundation
 import MediaPlayer
 import CoreAudio
+import AppKit
 
 enum RemoteMediaCommandPolicy {
     enum Action: Equatable {
@@ -167,6 +168,13 @@ final class NowPlayingSession {
 final class NowPlayingService {
     static let shared = NowPlayingService()
 
+    /// macOS may deliver stale MediaRemote events immediately after wake. On
+    /// macOS 26 those events can trip a MediaPlayer framework assertion before
+    /// an application's synchronous handler is given a chance to respond.
+    /// Keeping commands withdrawn for a short grace period avoids that event
+    /// burst while making controls available again promptly.
+    static let wakeRemoteCommandReactivationDelay: TimeInterval = 3.0
+
     struct Handlers {
         let onPlay: () -> Void
         let onPause: () -> Void
@@ -201,6 +209,27 @@ final class NowPlayingService {
     private let defaultOutputDeviceProvider: (() -> AudioDeviceID?)?
     private let audioDeviceIDsProvider: (() -> [AudioDeviceID])?
     private let bluetoothDeviceProvider: ((AudioDeviceID) -> Bool)?
+    private let observesSystemPowerEvents: Bool
+    private let remoteCommandInstallerOverride: (() -> Void)?
+    private let remoteCommandRemoverOverride: (() -> Void)?
+    private let scheduleDelayedAction: (
+        TimeInterval,
+        @escaping @MainActor () -> Void
+    ) -> Void
+
+    /// The block-based registration API returns the exact target token that
+    /// must later be passed to `removeTarget(_:)`. Retaining those pairs avoids
+    /// the broad `removeTarget(nil)` operation, which can disturb targets that
+    /// TextMouth does not own while MediaPlayer is dispatching an event.
+    private struct RemoteCommandRegistration {
+        let command: MPRemoteCommand
+        let target: Any
+    }
+
+    private var remoteCommandRegistrations: [RemoteCommandRegistration] = []
+    private var systemPowerObserverTokens: [NSObjectProtocol] = []
+    private var wakeTransitionGeneration = 0
+    private(set) var remoteCommandInstallationSuspended = false
 
     /// Detector for the experimental "restart sleep timer via media
     /// gesture" feature. Each command handler routes its event type
@@ -271,7 +300,18 @@ final class NowPlayingService {
         now: @escaping () -> Date = Date.init,
         defaultOutputDevice: (() -> AudioDeviceID?)? = nil,
         audioDeviceIDs: (() -> [AudioDeviceID])? = nil,
-        isBluetoothDevice: ((AudioDeviceID) -> Bool)? = nil
+        isBluetoothDevice: ((AudioDeviceID) -> Bool)? = nil,
+        observesSystemPowerEvents: Bool = true,
+        remoteCommandInstaller: (() -> Void)? = nil,
+        remoteCommandRemover: (() -> Void)? = nil,
+        scheduleDelayedAction: @escaping (
+            TimeInterval,
+            @escaping @MainActor () -> Void
+        ) -> Void = { delay, action in
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                action()
+            }
+        }
     ) {
         self.installsSystemIntegrations = installsSystemIntegrations
         self.diagnosticSink = diagnosticSink
@@ -279,6 +319,10 @@ final class NowPlayingService {
         self.defaultOutputDeviceProvider = defaultOutputDevice
         self.audioDeviceIDsProvider = audioDeviceIDs
         self.bluetoothDeviceProvider = isBluetoothDevice
+        self.observesSystemPowerEvents = observesSystemPowerEvents
+        self.remoteCommandInstallerOverride = remoteCommandInstaller
+        self.remoteCommandRemoverOverride = remoteCommandRemover
+        self.scheduleDelayedAction = scheduleDelayedAction
     }
 
     func setup(
@@ -322,6 +366,7 @@ final class NowPlayingService {
                 + "delay=\(formatted(bluetoothDelay)) integrations=\(installsSystemIntegrations)"
         )
 
+        startSystemPowerObservationIfNeeded()
         activateRemoteCommandsIfNeeded()
         if bluetoothMonitoringEnabled, installsSystemIntegrations {
             startDeviceChangeListener()
@@ -402,10 +447,37 @@ final class NowPlayingService {
     }
 
     func activateRemoteCommandsIfNeeded() {
-        guard installsSystemIntegrations else { return }
+        // Tests can inject command-center operations without touching the
+        // process-wide MediaPlayer singleton.
+        guard installsSystemIntegrations || remoteCommandInstallerOverride != nil else { return }
+        guard !remoteCommandInstallationSuspended else { return }
         guard !remoteCommandsActive else { return }
-        setupRemoteCommands()
+        installRemoteCommandTargets()
         remoteCommandsActive = true
+    }
+
+    /// Removes remote handlers before sleep. A generation number invalidates
+    /// delayed wake work from an older sleep/wake cycle, preventing stale work
+    /// from reinstalling handlers while the Mac is asleep again.
+    func handleSystemWillSleep() {
+        suspendRemoteCommandsForSystemTransition(reason: "system-will-sleep")
+    }
+
+    /// Keeps TextMouth out of the initial post-wake MediaRemote event burst.
+    /// The crash report that motivated this workaround occurred one second
+    /// after wake inside `_MPRemoteCommandEventDispatch.dealloc` on macOS 26.
+    func handleSystemDidWake() {
+        suspendRemoteCommandsForSystemTransition(reason: "system-did-wake")
+        let scheduledGeneration = wakeTransitionGeneration
+
+        diagnostic(
+            "remote commands wake reactivation scheduled delay="
+                + "\(formatted(Self.wakeRemoteCommandReactivationDelay)) "
+                + "generation=\(scheduledGeneration)"
+        )
+        scheduleDelayedAction(Self.wakeRemoteCommandReactivationDelay) { [weak self] in
+            self?.completeWakeTransition(generation: scheduledGeneration)
+        }
     }
 
     /// Apply the latest gesture-detector settings. Called once at
@@ -467,11 +539,23 @@ final class NowPlayingService {
         }
     }
 
+    /// Uses the production MediaPlayer integration unless a test supplies an
+    /// isolated installer. Keeping this seam here lets lifecycle tests verify
+    /// sleep/wake ordering without registering process-wide command handlers.
+    private func installRemoteCommandTargets() {
+        if let remoteCommandInstallerOverride {
+            remoteCommandInstallerOverride()
+            return
+        }
+        setupRemoteCommands()
+    }
+
     private func setupRemoteCommands() {
         let commandCenter = MPRemoteCommandCenter.shared()
 
-        // Remove any previous targets before adding new ones.
-        removeRemoteCommandTargets()
+        // Defensive cleanup is selective: only tokens returned to TextMouth by
+        // addTarget(handler:) are eligible for removal.
+        removeOwnedRemoteCommandTargets()
 
         // Each handler funnels its event type through the gesture
         // detector first via `consumeForGesture`. When that returns
@@ -483,7 +567,7 @@ final class NowPlayingService {
         // Play command: only resume, never toggle. Suppressed after device changes
         // to prevent macOS from auto-starting playback when Bluetooth disconnects.
         commandCenter.playCommand.isEnabled = true
-        commandCenter.playCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.playCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             return self.mediaPlayerStatus(for: self.dispatchPlayCommand())
         }
@@ -491,7 +575,7 @@ final class NowPlayingService {
         // Pause command: only pause, never toggle. Always safe to forward —
         // even during the suppress window, pausing is the correct behaviour.
         commandCenter.pauseCommand.isEnabled = true
-        commandCenter.pauseCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.pauseCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             return self.mediaPlayerStatus(for: self.dispatchPauseCommand())
         }
@@ -502,14 +586,14 @@ final class NowPlayingService {
         // `rcd` forwards. We gate it so the bug cannot flip a paused book into
         // playback on the wrong output device.
         commandCenter.togglePlayPauseCommand.isEnabled = true
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.togglePlayPauseCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             return self.mediaPlayerStatus(for: self.dispatchToggleCommand())
         }
 
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [30]
-        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.skipForwardCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.skipForward) { return .success }
             guard let handlers = self.activeHandlers else { return .commandFailed }
@@ -519,7 +603,7 @@ final class NowPlayingService {
 
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
-        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.skipBackwardCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.skipBackward) { return .success }
             guard let handlers = self.activeHandlers else { return .commandFailed }
@@ -530,7 +614,7 @@ final class NowPlayingService {
         // Next/previous track (AirPods double-tap, etc.) maps to skip forward/backward
         // since that's the most common user expectation for a book reader
         commandCenter.nextTrackCommand.isEnabled = true
-        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.nextTrackCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.nextTrack) { return .success }
             guard let handlers = self.activeHandlers else { return .commandFailed }
@@ -539,7 +623,7 @@ final class NowPlayingService {
         }
 
         commandCenter.previousTrackCommand.isEnabled = true
-        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+        registerRemoteCommand(commandCenter.previousTrackCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
             if self.consumeForGesture(.previousTrack) { return .success }
             guard let handlers = self.activeHandlers else { return .commandFailed }
@@ -653,6 +737,10 @@ final class NowPlayingService {
 
     private func publishNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
         guard installsSystemIntegrations else { return }
+        // A playback callback can arrive between the will-sleep notification
+        // and actual process suspension. Do not let it reclaim Now Playing
+        // ownership during the MediaPlayer safety window.
+        guard !remoteCommandInstallationSuspended else { return }
         var info = [String: Any]()
         info[MPMediaItemPropertyTitle] = title
         info[MPMediaItemPropertyArtist] = author
@@ -699,15 +787,116 @@ final class NowPlayingService {
         ownerID.map(shortOwnerID) ?? "none"
     }
 
+    /// Retains the opaque token returned by MediaPlayer so removal can target
+    /// precisely the block TextMouth installed.
+    private func registerRemoteCommand(
+        _ command: MPRemoteCommand,
+        handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
+    ) {
+        let target = command.addTarget(handler: handler)
+        remoteCommandRegistrations.append(
+            RemoteCommandRegistration(command: command, target: target)
+        )
+    }
+
+    /// Routes removal through the production integration or an isolated test
+    /// hook, mirroring `installRemoteCommandTargets()`.
     private func removeRemoteCommandTargets() {
+        if let remoteCommandRemoverOverride {
+            remoteCommandRemoverOverride()
+            return
+        }
+        removeOwnedRemoteCommandTargets()
+    }
+
+    /// Removes only TextMouth's block targets and advertises every associated
+    /// command as unavailable until registration is restored.
+    private func removeOwnedRemoteCommandTargets() {
+        for registration in remoteCommandRegistrations {
+            registration.command.removeTarget(registration.target)
+        }
+        remoteCommandRegistrations.removeAll()
+
         let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.playCommand.removeTarget(nil)
-        commandCenter.pauseCommand.removeTarget(nil)
-        commandCenter.togglePlayPauseCommand.removeTarget(nil)
-        commandCenter.skipForwardCommand.removeTarget(nil)
-        commandCenter.skipBackwardCommand.removeTarget(nil)
-        commandCenter.nextTrackCommand.removeTarget(nil)
-        commandCenter.previousTrackCommand.removeTarget(nil)
+        commandCenter.playCommand.isEnabled = false
+        commandCenter.pauseCommand.isEnabled = false
+        commandCenter.togglePlayPauseCommand.isEnabled = false
+        commandCenter.skipForwardCommand.isEnabled = false
+        commandCenter.skipBackwardCommand.isEnabled = false
+        commandCenter.nextTrackCommand.isEnabled = false
+        commandCenter.previousTrackCommand.isEnabled = false
+    }
+
+    // MARK: - System Sleep and Wake
+
+    /// Installs process-lifetime sleep and wake observers once the first reader
+    /// registers. The singleton owns the tokens, and observer closures retain
+    /// the service weakly to keep test instances independently disposable.
+    private func startSystemPowerObservationIfNeeded() {
+        guard installsSystemIntegrations, observesSystemPowerEvents else { return }
+        guard systemPowerObserverTokens.isEmpty else { return }
+
+        let notificationCenter = NSWorkspace.shared.notificationCenter
+        let sleepToken = notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // The observer explicitly targets the main operation queue, so it
+            // is safe to perform the actor-isolated withdrawal synchronously.
+            MainActor.assumeIsolated {
+                self?.handleSystemWillSleep()
+            }
+        }
+        let wakeToken = notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Handle wake before returning to the run loop where stale remote
+            // events may already be waiting.
+            MainActor.assumeIsolated {
+                self?.handleSystemDidWake()
+            }
+        }
+        systemPowerObserverTokens = [sleepToken, wakeToken]
+    }
+
+    /// Withdraws MediaPlayer ownership synchronously for a system power
+    /// transition. Repeated calls remain safe and still invalidate older
+    /// delayed wake completions.
+    private func suspendRemoteCommandsForSystemTransition(reason: String) {
+        wakeTransitionGeneration += 1
+        remoteCommandInstallationSuspended = true
+
+        if remoteCommandsActive {
+            removeRemoteCommandTargets()
+            remoteCommandsActive = false
+        }
+        clearSystemNowPlaying()
+        diagnostic(
+            "remote commands suspended reason=\(reason) "
+                + "generation=\(wakeTransitionGeneration)"
+        )
+    }
+
+    /// Completes only the newest wake transition. A subsequent sleep or wake
+    /// increments the generation and turns earlier scheduled closures into
+    /// harmless no-ops.
+    private func completeWakeTransition(generation: Int) {
+        guard generation == wakeTransitionGeneration else {
+            diagnostic(
+                "remote commands wake reactivation ignored staleGeneration=\(generation) "
+                    + "currentGeneration=\(wakeTransitionGeneration)"
+            )
+            return
+        }
+        guard remoteCommandInstallationSuspended else { return }
+
+        remoteCommandInstallationSuspended = false
+        activateRemoteCommandsIfNeeded()
+        publishCachedNowPlayingInfoForActiveOwner()
+        diagnostic("remote commands wake reactivated generation=\(generation)")
     }
 
     // MARK: - Audio Device Change Monitoring
