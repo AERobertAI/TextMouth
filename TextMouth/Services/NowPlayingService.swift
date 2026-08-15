@@ -1,7 +1,6 @@
 import Foundation
 import MediaPlayer
 import CoreAudio
-import AppKit
 
 enum RemoteMediaCommandPolicy {
     enum Action: Equatable {
@@ -44,6 +43,19 @@ enum RemoteMediaCommandPolicy {
 enum RemoteCommandDispatchResult: Equatable {
     case success
     case commandFailed
+}
+
+/// A command accepted from MediaPlayer for deferred delivery to the active
+/// reader. Keeping this representation independent of MediaPlayer makes the
+/// acknowledgement boundary directly testable without process-wide targets.
+enum RemoteMediaCommandRequest: String, Equatable {
+    case play
+    case pause
+    case togglePlayPause
+    case skipForward
+    case skipBackward
+    case nextTrack
+    case previousTrack
 }
 
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
@@ -168,13 +180,6 @@ final class NowPlayingSession {
 final class NowPlayingService {
     static let shared = NowPlayingService()
 
-    /// macOS may deliver stale MediaRemote events immediately after wake. On
-    /// macOS 26 those events can trip a MediaPlayer framework assertion before
-    /// an application's synchronous handler is given a chance to respond.
-    /// Keeping commands withdrawn for a short grace period avoids that event
-    /// burst while making controls available again promptly.
-    static let wakeRemoteCommandReactivationDelay: TimeInterval = 3.0
-
     struct Handlers {
         let onPlay: () -> Void
         let onPause: () -> Void
@@ -209,13 +214,7 @@ final class NowPlayingService {
     private let defaultOutputDeviceProvider: (() -> AudioDeviceID?)?
     private let audioDeviceIDsProvider: (() -> [AudioDeviceID])?
     private let bluetoothDeviceProvider: ((AudioDeviceID) -> Bool)?
-    private let observesSystemPowerEvents: Bool
-    private let remoteCommandInstallerOverride: (() -> Void)?
-    private let remoteCommandRemoverOverride: (() -> Void)?
-    private let scheduleDelayedAction: (
-        TimeInterval,
-        @escaping @MainActor () -> Void
-    ) -> Void
+    private let scheduleRemoteCommandAction: (@escaping @MainActor () -> Void) -> Void
 
     /// The block-based registration API returns the exact target token that
     /// must later be passed to `removeTarget(_:)`. Retaining those pairs avoids
@@ -227,9 +226,6 @@ final class NowPlayingService {
     }
 
     private var remoteCommandRegistrations: [RemoteCommandRegistration] = []
-    private var systemPowerObserverTokens: [NSObjectProtocol] = []
-    private var wakeTransitionGeneration = 0
-    private(set) var remoteCommandInstallationSuspended = false
 
     /// Detector for the experimental "restart sleep timer via media
     /// gesture" feature. Each command handler routes its event type
@@ -244,6 +240,13 @@ final class NowPlayingService {
     /// treated as spurious (Bluetooth-disconnect artefacts). `distantPast`
     /// means the window is inactive. Compared to `Date()` via `isSuppressed`.
     private var suppressUntil: Date = .distantPast
+
+    /// Advances only for routing changes initiated outside a deferred remote
+    /// command. Queued commands from one MediaPlayer burst therefore see the
+    /// results of earlier commands, while a newer user focus/playback action
+    /// invalidates the older work before it can steal control back.
+    private var externalRoutingRevision: UInt = 0
+    private var isPerformingRemoteCommand = false
 
     /// How long the suppress window stays open after an audio device change.
     /// rcd typically delivers its toggle within a few hundred milliseconds,
@@ -301,14 +304,10 @@ final class NowPlayingService {
         defaultOutputDevice: (() -> AudioDeviceID?)? = nil,
         audioDeviceIDs: (() -> [AudioDeviceID])? = nil,
         isBluetoothDevice: ((AudioDeviceID) -> Bool)? = nil,
-        observesSystemPowerEvents: Bool = true,
-        remoteCommandInstaller: (() -> Void)? = nil,
-        remoteCommandRemover: (() -> Void)? = nil,
-        scheduleDelayedAction: @escaping (
-            TimeInterval,
+        scheduleRemoteCommandAction: @escaping (
             @escaping @MainActor () -> Void
-        ) -> Void = { delay, action in
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        ) -> Void = { action in
+            DispatchQueue.main.async {
                 action()
             }
         }
@@ -319,10 +318,7 @@ final class NowPlayingService {
         self.defaultOutputDeviceProvider = defaultOutputDevice
         self.audioDeviceIDsProvider = audioDeviceIDs
         self.bluetoothDeviceProvider = isBluetoothDevice
-        self.observesSystemPowerEvents = observesSystemPowerEvents
-        self.remoteCommandInstallerOverride = remoteCommandInstaller
-        self.remoteCommandRemoverOverride = remoteCommandRemover
-        self.scheduleDelayedAction = scheduleDelayedAction
+        self.scheduleRemoteCommandAction = scheduleRemoteCommandAction
     }
 
     func setup(
@@ -339,6 +335,12 @@ final class NowPlayingService {
         bluetoothMonitoring: Bool = true,
         bluetoothDelay: TimeInterval = 2.0
     ) {
+        // Replacing callbacks can change how a queued command behaves. A new
+        // inactive reader does not affect current routing, but the first reader
+        // establishes the initial focus and must invalidate older empty state.
+        if handlersByOwner[ownerID] != nil || focusedOwnerID == nil {
+            noteExternalRoutingChange()
+        }
         handlersByOwner[ownerID] = Handlers(
             onPlay: onPlay,
             onPause: onPause,
@@ -366,7 +368,6 @@ final class NowPlayingService {
                 + "delay=\(formatted(bluetoothDelay)) integrations=\(installsSystemIntegrations)"
         )
 
-        startSystemPowerObservationIfNeeded()
         activateRemoteCommandsIfNeeded()
         if bluetoothMonitoringEnabled, installsSystemIntegrations {
             startDeviceChangeListener()
@@ -381,7 +382,10 @@ final class NowPlayingService {
             diagnostic("owner focus ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
             return
         }
-        focusedOwnerID = ownerID
+        if focusedOwnerID != ownerID {
+            noteExternalRoutingChange()
+            focusedOwnerID = ownerID
+        }
         ownerRegistrationOrder.removeAll { $0 == ownerID }
         ownerRegistrationOrder.append(ownerID)
         diagnostic(
@@ -399,6 +403,8 @@ final class NowPlayingService {
             diagnostic("playback preparation ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
             return
         }
+
+        noteExternalRoutingChange()
 
         if let previousOwnerID = playingOwnerID,
            previousOwnerID != ownerID,
@@ -427,6 +433,10 @@ final class NowPlayingService {
 
     func unregister(ownerID: UUID) {
         let wasActive = activeOwnerID == ownerID
+        let affectedRouting = focusedOwnerID == ownerID || playingOwnerID == ownerID
+        if affectedRouting {
+            noteExternalRoutingChange()
+        }
         handlersByOwner.removeValue(forKey: ownerID)
         ownerRegistrationOrder.removeAll { $0 == ownerID }
         nowPlayingInfoByOwner.removeValue(forKey: ownerID)
@@ -447,37 +457,10 @@ final class NowPlayingService {
     }
 
     func activateRemoteCommandsIfNeeded() {
-        // Tests can inject command-center operations without touching the
-        // process-wide MediaPlayer singleton.
-        guard installsSystemIntegrations || remoteCommandInstallerOverride != nil else { return }
-        guard !remoteCommandInstallationSuspended else { return }
+        guard installsSystemIntegrations else { return }
         guard !remoteCommandsActive else { return }
-        installRemoteCommandTargets()
+        setupRemoteCommands()
         remoteCommandsActive = true
-    }
-
-    /// Removes remote handlers before sleep. A generation number invalidates
-    /// delayed wake work from an older sleep/wake cycle, preventing stale work
-    /// from reinstalling handlers while the Mac is asleep again.
-    func handleSystemWillSleep() {
-        suspendRemoteCommandsForSystemTransition(reason: "system-will-sleep")
-    }
-
-    /// Keeps TextMouth out of the initial post-wake MediaRemote event burst.
-    /// The crash report that motivated this workaround occurred one second
-    /// after wake inside `_MPRemoteCommandEventDispatch.dealloc` on macOS 26.
-    func handleSystemDidWake() {
-        suspendRemoteCommandsForSystemTransition(reason: "system-did-wake")
-        let scheduledGeneration = wakeTransitionGeneration
-
-        diagnostic(
-            "remote commands wake reactivation scheduled delay="
-                + "\(formatted(Self.wakeRemoteCommandReactivationDelay)) "
-                + "generation=\(scheduledGeneration)"
-        )
-        scheduleDelayedAction(Self.wakeRemoteCommandReactivationDelay) { [weak self] in
-            self?.completeWakeTransition(generation: scheduledGeneration)
-        }
     }
 
     /// Apply the latest gesture-detector settings. Called once at
@@ -501,8 +484,11 @@ final class NowPlayingService {
     /// Lives here (not inline at each call site) so the suppression
     /// rule and the notification post stay in one place — easy to
     /// tweak later if we add more gesture-driven actions.
-    private func consumeForGesture(_ event: MediaGestureDetector.EventType) -> Bool {
-        guard gestureDetector.recordEvent(event) else { return false }
+    private func consumeForGesture(
+        _ event: MediaGestureDetector.EventType,
+        receivedAt: Date
+    ) -> Bool {
+        guard gestureDetector.recordEvent(event, at: receivedAt) else { return false }
         // Posting on main keeps SwiftUI views and other main-bound
         // observers safe regardless of which queue the command center
         // dispatched the original handler on.
@@ -539,17 +525,10 @@ final class NowPlayingService {
         }
     }
 
-    /// Uses the production MediaPlayer integration unless a test supplies an
-    /// isolated installer. Keeping this seam here lets lifecycle tests verify
-    /// sleep/wake ordering without registering process-wide command handlers.
-    private func installRemoteCommandTargets() {
-        if let remoteCommandInstallerOverride {
-            remoteCommandInstallerOverride()
-            return
-        }
-        setupRemoteCommands()
-    }
-
+    /// Registers each process-wide MediaPlayer command exactly once. The
+    /// callbacks acknowledge the framework immediately and defer TextMouth's
+    /// playback work, preventing reentrant Now Playing updates while
+    /// MediaPlayer still owns its internal event-dispatch continuation.
     private func setupRemoteCommands() {
         let commandCenter = MPRemoteCommandCenter.shared()
 
@@ -557,19 +536,17 @@ final class NowPlayingService {
         // addTarget(handler:) are eligible for removal.
         removeOwnedRemoteCommandTargets()
 
-        // Each handler funnels its event type through the gesture
-        // detector first via `consumeForGesture`. When that returns
-        // true, the event was the final piece of a matching pattern
-        // — we skip the usual callback so the user doesn't get an
-        // unwanted side effect (e.g. a "play" gesture would otherwise
-        // start playback in addition to restarting the timer).
+        // Each deferred request ultimately funnels its event type through the
+        // gesture detector. When the detector consumes a completed pattern,
+        // the usual callback is skipped so a restart-timer gesture does not
+        // also trigger an unwanted playback or navigation side effect.
 
         // Play command: only resume, never toggle. Suppressed after device changes
         // to prevent macOS from auto-starting playback when Bluetooth disconnects.
         commandCenter.playCommand.isEnabled = true
         registerRemoteCommand(commandCenter.playCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.dispatchPlayCommand())
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.play))
         }
 
         // Pause command: only pause, never toggle. Always safe to forward —
@@ -577,7 +554,7 @@ final class NowPlayingService {
         commandCenter.pauseCommand.isEnabled = true
         registerRemoteCommand(commandCenter.pauseCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.dispatchPauseCommand())
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.pause))
         }
 
         // Toggle command: in normal operation, reflects genuine user intent
@@ -588,27 +565,21 @@ final class NowPlayingService {
         commandCenter.togglePlayPauseCommand.isEnabled = true
         registerRemoteCommand(commandCenter.togglePlayPauseCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            return self.mediaPlayerStatus(for: self.dispatchToggleCommand())
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.togglePlayPause))
         }
 
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [30]
         registerRemoteCommand(commandCenter.skipForwardCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.consumeForGesture(.skipForward) { return .success }
-            guard let handlers = self.activeHandlers else { return .commandFailed }
-            handlers.onSkipForward()
-            return .success
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipForward))
         }
 
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
         registerRemoteCommand(commandCenter.skipBackwardCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.consumeForGesture(.skipBackward) { return .success }
-            guard let handlers = self.activeHandlers else { return .commandFailed }
-            handlers.onSkipBackward()
-            return .success
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.skipBackward))
         }
 
         // Next/previous track (AirPods double-tap, etc.) maps to skip forward/backward
@@ -616,29 +587,205 @@ final class NowPlayingService {
         commandCenter.nextTrackCommand.isEnabled = true
         registerRemoteCommand(commandCenter.nextTrackCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.consumeForGesture(.nextTrack) { return .success }
-            guard let handlers = self.activeHandlers else { return .commandFailed }
-            handlers.onSkipForward()
-            return .success
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.nextTrack))
         }
 
         commandCenter.previousTrackCommand.isEnabled = true
         registerRemoteCommand(commandCenter.previousTrackCommand) { [weak self] _ in
             guard let self = self else { return .commandFailed }
-            if self.consumeForGesture(.previousTrack) { return .success }
-            guard let handlers = self.activeHandlers else { return .commandFailed }
-            handlers.onSkipBackward()
-            return .success
+            return self.mediaPlayerStatus(for: self.acceptRemoteCommand(.previousTrack))
         }
+    }
+
+    /// Event-time inputs and the surrounding external routing revision are
+    /// captured at receipt. Owner selection remains deferred so rapid command
+    /// bursts resolve sequentially against state produced by earlier commands.
+    private struct AcceptedRemoteMediaCommand {
+        let request: RemoteMediaCommandRequest
+        let routingRevision: UInt
+        let wasSuppressed: Bool
+        let suppressionDeadline: Date
+        let receivedAt: Date
+    }
+
+    /// Accepts a framework command only when a reader owns media controls,
+    /// snapshots its routing state, then schedules the real action after the
+    /// MediaPlayer handler returns. Production uses the FIFO main dispatch
+    /// queue; tests capture the action to verify the acknowledgement boundary.
+    func acceptRemoteCommand(_ request: RemoteMediaCommandRequest) -> RemoteCommandDispatchResult {
+        guard activeOwnerID != nil else { return .commandFailed }
+
+        let receivedAt = nowProvider()
+        let accepted = AcceptedRemoteMediaCommand(
+            request: request,
+            routingRevision: externalRoutingRevision,
+            wasSuppressed: RemoteMediaCommandPolicy.isSuppressed(
+                now: receivedAt,
+                until: suppressUntil
+            ),
+            suppressionDeadline: suppressUntil,
+            receivedAt: receivedAt
+        )
+        scheduleRemoteCommandAction { [weak self] in
+            self?.performRemoteCommand(accepted)
+        }
+        return .success
+    }
+
+    /// Executes a previously acknowledged command on the main actor. Any
+    /// playback or Now Playing mutations occur here, outside MediaPlayer's
+    /// synchronous event callback and its internal continuation lifetime.
+    private func performRemoteCommand(_ command: AcceptedRemoteMediaCommand) {
+        guard command.routingRevision == externalRoutingRevision else {
+            diagnostic(
+                "command deferred request=\(command.request.rawValue) "
+                    + "result=commandFailed reason=stale-routing "
+                    + "acceptedRevision=\(command.routingRevision) "
+                    + "currentRevision=\(externalRoutingRevision)"
+            )
+            return
+        }
+
+        // Public routing APIs called from command handlers must not advance the
+        // external revision: later commands already accepted in the same burst
+        // are expected to observe this command's resulting state.
+        isPerformingRemoteCommand = true
+        defer { isPerformingRemoteCommand = false }
+
+        let result: RemoteCommandDispatchResult
+        switch command.request {
+        case .play:
+            if let targetOwnerID = focusedOwnerID ?? playingOwnerID {
+                result = dispatchPlayCommand(
+                    targetOwnerID: targetOwnerID,
+                    isSuppressed: command.wasSuppressed,
+                    suppressionDeadline: command.suppressionDeadline,
+                    receivedAt: command.receivedAt
+                )
+            } else {
+                result = .commandFailed
+            }
+        case .pause:
+            if let targetOwnerID = activeOwnerID {
+                result = dispatchPauseCommand(
+                    targetOwnerID: targetOwnerID,
+                    isSuppressed: command.wasSuppressed,
+                    receivedAt: command.receivedAt
+                )
+            } else {
+                result = .commandFailed
+            }
+        case .togglePlayPause:
+            if let targetOwnerID = playingOwnerID ?? focusedOwnerID {
+                result = dispatchToggleCommand(
+                    targetOwnerID: targetOwnerID,
+                    isSuppressed: command.wasSuppressed,
+                    suppressionDeadline: command.suppressionDeadline,
+                    receivedAt: command.receivedAt
+                )
+            } else {
+                result = .commandFailed
+            }
+        case .skipForward:
+            result = dispatchSkipCommandToActiveOwner(
+                gesture: .skipForward,
+                direction: .forward,
+                receivedAt: command.receivedAt
+            )
+        case .skipBackward:
+            result = dispatchSkipCommandToActiveOwner(
+                gesture: .skipBackward,
+                direction: .backward,
+                receivedAt: command.receivedAt
+            )
+        case .nextTrack:
+            result = dispatchSkipCommandToActiveOwner(
+                gesture: .nextTrack,
+                direction: .forward,
+                receivedAt: command.receivedAt
+            )
+        case .previousTrack:
+            result = dispatchSkipCommandToActiveOwner(
+                gesture: .previousTrack,
+                direction: .backward,
+                receivedAt: command.receivedAt
+            )
+        }
+        diagnostic("command deferred request=\(command.request.rawValue) result=\(result)")
+    }
+
+    /// Resolves navigation ownership at execution so an earlier Play or Toggle
+    /// in the same FIFO batch can transfer playback before the Skip runs.
+    private func dispatchSkipCommandToActiveOwner(
+        gesture: MediaGestureDetector.EventType,
+        direction: SkipDirection,
+        receivedAt: Date
+    ) -> RemoteCommandDispatchResult {
+        guard let targetOwnerID = activeOwnerID else { return .commandFailed }
+        return dispatchSkipCommand(
+            targetOwnerID: targetOwnerID,
+            gesture: gesture,
+            direction: direction,
+            receivedAt: receivedAt
+        )
+    }
+
+    /// Direction is separate from the gesture event because headset next and
+    /// previous commands share TextMouth's forward/backward navigation actions
+    /// while remaining distinct inputs for configurable gesture sequences.
+    private enum SkipDirection {
+        case forward
+        case backward
+    }
+
+    /// Delivers skip and track commands through their original gesture gate,
+    /// preserving both navigation semantics and sleep-timer restart gestures.
+    private func dispatchSkipCommand(
+        targetOwnerID: UUID,
+        gesture: MediaGestureDetector.EventType,
+        direction: SkipDirection,
+        receivedAt: Date
+    ) -> RemoteCommandDispatchResult {
+        guard let handlers = handlersByOwner[targetOwnerID] else { return .commandFailed }
+        if consumeForGesture(gesture, receivedAt: receivedAt) { return .success }
+        switch direction {
+        case .forward:
+            handlers.onSkipForward()
+        case .backward:
+            handlers.onSkipBackward()
+        }
+        return .success
     }
 
     /// Routes a directed Play command to the focused reader, pausing any
     /// different audible reader first. The override makes suppression
     /// behavior deterministic in unit tests.
     func dispatchPlayCommand(isSuppressed suppressionOverride: Bool? = nil) -> RemoteCommandDispatchResult {
-        let suppressed = suppressionOverride ?? isSuppressed
+        let receivedAt = nowProvider()
+        let suppressed = suppressionOverride ?? RemoteMediaCommandPolicy.isSuppressed(
+            now: receivedAt,
+            until: suppressUntil
+        )
+        guard let targetOwnerID = focusedOwnerID ?? playingOwnerID else {
+            diagnostic("command play failed reason=no-owner")
+            return .commandFailed
+        }
+        return dispatchPlayCommand(
+            targetOwnerID: targetOwnerID,
+            isSuppressed: suppressed,
+            suppressionDeadline: suppressUntil,
+            receivedAt: receivedAt
+        )
+    }
+
+    /// Executes Play for the owner selected when the remote event arrived.
+    private func dispatchPlayCommand(
+        targetOwnerID: UUID,
+        isSuppressed suppressed: Bool,
+        suppressionDeadline: Date,
+        receivedAt: Date
+    ) -> RemoteCommandDispatchResult {
         let action = RemoteMediaCommandPolicy.play(isSuppressed: suppressed)
-        let targetOwnerID = focusedOwnerID ?? playingOwnerID
         logCommand(
             "play",
             suppressed: suppressed,
@@ -646,21 +793,20 @@ final class NowPlayingService {
             targetOwnerID: targetOwnerID
         )
         if action == .consume {
-            suppressUntil = .distantPast
+            consumeSuppressionWindow(ifUnchangedFrom: suppressionDeadline)
             return .success
         }
         guard action == .play else { return .commandFailed }
-        if consumeForGesture(.play) { return .success }
+        if consumeForGesture(.play, receivedAt: receivedAt) { return .success }
 
-        guard let ownerID = targetOwnerID,
-              let handlers = handlersByOwner[ownerID] else {
+        guard let handlers = handlersByOwner[targetOwnerID] else {
             diagnostic("command play failed reason=no-owner")
             return .commandFailed
         }
-        prepareForPlayback(ownerID: ownerID)
+        prepareForPlayback(ownerID: targetOwnerID)
         handlers.onPlay()
         if handlers.isCurrentlyPlaying() {
-            playingOwnerID = ownerID
+            playingOwnerID = targetOwnerID
         }
         return .success
     }
@@ -668,12 +814,33 @@ final class NowPlayingService {
     /// Routes Pause to the audible reader when present, falling back to the
     /// focused reader so a newly opened paused book still accepts the command.
     func dispatchPauseCommand(isSuppressed suppressionOverride: Bool? = nil) -> RemoteCommandDispatchResult {
-        guard let handlers = activeHandlers else {
+        let receivedAt = nowProvider()
+        guard let targetOwnerID = activeOwnerID else {
             diagnostic("command pause failed reason=no-owner")
             return .commandFailed
         }
-        if consumeForGesture(.pause) { return .success }
-        let suppressed = suppressionOverride ?? isSuppressed
+        let suppressed = suppressionOverride ?? RemoteMediaCommandPolicy.isSuppressed(
+            now: receivedAt,
+            until: suppressUntil
+        )
+        return dispatchPauseCommand(
+            targetOwnerID: targetOwnerID,
+            isSuppressed: suppressed,
+            receivedAt: receivedAt
+        )
+    }
+
+    /// Executes Pause for the owner selected when the remote event arrived.
+    private func dispatchPauseCommand(
+        targetOwnerID: UUID,
+        isSuppressed suppressed: Bool,
+        receivedAt: Date
+    ) -> RemoteCommandDispatchResult {
+        guard let handlers = handlersByOwner[targetOwnerID] else {
+            diagnostic("command pause failed reason=no-owner")
+            return .commandFailed
+        }
+        if consumeForGesture(.pause, receivedAt: receivedAt) { return .success }
         let action = RemoteMediaCommandPolicy.pause(
             isSuppressed: suppressed,
             isPlaying: handlers.isCurrentlyPlaying()
@@ -684,7 +851,7 @@ final class NowPlayingService {
         } else {
             handlers.onPause()
         }
-        if playingOwnerID.flatMap({ handlersByOwner[$0] })?.isCurrentlyPlaying() != true {
+        if playingOwnerID == targetOwnerID, !handlers.isCurrentlyPlaying() {
             playingOwnerID = nil
         }
         return .success
@@ -693,41 +860,80 @@ final class NowPlayingService {
     /// Routes Toggle to audible playback first. With no playing reader, the
     /// focused reader receives the request and becomes the exclusive owner.
     func dispatchToggleCommand(isSuppressed suppressionOverride: Bool? = nil) -> RemoteCommandDispatchResult {
-        guard let ownerID = playingOwnerID ?? focusedOwnerID,
-              let handlers = handlersByOwner[ownerID] else {
+        let receivedAt = nowProvider()
+        guard let targetOwnerID = playingOwnerID ?? focusedOwnerID else {
             diagnostic("command toggle failed reason=no-owner")
             return .commandFailed
         }
-        let suppressed = suppressionOverride ?? isSuppressed
+        let suppressed = suppressionOverride ?? RemoteMediaCommandPolicy.isSuppressed(
+            now: receivedAt,
+            until: suppressUntil
+        )
+        return dispatchToggleCommand(
+            targetOwnerID: targetOwnerID,
+            isSuppressed: suppressed,
+            suppressionDeadline: suppressUntil,
+            receivedAt: receivedAt
+        )
+    }
+
+    /// Executes Toggle for the owner selected when the remote event arrived.
+    private func dispatchToggleCommand(
+        targetOwnerID: UUID,
+        isSuppressed suppressed: Bool,
+        suppressionDeadline: Date,
+        receivedAt: Date
+    ) -> RemoteCommandDispatchResult {
+        guard let handlers = handlersByOwner[targetOwnerID] else {
+            diagnostic("command toggle failed reason=no-owner")
+            return .commandFailed
+        }
         let action = RemoteMediaCommandPolicy.toggle(
             isSuppressed: suppressed,
             isPlaying: handlers.isCurrentlyPlaying()
         )
         logCommand("toggle", suppressed: suppressed, action: action)
         if suppressed {
-            suppressUntil = .distantPast
+            consumeSuppressionWindow(ifUnchangedFrom: suppressionDeadline)
             if action == .routeChangePause {
                 handlers.onAudioRouteChangePause()
-                playingOwnerID = nil
+                if playingOwnerID == targetOwnerID {
+                    playingOwnerID = nil
+                }
             }
             return .success
         }
-        if consumeForGesture(.togglePlayPause) { return .success }
+        if consumeForGesture(.togglePlayPause, receivedAt: receivedAt) { return .success }
         if !handlers.isCurrentlyPlaying() {
-            prepareForPlayback(ownerID: ownerID)
+            prepareForPlayback(ownerID: targetOwnerID)
         }
         handlers.onTogglePlayPause()
-        playingOwnerID = handlers.isCurrentlyPlaying() ? ownerID : nil
+        if handlers.isCurrentlyPlaying() {
+            playingOwnerID = targetOwnerID
+        } else if playingOwnerID == targetOwnerID {
+            playingOwnerID = nil
+        }
         return .success
+    }
+
+    /// Consumes only the suppression window that existed when the command was
+    /// accepted. A newer audio-route transition must retain its own window.
+    private func consumeSuppressionWindow(ifUnchangedFrom acceptedDeadline: Date) {
+        guard suppressUntil == acceptedDeadline else { return }
+        suppressUntil = .distantPast
     }
 
     func updateNowPlayingInfo(ownerID: UUID, title: String, author: String, isPlaying: Bool) {
         guard handlersByOwner[ownerID] != nil else { return }
         nowPlayingInfoByOwner[ownerID] = (title, author, isPlaying)
+        let previousPlayingOwnerID = playingOwnerID
         if isPlaying {
             playingOwnerID = ownerID
         } else if playingOwnerID == ownerID {
             playingOwnerID = nil
+        }
+        if playingOwnerID != previousPlayingOwnerID {
+            noteExternalRoutingChange()
         }
         // An inactive reader can update its own paused state, but it must not
         // replace the visible Now Playing item or steal AirPods commands.
@@ -737,10 +943,6 @@ final class NowPlayingService {
 
     private func publishNowPlayingInfo(title: String, author: String, isPlaying: Bool) {
         guard installsSystemIntegrations else { return }
-        // A playback callback can arrive between the will-sleep notification
-        // and actual process suspension. Do not let it reclaim Now Playing
-        // ownership during the MediaPlayer safety window.
-        guard !remoteCommandInstallationSuspended else { return }
         var info = [String: Any]()
         info[MPMediaItemPropertyTitle] = title
         info[MPMediaItemPropertyArtist] = author
@@ -753,6 +955,9 @@ final class NowPlayingService {
 
     func clearNowPlaying(ownerID: UUID) {
         guard activeOwnerID == ownerID else { return }
+        // Releasing media controls is an ownership decision even when paused;
+        // an older queued Play must not immediately reclaim them.
+        noteExternalRoutingChange()
         if playingOwnerID == ownerID {
             playingOwnerID = nil
         }
@@ -799,104 +1004,14 @@ final class NowPlayingService {
         )
     }
 
-    /// Routes removal through the production integration or an isolated test
-    /// hook, mirroring `installRemoteCommandTargets()`.
-    private func removeRemoteCommandTargets() {
-        if let remoteCommandRemoverOverride {
-            remoteCommandRemoverOverride()
-            return
-        }
-        removeOwnedRemoteCommandTargets()
-    }
-
-    /// Removes only TextMouth's block targets and advertises every associated
-    /// command as unavailable until registration is restored.
+    /// Removes only TextMouth's block targets. Command availability belongs to
+    /// the process-wide command object, so cleanup must not disable a command
+    /// that another in-process integration could still own.
     private func removeOwnedRemoteCommandTargets() {
         for registration in remoteCommandRegistrations {
             registration.command.removeTarget(registration.target)
         }
         remoteCommandRegistrations.removeAll()
-
-        let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.playCommand.isEnabled = false
-        commandCenter.pauseCommand.isEnabled = false
-        commandCenter.togglePlayPauseCommand.isEnabled = false
-        commandCenter.skipForwardCommand.isEnabled = false
-        commandCenter.skipBackwardCommand.isEnabled = false
-        commandCenter.nextTrackCommand.isEnabled = false
-        commandCenter.previousTrackCommand.isEnabled = false
-    }
-
-    // MARK: - System Sleep and Wake
-
-    /// Installs process-lifetime sleep and wake observers once the first reader
-    /// registers. The singleton owns the tokens, and observer closures retain
-    /// the service weakly to keep test instances independently disposable.
-    private func startSystemPowerObservationIfNeeded() {
-        guard installsSystemIntegrations, observesSystemPowerEvents else { return }
-        guard systemPowerObserverTokens.isEmpty else { return }
-
-        let notificationCenter = NSWorkspace.shared.notificationCenter
-        let sleepToken = notificationCenter.addObserver(
-            forName: NSWorkspace.willSleepNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            // The observer explicitly targets the main operation queue, so it
-            // is safe to perform the actor-isolated withdrawal synchronously.
-            MainActor.assumeIsolated {
-                self?.handleSystemWillSleep()
-            }
-        }
-        let wakeToken = notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            // Handle wake before returning to the run loop where stale remote
-            // events may already be waiting.
-            MainActor.assumeIsolated {
-                self?.handleSystemDidWake()
-            }
-        }
-        systemPowerObserverTokens = [sleepToken, wakeToken]
-    }
-
-    /// Withdraws MediaPlayer ownership synchronously for a system power
-    /// transition. Repeated calls remain safe and still invalidate older
-    /// delayed wake completions.
-    private func suspendRemoteCommandsForSystemTransition(reason: String) {
-        wakeTransitionGeneration += 1
-        remoteCommandInstallationSuspended = true
-
-        if remoteCommandsActive {
-            removeRemoteCommandTargets()
-            remoteCommandsActive = false
-        }
-        clearSystemNowPlaying()
-        diagnostic(
-            "remote commands suspended reason=\(reason) "
-                + "generation=\(wakeTransitionGeneration)"
-        )
-    }
-
-    /// Completes only the newest wake transition. A subsequent sleep or wake
-    /// increments the generation and turns earlier scheduled closures into
-    /// harmless no-ops.
-    private func completeWakeTransition(generation: Int) {
-        guard generation == wakeTransitionGeneration else {
-            diagnostic(
-                "remote commands wake reactivation ignored staleGeneration=\(generation) "
-                    + "currentGeneration=\(wakeTransitionGeneration)"
-            )
-            return
-        }
-        guard remoteCommandInstallationSuspended else { return }
-
-        remoteCommandInstallationSuspended = false
-        activateRemoteCommandsIfNeeded()
-        publishCachedNowPlayingInfoForActiveOwner()
-        diagnostic("remote commands wake reactivated generation=\(generation)")
     }
 
     // MARK: - Audio Device Change Monitoring
@@ -1110,6 +1225,10 @@ final class NowPlayingService {
     /// session would needlessly fire the pause sound effect and reset the
     /// reading-stats session.
     private func armSuppressAndPauseIfPlaying(trigger: String) {
+        // Route state changed after any command accepted against the previous
+        // device. Invalidate that work before arming suppression so an older
+        // Play cannot start through newly selected speakers.
+        noteExternalRoutingChange()
         let now = nowProvider()
         suppressUntil = RemoteMediaCommandPolicy.suppressDeadline(
             now: now, delay: suppressWindow
@@ -1326,6 +1445,14 @@ final class NowPlayingService {
     }
 
     var isRouteCommandSuppressed: Bool { isSuppressed }
+
+    /// Marks a focus or playback-ownership change initiated by UI, lifecycle,
+    /// or audio callbacks. Command-internal changes intentionally do not bump
+    /// the revision so an already accepted FIFO burst remains ordered.
+    private func noteExternalRoutingChange() {
+        guard !isPerformingRemoteCommand else { return }
+        externalRoutingRevision &+= 1
+    }
 
     private func diagnostic(_ message: String) {
         diagnosticSink(message)
