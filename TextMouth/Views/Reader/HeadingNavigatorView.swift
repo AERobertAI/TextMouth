@@ -302,7 +302,9 @@ struct HeadingNavigatorView: View {
             }
         }
 
-        let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.count))
+        // Heading offsets and totalCharacterCount use UTF-16 coordinates;
+        // grapheme counts shift every later chapter after emoji/combining text.
+        let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.utf16Length))
         let allHeadings = viewModel.headings
         let totalCharacterCount = max(content.totalCharacterCount, 1)
         let totalWordCount = content.totalWordCount
