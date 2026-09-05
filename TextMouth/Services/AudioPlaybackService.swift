@@ -97,8 +97,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// consistent across chapters (mirrors the fix in AudioEngineService).
     private var currentVolume: Float = 1.0
 
-    let minimumSpeed: Double = 0.25
-    let maximumSpeed: Double = 4.0
+    static let speedRange = 0.25...4.0
+    let minimumSpeed: Double = speedRange.lowerBound
+    let maximumSpeed: Double = speedRange.upperBound
 
     override init() {
         super.init()
@@ -233,10 +234,17 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     func setSpeed(_ speed: Double) {
-        playbackSpeed = max(minimumSpeed, min(speed, maximumSpeed))
+        playbackSpeed = Self.clampedSpeed(speed)
         if isPlaying && !isPaused {
             player?.rate = Float(playbackSpeed)
         }
+    }
+
+    /// Reader restoration, time estimates, and the player share one supported
+    /// range. Non-finite metadata falls back to normal speed.
+    static func clampedSpeed(_ speed: Double) -> Double {
+        guard speed.isFinite else { return 1 }
+        return max(speedRange.lowerBound, min(speed, speedRange.upperBound))
     }
 
     /// Volume control (for sleep timer fade-out).

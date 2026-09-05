@@ -3,6 +3,37 @@ import XCTest
 
 @MainActor
 final class PlaybackPolicyProductionTests: XCTestCase {
+    /// Oversized input should report an ordinary validation error rather than
+    /// trapping while converting a valid Int number of hours into seconds.
+    func testJumpHoursCannotOverflowBeforeLengthValidation() {
+        let result = JumpInputValidator.time(
+            hours: String(Int.max), minutes: "0", seconds: "0", bookLength: 3_600
+        )
+        XCTAssertEqual(result, .error("Time exceeds book length. Maximum is 1 hour."))
+    }
+
+    /// Invalid metadata must remain safe for visual and spoken duration labels.
+    func testInvalidDurationsHaveAccessibleUnknownLabels() {
+        for duration in [Double.nan, .infinity, -.infinity, Double.greatestFiniteMagnitude] {
+            XCTAssertEqual(TimeFormatting.format(duration), "Unknown")
+            XCTAssertEqual(TimeFormatting.spoken(duration), "Unknown duration")
+        }
+        XCTAssertEqual(TimeFormatting.format(-1), "0:00")
+        XCTAssertEqual(TimeFormatting.spoken(65.9), "1 minute, 5 seconds")
+    }
+
+    /// Library estimates must agree with the player's clamp for restored data,
+    /// including a zero multiplier that used to produce an infinite duration.
+    func testAudioEstimatesUseTheSameSpeedClampAsPlayback() {
+        for speed in [0.0, -1, 99, .infinity, .nan] {
+            let book = Book(title: "Audio", format: .audio, filePath: "audio.wav", md5Hash: "audio",
+                            localWPM: speed, audioDuration: 120)
+            let playback = AudioPlaybackService()
+            playback.setSpeed(speed)
+            XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 120 / playback.playbackSpeed)
+        }
+    }
+
     func testPercentValidationRejectsEmptyInput() {
         XCTAssertEqual(JumpInputValidator.percent(""), .error("Enter a percent."))
         XCTAssertEqual(JumpInputValidator.percent("   "), .error("Enter a percent."))

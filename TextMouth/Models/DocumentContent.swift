@@ -146,12 +146,12 @@ enum SleepTimerDuration: Hashable {
 enum TimeFormatting {
     /// Format seconds to h:mm:ss or m:ss (for visual display)
     static func format(_ seconds: TimeInterval) -> String {
-        let totalSeconds = Int(max(seconds, 0))
+        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown" }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
         if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+            return "\(hours):" + String(format: "%02d:%02d", minutes, secs)
         }
         return String(format: "%d:%02d", minutes, secs)
     }
@@ -159,7 +159,7 @@ enum TimeFormatting {
     /// Format seconds as spoken words for VoiceOver (e.g. "1 hour, 3 minutes, 45 seconds").
     /// Omits zero-valued leading fields so "0:54:35" becomes "54 minutes, 35 seconds".
     static func spoken(_ seconds: TimeInterval) -> String {
-        let totalSeconds = Int(max(seconds, 0))
+        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown duration" }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
@@ -175,5 +175,12 @@ enum TimeFormatting {
             parts.append("\(secs) \(secs == 1 ? "second" : "seconds")")
         }
         return parts.joined(separator: ", ")
+    }
+
+    /// External metadata and estimates can contain invalid or enormous values.
+    /// Use a failable conversion so rendering a label never traps the app.
+    private static func wholeSeconds(_ seconds: TimeInterval) -> Int? {
+        guard seconds.isFinite else { return nil }
+        return Int(exactly: max(seconds, 0).rounded(.towardZero))
     }
 }

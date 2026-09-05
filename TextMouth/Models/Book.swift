@@ -348,8 +348,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// For text books: uses WPM-based estimate with per-book override.
     func estimatedTimeRemaining(wpm: Double) -> TimeInterval? {
         if format.isAudio {
-            guard let duration = audioDuration, duration > 0 else { return nil }
-            let speed = localWPM ?? 1.0 // For audio, localWPM stores the speed multiplier
+            guard let duration = audioDuration, duration.isFinite, duration > 0 else { return nil }
+            // For audio, localWPM stores the multiplier. Match the runtime
+            // clamp before division, including legacy zero-speed values.
+            let speed = AudioPlaybackService.clampedSpeed(localWPM ?? 1.0)
             let adjustedDuration = duration / speed
             guard let pos = readingPosition else { return adjustedDuration }
             let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset

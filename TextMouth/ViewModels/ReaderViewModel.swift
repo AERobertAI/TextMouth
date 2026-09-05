@@ -250,7 +250,7 @@ final class ReaderViewModel: ObservableObject {
         if isAudioBook {
             setupAudioCallbacks()
             if let localSpeed = book.localWPM {
-                audioSpeed = localSpeed
+                audioSpeed = AudioPlaybackService.clampedSpeed(localSpeed)
             }
         }
 
