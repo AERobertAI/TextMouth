@@ -640,9 +640,15 @@ enum FileImportService {
             )
         }
         let libraryRoot = libraryDirectory.standardizedFileURL.resolvingSymlinksInPath()
-        let package = libraryRoot.appendingPathComponent(book.folderPath, isDirectory: true)
+        let requestedPackage = libraryRoot.appendingPathComponent(book.folderPath, isDirectory: true)
             .appendingPathComponent(name, isDirectory: true)
-            .standardizedFileURL.resolvingSymlinksInPath()
+            .standardizedFileURL
+        // Deleting a package alias must not delete the other book it points
+        // to, even when both happen to live inside the managed library.
+        guard (try? requestedPackage.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true else {
+            throw FileImportError.importFailed("A symbolic link cannot be deleted as a managed book package.")
+        }
+        let package = requestedPackage.resolvingSymlinksInPath()
         guard package.path.hasPrefix(libraryRoot.path + "/"),
               !book.filePath.isEmpty,
               URL(fileURLWithPath: book.filePath).standardizedFileURL.resolvingSymlinksInPath()

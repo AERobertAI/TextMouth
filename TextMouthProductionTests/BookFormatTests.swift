@@ -163,12 +163,16 @@ final class BookFormatTests: XCTestCase {
     }
 
     private func makeBook(hash: String) -> Book {
-        Book(
+        // Match the package/content relationship of a real imported book so
+        // cancellation exercises cleanup without bypassing deletion safety.
+        let packageName = "\(UUID().uuidString).tmb"
+        return Book(
             title: UUID().uuidString,
             format: .txt,
-            filePath: "/tmp/book.txt",
+            filePath: TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
+                .appendingPathComponent("book.txt").path,
             md5Hash: hash,
-            tmbDirectoryName: "\(UUID().uuidString).tmb"
+            tmbDirectoryName: packageName
         )
     }
 

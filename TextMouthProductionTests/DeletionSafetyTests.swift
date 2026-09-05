@@ -45,6 +45,25 @@ final class DeletionSafetyTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: outside.path))
     }
 
+    /// Library containment alone cannot authorize deleting another package
+    /// reached through an alias. Neither the alias nor its target is removed.
+    func testDeletionRejectsPackageSymlinkToAnotherManagedBook() throws {
+        let library = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: library) }
+        let target = library.appendingPathComponent("Target.tmb")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let content = target.appendingPathComponent("book.txt")
+        try Data("Retain this book".utf8).write(to: content)
+        let alias = library.appendingPathComponent("Alias.tmb")
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: target)
+        var book = makeBook(title: "Alias")
+        book.tmbDirectoryName = "Alias.tmb"
+        book.filePath = alias.appendingPathComponent("book.txt").path
+
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book, libraryDirectory: library))
+        XCTAssertEqual(try String(contentsOf: content), "Retain this book")
+    }
+
     /// Ordinary managed packages retain their existing deletion path.
     func testDeletionAcceptsManagedPackage() throws {
         var book = makeBook(title: "Managed")
