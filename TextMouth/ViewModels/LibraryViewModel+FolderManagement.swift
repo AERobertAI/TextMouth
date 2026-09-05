@@ -7,14 +7,21 @@ extension LibraryViewModel {
     // MARK: - Folder Operations
 
     func createFolder(name: String, parentPath: String) {
-        // Strip filesystem-unsafe characters (/ is used as internal path separator)
-        let sanitized = name.replacingOccurrences(of: "/", with: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !sanitized.isEmpty else { return }
-        if let folder = library.createFolder(name: sanitized, parentPath: parentPath) {
-            try? TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+        // Publish the folder only after its directory exists, matching book
+        // moves and renames when storage is unavailable or a file collides.
+        var proposed = library
+        guard let folder = proposed.createFolder(name: name, parentPath: parentPath) else {
+            errorMessage = "Choose a unique folder name without reserved path or package names."
+            showError = true
+            return
         }
-        save()
+        do {
+            try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+            library = proposed
+            save()
+        } catch {
+            presentFilesystemError("Could not create folder", error: error)
+        }
     }
 
     /// Remove a folder, moving its contents to the given destination path.

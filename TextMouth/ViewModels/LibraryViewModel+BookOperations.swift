@@ -107,6 +107,13 @@ extension LibraryViewModel {
         }
 
         var proposed = proposedLibrary
+        let existingPaths = Set(library.folders.map(\.fullPath))
+        let changedFolders = proposed.folders.filter { !existingPaths.contains($0.fullPath) }
+        guard changedFolders.allSatisfy({ BookFolder.isValidLibraryPath($0.fullPath) }),
+              proposed.books.filter({ affectedBookIDs.contains($0.id) })
+                .allSatisfy({ BookFolder.isValidLibraryPath($0.folderPath) }) else {
+            throw FileImportError.importFailed("A destination folder path is invalid.")
+        }
         var moves: [Move] = []
         for bookID in affectedBookIDs {
             guard let original = library.books.first(where: { $0.id == bookID }),
@@ -142,6 +149,11 @@ extension LibraryViewModel {
             }
             for move in moves {
                 try move.updated.saveBookInfoThrowing()
+            }
+            // Empty folders have no book move to create their destinations.
+            // Materialize changed folder paths before publishing the model.
+            for folder in changedFolders {
+                try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
             }
         } catch {
             for move in completedMoves.reversed() {

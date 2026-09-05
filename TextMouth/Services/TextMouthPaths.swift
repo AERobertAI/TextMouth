@@ -251,6 +251,9 @@ enum TextMouthPaths {
 
     /// Create a library subfolder on disk
     static func ensureLibrarySubfolder(_ folderPath: String) throws {
+        guard BookFolder.isValidLibraryPath(folderPath) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
         guard !folderPath.isEmpty else { return }
         let dir = libraryDir.appendingPathComponent(folderPath, isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
