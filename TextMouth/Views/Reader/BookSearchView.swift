@@ -50,7 +50,8 @@ struct BookSearchView: View {
     }
 
     fileprivate struct SearchResult: Identifiable {
-        let id = UUID()
+        /// Keep result/rotor identity stable when SwiftUI refreshes the sheet.
+        var id: String { "\(chapterIndex):\(characterOffset):\(matchedText.utf16Length)" }
         let chapterIndex: Int
         let characterOffset: Int
         let matchedText: String
@@ -139,25 +140,26 @@ struct BookSearchView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(results) { result in
-                            SearchResultRow(
-                                result: result,
-                                displayMode: displayMode,
-                                chapterTitle: chapterTitles[result.chapterIndex],
-                                totalCharacterCount: totalCharacterCount,
-                                totalWordCount: totalWordCount,
-                                currentWPM: currentWPM
-                            )
-                            .padding(.horizontal)
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
+                            // A native button exposes the same activation to
+                            // keyboard, VoiceOver, braille, and pointer users.
+                            Button {
                                 onNavigate(result.chapterIndex, result.characterOffset)
                                 dismiss()
+                            } label: {
+                                SearchResultRow(
+                                    result: result,
+                                    displayMode: displayMode,
+                                    chapterTitle: chapterTitles[result.chapterIndex],
+                                    totalCharacterCount: totalCharacterCount,
+                                    totalWordCount: totalWordCount,
+                                    currentWPM: currentWPM
+                                )
+                                .padding(.horizontal)
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
-                            .accessibilityAction(.default) {
-                                onNavigate(result.chapterIndex, result.characterOffset)
-                                dismiss()
-                            }
+                            .buttonStyle(.plain)
                             Divider()
                         }
                     }
@@ -265,7 +267,7 @@ private struct SearchResultRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
-        .accessibilityHint("Double-tap to navigate to this result")
+        .accessibilityHint("Activate to navigate to this result")
     }
 
     private var percentage: Double {
