@@ -18,12 +18,61 @@ enum AudioBookParser {
         Int(time * ReaderViewModel.audioCharsPerSecond)
     }
 
+    /// Respect an explicit order without repeating a file when a manifest lists
+    /// it twice; append unlisted files in Finder-style numeric order.
     static func orderedFileNames(_ names: [String], manifestOrder: [String]? = nil) -> [String] {
         let alphabetical = names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         guard let manifestOrder, !manifestOrder.isEmpty else { return alphabetical }
-        let requested = manifestOrder.compactMap { name in alphabetical.first { $0 == name } }
+        let available = Set(names)
+        var seen = Set<String>()
+        let requested = manifestOrder.filter { available.contains($0) && seen.insert($0).inserted }
         let requestedSet = Set(requested)
         return requested + alphabetical.filter { !requestedSet.contains($0) }
+    }
+
+    /// Find the same playable candidates during import and reader loading.
+    /// ZIPs commonly contain a wrapper folder; AppleDouble sidecars and symbolic
+    /// links are not chapters, even when their names have an audio extension.
+    static func audioFiles(in directory: URL) throws -> [URL] {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
+        var enumerationError: Error?
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles],
+            errorHandler: { _, error in
+                enumerationError = error
+                return false
+            }
+        ) else { throw AudioParseError.noAudioFiles }
+
+        let extensions = Set(BookFormat.audio.fileExtensions)
+        var files: [URL] = []
+        for case let file as URL in enumerator {
+            let values = try file.resourceValues(forKeys: keys)
+            if file.lastPathComponent == "__MACOSX" || values.isSymbolicLink == true {
+                enumerator.skipDescendants()
+                continue
+            }
+            if values.isRegularFile == true, extensions.contains(file.pathExtension.lowercased()) {
+                files.append(file)
+            }
+        }
+        if let enumerationError { throw enumerationError }
+        return files.sorted {
+            relativeName(of: $0, in: directory).localizedStandardCompare(
+                relativeName(of: $1, in: directory)
+            ) == .orderedAscending
+        }
+    }
+
+    /// Manifest filenames are relative to the audio directory, so tracks with
+    /// the same basename on different discs remain distinct.
+    private static func relativeName(of file: URL, in directory: URL) -> String {
+        // Foundation may return /private/var for a directory supplied as /var.
+        // Compare canonical paths before removing the base-directory prefix.
+        let basePath = directory.resolvingSymlinksInPath().path
+        return String(file.resolvingSymlinksInPath().path.dropFirst(basePath.count + 1))
     }
 
     /// Parse a single audio file. Extracts chapters from M4B metadata if available.
@@ -78,11 +127,7 @@ enum AudioBookParser {
     /// Files are ordered alphabetically unless a manifest.json is found.
     static func parseDirectory(url: URL) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
         let fm = FileManager.default
-        let contents = try fm.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
-
-        let audioExtensions = Set(BookFormat.audio.fileExtensions)
-        var audioFiles = contents.filter { audioExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        var audioFiles = try Self.audioFiles(in: url)
 
         guard !audioFiles.isEmpty else {
             throw AudioParseError.noAudioFiles
@@ -91,7 +136,6 @@ enum AudioBookParser {
         // Check for manifest.json
         let manifestURL = url.appendingPathComponent("manifest.json")
         var chapterTitles: [String: String] = [:] // filename -> title
-        var customOrder: [String]?
 
         var manifest: AudioManifest?
         if fm.fileExists(atPath: manifestURL.path),
@@ -100,11 +144,11 @@ enum AudioBookParser {
             chapterTitles = manifest?.chapters ?? [:]
             if let order = manifest?.order, !order.isEmpty {
                 // Reorder files according to manifest
-                let orderSet = Set(order)
-                let ordered = order.compactMap { name in audioFiles.first { $0.lastPathComponent == name } }
-                let remaining = audioFiles.filter { !orderSet.contains($0.lastPathComponent) }
-                audioFiles = ordered + remaining
-                customOrder = order
+                let filesByName = Dictionary(uniqueKeysWithValues: audioFiles.map {
+                    (relativeName(of: $0, in: url), $0)
+                })
+                audioFiles = orderedFileNames(Array(filesByName.keys), manifestOrder: order)
+                    .compactMap { filesByName[$0] }
             }
         }
 
@@ -117,6 +161,7 @@ enum AudioBookParser {
             let result = try await parseSegmentedAudio(
                 segments: segments,
                 audioDir: url,
+                availableFiles: Set(audioFiles.map { relativeName(of: $0, in: url) }),
                 title: overallTitle,
                 author: overallAuthor
             )
@@ -128,9 +173,10 @@ enum AudioBookParser {
 
         for (index, fileURL) in audioFiles.enumerated() {
             let fileName = fileURL.deletingPathExtension().lastPathComponent
-            let title = chapterTitles[fileURL.lastPathComponent] ?? fileName
+            let title = chapterTitles[relativeName(of: fileURL, in: url)] ?? fileName
 
-            let dur = await AudioPlaybackService.getDuration(of: fileURL) ?? 1
+            guard let dur = await AudioPlaybackService.getDuration(of: fileURL),
+                  dur.isFinite, dur > 0 else { throw AudioParseError.invalidDuration }
             let placeholderLength = placeholderLength(for: dur)
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
 
@@ -154,6 +200,7 @@ enum AudioBookParser {
     private static func parseSegmentedAudio(
         segments: [AudioSegment],
         audioDir: URL,
+        availableFiles: Set<String>,
         title: String,
         author: String
     ) async throws -> (content: DocumentContent, filePaths: [String]) {
@@ -161,6 +208,14 @@ enum AudioBookParser {
         var filePaths: [String] = []
 
         for (index, segment) in segments.enumerated() {
+            // Only reference discovered in-package media. A manifest cannot
+            // escape the package or introduce negative/non-finite clip ranges.
+            guard availableFiles.contains(segment.file),
+                  segment.startTime.isFinite, segment.startTime >= 0,
+                  segment.endTime.isFinite, segment.endTime >= 0,
+                  segment.endTime == 0 || segment.endTime > segment.startTime else {
+                throw AudioParseError.invalidSegment
+            }
             let filePath = audioDir.appendingPathComponent(segment.file).path
 
             // Calculate duration from start/end times
@@ -168,9 +223,13 @@ enum AudioBookParser {
             if duration <= 0 {
                 // endTime of 0 means "play to end of file" — get actual duration
                 let fileURL = URL(fileURLWithPath: filePath)
-                duration = await AudioPlaybackService.getDuration(of: fileURL) ?? 1
-                duration -= segment.startTime
+                guard let fileDuration = await AudioPlaybackService.getDuration(of: fileURL) else {
+                    throw AudioParseError.invalidDuration
+                }
+                duration = fileDuration - segment.startTime
             }
+
+            guard duration.isFinite, duration > 0 else { throw AudioParseError.invalidDuration }
 
             let placeholderLength = placeholderLength(for: max(1, duration))
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
@@ -196,12 +255,14 @@ enum AudioParseError: LocalizedError {
     case invalidDuration
     case noAudioFiles
     case unsupportedFormat
+    case invalidSegment
 
     var errorDescription: String? {
         switch self {
         case .invalidDuration: return "Could not determine audio duration."
         case .noAudioFiles: return "No supported audio files found."
         case .unsupportedFormat: return "Unsupported audio format."
+        case .invalidSegment: return "An audio chapter refers to a missing file or an invalid time range."
         }
     }
 }

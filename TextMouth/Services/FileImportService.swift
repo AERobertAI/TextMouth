@@ -856,16 +856,9 @@ enum FileImportService {
         try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
         try FileManager.default.unzipItem(at: zipURL, to: audioDir)
 
-        // Find audio files
-        let audioExtensions = Set(BookFormat.audio.fileExtensions)
-        let enumerator = FileManager.default.enumerator(at: audioDir, includingPropertiesForKeys: nil)
-        var audioFiles: [URL] = []
-        while let fileURL = enumerator?.nextObject() as? URL {
-            if audioExtensions.contains(fileURL.pathExtension.lowercased()) {
-                audioFiles.append(fileURL)
-            }
-        }
-        audioFiles.sort { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        // Use the reader's discovery rules, including wrapper folders and
+        // excluding Finder metadata that happens to have an audio extension.
+        let audioFiles = try AudioBookParser.audioFiles(in: audioDir)
 
         guard !audioFiles.isEmpty else {
             throw FileImportError.importFailed("No audio files found in ZIP")
