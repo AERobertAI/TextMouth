@@ -170,19 +170,7 @@ extension LibraryViewModel {
                     }
                 )
                 DispatchQueue.main.sync {
-                    for book in result.books { self.library.addBook(book) }
-                    self.save()
-                    self.importProgressMessage = ""
-                    if let failureSummary = result.failureSummary {
-                        self.errorMessage = failureSummary
-                        self.showError = true
-                    }
-                    self.handleOriginalFileDeletion(url: url)
-                    if result.books.count > 1 {
-                        self.pendingZipBooks = result.books
-                        self.pendingZipFolderPath = folderPath
-                        self.showZipFolderDialog = true
-                    }
+                    self.completeZIPImport(result, originalURL: url, folderPath: folderPath)
                 }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
@@ -220,11 +208,40 @@ extension LibraryViewModel {
         importProgressMessage = message
     }
 
-    private func completeSingleImportedBook(_ book: Book, originalURL: URL) {
-        library.addBook(book)
+    /// Apply the same duplicate decision to a DAISY/audio ZIP as to a single
+    /// document. Original-file handling waits for the user's acceptance.
+    func completeSingleImportedBook(_ book: Book, originalURL: URL) {
+        importProgressMessage = ""
+        guard addBookCheckingDuplicate(book, toFolder: book.folderPath, originalURL: originalURL) else {
+            return
+        }
+        save()
+        handleOriginalFileDeletion(url: originalURL)
+    }
+
+    /// Publish a batch result while retaining an archive that still contains
+    /// failed or unimported content. This also covers empty/duplicate-only ZIPs.
+    func completeZIPImport(_ result: ZipImportResult, originalURL: URL, folderPath: String) {
+        let priorIDs = Set(library.books.map(\.id))
+        for book in result.books { library.addBook(book) }
+        let acceptedBooks = result.books.filter { book in
+            !priorIDs.contains(book.id) && library.books.contains { $0.id == book.id }
+        }
         save()
         importProgressMessage = ""
-        handleOriginalFileDeletion(url: originalURL)
+        if let failureSummary = result.failureSummary {
+            errorMessage = failureSummary
+            showError = true
+        }
+        if result.failures.isEmpty, !acceptedBooks.isEmpty,
+           acceptedBooks.count == result.books.count {
+            handleOriginalFileDeletion(url: originalURL)
+        }
+        if acceptedBooks.count > 1 {
+            pendingZipBooks = acceptedBooks
+            pendingZipFolderPath = folderPath
+            showZipFolderDialog = true
+        }
     }
 
     private func presentImportError(_ error: Error) {
@@ -272,8 +289,9 @@ extension LibraryViewModel {
                 try book.saveBookInfoThrowing(contentIndex: index)
                 DispatchQueue.main.async {
                     guard let self else { return }
-                    self.library.addBook(book)
-                    self.save()
+                    if self.addBookCheckingDuplicate(book, toFolder: folderPath) {
+                        self.save()
+                    }
                 }
             } catch {
                 DispatchQueue.main.async { self?.presentImportError(error) }
