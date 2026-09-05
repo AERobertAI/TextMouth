@@ -261,7 +261,7 @@ extension ReaderViewModel {
         let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
         let transformation = substitutionService.transform(pausedText)
         currentTransformation = transformation
-        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap, transformation.offsetMap])
+        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
         let speakText = transformation.modifiedText
         // Convert original-text offset to modified-text offset using the full composed map
         let speakOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset

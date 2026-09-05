@@ -442,7 +442,7 @@ final class ReaderViewModel: ObservableObject {
                         let (pausedText, pauseMap) = self.applyPunctuationPauses(filteredText)
                         let transform = self.substitutionService.transform(pausedText)
                         self.currentTransformation = transform
-                        self.currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap, transform.offsetMap])
+                        self.currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transform.offsetMap.stages)
                         self.speechService.usePreRenderedEngine(preEngine, text: transform.modifiedText)
                         self.nextChapterEngine = nil
                         self.nextChapterIndex = nil

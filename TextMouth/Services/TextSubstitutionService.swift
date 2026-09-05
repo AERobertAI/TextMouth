@@ -78,28 +78,29 @@ struct TextTransformation {
     let modifiedText: String
     /// The offset map for this substitution stage (modified↔original).
     /// Exposed so it can be composed with other pipeline stages.
-    let offsetMap: OffsetMap
+    let offsetMap: ComposedOffsetMap
 
-    init(originalText: String, modifiedText: String, offsetPoints: [(modifiedPos: Int, cumulativeDelta: Int)]) {
+    /// Each rule works in the previous rule's output coordinates. Retain the
+    /// stages so subsequent edits cannot invalidate earlier breakpoints.
+    init(originalText: String, modifiedText: String, offsetMaps: [OffsetMap]) {
         self.originalText = originalText
         self.modifiedText = modifiedText
-        // Convert legacy offset points to OffsetMap format (conventions match exactly)
-        self.offsetMap = OffsetMap(points: offsetPoints.map { (targetPos: $0.modifiedPos, cumulativeDelta: $0.cumulativeDelta) })
+        self.offsetMap = ComposedOffsetMap(stages: offsetMaps)
     }
 
     /// Identity transformation (no changes).
     static func identity(_ text: String) -> TextTransformation {
-        TextTransformation(originalText: text, modifiedText: text, offsetPoints: [])
+        TextTransformation(originalText: text, modifiedText: text, offsetMaps: [])
     }
 
     /// Convert an offset in the modified text to the corresponding offset in the original text.
     func toOriginalOffset(_ modified: Int) -> Int {
-        offsetMap.toSource(modified)
+        offsetMap.toOriginal(modified)
     }
 
     /// Convert an offset in the original text to the corresponding offset in the modified text.
     func toModifiedOffset(_ original: Int) -> Int {
-        offsetMap.toTarget(original)
+        offsetMap.toModified(original)
     }
 
     var hasChanges: Bool { originalText != modifiedText }
@@ -181,26 +182,30 @@ final class TextSubstitutionService: ObservableObject {
         let enabledRules = rules.filter { $0.isEnabled && !$0.pattern.isEmpty }
         guard !enabledRules.isEmpty else { return .identity(text) }
 
-        // Apply rules sequentially, building offset map as we go.
-        // Each rule operates on the result of the previous rule.
-        // We track cumulative delta to map between modified and original coordinates.
+        // Apply rules sequentially and compose their coordinate maps. Sorting
+        // all rules' breakpoints together mixes different intermediate texts.
         var current = text
-        var totalDelta = 0
-        var points: [(modifiedPos: Int, cumulativeDelta: Int)] = []
+        var stages: [OffsetMap] = []
 
         for rule in enabledRules {
-            let replacements = findReplacements(in: current, rule: rule)
+            // Only map replacements that can actually be applied to this
+            // string; an invalid Unicode range must not shift later offsets.
+            let replacements = findReplacements(in: current, rule: rule).filter {
+                Range($0.range, in: current) != nil
+            }
             guard !replacements.isEmpty else { continue }
 
             // Track offset shifts from this rule's replacements (in forward order)
             var shift = 0
+            var totalDelta = 0
+            var points: [(targetPos: Int, cumulativeDelta: Int)] = []
             for rep in replacements {
                 let adjustedStart = rep.range.location + shift
                 let replacementLength = rep.replacement.utf16Length
                 let lenDiff = rep.range.length - replacementLength
                 totalDelta += lenDiff
                 let afterInModified = adjustedStart + replacementLength
-                points.append((modifiedPos: afterInModified, cumulativeDelta: totalDelta))
+                points.append((targetPos: afterInModified, cumulativeDelta: totalDelta))
                 shift -= lenDiff
             }
 
@@ -218,10 +223,10 @@ final class TextSubstitutionService: ObservableObject {
                 newText.replaceSubrange(stringRange, with: rep.replacement)
             }
             current = newText
+            stages.append(OffsetMap(points: points))
         }
 
-        let sortedPoints = points.sorted { $0.modifiedPos < $1.modifiedPos }
-        return TextTransformation(originalText: text, modifiedText: current, offsetPoints: sortedPoints)
+        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
     }
 
     // MARK: - Pattern Matching
