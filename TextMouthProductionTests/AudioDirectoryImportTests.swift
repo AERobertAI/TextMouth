@@ -5,6 +5,45 @@ import ZIPFoundation
 /// Real media fixtures exercise archive discovery and the reader's directory
 /// parser together, without starting audio playback or using personal files.
 final class AudioDirectoryImportTests: XCTestCase {
+    /// Completing an audiobook in loop mode must reload its audio backend,
+    /// rather than passing the placeholder chapter's spaces to speech.
+    @MainActor
+    func testLoopRestartsTheAudioBackendAtTheBeginning() async throws {
+        let packageName = "\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
+        defer { try? FileManager.default.removeItem(at: package) }
+        let source = package.appendingPathComponent("Track.wav")
+        try writeSilence(to: source)
+        var book = Book(
+            title: "Looping Audio", format: .audio, filePath: source.path,
+            md5Hash: UUID().uuidString, tmbDirectoryName: packageName
+        )
+        book.localEndOfBookBehavior = EndOfBookBehavior.loop.rawValue
+        let library = LibraryViewModel()
+        library.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book, libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+        let savedStats = reader.readingStatsService.stats
+        defer {
+            reader.close()
+            reader.readingStatsService.stats = savedStats
+            reader.readingStatsService.save()
+        }
+        reader.content = try await AudioBookParser.parse(url: source)
+        reader.isLoading = false
+        reader.currentCharacterOffset = 5
+
+        reader.handleEndOfBook()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying)
+        XCTAssertFalse(reader.speechService.isSpeaking)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+    }
+
     /// Finder wrapper folders are valid, while resource forks and links are not
     /// playable chapters. Numeric ordering also applies to disc directories.
     func testNestedFilesUseRelativeNaturalOrderAndIgnoreMetadata() async throws {

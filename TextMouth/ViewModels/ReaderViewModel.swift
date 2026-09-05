@@ -198,7 +198,7 @@ final class ReaderViewModel: ObservableObject {
     /// Prevent Where Am I delegate from being deallocated.
     /// Accessed from WhereAmI extension.
     var whereAmIDelegate: WhereAmIDelegateHelper?
-    private var hasClosed = false
+    private(set) var hasClosed = false
 
     /// For audio books, 10 characters = 1 second of audio.
     /// All time calculations use this constant to convert character offsets to/from seconds.
@@ -453,7 +453,7 @@ final class ReaderViewModel: ObservableObject {
                     }
                 } else {
                     self.debugLog("no more chapters, book ended")
-                    self.readingStatsService.endSession()
+                    self.readingStatsService.endSession(bookID: self.book.id)
                     self.handleEndOfBook()
                 }
             }
@@ -782,7 +782,7 @@ final class ReaderViewModel: ObservableObject {
                     || (!format.isAudio
                         && bookCopy.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
+                    guard let self = self, !self.hasClosed else { return }
                     if let audioFiles = loadedAudioFiles {
                         self.audioChapterFiles = audioFiles
                     }
@@ -797,13 +797,16 @@ final class ReaderViewModel: ObservableObject {
                     // Clamp saved reading position to valid range. The chapter
                     // count can change if the book was re-imported or the cache
                     // was regenerated with different parsing.
-                    if self.currentChapterIndex >= parsed.chapters.count {
+                    if self.currentChapterIndex < 0 {
+                        self.currentChapterIndex = 0
+                        self.currentCharacterOffset = 0
+                    } else if self.currentChapterIndex >= parsed.chapters.count {
                         self.currentChapterIndex = max(0, parsed.chapters.count - 1)
                         self.currentCharacterOffset = 0
                     }
                     if self.currentChapterIndex < parsed.chapters.count {
                         let chapterLen = parsed.chapters[self.currentChapterIndex].text.utf16Length
-                        if self.currentCharacterOffset > chapterLen {
+                        if self.currentCharacterOffset < 0 || self.currentCharacterOffset > chapterLen {
                             self.currentCharacterOffset = 0
                         }
                     }
@@ -824,8 +827,9 @@ final class ReaderViewModel: ObservableObject {
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
-                    self?.errorMessage = error.localizedDescription
-                    self?.isLoading = false
+                    guard let self, !self.hasClosed else { return }
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
                 }
             }
         }
