@@ -48,6 +48,15 @@ extension LibraryViewModel {
     /// Remove a folder and permanently delete all its contents (books, subfolders, .tmb files).
     func removeFolderAndEverything(_ folder: BookFolder) {
         let path = folder.fullPath
+        // Validate again at the destructive boundary: legacy/edited indexes
+        // can contain names rejected by today's creation UI, and an open
+        // confirmation may refer to a folder moved in another window.
+        guard !path.isEmpty, BookFolder.isValidLibraryPath(path),
+              library.folders.contains(where: { $0.id == folder.id && $0.fullPath == path }) else {
+            errorMessage = "Could not remove folder: its library path is invalid or has changed."
+            showError = true
+            return
+        }
         let booksToRemove = library.books.filter {
             $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
         }

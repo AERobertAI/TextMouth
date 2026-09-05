@@ -4,6 +4,27 @@ import XCTest
 /// Exercise folder edits against both the model and real temporary storage.
 @MainActor
 final class FolderSafetyTests: XCTestCase {
+    /// Old library indexes can predate folder-name validation. A destructive
+    /// command must reject their root/traversal paths even when no books match.
+    func testDeletionRejectsUnsafeLegacyFolderPaths() throws {
+        XCTAssertTrue(TextMouthPaths.root.path.contains("TextMouthTests-"))
+        try TextMouthPaths.ensureDirectoryStructure()
+        let sentinel = TextMouthPaths.libraryDir.appendingPathComponent("Retain-\(UUID().uuidString).txt")
+        try Data("Retain library".utf8).write(to: sentinel)
+        defer { try? FileManager.default.removeItem(at: sentinel) }
+        for name in ["", ".", ".."] {
+            let folder = BookFolder(name: name)
+            let viewModel = LibraryViewModel()
+            viewModel.library = Library(folders: [folder])
+
+            viewModel.removeFolderAndEverything(folder)
+
+            XCTAssertTrue(viewModel.showError)
+            XCTAssertEqual(viewModel.library.folders.map(\.id), [folder.id])
+            XCTAssertEqual(try String(contentsOf: sentinel), "Retain library")
+        }
+    }
+
     /// Special components must never become a user-created library folder.
     func testCreationRejectsTraversalAndReservedNames() {
         for name in [".", "..", "  ..  ", "", "\0", "Book.TMB", "__recent__"] {
