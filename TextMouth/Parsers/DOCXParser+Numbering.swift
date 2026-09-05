@@ -15,7 +15,7 @@ struct DOCXNumbering {
     func listType(numId: String, level: Int) -> ListType {
         guard let abstractId = numIdToAbstractId[numId],
               let levels = abstractNums[abstractId],
-              level < levels.count else {
+              levels.indices.contains(level) else {
             return .bullet // default to bullet if we can't determine
         }
         return levels[level].listType

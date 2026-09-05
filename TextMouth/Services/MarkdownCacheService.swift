@@ -13,7 +13,7 @@ enum MarkdownCacheService {
     /// on the next app launch. Books with a stored version lower than this
     /// (or nil for pre-versioning books) will have their content.md rebuilt.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "3.0.2"
+    static let currentCacheVersion: String = "3.0.3"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
