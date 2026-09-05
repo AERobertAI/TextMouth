@@ -619,8 +619,37 @@ enum FileImportService {
     /// permanent deletion otherwise.
     @MainActor
     static func deleteBookPackage(_ book: Book) throws {
-        let tmbDir = book.tmbDirectory
+        let tmbDir = try managedPackageURLForDeletion(book)
         try removeItemRespectingTrashSetting(at: tmbDir)
+    }
+
+    /// Validate the deletion target independently of filesystem mutation. A
+    /// missing legacy package name otherwise resolves to the entire folder.
+    /// Resolve symlinks as well as dot components before checking containment.
+    static func managedPackageURLForDeletion(
+        _ book: Book,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) throws -> URL {
+        let name = book.tmbDirectoryName
+        guard !name.isEmpty,
+              (name as NSString).lastPathComponent == name,
+              name.lowercased().hasSuffix(".tmb"),
+              BookFolder.isValidLibraryPath(book.folderPath) else {
+            throw FileImportError.importFailed(
+                "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it."
+            )
+        }
+        let libraryRoot = libraryDirectory.standardizedFileURL.resolvingSymlinksInPath()
+        let package = libraryRoot.appendingPathComponent(book.folderPath, isDirectory: true)
+            .appendingPathComponent(name, isDirectory: true)
+            .standardizedFileURL.resolvingSymlinksInPath()
+        guard package.path.hasPrefix(libraryRoot.path + "/"),
+              !book.filePath.isEmpty,
+              URL(fileURLWithPath: book.filePath).standardizedFileURL.resolvingSymlinksInPath()
+                .path.hasPrefix(package.path + "/") else {
+            throw FileImportError.importFailed("The book's package and content paths do not match a managed library location.")
+        }
+        return package
     }
 
     /// Delete just the book file from a .tmb (legacy compat - prefer deleteBookPackage)
