@@ -17,10 +17,10 @@ class DAISYNCXParser: NSObject, XMLParserDelegate {
     // Parsing state
     private var elementStack: [String] = []
     private var currentText = ""
-    private var currentLabel = ""
-    private var currentSrc = ""
-    private var depthCounter = 0
-    private var inNavPoint = false
+    /// Reserve each point in document order and keep a stack of its index.
+    /// Nested points must not overwrite their parent's label/source, and
+    /// emitting only at </navPoint> would reverse the reading order.
+    private var navPointStack: [Int] = []
     private var inNavLabel = false
     private var inText = false
 
@@ -33,7 +33,7 @@ class DAISYNCXParser: NSObject, XMLParserDelegate {
         parser.delegate = self
         parser.shouldProcessNamespaces = false
         parser.parse()
-        return navPoints
+        return navPoints.filter { !$0.label.isEmpty && !$0.contentSrc.isEmpty }
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String,
@@ -44,17 +44,18 @@ class DAISYNCXParser: NSObject, XMLParserDelegate {
 
         switch localName {
         case "navpoint":
-            depthCounter += 1
-            inNavPoint = true
-            currentLabel = ""
-            currentSrc = ""
-        case "navlabel" where inNavPoint:
+            let level = navPointStack.count + 1
+            navPointStack.append(navPoints.count)
+            navPoints.append(DAISYNavPoint(label: "", contentSrc: "", level: level))
+        case "navlabel" where !navPointStack.isEmpty:
             inNavLabel = true
         case "text" where inNavLabel:
             inText = true
             currentText = ""
-        case "content" where inNavPoint:
-            currentSrc = attributes["src"] ?? ""
+        case "content":
+            if let index = navPointStack.last {
+                navPoints[index].contentSrc = attributes["src"] ?? ""
+            }
         default:
             break
         }
@@ -70,19 +71,13 @@ class DAISYNCXParser: NSObject, XMLParserDelegate {
 
         switch localName {
         case "navpoint":
-            if inNavPoint && !currentLabel.isEmpty && !currentSrc.isEmpty {
-                navPoints.append(DAISYNavPoint(
-                    label: currentLabel.trimmingCharacters(in: .whitespacesAndNewlines),
-                    contentSrc: currentSrc,
-                    level: depthCounter
-                ))
-            }
-            depthCounter = max(0, depthCounter - 1)
-            if depthCounter == 0 { inNavPoint = false }
+            _ = navPointStack.popLast()
         case "navlabel":
             inNavLabel = false
         case "text" where inNavLabel:
-            currentLabel = currentText
+            if let index = navPointStack.last {
+                navPoints[index].label = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
             inText = false
         default:
             break

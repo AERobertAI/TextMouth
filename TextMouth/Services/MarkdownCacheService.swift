@@ -183,17 +183,11 @@ enum MarkdownCacheService {
                 continue
             }
 
-            let chapterPath: String
-            if opfDirectory.isEmpty {
-                chapterPath = manifestItem.href
-            } else {
-                chapterPath = "\(opfDirectory)/\(manifestItem.href)"
-            }
-
-            let decodedPath = chapterPath.removingPercentEncoding ?? chapterPath
-            guard !decodedPath.contains("..") && !decodedPath.hasPrefix("/") else {
-                continue
-            }
+            // Match direct EPUB parsing: sibling-relative paths and literal
+            // dots in a filename are valid references inside the archive.
+            let decodedPath = ParserUtilities.resolvedPackagePath(
+                manifestItem.href, relativeTo: opfPath, preserveFragment: false
+            )
 
             guard let chapterHTML = try? EPUBParser.extractString(archive: archive, path: decodedPath) else {
                 continue

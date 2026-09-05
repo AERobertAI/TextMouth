@@ -45,7 +45,6 @@ enum EPUBParser {
 
         // Step 2: Read and parse OPF
         let opfXML = try extractString(archive: archive, path: opfPath)
-        let opfDirectory = (opfPath as NSString).deletingLastPathComponent
         let opfData = try parseOPF(opfXML)
 
         // Step 3: Read chapters in spine order
@@ -56,18 +55,12 @@ enum EPUBParser {
                 continue
             }
 
-            let chapterPath: String
-            if opfDirectory.isEmpty {
-                chapterPath = manifestItem.href
-            } else {
-                chapterPath = "\(opfDirectory)/\(manifestItem.href)"
-            }
-
-            // Decode percent-encoded paths and validate against path traversal
-            let decodedPath = chapterPath.removingPercentEncoding ?? chapterPath
-            guard !decodedPath.contains("..") && !decodedPath.hasPrefix("/") else {
-                continue
-            }
+            // OPFs may refer to sibling folders with ../Text/chapter.xhtml.
+            // Resolve within the ZIP namespace; extractString only reads an
+            // archive entry and never treats this as a host filesystem path.
+            let decodedPath = ParserUtilities.resolvedPackagePath(
+                manifestItem.href, relativeTo: opfPath, preserveFragment: false
+            )
 
             guard let chapterHTML = try? extractString(archive: archive, path: decodedPath) else {
                 continue
