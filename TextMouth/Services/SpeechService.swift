@@ -301,7 +301,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var currentVoice: AVSpeechSynthesisVoice?
     @Published var wordsPerMinute: Double = 200 {
         didSet {
-            UserDefaults.standard.set(wordsPerMinute, forKey: "wordsPerMinute")
+            // This is a reader's effective speed. Only SettingsViewModel may
+            // persist global defaults; per-book overrides must stay local.
             if !usingDirectMode && audioEngine.isPlaying {
                 audioEngine.setSpeed(wpm: wordsPerMinute)
             }
@@ -310,7 +311,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Pitch multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch)
     @Published var pitchMultiplier: Double = 1.0 {
         didSet {
-            UserDefaults.standard.set(pitchMultiplier, forKey: "pitchMultiplier")
+            // Applying a book's pitch must not overwrite the global setting.
             if !usingDirectMode && (audioEngine.isPlaying || audioEngine.isPaused) {
                 audioEngine.setPitch(multiplier: pitchMultiplier)
             }

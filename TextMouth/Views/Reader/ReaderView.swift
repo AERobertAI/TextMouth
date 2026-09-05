@@ -151,9 +151,9 @@ struct ReaderView: View {
                 Button {
                     showVoicePicker.toggle()
                 } label: {
-                    Label("Voice", systemImage: "person.wave.2")
+                        Label(viewModel.isAudioBook ? "Speed" : "Voice", systemImage: "person.wave.2")
                 }
-                .accessibilityLabel("Change voice for this book")
+                .accessibilityLabel(viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book")
 
                 Button {
                     showMetadataEditor.toggle()
@@ -290,11 +290,25 @@ struct BookVoicePickerView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Voice & Speed for This Book")
+            Text(viewModel.isAudioBook ? "Audio Speed for This Book" : "Voice & Speed for This Book")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
             Form {
+                if viewModel.isAudioBook {
+                    // Audio settings use multipliers throughout; the TTS WPM
+                    // slider would otherwise write incompatible local state.
+                    Section("Audio Speed") {
+                        Slider(value: Binding(
+                            get: { viewModel.audioSpeed },
+                            set: { viewModel.adjustAudioSpeed(delta: $0 - viewModel.audioSpeed) }
+                        ), in: 0.25...4.0, step: 0.25) {
+                            Text("Audio speed")
+                        }
+                        .accessibilityValue(String(format: "%.2f times speed", viewModel.audioSpeed))
+                        Text(String(format: "%.2fx", viewModel.audioSpeed))
+                    }
+                } else {
                 Section {
                     Picker("Language", selection: $selectedLanguage) {
                         Text("All").tag("")
@@ -387,6 +401,7 @@ struct BookVoicePickerView: View {
                 } header: {
                     Text("Pitch")
                 }
+                }
 
                 Section {
                     Picker("When this book ends", selection: Binding(
@@ -410,18 +425,20 @@ struct BookVoicePickerView: View {
                 }
 
                 Section {
+                    if !viewModel.isAudioBook {
                     Button("Save to Global Settings") {
                         viewModel.saveSettingsToGlobal()
                     }
                     .accessibilityLabel("Save this book's voice and speed as the global defaults")
                     .accessibilityHint("Updates the default voice and speed for all books that don't have their own settings")
+                    }
 
                     if viewModel.hasLocalSettings {
-                        Button("Reset to Global Settings") {
+                        Button(viewModel.isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings") {
                             viewModel.resetToGlobalSettings()
                         }
-                        .accessibilityLabel("Reset to global voice and speed settings")
-                        .accessibilityHint("Removes book-specific voice and speed, uses global defaults instead")
+                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : "Reset to global voice and speed settings")
+                        .accessibilityHint(viewModel.isAudioBook ? "Resets this book to 1 times speed" : "Removes book-specific voice and speed, uses global defaults instead")
                     }
                 }
             }
@@ -431,7 +448,7 @@ struct BookVoicePickerView: View {
         }
         .padding()
         .frame(width: 450, height: 600)
-        .navigationTitle("Voice & Speed: \(viewModel.book.title)")
+        .navigationTitle("\(viewModel.isAudioBook ? "Audio Speed" : "Voice & Speed"): \(viewModel.book.title)")
         .onAppear {
             // Default to the current voice's language
             if let voice = viewModel.speechService.currentVoice {

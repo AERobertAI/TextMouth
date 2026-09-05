@@ -562,14 +562,14 @@ final class ReaderViewModel: ObservableObject {
         nc.publisher(for: .increaseSpeed)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.adjustSpeed(delta: 25)
+                self.stepSpeed(forward: true)
             }
             .store(in: &cancellables)
 
         nc.publisher(for: .decreaseSpeed)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.adjustSpeed(delta: -25)
+                self.stepSpeed(forward: false)
             }
             .store(in: &cancellables)
 

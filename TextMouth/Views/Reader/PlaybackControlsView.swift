@@ -69,7 +69,7 @@ struct PlaybackControlsView: View {
             if settingsViewModel.showSpeedInPlaybackControls {
             HStack(spacing: 8) {
                 Button {
-                    viewModel.adjustSpeed(delta: viewModel.isAudioBook ? -0.25 : -25)
+                    viewModel.stepSpeed(forward: false)
                 } label: {
                     Image(systemName: "tortoise")
                         .font(.caption)
@@ -78,10 +78,10 @@ struct PlaybackControlsView: View {
                 .buttonStyle(.plain)
 
                 if viewModel.isAudioBook {
-                    Text(String(format: "%.1fx", viewModel.audioSpeed))
+                    Text(String(format: "%.2fx", viewModel.audioSpeed))
                         .font(.system(.body, design: .monospaced))
-                        .frame(width: 40)
-                        .accessibilityLabel(String(format: "%.1f times speed", viewModel.audioSpeed))
+                        .frame(minWidth: 50)
+                        .accessibilityLabel(String(format: "%.2f times speed", viewModel.audioSpeed))
                 } else {
                     Text("\(Int(viewModel.currentWPM))")
                         .font(.system(.body, design: .monospaced))
@@ -90,7 +90,7 @@ struct PlaybackControlsView: View {
                 }
 
                 Button {
-                    viewModel.adjustSpeed(delta: viewModel.isAudioBook ? 0.25 : 25)
+                    viewModel.stepSpeed(forward: true)
                 } label: {
                     Image(systemName: "hare")
                         .font(.caption)
@@ -98,7 +98,7 @@ struct PlaybackControlsView: View {
                 .accessibilityLabel(viewModel.isAudioBook ? "Increase speed by 0.25x" : "Increase speed by 25 words per minute")
                 .buttonStyle(.plain)
 
-                if viewModel.hasLocalSettings {
+                if viewModel.hasLocalSettings && !viewModel.isAudioBook {
                     Button {
                         viewModel.saveSettingsToGlobal()
                     } label: {
