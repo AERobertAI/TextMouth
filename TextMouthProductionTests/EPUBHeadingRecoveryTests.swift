@@ -327,8 +327,48 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         let oldMarkdown = try String(contentsOf: fixture.appendingPathComponent("content.md"), encoding: .utf8)
         let previous = MarkdownCacheService.parseMultiChapterMarkdown(oldMarkdown, bookTitle: "Fixture", bookAuthor: "")
         let source = try XCTUnwrap(FileManager.default.contentsOfDirectory(at: fixture, includingPropertiesForKeys: nil).first { $0.pathExtension == "epub" })
-        let book = try FileImportService.importFile(from: source)
-        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        var book = try FileImportService.importFile(from: source)
+        let package = book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        // Compare the full regeneration/index path before and after performance
+        // changes. Timing is diagnostic, never a flaky test pass/fail threshold.
+        let clock = ContinuousClock()
+        var durations: [Double] = []
+        for _ in 0..<3 {
+            let start = clock.now
+            let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book))
+            let elapsed = start.duration(to: clock.now).components
+            durations.append(Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18)
+            XCTAssertEqual(index.allHeadings.count, 127)
+        }
+        print("EPUB_CACHE_REBUILD_SECONDS \(durations)")
+        // Profile a bounded batch against serial execution using independent
+        // disposable copies, so the comparison includes real parsing and writes.
+        let batchBooks = try (0..<4).map { _ -> Book in
+            var copy = Book(
+                title: book.title, author: book.author, format: book.format,
+                filePath: "", md5Hash: book.md5Hash, folderPath: book.folderPath,
+                tmbDirectoryName: "CacheBatch-\(UUID().uuidString).tmb"
+            )
+            let directory = copy.tmbDirectory
+            try FileManager.default.copyItem(at: package, to: directory)
+            copy.filePath = directory.appendingPathComponent(URL(fileURLWithPath: book.filePath).lastPathComponent).path
+            addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+            return copy
+        }
+        for workers in [1, 2] {
+            let finished = expectation(description: "Cache batch with \(workers) workers")
+            let start = clock.now
+            TextCacheUpdateQueue.run(books: batchBooks, concurrentEPUBs: workers, update: { original in
+                var copy = original
+                let index = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &copy)
+                XCTAssertEqual(index?.allHeadings.count, 127)
+            }, completion: { finished.fulfill() })
+            wait(for: [finished], timeout: 60)
+            let elapsed = start.duration(to: clock.now).components
+            let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
+            print("EPUB_BATCH_SECONDS workers=\(workers) seconds=\(seconds)")
+        }
         let current = try MarkdownCacheService.loadFromCache(for: book)
         XCTAssertEqual(previous.chapters.count, 122)
         XCTAssertEqual(previous.allHeadings.count, 27)
