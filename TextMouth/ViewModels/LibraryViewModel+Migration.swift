@@ -427,9 +427,10 @@ extension LibraryViewModel {
         // a Timer (two copies firing every 10s — visible as accelerated
         // refreshTick updates and double the wakeups).
         refreshTimer?.invalidate()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshTick &+= 1 }
         }
+        refreshTimer = LibraryRefreshTimer(timer: timer)
     }
 
     // MARK: - Time Estimation
