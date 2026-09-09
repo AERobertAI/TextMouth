@@ -77,3 +77,18 @@ complete command and cache compatibility notes.
 
 `LibraryLifecycleTests` covers the utility-queue final release that caused the
 reported test-host crash, including actual timer invalidation and replacement.
+
+## Automatic cache-update performance
+
+`CacheUpdateTests` covers per-book progress, recovery from newer package
+checkpoints, forced manual extraction, failed updates, and bounded worker
+scheduling. Ordinary EPUBs use two utility workers; large sources and other
+formats run alone. The corpus test above also reports diagnostic single-book
+and serial/parallel batch times against disposable copies, with no timing-based
+assertions. See the [performance record](../CACHE-UPDATES-2026-09-09.md).
+
+Choose version bumps by processing stage: change
+`MarkdownCacheService.currentCacheVersion` for source-to-Markdown changes, and
+`BookContentIndex.currentVersion` for changes confined to reading/index
+derivation. The latter can reuse the existing Markdown instead of reconverting
+every source. This performance update leaves both version values unchanged.
