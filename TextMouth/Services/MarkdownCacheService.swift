@@ -8,10 +8,11 @@ import SwiftSoup
 /// the original file on every open.
 enum MarkdownCacheService {
 
-    /// Current semantic version of the cache format. Bump this whenever the
-    /// extraction or parsing logic changes so existing caches are regenerated
-    /// on the next app launch. Books with a stored version lower than this
-    /// (or nil for pre-versioning books) will have their content.md rebuilt.
+    /// Current semantic version of the extracted Markdown. Bump this when source
+    /// extraction or the stored representation changes. Changes confined to
+    /// reading-text/index derivation should bump BookContentIndex.currentVersion
+    /// instead, so existing Markdown can be reindexed without source conversion.
+    /// Older versions (or nil) regenerate through startup maintenance.
     /// Uses semantic versioning: major.minor.patch
     static let currentCacheVersion: String = "3.0.4"
 
@@ -36,26 +37,59 @@ enum MarkdownCacheService {
     private static let chapterMarkerPrefix = "<!-- chapter: "
     private static let chapterMarkerSuffix = " -->"
 
+    /// EPUB extraction already produces reading chapters to resolve heading
+    /// coordinates. Keep those results until indexing instead of parsing the
+    /// newly written Markdown a second time. Other formats supply Markdown only.
+    private struct ExtractedCache {
+        var markdown: String
+        var chapters: [Chapter]? = nil
+    }
+
     // MARK: - Cache Generation
 
     /// Generate and write the content.md cache file for a book.
     /// Returns true if the cache was successfully created.
     @discardableResult
     static func generateCache(for book: Book) -> Bool {
-        guard !book.format.isAudio else { return false }
-        guard !book.tmbDirectoryName.isEmpty else { return false }
+        generateCacheContent(for: book) != nil
+    }
+
+    /// Generate the cache and its reading content together. Index construction
+    /// reuses EPUB's prepared chapters and performs only one Markdown pass for
+    /// other formats. No result escapes until the atomic cache write succeeds.
+    static func generateCacheContent(for book: Book) -> DocumentContent? {
+        guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
 
         let tmbDir = book.tmbDirectory
         let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
         let fileURL = URL(fileURLWithPath: book.filePath)
 
         do {
-            let markdown = try extractMarkdown(from: fileURL, format: book.format)
-            try markdown.write(to: cachePath, atomically: true, encoding: .utf8)
-            return true
+            let extracted = try extractCache(from: fileURL, format: book.format)
+            let content: DocumentContent
+            if let chapters = extracted.chapters, !chapters.isEmpty {
+                content = DocumentContent(
+                    title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
+                    author: book.author,
+                    chapters: chapters,
+                    contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
+                )
+            } else {
+                // Preserve the cache reader's empty-document and chapter-marker
+                // behavior as well as its title fallback for non-EPUB formats.
+                let parsed = parseMultiChapterMarkdown(
+                    extracted.markdown, bookTitle: book.title, bookAuthor: book.author
+                )
+                content = DocumentContent(
+                    title: parsed.title, author: parsed.author, chapters: parsed.chapters,
+                    contentIndex: parsed.contentIndex.replacingFormat(book.format)
+                )
+            }
+            try extracted.markdown.write(to: cachePath, atomically: true, encoding: .utf8)
+            return content
         } catch {
             print("Failed to generate content cache for \(book.title): \(error)")
-            return false
+            return nil
         }
     }
 
@@ -71,9 +105,9 @@ enum MarkdownCacheService {
     /// Import-time variant that also computes the persisted navigation index
     /// while already executing on the serial import queue.
     static func generateCacheAnalyzeAndStamp(for book: inout Book) -> BookContentIndex? {
-        guard generateCacheAndStampVersion(for: &book),
-              let content = try? loadFromCache(for: book) else { return nil }
-        let index = content.contentIndex.replacingFormat(book.format)
+        guard let content = generateCacheContent(for: book) else { return nil }
+        book.cacheFormatVersion = currentCacheVersion
+        let index = content.contentIndex
         book.applyContentIndexSummary(index)
         return index
     }
@@ -122,34 +156,36 @@ enum MarkdownCacheService {
     /// HTML: converts the HTML to Markdown.
     /// Markdown: uses the file as-is.
     /// Plain text: wraps with minimal Markdown formatting (detects headings).
-    private static func extractMarkdown(from url: URL, format: BookFormat) throws -> String {
+    private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
+        let markdown: String
         switch format {
         case .epub:
             return try extractFromEPUB(url: url)
         case .html:
             let html = try String(contentsOf: url, encoding: .utf8)
-            return try HTMLToMarkdownConverter.convert(html)
+            markdown = try HTMLToMarkdownConverter.convert(html)
         case .markdown:
             // Already Markdown — use as-is
-            return try String(contentsOf: url, encoding: .utf8)
+            markdown = try String(contentsOf: url, encoding: .utf8)
         case .txt:
-            return try extractFromPlainText(url: url)
+            markdown = try extractFromPlainText(url: url)
         case .docx:
-            return try DOCXParser.extractMarkdown(from: url)
+            markdown = try DOCXParser.extractMarkdown(from: url)
         case .daisy:
-            return try DAISYParser.extractMarkdown(from: url)
+            markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:
-            return try PDFTextParser.extractMarkdown(from: url)
+            markdown = try PDFTextParser.extractMarkdown(from: url)
         case .audio:
             // Audio books don't get text caching
-            return ""
+            markdown = ""
         }
+        return ExtractedCache(markdown: markdown)
     }
 
     /// Use the direct EPUB parser's navigation recovery as the cache source.
     /// Chapter markers preserve boundaries; heading annotations preserve TOC
     /// labels and offsets without inserting any extra text into the book.
-    private static func extractFromEPUB(url: URL) throws -> String {
+    private static func extractFromEPUB(url: URL) throws -> ExtractedCache {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
         }
@@ -164,9 +200,10 @@ enum MarkdownCacheService {
         let opfXML = try EPUBParser.extractString(archive: archive, path: opfPath)
         let opfData = try EPUBParser.parseOPF(opfXML)
         let chapters = try EPUBParser.preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
-        return chapters.map { prepared in
+        let markdown = chapters.map { prepared in
             "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
+        return ExtractedCache(markdown: markdown, chapters: chapters.map(\.chapter))
     }
 
     /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.

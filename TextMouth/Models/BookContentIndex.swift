@@ -4,6 +4,9 @@ import Foundation
 /// content. The full index lives in the package's bookInfo.json; library.json
 /// stores only the version and compact totals already exposed by Book.
 struct BookContentIndex: Codable, Hashable {
+    /// Bump for changes to derived reading text, heading coordinates, metrics, or
+    /// the index schema. Existing Markdown can then be reindexed without forcing
+    /// another source extraction via MarkdownCacheService.currentCacheVersion.
     static let currentVersion = "1.0.0"
 
     enum Kind: String, Codable, Hashable {

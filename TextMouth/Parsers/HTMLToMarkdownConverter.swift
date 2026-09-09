@@ -107,15 +107,18 @@ enum HTMLToMarkdownConverter {
         // Preserve a TOC target in the Markdown stream at its actual DOM
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
-        let id = (try? element.attr("id")) ?? ""
-        let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
-        if tag != "script", tag != "style",
-           let annotation = headingTargets[id] ?? headingTargets[legacyName] {
-            if element.isBlock() {
-                ensureBlankLine(&result)
-                result += annotation.markdown + "\n\n"
-            } else {
-                result += annotation.markdown
+        // Most chapters have no fragment destinations. Avoid attribute lookups
+        // at every node when there is no possible navigation match.
+        if !headingTargets.isEmpty, tag != "script", tag != "style" {
+            let id = (try? element.attr("id")) ?? ""
+            let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
+            if let annotation = headingTargets[id] ?? headingTargets[legacyName] {
+                if element.isBlock() {
+                    ensureBlankLine(&result)
+                    result += annotation.markdown + "\n\n"
+                } else {
+                    result += annotation.markdown
+                }
             }
         }
 

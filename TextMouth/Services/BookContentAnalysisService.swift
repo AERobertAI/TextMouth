@@ -59,9 +59,20 @@ enum BookContentAnalysisService {
         var cacheIsCurrent = hadExistingCache
             && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
         if regenerateTextCache || !hadExistingCache {
-            let regenerated = MarkdownCacheService.generateCache(for: book)
-            cacheIsCurrent = regenerated
-            if !regenerated, !hadExistingCache {
+            if let content = MarkdownCacheService.generateCacheContent(for: book) {
+                // Regeneration already parsed and indexed this exact content.
+                // Reading content.md again doubles that work for every book.
+                return Result(
+                    content: content,
+                    index: content.contentIndex,
+                    audioFilePaths: nil,
+                    audioSegments: nil,
+                    usedPersistedIndex: false,
+                    cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+                )
+            }
+            cacheIsCurrent = false
+            if !hadExistingCache {
                 let content = try BookParser.parse(url: url, format: book.format)
                 let index = content.contentIndex.replacingFormat(book.format)
                 return Result(
@@ -107,6 +118,18 @@ enum BookContentAnalysisService {
             usedPersistedIndex: precomputed != nil,
             cacheFormatVersion: cacheIsCurrent ? MarkdownCacheService.currentCacheVersion : nil
         )
+    }
+
+    /// Recover a fully committed cache/index after an interrupted library batch.
+    /// Package metadata is written per book, so it can be newer than library.json.
+    /// A missing cache, old index, or old extraction version must still rebuild.
+    static func completedTextCacheIndex(for book: Book) -> BookContentIndex? {
+        guard !book.format.isAudio,
+              MarkdownCacheService.cacheExists(for: book),
+              let info = try? BookInfo.load(from: book.tmbDirectory),
+              info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
+              let index = info.contentIndex, index.isValid(for: book.format) else { return nil }
+        return index
     }
 
     private static func analyzeAudio(book: Book, url: URL) throws -> Result {
