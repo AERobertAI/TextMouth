@@ -9,45 +9,14 @@ enum HTMLParser {
         // Try to get title from <title> tag
         let docTitle = (try? doc.title()).flatMap({ $0.isEmpty ? nil : $0 }) ?? title
 
-        // Remove executable/presentational elements
-        try doc.select("script, style").remove()
-
+        // Standalone HTML must keep literal punctuation and escaped tags as
+        // text. Record DOM heading positions during plain-text extraction
+        // rather than interpreting that text as intermediate Markdown.
         let body = doc.body() ?? doc
-
-        // Strip <nav> only when headings exist outside it (nav is
-        // duplicating them). If headings only exist inside nav,
-        // keep them so TTS still reads the heading.
-        let allH = try body.select("h1, h2, h3, h4, h5, h6").size()
-        let navH = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
-        if allH > navH {
-            try body.select("nav").remove()
-        }
-
-        let fullText = try body.text()
-
-        // Extract headings
-        var headings: [Heading] = []
-        let headingElements = try doc.select("h1, h2, h3, h4, h5, h6")
-        var searchStart = fullText.startIndex
-
-        for element in headingElements.array() {
-            let tag = element.tagName()
-            let level = tag.last.flatMap({ Int(String($0)) }) ?? 1
-            let headingText = try element.text()
-
-            let offset: Int
-            if let range = fullText.range(of: headingText, range: searchStart..<fullText.endIndex) {
-                offset = fullText.utf16Offset(of: range.lowerBound)
-                searchStart = range.upperBound
-            } else {
-                offset = fullText.utf16Offset(of: searchStart)
-            }
-
-            headings.append(Heading(level: level, text: headingText, characterOffset: offset))
-        }
-
-        // Treat entire HTML as a single chapter
-        let chapter = Chapter(title: docTitle, text: fullText, headings: headings)
+        try HTMLToMarkdownConverter.removeDuplicateNavigation(from: body)
+        var extractor = HTMLReadingTextExtractor()
+        try extractor.visit(body)
+        let chapter = extractor.chapter(title: docTitle)
 
         return DocumentContent(
             title: docTitle,
@@ -59,5 +28,66 @@ enum HTMLParser {
     private static func extractMetaAuthor(_ doc: Document) -> String? {
         guard let meta = try? doc.select("meta[name=author]").first() else { return nil }
         return try? meta.attr("content")
+    }
+}
+
+/// Match SwiftSoup's plain-text whitespace rules while recording positions at
+/// the actual heading nodes. No substring search or marker text is involved.
+private struct HTMLReadingTextExtractor {
+    private var text = ""
+    private var utf16Length = 0
+    private var headings: [Heading] = []
+
+    /// Visit each node once, skipping executable content and preserving the
+    /// same block separators and preformatted text used by direct HTML reading.
+    mutating func visit(_ node: Node) throws {
+        if let textNode = node as? TextNode {
+            let parent = textNode.parent() as? Element
+            let preservesWhitespace = parent?.tag().preserveWhitespace() == true
+                || parent?.parent()?.tag().preserveWhitespace() == true
+            var value = textNode.getWholeText()
+            if !preservesWhitespace {
+                value = StringUtil.normaliseWhitespace(value)
+                if (text.isEmpty || text.hasSuffix(" ")), value.hasPrefix(" ") {
+                    value.removeFirst()
+                }
+            }
+            append(value)
+            return
+        }
+        if let element = node as? Element {
+            let tag = element.tagName().lowercased()
+            guard tag != "script", tag != "style" else { return }
+            if !text.isEmpty, (element.isBlock() || tag == "br"), !text.hasSuffix(" ") {
+                append(" ")
+            }
+            if ["h1", "h2", "h3", "h4", "h5", "h6"].contains(tag),
+               let level = tag.last?.wholeNumberValue {
+                let label = try element.text()
+                if !label.isEmpty {
+                    headings.append(Heading(level: level, text: label, characterOffset: utf16Length))
+                }
+            }
+        }
+        for child in node.getChildNodes() {
+            try visit(child)
+        }
+    }
+
+    /// Advance UTF-16 coordinates incrementally, including non-BMP characters.
+    private mutating func append(_ value: String) {
+        text += value
+        utf16Length += value.utf16.count
+    }
+
+    /// Apply outer whitespace trimming to the text and its coordinates together.
+    func chapter(title: String) -> Chapter {
+        let firstContent = text.rangeOfCharacter(from: .whitespacesAndNewlines.inverted)?.lowerBound ?? text.endIndex
+        let prefixLength = text.utf16Offset(of: firstContent)
+        let plainText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedHeadings = headings.map {
+            Heading(level: $0.level, text: $0.text, characterOffset: max(0, $0.characterOffset - prefixLength))
+        }
+        return Chapter(title: title, text: plainText, headings: normalizedHeadings)
     }
 }

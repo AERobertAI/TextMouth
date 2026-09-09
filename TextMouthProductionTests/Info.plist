@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>TextMouthProfileLibraryRoot</key>
 	<string>$(TEXTMOUTH_PROFILE_LIBRARY_ROOT)</string>
+	<key>TextMouthEPUBRegressionFixture</key>
+	<string>$(TEXTMOUTH_EPUB_REGRESSION_FIXTURE)</string>
 	<key>TextMouthProfilePlaySeconds</key>
 	<string>$(TEXTMOUTH_PROFILE_PLAY_SECONDS)</string>
 	<key>TextMouthProfileRenderCharacters</key>

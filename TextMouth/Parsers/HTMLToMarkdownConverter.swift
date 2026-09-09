@@ -6,7 +6,11 @@ import SwiftSoup
 enum HTMLToMarkdownConverter {
 
     /// Convert an HTML string to Markdown, preserving headings, emphasis, links, and lists.
-    static func convert(_ html: String, stripDuplicateNavigation: Bool = false) throws -> String {
+    static func convert(
+        _ html: String,
+        stripDuplicateNavigation: Bool = false,
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+    ) throws -> String {
         let doc = try SwiftSoup.parse(html)
 
         let body = doc.body() ?? doc
@@ -15,7 +19,7 @@ enum HTMLToMarkdownConverter {
         }
 
         var result = ""
-        convertNode(body, into: &result)
+        convertNode(body, into: &result, headingTargets: headingTargets)
 
         // Clean up excessive blank lines (collapse 3+ newlines to 2)
         result = collapseBlankLines(result)
@@ -25,7 +29,7 @@ enum HTMLToMarkdownConverter {
     /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
     /// chapter has real heading elements outside nav, so nav-only headings
     /// remain available for sparse documents.
-    private static func removeDuplicateNavigation(from body: Element) throws {
+    static func removeDuplicateNavigation(from body: Element) throws {
         var allHeadingCount = 0
         var navHeadingCount = 0
         var navigationElements: [Element] = []
@@ -83,7 +87,7 @@ enum HTMLToMarkdownConverter {
     // MARK: - Node Conversion
 
     /// Recursively walk the DOM tree and emit Markdown for each element.
-    private static func convertNode(_ node: Node, into result: inout String) {
+    private static func convertNode(_ node: Node, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
         for child in node.getChildNodes() {
             if let textNode = child as? TextNode {
                 // Emit text content, collapsing runs of whitespace
@@ -91,14 +95,29 @@ enum HTMLToMarkdownConverter {
                 let collapsed = collapseWhitespace(text)
                 result += collapsed
             } else if let element = child as? Element {
-                convertElement(element, into: &result)
+                convertElement(element, into: &result, headingTargets: headingTargets)
             }
         }
     }
 
     /// Convert a single HTML element to its Markdown equivalent.
-    private static func convertElement(_ element: Element, into result: inout String) {
+    private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
         let tag = element.tagName().lowercased()
+
+        // Preserve a TOC target in the Markdown stream at its actual DOM
+        // position. Inline targets stay inline; block targets precede their
+        // block. The annotation never contributes words to speech.
+        let id = (try? element.attr("id")) ?? ""
+        let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
+        if tag != "script", tag != "style",
+           let annotation = headingTargets[id] ?? headingTargets[legacyName] {
+            if element.isBlock() {
+                ensureBlankLine(&result)
+                result += annotation.markdown + "\n\n"
+            } else {
+                result += annotation.markdown
+            }
+        }
 
         switch tag {
         // Non-content elements are ignored without running selector queries.
@@ -111,13 +130,13 @@ enum HTMLToMarkdownConverter {
             let prefix = String(repeating: "#", count: level)
             ensureBlankLine(&result)
             result += "\(prefix) "
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
             result += "\n\n"
 
         // Paragraphs
         case "p":
             ensureBlankLine(&result)
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
             result += "\n\n"
 
         // Line breaks
@@ -127,20 +146,20 @@ enum HTMLToMarkdownConverter {
         // Emphasis
         case "em", "i":
             result += "*"
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
             result += "*"
 
         // Strong
         case "strong", "b":
             result += "**"
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
             result += "**"
 
         // Links
         case "a":
             let href = (try? element.attr("href")) ?? ""
             result += "["
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
             result += "]"
             if !href.isEmpty {
                 result += "(\(href))"
@@ -155,24 +174,24 @@ enum HTMLToMarkdownConverter {
         // Unordered lists
         case "ul":
             ensureBlankLine(&result)
-            convertListItems(element, ordered: false, into: &result)
+            convertListItems(element, ordered: false, into: &result, headingTargets: headingTargets)
             result += "\n"
 
         // Ordered lists
         case "ol":
             ensureBlankLine(&result)
-            convertListItems(element, ordered: true, into: &result)
+            convertListItems(element, ordered: true, into: &result, headingTargets: headingTargets)
             result += "\n"
 
         // List items (handled by convertListItems, but just in case)
         case "li":
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
 
         // Blockquotes
         case "blockquote":
             ensureBlankLine(&result)
             var inner = ""
-            convertNode(element, into: &inner)
+            convertNode(element, into: &inner, headingTargets: headingTargets)
             // Prefix each line with >
             let lines = inner.trimmingCharacters(in: .whitespacesAndNewlines)
                 .components(separatedBy: "\n")
@@ -195,10 +214,10 @@ enum HTMLToMarkdownConverter {
         case "code":
             // If parent is <pre>, skip the inline backticks
             if element.parent()?.tagName().lowercased() == "pre" {
-                convertNode(element, into: &result)
+                convertNode(element, into: &result, headingTargets: headingTargets)
             } else {
                 result += "`"
-                convertNode(element, into: &result)
+                convertNode(element, into: &result, headingTargets: headingTargets)
                 result += "`"
             }
 
@@ -216,18 +235,18 @@ enum HTMLToMarkdownConverter {
              "table", "thead", "tbody", "tfoot", "tr", "td", "th",
              "caption", "colgroup", "col",
              "dl", "dt", "dd":
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
 
         // Unknown elements — just emit their text children
         default:
-            convertNode(element, into: &result)
+            convertNode(element, into: &result, headingTargets: headingTargets)
         }
     }
 
     // MARK: - List Conversion
 
     /// Convert list item children of a <ul> or <ol> to Markdown.
-    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String) {
+    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
         let items = listElement.getChildNodes().compactMap { node -> Element? in
             guard let element = node as? Element,
                   element.tagName().lowercased() == "li" else { return nil }
@@ -237,7 +256,9 @@ enum HTMLToMarkdownConverter {
             let bullet = ordered ? "\(index + 1). " : "- "
             result += bullet
             var itemContent = ""
-            convertNode(item, into: &itemContent)
+            // Go through the element entry point so an id on the li itself
+            // receives its annotation as well as targets inside the item.
+            convertElement(item, into: &itemContent, headingTargets: headingTargets)
             // Trim the item content and indent continuation lines
             let trimmed = itemContent.trimmingCharacters(in: .whitespacesAndNewlines)
             let lines = trimmed.components(separatedBy: "\n")

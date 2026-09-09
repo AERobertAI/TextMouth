@@ -13,7 +13,7 @@ enum MarkdownCacheService {
     /// on the next app launch. Books with a stored version lower than this
     /// (or nil for pre-versioning books) will have their content.md rebuilt.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "3.0.3"
+    static let currentCacheVersion: String = "3.0.4"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -146,11 +146,9 @@ enum MarkdownCacheService {
         }
     }
 
-    /// Extract Markdown from an EPUB file. Each spine chapter is converted from HTML
-    /// to Markdown and separated by chapter markers. When the HTML lacks semantic
-    /// heading tags, falls back to the NCX table of contents for chapter titles and
-    /// injects a `# Title` heading at the top of each chapter's Markdown so that
-    /// MarkdownDocParser will find headings during cache loading.
+    /// Use the direct EPUB parser's navigation recovery as the cache source.
+    /// Chapter markers preserve boundaries; heading annotations preserve TOC
+    /// labels and offsets without inserting any extra text into the book.
     private static func extractFromEPUB(url: URL) throws -> String {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
@@ -161,130 +159,14 @@ enum MarkdownCacheService {
         } catch {
             throw EPUBParserError.invalidArchive
         }
-
-        // Use shared EPUB parsing helpers from EPUBParser
         let containerXML = try EPUBParser.extractString(archive: archive, path: "META-INF/container.xml")
         let opfPath = try EPUBParser.parseContainerForOPFPath(containerXML)
         let opfXML = try EPUBParser.extractString(archive: archive, path: opfPath)
-        let opfDirectory = (opfPath as NSString).deletingLastPathComponent
         let opfData = try EPUBParser.parseOPF(opfXML)
-
-        // Build a mapping from content file href to NCX navigation title.
-        // Many EPUBs use styled <div>/<span> instead of <h1>-<h6> for chapter
-        // headings, so the HTML-to-Markdown converter produces no `#` headings.
-        // The NCX provides the authoritative chapter titles in those cases.
-        let ncxTitles = parseNCXTitles(archive: archive, opfData: opfData, opfDirectory: opfDirectory)
-
-        var markdownParts: [String] = []
-
-        for itemRef in opfData.spineItemRefs {
-            guard let manifestItem = opfData.manifest[itemRef],
-                  manifestItem.mediaType.contains("html") || manifestItem.mediaType.contains("xml") else {
-                continue
-            }
-
-            // Match direct EPUB parsing: sibling-relative paths and literal
-            // dots in a filename are valid references inside the archive.
-            let decodedPath = ParserUtilities.resolvedPackagePath(
-                manifestItem.href, relativeTo: opfPath, preserveFragment: false
-            )
-
-            guard let chapterHTML = try? EPUBParser.extractString(archive: archive, path: decodedPath) else {
-                continue
-            }
-
-            // Convert chapter HTML to Markdown. EPUB cache generation uses the
-            // same duplicate nav/TOC stripping rule as direct EPUB parsing.
-            var chapterMD = (try? HTMLToMarkdownConverter.convert(
-                chapterHTML,
-                stripDuplicateNavigation: true
-            )) ?? ""
-            guard !chapterMD.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                continue
-            }
-
-            // Extract chapter title from the first heading in the Markdown
-            var chapterTitle = extractFirstHeading(from: chapterMD)
-
-            // If no heading was found in the HTML, look up the NCX title for this
-            // content file and inject it as a level-1 Markdown heading at the top.
-            // This ensures MarkdownDocParser will pick it up as a proper heading.
-            if chapterTitle.isEmpty {
-                let ncxTitle = ncxTitles[manifestItem.href] ?? ""
-                if !ncxTitle.isEmpty {
-                    chapterTitle = ncxTitle
-                    // Prepend the heading so it appears in the parsed content
-                    chapterMD = "# \(ncxTitle)\n\n\(chapterMD)"
-                }
-            }
-
-            markdownParts.append("\(chapterMarkerPrefix)\(chapterTitle)\(chapterMarkerSuffix)\n\(chapterMD)")
-        }
-
-        // If only one chapter, skip the chapter markers for simplicity
-        if markdownParts.count == 1, let single = markdownParts.first {
-            // Strip the chapter marker line from the single chapter
-            let lines = single.components(separatedBy: "\n")
-            if lines.first?.hasPrefix(chapterMarkerPrefix) == true {
-                return lines.dropFirst().joined(separator: "\n")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            return single
-        }
-
-        return markdownParts.joined(separator: "\n\n")
-    }
-
-    /// Parse the NCX table of contents from an EPUB archive and return a mapping
-    /// from content file href (relative to OPF directory) to navigation title.
-    /// Returns an empty dictionary if no NCX is found or parsing fails.
-    private static func parseNCXTitles(
-        archive: Archive,
-        opfData: EPUBParser.OPFData,
-        opfDirectory: String
-    ) -> [String: String] {
-        // Find the NCX file from the manifest (media-type application/x-dtbncx+xml)
-        let ncxItem = opfData.manifest.values.first { $0.mediaType.contains("ncx") }
-        guard let ncxHref = ncxItem?.href else { return [:] }
-
-        let ncxPath = opfDirectory.isEmpty ? ncxHref : "\(opfDirectory)/\(ncxHref)"
-        guard let ncxXML = try? EPUBParser.extractString(archive: archive, path: ncxPath) else {
-            return [:]
-        }
-
-        // Parse navPoints from the NCX XML
-        guard let doc = try? XMLDocument(xmlString: ncxXML) else { return [:] }
-        guard let navPoints = try? doc.nodes(forXPath: "//*[local-name()='navPoint']") else {
-            return [:]
-        }
-
-        var titles: [String: String] = [:]
-        for navPoint in navPoints {
-            guard let element = navPoint as? XMLElement else { continue }
-
-            // Extract the label text
-            let labelText = (try? element.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?
-                .first?.stringValue ?? ""
-            guard !labelText.isEmpty else { continue }
-
-            // Extract the content src (may include a fragment like "file.html#id")
-            guard let contentNode = (try? element.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement,
-                  let src = contentNode.attribute(forName: "src")?.stringValue else {
-                continue
-            }
-
-            // Strip fragment identifier — we map by filename only so the title
-            // applies to the spine item regardless of which anchor the NCX points to
-            let fileOnly = src.components(separatedBy: "#").first ?? src
-            let decoded = fileOnly.removingPercentEncoding ?? fileOnly
-
-            // Only store the first title for each file (the primary chapter heading)
-            if titles[decoded] == nil {
-                titles[decoded] = labelText
-            }
-        }
-
-        return titles
+        let chapters = try EPUBParser.preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
+        return chapters.map { prepared in
+            "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
+        }.joined(separator: "\n\n")
     }
 
     /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.
@@ -357,7 +239,7 @@ enum MarkdownCacheService {
 
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
-            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle))
+            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle, includeNavigationHeadings: true))
                 ?? Chapter(title: bookTitle, text: markdown, headings: [])
             return DocumentContent(
                 title: chapter.title.isEmpty ? bookTitle : chapter.title,
@@ -371,7 +253,8 @@ enum MarkdownCacheService {
         for section in sections {
             let parsedChapter = try? MarkdownDocParser.parseChapter(
                 markdown: section.content,
-                title: section.title
+                title: section.title,
+                includeNavigationHeadings: true
             )
             if var ch = parsedChapter {
                 // Use the chapter marker title, falling back to what the parser found
@@ -441,25 +324,6 @@ enum MarkdownCacheService {
         }
 
         return sections
-    }
-
-    // MARK: - Helpers
-
-    /// Extract the first heading text from Markdown content (for chapter title detection).
-    private static func extractFirstHeading(from markdown: String) -> String {
-        for line in markdown.components(separatedBy: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("#") {
-                let level = trimmed.prefix(while: { $0 == "#" }).count
-                if level >= 1 && level <= 6 {
-                    return String(trimmed.dropFirst(level))
-                        .trimmingCharacters(in: .whitespaces)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-                        .trimmingCharacters(in: .whitespaces)
-                }
-            }
-        }
-        return ""
     }
 
 }

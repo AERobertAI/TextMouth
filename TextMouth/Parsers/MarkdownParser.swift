@@ -15,21 +15,40 @@ enum MarkdownDocParser {
     /// Parse one chapter without constructing an intermediate DocumentContent.
     /// Multi-chapter cache loading uses this to avoid calculating book metrics
     /// once per chapter and then again for the assembled document.
-    static func parseChapter(markdown: String, title: String = "Untitled") throws -> Chapter {
+    static func parseChapter(
+        markdown: String,
+        title: String = "Untitled",
+        includeNavigationHeadings: Bool = false
+    ) throws -> Chapter {
         let document = Document(parsing: markdown)
 
         // Capture headings while emitting their text. Searching for their
         // labels afterwards can bind a heading to an earlier body paragraph.
-        var textExtractor = PlainTextExtractor()
+        var textExtractor = PlainTextExtractor(includeNavigationHeadings: includeNavigationHeadings)
         textExtractor.visit(document)
         let plainText = textExtractor.result.trimmingCharacters(in: .whitespacesAndNewlines)
         let firstContent = textExtractor.result.rangeOfCharacter(from: .whitespacesAndNewlines.inverted)?.lowerBound
             ?? textExtractor.result.endIndex
         let trimmedPrefixLength = textExtractor.result.utf16Offset(of: firstContent)
-        let headings = textExtractor.headings.map { heading in
-            Heading(level: heading.level, text: heading.text,
-                    characterOffset: max(0, heading.offset - trimmedPrefixLength))
+        var headings = textExtractor.headings
+            .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .map { heading in
+                Heading(level: heading.level, text: heading.text,
+                        characterOffset: max(0, heading.offset - trimmedPrefixLength))
+            }
+
+        // An anchor at an existing semantic heading must not create a duplicate
+        // row. Keep semantic labels/levels, then merge other TOC destinations in
+        // text order. Coordinates come from the same walk that produces speech.
+        var occupiedOffsets = Set(headings.map(\.characterOffset))
+        let textLength = plainText.utf16.count
+        for heading in textExtractor.navigationHeadings {
+            let offset = min(textLength, max(0, heading.offset - trimmedPrefixLength))
+            if occupiedOffsets.insert(offset).inserted {
+                headings.append(Heading(level: heading.level, text: heading.text, characterOffset: offset))
+            }
         }
+        headings.sort { $0.characterOffset < $1.characterOffset }
 
         // Use first heading as title if available
         let docTitle = headings.first?.text ?? title
@@ -41,9 +60,16 @@ enum MarkdownDocParser {
 // MARK: - Plain Text Extractor
 
 private struct PlainTextExtractor: MarkupWalker {
+    var includeNavigationHeadings = false
     var result = ""
     var headings: [(level: Int, text: String, offset: Int)] = []
+    var navigationHeadings: [(level: Int, text: String, offset: Int)] = []
     private var utf16Length = 0
+
+    /// Only generated cache/EPUB Markdown opts into navigation annotations.
+    init(includeNavigationHeadings: Bool) {
+        self.includeNavigationHeadings = includeNavigationHeadings
+    }
 
     /// Track offsets incrementally so books with many headings remain linear
     /// in size, including text containing emoji and combining characters.
@@ -99,5 +125,21 @@ private struct PlainTextExtractor: MarkupWalker {
         headings.append((heading.level, heading.plainText, utf16Length))
         descendInto(heading)
         append("\n\n")
+    }
+
+    /// Block annotations precede a chapter or block target; establish the same
+    /// paragraph boundary as the following block without adding label text.
+    mutating func visitHTMLBlock(_ html: HTMLBlock) {
+        guard includeNavigationHeadings,
+              let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) else { return }
+        separateBlock()
+        navigationHeadings.append((annotation.level, annotation.text, utf16Length))
+    }
+
+    /// Inline anchors keep their precise location within the current paragraph.
+    mutating func visitInlineHTML(_ html: InlineHTML) {
+        guard includeNavigationHeadings,
+              let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) else { return }
+        navigationHeadings.append((annotation.level, annotation.text, utf16Length))
     }
 }

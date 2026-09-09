@@ -47,33 +47,13 @@ enum EPUBParser {
         let opfXML = try extractString(archive: archive, path: opfPath)
         let opfData = try parseOPF(opfXML)
 
-        // Step 3: Read chapters in spine order
-        var chapters: [Chapter] = []
-        for itemRef in opfData.spineItemRefs {
-            guard let manifestItem = opfData.manifest[itemRef],
-                  manifestItem.mediaType.contains("html") || manifestItem.mediaType.contains("xml") else {
-                continue
-            }
-
-            // OPFs may refer to sibling folders with ../Text/chapter.xhtml.
-            // Resolve within the ZIP namespace; extractString only reads an
-            // archive entry and never treats this as a host filesystem path.
-            let decodedPath = ParserUtilities.resolvedPackagePath(
-                manifestItem.href, relativeTo: opfPath, preserveFragment: false
-            )
-
-            guard let chapterHTML = try? extractString(archive: archive, path: decodedPath) else {
-                continue
-            }
-
-            let chapter = try parseChapterHTML(chapterHTML)
-            chapters.append(chapter)
-        }
+        // Share navigation recovery and exact text coordinates with the cache.
+        let chapters = try preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
 
         return DocumentContent(
             title: opfData.title,
             author: opfData.author,
-            chapters: chapters
+            chapters: chapters.map(\.chapter)
         )
     }
 
@@ -275,11 +255,14 @@ enum EPUBParser {
         var author: String
         var manifest: [String: ManifestItem]  // id -> item
         var spineItemRefs: [String]  // ordered manifest IDs
+        var spineTOCID: String? = nil
+        var guideTOCHrefs: [String] = []
     }
 
     struct ManifestItem {
         var href: String
         var mediaType: String
+        var properties: String = ""
     }
 
     static func parseOPF(_ xml: String) throws -> OPFData {
@@ -302,7 +285,10 @@ enum EPUBParser {
                   let mediaType = element.attribute(forName: "media-type")?.stringValue else {
                 continue
             }
-            manifest[id] = ManifestItem(href: href, mediaType: mediaType)
+            manifest[id] = ManifestItem(
+                href: href, mediaType: mediaType,
+                properties: element.attribute(forName: "properties")?.stringValue ?? ""
+            )
         }
 
         // Spine
@@ -315,11 +301,22 @@ enum EPUBParser {
             throw EPUBParserError.missingSpine
         }
 
+        // Preserve the declared NCX and legacy visible-TOC references rather
+        // than choosing navigation files by dictionary iteration order.
+        let spine = (try doc.nodes(forXPath: "//*[local-name()='spine']")).first as? XMLElement
+        let guideReferences = try doc.nodes(forXPath: "//*[local-name()='guide']/*[local-name()='reference']")
+        let guideTOCHrefs = guideReferences.compactMap { node -> String? in
+            guard let element = node as? XMLElement,
+                  element.attribute(forName: "type")?.stringValue == "toc" else { return nil }
+            return element.attribute(forName: "href")?.stringValue
+        }
         return OPFData(
             title: title,
             author: author,
             manifest: manifest,
-            spineItemRefs: spineItemRefs
+            spineItemRefs: spineItemRefs,
+            spineTOCID: spine?.attribute(forName: "toc")?.stringValue,
+            guideTOCHrefs: guideTOCHrefs
         )
     }
 
@@ -327,52 +324,10 @@ enum EPUBParser {
 
     /// Convert one EPUB spine document using the same navigation filtering as full parsing.
     static func parseChapterHTML(_ html: String) throws -> Chapter {
-        let doc = try SwiftSoup.parse(html)
-
-        // Remove executable/presentational elements — never read aloud
-        try doc.select("script, style").remove()
-
-        let body = doc.body() ?? doc
-
-        // Strip <nav> elements only when the body has heading elements
-        // (h1-h6) outside the nav. EPUB3 nav TOCs duplicate heading text
-        // via link labels, causing TTS to read each heading twice. But if
-        // a heading ONLY exists inside the nav (no content heading to
-        // duplicate), removing it would lose the heading entirely.
-        let allHeadingCount = try body.select("h1, h2, h3, h4, h5, h6").size()
-        let navHeadingCount = try body.select("nav h1, nav h2, nav h3, nav h4, nav h5, nav h6").size()
-        if allHeadingCount > navHeadingCount {
-            // Headings exist outside nav — nav is duplicating them
-            try body.select("nav").remove()
-        }
-
-        let allText = try body.text()
-
-        var headings: [Heading] = []
-        let headingElements = try doc.select("h1, h2, h3, h4, h5, h6")
-        var searchStart = allText.startIndex
-
-        for element in headingElements.array() {
-            let tag = element.tagName()
-            let level = tag.last.flatMap({ Int(String($0)) }) ?? 1
-            let headingText = try element.text()
-
-            // Find the next occurrence after our search position
-            let offset: Int
-            if let range = allText.range(of: headingText, range: searchStart..<allText.endIndex) {
-                offset = allText.utf16Offset(of: range.lowerBound)
-                searchStart = range.upperBound
-            } else {
-                offset = allText.utf16Offset(of: searchStart)
-            }
-
-            headings.append(Heading(level: level, text: headingText, characterOffset: offset))
-        }
-
-        // Get chapter title from first heading or empty
-        let chapterTitle = headings.first?.text ?? ""
-
-        return Chapter(title: chapterTitle, text: allText, headings: headings)
+        // Markdown records heading offsets during extraction, so an earlier
+        // body occurrence of the label cannot steal the heading's position.
+        let markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
+        return try MarkdownDocParser.parseChapter(markdown: markdown, title: "")
     }
 
     // MARK: - ZIP Helpers (shared with MarkdownCacheService)
