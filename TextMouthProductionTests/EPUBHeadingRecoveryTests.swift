@@ -236,16 +236,31 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// Ordinary comments and malformed metadata cannot invent destinations.
     /// Code samples containing our syntax remain code, not navigation.
     func testHeadingAnnotationsAreOptInAndDoNotConsumeOrdinaryComments() throws {
-        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Metadata title")
-        let markdown = "\(annotation.markdown)\n\nBody.\n\n<!-- ordinary -->\n\n<!-- textmouth-heading: invalid -->"
+        // Encode once: the code-sample check below compares against this marker.
+        let marker = MarkdownHeadingAnnotation(level: 2, text: "Metadata title").markdown
+        let markdown = "\(marker)\n\nBody.\n\n<!-- ordinary -->\n\n<!-- textmouth-heading: invalid -->"
         let plain = try MarkdownDocParser.parseChapter(markdown: markdown)
         let cached = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
         XCTAssertTrue(plain.headings.isEmpty)
         XCTAssertEqual(cached.headings.map(\.text), ["Metadata title"])
         XCTAssertEqual(cached.text, plain.text)
-        let code = try MarkdownDocParser.parseChapter(markdown: "```\n\(annotation.markdown)\n```", includeNavigationHeadings: true)
+        let code = try MarkdownDocParser.parseChapter(markdown: "```\n\(marker)\n```", includeNavigationHeadings: true)
         XCTAssertTrue(code.headings.isEmpty)
-        XCTAssertTrue(code.text.contains(annotation.markdown))
+        XCTAssertTrue(code.text.contains(marker))
+    }
+
+    /// Every encoding of a destination is one canonical marker (sorted JSON
+    /// keys), so regenerated caches are reproducible. Markers that earlier
+    /// caches wrote with another key order still decode.
+    func testHeadingAnnotationMarkersAreCanonicalAndReadEitherKeyOrder() {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Label")
+        let canonical = "<!-- textmouth-heading: eyJsZXZlbCI6MiwidGV4dCI6IkxhYmVsIn0= -->"
+        for _ in 0..<20 {
+            XCTAssertEqual(annotation.markdown, canonical)
+        }
+        let legacy = MarkdownHeadingAnnotation.decode("<!-- textmouth-heading: eyJ0ZXh0IjoiTGFiZWwiLCJsZXZlbCI6Mn0= -->")
+        XCTAssertEqual(legacy?.level, 2)
+        XCTAssertEqual(legacy?.text, "Label")
     }
 
     /// A reader opening a 3.0.3 package must replace its stale 27-heading index
