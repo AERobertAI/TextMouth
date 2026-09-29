@@ -217,7 +217,7 @@ test("SMIL with no audio returns empty clips") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 0, "Should find no audio clips in text-only SMIL")
 }
 
@@ -235,7 +235,7 @@ test("SMIL audio without src is skipped") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 0, "Should skip audio elements without src")
 }
 
@@ -256,7 +256,7 @@ test("SMIL with mixed time formats") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 2, "Should parse both time formats")
     try assertTrue(abs(clips[0].endTime - 5.5) < 0.001, "First clip should use npt format")
     try assertTrue(abs(clips[1].startTime - 5.5) < 0.001, "Second clip should use H:MM:SS format")

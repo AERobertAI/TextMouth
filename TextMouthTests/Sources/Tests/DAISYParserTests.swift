@@ -422,8 +422,8 @@ test("SMIL parser records par IDs on audio clips") {
     </body>
     </smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     try assertEqual(clips.count, 3, "Should parse 3 audio clips")
     try assertEqual(clips[0].parID, "par_001", "First clip should have par_001 ID")
@@ -440,8 +440,8 @@ test("SMIL parser clip(forFragment:) finds correct clip") {
       <par id="verse2"><audio src="ch1.mp3" clipBegin="20.0" clipEnd="38.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    _ = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    _ = try parser.parse()
 
     let clip1 = parser.clip(forFragment: "intro")
     try assertTrue(clip1 != nil, "Should find clip for 'intro'")
@@ -470,8 +470,8 @@ test("Segments from same SMIL get distinct non-overlapping time ranges") {
       <par id="body_ch2"><audio src="book.mp3" clipBegin="0:06:00" clipEnd="0:10:00"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     // NavPoint 1 references heading_ch1, NavPoint 2 references heading_ch2
     let clip1 = parser.clip(forFragment: "heading_ch1")!
@@ -513,10 +513,10 @@ test("Segments from different SMIL files use their own clip ranges") {
     </seq></body></smil>
     """
 
-    let parser1 = TestFragmentAwareSMILParser(data: smil1.data(using: .utf8)!)
-    let clips1 = parser1.parse()
-    let parser2 = TestFragmentAwareSMILParser(data: smil2.data(using: .utf8)!)
-    let clips2 = parser2.parse()
+    let parser1 = TestFragmentAwareSMILParser(data: smil1.data(using: .utf8)!, file: "test.smil")
+    let clips1 = try parser1.parse()
+    let parser2 = TestFragmentAwareSMILParser(data: smil2.data(using: .utf8)!, file: "test.smil")
+    let clips2 = try parser2.parse()
 
     let seg1Clip = parser1.clip(forFragment: "s1") ?? clips1[0]
     let seg2Clip = parser2.clip(forFragment: "s2") ?? clips2[0]
@@ -545,8 +545,8 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
       </par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     try assertEqual(clips.count, 2)
     try assertEqual(clips[0].parID, "tcp1")

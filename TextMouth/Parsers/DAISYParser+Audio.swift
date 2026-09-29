@@ -14,22 +14,18 @@ struct DAISYAudioClip {
 /// Handles both DAISY 2.02 (clip-begin="npt=SS.SSSs") and DAISY 3
 /// (clipBegin="H:MM:SS.mmm") timing formats. Each clip records the ID
 /// of its parent <par> element so callers can look up clips by SMIL fragment.
-class DAISYAudioSMILParser: NSObject, XMLParserDelegate {
-    private let data: Data
+class DAISYAudioSMILParser: DAISYSAXParser {
     private(set) var audioClips: [DAISYAudioClip] = []
 
     /// ID of the nearest enclosing <par> (or <seq>) element, used to tag clips
     private var currentParID: String = ""
 
-    init(data: Data) {
-        self.data = data
-    }
-
-    func parse() -> [DAISYAudioClip] {
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.parse()
+    /// Parse the file's audio clips in playback order.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   truncated or not well-formed; segment timing drawn from a partial
+    ///   clip list would cut chapters short.
+    func parse() throws -> [DAISYAudioClip] {
+        try parseDocument()
         return audioClips
     }
 
@@ -210,12 +206,7 @@ enum DAISYAudioConverter {
             )
 
             // Parse the SMIL file once and cache it
-            if smilCache[smilPath] == nil {
-                guard let smilData = try? provider.readFile(at: smilPath) else { continue }
-                let parser = DAISYAudioSMILParser(data: smilData)
-                _ = parser.parse()
-                smilCache[smilPath] = parser
-            }
+            guard try cachedAudioSMIL(at: smilPath, in: provider, cache: &smilCache) != nil else { continue }
 
             navRefs.append(NavRef(navPoint: navPoint, smilPath: smilPath, fragmentID: fragmentID))
         }
@@ -329,12 +320,7 @@ enum DAISYAudioConverter {
                 preserveFragment: false
             )
 
-            if smilCache[smilPath] == nil {
-                guard let smilData = try? provider.readFile(at: smilPath) else { continue }
-                let parser = DAISYAudioSMILParser(data: smilData)
-                _ = parser.parse()
-                smilCache[smilPath] = parser
-            }
+            guard try cachedAudioSMIL(at: smilPath, in: provider, cache: &smilCache) != nil else { continue }
 
             headingRefs.append(HeadingRef(heading: heading, smilPath: smilPath, fragmentID: fragmentID))
         }
@@ -401,6 +387,22 @@ enum DAISYAudioConverter {
     }
 
     // MARK: - Helpers
+
+    /// The parsed SMIL file at `smilPath`, parsing it on first use so several
+    /// headings that share a file share one parse. Returns nil when the
+    /// package lacks the file, which callers skip as they always have.
+    /// - Throws: `DAISYParserError.malformedXML` when the file is damaged.
+    private static func cachedAudioSMIL(
+        at smilPath: String,
+        in provider: DAISYFileProvider,
+        cache: inout [String: DAISYAudioSMILParser]
+    ) throws -> DAISYAudioSMILParser? {
+        if let cached = cache[smilPath] { return cached }
+        guard let parser = try? DAISYAudioSMILParser(path: smilPath, in: provider) else { return nil }
+        _ = try parser.parse()
+        cache[smilPath] = parser
+        return parser
+    }
 
     /// Resolve a clip reference exactly as manifest construction does. Internal
     /// visibility lets parser regression tests cover basename collisions.

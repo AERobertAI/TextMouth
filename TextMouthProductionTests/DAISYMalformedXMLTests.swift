@@ -29,7 +29,7 @@ final class DAISYMalformedXMLTests: XCTestCase {
     <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
     <navMap>
     <navPoint id="n1"><navLabel><text>Leadline Readings</text></navLabel><content src="part1.smil#p1"/></navPoint>
-    <navPoint id="n2"><navLabel><text>Breakwater Survey</text></navLabel><content src="part2.smil#p2"/></navPoint>
+    <navPoint id="n2"><navLabel><text>Breakwater Survey</text></navLabel><content src="part2.smil#p3"/></navPoint>
     </navMap>
     </ncx>
     """
@@ -58,23 +58,27 @@ final class DAISYMalformedXMLTests: XCTestCase {
     </body></html>
     """
 
-    /// The first chapter's synchronization: a heading, then a paragraph.
+    /// The first chapter's synchronization: a heading, then a paragraph,
+    /// each with its text fragment and its clip of the chapter's audio.
     private static let part1SMIL = """
     <?xml version="1.0" encoding="utf-8"?>
     <smil><body><seq>
-    <par id="p1"><text src="text.html#t1"/></par>
-    <par id="p2"><text src="text.html#t2"/></par>
+    <par id="p1"><text src="text.html#t1"/><audio src="part1.mp3" clip-begin="npt=0.000s" clip-end="npt=4.500s"/></par>
+    <par id="p2"><text src="text.html#t2"/><audio src="part1.mp3" clip-begin="npt=4.500s" clip-end="npt=12.250s"/></par>
     </seq></body></smil>
     """
 
-    /// The second chapter's synchronization: a heading, then a paragraph.
+    /// The second chapter's synchronization, shaped like the first.
     private static let part2SMIL = """
     <?xml version="1.0" encoding="utf-8"?>
     <smil><body><seq>
-    <par id="p3"><text src="text.html#t3"/></par>
-    <par id="p4"><text src="text.html#t4"/></par>
+    <par id="p3"><text src="text.html#t3"/><audio src="part2.mp3" clip-begin="npt=0.000s" clip-end="npt=3.000s"/></par>
+    <par id="p4"><text src="text.html#t4"/><audio src="part2.mp3" clip-begin="npt=3.000s" clip-end="npt=9.750s"/></par>
     </seq></body></smil>
     """
+
+    /// Stand-in audio files: conversion copies them without decoding.
+    private static let audioFiles = ["part1.mp3": "first chapter audio", "part2.mp3": "second chapter audio"]
 
     /// The DAISY 2.02 text content the SMIL files point into.
     private static let contentHTML = """
@@ -86,15 +90,16 @@ final class DAISYMalformedXMLTests: XCTestCase {
     </body></html>
     """
 
-    /// A complete DAISY 2.02 text package, with `overrides` replacing files.
-    private static func daisy202Package(_ overrides: [String: String] = [:]) -> [String: String] {
+    /// A complete DAISY 2.02 package; each entry of `changes` adds a file or
+    /// replaces the standard one at that path.
+    private static func daisy202Package(_ changes: [String: String] = [:]) -> [String: String] {
         let files = [
             "ncc.html": ncc,
             "part1.smil": part1SMIL,
             "part2.smil": part2SMIL,
             "text.html": contentHTML
         ]
-        return files.merging(overrides) { _, override in override }
+        return files.merging(changes) { _, change in change }
     }
 
     /// `text` up to, not including, the first `marker`: a copy cut off
@@ -277,6 +282,73 @@ final class DAISYMalformedXMLTests: XCTestCase {
         ]))
         defer { try? FileManager.default.removeItem(at: damaged) }
         malformedXMLReason(naming: "part1.smil") { try DAISYParser.extractMarkdown(from: damaged) }
+    }
+
+    // MARK: - SMIL Audio Clips
+
+    /// A clip list cut off after its first clip throws instead of returning
+    /// the clips before the cut, which would end the chapter early.
+    func testTruncatedAudioSMILThrowsErrorNamingTheFile() throws {
+        let complete = try DAISYAudioSMILParser(data: Data(Self.part1SMIL.utf8), file: "part1.smil").parse()
+        XCTAssertEqual(complete.map(\.parID), ["p1", "p2"])
+
+        let damaged = Self.truncated(Self.part1SMIL, before: "<par id=\"p2\"")
+        malformedXMLReason(naming: "part1.smil") {
+            try DAISYAudioSMILParser(data: Data(damaged.utf8), file: "part1.smil").parse()
+        }
+    }
+
+    /// An intact DAISY 2.02 audio package still yields one segment per
+    /// heading, each spanning its own clips, with the audio copied.
+    func testIntactDAISY202AudioPackageBuildsOneSegmentPerHeading() throws {
+        let package = InMemoryDAISYPackage(Self.daisy202Package(Self.audioFiles))
+        let audioDirectory = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: audioDirectory) }
+
+        let manifest = try DAISYAudioConverter.convertToAudioBook(
+            from: package, version: .daisy202, toDirectory: audioDirectory
+        )
+
+        XCTAssertEqual(manifest.title, "Harbor Soundings")
+        XCTAssertEqual(manifest.author, "Odile Marchetti")
+        let segments = try XCTUnwrap(manifest.segments)
+        XCTAssertEqual(segments.map(\.title), ["Leadline Readings", "Breakwater Survey"])
+        XCTAssertEqual(segments.map(\.file), ["part1.mp3", "part2.mp3"])
+        XCTAssertEqual(segments.map(\.startTime), [0, 0])
+        XCTAssertEqual(segments.map(\.endTime), [12.25, 9.75])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path).sorted(),
+                       ["part1.mp3", "part2.mp3"])
+    }
+
+    /// DAISY 2.02 audio import stops on a damaged SMIL file before copying.
+    func testDAISY202AudioImportWithTruncatedSMILReportsTheSynchronizationFile() throws {
+        let package = InMemoryDAISYPackage(Self.daisy202Package(Self.audioFiles.merging([
+            "part2.smil": Self.truncated(Self.part2SMIL, before: "<par id=\"p4\"")
+        ]) { _, override in override }))
+        let audioDirectory = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: audioDirectory) }
+
+        malformedXMLReason(naming: "part2.smil") {
+            try DAISYAudioConverter.convertToAudioBook(from: package, version: .daisy202, toDirectory: audioDirectory)
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])
+    }
+
+    /// DAISY 3 audio import stops on a damaged SMIL file before copying.
+    func testDAISY3AudioImportWithTruncatedSMILReportsTheSynchronizationFile() throws {
+        let package = InMemoryDAISYPackage(Self.audioFiles.merging([
+            "package.opf": Self.opf,
+            "book.ncx": Self.ncx,
+            "part1.smil": Self.part1SMIL,
+            "part2.smil": Self.truncated(Self.part2SMIL, before: "</seq>")
+        ]) { _, override in override })
+        let audioDirectory = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: audioDirectory) }
+
+        malformedXMLReason(naming: "part2.smil") {
+            try DAISYAudioConverter.convertToAudioBook(from: package, version: .daisy3, toDirectory: audioDirectory)
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])
     }
 
     // MARK: - Helpers
