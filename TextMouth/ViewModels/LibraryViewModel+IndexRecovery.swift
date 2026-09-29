@@ -67,7 +67,8 @@ extension LibraryViewModel {
 
     // MARK: - Loading
 
-    /// Reads library.json and runs the startup repair. An unreadable index,
+    /// Reads library.json and runs the startup repair; called once, at
+    /// startup (Try Again uses `retryLibraryIndex()`). An unreadable index,
     /// which the service has already preserved and protected by suspending
     /// index writes, puts the model into recovery: the library shown is
     /// rebuilt from disk and the recovery options are presented.
