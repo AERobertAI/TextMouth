@@ -4,7 +4,12 @@ import XCTest
 
 /// Playback passes over chapters whose prepared speech has nothing to say
 /// (every section skipped, or all text deleted by substitutions) exactly as
-/// it passes over empty chapters.
+/// it passes over empty chapters. When nothing speakable remains, the book
+/// ends through its end-of-book behavior without a Playing state or a
+/// listening session, and Loop cannot restart a book with nothing to say.
+///
+/// Tests that start speech stop it before the main run loop turns, so the
+/// synthesizer is never heard.
 @MainActor
 final class SpeakableChapterAdvanceTests: XCTestCase {
 
