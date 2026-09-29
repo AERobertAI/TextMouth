@@ -68,15 +68,11 @@ struct LibraryIndexSandbox {
     }
 
     /// Writes an index damaged by `damage` at `url` and returns the bytes on
-    /// disk. The legacy index is read only when the current one is absent, so
-    /// staging at the legacy location also removes the current index.
+    /// disk (for `.unreadable`, the bytes behind the removed permission).
     @discardableResult
     func stage(_ damage: LibraryIndexDamage, at url: URL) throws -> Data {
-        if url != indexURL {
-            try? FileManager.default.removeItem(at: indexURL)
-        }
         let bytes = try Self.damagedBytes(damage)
-        try write(bytes, at: url)
+        try place(bytes, at: url)
         if damage == .unreadable {
             XCTAssertEqual(chmod(url.path, 0o000), 0)
             XCTAssertThrowsError(try Data(contentsOf: url), "the fixture must really be unreadable")
@@ -84,17 +80,21 @@ struct LibraryIndexSandbox {
         return bytes
     }
 
-    /// Writes a readable, valid index at `url` (creating its folder) and
-    /// returns its bytes.
+    /// Writes `library` as a valid index at `url` and returns its bytes.
     @discardableResult
     func stageValid(_ library: Library, at url: URL) throws -> Data {
         let bytes = try Self.encoded(library)
-        try write(bytes, at: url)
+        try place(bytes, at: url)
         return bytes
     }
 
-    /// Writes `bytes` at `url`, creating the folder, replacing any earlier file.
-    private func write(_ bytes: Data, at url: URL) throws {
+    /// Writes `bytes` at `url`, creating its folder and replacing any earlier
+    /// file. The legacy index is read only when the current one is absent, so
+    /// placing a legacy fixture also removes the current index.
+    private func place(_ bytes: Data, at url: URL) throws {
+        if url != indexURL {
+            try? FileManager.default.removeItem(at: indexURL)
+        }
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
             withIntermediateDirectories: true

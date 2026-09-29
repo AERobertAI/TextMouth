@@ -92,6 +92,42 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         XCTAssertEqual(LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL).count, 1)
     }
 
+    // MARK: - Legacy Migration
+
+    /// A readable legacy index is migrated: the current index is written at
+    /// once, not by a debounced save a crash could lose, and only then is the
+    /// legacy file retired.
+    func testReadableLegacyIndexIsWrittenBeforeTheLegacyFileIsRetired() throws {
+        let legacy = LibraryIndexSandbox.sampleLibrary()
+        try sandbox.stageValid(legacy, at: sandbox.legacyURL)
+
+        let loaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.indexURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.legacyURL.path))
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(Set(written.books.map(\.id)), Set(loaded.books.map(\.id)))
+        XCTAssertTrue(Set(written.books.map(\.id)).isSuperset(of: legacy.books.map(\.id)))
+        XCTAssertEqual(written.folders.map(\.fullPath), legacy.folders.map(\.fullPath))
+    }
+
+    /// A legacy index that becomes readable while writes are suspended (Try
+    /// Again after a legacy failure) loads, but nothing is written and the
+    /// legacy file stays until the library model saves after resuming.
+    func testLegacyIndexLoadedWhileSuspendedIsNotRetired() throws {
+        try sandbox.stage(.truncated, at: sandbox.legacyURL)
+        _ = LibraryPersistenceService.load()
+        let legacy = LibraryIndexSandbox.sampleLibrary()
+        let legacyBytes = try sandbox.stageValid(legacy, at: sandbox.legacyURL)
+
+        let loaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+
+        XCTAssertTrue(Set(loaded.books.map(\.id)).isSuperset(of: legacy.books.map(\.id)))
+        XCTAssertEqual(try Data(contentsOf: sandbox.legacyURL), legacyBytes)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.indexURL.path))
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
+    }
+
     // MARK: - Leaving Suspension
 
     /// Quitting from recovery runs the ordinary termination flush, which must

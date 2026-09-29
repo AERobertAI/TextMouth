@@ -113,6 +113,22 @@ enum LibraryPersistenceService {
         }
     }
 
+    /// Write `library` to library.json immediately, superseding any debounced
+    /// snapshot queued before it, and report whether it reached the disk:
+    /// false while index writes are suspended.
+    private static func writeIndexNow(_ library: Library) throws -> Bool {
+        try saveQueue.sync { () throws -> Bool in
+            guard !indexWritesSuspended else {
+                noteSkippedIndexWrite()
+                return false
+            }
+            pendingLibrary = nil
+            saveGeneration &+= 1
+            try encodeAndWrite(library, to: libraryFileURL)
+            return true
+        }
+    }
+
     /// Encode `library` the way every index write does and replace `url`
     /// atomically, so a reader never sees a half-written index.
     private static func encodeAndWrite(_ library: Library, to url: URL) throws {
@@ -201,9 +217,13 @@ enum LibraryPersistenceService {
             do {
                 try TextMouthPaths.ensureDirectoryStructure()
                 try FileImportService.rebuildDirectoryStructure(library: &library)
-                save(library)
                 saveAllBookInfos(library)
-                try? FileManager.default.removeItem(at: legacyURL)
+                // Retire the legacy file only once the migrated index is on
+                // disk. While index writes are suspended, or when the write
+                // fails, it stays; the model's next save writes the index.
+                if try writeIndexNow(library) {
+                    try? FileManager.default.removeItem(at: legacyURL)
+                }
             } catch {
                 print("Migration failed: \(error)")
             }
