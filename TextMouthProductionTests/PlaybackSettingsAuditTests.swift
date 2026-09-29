@@ -320,6 +320,17 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         }
     }
 
+    /// The toolbar button opening the sheet shows a speed gauge for audio
+    /// books. A mistyped symbol name would silently draw nothing.
+    func testBookSettingsToolbarSymbolsExist() {
+        XCTAssertEqual(ReaderView.bookSettingsSymbol(isAudioBook: true), "gauge.with.needle")
+        XCTAssertEqual(ReaderView.bookSettingsSymbol(isAudioBook: false), "person.wave.2")
+        for isAudioBook in [true, false] {
+            let name = ReaderView.bookSettingsSymbol(isAudioBook: isAudioBook)
+            XCTAssertNotNil(NSImage(systemSymbolName: name, accessibilityDescription: nil), name)
+        }
+    }
+
     /// Only text books offer speech controls. The text sheet is checked too,
     /// proving the harness can see voice and WPM controls when they exist.
     func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() {

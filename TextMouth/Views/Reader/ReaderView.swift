@@ -151,7 +151,10 @@ struct ReaderView: View {
                 Button {
                     showVoicePicker.toggle()
                 } label: {
-                        Label(viewModel.isAudioBook ? "Speed" : "Voice", systemImage: "person.wave.2")
+                    Label(
+                        viewModel.isAudioBook ? "Speed" : "Voice",
+                        systemImage: Self.bookSettingsSymbol(isAudioBook: viewModel.isAudioBook)
+                    )
                 }
                 .accessibilityLabel(viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book")
 
@@ -278,6 +281,13 @@ struct ReaderView: View {
             hostWindow: viewModel.hostWindow,
             keyWindow: NSApp.keyWindow
         )
+    }
+
+    /// SF Symbol for the toolbar button that opens per-book settings. Audio
+    /// books open speed-only settings, so they show a speed gauge rather
+    /// than the voice icon a sighted user would read as "voice settings".
+    static func bookSettingsSymbol(isAudioBook: Bool) -> String {
+        isAudioBook ? "gauge.with.needle" : "person.wave.2"
     }
 }
 
