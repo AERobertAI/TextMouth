@@ -595,17 +595,27 @@ extension ReaderViewModel {
         )
     }
 
-    /// Adjust audio playback speed by a delta (e.g. +0.25x or -0.25x).
-    /// Clamped to the audio service's min/max range. Persisted as per-book setting.
-    func adjustAudioSpeed(delta: Double) {
-        let newSpeed = max(audioPlaybackService.minimumSpeed,
-                          min(audioSpeed + delta, audioPlaybackService.maximumSpeed))
+    /// Apply a new audio speed to the reader and the player, save it as this
+    /// book's speed, and announce it.
+    ///
+    /// This is the single write path for user-chosen audio speeds; every
+    /// step command reaches it through `adjustAudioSpeed(delta:)`. The value
+    /// is clamped and snapped by `AudioSpeed.normalized(_:)`, so the speed
+    /// that plays is exactly the one that is shown, announced, and saved.
+    func setAudioSpeed(_ requestedSpeed: Double) {
+        let newSpeed = AudioSpeed.normalized(requestedSpeed)
         audioSpeed = newSpeed
         audioPlaybackService.setSpeed(newSpeed)
-        // Save as per-book setting
+        // The persisted schema stores an audio book's multiplier in the
+        // `localWPM` slot; it is never interpreted as words per minute.
         book.localWPM = newSpeed
-        libraryViewModel.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: book.localVoiceID, wpm: newSpeed, pitch: book.localPitch)
+        saveLocalVoiceSettings()
         announceToVoiceOver(String(format: "%.2fx speed", newSpeed))
+    }
+
+    /// Move the audio speed by a signed multiplier delta (e.g. +0.25x).
+    func adjustAudioSpeed(delta: Double) {
+        setAudioSpeed(audioSpeed + delta)
     }
 
     // MARK: - End of Book Behavior

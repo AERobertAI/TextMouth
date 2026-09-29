@@ -116,8 +116,9 @@ final class ReaderViewModel: ObservableObject {
     /// and stops at segments[i].endTime within the corresponding file.
     var audioSegments: [AudioSegment] = []
 
-    /// Audio playback speed (0.25 to 4.0, separate from WPM)
-    @Published var audioSpeed: Double = 1.0
+    /// Audio playback multiplier, separate from WPM. Always a value returned
+    /// by `AudioSpeed.normalized(_:)`; change it through `setAudioSpeed(_:)`.
+    @Published var audioSpeed: Double = AudioSpeed.normal
 
     /// Current text transformation for mapping modified<->original offsets.
     /// Accessed from Playback extension when speaking chapters.
@@ -249,8 +250,10 @@ final class ReaderViewModel: ObservableObject {
 
         if isAudioBook {
             setupAudioCallbacks()
+            // Audio books keep their multiplier in `localWPM`. Restore it
+            // clamped and snapped, exactly as the player and estimates use it.
             if let localSpeed = book.localWPM {
-                audioSpeed = AudioPlaybackService.clampedSpeed(localSpeed)
+                audioSpeed = AudioSpeed.normalized(localSpeed)
             }
         }
 

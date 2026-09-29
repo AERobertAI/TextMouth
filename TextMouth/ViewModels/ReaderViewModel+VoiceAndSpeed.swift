@@ -83,7 +83,7 @@ extension ReaderViewModel {
             pitch: nil
         )
         if isAudioBook {
-            audioSpeed = 1
+            audioSpeed = AudioSpeed.normal
             audioPlaybackService.setSpeed(audioSpeed)
             announceToVoiceOver("Using normal audio speed")
             return
