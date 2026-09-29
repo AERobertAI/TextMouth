@@ -111,7 +111,10 @@ final class LibraryViewModel: ObservableObject {
         // Ensure directory structure exists on first launch
         try? TextMouthPaths.ensureDirectoryStructure()
 
-        library = LibraryPersistenceService.load()
+        // An unreadable index starts as an empty library here. The service has
+        // already preserved that index and suspended index writes, so the
+        // startup repair below can rebuild from packages but cannot save over it.
+        library = LibraryPersistenceService.load().library ?? Library()
         migrateOldBooksIfNeeded()
         setupFinderOpenHandler()
         setupDataDirectoryChangeHandler()
