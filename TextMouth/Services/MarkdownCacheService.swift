@@ -15,7 +15,9 @@ enum MarkdownCacheService {
     /// Older versions (or nil) regenerate through startup maintenance.
     /// Uses semantic versioning: major.minor.patch
     /// 3.0.5: EPUB page lists, landmarks, and hidden content no longer become
-    /// headings or speech, and annotations never enter heading lines.
+    /// headings or speech; a navigation annotation never enters a heading or
+    /// begins a line (which hid that line's words); named anchors add no "[]";
+    /// and a heading with a line break stays one heading.
     static let currentCacheVersion: String = "3.0.5"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
