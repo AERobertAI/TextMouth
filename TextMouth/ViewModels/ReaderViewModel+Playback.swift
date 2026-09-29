@@ -710,12 +710,14 @@ extension ReaderViewModel {
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
         // Determine behavior: per-book override or global setting
-        let behavior: EndOfBookBehavior
-        if let localRaw = book.localEndOfBookBehavior,
-           let local = EndOfBookBehavior(rawValue: localRaw) {
-            behavior = local
-        } else {
-            behavior = settingsViewModel.endOfBookBehavior
+        var behavior = effectiveEndOfBookBehavior
+        // Looping restarts speech at the first chapter with anything to say.
+        // A text book with none (every section skipped, or all text deleted
+        // by substitutions) would reach its end again at once, forever, so
+        // it stops instead.
+        if behavior == .loop, !isAudioBook, nextSpeakableChapterSpeech(from: 0) == nil {
+            debugLog("end of book: nothing speakable to loop to; stopping")
+            behavior = .stop
         }
 
         switch behavior {

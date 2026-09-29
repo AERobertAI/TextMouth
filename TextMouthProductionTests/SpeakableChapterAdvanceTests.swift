@@ -218,6 +218,56 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    /// Looping a book with nothing speakable anywhere would end it again at
+    /// once, forever. It stops instead, exactly as the Stop behavior does,
+    /// leaving the cursor where the book ended.
+    func testLoopWithNothingSpeakableStopsInsteadOfRestarting() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Foreword", "Praise.")]),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Foreword", "Notes"],
+            endOfBook: .loop,
+            at: ReadingPosition(chapterIndex: 1, characterOffset: 3)
+        ) { reader in
+            reader.handleEndOfBook()
+
+            XCTAssertEqual(reader.lastAnnouncement, "Finished: Quiet Pages")
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentCharacterOffset, 3)
+            XCTAssertFalse(reader.speechService.isSpeaking)
+            XCTAssertFalse(reader.isCurrentlyPlaying)
+            XCTAssertFalse(ReadingStatsService.shared.hasActiveSession)
+            XCTAssertEqual(
+                ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
+                [reader.book.id.uuidString]
+            )
+        }
+    }
+
+    /// With anything speakable, looping still restarts from the beginning.
+    func testLoopRestartsFromTheBeginningWhenAnythingIsSpeakable() throws {
+        try withReader(
+            chapters: [
+                Chapter(title: "One", text: "Opening chapter."),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Notes"],
+            endOfBook: .loop,
+            at: ReadingPosition(chapterIndex: 1, characterOffset: 0)
+        ) { reader in
+            reader.handleEndOfBook()
+            let startedSpeaking = reader.speechService.isSpeaking
+            silence(reader)
+
+            XCTAssertTrue(startedSpeaking)
+            XCTAssertEqual(reader.lastAnnouncement, "Restarting: Quiet Pages")
+            XCTAssertEqual(reader.currentChapterIndex, 0)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "Opening chapter.")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Deletes every illustration marker, the kind of rule a listener adds
@@ -241,6 +291,15 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             text += "\(section.heading)\n\n\(section.body)"
         }
         return Chapter(title: sections.first?.heading ?? "", text: text, headings: headings)
+    }
+
+    /// Stop the reader's speech before the main run loop turns, so a test
+    /// that starts speech is never audible. Advancing the playback
+    /// generation also keeps a queued look-ahead render from starting.
+    /// Record anything the test checks about the speech first.
+    private func silence(_ reader: ReaderViewModel) {
+        reader.stop()
+        reader.chapterPlaybackGeneration += 1
     }
 
     /// A chapter whose only section follows two blank lines, as converted
