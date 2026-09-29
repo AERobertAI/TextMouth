@@ -11,6 +11,11 @@ enum DAISYParserError: LocalizedError {
     case notDAISYBook
     case missingContent(String)
     case parseError(String)
+    /// A file in the package is damaged: its markup breaks off or is not
+    /// well-formed, so reading on would silently yield a partial book.
+    /// `file` is the file's path inside the package; `reason` completes the
+    /// sentence "The file is damaged or incomplete: …".
+    case malformedXML(file: String, reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +24,9 @@ enum DAISYParserError: LocalizedError {
         case .notDAISYBook: return "Not a valid DAISY book (no OPF or ncc.html found)."
         case .missingContent(let msg): return "Missing DAISY content: \(msg)"
         case .parseError(let msg): return "DAISY parse error: \(msg)"
+        case .malformedXML(let file, let reason):
+            return "The file “\(file)” in this DAISY book is damaged or incomplete: \(reason). "
+                + "Get a fresh copy of the book, then import it again."
         }
     }
 }
@@ -304,9 +312,7 @@ enum DAISYParser {
         }
 
         // Parse OPF to find the DTBook XML file
-        let opfData = try provider.readFile(at: opfPath)
-        let opfParser = DAISYOPFParser(data: opfData)
-        let opfResult = opfParser.parse()
+        let opfResult = try DAISYOPFParser(path: opfPath, in: provider).parse()
 
         // Collect DTBook content files, using spine order when available
         let opfDir = (opfPath as NSString).deletingLastPathComponent
@@ -380,9 +386,7 @@ enum DAISYParser {
         guard let opfPath = allFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) else {
             return nil
         }
-        let opfData = try provider.readFile(at: opfPath)
-        let opfParser = DAISYOPFParser(data: opfData)
-        let result = opfParser.parse()
+        let result = try DAISYOPFParser(path: opfPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)
     }
 

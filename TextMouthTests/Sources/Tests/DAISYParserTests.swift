@@ -324,7 +324,7 @@ test("DAISY 2.02 fragment extraction avoids whole-file duplicate wrapper text") 
 }
 
 test("DAISY 2.02 Markdown extraction follows SMIL text fragments") {
-    let daisyURL = try makeTemporaryDAISY202FragmentZip(entries: [
+    let daisyURL = try makeTemporaryDAISYZip(entries: [
         "ncc.html": """
         <html><head>
         <meta name="dc:title" content="Fragment Test"/>
@@ -558,9 +558,11 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
 
 }
 
-private func makeTemporaryDAISY202FragmentZip(entries: [String: String]) throws -> URL {
+/// Write a DAISY package with the given text files (path → contents) to a new
+/// ZIP in the temporary directory. Callers remove the returned file.
+func makeTemporaryDAISYZip(entries: [String: String]) throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("TextMouthDAISYFragmentTest-\(UUID().uuidString).zip")
+        .appendingPathComponent("TextMouthDAISYTest-\(UUID().uuidString).zip")
     let archive = try Archive(url: url, accessMode: .create)
 
     for (path, contents) in entries {
@@ -579,3 +581,27 @@ private func makeTemporaryDAISY202FragmentZip(entries: [String: String]) throws 
 
     return url
 }
+
+#if canImport(TextMouth)
+/// Serves a DAISY package from memory (path → bytes), so converter tests can
+/// exercise production code without writing an archive to disk.
+struct InMemoryDAISYPackage: DAISYFileProvider {
+    let files: [String: Data]
+
+    /// Package the given text files (path → contents) as UTF-8.
+    init(_ textFiles: [String: String]) {
+        files = textFiles.mapValues { Data($0.utf8) }
+    }
+
+    func listFiles() -> [String] {
+        files.keys.sorted()
+    }
+
+    func readFile(at path: String) throws -> Data {
+        guard let data = files[path] else {
+            throw DAISYParserError.missingContent("File not found in test package: \(path)")
+        }
+        return data
+    }
+}
+#endif

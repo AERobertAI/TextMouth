@@ -20,22 +20,19 @@ struct DAISYManifestItem {
 
 /// SAX parser for DAISY 3 OPF package files.
 /// These use the OEB package namespace and contain dc-metadata for Dublin Core fields.
-class DAISYOPFParser: NSObject, XMLParserDelegate {
-    private let data: Data
+class DAISYOPFParser: DAISYSAXParser {
     private var result = DAISYOPFResult()
 
     // Parsing state
     private var elementStack: [String] = []
     private var currentText = ""
 
-    init(data: Data) {
-        self.data = data
-    }
-
-    func parse() -> DAISYOPFResult {
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.parse()
+    /// Parse the package's metadata, manifest, and spine.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   truncated or not well-formed. A partial manifest or spine would
+    ///   silently drop content files from the book.
+    func parse() throws -> DAISYOPFResult {
+        try parseDocument()
         return result
     }
 

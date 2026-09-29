@@ -177,9 +177,7 @@ enum DAISYAudioConverter {
         guard let opfPath = allFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) else {
             throw DAISYParserError.missingContent("No OPF file found")
         }
-        let opfData = try provider.readFile(at: opfPath)
-        let opfParser = DAISYOPFParser(data: opfData)
-        let opfResult = opfParser.parse()
+        let opfResult = try DAISYOPFParser(path: opfPath, in: provider).parse()
 
         // Parse NCX for heading structure
         guard let ncxPath = allFiles.first(where: { $0.lowercased().hasSuffix(".ncx") }) else {
