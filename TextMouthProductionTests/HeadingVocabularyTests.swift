@@ -385,3 +385,90 @@ final class ReaderHeadingLocationTests: XCTestCase {
         )
     }
 }
+
+/// Library rows hold only the Book model (no parsed headings), so they show
+/// overall progress in place of the old content-unit number.
+@MainActor
+final class LibraryProgressTextTests: XCTestCase {
+    /// An opened library book with the given saved position and measured size.
+    private func book(position: ReadingPosition?, totalCharacters: Int?) -> Book {
+        Book(
+            title: "Atlas of Canals",
+            author: "A. Surveyor",
+            format: .epub,
+            filePath: "/tmp/\(UUID().uuidString).epub",
+            md5Hash: UUID().uuidString,
+            lastOpened: Date(),
+            readingPosition: position,
+            totalCharacterCount: totalCharacters
+        )
+    }
+
+    func testProgressUsesTheBookWideOffset() {
+        let book = book(
+            position: ReadingPosition(chapterIndex: 12, characterOffset: 5, globalCharacterOffset: 420),
+            totalCharacters: 1_000
+        )
+
+        let progress = BookRow.progressText(for: book)
+
+        XCTAssertEqual(progress?.visible, "42%")
+        XCTAssertEqual(progress?.spoken, "42 percent")
+    }
+
+    /// Legacy positions without a book-wide offset use the same fallback as
+    /// the row's time-left estimate, so the two figures never disagree.
+    func testProgressFallsBackToTheSavedOffsetLikeTimeRemaining() {
+        let book = book(position: ReadingPosition(chapterIndex: 0, characterOffset: 250), totalCharacters: 1_000)
+
+        XCTAssertEqual(book.percentComplete, 25)
+        XCTAssertEqual(BookRow.progressText(for: book)?.visible, "25%")
+    }
+
+    func testProgressRoundsToWholePercents() {
+        let book = book(
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 0, globalCharacterOffset: 416),
+            totalCharacters: 1_000
+        )
+
+        XCTAssertEqual(BookRow.progressText(for: book)?.spoken, "42 percent")
+    }
+
+    func testProgressIsClampedToTheBook() {
+        let pastEnd = book(
+            position: ReadingPosition(chapterIndex: 3, characterOffset: 0, globalCharacterOffset: 5_000),
+            totalCharacters: 1_000
+        )
+        let beforeStart = book(
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 0, globalCharacterOffset: -20),
+            totalCharacters: 1_000
+        )
+
+        XCTAssertEqual(BookRow.progressText(for: pastEnd)?.visible, "100%")
+        XCTAssertEqual(BookRow.progressText(for: beforeStart)?.visible, "0%")
+    }
+
+    /// Without a saved position or a measured size the row omits progress
+    /// rather than guessing.
+    func testProgressIsOmittedWhenItCannotBeComputed() {
+        XCTAssertNil(BookRow.progressText(for: book(position: nil, totalCharacters: 1_000)))
+        XCTAssertNil(BookRow.progressText(for: book(position: ReadingPosition(), totalCharacters: nil)))
+        XCTAssertNil(BookRow.progressText(for: book(position: ReadingPosition(), totalCharacters: 0)))
+    }
+
+    func testRowLabelSpeaksPercentInsteadOfAChapter() {
+        let row = BookRow(book: book(
+            position: ReadingPosition(chapterIndex: 12, characterOffset: 5, globalCharacterOffset: 420),
+            totalCharacters: 1_000
+        ))
+
+        XCTAssertTrue(row.rowAccessibilityLabel.contains("42 percent"), row.rowAccessibilityLabel)
+        XCTAssertFalse(row.rowAccessibilityLabel.localizedCaseInsensitiveContains("chapter"))
+    }
+
+    func testRowLabelOmitsProgressForAnUnmeasuredBook() {
+        let row = BookRow(book: book(position: ReadingPosition(chapterIndex: 4), totalCharacters: nil))
+
+        XCTAssertEqual(row.rowAccessibilityLabel, "Atlas of Canals, by A. Surveyor, EPUB")
+    }
+}

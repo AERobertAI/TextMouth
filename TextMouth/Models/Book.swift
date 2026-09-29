@@ -376,6 +376,19 @@ struct Book: Identifiable, Codable, Hashable {
         )
     }
 
+    /// Percent of the book already read (0–100), or nil when the book has no
+    /// saved position or has not been measured yet. Library rows hold only
+    /// this model, never parsed content, so they report overall progress
+    /// instead of a heading. The cursor and total match
+    /// `estimatedTimeRemaining(wpm:)`, so a row's percent and time left agree.
+    var percentComplete: Double? {
+        guard let position = readingPosition,
+              let totalChars = totalCharacterCount, totalChars > 0 else { return nil }
+        let globalOffset = position.globalCharacterOffset ?? position.characterOffset
+        let clampedOffset = min(max(globalOffset, 0), totalChars)
+        return Double(clampedOffset) / Double(totalChars) * 100
+    }
+
     /// Save this book's data to its bookInfo.json
     func saveBookInfo() {
         try? saveBookInfoThrowing()

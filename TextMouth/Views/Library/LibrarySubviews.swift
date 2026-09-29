@@ -243,8 +243,8 @@ struct BookRow: View {
 
                     Spacer()
 
-                    if let pos = book.readingPosition {
-                        Text("Ch. \(pos.chapterIndex + 1)")
+                    if let progress = Self.progressText(for: book) {
+                        Text(progress.visible)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -266,14 +266,15 @@ struct BookRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(rowAccessibilityLabel)
         .accessibilityHint(isEditMode
             ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
             : "Press Enter to open, Command I for info")
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
     }
 
-    private var accessibilityLabel: String {
+    /// Spoken label for the whole row, replacing its combined children.
+    var rowAccessibilityLabel: String {
         var parts: [String] = []
         if isEditMode && isEditSelected {
             parts.append("Selected")
@@ -285,14 +286,23 @@ struct BookRow: View {
         } else if isOpenInWindow {
             parts.append("Now Reading")
         }
-        if let pos = book.readingPosition {
-            parts.append("Chapter \(pos.chapterIndex + 1)")
+        if let progress = Self.progressText(for: book) {
+            parts.append(progress.spoken)
         }
         if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
             parts.append("\(TimeFormatting.spoken(remaining)) remaining")
         }
         parts.append(book.format.displayName)
         return parts.joined(separator: ", ")
+    }
+
+    /// Progress shown in a library row — visible "42%", spoken "42 percent" —
+    /// or nil to hide it when it cannot be known without parsing the book.
+    /// Whole percents are rounded the same way Where Am I speaks them.
+    static func progressText(for book: Book) -> (visible: String, spoken: String)? {
+        guard let percent = book.percentComplete else { return nil }
+        let wholePercent = String(format: "%.0f", percent)
+        return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
     }
 }
 
