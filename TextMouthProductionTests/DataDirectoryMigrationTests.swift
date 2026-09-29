@@ -82,6 +82,30 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
+    /// While library index writes are suspended, migration refuses before
+    /// copying anything: the copy's library.json would publish the
+    /// provisional library that stands in for an unreadable index.
+    func testMigrationWaitsWhileTheLibraryIndexIsUnreadable() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        try sandbox.stage(.truncated, at: sandbox.indexURL)
+        _ = LibraryPersistenceService.load()
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let library = try makeLibrary(at: source)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+        ) { error in
+            guard case LibraryIndexRecoveryError.indexUnreadable = error else {
+                return XCTFail("Expected the unreadable-index refusal, received \(error)")
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
     private func makeLibrary(at root: URL) throws -> Library {
         let packageName = "\(UUID().uuidString).tmb"
         let package = root.appendingPathComponent("Library/\(packageName)", isDirectory: true)

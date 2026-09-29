@@ -27,6 +27,13 @@ enum DataDirectoryMigrator {
         library: Library,
         fileManager: FileManager = .default
     ) throws -> Library {
+        // The copy's library.json is written from `library`. While the index
+        // cannot be read, that library is only the provisional one rebuilt
+        // from disk, and publishing it would bypass the index write
+        // suspension, so migration waits until the index is recovered.
+        guard !LibraryPersistenceService.areIndexWritesSuspended else {
+            throw LibraryIndexRecoveryError.indexUnreadable
+        }
         let source = oldRoot.standardizedFileURL
         let destination = newRoot.standardizedFileURL
         let sourcePath = source.path
