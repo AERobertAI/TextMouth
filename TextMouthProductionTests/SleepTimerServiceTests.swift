@@ -515,6 +515,27 @@ final class SleepTimerServiceTests: XCTestCase {
         restored._resetForTesting()
     }
 
+    /// The restored duration is editable with `defaults write`. Minutes above
+    /// the sheet's range are clamped, so re-arming the timer cannot overflow
+    /// converting them to seconds; zero or negative minutes restore nothing.
+    func testRestoredMinutesAreLimitedToTheSupportedRange() throws {
+        let key = "sleepTimer.lastUsedDuration"
+        testDefaults.set(Data(#"{"kind":"minutes","minutes":9223372036854775807}"#.utf8), forKey: key)
+        let restored = SleepTimerService(userDefaults: testDefaults)
+        defer { restored._resetForTesting() }
+
+        XCTAssertEqual(restored.lastUsedDuration, .minutes(480))
+        restored.start(duration: try XCTUnwrap(restored.lastUsedDuration), onExpire: {})
+        XCTAssertEqual(restored.remainingSeconds, 480 * 60)
+
+        for minutes in [0, -5] {
+            testDefaults.set(Data(#"{"kind":"minutes","minutes":\#(minutes)}"#.utf8), forKey: key)
+            XCTAssertNil(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, "\(minutes)")
+        }
+        testDefaults.set(Data(#"{"kind":"minutes","minutes":45}"#.utf8), forKey: key)
+        XCTAssertEqual(SleepTimerService(userDefaults: testDefaults).lastUsedDuration, .minutes(45))
+    }
+
     func testFixturePersistenceDoesNotTouchStandardDefaults() {
         let key = "sleepTimer.lastUsedDuration"
         let standardValueBeforeTest = UserDefaults.standard.data(forKey: key)
