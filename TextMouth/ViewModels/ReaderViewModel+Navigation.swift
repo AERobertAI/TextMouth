@@ -894,15 +894,14 @@ extension ReaderViewModel {
     }
 
     /// Return the heading at or immediately before the current reading position.
+    /// Delegates to `HeadingPosition` so heading lookups and the spoken
+    /// "Heading N of M" numbering can never disagree.
     nonisolated static func currentHeading(
         in headings: [Heading],
         chapterIndex: Int,
         characterOffset: Int
     ) -> Heading? {
-        headings.last(where: {
-            $0.chapterIndex < chapterIndex ||
-            ($0.chapterIndex == chapterIndex && $0.characterOffset <= characterOffset)
-        })
+        HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).heading
     }
 
     /// Return the first heading strictly after the current reading position.
