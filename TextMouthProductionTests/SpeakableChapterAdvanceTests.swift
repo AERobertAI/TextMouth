@@ -197,6 +197,27 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    // MARK: - End of book
+
+    /// Reaching the end closes this book's listening session, and only this
+    /// book's: a session that another window owns keeps running.
+    func testEndOfBookClosesOnlyThisBooksListeningSession() throws {
+        try withReader(chapters: [Chapter(title: "One", text: "Words.")]) { reader in
+            let statistics = ReadingStatsService.shared
+            statistics.startSession(bookID: reader.book.id)
+
+            reader.handleEndOfBook()
+
+            XCTAssertFalse(statistics.hasActiveSession)
+
+            statistics.startSession(bookID: UUID())
+
+            reader.handleEndOfBook()
+
+            XCTAssertTrue(statistics.hasActiveSession)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Deletes every illustration marker, the kind of rule a listener adds

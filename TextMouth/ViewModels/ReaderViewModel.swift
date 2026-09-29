@@ -475,7 +475,6 @@ final class ReaderViewModel: ObservableObject {
                     }
                 } else {
                     self.debugLog("no more chapters, book ended")
-                    self.readingStatsService.endSession(bookID: self.book.id)
                     self.handleEndOfBook()
                 }
             }

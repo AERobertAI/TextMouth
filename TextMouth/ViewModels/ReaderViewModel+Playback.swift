@@ -598,7 +598,6 @@ extension ReaderViewModel {
                     self.currentCharacterOffset = 0
                     self.playAudioChapter()
                 } else {
-                    self.readingStatsService.endSession(bookID: self.book.id)
                     self.handleEndOfBook()
                 }
             }
@@ -702,6 +701,10 @@ extension ReaderViewModel {
     /// Called when the last chapter finishes playing.
     /// Behavior depends on per-book override or global setting: stop, loop, or continue to next book.
     func handleEndOfBook() {
+        // Time after the end of the book is not listening time, so close this
+        // book's session here, once, for every way a book can end. Another
+        // window's session is left running.
+        readingStatsService.endSession(bookID: book.id)
         // Audio completion does not flow through SpeechService's publishers.
         // Clear its mirrored UI state before applying stop/loop/continue.
         isCurrentlyPlaying = false
