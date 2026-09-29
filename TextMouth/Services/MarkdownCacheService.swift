@@ -14,7 +14,9 @@ enum MarkdownCacheService {
     /// instead, so existing Markdown can be reindexed without source conversion.
     /// Older versions (or nil) regenerate through startup maintenance.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "3.0.4"
+    /// 3.0.5: EPUB page lists, landmarks, and hidden content no longer become
+    /// headings or speech, and annotations never enter heading lines.
+    static let currentCacheVersion: String = "3.0.5"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.

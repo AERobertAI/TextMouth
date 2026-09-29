@@ -590,6 +590,53 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(withoutGuide.chapters.map(\.text), cached.chapters.map(\.text))
     }
 
+    /// A reader opening a 3.0.4 package of a page-list book must replace the
+    /// stale cache and persisted index, whose page numbers filled the headings
+    /// list, and afterwards reuse the rebuilt index.
+    func testStalePageListCacheAndIndexAreRebuiltTogether() throws {
+        var book = try makePageListBook()
+        let repaired = try MarkdownCacheService.loadFromCache(for: book)
+        // Recreate the 3.0.4 shape: page destinations inside a paragraph and
+        // inside a heading line, and the hidden page list read as a heading.
+        let page = { (label: String) in MarkdownHeadingAnnotation(level: 1, text: label).markdown }
+        let legacyMarkdown = """
+        <!-- chapter: Contents -->
+        # Contents
+
+        ## Page List
+
+        <!-- chapter: \(page("1"))1 -->
+        # \(page("1"))1
+
+        More words \(page("2"))on the second page.
+        """
+        try legacyMarkdown.write(
+            to: book.tmbDirectory.appendingPathComponent("content.md"), atomically: true, encoding: .utf8
+        )
+        book.cacheFormatVersion = "3.0.4"
+        let legacy = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(legacy.allHeadings.map(\.text), ["Contents", "Page List", "1", "2"])
+        try book.saveBookInfoThrowing(contentIndex: legacy.contentIndex.replacingFormat(.epub))
+
+        let result = try BookContentAnalysisService.load(
+            book: book,
+            regenerateTextCache: MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+        )
+        XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertEqual(result.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(result.content.allHeadings, repaired.allHeadings)
+        XCTAssertEqual(result.index.allHeadings, repaired.allHeadings)
+        XCTAssertEqual(result.content.chapters.map(\.text), repaired.chapters.map(\.text))
+
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        book.cacheFormatVersion = result.cacheFormatVersion
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex)
+        XCTAssertEqual(reopened.content.allHeadings, repaired.allHeadings)
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
