@@ -45,6 +45,18 @@ extension ReaderViewModel {
         nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) != nil
     }
 
+    /// Text of the heading containing `bookmark`: the location its row and
+    /// rotor entry name. Nil before content loads, in a book without headings,
+    /// or when the bookmark precedes the first heading; bookmarks never fall
+    /// back to content-unit titles or numbers.
+    func headingText(forBookmark bookmark: Bookmark) -> String? {
+        HeadingPosition(
+            in: headings,
+            chapterIndex: bookmark.chapterIndex,
+            characterOffset: bookmark.characterOffset
+        ).headingText
+    }
+
     /// Toggle a bookmark at the current position: if one exists nearby, remove it;
     /// otherwise add a new one. When adding, checks for overlap with existing
     /// bookmarks and adjusts position to avoid placing two bookmarks within

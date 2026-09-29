@@ -16,7 +16,7 @@ final class LegacyWhereAmIProductionTests: XCTestCase {
         )
         let percent = content.percentComplete(globalOffset: globalOffset)
         let remaining = content.estimatedTimeRemaining(fromGlobalOffset: globalOffset, wpm: 200)
-        let heading = ReaderViewModel.currentHeading(
+        let position = HeadingPosition(
             in: content.allHeadings,
             chapterIndex: chapterIndex,
             characterOffset: localOffset
@@ -24,10 +24,11 @@ final class LegacyWhereAmIProductionTests: XCTestCase {
 
         let summary = ReaderViewModel.briefWhereAmISummary(
             bookTitle: content.title,
-            headingTitle: heading?.text,
-            chapterTitle: content.chapters[chapterIndex].title,
-            chapterIndex: chapterIndex,
-            chapterCount: content.chapters.count,
+            locationTitle: position.title(
+                contentTitle: content.chapters[chapterIndex].title,
+                bookTitle: content.title
+            ),
+            headingPosition: position,
             percentComplete: percent,
             timeRemaining: remaining
         )
@@ -35,7 +36,14 @@ final class LegacyWhereAmIProductionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(percent, 0)
         XCTAssertLessThanOrEqual(percent, 100)
         XCTAssertGreaterThanOrEqual(remaining, 0)
-        XCTAssertTrue(summary.contains("Chapter \(chapterIndex + 1) of \(content.chapters.count)"))
+        // The position is numbered among the book's headings, not its
+        // content units, and the containing heading is named.
+        XCTAssertEqual(position.count, content.allHeadings.count)
+        XCTAssertFalse(position.label.isEmpty)
+        XCTAssertTrue(summary.contains(position.label))
+        if let headingText = position.headingText {
+            XCTAssertTrue(summary.contains(headingText))
+        }
         XCTAssertTrue(summary.contains("percent"))
         XCTAssertTrue(summary.contains("remaining"))
     }

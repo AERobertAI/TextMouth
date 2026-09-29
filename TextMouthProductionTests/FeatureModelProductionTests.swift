@@ -69,12 +69,23 @@ final class FeatureModelProductionTests: XCTestCase {
 
     func testBookmarkAccessibilityIncludesNote() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
-        XCTAssertEqual(bookmark.accessibilityLabel, "Bookmark 3, Chapter 2, Note: Important")
+        XCTAssertEqual(
+            bookmark.accessibilityLabel(headingText: "The Battle"),
+            "Bookmark 3, The Battle, Note: Important"
+        )
     }
 
     func testBookmarkAccessibilityOmitsEmptyNote() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0)
-        XCTAssertEqual(bookmark.accessibilityLabel, "Bookmark 3, Chapter 2")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "The Battle"), "Bookmark 3, The Battle")
+    }
+
+    /// Without a known heading the location is omitted; the model never
+    /// substitutes a content-unit number.
+    func testBookmarkAccessibilityOmitsUnknownHeading() {
+        let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: nil), "Bookmark 3, Note: Important")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "   "), "Bookmark 3, Note: Important")
     }
 
     func testLastOpenedBookIDRoundTripsAsUUIDString() {
@@ -208,16 +219,39 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(ranges.first?.length, 10)
     }
 
+    /// The copied position uses Where Am I's heading vocabulary: the heading
+    /// text, then its number among all of the book's headings.
     func testCopyPositionBuildsFormattedSummary() {
-        let summary = ReaderViewModel.readingPositionSummary(parts: [
-            "The Great Gatsby", "by F. Scott Fitzgerald", "Chapter 3 of 9", "33.3% through", "2:15:00 remaining",
-        ])
-        XCTAssertTrue(summary.contains("Chapter 3 of 9"))
-        XCTAssertTrue(summary.contains("33.3% through"))
+        let headings = (0..<9).map { Heading(level: 1, text: "Part \($0 + 1)", chapterIndex: $0, characterOffset: 0) }
+        let summary = ReaderViewModel.readingPositionSummary(
+            bookTitle: "The Great Gatsby",
+            author: "F. Scott Fitzgerald",
+            locationTitle: "Part 3",
+            headingPosition: HeadingPosition(in: headings, chapterIndex: 2, characterOffset: 5),
+            percentComplete: 33.3,
+            formattedTimeRemaining: "2:15:00"
+        )
+        XCTAssertEqual(
+            summary,
+            "The Great Gatsby | by F. Scott Fitzgerald | Part 3 | Heading 3 of 9 | 33.3% through | 2:15:00 remaining"
+        )
     }
 
     func testCopyPositionOmitsUnknownAuthor() {
         XCTAssertEqual(ReaderViewModel.readingPositionSummary(parts: ["My Book", "by Unknown"]), "My Book")
+    }
+
+    /// Missing authors, headings, and heading numbers leave no empty fields.
+    func testCopyPositionOmitsEmptyFields() {
+        let summary = ReaderViewModel.readingPositionSummary(
+            bookTitle: "My Book",
+            author: "",
+            locationTitle: nil,
+            headingPosition: HeadingPosition(in: [], chapterIndex: 0, characterOffset: 0),
+            percentComplete: 0,
+            formattedTimeRemaining: "0:30"
+        )
+        XCTAssertEqual(summary, "My Book | 0.0% through | 0:30 remaining")
     }
 
     func testCopyReadingPositionNotificationExists() {

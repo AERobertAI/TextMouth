@@ -262,7 +262,7 @@ enum AudioParseError: LocalizedError {
         case .invalidDuration: return "Could not determine audio duration."
         case .noAudioFiles: return "No supported audio files found."
         case .unsupportedFormat: return "Unsupported audio format."
-        case .invalidSegment: return "An audio chapter refers to a missing file or an invalid time range."
+        case .invalidSegment: return "An audio section refers to a missing file or an invalid time range."
         }
     }
 }

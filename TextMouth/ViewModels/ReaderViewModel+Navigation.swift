@@ -251,7 +251,7 @@ extension ReaderViewModel {
         }
         if nextChapter < content.chapters.count {
             navigateTo(chapterIndex: nextChapter, characterOffset: 0)
-            announceToVoiceOver("Next chapter")
+            announceSectionCrossing(forward: true)
         }
     }
 
@@ -285,7 +285,7 @@ extension ReaderViewModel {
             // Find the last sentence start in the previous chapter
             let prevOffset = findSentenceStart(in: prevText, before: prevText.utf16Length)
             navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
-            announceToVoiceOver("Previous chapter")
+            announceSectionCrossing(forward: false)
         }
     }
 
@@ -313,7 +313,7 @@ extension ReaderViewModel {
         }
         if nextChapter < content.chapters.count {
             navigateTo(chapterIndex: nextChapter, characterOffset: 0)
-            announceToVoiceOver("Next chapter")
+            announceSectionCrossing(forward: true)
         }
     }
 
@@ -346,8 +346,37 @@ extension ReaderViewModel {
             // Find the last paragraph start in the previous chapter
             let prevOffset = findParagraphStart(in: prevText, before: prevText.utf16Length)
             navigateTo(chapterIndex: prevChapter, characterOffset: prevOffset)
-            announceToVoiceOver("Previous chapter")
+            announceSectionCrossing(forward: false)
         }
+    }
+
+    // MARK: - Section Crossing Announcements
+
+    /// Announce a sentence or paragraph move that crossed into another content
+    /// unit. Call after navigating, so the announcement describes where the
+    /// cursor landed.
+    private func announceSectionCrossing(forward: Bool) {
+        announceToVoiceOver(Self.sectionCrossingAnnouncement(
+            in: headings,
+            chapterIndex: currentChapterIndex,
+            characterOffset: currentCharacterOffset,
+            forward: forward
+        ))
+    }
+
+    /// Wording for a sentence or paragraph move that crossed a content-unit
+    /// boundary. Content units (spine files, audio files) are internal and
+    /// their count means nothing to the listener, so this names the heading
+    /// at or before the new position, as the headings panel would, or says
+    /// "Next section" / "Previous section" when no heading precedes it.
+    nonisolated static func sectionCrossingAnnouncement(
+        in headings: [Heading],
+        chapterIndex: Int,
+        characterOffset: Int,
+        forward: Bool
+    ) -> String {
+        HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).headingText
+            ?? (forward ? "Next section" : "Previous section")
     }
 
     /// Find the next sentence start using the reader's persisted UTF-16 offsets.
@@ -894,15 +923,14 @@ extension ReaderViewModel {
     }
 
     /// Return the heading at or immediately before the current reading position.
+    /// Delegates to `HeadingPosition` so heading lookups and the spoken
+    /// "Heading N of M" numbering can never disagree.
     nonisolated static func currentHeading(
         in headings: [Heading],
         chapterIndex: Int,
         characterOffset: Int
     ) -> Heading? {
-        headings.last(where: {
-            $0.chapterIndex < chapterIndex ||
-            ($0.chapterIndex == chapterIndex && $0.characterOffset <= characterOffset)
-        })
+        HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).heading
     }
 
     /// Return the first heading strictly after the current reading position.

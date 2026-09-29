@@ -30,26 +30,34 @@ struct ReaderView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityElement(children: .combine)
             } else {
-                // Book info header
+                // Book info header: the book title, the heading being read,
+                // and that heading's number among all the book's headings —
+                // the same list and numbering the headings panel shows.
+                // Internal content units (spine files, audio files) are
+                // never counted here.
                 VStack(alignment: .leading, spacing: 4) {
-                    if let content = viewModel.content {
+                    if viewModel.content != nil {
                         Text(viewModel.book.title)
                             .font(.title2)
                             .fontWeight(.bold)
                             .accessibilityAddTraits(.isHeader)
 
-                        if viewModel.displayChapterIndex < content.chapters.count {
-                            let chapter = content.chapters[viewModel.displayChapterIndex]
-                            if !chapter.title.isEmpty {
-                                Text(chapter.title)
-                                    .font(.title3)
-                                    .foregroundColor(.secondary)
-                            }
+                        let position = viewModel.displayHeadingPosition
+                        if let title = viewModel.locationTitle(
+                            for: position,
+                            chapterIndex: viewModel.displayChapterIndex
+                        ) {
+                            Text(title)
+                                .font(.title3)
+                                .foregroundColor(.secondary)
                         }
 
-                        Text("Chapter \(viewModel.displayChapterIndex + 1) of \(content.chapters.count)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        // Empty for a book without headings.
+                        if !position.label.isEmpty {
+                            Text(position.label)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -235,6 +243,8 @@ struct ReaderView: View {
                 BookSearchView(
                     chapterTexts: content.chapters.map { $0.text },
                     chapterTitles: content.chapters.map { $0.title },
+                    headings: viewModel.headings,
+                    bookTitle: viewModel.book.title,
                     totalCharacterCount: content.totalCharacterCount,
                     totalWordCount: content.totalWordCount,
                     currentWPM: viewModel.speechService.wordsPerMinute,

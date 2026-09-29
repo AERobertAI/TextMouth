@@ -305,7 +305,7 @@ struct PlaybackSettingsView: View {
                     }
                 }
                 .accessibilityLabel("End of book behavior")
-                .accessibilityHint("What happens when the last chapter of a book finishes playing")
+                .accessibilityHint("What happens when a book finishes playing")
 
                 Text("\"Continue to Next Book\" plays the next book in the same folder by sort order.")
                     .font(.caption)

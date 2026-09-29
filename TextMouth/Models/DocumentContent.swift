@@ -119,6 +119,141 @@ struct Heading: Identifiable, Hashable {
         self.characterOffset = characterOffset
         self.id = "\(chapterIndex)-\(characterOffset)-\(level)-\(text)"
     }
+
+    /// Whether this heading begins at or before a reading position. The last
+    /// heading satisfying this contains the position; that single rule decides
+    /// the current heading for the headings panel, the reader header, Where
+    /// Am I, bookmark labels, and navigation announcements alike.
+    func startsAtOrBefore(chapterIndex: Int, characterOffset: Int) -> Bool {
+        self.chapterIndex < chapterIndex
+            || (self.chapterIndex == chapterIndex && self.characterOffset <= characterOffset)
+    }
+}
+
+extension String {
+    /// This string, or nil when it holds only whitespace, so a blank title is
+    /// left out of labels instead of being shown or spoken as an empty phrase.
+    var nonBlank: String? {
+        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : self
+    }
+}
+
+/// A reading position described by the book's headings — the same list the
+/// headings panel shows. Internally a book is divided into content units
+/// (EPUB spine documents, audio files, or one whole text file) whose count
+/// rarely matches the headings a reader navigates, so every user-facing
+/// location counts headings and never content units.
+struct HeadingPosition: Equatable {
+    /// The heading containing the position: the last heading that starts at
+    /// or before it. Nil when the position precedes the first heading.
+    let heading: Heading?
+    /// 1-based number of `heading` within the book's heading list, or nil
+    /// when the position precedes the first heading.
+    let number: Int?
+    /// Total number of headings in the book.
+    let count: Int
+
+    /// Locate a (content unit, character offset) position within `headings`.
+    /// A linear scan keeps the result identical to the headings panel for any
+    /// heading order; books hold at most a few thousand headings, so the cost
+    /// is negligible even when the reader header re-renders during playback.
+    init(in headings: [Heading], chapterIndex: Int, characterOffset: Int) {
+        self.init(
+            headings: headings,
+            containingIndex: headings.lastIndex {
+                $0.startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset)
+            }
+        )
+    }
+
+    /// Build a position from the list index of its containing heading, as
+    /// found by the initializer above or by `HeadingSweep`.
+    fileprivate init(headings: [Heading], containingIndex: Int?) {
+        heading = containingIndex.map { headings[$0] }
+        number = containingIndex.map { $0 + 1 }
+        count = headings.count
+    }
+
+    /// The shared position label: "Heading N of M", "Before heading 1 of M"
+    /// when the position precedes the first heading, or an empty string for a
+    /// book without headings (callers drop empty parts rather than speak them).
+    var label: String {
+        guard count > 0 else { return "" }
+        guard let number else { return "Before heading 1 of \(count)" }
+        return "Heading \(number) of \(count)"
+    }
+
+    /// The containing heading's text, or nil before the first heading or when
+    /// that heading's text is blank.
+    var headingText: String? {
+        heading?.text.nonBlank
+    }
+
+    /// Name for the position, or nil when nothing beyond `label` is worth
+    /// saying. Normally this is the containing heading's text. Only a book with
+    /// no headings at all falls back to its content unit's own title, and even
+    /// then not when that title merely repeats the book title.
+    func title(contentTitle: String?, bookTitle: String) -> String? {
+        guard count == 0 else { return headingText }
+        guard let contentTitle = contentTitle?.nonBlank,
+              !Self.isSameTitle(contentTitle, bookTitle)
+        else { return nil }
+        return contentTitle
+    }
+
+    /// Compare titles the way a listener hears them: ignoring letter case and
+    /// surrounding whitespace.
+    private static func isSameTitle(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.trimmingCharacters(in: .whitespacesAndNewlines)
+            .caseInsensitiveCompare(rhs.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
+    }
+}
+
+/// Locates a series of positions within one heading list. When positions
+/// arrive in reading order, as book search results do, each heading is
+/// visited once in total instead of once per position. Every answer equals
+/// `HeadingPosition(in:chapterIndex:characterOffset:)` for the same list,
+/// whatever order the list is in; a position earlier than the previous one
+/// simply restarts the sweep.
+struct HeadingSweep {
+    private let headings: [Heading]
+    /// List indices ordered by where each heading starts; ties keep list order.
+    private let startOrder: [Int]
+    /// How many leading entries of `startOrder` start at or before the last
+    /// position located.
+    private var passedCount = 0
+    /// Greatest list index among those passed headings, which is exactly the
+    /// index `HeadingPosition` would find with its backwards scan.
+    private var containingIndex: Int?
+    /// The previous position, to detect a move backwards.
+    private var previousPosition: (Int, Int)?
+
+    init(headings: [Heading]) {
+        self.headings = headings
+        startOrder = headings.indices.sorted { lhs, rhs in
+            (headings[lhs].chapterIndex, headings[lhs].characterOffset, lhs)
+                < (headings[rhs].chapterIndex, headings[rhs].characterOffset, rhs)
+        }
+    }
+
+    /// Locate the next position, advancing past every heading that starts at
+    /// or before it.
+    mutating func position(chapterIndex: Int, characterOffset: Int) -> HeadingPosition {
+        if let previousPosition, (chapterIndex, characterOffset) < previousPosition {
+            passedCount = 0
+            containingIndex = nil
+        }
+        previousPosition = (chapterIndex, characterOffset)
+
+        while passedCount < startOrder.count {
+            let index = startOrder[passedCount]
+            guard headings[index].startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset)
+            else { break }
+            containingIndex = max(containingIndex ?? index, index)
+            passedCount += 1
+        }
+        return HeadingPosition(headings: headings, containingIndex: containingIndex)
+    }
 }
 
 enum SleepTimerDuration: Hashable {

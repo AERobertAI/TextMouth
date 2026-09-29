@@ -50,7 +50,12 @@ final class ReaderViewModel: ObservableObject {
     let settingsViewModel: SettingsViewModel
     var soundEffectService: SoundEffectService?
 
-    @Published var content: DocumentContent?
+    @Published var content: DocumentContent? {
+        // Derive the published heading list from whatever content the reader
+        // holds, so the headings panel and every heading-based location label
+        // always count exactly the same headings.
+        didSet { headings = content?.allHeadings ?? [] }
+    }
     @Published var currentChapterIndex = 0 {
         didSet {
             schedulePlaybackUIRefresh()
@@ -75,6 +80,8 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var displayVisibleTextWindow = ""
     @Published var isLoading = true
     @Published var errorMessage: String?
+    /// Every heading in the book, in reading order: the headings panel's rows
+    /// and the list that heading numbers count. Kept in step with `content`.
     @Published var headings: [Heading] = []
     @Published var bookmarks: [Bookmark] = []
     @Published var epubMetadata: EPUBMetadata?
@@ -157,6 +164,10 @@ final class ReaderViewModel: ObservableObject {
     /// Track when "Where Am I?" was last triggered for brief->full escalation.
     /// Accessed from WhereAmI extension.
     var lastWhereAmITime: Date = .distantPast
+    /// Text of the most recent VoiceOver announcement, recorded even when no
+    /// window can post it, so regression tests can verify spoken wording.
+    /// Written only by `announceToVoiceOver(_:)`.
+    var lastAnnouncement: String?
 
     /// Base offset for word-spoken callback tracking
     var utteranceBaseOffset: Int = 0
@@ -774,8 +785,8 @@ final class ReaderViewModel: ObservableObject {
                     if let segs = loadedAudioSegments {
                         self.audioSegments = segs
                     }
+                    // Assigning content also publishes its headings.
                     self.content = parsed
-                    self.headings = parsed.allHeadings
                     self.epubMetadata = loadedMetadata
                     self.audioMetadata = loadedAudioMetadata
 
