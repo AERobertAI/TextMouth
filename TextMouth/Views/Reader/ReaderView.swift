@@ -248,6 +248,7 @@ struct ReaderView: View {
                     totalCharacterCount: content.totalCharacterCount,
                     totalWordCount: content.totalWordCount,
                     currentWPM: viewModel.speechService.wordsPerMinute,
+                    announce: viewModel.announceToVoiceOver,
                     onNavigate: { chapterIndex, charOffset in
                         viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
                         showSearch = false

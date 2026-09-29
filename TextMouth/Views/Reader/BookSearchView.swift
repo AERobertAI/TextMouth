@@ -256,23 +256,57 @@ enum BookSearchEngine {
 }
 
 struct BookSearchView: View {
-    let chapterTexts: [String]
-    let chapterTitles: [String]
-    /// Every heading in the book, used to name where each match is.
-    let headings: [Heading]
-    /// The book's title, so a content title that merely repeats it is not
-    /// offered as a match's location.
-    let bookTitle: String
     let totalCharacterCount: Int
     let totalWordCount: Int
     let currentWPM: Double
     let onNavigate: (Int, Int) -> Void  // chapterIndex, characterOffset
     @Environment(\.dismiss) private var dismiss
 
-    @State private var searchText = ""
-    @State private var useRegex = false
+    /// Runs the searches: waits for typing to pause, works off the main
+    /// actor, and reports each search's status.
+    @StateObject private var model: BookSearchModel
     @State private var displayMode: DisplayMode = .percentage
     @FocusState private var isSearchFieldFocused: Bool
+
+    /// - Parameters:
+    ///   - chapterTexts: Text of each content unit, searched in order.
+    ///   - chapterTitles: Title of each content unit, which names a match's
+    ///     location in a book without headings.
+    ///   - headings: Every heading in the book, used to name where each
+    ///     match is.
+    ///   - bookTitle: The book's title, so a content title that merely
+    ///     repeats it is not offered as a match's location.
+    ///   - announce: Speaks each completed search's status through VoiceOver.
+    ///   - onNavigate: Opens a result, given its chapter index and UTF-16
+    ///     character offset.
+    init(
+        chapterTexts: [String],
+        chapterTitles: [String],
+        headings: [Heading],
+        bookTitle: String,
+        totalCharacterCount: Int,
+        totalWordCount: Int,
+        currentWPM: Double,
+        announce: @escaping @MainActor (String) -> Void,
+        onNavigate: @escaping (Int, Int) -> Void
+    ) {
+        self.totalCharacterCount = totalCharacterCount
+        self.totalWordCount = totalWordCount
+        self.currentWPM = currentWPM
+        self.onNavigate = onNavigate
+        // StateObject builds the model once each time the sheet opens; the
+        // copies of the book passed in by later reader refreshes go unused.
+        _model = StateObject(wrappedValue: BookSearchModel(
+            corpus: BookSearchCorpus(
+                chapterTexts: chapterTexts,
+                chapterTitles: chapterTitles,
+                headings: headings,
+                bookTitle: bookTitle
+            ),
+            announce: announce
+        ))
+    }
+
     enum DisplayMode: String, CaseIterable {
         case percentage = "Percentage"
         case time = "Time"
@@ -305,12 +339,6 @@ struct BookSearchView: View {
         }
     }
 
-    private enum SearchOutcome {
-        case empty
-        case results([BookSearchResult])
-        case regexError(String)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -325,9 +353,9 @@ struct BookSearchView: View {
             }
             .padding()
 
-            // Search field and options
+            // Search field, the status of its search, and options
             VStack(spacing: 8) {
-                TextField("Search text", text: $searchText)
+                TextField("Search text", text: $model.query)
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
                     .accessibilityLabel("Search text")
@@ -335,8 +363,16 @@ struct BookSearchView: View {
                     .accessibilityIdentifier(voiceOverFocusID)
                     .background(VoiceOverFocus(delay: 1.2))
 
+                // Plain text right after the field, which VoiceOver reads in
+                // place. Each completed search also announces it, so the
+                // outcome is heard without leaving the field.
+                Text(model.status.text)
+                    .font(.callout)
+                    .foregroundColor(model.status.isError ? .red : .secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 HStack {
-                    Toggle("Use Regex", isOn: $useRegex)
+                    Toggle("Use Regex", isOn: $model.useRegex)
                         .toggleStyle(.checkbox)
                         .accessibilityLabel("Use regular expression")
                         .accessibilityHint("When enabled, search text is treated as a regular expression")
@@ -358,34 +394,13 @@ struct BookSearchView: View {
 
             Divider()
 
-            // Results
-            switch searchOutcome {
-            case .empty:
-                if searchText.isEmpty {
-                    Text("Enter a search term above.")
-                        .foregroundColor(.secondary)
-                        .padding()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    Text("No results found.")
-                        .foregroundColor(.secondary)
-                        .padding()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityLabel("No results found for \(searchText)")
-                }
-
-            case .regexError(let message):
-                Text(message)
-                    .foregroundColor(.red)
-                    .font(.callout)
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityLabel("Regex error: \(message)")
-
-            case .results(let results):
+            // Results. When there are none, the status line says why.
+            if model.results.isEmpty {
+                Spacer()
+            } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(results) { result in
+                        ForEach(model.results) { result in
                             // A native button exposes the same activation to
                             // keyboard, VoiceOver, braille, and pointer users.
                             Button {
@@ -409,9 +424,12 @@ struct BookSearchView: View {
                         }
                     }
                 }
-                .accessibilityLabel("\(results.count) \(results.count == 1 ? "match" : "matches") found")
+                // The status line above gives the count, which "N matches
+                // found" here would repeat, and misstate once the result
+                // limit is reached.
+                .accessibilityLabel("Search results")
                 .accessibilityRotor("Search Results") {
-                    ForEach(results) { result in
+                    ForEach(model.results) { result in
                         AccessibilityRotorEntry(result.contextAndLocation, id: result.id)
                     }
                 }
@@ -424,31 +442,9 @@ struct BookSearchView: View {
                 isSearchFieldFocused = true
             }
         }
-    }
-
-    private var searchOutcome: SearchOutcome {
-        guard !searchText.isEmpty else { return .empty }
-
-        // Nothing cancels this synchronous search, so it never throws.
-        let corpus = BookSearchCorpus(
-            chapterTexts: chapterTexts,
-            chapterTitles: chapterTitles,
-            headings: headings,
-            bookTitle: bookTitle
-        )
-        guard let outcome = try? BookSearchEngine.search(
-            query: searchText,
-            useRegex: useRegex,
-            in: corpus,
-            isCancelled: { false }
-        ) else { return .empty }
-
-        switch outcome {
-        case .matches(let results, _):
-            return results.isEmpty ? .empty : .results(results)
-        case .invalidPattern(let message):
-            return .regexError("Invalid regex: \(message)")
-        }
+        // Closing the sheet stops its search, so nothing is announced after
+        // it is gone.
+        .onDisappear { model.cancelSearch() }
     }
 }
 
