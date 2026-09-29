@@ -10,8 +10,7 @@ struct DAISYNavPoint {
 }
 
 /// SAX parser for DAISY 3 NCX files to extract navigation points
-class DAISYNCXParser: NSObject, XMLParserDelegate {
-    private let data: Data
+class DAISYNCXParser: DAISYSAXParser {
     private var navPoints: [DAISYNavPoint] = []
 
     // Parsing state
@@ -24,15 +23,12 @@ class DAISYNCXParser: NSObject, XMLParserDelegate {
     private var inNavLabel = false
     private var inText = false
 
-    init(data: Data) {
-        self.data = data
-    }
-
-    func parse() -> [DAISYNavPoint] {
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.parse()
+    /// Parse the navigation map into points in document order.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   truncated or not well-formed. Audio segments follow this list, so a
+    ///   partial map would silently end the book early.
+    func parse() throws -> [DAISYNavPoint] {
+        try parseDocument()
         return navPoints.filter { !$0.label.isEmpty && !$0.contentSrc.isEmpty }
     }
 

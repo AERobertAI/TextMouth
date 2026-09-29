@@ -23,6 +23,17 @@ final class DAISYMalformedXMLTests: XCTestCase {
     </package>
     """
 
+    /// A DAISY 3 navigation map with two top-level points.
+    private static let ncx = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+    <navMap>
+    <navPoint id="n1"><navLabel><text>Leadline Readings</text></navLabel><content src="part1.smil#p1"/></navPoint>
+    <navPoint id="n2"><navLabel><text>Breakwater Survey</text></navLabel><content src="part2.smil#p2"/></navPoint>
+    </navMap>
+    </ncx>
+    """
+
     /// DTBook content with a heading and two paragraphs.
     private static let dtbook = """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -153,6 +164,35 @@ final class DAISYMalformedXMLTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: audioDirectory) }
 
         malformedXMLReason(naming: "package.opf") {
+            try DAISYAudioConverter.convertToAudioBook(from: package, version: .daisy3, toDirectory: audioDirectory)
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])
+    }
+
+    // MARK: - NCX Navigation
+
+    /// A map cut off after its first point used to parse as a one-point map,
+    /// turning a whole audio book into its first chapter without a word.
+    func testTruncatedNCXThrowsErrorNamingTheFile() throws {
+        let complete = try DAISYNCXParser(data: Data(Self.ncx.utf8), file: "book.ncx").parse()
+        XCTAssertEqual(complete.map(\.label), ["Leadline Readings", "Breakwater Survey"])
+
+        let damaged = Self.truncated(Self.ncx, before: "<navPoint id=\"n2\"")
+        malformedXMLReason(naming: "book.ncx") {
+            try DAISYNCXParser(data: Data(damaged.utf8), file: "book.ncx").parse()
+        }
+    }
+
+    /// Audio import stops on a damaged navigation map before copying audio.
+    func testDAISY3AudioImportWithTruncatedNCXReportsTheNavigationFile() throws {
+        let package = InMemoryDAISYPackage([
+            "package.opf": Self.opf,
+            "book.ncx": Self.truncated(Self.ncx, before: "</navMap>")
+        ])
+        let audioDirectory = try Self.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: audioDirectory) }
+
+        malformedXMLReason(naming: "book.ncx") {
             try DAISYAudioConverter.convertToAudioBook(from: package, version: .daisy3, toDirectory: audioDirectory)
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])

@@ -183,9 +183,7 @@ enum DAISYAudioConverter {
         guard let ncxPath = allFiles.first(where: { $0.lowercased().hasSuffix(".ncx") }) else {
             throw DAISYParserError.missingContent("No NCX file found")
         }
-        let ncxData = try provider.readFile(at: ncxPath)
-        let ncxParser = DAISYNCXParser(data: ncxData)
-        let navPoints = ncxParser.parse()
+        let navPoints = try DAISYNCXParser(path: ncxPath, in: provider).parse()
 
         // Pre-parse all referenced SMIL files so we can compute segment
         // boundaries across navPoints that share the same SMIL file.
