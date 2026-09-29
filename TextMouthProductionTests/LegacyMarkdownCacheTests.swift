@@ -263,4 +263,42 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         )
         XCTAssertEqual(content.allHeadings, [])
     }
+
+    /// A reader opening a .txt package written at format 3.0.5 must replace
+    /// its cache and persisted index, whose text lost Markdown-looking
+    /// characters, with a literal rebuild that matches the direct parser, and
+    /// afterwards reuse the rebuilt index.
+    func testPlainTextCacheFromFormat305IsRebuiltAsLiteralText() throws {
+        let body = "*Starred* words -- and <b>tags</b> & [links](x)."
+        var book = try importPlainTextBook("OPENING\n\(body)")
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .txt)
+        // Recreate what format 3.0.5 stored: the all-caps line marked up as a
+        // heading and every other line copied verbatim for the Markdown reader.
+        try "## OPENING\n\(body)".write(
+            to: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory), atomically: true, encoding: .utf8
+        )
+        book.cacheFormatVersion = "3.0.5"
+        let legacy = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(legacy.chapters.map(\.text), ["OPENING\n\nStarred words \u{2013} and tags & links."])
+        try book.saveBookInfoThrowing(contentIndex: legacy.contentIndex.replacingFormat(.txt))
+
+        XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion))
+        let result = try BookContentAnalysisService.load(
+            book: book,
+            regenerateTextCache: MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+        )
+        XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertEqual(result.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(result.content.chapters.map(\.text), ["OPENING\n\n\(body)"])
+        assertSamePlainTextReading(cached: result.content, direct: direct)
+        XCTAssertEqual(result.index.allHeadings, direct.allHeadings)
+
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        book.cacheFormatVersion = result.cacheFormatVersion
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex)
+        assertSamePlainTextReading(cached: reopened.content, direct: direct)
+    }
 }

@@ -18,7 +18,11 @@ enum MarkdownCacheService {
     /// headings or speech; a navigation annotation never enters a heading or
     /// begins a line (which hid that line's words); named anchors add no "[]";
     /// and a heading with a line break stays one heading.
-    static let currentCacheVersion: String = "3.0.5"
+    /// 3.0.6: plain-text books are stored as literal Markdown, so text that
+    /// looks like Markdown or HTML is read as written and matches the direct
+    /// parser; and DAISY 2.02 inline fragments are read in full, where caches
+    /// written earlier kept only a fragment's first child element's text.
+    static let currentCacheVersion: String = "3.0.6"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
