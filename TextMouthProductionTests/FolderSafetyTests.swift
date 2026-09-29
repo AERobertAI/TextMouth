@@ -522,6 +522,35 @@ final class FolderSafetyTests: XCTestCase {
         XCTAssertNil(library.folderSortSettings["Old/Sub"])
     }
 
+    // MARK: - Directory Cleanup
+
+    /// Cleanup matches directories to folders with the volume's rule: where
+    /// case is ignored, an empty directory spelled `reports` is the folder
+    /// `Reports` and stays, while an untracked empty directory still goes.
+    func testEmptyDirectoryCleanupKeepsEquivalentlySpelledFolders() throws {
+        let fileManager = FileManager.default
+        let libraryDir = fileManager.temporaryDirectory
+            .appendingPathComponent("TextMouthCleanup-\(UUID().uuidString)/Library", isDirectory: true)
+        defer { try? fileManager.removeItem(at: libraryDir.deletingLastPathComponent()) }
+        let tracked = libraryDir.appendingPathComponent("reports/Q1", isDirectory: true)
+        let untracked = libraryDir.appendingPathComponent("Leftover", isDirectory: true)
+        try fileManager.createDirectory(at: tracked, withIntermediateDirectories: true)
+        try fileManager.createDirectory(at: untracked, withIntermediateDirectories: true)
+        let library = Library(folders: [
+            BookFolder(name: "Reports"),
+            BookFolder(name: "q1", parentPath: "Reports"),
+        ])
+
+        FileImportService.removeEmptyLibrarySubdirectories(
+            library: library,
+            libraryDirectory: libraryDir,
+            equivalence: .caseInsensitive
+        )
+
+        XCTAssertTrue(fileManager.fileExists(atPath: tracked.path))
+        XCTAssertFalse(fileManager.fileExists(atPath: untracked.path))
+    }
+
     // MARK: - Explaining Refused Edits
 
     /// Deletes top-level folders a view-model test created in the test root.
