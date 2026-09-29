@@ -25,7 +25,7 @@ extension ReaderViewModel {
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) { return }
         // Find what a text book will say before claiming playback, so a book
-        // with nothing left to say ends without touching any of the below.
+        // with nothing left to say ends before any playback state is claimed.
         var speechStart: SpeechStart?
         if !isAudioBook {
             guard let start = speechStartFromCursor() else {
@@ -293,8 +293,8 @@ extension ReaderViewModel {
     /// Where speech resumes from the cursor: the rest of the cursor's
     /// chapter when anything speakable follows the cursor there, otherwise
     /// the start of the next speakable chapter. Nil when nothing speakable
-    /// remains in the book, and when no loaded chapter holds the cursor,
-    /// which callers rule out first.
+    /// remains in the book, and when no content is loaded or the cursor is
+    /// outside it, which callers rule out first.
     ///
     /// A chapter that is speakable as a whole can still have nothing left
     /// after the cursor, when the cursor sits in a skipped section at the
