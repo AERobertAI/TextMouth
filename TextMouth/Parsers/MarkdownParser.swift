@@ -65,6 +65,10 @@ private struct PlainTextExtractor: MarkupWalker {
     var headings: [(level: Int, text: String, offset: Int)] = []
     var navigationHeadings: [(level: Int, text: String, offset: Int)] = []
     private var utf16Length = 0
+    /// Start of the heading being walked, if any. Caches written before format
+    /// 3.0.5 could place an annotation inside a heading line; it names that
+    /// heading, so it takes the heading's offset rather than a later one.
+    private var currentHeadingOffset: Int?
 
     /// Only generated cache/EPUB Markdown opts into navigation annotations.
     init(includeNavigationHeadings: Bool) {
@@ -122,9 +126,35 @@ private struct PlainTextExtractor: MarkupWalker {
     /// Record the exact text position before walking the heading's children.
     mutating func visitHeading(_ heading: Markdown.Heading) -> () {
         separateBlock()
-        headings.append((heading.level, heading.plainText, utf16Length))
+        headings.append((heading.level, Self.visibleLabel(of: heading), utf16Length))
+        currentHeadingOffset = utf16Length
         descendInto(heading)
+        currentHeadingOffset = nil
         append("\n\n")
+    }
+
+    /// Heading-list labels contain only visible words. HTML comments, such as
+    /// annotations inside headings of caches written before format 3.0.5, are
+    /// never displayed. Every other label keeps swift-markdown's plain text
+    /// exactly, so existing labels and the heading IDs built from them hold.
+    private static func visibleLabel(of heading: Markdown.Heading) -> String {
+        let label = heading.plainText
+        guard label.contains("<!--") else { return label }
+        return textExcludingComments(heading).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Mirror swift-markdown's inline plain text (containers join their
+    /// children) while omitting HTML comments.
+    private static func textExcludingComments(_ markup: Markup) -> String {
+        markup.children.map { child -> String in
+            if let html = child as? InlineHTML {
+                return html.rawHTML.hasPrefix("<!--") ? "" : html.rawHTML
+            }
+            if child is InlineContainer {
+                return textExcludingComments(child)
+            }
+            return (child as? InlineMarkup)?.plainText ?? ""
+        }.joined()
     }
 
     /// Block annotations precede a chapter or block target; establish the same
@@ -137,9 +167,11 @@ private struct PlainTextExtractor: MarkupWalker {
     }
 
     /// Inline anchors keep their precise location within the current paragraph.
+    /// Inside a heading an anchor names the heading itself, so it shares the
+    /// heading's offset instead of adding a row partway through its label.
     mutating func visitInlineHTML(_ html: InlineHTML) {
         guard includeNavigationHeadings,
               let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) else { return }
-        navigationHeadings.append((annotation.level, annotation.text, utf16Length))
+        navigationHeadings.append((annotation.level, annotation.text, currentHeadingOffset ?? utf16Length))
     }
 }

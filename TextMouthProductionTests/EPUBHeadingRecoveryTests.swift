@@ -506,6 +506,40 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(untitled.headings.map(\.characterOffset), [0])
     }
 
+    /// Caches written before format 3.0.5 could hold an annotation inside a
+    /// heading line. Parsing them must still show only the visible label, and
+    /// the annotation must resolve to that heading rather than add a row.
+    func testAnnotationsInsideLegacyHeadingLinesNeverReachLabels() throws {
+        let page = MarkdownHeadingAnnotation(level: 1, text: "10").markdown
+        let section = MarkdownHeadingAnnotation(level: 2, text: "Section from contents").markdown
+        let markdown = """
+        # \(page)2
+
+        Body.
+
+        ## Chapter \(section)Two
+
+        More.
+
+        ### Notes <!-- ordinary comment -->
+
+        End.
+        """
+        for includeNavigationHeadings in [false, true] {
+            let chapter = try MarkdownDocParser.parseChapter(
+                markdown: markdown, includeNavigationHeadings: includeNavigationHeadings
+            )
+            XCTAssertFalse(chapter.text.contains("<!--"))
+            XCTAssertEqual(chapter.headings.map(\.text), ["2", "Chapter Two", "Notes"])
+            XCTAssertEqual(chapter.headings.map(\.level), [1, 2, 3])
+            let offsets = try ["Chapter Two", "Notes"].map {
+                chapter.text.utf16Offset(of: try XCTUnwrap(chapter.text.range(of: $0)).lowerBound)
+            }
+            XCTAssertEqual(chapter.headings.map(\.characterOffset), [0] + offsets)
+            XCTAssertEqual(chapter.title, "2")
+        }
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
