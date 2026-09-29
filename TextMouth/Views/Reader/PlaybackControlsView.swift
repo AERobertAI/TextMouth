@@ -78,10 +78,11 @@ struct PlaybackControlsView: View {
                 .buttonStyle(.plain)
 
                 if viewModel.isAudioBook {
-                    Text(String(format: "%.2fx", viewModel.audioSpeed))
+                    // Shared formatter: "1.25x" on screen, "1.25 times speed" spoken.
+                    Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
                         .font(.system(.body, design: .monospaced))
                         .frame(minWidth: 50)
-                        .accessibilityLabel(String(format: "%.2f times speed", viewModel.audioSpeed))
+                        .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
                 } else {
                     Text("\(Int(viewModel.currentWPM))")
                         .font(.system(.body, design: .monospaced))

@@ -610,7 +610,7 @@ extension ReaderViewModel {
         // `localWPM` slot; it is never interpreted as words per minute.
         book.localWPM = newSpeed
         saveLocalVoiceSettings()
-        announceToVoiceOver(String(format: "%.2fx speed", newSpeed))
+        announceToVoiceOver(AudioSpeed.spokenLabel(for: newSpeed))
     }
 
     /// Move the audio speed by a signed multiplier delta (e.g. +0.25x).

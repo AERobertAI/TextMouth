@@ -85,7 +85,7 @@ extension ReaderViewModel {
         if isAudioBook {
             audioSpeed = AudioSpeed.normal
             audioPlaybackService.setSpeed(audioSpeed)
-            announceToVoiceOver("Using normal audio speed")
+            announceToVoiceOver("Audio speed reset to \(AudioSpeed.spokenLabel(for: audioSpeed))")
             return
         }
         // Apply global settings

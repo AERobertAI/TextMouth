@@ -62,16 +62,16 @@ enum AudioPositionObserverPolicy {
 // MARK: - Audio Speed Rules
 
 /// The single source of truth for audio book playback speed: the supported
-/// range, the step sizes, and snapping.
+/// range, the step sizes, snapping, and the text shown and spoken for a speed.
 ///
 /// Audio speed is a multiplier of the recording's natural speed (1.0 = as
 /// recorded). Every speed that is applied to the player, restored from a
-/// saved book, used for a time estimate, or saved passes through
-/// `normalized(_:)`, which clamps it to `range` and snaps it to the
-/// `fineStep` grid. Snapping keeps binary floating-point drift such as
-/// `1.0 + 0.1 == 1.1000000000000001` out of the player and the saved library,
-/// and keeps the quarter steps saved by earlier releases (1.25, 1.5, 1.75, 2)
-/// exact.
+/// saved book, used for a time estimate, saved, displayed, or announced
+/// passes through `normalized(_:)`, which clamps it to `range` and snaps it
+/// to the `fineStep` grid. Snapping keeps binary floating-point drift such as
+/// `1.0 + 0.1 == 1.1000000000000001` out of the player, the UI, and the saved
+/// library, and keeps the quarter steps saved by earlier releases
+/// (1.25, 1.5, 1.75, 2) exact.
 enum AudioSpeed {
     /// Supported multipliers. Unchanged from earlier releases so every saved
     /// per-book speed stays valid. Both bounds lie on the snapping grid.
@@ -98,6 +98,32 @@ enum AudioSpeed {
         let clamped = min(max(speed, range.lowerBound), range.upperBound)
         // The bounds are on the grid, so snapping cannot leave the range.
         return (clamped * gridPointsPerUnit).rounded() / gridPointsPerUnit
+    }
+
+    // MARK: Labels
+
+    /// A multiplier or step as a plain decimal with one or two fraction
+    /// digits: "1.0", "1.3", "1.25", "0.05". It always uses "." (like the
+    /// app's other numeric labels) so the visible and spoken forms of a
+    /// speed carry exactly the same number.
+    static func formattedNumber(_ value: Double) -> String {
+        // Two fixed decimals keep every hundredth ("1.25", "1.30"). Dropping
+        // one trailing zero then leaves at least one decimal ("1.3", "1.0"),
+        // so a two-decimal speed is never shown with one decimal.
+        let twoDecimals = String(format: "%.2f", value)
+        return twoDecimals.hasSuffix("0") ? String(twoDecimals.dropLast()) : twoDecimals
+    }
+
+    /// Visible speed text, e.g. "1.0x", "1.3x", "1.25x". The speed is
+    /// normalized first, so the label always names the speed that plays.
+    static func visibleLabel(for speed: Double) -> String {
+        "\(formattedNumber(normalized(speed)))x"
+    }
+
+    /// Spoken equivalent of `visibleLabel(for:)` for VoiceOver and braille,
+    /// e.g. "1.25 times speed". A bare "1.25x" is read ambiguously.
+    static func spokenLabel(for speed: Double) -> String {
+        "\(formattedNumber(normalized(speed))) times speed"
     }
 }
 

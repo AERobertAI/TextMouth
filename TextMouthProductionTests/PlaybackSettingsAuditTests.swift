@@ -151,6 +151,49 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(reader.totalEstimatedTime, libraryEstimate)
     }
 
+    // MARK: - Audio speed labels
+
+    /// Visible text keeps hundredths only when present and always shows at
+    /// least one decimal, so 1.25 is never displayed as 1.2 or 1.3.
+    func testAudioSpeedVisibleLabels() {
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1), "1.0x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1.3), "1.3x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1.25), "1.25x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 0.25), "0.25x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 4), "4.0x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1.05), "1.05x")
+    }
+
+    /// VoiceOver and braille get the same number followed by "times speed".
+    func testAudioSpeedSpokenLabels() {
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 1), "1.0 times speed")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 1.3), "1.3 times speed")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 1.25), "1.25 times speed")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 0.25), "0.25 times speed")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 4), "4.0 times speed")
+    }
+
+    /// Labels name the speed that would actually play: drifted, raw, and
+    /// damaged values are normalized before formatting.
+    func testAudioSpeedLabelsDescribeNormalizedSpeed() {
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1.0 + 0.1), "1.1x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 1.2345), "1.25x")
+        XCTAssertEqual(AudioSpeed.visibleLabel(for: 9), "4.0x")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: .nan), "1.0 times speed")
+    }
+
+    /// Exhaustively, every supported speed shows a number that parses back to
+    /// exactly that speed, and its spoken label carries the same number.
+    func testEverySupportedSpeedHasLosslessMatchingLabels() {
+        for gridIndex in 5...80 {
+            let speed = Double(gridIndex) / 20
+            let number = String(AudioSpeed.visibleLabel(for: speed).dropLast())
+
+            XCTAssertEqual(Double(number), speed, "Visible label for \(speed)")
+            XCTAssertEqual(AudioSpeed.spokenLabel(for: speed), "\(number) times speed")
+        }
+    }
+
     /// Use an isolated notification center and a nonexistent file: these
     /// settings operations do not need parsing or an active audio device.
     /// `localWPM` holds words per minute for text books and the playback

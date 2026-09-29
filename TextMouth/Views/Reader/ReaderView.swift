@@ -163,10 +163,11 @@ struct ReaderView: View {
                 .accessibilityLabel("Edit book metadata")
 
                 if viewModel.isAudioBook {
-                    Text(String(format: "%.2fx", viewModel.audioSpeed))
+                    // Shared formatter: "1.25x" on screen, "1.25 times speed" spoken.
+                    Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
                         .font(.caption)
                         .foregroundColor(viewModel.book.localWPM != nil ? .accentColor : .secondary)
-                        .accessibilityLabel(String(format: "%.2f times speed", viewModel.audioSpeed))
+                        .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
                 } else {
                     Text("\(Int(viewModel.speechService.wordsPerMinute)) WPM")
                         .font(.caption)
@@ -305,8 +306,9 @@ struct BookVoicePickerView: View {
                         ), in: 0.25...4.0, step: 0.25) {
                             Text("Audio speed")
                         }
-                        .accessibilityValue(String(format: "%.2f times speed", viewModel.audioSpeed))
-                        Text(String(format: "%.2fx", viewModel.audioSpeed))
+                        .accessibilityValue(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
+                        Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
+                            .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
                     }
                 } else {
                     Section {
@@ -438,7 +440,11 @@ struct BookVoicePickerView: View {
                             viewModel.resetToGlobalSettings()
                         }
                         .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : "Reset to global voice and speed settings")
-                        .accessibilityHint(viewModel.isAudioBook ? "Resets this book to 1 times speed" : "Removes book-specific voice and speed, uses global defaults instead")
+                        .accessibilityHint(
+                            viewModel.isAudioBook
+                                ? "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))"
+                                : "Removes book-specific voice and speed, uses global defaults instead"
+                        )
                     }
                 }
             }
