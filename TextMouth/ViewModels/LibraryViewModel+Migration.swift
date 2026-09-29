@@ -47,6 +47,15 @@ extension LibraryViewModel {
     /// Migrate any books still using old storage paths to .tmb packages,
     /// and fix any stale file paths pointing to old locations.
     func migrateOldBooksIfNeeded() {
+        // Every repair below reconciles the index with the disk and then saves
+        // the index. While the index cannot be read there is nothing to
+        // reconcile, and saving would replace the evidence the user may still
+        // recover, so show a library rebuilt from disk and save nothing.
+        guard indexRecovery == nil else {
+            buildProvisionalLibrary()
+            return
+        }
+
         var needsSave = false
 
         // Merge folder rows that name one directory on this volume before the

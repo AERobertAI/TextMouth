@@ -94,6 +94,17 @@ final class LibraryViewModel: ObservableObject {
     @Published var extractionProgressTotal = 0
     @Published var extractionProgressMessage = ""
 
+    /// Set while library.json exists but cannot be read. The library shown is
+    /// then provisional and index writes are suspended. Only the recovery
+    /// actions in LibraryViewModel+IndexRecovery change it.
+    @Published var indexRecovery: LibraryIndexRecovery?
+    /// Presents the index recovery options (a sheet in the library window).
+    @Published var showIndexRecoveryOptions = false
+
+    /// False for the inert model used by previews and tests, which never
+    /// starts disk maintenance, observers, or background analysis by itself.
+    let runsBackgroundWork: Bool
+
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
     /// Owns the main-run-loop timer through a handle that can cancel from any thread.
@@ -104,6 +115,7 @@ final class LibraryViewModel: ObservableObject {
     /// An inert model lets previews and lifecycle tests opt out of disk migration,
     /// observers, and background maintenance; the app uses the default startup.
     init(initializeServices: Bool = true) {
+        runsBackgroundWork = initializeServices
         guard initializeServices else { return }
         // Migrate from old sandbox container if needed (before loading library)
         migrateFromSandboxContainer()
@@ -111,11 +123,9 @@ final class LibraryViewModel: ObservableObject {
         // Ensure directory structure exists on first launch
         try? TextMouthPaths.ensureDirectoryStructure()
 
-        // An unreadable index starts as an empty library here. The service has
-        // already preserved that index and suspended index writes, so the
-        // startup repair below can rebuild from packages but cannot save over it.
-        library = LibraryPersistenceService.load().library ?? Library()
-        migrateOldBooksIfNeeded()
+        // Load the index and run the startup repair; an unreadable index
+        // enters recovery with a provisional library and saves nothing.
+        loadLibraryIndex()
         setupFinderOpenHandler()
         setupDataDirectoryChangeHandler()
         importOperationQueue.onActivityChanged = { [weak self] activeCount in

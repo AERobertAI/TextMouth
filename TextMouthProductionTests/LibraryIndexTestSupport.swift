@@ -67,11 +67,15 @@ struct LibraryIndexSandbox {
         }
     }
 
-    /// Writes an index damaged by `damage` at `url` and returns the bytes on
-    /// disk (for `.unreadable`, the bytes behind the removed permission).
+    /// Writes `library`'s index damaged by `damage` at `url` and returns the
+    /// bytes on disk (for `.unreadable`, the bytes behind the permission).
     @discardableResult
-    func stage(_ damage: LibraryIndexDamage, at url: URL) throws -> Data {
-        let bytes = try Self.damagedBytes(damage)
+    func stage(
+        _ damage: LibraryIndexDamage,
+        of library: Library = LibraryIndexSandbox.sampleLibrary(),
+        at url: URL
+    ) throws -> Data {
+        let bytes = try Self.damagedBytes(damage, of: library)
         try place(bytes, at: url)
         if damage == .unreadable {
             XCTAssertEqual(chmod(url.path, 0o000), 0)
@@ -148,16 +152,20 @@ struct LibraryIndexSandbox {
         return try encoder.encode(library)
     }
 
-    /// The bytes of a sample index damaged by `damage`. An unreadable fixture
-    /// keeps intact JSON; `stage` removes its read permission.
-    static func damagedBytes(_ damage: LibraryIndexDamage) throws -> Data {
-        let intact = try encoded(sampleLibrary())
+    /// The bytes of `library`'s index damaged by `damage`. An unreadable
+    /// fixture keeps intact JSON; `stage` removes its read permission.
+    static func damagedBytes(
+        _ damage: LibraryIndexDamage,
+        of library: Library = LibraryIndexSandbox.sampleLibrary()
+    ) throws -> Data {
+        let intact = try encoded(library)
         switch damage {
         case .truncated:
             return intact.prefix(intact.count / 2)
         case .unknownFormat:
             var index = try XCTUnwrap(JSONSerialization.jsonObject(with: intact) as? [String: Any])
             var books = try XCTUnwrap(index["books"] as? [[String: Any]])
+            _ = try XCTUnwrap(books.first, "an unknown-format fixture needs a book")
             books[0]["format"] = "mobi"
             index["books"] = books
             return try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted])
