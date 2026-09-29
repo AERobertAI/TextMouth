@@ -6,11 +6,12 @@ import Foundation
 /// through `parse(text:title:)` (the fallback when no cache can be written),
 /// or through content.md, the Markdown cache written from `markdown(text:)`
 /// and read by `MarkdownDocParser`. Both paths are built from one line
-/// analysis, `blocks(in:)`, so they share the same headings, paragraphs, and
-/// heading positions.
+/// analysis, `blocks(in:)`, so they agree on every word, every heading, and
+/// every heading position a listener meets.
 ///
-/// The reading text keeps the source's lines, in order, with this whitespace
-/// normalization (the one the Markdown cache applies to ordinary lines):
+/// The reading text keeps every character of the source, in order, except for
+/// this whitespace normalization (the one the Markdown cache applies to
+/// ordinary lines):
 /// - A line ends at each character of `CharacterSet.newlines` (LF, VT, FF,
 ///   CR, NEL, LS, PS). Each character ends one line, so a CRLF pair also
 ///   leaves an empty line between the two lines it separates.
@@ -43,8 +44,8 @@ enum PlainTextParser {
 
     // MARK: - Reading Paths
 
-    /// Parse plain text into a single chapter, its paragraphs and headings
-    /// placed exactly as `MarkdownDocParser` places those of `markdown(text:)`.
+    /// Parse plain text into a single chapter. Its text and headings are
+    /// exactly those `MarkdownDocParser` reads back from `markdown(text:)`.
     static func parse(text: String, title: String = "Untitled") -> DocumentContent {
         let reading = readingContent(of: blocks(in: text))
         let chapter = Chapter(title: title, text: reading.text, headings: reading.headings)
@@ -56,16 +57,18 @@ enum PlainTextParser {
         )
     }
 
-    /// The content.md representation of a plain-text source. Headings become
-    /// ATX headings of their heuristic level; each paragraph line stays its
-    /// own Markdown line, whose line break the reader speaks as a space.
+    /// The content.md representation of a plain-text source. Every character
+    /// is written as a Markdown literal, so text that merely looks like
+    /// Markdown or HTML is read exactly as written. Headings become ATX
+    /// headings of their heuristic level; each paragraph line stays its own
+    /// Markdown line, whose line break the reader speaks as a space.
     static func markdown(text: String) -> String {
         blocks(in: text).map { block -> String in
             switch block {
             case let .heading(level, label):
-                return String(repeating: "#", count: level) + " " + label
+                return String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label)
             case let .paragraph(lines):
-                return lines.joined(separator: "\n")
+                return lines.map(MarkdownLiteral.escaped).joined(separator: "\n")
             }
         }.joined(separator: blockSeparator)
     }
@@ -182,9 +185,10 @@ enum PlainTextParser {
 
     // MARK: - Direct Reading Text
 
-    /// Render blocks the way `MarkdownDocParser` renders `markdown(text:)`:
-    /// blocks joined by "\n\n", paragraph lines joined by a space, and each
-    /// heading placed at the UTF-16 offset where its label begins.
+    /// Render blocks as the reading text and headings `MarkdownDocParser`
+    /// produces for `markdown(text:)`: blocks joined by "\n\n", paragraph
+    /// lines joined by a space, and each heading placed at the UTF-16 offset
+    /// where its label begins.
     private static func readingContent(of blocks: [Block]) -> (text: String, headings: [Heading]) {
         var text = ""
         // Counted as text grows, so books with many headings stay linear.
@@ -210,5 +214,55 @@ enum PlainTextParser {
             }
         }
         return (text, headings)
+    }
+}
+
+/// Writes text into Markdown as literal characters: the cache reader
+/// (swift-markdown, which parses CommonMark with GitHub tables, strikethrough,
+/// and task lists, plus smart punctuation) reads the result back as exactly
+/// the input's characters, in order.
+///
+/// Every ASCII punctuation character is backslash-escaped, the one form
+/// CommonMark reads literally anywhere in a paragraph or heading. That
+/// disarms emphasis, code spans, links, images, autolinks, raw HTML and its
+/// comments, entity references, strikethrough, tables, inline attributes,
+/// block markers at the start of a line, and the smart quotes, dashes, and
+/// ellipses the reader would otherwise substitute. Escapes apply per Unicode
+/// scalar, because a quote followed by a combining mark is one Swift
+/// `Character` but still a quote to the parser. U+FEFF is written as a
+/// character reference: the parser drops it as a byte-order mark when it
+/// begins the document.
+///
+/// Whitespace remains the caller's concern. Markdown strips spaces and tabs
+/// at the ends of a line and treats a line break as structure, so callers
+/// escape single lines already trimmed of surrounding whitespace.
+enum MarkdownLiteral {
+
+    /// The text with every character Markdown could interpret made literal.
+    static func escaped(_ text: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            if isASCIIPunctuation(scalar) {
+                result.append("\\")
+                result.append(scalar)
+            } else if scalar == "\u{FEFF}" {
+                result.append(contentsOf: "&#xFEFF;".unicodeScalars)
+            } else {
+                result.append(scalar)
+            }
+        }
+        return String(result)
+    }
+
+    /// CommonMark's escapable characters: U+0021–U+002F, U+003A–U+0040,
+    /// U+005B–U+0060, and U+007B–U+007E. A backslash before any other
+    /// character is itself literal text, so nothing else may be escaped.
+    private static func isASCIIPunctuation(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.value {
+        case 0x21...0x2F, 0x3A...0x40, 0x5B...0x60, 0x7B...0x7E:
+            return true
+        default:
+            return false
+        }
     }
 }

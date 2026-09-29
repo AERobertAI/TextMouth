@@ -118,7 +118,9 @@ final class ParserContentFidelityTests: XCTestCase {
         let cached = MarkdownCacheService.parseMultiChapterMarkdown(
             PlainTextParser.markdown(text: source), bookTitle: "Plain", bookAuthor: "Author"
         )
-        return assertSamePlainTextReading(cached: cached, direct: direct, file: file, line: line) ?? Chapter()
+        return assertSamePlainTextReading(
+            cached: cached, direct: direct, context: "source \(source.debugDescription)", file: file, line: line
+        ) ?? Chapter()
     }
 
     /// Every heading style is still recognized on both paths, and each heading
@@ -198,28 +200,303 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.text, "NUL\u{FFFD}HEADING\n\nbody\u{FFFD}text")
         XCTAssertEqual(chapter.headings.map(\.text), ["NUL\u{FFFD}HEADING"])
     }
+
+    /// Markdown- and HTML-looking text in a .txt source is ordinary text. The
+    /// cached reading keeps every character of each construct, in order,
+    /// exactly as the direct reading does, and none of them adds a heading.
+    func testPlainTextKeepsMarkdownAndHTMLLookalikesLiteral() {
+        let paragraphs = [
+            "Stars *around* words and **doubled** ones",
+            "Underscores _around_ words and __doubled__ ones",
+            "Backticks `around code` and a lone ` mark",
+            "Tags <b>bold</b>, <span class=\"x\">spans</span>, and <br/>",
+            "Brackets [a link](https://example.com), ![an image](i.png), and [ref]",
+            "1. Numbered like a list item",
+            "2) Numbered with a parenthesis",
+            "- Dashed like a list item",
+            "+ Plussed like a list item",
+            "* Starred like a list item",
+            "> Quoted like a block quote",
+            "***",
+            "Entities &amp; &lt;tag&gt; &#65; &#x42; &copy;",
+            "Backslashes \\ C:\\Users\\*name* \\n and one at the end \\",
+            "Comparisons a < b, b > a, and x<y>z",
+            "Straight \"double\" and 'single' quotes in don't",
+            "Dashes -- and --- and an ellipsis...",
+            "Tildes ~~struck~~, pipes | a | b |, and carets ^[x](y)",
+        ]
+        let chapter = assertPlainTextReadingsAgree(paragraphs.joined(separator: "\n\n"))
+        XCTAssertEqual(chapter.text.components(separatedBy: "\n\n"), paragraphs)
+        XCTAssertEqual(chapter.headings, [])
+    }
+
+    /// Heading labels are literal too: markup characters stay in the label
+    /// and in the spoken heading, whatever the heading style.
+    func testPlainTextHeadingLabelsKeepMarkupCharacters() {
+        let chapter = assertPlainTextReadingsAgree("""
+        ## Part *One*: <draft> & [notes](x) `v2` \\ #1 ##
+        Body.
+        ISSUE #5 -- *DRAFT* <B>
+        Title with _under_ & 'quotes'...
+        ===
+        """)
+        let labels = [
+            "Part *One*: <draft> & [notes](x) `v2` \\ #1",
+            "ISSUE #5 -- *DRAFT* <B>",
+            "Title with _under_ & 'quotes'...",
+        ]
+        XCTAssertEqual(chapter.headings.map(\.text), labels)
+        XCTAssertEqual(chapter.headings.map(\.level), [2, 2, 1])
+        XCTAssertEqual(chapter.text, [labels[0], "Body.", labels[1], labels[2]].joined(separator: "\n\n"))
+    }
+
+    /// A line that looks like an HTML comment is spoken text, not a hidden
+    /// comment, whether it stands alone or sits inside a paragraph.
+    func testPlainTextHTMLCommentLineIsSpokenText() {
+        let chapter = assertPlainTextReadingsAgree("<!-- note -->\n\nBefore\n<!-- note -->\nafter")
+        XCTAssertEqual(chapter.text, "<!-- note -->\n\nBefore <!-- note --> after")
+        XCTAssertEqual(chapter.headings, [])
+    }
+
+    /// Lines the heuristics have never treated as headings are read exactly
+    /// as written: seven markers, markers without a label, underlines with no
+    /// heading above them (including one under an ATX heading), and all-caps
+    /// lines with under three letters or over eighty characters.
+    func testPlainTextLinesThatAreNotHeadingsStayLiteral() {
+        let longCaps = String(repeating: "LONG ", count: 17).trimmingCharacters(in: .whitespaces)
+        XCTAssertEqual(longCaps.count, 84)
+        let chapter = assertPlainTextReadingsAgree("""
+        ####### Seven markers
+
+        ###
+
+        =====
+        ---
+        # Heading
+        ---
+        OK 42
+
+        \(longCaps)
+        """)
+        XCTAssertEqual(chapter.text, [
+            "####### Seven markers", "###", "===== ---", "Heading", "--- OK 42", longCaps,
+        ].joined(separator: "\n\n"))
+        XCTAssertEqual(chapter.headings.map(\.text), ["Heading"])
+        XCTAssertEqual(chapter.headings.map(\.level), [1])
+    }
+
+    /// Escapes apply per Unicode scalar: a quote, dash, or period followed by
+    /// a combining mark is one Swift Character, yet the Markdown parser would
+    /// still curl the quote or merge the dashes. A byte-order mark at the
+    /// start, which the parser would drop, stays a character.
+    func testPlainTextKeepsPunctuationBeforeCombiningMarksAndLeadingByteOrderMark() {
+        let source = "\u{FEFF}It'\u{301}s \"\u{301}odd\" -\u{301}- .\u{301}.."
+        let chapter = assertPlainTextReadingsAgree(source)
+        XCTAssertEqual(chapter.text, source)
+    }
+
+    /// Exactly CommonMark's 32 ASCII punctuation characters are escaped; a
+    /// backslash before anything else would itself be read aloud.
+    func testMarkdownLiteralEscapesExactlyTheASCIIPunctuation() {
+        let punctuation = PlainTextFixture.asciiPunctuation
+        XCTAssertEqual(punctuation.count, 32)
+        XCTAssertEqual(MarkdownLiteral.escaped(punctuation), punctuation.map { "\\\($0)" }.joined())
+        let unescaped = "Az09 e\u{301}🙂\t\u{00A0}“”‘’–—…\u{0}"
+        XCTAssertEqual(MarkdownLiteral.escaped(unescaped), unescaped)
+        XCTAssertEqual(MarkdownLiteral.escaped("a\u{FEFF}b"), "a&#xFEFF;b")
+    }
+
+    /// The invariant on one book that mixes every heading style, every
+    /// construct the cache used to reinterpret, Unicode, inner tabs, and all
+    /// line endings: the direct and cached readings are one text with one
+    /// heading list, and each heading sits where its label begins.
+    func testPlainTextReadingsAgreeOnCombinedFixture() {
+        let chapter = assertPlainTextReadingsAgree(PlainTextFixture.combined)
+        XCTAssertEqual(chapter.text, PlainTextFixture.combinedReading)
+        XCTAssertEqual(chapter.headings.map(\.level), PlainTextFixture.combinedHeadings.map(\.level))
+        XCTAssertEqual(chapter.headings.map(\.text), PlainTextFixture.combinedHeadings.map(\.text))
+        let text = chapter.text as NSString
+        for heading in chapter.headings {
+            XCTAssertTrue(text.substring(from: heading.characterOffset).hasPrefix(heading.text), heading.text)
+        }
+    }
+
+    /// The invariant for arbitrary text rather than chosen examples: sources
+    /// assembled at random from every ASCII punctuation character, Markdown
+    /// and HTML constructs, heading-shaped lines, Unicode marks and spaces,
+    /// invisible characters, NUL, and every newline character read the same
+    /// on both paths. The seed is fixed, so a failure names a source that
+    /// replays exactly.
+    func testPlainTextReadingsAgreeOnGeneratedSources() {
+        var generator = SeededGenerator(state: 0x7E57)
+        for _ in 0..<1_000 {
+            assertPlainTextReadingsAgree(PlainTextFixture.randomSource(using: &generator))
+            // One replayable failing source explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 {
+                break
+            }
+        }
+    }
 }
 
 extension XCTestCase {
     /// Assert that two readings of one plain-text book are the same reading:
     /// one chapter each, equal text, and equal headings (level, label, and
-    /// UTF-16 offset) in the chapter and in the book-wide index. Returns the
-    /// direct reading's chapter for further checks.
+    /// UTF-16 offset) in the chapter and in the book-wide index. `context`
+    /// names the source in failure messages. Returns the direct reading's
+    /// chapter for further checks.
     @discardableResult
     func assertSamePlainTextReading(
         cached: DocumentContent,
         direct: DocumentContent,
+        context: String = "",
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> Chapter? {
-        XCTAssertEqual(cached.chapters.count, 1, "a cached plain-text book is one chapter", file: file, line: line)
-        XCTAssertEqual(direct.chapters.count, 1, "a parsed plain-text book is one chapter", file: file, line: line)
+        XCTAssertEqual(cached.chapters.count, 1, "cached chapters; \(context)", file: file, line: line)
+        XCTAssertEqual(direct.chapters.count, 1, "parsed chapters; \(context)", file: file, line: line)
         guard let cachedChapter = cached.chapters.first, let directChapter = direct.chapters.first else {
             return nil
         }
-        XCTAssertEqual(cachedChapter.text, directChapter.text, "reading text", file: file, line: line)
-        XCTAssertEqual(cachedChapter.headings, directChapter.headings, "chapter headings", file: file, line: line)
-        XCTAssertEqual(cached.allHeadings, direct.allHeadings, "indexed headings", file: file, line: line)
+        XCTAssertEqual(cachedChapter.text, directChapter.text, "reading text; \(context)", file: file, line: line)
+        XCTAssertEqual(cachedChapter.headings, directChapter.headings, "chapter headings; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.allHeadings, direct.allHeadings, "indexed headings; \(context)", file: file, line: line)
         return directChapter
+    }
+}
+
+/// SplitMix64: a tiny deterministic generator, so randomized tests repeat
+/// exactly from run to run.
+struct SeededGenerator: RandomNumberGenerator {
+    var state: UInt64
+
+    /// Advance the state and scramble it into the next output.
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+        return mixed ^ (mixed >> 31)
+    }
+}
+
+/// A plain-text book shared by the parser and cache tests, with its expected
+/// reading written out in full.
+enum PlainTextFixture {
+    /// Every heading style, every construct the cache used to read as
+    /// Markdown or HTML (a chapter-marker lookalike included), Unicode,
+    /// surrounding and inner whitespace, and CRLF, CR, and LF line endings.
+    static let combined = """
+        THE PLAIN TEXT COMPANION
+        A guide to *literal* reading, with _underscores_ and `code`.
+
+        # Part 1: <Setup> & [notes](https://example.com) #
+        Compare a < b and b > a; x<y>z is not a tag, nor is <b>bold</b>.
+        Entities stay spelled out: &amp; &lt; &#65; &copy;
+        Paths keep backslashes: C:\\Users\\*name* and a trailing one \\
+
+        1. Numbered lines stay prose.
+        2) So do parenthesized ones.
+        - Dashed lines, + plussed lines, * starred lines.
+        > Quoted lines too.
+        ***
+        <!-- note -->
+        <!-- chapter: Not A Chapter -->
+
+        Setext Title With 'Quotes' -- "Dashes"...
+        =========================================
+           Indented\tprose with an inner tab and trailing spaces\u{20}\u{20}\u{20}
+        ~~Tildes~~, pipes | a | b |, carets ^[x](y), and ![alt](i.png).
+
+        Minor Setext 🙂 Cafe\u{301}
+        ----
+        -----
+        ## Emoji 🙂 and combining e\u{301} ##
+        Last line.
+        """ + "\r\nWindows ending\rold Mac ending\r\n\r\nFINAL WORDS"
+
+    /// The reading both paths must produce: heading lines as their labels,
+    /// the consumed setext underlines gone, the unconsumed one kept, and each
+    /// paragraph's trimmed lines joined by spaces. Each CRLF also ends a
+    /// paragraph, because it counts as a line break plus an empty line.
+    static let combinedReading = [
+        "THE PLAIN TEXT COMPANION",
+        "A guide to *literal* reading, with _underscores_ and `code`.",
+        "Part 1: <Setup> & [notes](https://example.com)",
+        "Compare a < b and b > a; x<y>z is not a tag, nor is <b>bold</b>."
+            + " Entities stay spelled out: &amp; &lt; &#65; &copy;"
+            + " Paths keep backslashes: C:\\Users\\*name* and a trailing one \\",
+        "1. Numbered lines stay prose. 2) So do parenthesized ones."
+            + " - Dashed lines, + plussed lines, * starred lines. > Quoted lines too."
+            + " *** <!-- note --> <!-- chapter: Not A Chapter -->",
+        "Setext Title With 'Quotes' -- \"Dashes\"...",
+        "Indented\tprose with an inner tab and trailing spaces"
+            + " ~~Tildes~~, pipes | a | b |, carets ^[x](y), and ![alt](i.png).",
+        "Minor Setext 🙂 Cafe\u{301}",
+        "-----",
+        "Emoji 🙂 and combining e\u{301}",
+        "Last line.",
+        "Windows ending old Mac ending",
+        "FINAL WORDS",
+    ].joined(separator: "\n\n")
+
+    /// The headings both paths must find, in reading order.
+    static let combinedHeadings: [(level: Int, text: String)] = [
+        (2, "THE PLAIN TEXT COMPANION"),
+        (1, "Part 1: <Setup> & [notes](https://example.com)"),
+        (1, "Setext Title With 'Quotes' -- \"Dashes\"..."),
+        (2, "Minor Setext 🙂 Cafe\u{301}"),
+        (2, "Emoji 🙂 and combining e\u{301}"),
+        (2, "FINAL WORDS"),
+    ]
+
+    /// CommonMark's 32 ASCII punctuation characters, in code point order.
+    static let asciiPunctuation = ##"!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"##
+
+    /// Pieces of generated lines: every ASCII punctuation character, Markdown
+    /// and HTML constructs, words that make all-caps headings, Unicode letters
+    /// and marks, spaces, and invisible characters.
+    private static let fragments = asciiPunctuation.map { String($0) } + [
+        "alpha", "Beta", "GAMMA", "CHAPTER ONE", "Part", "e\u{301}", "🙂", "👩‍👩‍👧", "ß", "ǅ", "ⅫⅫⅫ", "1984",
+        "***", "---", "===", "--", "...", "&amp;", "&#65;", "<b>", "</b>", "<!-- note -->",
+        "<!-- chapter: Fake -->", "[a](b)", "![i](j)", "`code`", "\\", "~~s~~", "^[x](y)", "a|b",
+        "<http://x.y>", "#", "##", "#######", "1.", "2)", "- ", "> ", "[ ]", "\"quoted\"", "It's", "a < b",
+        " ", "  ", "\t", "\u{00A0}", "\u{3000}", "\u{200B}",
+        "\u{0}", "\u{FEFF}", "\u{0301}", "\u{200D}", "\u{0007}", "\u{FFFE}",
+    ]
+
+    /// Whole generated lines that probe the heading heuristics and Markdown
+    /// block syntax: underlines, markers, indentation, fences, and tables.
+    private static let wholeLines = [
+        "", "   ", "=====", "-----", "===", "---", "#", "## Heading", "# CHAPTER #", "#hashtag",
+        "   # Indented heading", "LOUD WORDS HERE", "\u{FEFF}# Title", "    four space indent", "\tTabbed",
+        "trailing  ", "Title", "```", "| a | b |", "|---|---|", "1. item", "- [ ] task",
+    ]
+
+    /// Every character in `CharacterSet.newlines`, CRLF, and blank lines.
+    private static let lineBreaks = [
+        "\n", "\r\n", "\r", "\u{0B}", "\u{0C}", "\u{85}", "\u{2028}", "\u{2029}", "\n\n", "\n \t\n",
+    ]
+
+    /// A random plain-text source of up to twelve lines: a quarter of them
+    /// whole lines from `wholeLines`, the rest built from `fragments`.
+    static func randomSource<Generator: RandomNumberGenerator>(using generator: inout Generator) -> String {
+        var source = ""
+        for index in 0..<Int.random(in: 0...12, using: &generator) {
+            if index > 0 {
+                source += lineBreaks.randomElement(using: &generator)!
+            }
+            if Int.random(in: 0..<4, using: &generator) == 0 {
+                source += wholeLines.randomElement(using: &generator)!
+                continue
+            }
+            for _ in 0..<Int.random(in: 0...6, using: &generator) {
+                source += fragments.randomElement(using: &generator)!
+                if Bool.random(using: &generator) {
+                    source += " "
+                }
+            }
+        }
+        return source
     }
 }

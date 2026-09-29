@@ -159,7 +159,7 @@ enum MarkdownCacheService {
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
     /// HTML: converts the HTML to Markdown.
     /// Markdown: uses the file as-is.
-    /// Plain text: the plain-text headings as ATX headings, lines as paragraphs.
+    /// Plain text: literal Markdown with the plain-text headings as ATX headings.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
         let markdown: String
         switch format {
@@ -172,8 +172,9 @@ enum MarkdownCacheService {
             // Already Markdown — use as-is
             markdown = try String(contentsOf: url, encoding: .utf8)
         case .txt:
-            // The same line analysis as the direct parser, so a cached book
-            // has the headings and paragraphs PlainTextParser.parse(text:) reads.
+            // The same line analysis as the direct parser, written as literal
+            // Markdown, so a cached book reads exactly as
+            // PlainTextParser.parse(text:) reads it.
             let text = try String(contentsOf: url, encoding: .utf8)
             markdown = PlainTextParser.markdown(text: text)
         case .docx:

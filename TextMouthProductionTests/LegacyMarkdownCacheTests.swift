@@ -215,4 +215,52 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         item.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
         XCTAssertEqual(item.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
     }
+
+    // MARK: - Plain Text
+
+    /// Import a plain-text source through the production path, which copies
+    /// it into a package, writes content.md, and stamps the cache version.
+    private func importPlainTextBook(_ source: String) throws -> Book {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Plain Fixture.txt")
+        try source.write(to: file, atomically: true, encoding: .utf8)
+        let book = try FileImportService.importFile(from: file)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        return book
+    }
+
+    /// The content.md written for a .txt book reads exactly like the direct
+    /// parser: one chapter, the same text, and the same headings. No literal
+    /// text is stored as an HTML comment, so none can hide or split a chapter.
+    func testPlainTextCacheFileReadsLikeTheDirectParser() throws {
+        let book = try importPlainTextBook(PlainTextFixture.combined)
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .txt)
+        let chapter = assertSamePlainTextReading(cached: cached, direct: direct)
+        XCTAssertEqual(chapter?.text, PlainTextFixture.combinedReading)
+
+        let markdown = try String(
+            contentsOf: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory), encoding: .utf8
+        )
+        XCTAssertFalse(markdown.contains("<!--"))
+    }
+
+    /// A .txt line spelled like a chapter marker is text. The cache used to
+    /// copy it verbatim, so the reader took it for a marker: the words before
+    /// it vanished and the line itself became a chapter title.
+    func testPlainTextChapterMarkerLookalikeStaysText() {
+        let content = parse(PlainTextParser.markdown(
+            text: "Opening words.\n<!-- chapter: Not A Chapter -->\nClosing words."
+        ))
+        XCTAssertEqual(content.chapters.count, 1)
+        XCTAssertEqual(
+            content.chapters.first?.text,
+            "Opening words. <!-- chapter: Not A Chapter --> Closing words."
+        )
+        XCTAssertEqual(content.allHeadings, [])
+    }
 }
