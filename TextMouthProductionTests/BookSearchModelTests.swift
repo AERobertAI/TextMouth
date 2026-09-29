@@ -327,6 +327,58 @@ final class BookSearchEngineTests: XCTestCase {
         XCTAssertGreaterThan(comparedResults, 500)
     }
 
+    /// Every result sits exactly where the shared matcher,
+    /// `BookTextSearch.ranges`, finds a match: the same UTF-16 offset and
+    /// length within its chapter, and that offset plus the UTF-16 length of
+    /// every earlier chapter across the whole book.
+    func testResultsSitWhereTheSharedMatcherFindsThem() throws {
+        /// Where a match sits, in UTF-16 units.
+        struct Placement: Equatable {
+            let chapterIndex: Int
+            let characterOffset: Int
+            let length: Int
+            let globalOffset: Int
+        }
+
+        var comparedResults = 0
+        for (queries, useRegex) in [(literalQueries, false), (regexQueries, true)] {
+            for query in queries {
+                let context = "\(useRegex ? "Regex" : "Literal") \(query.debugDescription)"
+                let outcome = try BookSearchEngine.search(query: query, useRegex: useRegex, in: unicodeCorpus)
+                // Invalid patterns have no ranges; other tests cover them.
+                guard case .matches(let results, isTruncated: false) = outcome else { continue }
+
+                var expected: [Placement] = []
+                var chapterStart = 0
+                for (chapterIndex, text) in unicodeCorpus.chapterTexts.enumerated() {
+                    // Search lists only ranges that have a String equivalent.
+                    for range in try BookTextSearch.ranges(in: text, query: query, useRegex: useRegex)
+                    where Range(range, in: text) != nil {
+                        expected.append(Placement(
+                            chapterIndex: chapterIndex,
+                            characterOffset: range.location,
+                            length: range.length,
+                            globalOffset: chapterStart + range.location
+                        ))
+                    }
+                    chapterStart += text.utf16Length
+                }
+
+                let placements = results.map {
+                    Placement(
+                        chapterIndex: $0.chapterIndex,
+                        characterOffset: $0.characterOffset,
+                        length: $0.matchedText.utf16Length,
+                        globalOffset: $0.globalOffset
+                    )
+                }
+                XCTAssertEqual(placements, expected, context)
+                comparedResults += expected.count
+            }
+        }
+        XCTAssertGreaterThan(comparedResults, 500)
+    }
+
     /// The documented limit, which the status line reports when reached.
     func testResultLimitIsTwoThousand() {
         XCTAssertEqual(BookSearchEngine.resultLimit, 2_000)
