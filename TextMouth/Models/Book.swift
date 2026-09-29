@@ -484,9 +484,16 @@ struct Bookmark: Identifiable, Codable, Hashable {
         self.dateCreated = dateCreated
     }
 
-    /// Concise label shared by bookmark rows and accessibility rotors.
-    var accessibilityLabel: String {
-        var parts = ["Bookmark \(number)", "Chapter \(chapterIndex + 1)"]
+    /// Concise label shared by bookmark rows and the bookmarks rotor, such as
+    /// "Bookmark 3, The Battle, Note: Check this". `headingText` names the
+    /// heading containing the bookmark. When it is unknown (content not
+    /// loaded, or no heading at that point) the location is simply omitted:
+    /// internal content-unit numbers are never shown in its place.
+    func accessibilityLabel(headingText: String?) -> String {
+        var parts = ["Bookmark \(number)"]
+        if let headingText, !headingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append(headingText)
+        }
         if !label.isEmpty { parts.append("Note: \(label)") }
         return parts.joined(separator: ", ")
     }

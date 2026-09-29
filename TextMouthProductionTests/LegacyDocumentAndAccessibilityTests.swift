@@ -176,10 +176,15 @@ final class LegacyDocumentContentModelTests: XCTestCase {
     }
 }
 
+/// Bookmark rows are SwiftUI views, so their labels are read on the main actor.
+@MainActor
 final class LegacyBookmarkAccessibilityTests: XCTestCase {
-    func testLabelIncludesBookmarkNumberAndOneBasedChapter() {
-        let row = BookmarkRow(bookmark: Bookmark(number: 3, chapterIndex: 4, characterOffset: 0))
-        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 3, Chapter 5")
+    func testLabelIncludesBookmarkNumberAndContainingHeading() {
+        let row = BookmarkRow(
+            bookmark: Bookmark(number: 3, chapterIndex: 4, characterOffset: 0),
+            headingText: "The Long Walk"
+        )
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 3, The Long Walk")
     }
 
     func testLabelIncludesNoteWhenPresent() {
@@ -190,28 +195,42 @@ final class LegacyBookmarkAccessibilityTests: XCTestCase {
             label: "Important passage"
         )
         XCTAssertEqual(
-            BookmarkRow(bookmark: bookmark).bookmarkAccessibilityLabel,
-            "Bookmark 1, Chapter 1, Note: Important passage"
+            BookmarkRow(bookmark: bookmark, headingText: "Opening").bookmarkAccessibilityLabel,
+            "Bookmark 1, Opening, Note: Important passage"
         )
     }
 
     func testLabelOmitsNoteWhenEmpty() {
-        let row = BookmarkRow(bookmark: Bookmark(number: 2, chapterIndex: 1, characterOffset: 0))
-        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 2, Chapter 2")
+        let row = BookmarkRow(
+            bookmark: Bookmark(number: 2, chapterIndex: 1, characterOffset: 0),
+            headingText: "Second Part"
+        )
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 2, Second Part")
     }
 
     func testLabelContainsBookmarkOnlyOnce() {
-        let row = BookmarkRow(bookmark: Bookmark(number: 1, chapterIndex: 0, characterOffset: 0))
+        let row = BookmarkRow(
+            bookmark: Bookmark(number: 1, chapterIndex: 0, characterOffset: 0),
+            headingText: "Opening"
+        )
         XCTAssertEqual(row.bookmarkAccessibilityLabel.components(separatedBy: "ookmark").count - 1, 1)
     }
 
-    func testHighChapterIndexIsRenderedOneBased() {
-        let row = BookmarkRow(bookmark: Bookmark(number: 5, chapterIndex: 99, characterOffset: 0))
-        XCTAssertTrue(row.bookmarkAccessibilityLabel.contains("Chapter 100"))
+    /// A late content unit with no known heading still never exposes its
+    /// internal unit number; the location is simply left out.
+    func testUnknownLocationIsOmittedRatherThanNumbered() {
+        let row = BookmarkRow(
+            bookmark: Bookmark(number: 5, chapterIndex: 99, characterOffset: 0),
+            headingText: nil
+        )
+        XCTAssertEqual(row.bookmarkAccessibilityLabel, "Bookmark 5")
     }
 
     func testRowProvidesNavigationHint() {
-        let row = BookmarkRow(bookmark: Bookmark(number: 1, chapterIndex: 0, characterOffset: 0))
+        let row = BookmarkRow(
+            bookmark: Bookmark(number: 1, chapterIndex: 0, characterOffset: 0),
+            headingText: nil
+        )
         XCTAssertEqual(row.accessibilityHintText, "Double-tap to navigate to this bookmark")
     }
 }

@@ -82,7 +82,7 @@ struct BookmarkPanelView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(sortedBookmarks.enumerated()), id: \.element.id) { index, bookmark in
-                            let row = BookmarkRow(bookmark: bookmark)
+                            let row = bookmarkRow(for: bookmark)
 
                             Button {
                                 viewModel.navigateToBookmark(bookmark)
@@ -121,9 +121,10 @@ struct BookmarkPanelView: View {
                     }
                 }
                 .accessibilityRotor("Bookmarks") {
+                    // Rotor entries speak exactly what the rows say.
                     ForEach(sortedBookmarks) { bookmark in
                         AccessibilityRotorEntry(
-                            "Bookmark \(bookmark.number), Chapter \(bookmark.chapterIndex + 1)\(bookmark.label.isEmpty ? "" : ", \(bookmark.label)")",
+                            bookmarkRow(for: bookmark).bookmarkAccessibilityLabel,
                             id: bookmark.id
                         )
                     }
@@ -208,10 +209,19 @@ extension BookmarkPanelView {
     var sortedBookmarks: [Bookmark] {
         viewModel.bookmarks.sorted(by: { $0.number < $1.number })
     }
+
+    /// Row for `bookmark`, located by the heading that contains it. Both the
+    /// list and the Bookmarks rotor build rows here so they always agree.
+    func bookmarkRow(for bookmark: Bookmark) -> BookmarkRow {
+        BookmarkRow(bookmark: bookmark, headingText: viewModel.headingText(forBookmark: bookmark))
+    }
 }
 
 struct BookmarkRow: View {
     let bookmark: Bookmark
+    /// Text of the heading containing the bookmark, shown under its number
+    /// and spoken in its label; nil leaves the location out.
+    let headingText: String?
 
     var body: some View {
         HStack {
@@ -223,9 +233,11 @@ struct BookmarkRow: View {
                 Text("Bookmark \(bookmark.number)")
                     .font(.headline)
 
-                Text("Chapter \(bookmark.chapterIndex + 1)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                if let headingText {
+                    Text(headingText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 if !bookmark.label.isEmpty {
                     Text(bookmark.label)
@@ -247,8 +259,9 @@ struct BookmarkRow: View {
         "Double-tap to navigate to this bookmark"
     }
 
+    /// Spoken label shared with the Bookmarks rotor.
     var bookmarkAccessibilityLabel: String {
-        bookmark.accessibilityLabel
+        bookmark.accessibilityLabel(headingText: headingText)
     }
 }
 

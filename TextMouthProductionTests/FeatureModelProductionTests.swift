@@ -69,12 +69,23 @@ final class FeatureModelProductionTests: XCTestCase {
 
     func testBookmarkAccessibilityIncludesNote() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
-        XCTAssertEqual(bookmark.accessibilityLabel, "Bookmark 3, Chapter 2, Note: Important")
+        XCTAssertEqual(
+            bookmark.accessibilityLabel(headingText: "The Battle"),
+            "Bookmark 3, The Battle, Note: Important"
+        )
     }
 
     func testBookmarkAccessibilityOmitsEmptyNote() {
         let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0)
-        XCTAssertEqual(bookmark.accessibilityLabel, "Bookmark 3, Chapter 2")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "The Battle"), "Bookmark 3, The Battle")
+    }
+
+    /// Without a known heading the location is omitted; the model never
+    /// substitutes a content-unit number.
+    func testBookmarkAccessibilityOmitsUnknownHeading() {
+        let bookmark = Bookmark(number: 3, chapterIndex: 1, characterOffset: 0, label: "Important")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: nil), "Bookmark 3, Note: Important")
+        XCTAssertEqual(bookmark.accessibilityLabel(headingText: "   "), "Bookmark 3, Note: Important")
     }
 
     func testLastOpenedBookIDRoundTripsAsUUIDString() {

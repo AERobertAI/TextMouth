@@ -336,4 +336,52 @@ final class ReaderHeadingLocationTests: XCTestCase {
 
         XCTAssertTrue(reader.buildBriefWhereAmI().hasPrefix("Heading Vocabulary. Opening. Heading 1 of 2. "))
     }
+
+    /// Bookmarks are located by the heading containing them, computed from
+    /// the reader's content; the panel's rows and rotor share that label.
+    func testBookmarksAreLabeledByTheirContainingHeading() {
+        let beforeMiddle = Bookmark(number: 1, chapterIndex: 1, characterOffset: 3, label: "Check")
+        let inMiddle = Bookmark(number: 2, chapterIndex: 1, characterOffset: 20)
+        let inLastUnit = Bookmark(number: 3, chapterIndex: 2, characterOffset: 5)
+        let reader = makeReader(book: missingSourceBook(bookmarks: [beforeMiddle, inMiddle, inLastUnit]))
+        defer { reader.close() }
+
+        // Before content loads there is no heading to name.
+        XCTAssertNil(reader.headingText(forBookmark: inMiddle))
+
+        reader.content = threeUnitContent()
+        let panel = BookmarkPanelView(viewModel: reader)
+
+        XCTAssertEqual(reader.headingText(forBookmark: beforeMiddle), "Opening")
+        XCTAssertEqual(reader.headingText(forBookmark: inMiddle), "Middle")
+        XCTAssertEqual(reader.headingText(forBookmark: inLastUnit), "Middle")
+        XCTAssertEqual(
+            panel.bookmarkRow(for: beforeMiddle).bookmarkAccessibilityLabel,
+            "Bookmark 1, Opening, Note: Check"
+        )
+        XCTAssertEqual(panel.bookmarkRow(for: inLastUnit).bookmarkAccessibilityLabel, "Bookmark 3, Middle")
+    }
+
+    func testBookmarkBeforeTheFirstHeadingOmitsItsLocation() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = DocumentContent(
+            title: "Fixture",
+            author: "Tester",
+            chapters: [
+                Chapter(
+                    title: "Cover",
+                    text: "Cover text. Then the story.",
+                    headings: [Heading(level: 1, text: "Story", characterOffset: 12)]
+                ),
+            ]
+        )
+        let bookmark = Bookmark(number: 1, chapterIndex: 0, characterOffset: 2)
+
+        XCTAssertNil(reader.headingText(forBookmark: bookmark))
+        XCTAssertEqual(
+            BookmarkPanelView(viewModel: reader).bookmarkRow(for: bookmark).bookmarkAccessibilityLabel,
+            "Bookmark 1"
+        )
+    }
 }
