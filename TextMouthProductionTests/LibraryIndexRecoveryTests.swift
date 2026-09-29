@@ -16,7 +16,8 @@ final class LibraryIndexRecoveryTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        sandbox.restore()
+        // Optional: tear-down also runs when capturing failed in set-up.
+        sandbox?.restore()
         for folder in createdFolders {
             try? FileManager.default.removeItem(at: folder)
         }

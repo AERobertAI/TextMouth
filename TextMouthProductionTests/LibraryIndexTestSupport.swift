@@ -57,6 +57,9 @@ struct LibraryIndexSandbox {
             Self.makeReadable(url)
         }
         LibraryPersistenceService.resumeIndexWrites()
+        // A snapshot the test left pending is written now, so it cannot land
+        // after the original bytes are put back.
+        LibraryPersistenceService.flushPendingSave()
         for copy in copies where !copiesBefore.contains(copy) {
             try? FileManager.default.removeItem(at: copy)
         }

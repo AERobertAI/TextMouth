@@ -14,7 +14,8 @@ final class LibraryIndexPersistenceTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        sandbox.restore()
+        // Optional: tear-down also runs when capturing failed in set-up.
+        sandbox?.restore()
     }
 
     // MARK: - Unreadable Current Index
