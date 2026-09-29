@@ -6,10 +6,11 @@ import Foundation
 /// An index that exists but cannot be read or decoded is never replaced by an
 /// empty library. `load()` preserves its bytes (see `LibraryIndexQuarantine`)
 /// and suspends every library.json write in the process: debounced saves,
-/// flushes, and the legacy migration all skip the index until the library
-/// model adopts a readable index (`resumeIndexWrites()`) or the user replaces
-/// the unreadable one (`replaceUnreadableIndex(with:)`). Package metadata
-/// (bookInfo.json) writes continue, so reading positions are still saved.
+/// flushes, and the legacy migration skip the index, and data-directory
+/// migration refuses, until the library model adopts a readable index
+/// (`resumeIndexWrites()`) or the user replaces the unreadable one
+/// (`replaceUnreadableIndex(with:)`). Package metadata (bookInfo.json)
+/// writes continue, so reading positions are still saved.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -316,7 +317,8 @@ enum LibraryPersistenceService {
             endIndexWriteSuspension()
             logIndexEvent(
                 "rebuilt the library index with \(library.books.count) book(s); "
-                    + "previous index kept at \(preservedCopy?.path ?? "its legacy location")"
+                    + (preservedCopy.map { "previous index kept at \($0.path)" }
+                        ?? "no index file was there to replace")
             )
             return preservedCopy
         }
