@@ -690,6 +690,22 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         }
     }
 
+    /// A Markdown heading is one line. A line break inside a heading, even
+    /// inside the link many EPUB headings carry back to the TOC, reads as a
+    /// space; it must not cut the label short or leave link syntax as prose.
+    func testLineBreaksInsideHeadingsKeepOneLabel() throws {
+        let html = """
+        <h1 id="hd-praise"><a href="toc.xhtml#toc-praise"><span class="fs">Praise for the</span><br/>Pandominion series</a></h1>
+        <p>Quoted praise.</p>
+        <h2>Part<br/>One</h2><p>Body.</p>
+        """
+        let chapter = try EPUBParser.parseChapterHTML(html)
+        XCTAssertEqual(chapter.headings.map(\.text), ["Praise for the Pandominion series", "Part One"])
+        XCTAssertEqual(chapter.text, "Praise for the Pandominion series\n\nQuoted praise.\n\nPart One\n\nBody.")
+        let direct = try XCTUnwrap(HTMLParser.parse(html: html).chapters.first)
+        XCTAssertEqual(direct.headings.map(\.text), chapter.headings.map(\.text))
+    }
+
     /// Optional corpus verification for any copied EPUB (see
     /// `copiedEPUBFixture`). Every book's navigation must satisfy these rules:
     /// direct and cached reading agree; heading labels and chapter titles carry

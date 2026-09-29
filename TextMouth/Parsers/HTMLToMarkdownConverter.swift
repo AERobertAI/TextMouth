@@ -135,9 +135,9 @@ enum HTMLToMarkdownConverter {
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
                 emit(annotation, inline: false, into: &result)
             }
-            result += "\(prefix) "
-            convertNode(element, into: &result, headingTargets: [:])
-            result += "\n\n"
+            var label = ""
+            convertNode(element, into: &label, headingTargets: [:])
+            result += "\(prefix) \(singleLine(label))\n\n"
 
         // Paragraphs
         case "p":
@@ -393,6 +393,15 @@ enum HTMLToMarkdownConverter {
             with: " ",
             options: .regularExpression
         )
+    }
+
+    /// A Markdown heading is a single line. Join a heading's converted lines
+    /// with spaces: a line break (<br/>) or stray block inside a heading would
+    /// otherwise end it early, cutting its label short and leaving the rest of
+    /// its words, with any enclosing link syntax, as literal prose to be read.
+    private static func singleLine(_ text: String) -> String {
+        guard text.contains("\n") else { return text }
+        return text.replacingOccurrences(of: "[ \\t]*\\n[ \\t\\n]*", with: " ", options: .regularExpression)
     }
 
     /// Collapse three or more consecutive newlines into exactly two.
