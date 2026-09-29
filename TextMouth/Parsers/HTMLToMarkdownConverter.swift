@@ -113,18 +113,12 @@ enum HTMLToMarkdownConverter {
         // Preserve a TOC target in the Markdown stream at its actual DOM
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
-        // Most chapters have no fragment destinations. Avoid attribute lookups
-        // at every node when there is no possible navigation match.
-        if !headingTargets.isEmpty, tag != "script", tag != "style" {
-            let id = (try? element.attr("id")) ?? ""
-            let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
-            if let annotation = headingTargets[id] ?? headingTargets[legacyName] {
-                if element.isBlock() {
-                    ensureBlankLine(&result)
-                    result += annotation.markdown + "\n\n"
-                } else {
-                    result += annotation.markdown
-                }
+        if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+            if element.isBlock() {
+                ensureBlankLine(&result)
+                result += annotation.markdown + "\n\n"
+            } else {
+                result += annotation.markdown
             }
         }
 
@@ -138,8 +132,16 @@ enum HTMLToMarkdownConverter {
             let level = Int(String(tag.last!)) ?? 1
             let prefix = String(repeating: "#", count: level)
             ensureBlankLine(&result)
+            // A destination inside a heading (such as an anchor before its
+            // words) names that heading. Emit it as its own block immediately
+            // before the heading line, never inside the label: the Markdown
+            // parser gives both the same offset and keeps the visible heading,
+            // and a heading without visible text still keeps its destination.
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                result += annotation.markdown + "\n\n"
+            }
             result += "\(prefix) "
-            convertNode(element, into: &result, headingTargets: headingTargets)
+            convertNode(element, into: &result, headingTargets: [:])
             result += "\n\n"
 
         // Paragraphs
@@ -255,6 +257,43 @@ enum HTMLToMarkdownConverter {
         default:
             convertNode(element, into: &result, headingTargets: headingTargets)
         }
+    }
+
+    // MARK: - Navigation Annotations
+
+    /// The TOC destination an element carries through its id, or through the
+    /// name of a legacy anchor.
+    private static func headingAnnotation(
+        for element: Element,
+        tag: String,
+        headingTargets: [String: MarkdownHeadingAnnotation]
+    ) -> MarkdownHeadingAnnotation? {
+        // Most chapters have no fragment destinations. Avoid attribute lookups
+        // at every node when there is no possible navigation match.
+        guard !headingTargets.isEmpty, tag != "script", tag != "style" else { return nil }
+        let id = (try? element.attr("id")) ?? ""
+        let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
+        return headingTargets[id] ?? headingTargets[legacyName]
+    }
+
+    /// Destinations carried by a heading's descendants, in document order.
+    /// Content outside the reading flow is skipped exactly as conversion skips it.
+    private static func headingAnnotations(
+        inside heading: Element,
+        headingTargets: [String: MarkdownHeadingAnnotation]
+    ) -> [MarkdownHeadingAnnotation] {
+        guard !headingTargets.isEmpty else { return [] }
+        var annotations: [MarkdownHeadingAnnotation] = []
+        for child in heading.getChildNodes() {
+            guard let element = child as? Element,
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+            let tag = element.tagName().lowercased()
+            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+                annotations.append(annotation)
+            }
+            annotations += headingAnnotations(inside: element, headingTargets: headingTargets)
+        }
+        return annotations
     }
 
     // MARK: - List Conversion

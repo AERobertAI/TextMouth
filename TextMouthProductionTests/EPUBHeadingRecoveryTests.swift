@@ -472,6 +472,40 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.text), ["Twelve"])
     }
 
+    /// A destination at or inside a heading names that heading. It is never
+    /// written into the heading's text: the visible label stays exact, the
+    /// destination shares the heading's offset instead of adding a row, and a
+    /// heading without visible text still keeps its destination.
+    func testNavigationTargetsInsideHeadingsNameTheHeading() throws {
+        let targets = ["whole", "start", "middle", "empty"].reduce(into: [String: MarkdownHeadingAnnotation]()) {
+            $0[$1] = MarkdownHeadingAnnotation(level: 2, text: "TOC \($1)")
+        }
+        let markdown = try HTMLToMarkdownConverter.convert("""
+        <h1 id="whole"><span id="start"></span>Opening</h1><p>First.</p>
+        <h2>Chapter <a id="middle"/>Two</h2><p>Second.</p>
+        """, headingTargets: targets)
+        // Every annotation is a block of its own; heading lines hold only words.
+        let lines = markdown.split(separator: "\n").map(String.init)
+        XCTAssertEqual(lines.filter { $0.hasPrefix("#") }, ["# Opening", "## Chapter Two"])
+        XCTAssertEqual(lines.compactMap { MarkdownHeadingAnnotation.decode($0)?.text }, ["TOC whole", "TOC start", "TOC middle"])
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
+        XCTAssertEqual(chapter.text, "Opening\n\nFirst.\n\nChapter Two\n\nSecond.")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Opening", "Chapter Two"])
+        XCTAssertEqual(chapter.headings.map(\.level), [1, 2])
+        let second = try XCTUnwrap(chapter.text.range(of: "Chapter Two"))
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [0, chapter.text.utf16Offset(of: second.lowerBound)])
+
+        // Without visible heading text, the destination itself marks the heading.
+        let ornament = try HTMLToMarkdownConverter.convert(
+            "<h3><img src='ornament.png' alt=''/><span id='empty'></span></h3><p>Third.</p>",
+            headingTargets: targets
+        )
+        let untitled = try MarkdownDocParser.parseChapter(markdown: ornament, includeNavigationHeadings: true)
+        XCTAssertEqual(untitled.text, "Third.")
+        XCTAssertEqual(untitled.headings.map(\.text), ["TOC empty"])
+        XCTAssertEqual(untitled.headings.map(\.characterOffset), [0])
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
