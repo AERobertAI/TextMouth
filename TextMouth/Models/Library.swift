@@ -124,46 +124,12 @@ struct Library: Codable {
         guard let folder = folders.first(where: { $0.id == id }) else { return }
         let folderPath = folder.fullPath
 
-        // Collect subfolders of the removed folder
-        let childFolders = folders.filter {
-            $0.parentPath == folderPath || $0.parentPath.hasPrefix(folderPath + "/")
-        }
+        // The removed folder's own sort setting goes away; the settings of
+        // its subfolders move with them.
+        folderSortSettings.removeValue(forKey: folderPath)
 
-        // Reparent direct child folders under the destination
-        for child in childFolders {
-            if let idx = folders.firstIndex(where: { $0.id == child.id }) {
-                if child.parentPath == folderPath {
-                    // Direct child of deleted folder — reparent to destination
-                    folders[idx].parentPath = destination
-                } else {
-                    // Deeper descendant — replace the deleted folder's prefix with destination
-                    let suffix = String(child.parentPath.dropFirst(folderPath.count))
-                    folders[idx].parentPath = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-                }
-            }
-        }
-
-        // Move books to destination, preserving subfolder structure
-        for i in books.indices {
-            if books[i].folderPath == folderPath {
-                books[i].folderPath = destination
-            } else if books[i].folderPath.hasPrefix(folderPath + "/") {
-                let suffix = String(books[i].folderPath.dropFirst(folderPath.count))
-                books[i].folderPath = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-            }
-        }
-
-        // Update sort settings: reparent child paths, remove the deleted folder's entry
-        for key in folderSortSettings.keys {
-            if key == folderPath {
-                folderSortSettings.removeValue(forKey: key)
-            } else if key.hasPrefix(folderPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                let suffix = String(key.dropFirst(folderPath.count))
-                let newKey = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-                folderSortSettings[newKey] = setting
-            }
-        }
+        // Books and subfolders keep their structure under the destination.
+        relocate(FolderSubtree(rootPath: folderPath, equivalence: .caseSensitive), to: destination)
 
         // Remove only the folder itself (children have been reparented)
         folders.removeAll { $0.id == id }
@@ -231,37 +197,10 @@ struct Library: Codable {
             .max() ?? 0
         if maxSubfolderDepth + depthIncrease > BookFolder.maxDepth { return false }
 
-        // Update the folder itself
+        // Carry descendants, books, and sort settings along, then reparent
+        // the folder itself (its own parent lies outside the moved subtree).
+        relocate(FolderSubtree(rootPath: oldPath, equivalence: .caseSensitive), to: newPath)
         folders[folderIdx].parentPath = newParent
-
-        // Update all subfolders: replace oldPath prefix with newPath
-        for i in folders.indices {
-            if folders[i].parentPath == oldPath {
-                folders[i].parentPath = newPath
-            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
-                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
-            }
-        }
-
-        // Update all books in the moved tree
-        for i in books.indices {
-            if books[i].folderPath == oldPath {
-                books[i].folderPath = newPath
-            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
-                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
-            }
-        }
-
-        // Remap sort settings from old paths to new paths
-        for key in folderSortSettings.keys {
-            if key == oldPath {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath] = setting
-            } else if key.hasPrefix(oldPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
-            }
-        }
 
         return true
     }
@@ -281,39 +220,47 @@ struct Library: Codable {
         // Check for name collision with a sibling folder
         if folders.contains(where: { $0.fullPath == newPath }) { return false }
 
-        // Update the folder name
+        // Carry descendants, books, and sort settings along, then rename the
+        // folder itself.
+        relocate(FolderSubtree(rootPath: oldPath, equivalence: .caseSensitive), to: newPath)
         folders[folderIdx].name = sanitized
 
-        // Update all subfolder parentPaths that referenced the old path
-        for i in folders.indices {
-            if folders[i].parentPath == oldPath {
-                folders[i].parentPath = newPath
-            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
-                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
-            }
-        }
-
-        // Update all book folderPaths
-        for i in books.indices {
-            if books[i].folderPath == oldPath {
-                books[i].folderPath = newPath
-            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
-                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
-            }
-        }
-
-        // Remap sort settings from old paths to new paths
-        for key in folderSortSettings.keys {
-            if key == oldPath {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath] = setting
-            } else if key.hasPrefix(oldPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
-            }
-        }
-
         return true
+    }
+
+    /// Rewrites every stored path inside `subtree` so the subtree's root
+    /// becomes `newRootPath`: subfolder parents, book folders, and per-folder
+    /// sort settings, including the root's own setting. The root folder's row
+    /// is left to the caller, which renames, reparents, or removes it.
+    private mutating func relocate(_ subtree: FolderSubtree, to newRootPath: String) {
+        // A folder with an empty stored path would claim the whole library
+        // as its subtree; relocating it would rewrite every path.
+        guard !subtree.rootPath.isEmpty else { return }
+
+        for index in folders.indices {
+            if let parentPath = subtree.relocating(folders[index].parentPath, to: newRootPath) {
+                folders[index].parentPath = parentPath
+            }
+        }
+        for index in books.indices {
+            if let folderPath = subtree.relocating(books[index].folderPath, to: newRootPath) {
+                books[index].folderPath = folderPath
+            }
+        }
+
+        // Rebuild the settings in one pass. Category keys such as
+        // "__recent__" never match a folder subtree, so they stay put; a
+        // relocated setting replaces any stale entry under its new key.
+        var relocatedSettings: [String: FolderSortSetting] = [:]
+        var otherSettings: [String: FolderSortSetting] = [:]
+        for (key, setting) in folderSortSettings {
+            if let newKey = subtree.relocating(key, to: newRootPath) {
+                relocatedSettings[newKey] = setting
+            } else {
+                otherSettings[key] = setting
+            }
+        }
+        folderSortSettings = otherSettings.merging(relocatedSettings) { _, relocated in relocated }
     }
 
     /// Check whether a folder contains any books or subfolders
