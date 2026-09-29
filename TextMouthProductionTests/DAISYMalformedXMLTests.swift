@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// A damaged DAISY file must never turn silently into a shorter book (TODO T04).
@@ -6,6 +7,8 @@ import XCTest
 /// throw an error naming the file, and every caller propagates it. DTBook
 /// content keeps the text read before any damage and reports the damage
 /// beside that text; content damaged before any text throws like structure.
+/// The DAISY 2.02 NCC is read as HTML, so ordinary HTML markup works, and a
+/// copy cut short fails by name instead of becoming a shorter table of contents.
 final class DAISYMalformedXMLTests: XCTestCase {
 
     // MARK: - Fixtures
@@ -58,6 +61,23 @@ final class DAISYMalformedXMLTests: XCTestCase {
     <h1 id="h1"><a href="part1.smil#p1">Leadline Readings</a></h1>
     <h1 id="h2"><a href="part2.smil#p3">Breakwater Survey</a></h1>
     </body></html>
+    """
+
+    /// The same navigation written as ordinary HTML rather than XHTML:
+    /// upper-case tags, unquoted attributes, unclosed `<META>` and `<BR>`
+    /// tags, and named entities, none of which an XML parser accepts.
+    private static let htmlNCC = """
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <HTML><HEAD>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <META name="dc:title" content="Harbor&nbsp;Soundings">
+    <META name=dc:creator content="Odile Marchetti">
+    <TITLE>Harbor Soundings</TITLE>
+    </HEAD><BODY>
+    <H1 class=title id=h1><A href="part1.smil#p1">Leadline&nbsp;Readings</A></H1>
+    <P>Produced for the harbor library<BR>reading room</P>
+    <H2 id=h2><A href="part2.smil#p3">Breakwater &amp; Survey</A><BR></H2>
+    </BODY></HTML>
     """
 
     /// The first chapter's synchronization: a heading, then a paragraph,
@@ -467,7 +487,141 @@ final class DAISYMalformedXMLTests: XCTestCase {
         XCTAssertTrue(entry.contains("DAISY_INCOMPLETE_CONTENT: The file “\(folder)/book.xml”"), entry)
     }
 
+    // MARK: - NCC Navigation
+
+    /// An NCC in ordinary HTML yields its metadata and headings. Forcing it
+    /// through an XML parser stopped at the first unclosed `<META>`, before
+    /// any heading, and left the book without navigation or text.
+    func testNCCWrittenAsOrdinaryHTMLParses() throws {
+        let result = try DAISY202NCCParser(html: Self.htmlNCC, file: "ncc.html").parse()
+
+        XCTAssertEqual(result.title, "Harbor Soundings")
+        XCTAssertEqual(result.author, "Odile Marchetti")
+        XCTAssertEqual(Self.outline(result), [
+            "h1 Leadline Readings → part1.smil#p1",
+            "h2 Breakwater & Survey → part2.smil#p3"
+        ])
+    }
+
+    /// A DAISY 2.02 book whose NCC is ordinary HTML opens with its full text
+    /// and its title and author.
+    func testDAISY202BookWithHTMLNCCReadsItsTextAndMetadata() throws {
+        let zip = try makeTemporaryDAISYZip(entries: Self.daisy202Package(["ncc.html": Self.htmlNCC]))
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        let markdown = try DAISYParser.extractMarkdown(from: zip)
+        let metadata = try XCTUnwrap(DAISYParser.readMetadata(from: zip))
+
+        XCTAssertTrue(markdown.contains("The first sounding came up at nine fathoms."), markdown)
+        XCTAssertTrue(markdown.contains("The second sounding struck gravel near the breakwater."), markdown)
+        XCTAssertEqual(metadata.title, "Harbor Soundings")
+        XCTAssertEqual(metadata.author, "Odile Marchetti")
+    }
+
+    /// The bundled NCC fixtures keep exactly the navigation the XML parser
+    /// gave them: every title, author, level, label, and destination.
+    func testNCCFixturesKeepTheirNavigation() throws {
+        let tides = try Self.parseFixtureNCC("daisy202_test.zip", path: "ncc.html")
+        XCTAssertEqual(tides.title, "The Manual of Tide Prediction")
+        XCTAssertEqual(tides.author, "Josephine Halford")
+        XCTAssertEqual(Self.outline(tides), [
+            "h1 The Manual of Tide Prediction → content001.smil#txt_1",
+            "h1 Chapter 1: Gravitational Forces → content001.smil#txt_2",
+            "h2 The Moon's Influence → content001.smil#txt_3",
+            "h1 Chapter 2: Tidal Patterns → content002.smil#txt_10",
+            "h2 Spring and Neap Tides → content002.smil#txt_11"
+        ])
+
+        let treaty = try Self.parseFixtureNCC("wipo-treaty-d202-text-only.zip", path: "WIPO-Treaty-D202Fileset/ncc.html")
+        XCTAssertEqual(treaty.title, "WIPO Treaty for the Visually Impaired")
+        XCTAssertEqual(treaty.author, "WBU")
+        XCTAssertEqual(Self.outline(treaty), [
+            "h1 WIPO Treaty for the Visually Impaired → d202_1.smil#txt_1",
+            "h1 WIPO Treaty for Visually Impaired → d202_2.smil#txt_4",
+            "h1 Preamble → d202_3.smil#txt_11",
+            "h1 Article 1. Purpose → d202_4.smil#txt_40",
+            "h1 Article 2. Nature and Scope of Obligations → d202_5.smil#txt_42",
+            "h1 Article 3. Relations to Other Agreements → d202_6.smil#txt_51",
+            "h1 Article 4. Limitations and Exceptions to Exclusive Rights under Copyright → d202_7.smil#txt_65",
+            "h1 Article 5. Acknowledgment and Moral Rights → d202_8.smil#txt_85",
+            "h1 Article 6. Circumvention of Technological Measures → d202_9.smil#txt_90",
+            "h1 Article 7. Relationship with Contracts → d202_10.smil#txt_92",
+            "h1 Article 8. Imports and Exports of Works → d202_11.smil#txt_94",
+            "h1 Article 9. Notice to Right Owners for Commercial Reproduction and Distribution of Works"
+                + " → d202_12.smil#txt_105",
+            "h1 Article 10. Database on Availability of Works → d202_13.smil#txt_110",
+            "h1 Article 11. Remuneration for Commercial Exploitation of Works. → d202_14.smil#txt_113",
+            "h1 Article 12. Orphaned Works. → d202_15.smil#txt_119",
+            "h1 Article 13. Respect for Privacy. → d202_16.smil#txt_122",
+            "h1 Article 14. Limitations and Exceptions Applied to Non-Copyrighted Elements of Databases"
+                + " → d202_17.smil#txt_125",
+            "h1 Article 15. Disabilities Covered → d202_18.smil#txt_129",
+            "h1 Article 16. Additional Definitions → d202_19.smil#txt_134",
+            "h1 Article 17. Conference of Parties → d202_20.smil#txt_144",
+            "h1 Article 18. Optional Protocols → d202_21.smil#txt_152",
+            "h1 Article 19. Reservations → d202_22.smil#txt_157",
+            "h1 Article 20. Monitoring and Implementation → d202_23.smil#txt_159"
+        ])
+    }
+
+    /// An NCC cut off partway, in XHTML or in HTML, fails by name instead of
+    /// becoming a table of contents that silently ends early.
+    func testTruncatedNCCThrowsErrorNamingTheFile() {
+        for source in [Self.ncc, Self.htmlNCC] {
+            let damaged = Self.truncated(source, before: "Survey")
+            let reason = malformedXMLReason(naming: "ncc.html") {
+                try DAISY202NCCParser(html: damaged, file: "ncc.html").parse()
+            }
+            XCTAssertTrue(reason.contains("closing body and html tags"), reason)
+        }
+    }
+
+    /// A copy that lost only its final `</html>` tag lost no navigation, so
+    /// it still reads in full.
+    func testNCCMissingOnlyItsFinalTagKeepsItsNavigation() throws {
+        let result = try DAISY202NCCParser(html: Self.truncated(Self.ncc, before: "</html>"), file: "ncc.html").parse()
+
+        XCTAssertEqual(Self.outline(result), [
+            "h1 Leadline Readings → part1.smil#p1",
+            "h1 Breakwater Survey → part2.smil#p3"
+        ])
+    }
+
+    /// Text extraction, metadata reading, and audio import all refuse a
+    /// truncated NCC, naming it.
+    func testDAISY202BookWithTruncatedNCCReportsTheNavigationFile() throws {
+        let files = Self.daisy202Package(["ncc.html": Self.truncated(Self.ncc, before: "<h1 id=\"h2\"")])
+        let zip = try makeTemporaryDAISYZip(entries: files)
+        let audioDirectory = try Self.makeTemporaryDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: zip)
+            try? FileManager.default.removeItem(at: audioDirectory)
+        }
+
+        malformedXMLReason(naming: "ncc.html") { try DAISYParser.extractMarkdown(from: zip) }
+        malformedXMLReason(naming: "ncc.html") { try DAISYParser.readMetadata(from: zip) }
+        malformedXMLReason(naming: "ncc.html") {
+            try DAISYAudioConverter.convertToAudioBook(
+                from: InMemoryDAISYPackage(files.merging(Self.audioFiles) { current, _ in current }),
+                version: .daisy202,
+                toDirectory: audioDirectory
+            )
+        }
+    }
+
     // MARK: - Helpers
+
+    /// An NCC's headings as "h<level> <label> → <destination>" lines, which
+    /// compare and read clearly in a failure message.
+    private static func outline(_ result: DAISY202NCCResult) -> [String] {
+        result.headings.map { "h\($0.level) \($0.text) → \($0.href)" }
+    }
+
+    /// Parse the NCC at `path` inside the bundled test fixture `name`.
+    private static func parseFixtureNCC(_ name: String, path: String) throws -> DAISY202NCCResult {
+        let archive = try Archive(url: try requireFile(name), accessMode: .read)
+        return try DAISY202NCCParser(path: path, in: ArchiveFileProvider(archive: archive)).parse()
+    }
 
     /// The words a reader hears for `markdown`: its plain text as the
     /// Markdown parser extracts it for speech and display.

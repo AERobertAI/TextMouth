@@ -290,14 +290,7 @@ enum DAISYAudioConverter {
         }) else {
             throw DAISYParserError.missingContent("No ncc.html found")
         }
-        let nccData = try provider.readFile(at: nccPath)
-        guard let nccHTML = String(data: nccData, encoding: .utf8)
-                ?? String(data: nccData, encoding: .isoLatin1) else {
-            throw DAISYParserError.parseError("Cannot decode ncc.html")
-        }
-
-        let nccParser = DAISY202NCCParser(html: nccHTML)
-        let nccResult = nccParser.parse()
+        let nccResult = try DAISY202NCCParser(path: nccPath, in: provider).parse()
 
         // Pre-parse all referenced SMIL files for fragment-aware clip lookup
         var smilCache: [String: DAISYAudioSMILParser] = [:]

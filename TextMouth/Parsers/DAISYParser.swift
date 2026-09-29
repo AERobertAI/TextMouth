@@ -437,15 +437,8 @@ enum DAISYParser {
             throw DAISYParserError.missingContent("No ncc.html found for DAISY 2.02")
         }
 
-        let nccData = try provider.readFile(at: nccPath)
-        guard let nccHTML = String(data: nccData, encoding: .utf8)
-                ?? String(data: nccData, encoding: .isoLatin1) else {
-            throw DAISYParserError.parseError("Cannot decode ncc.html")
-        }
-
         // Parse NCC for metadata and navigation structure
-        let nccParser = DAISY202NCCParser(html: nccHTML)
-        let nccResult = nccParser.parse()
+        let nccResult = try DAISY202NCCParser(path: nccPath, in: provider).parse()
 
         // Collect text fragments referenced by SMIL files, preserving NCC
         // heading order. Do not collapse "book.html#p1" down to "book.html":
@@ -572,13 +565,7 @@ enum DAISYParser {
         }) else {
             return nil
         }
-        let nccData = try provider.readFile(at: nccPath)
-        guard let nccHTML = String(data: nccData, encoding: .utf8)
-                ?? String(data: nccData, encoding: .isoLatin1) else {
-            return nil
-        }
-        let parser = DAISY202NCCParser(html: nccHTML)
-        let result = parser.parse()
+        let result = try DAISY202NCCParser(path: nccPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)
     }
 }
