@@ -18,7 +18,11 @@ enum MarkdownCacheService {
     /// headings or speech; a navigation annotation never enters a heading or
     /// begins a line (which hid that line's words); named anchors add no "[]";
     /// and a heading with a line break stays one heading.
-    static let currentCacheVersion: String = "3.0.5"
+    /// 3.0.6: plain-text books are stored as literal Markdown, so text that
+    /// looks like Markdown or HTML is read as written and matches the direct
+    /// parser; and DAISY 2.02 inline fragments are read in full, where caches
+    /// written earlier kept only a fragment's first child element's text.
+    static let currentCacheVersion: String = "3.0.6"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -159,7 +163,7 @@ enum MarkdownCacheService {
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
     /// HTML: converts the HTML to Markdown.
     /// Markdown: uses the file as-is.
-    /// Plain text: wraps with minimal Markdown formatting (detects headings).
+    /// Plain text: literal Markdown with the plain-text headings as ATX headings.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
         let markdown: String
         switch format {
@@ -172,7 +176,11 @@ enum MarkdownCacheService {
             // Already Markdown — use as-is
             markdown = try String(contentsOf: url, encoding: .utf8)
         case .txt:
-            markdown = try extractFromPlainText(url: url)
+            // The same line analysis as the direct parser, written as literal
+            // Markdown, so a cached book reads exactly as
+            // PlainTextParser.parse(text:) reads it.
+            let text = try String(contentsOf: url, encoding: .utf8)
+            markdown = PlainTextParser.markdown(text: text)
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url)
         case .daisy:
@@ -208,61 +216,6 @@ enum MarkdownCacheService {
             "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
         return ExtractedCache(markdown: markdown, chapters: chapters.map(\.chapter))
-    }
-
-    /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.
-    private static func extractFromPlainText(url: URL) throws -> String {
-        let text = try String(contentsOf: url, encoding: .utf8)
-        let lines = text.components(separatedBy: .newlines)
-        var result: [String] = []
-        var setextLines: Set<Int> = []
-
-        // First pass: identify setext underline lines
-        for (index, line) in lines.enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.count >= 3 && (trimmed.allSatisfy({ $0 == "=" }) || trimmed.allSatisfy({ $0 == "-" })) {
-                setextLines.insert(index)
-            }
-        }
-
-        for (index, line) in lines.enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            // Skip setext underline lines (already part of headings in Markdown)
-            if setextLines.contains(index) {
-                result.append(line)
-                continue
-            }
-
-            // Already has markdown heading syntax — keep as-is
-            if trimmed.hasPrefix("#") {
-                result.append(line)
-                continue
-            }
-
-            // Setext-style heading: line followed by === or ---
-            if !trimmed.isEmpty && index + 1 < lines.count && setextLines.contains(index + 1) {
-                // Already valid Markdown setext heading — keep as-is
-                result.append(line)
-                continue
-            }
-
-            // All-caps short lines → convert to ## headings
-            if trimmed.count >= 3 && trimmed.count <= 80
-                && trimmed.uppercased() == trimmed
-                && trimmed.rangeOfCharacter(from: .letters) != nil {
-                let letters = trimmed.filter { $0.isLetter }
-                if letters.count >= 3 {
-                    result.append("## \(trimmed)")
-                    continue
-                }
-            }
-
-            // Regular line — keep as-is
-            result.append(line)
-        }
-
-        return result.joined(separator: "\n")
     }
 
     // MARK: - Multi-Chapter Markdown Parsing

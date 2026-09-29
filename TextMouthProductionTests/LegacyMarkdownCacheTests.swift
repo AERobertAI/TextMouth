@@ -215,4 +215,90 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         item.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
         XCTAssertEqual(item.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
     }
+
+    // MARK: - Plain Text
+
+    /// Import a plain-text source through the production path, which copies
+    /// it into a package, writes content.md, and stamps the cache version.
+    private func importPlainTextBook(_ source: String) throws -> Book {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Plain Fixture.txt")
+        try source.write(to: file, atomically: true, encoding: .utf8)
+        let book = try FileImportService.importFile(from: file)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        return book
+    }
+
+    /// The content.md written for a .txt book reads exactly like the direct
+    /// parser: one chapter, the same text, and the same headings. No literal
+    /// text is stored as an HTML comment, so none can hide or split a chapter.
+    func testPlainTextCacheFileReadsLikeTheDirectParser() throws {
+        let book = try importPlainTextBook(PlainTextFixture.combined)
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .txt)
+        let chapter = assertSamePlainTextReading(cached: cached, direct: direct)
+        XCTAssertEqual(chapter?.text, PlainTextFixture.combinedReading)
+
+        let markdown = try String(
+            contentsOf: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory), encoding: .utf8
+        )
+        XCTAssertFalse(markdown.contains("<!--"))
+    }
+
+    /// A .txt line spelled like a chapter marker is text. The cache used to
+    /// copy it verbatim, so the reader took it for a marker: the words before
+    /// it vanished and the line itself became a chapter title.
+    func testPlainTextChapterMarkerLookalikeStaysText() {
+        let content = parse(PlainTextParser.markdown(
+            text: "Opening words.\n<!-- chapter: Not A Chapter -->\nClosing words."
+        ))
+        XCTAssertEqual(content.chapters.count, 1)
+        XCTAssertEqual(
+            content.chapters.first?.text,
+            "Opening words. <!-- chapter: Not A Chapter --> Closing words."
+        )
+        XCTAssertEqual(content.allHeadings, [])
+    }
+
+    /// A reader opening a .txt package written at format 3.0.5 must replace
+    /// its cache and persisted index, whose text lost Markdown-looking
+    /// characters, with a literal rebuild that matches the direct parser, and
+    /// afterwards reuse the rebuilt index.
+    func testPlainTextCacheFromFormat305IsRebuiltAsLiteralText() throws {
+        let body = "*Starred* words -- and <b>tags</b> & [links](x)."
+        var book = try importPlainTextBook("OPENING\n\(body)")
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .txt)
+        // Recreate what format 3.0.5 stored: the all-caps line marked up as a
+        // heading and every other line copied verbatim for the Markdown reader.
+        try "## OPENING\n\(body)".write(
+            to: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory), atomically: true, encoding: .utf8
+        )
+        book.cacheFormatVersion = "3.0.5"
+        let legacy = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(legacy.chapters.map(\.text), ["OPENING\n\nStarred words \u{2013} and tags & links."])
+        try book.saveBookInfoThrowing(contentIndex: legacy.contentIndex.replacingFormat(.txt))
+
+        XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion))
+        let result = try BookContentAnalysisService.load(
+            book: book,
+            regenerateTextCache: MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+        )
+        XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertEqual(result.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(result.content.chapters.map(\.text), ["OPENING\n\n\(body)"])
+        assertSamePlainTextReading(cached: result.content, direct: direct)
+        XCTAssertEqual(result.index.allHeadings, direct.allHeadings)
+
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        book.cacheFormatVersion = result.cacheFormatVersion
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex)
+        assertSamePlainTextReading(cached: reopened.content, direct: direct)
+    }
 }

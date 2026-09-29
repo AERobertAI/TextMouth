@@ -306,12 +306,13 @@ final class BookContentIndexTests: XCTestCase {
     }
 
     func testParserVersionForcesPreviousCacheGenerationToRebuild() {
-        XCTAssertEqual(MarkdownCacheService.currentCacheVersion, "3.0.5")
+        XCTAssertEqual(MarkdownCacheService.currentCacheVersion, "3.0.6")
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "2.0.1"))
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "3.0.2"))
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "3.0.3"))
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "3.0.4"))
-        XCTAssertFalse(MarkdownCacheService.isCacheOutdated(stored: "3.0.5"))
+        XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "3.0.5"))
+        XCTAssertFalse(MarkdownCacheService.isCacheOutdated(stored: "3.0.6"))
     }
 
     func testFailedRegenerationLeavesPreviousCacheReadable() throws {
