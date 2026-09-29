@@ -269,7 +269,10 @@ struct ReaderView: View {
             showSleepTimer.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { notification in
-            guard shouldAcceptPanelCommand(notification) else { return }
+            // An audio book's text is only placeholder spacing for position
+            // tracking, so the toolbar offers no Search for it; the menu
+            // command must not open it either.
+            guard !viewModel.isAudioBook, shouldAcceptPanelCommand(notification) else { return }
             showSearch.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
