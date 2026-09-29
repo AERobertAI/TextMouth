@@ -297,18 +297,11 @@ struct BookVoicePickerView: View {
 
             Form {
                 if viewModel.isAudioBook {
-                    // Audio settings use multipliers throughout; the TTS WPM
-                    // slider would otherwise write incompatible local state.
+                    // Audio settings use multipliers throughout; the TTS
+                    // voice, WPM, and pitch controls would otherwise write
+                    // incompatible local state, so none of them appear here.
                     Section("Audio Speed") {
-                        Slider(value: Binding(
-                            get: { viewModel.audioSpeed },
-                            set: { viewModel.adjustAudioSpeed(delta: $0 - viewModel.audioSpeed) }
-                        ), in: 0.25...4.0, step: 0.25) {
-                            Text("Audio speed")
-                        }
-                        .accessibilityValue(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
-                        Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
-                            .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
+                        audioSpeedControls
                     }
                 } else {
                     Section {
@@ -461,6 +454,50 @@ struct BookVoicePickerView: View {
                 selectedLanguage = String(voice.language.prefix(2))
             }
         }
+    }
+
+    /// Audio books get the current speed, a stepper for precise changes, and
+    /// a slider for large ones. Both controls move by `AudioSpeed.fineStep`
+    /// through one binding.
+    ///
+    /// On macOS these controls are AppKit cells. SwiftUI copies an explicit
+    /// `accessibilityLabel` onto them, but not the label view, so the label
+    /// is repeated. `accessibilityValue` becomes the AXValueDescription that
+    /// VoiceOver speaks instead of the cell's bare number.
+    @ViewBuilder
+    private var audioSpeedControls: some View {
+        let controlLabel = "Audio speed"
+        let spokenSpeed = AudioSpeed.spokenLabel(for: viewModel.audioSpeed)
+        let stepHint = AudioSpeed.stepHint(AudioSpeed.fineStep)
+
+        Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
+            .accessibilityLabel(spokenSpeed)
+
+        Stepper(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
+            Text(controlLabel)
+        }
+        .accessibilityLabel(controlLabel)
+        .accessibilityValue(spokenSpeed)
+        .accessibilityHint(stepHint)
+
+        Slider(value: audioSpeedBinding, in: AudioSpeed.range, step: AudioSpeed.fineStep) {
+            Text(controlLabel)
+        }
+        .accessibilityLabel(controlLabel)
+        .accessibilityValue(spokenSpeed)
+        .accessibilityHint(stepHint)
+    }
+
+    /// The one binding behind the audio stepper and slider. Writes go through
+    /// `setAudioSpeed(_:)`, which snaps, clamps, applies, saves, and announces
+    /// the speed, so the playback bar and toolbar caption update at once.
+    /// Internal (not private) so hosted tests can drive exactly what the
+    /// controls do.
+    var audioSpeedBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.audioSpeed },
+            set: { viewModel.setAudioSpeed($0) }
+        )
     }
 
     private var availableLanguages: [String] {

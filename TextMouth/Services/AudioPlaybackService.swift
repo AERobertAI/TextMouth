@@ -85,8 +85,9 @@ enum AudioSpeed {
     /// Steps are relative, so a speed of 1.25 moves to 1.35 and back.
     static let coarseStep: Double = 0.1
 
-    /// Step for precise adjustments. It is also the snapping grid, so every
-    /// normalized speed is a whole number of fine steps.
+    /// Step for precise adjustments: the stepper and slider in the per-book
+    /// speed sheet. It is also the snapping grid, so every normalized speed
+    /// is a whole number of fine steps.
     static let fineStep: Double = 0.05
 
     /// Grid points per 1x (20 for a 0.05 grid). Snapping multiplies by this
@@ -135,6 +136,12 @@ enum AudioSpeed {
     /// e.g. "Increase audio speed by 0.1 times".
     static func stepButtonLabel(increasing: Bool, by step: Double) -> String {
         "\(increasing ? "Increase" : "Decrease") audio speed by \(formattedNumber(step)) times"
+    }
+
+    /// Accessibility hint for an adjustable control that moves in steps of
+    /// `step`, e.g. "Changes the speed in steps of 0.05 times".
+    static func stepHint(_ step: Double) -> String {
+        "Changes the speed in steps of \(formattedNumber(step)) times"
     }
 }
 

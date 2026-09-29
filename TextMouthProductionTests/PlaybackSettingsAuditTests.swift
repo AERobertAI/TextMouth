@@ -1,3 +1,5 @@
+import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -248,6 +250,98 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(reader.totalEstimatedTime, libraryEstimate)
     }
 
+    // MARK: - Per-book speed sheet
+
+    /// The sheet's stepper and slider share one binding that moves by the
+    /// fine step, lands on exact values, and updates the live player and the
+    /// saved book immediately.
+    func testSheetBindingMovesAudioSpeedByFineSteps() {
+        let reader = makeReader(format: .audio)
+        defer { reader.close() }
+        let speed = BookVoicePickerView(viewModel: reader).audioSpeedBinding
+
+        speed.wrappedValue += AudioSpeed.fineStep
+        XCTAssertEqual(reader.audioSpeed, 1.05)
+        speed.wrappedValue += AudioSpeed.fineStep
+        XCTAssertEqual(reader.audioSpeed, 1.1)
+        speed.wrappedValue -= AudioSpeed.fineStep
+        XCTAssertEqual(speed.wrappedValue, 1.05)
+        XCTAssertEqual(reader.audioPlaybackService.playbackSpeed, 1.05)
+        XCTAssertEqual(reader.libraryViewModel.bookByID(reader.book.id)?.localWPM, 1.05)
+    }
+
+    /// A slider position is lowerBound + k × step, which drifts in binary;
+    /// the binding must still store the exact decimal for that position.
+    func testSheetSliderPositionsLandOnExactSpeeds() {
+        let reader = makeReader(format: .audio)
+        defer { reader.close() }
+        let speed = BookVoicePickerView(viewModel: reader).audioSpeedBinding
+
+        let expectedSpeedByPosition: [Int: Double] = [0: 0.25, 15: 1, 17: 1.1, 35: 2, 75: 4]
+        for (position, expected) in expectedSpeedByPosition {
+            speed.wrappedValue = AudioSpeed.range.lowerBound + Double(position) * AudioSpeed.fineStep
+            XCTAssertEqual(reader.audioSpeed, expected, "Slider position \(position)")
+        }
+    }
+
+    /// The stepper and slider hints state the fine step in words.
+    func testSheetControlHintStatesTheFineStep() {
+        XCTAssertEqual(
+            AudioSpeed.stepHint(AudioSpeed.fineStep),
+            "Changes the speed in steps of 0.05 times"
+        )
+    }
+
+    /// In the rendered sheet, VoiceOver finds both audio controls labelled
+    /// "Audio speed", hears the spoken speed and the step, and its increment
+    /// action moves by exactly the fine step.
+    func testRenderedAudioSheetControlsAreLabelledAndMoveByFineStep() throws {
+        let reader = makeReader(format: .audio, localWPM: 1.25)
+        defer { reader.close() }
+
+        try withHostedControls(BookVoicePickerView(viewModel: reader)) { controls in
+            for role in [NSAccessibility.Role.incrementor, .slider] {
+                let control = try XCTUnwrap(controls.first { $0.role == role }, role.rawValue)
+                XCTAssertEqual(control.label, "Audio speed", role.rawValue)
+                XCTAssertEqual(control.valueDescription, "1.25 times speed", role.rawValue)
+                XCTAssertEqual(control.hint, "Changes the speed in steps of 0.05 times", role.rawValue)
+            }
+
+            let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor })
+            _ = stepper.element.accessibilityPerformIncrement()
+            XCTAssertEqual(reader.audioSpeed, 1.3)
+            // SwiftUI re-renders asynchronously; the spoken value must follow,
+            // and the slider must receive 1.3 before it is adjusted.
+            XCTAssertTrue(waitUntil { stepper.element.accessibilityValueDescription() == "1.3 times speed" })
+
+            let slider = try XCTUnwrap(controls.first { $0.role == .slider })
+            _ = slider.element.accessibilityPerformDecrement()
+            XCTAssertEqual(reader.audioSpeed, 1.25)
+        }
+    }
+
+    /// Only text books offer speech controls. The text sheet is checked too,
+    /// proving the harness can see voice and WPM controls when they exist.
+    func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() {
+        let text = makeReader(format: .txt)
+        defer { text.close() }
+        withHostedControls(BookVoicePickerView(viewModel: text)) { controls in
+            XCTAssertTrue(controls.contains { $0.label == "Select voice for this book" })
+            XCTAssertTrue(controls.contains { $0.valueDescription.hasSuffix("words per minute") })
+        }
+
+        let audio = makeReader(format: .audio)
+        defer { audio.close() }
+        withHostedControls(BookVoicePickerView(viewModel: audio)) { controls in
+            let spoken = controls.map { "\($0.label) \($0.valueDescription)".lowercased() }
+            for speechTerm in ["words per minute", "voice", "pitch"] {
+                XCTAssertFalse(spoken.contains { $0.contains(speechTerm) }, speechTerm)
+            }
+            let popUps = controls.filter { $0.role == .popUpButton }.map(\.label)
+            XCTAssertEqual(popUps, ["End of book behavior for this book"])
+        }
+    }
+
     // MARK: - Keeping audio multipliers out of speech WPM
 
     /// Opening an audio book must not push its saved multiplier into the
@@ -343,6 +437,82 @@ final class PlaybackSettingsAuditTests: XCTestCase {
             XCTAssertEqual(Double(number), speed, "Visible label for \(speed)")
             XCTAssertEqual(AudioSpeed.spokenLabel(for: speed), "\(number) times speed")
         }
+    }
+
+    /// The attributes VoiceOver reads from one native control in a hosted
+    /// view. SwiftUI stores `accessibilityValue` text in AXValueDescription,
+    /// which VoiceOver speaks instead of a slider's or stepper's raw number.
+    private struct AccessibleControl {
+        let element: NSAccessibilityProtocol
+        let role: NSAccessibility.Role
+        let label: String
+        let valueDescription: String
+        let hint: String
+    }
+
+    /// Host `view` in an offscreen window that is never shown, wait for
+    /// SwiftUI to create its AppKit controls, and pass their accessibility
+    /// attributes to `body` while the window is still alive.
+    ///
+    /// Only AppKit-backed controls (sliders, steppers, pop-up buttons) appear
+    /// here; purely SwiftUI text and buttons are built only for a connected
+    /// assistive app, so they are verified through their label functions.
+    private func withHostedControls<Content: View>(
+        _ view: Content,
+        _ body: ([AccessibleControl]) throws -> Void
+    ) rethrows {
+        let hostingView = NSHostingView(rootView: view)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 450, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        // Tests own this window; AppKit must not release it again on close.
+        window.isReleasedWhenClosed = false
+        window.contentView = hostingView
+        defer { window.close() }
+
+        // SwiftUI creates platform controls during layout; poll briefly so a
+        // slow first render cannot produce an empty, vacuously passing list.
+        var controls: [AccessibleControl] = []
+        _ = waitUntil(timeout: 5) {
+            hostingView.layoutSubtreeIfNeeded()
+            controls = accessibleControls(in: hostingView)
+            return !controls.isEmpty
+        }
+        try body(controls)
+    }
+
+    /// Spin the main run loop until `condition` holds or `timeout` passes,
+    /// letting SwiftUI apply asynchronous view updates. Returns the outcome.
+    private func waitUntil(timeout: TimeInterval = 2, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() {
+            guard Date() < deadline else { return false }
+            RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+        }
+        return true
+    }
+
+    /// Depth-first collection of every accessibility element below `root`
+    /// that is not a plain group, i.e. the controls VoiceOver can land on.
+    private func accessibleControls(in root: Any) -> [AccessibleControl] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        var controls: [AccessibleControl] = []
+        if let role = node.accessibilityRole(), role != .group {
+            controls.append(AccessibleControl(
+                element: node,
+                role: role,
+                label: node.accessibilityLabel() ?? "",
+                valueDescription: node.accessibilityValueDescription() ?? "",
+                hint: node.accessibilityHelp() ?? ""
+            ))
+        }
+        for child in node.accessibilityChildren() ?? [] {
+            controls += accessibleControls(in: child)
+        }
+        return controls
     }
 
     /// Run `body` with a known global speech speed so WPM assertions are
