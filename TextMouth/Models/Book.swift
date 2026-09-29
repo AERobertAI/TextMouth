@@ -349,9 +349,10 @@ struct Book: Identifiable, Codable, Hashable {
     func estimatedTimeRemaining(wpm: Double) -> TimeInterval? {
         if format.isAudio {
             guard let duration = audioDuration, duration.isFinite, duration > 0 else { return nil }
-            // For audio, localWPM stores the multiplier. Match the runtime
-            // clamp before division, including legacy zero-speed values.
-            let speed = AudioPlaybackService.clampedSpeed(localWPM ?? 1.0)
+            // For audio, localWPM stores the multiplier. Normalize it exactly
+            // as the reader and player do (clamped and snapped) before
+            // division, including legacy zero-speed values.
+            let speed = AudioSpeed.normalized(localWPM ?? AudioSpeed.normal)
             let adjustedDuration = duration / speed
             guard let pos = readingPosition else { return adjustedDuration }
             let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset

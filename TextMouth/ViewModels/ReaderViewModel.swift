@@ -116,8 +116,9 @@ final class ReaderViewModel: ObservableObject {
     /// and stops at segments[i].endTime within the corresponding file.
     var audioSegments: [AudioSegment] = []
 
-    /// Audio playback speed (0.25 to 4.0, separate from WPM)
-    @Published var audioSpeed: Double = 1.0
+    /// Audio playback multiplier, separate from WPM. Always a value returned
+    /// by `AudioSpeed.normalized(_:)`; change it through `setAudioSpeed(_:)`.
+    @Published var audioSpeed: Double = AudioSpeed.normal
 
     /// Current text transformation for mapping modified<->original offsets.
     /// Accessed from Playback extension when speaking chapters.
@@ -231,17 +232,8 @@ final class ReaderViewModel: ObservableObject {
             currentCharacterOffset = pos.characterOffset
         }
 
-        // Apply per-book voice/speed/pitch overrides
-        if let localWPM = book.localWPM {
-            speechService.setSpeedRealtime(localWPM)
-        }
-        if let localPitch = book.localPitch {
-            speechService.setPitchRealtime(localPitch)
-        }
-        if let localVoiceID = book.localVoiceID,
-           let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
-            speechService.currentVoice = voice
-        }
+        // Apply per-book voice/speed/pitch overrides (never an audio multiplier)
+        applyLocalSpeechOverrides()
 
         setupCallbacks()
         setupNotifications()
@@ -249,8 +241,10 @@ final class ReaderViewModel: ObservableObject {
 
         if isAudioBook {
             setupAudioCallbacks()
+            // Audio books keep their multiplier in `localWPM`. Restore it
+            // clamped and snapped, exactly as the player and estimates use it.
             if let localSpeed = book.localWPM {
-                audioSpeed = AudioPlaybackService.clampedSpeed(localSpeed)
+                audioSpeed = AudioSpeed.normalized(localSpeed)
             }
         }
 
@@ -688,16 +682,7 @@ final class ReaderViewModel: ObservableObject {
                 // the user committed to a fade duration when they started.
                 // The next timer will pick up the new value automatically.
                 // Re-apply per-book overrides (they take priority over global)
-                if let localWPM = self.book.localWPM {
-                    self.speechService.setSpeedRealtime(localWPM)
-                }
-                if let localPitch = self.book.localPitch {
-                    self.speechService.setPitchRealtime(localPitch)
-                }
-                if let localVoiceID = self.book.localVoiceID,
-                   let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
-                    self.speechService.currentVoice = voice
-                }
+                self.applyLocalSpeechOverrides()
             }
             .store(in: &cancellables)
 

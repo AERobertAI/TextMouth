@@ -7,11 +7,25 @@ extension ReaderViewModel {
 
     // MARK: - Speed & Voice
 
+    /// Words per minute added or removed by one text-book speed step.
+    static let speechSpeedStep: Double = 25
+
     /// Use the same step for keyboard commands, menus, and playback buttons.
-    /// Audio multipliers and speech WPM are different units.
+    /// Audio multipliers and speech WPM are different units: audio books move
+    /// by `AudioSpeed.coarseStep`, text books by `speechSpeedStep` WPM.
     func stepSpeed(forward: Bool) {
-        let step = isAudioBook ? 0.25 : 25.0
+        let step = isAudioBook ? AudioSpeed.coarseStep : Self.speechSpeedStep
         adjustSpeed(delta: forward ? step : -step)
+    }
+
+    /// VoiceOver label for the playback bar's speed buttons, stating the
+    /// exact step `stepSpeed(forward:)` applies in this book's unit.
+    func speedStepButtonLabel(forward: Bool) -> String {
+        if isAudioBook {
+            return AudioSpeed.stepButtonLabel(increasing: forward, by: AudioSpeed.coarseStep)
+        }
+        let direction = forward ? "Increase" : "Decrease"
+        return "\(direction) speed by \(Int(Self.speechSpeedStep)) words per minute"
     }
 
     /// Adjust TTS speed by a delta (e.g. +25 or -25 WPM).
@@ -43,6 +57,27 @@ extension ReaderViewModel {
         book.localVoiceID = voice.identifier
         saveLocalVoiceSettings()
         announceToVoiceOver("Voice changed to \(voice.name)")
+    }
+
+    /// Apply this book's saved voice, speed, and pitch overrides to the speech
+    /// engine. Runs when the reader opens and again after global speech
+    /// settings change, because per-book overrides take priority.
+    ///
+    /// Audio books store their playback multiplier in `localWPM`, so their
+    /// saved speed must never reach the speech engine: 1.25 would clamp to
+    /// the 50 WPM minimum and make "Where Am I?" speak at a crawl. Voice and
+    /// pitch mean the same thing for every format and are still applied.
+    func applyLocalSpeechOverrides() {
+        if !isAudioBook, let localWPM = book.localWPM {
+            speechService.setSpeedRealtime(localWPM)
+        }
+        if let localPitch = book.localPitch {
+            speechService.setPitchRealtime(localPitch)
+        }
+        if let localVoiceID = book.localVoiceID,
+           let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
+            speechService.currentVoice = voice
+        }
     }
 
     /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
@@ -83,9 +118,9 @@ extension ReaderViewModel {
             pitch: nil
         )
         if isAudioBook {
-            audioSpeed = 1
+            audioSpeed = AudioSpeed.normal
             audioPlaybackService.setSpeed(audioSpeed)
-            announceToVoiceOver("Using normal audio speed")
+            announceToVoiceOver("Audio speed reset to \(AudioSpeed.spokenLabel(for: audioSpeed))")
             return
         }
         // Apply global settings

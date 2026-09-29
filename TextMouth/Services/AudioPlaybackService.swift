@@ -59,6 +59,92 @@ enum AudioPositionObserverPolicy {
     }
 }
 
+// MARK: - Audio Speed Rules
+
+/// The single source of truth for audio book playback speed: the supported
+/// range, the step sizes, snapping, and the text shown and spoken for a speed.
+///
+/// Audio speed is a multiplier of the recording's natural speed (1.0 = as
+/// recorded). Every speed that is applied to the player, restored from a
+/// saved book, used for a time estimate, saved, displayed, or announced
+/// passes through `normalized(_:)`, which clamps it to `range` and snaps it
+/// to the `fineStep` grid. Snapping keeps binary floating-point drift such as
+/// `1.0 + 0.1 == 1.1000000000000001` out of the player, the UI, and the saved
+/// library, and keeps the quarter steps saved by earlier releases
+/// (1.25, 1.5, 1.75, 2) exact.
+enum AudioSpeed {
+    /// Supported multipliers. Unchanged from earlier releases so every saved
+    /// per-book speed stays valid. Both bounds lie on the snapping grid.
+    static let range: ClosedRange<Double> = 0.25...4.0
+
+    /// The recording's natural speed, and the fallback for unusable values.
+    static let normal: Double = 1.0
+
+    /// Step for quick adjustments: the playback bar's speed buttons and the
+    /// Increase Speed / Decrease Speed menu items and keyboard shortcuts.
+    /// Steps are relative, so a speed of 1.25 moves to 1.35 and back.
+    static let coarseStep: Double = 0.1
+
+    /// Step for precise adjustments: the stepper and slider in the per-book
+    /// speed sheet. It is also the snapping grid, so every normalized speed
+    /// is a whole number of fine steps.
+    static let fineStep: Double = 0.05
+
+    /// Grid points per 1x (20 for a 0.05 grid). Snapping multiplies by this
+    /// whole number, rounds to an integer, and divides back; dividing two
+    /// exact integers yields the Double closest to the intended decimal, so
+    /// the result compares equal to a literal such as 1.1.
+    private static let gridPointsPerUnit = (1 / fineStep).rounded()
+
+    /// Clamps `speed` to `range` and snaps it to the nearest `fineStep`.
+    /// Non-finite input (NaN or infinity from damaged saved data) falls back
+    /// to `normal`, because neither range bound is a sensible guess for it.
+    static func normalized(_ speed: Double) -> Double {
+        guard speed.isFinite else { return normal }
+        let clamped = min(max(speed, range.lowerBound), range.upperBound)
+        // The bounds are on the grid, so snapping cannot leave the range.
+        return (clamped * gridPointsPerUnit).rounded() / gridPointsPerUnit
+    }
+
+    // MARK: Labels
+
+    /// A multiplier or step as a plain decimal with one or two fraction
+    /// digits: "1.0", "1.3", "1.25", "0.05". It always uses "." (like the
+    /// app's other numeric labels) so the visible and spoken forms of a
+    /// speed carry exactly the same number.
+    static func formattedNumber(_ value: Double) -> String {
+        // Two fixed decimals keep every hundredth ("1.25", "1.30"). Dropping
+        // one trailing zero then leaves at least one decimal ("1.3", "1.0"),
+        // so a two-decimal speed is never shown with one decimal.
+        let twoDecimals = String(format: "%.2f", value)
+        return twoDecimals.hasSuffix("0") ? String(twoDecimals.dropLast()) : twoDecimals
+    }
+
+    /// Visible speed text, e.g. "1.0x", "1.3x", "1.25x". The speed is
+    /// normalized first, so the label always names the speed that plays.
+    static func visibleLabel(for speed: Double) -> String {
+        "\(formattedNumber(normalized(speed)))x"
+    }
+
+    /// Spoken equivalent of `visibleLabel(for:)` for VoiceOver and braille,
+    /// e.g. "1.25 times speed". A bare "1.25x" is read ambiguously.
+    static func spokenLabel(for speed: Double) -> String {
+        "\(formattedNumber(normalized(speed))) times speed"
+    }
+
+    /// Accessibility label for a button that moves the speed by `step`,
+    /// e.g. "Increase audio speed by 0.1 times".
+    static func stepButtonLabel(increasing: Bool, by step: Double) -> String {
+        "\(increasing ? "Increase" : "Decrease") audio speed by \(formattedNumber(step)) times"
+    }
+
+    /// Accessibility hint for an adjustable control that moves in steps of
+    /// `step`, e.g. "Changes the speed in steps of 0.05 times".
+    static func stepHint(_ step: Double) -> String {
+        "Changes the speed in steps of \(formattedNumber(step)) times"
+    }
+}
+
 /// Plays audio files (mp3, m4a, m4b, wav, etc.) with variable speed and seeking.
 /// Used for audio book playback as an alternative to the TTS SpeechService.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
@@ -97,9 +183,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// consistent across chapters (mirrors the fix in AudioEngineService).
     private var currentVolume: Float = 1.0
 
-    static let speedRange = 0.25...4.0
-    let minimumSpeed: Double = speedRange.lowerBound
-    let maximumSpeed: Double = speedRange.upperBound
+    /// Slowest and fastest supported multipliers (see `AudioSpeed.range`).
+    let minimumSpeed: Double = AudioSpeed.range.lowerBound
+    let maximumSpeed: Double = AudioSpeed.range.upperBound
 
     override init() {
         super.init()
@@ -233,18 +319,15 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         clipEndTime = (time ?? 0) > 0 ? time : nil
     }
 
+    /// Set the playback multiplier, live if audio is currently playing.
+    /// Reader restoration, time estimates, and the player share
+    /// `AudioSpeed.normalized(_:)`, so the player always runs at exactly the
+    /// speed the reader shows and saves.
     func setSpeed(_ speed: Double) {
-        playbackSpeed = Self.clampedSpeed(speed)
+        playbackSpeed = AudioSpeed.normalized(speed)
         if isPlaying && !isPaused {
             player?.rate = Float(playbackSpeed)
         }
-    }
-
-    /// Reader restoration, time estimates, and the player share one supported
-    /// range. Non-finite metadata falls back to normal speed.
-    static func clampedSpeed(_ speed: Double) -> Double {
-        guard speed.isFinite else { return 1 }
-        return max(speedRange.lowerBound, min(speed, speedRange.upperBound))
     }
 
     /// Volume control (for sleep timer fade-out).

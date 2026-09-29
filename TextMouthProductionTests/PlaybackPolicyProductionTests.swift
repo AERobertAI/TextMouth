@@ -22,16 +22,25 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(65.9), "1 minute, 5 seconds")
     }
 
-    /// Library estimates must agree with the player's clamp for restored data,
-    /// including a zero multiplier that used to produce an infinite duration.
-    func testAudioEstimatesUseTheSameSpeedClampAsPlayback() {
-        for speed in [0.0, -1, 99, .infinity, .nan] {
+    /// Library estimates must agree with the player's clamping and snapping
+    /// for restored data, including a zero multiplier that used to produce an
+    /// infinite duration and off-grid values left by drift or hand edits.
+    func testAudioEstimatesUseTheSameSpeedNormalizationAsPlayback() {
+        for speed in [0.0, -1, 99, .infinity, .nan, 0.26, 1.1000000000000001, 1.2345, 3.99] {
             let book = Book(title: "Audio", format: .audio, filePath: "audio.wav", md5Hash: "audio",
                             localWPM: speed, audioDuration: 120)
             let playback = AudioPlaybackService()
             playback.setSpeed(speed)
-            XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 120 / playback.playbackSpeed)
+            XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 120 / playback.playbackSpeed, "\(speed)")
         }
+    }
+
+    /// The estimate divides by the snapped speed, not the raw saved value.
+    func testAudioEstimateDividesBySnappedSpeed() {
+        let book = Book(title: "Audio", format: .audio, filePath: "audio.wav", md5Hash: "audio",
+                        localWPM: 1.2345, audioDuration: 120)
+
+        XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 96)
     }
 
     func testPercentValidationRejectsEmptyInput() {

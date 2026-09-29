@@ -74,14 +74,15 @@ struct PlaybackControlsView: View {
                     Image(systemName: "tortoise")
                         .font(.caption)
                 }
-                .accessibilityLabel(viewModel.isAudioBook ? "Decrease speed by 0.25x" : "Decrease speed by 25 words per minute")
+                .accessibilityLabel(viewModel.speedStepButtonLabel(forward: false))
                 .buttonStyle(.plain)
 
                 if viewModel.isAudioBook {
-                    Text(String(format: "%.2fx", viewModel.audioSpeed))
+                    // Shared formatter: "1.25x" on screen, "1.25 times speed" spoken.
+                    Text(AudioSpeed.visibleLabel(for: viewModel.audioSpeed))
                         .font(.system(.body, design: .monospaced))
                         .frame(minWidth: 50)
-                        .accessibilityLabel(String(format: "%.2f times speed", viewModel.audioSpeed))
+                        .accessibilityLabel(AudioSpeed.spokenLabel(for: viewModel.audioSpeed))
                 } else {
                     Text("\(Int(viewModel.currentWPM))")
                         .font(.system(.body, design: .monospaced))
@@ -95,7 +96,7 @@ struct PlaybackControlsView: View {
                     Image(systemName: "hare")
                         .font(.caption)
                 }
-                .accessibilityLabel(viewModel.isAudioBook ? "Increase speed by 0.25x" : "Increase speed by 25 words per minute")
+                .accessibilityLabel(viewModel.speedStepButtonLabel(forward: true))
                 .buttonStyle(.plain)
 
                 if viewModel.hasLocalSettings && !viewModel.isAudioBook {
