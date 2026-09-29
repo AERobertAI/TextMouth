@@ -111,6 +111,40 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         XCTAssertEqual(SpeechService.rateForWPM(10_000), 1)
     }
 
+    /// The speech engine reads the global speed and pitch from the store
+    /// directly, so it validates them with the same rules as Settings: an
+    /// injected extreme is clamped at launch, and a non-finite or missing
+    /// value reloads as the default.
+    func testSpeechServiceValidatesStoredGlobalSpeedAndPitch() throws {
+        let suiteName = "com.textmouth.tests.speech-defaults.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(1e308, forKey: "wordsPerMinute")
+        defaults.set(-2.0, forKey: "pitchMultiplier")
+
+        let service = SpeechService(userDefaults: defaults)
+
+        XCTAssertEqual(service.wordsPerMinute, 650)
+        XCTAssertEqual(service.pitchMultiplier, 0.5)
+
+        defaults.set(Double.nan, forKey: "wordsPerMinute")
+        defaults.set(Double.infinity, forKey: "pitchMultiplier")
+        service.reloadSettings()
+        XCTAssertEqual(service.wordsPerMinute, 200)
+        XCTAssertEqual(service.pitchMultiplier, 1)
+
+        defaults.set(425.0, forKey: "wordsPerMinute")
+        defaults.removeObject(forKey: "pitchMultiplier")
+        service.reloadSettings()
+        XCTAssertEqual(service.wordsPerMinute, 425)
+        XCTAssertEqual(service.pitchMultiplier, 1)
+
+        // A stored 0 has always meant "not chosen yet" to the speech engine.
+        defaults.set(0.0, forKey: "wordsPerMinute")
+        service.reloadSettings()
+        XCTAssertEqual(service.wordsPerMinute, 200)
+    }
+
     func testAudioEngineSpeedRatioUsesProductionMultiplier() {
         XCTAssertEqual(AudioEngineService.speedMultiplier(wpm: 300, renderWPM: 200), 1.5)
     }

@@ -191,11 +191,16 @@ final class SleepTimerService: ObservableObject {
             }
         }
 
+        /// The saved duration, or nil when it cannot be one. The value is
+        /// editable with `defaults write`, so minutes below the supported
+        /// range are rejected and minutes above it are clamped: arming a
+        /// timer multiplies them by 60, which would overflow for Int.max.
         func toModel() -> SleepTimerDuration? {
             switch kind {
             case "minutes":
-                guard let m = minutes, m > 0 else { return nil }
-                return .minutes(m)
+                let supported = SettingsPolicy.sleepTimerMinutes
+                guard let minutes, minutes >= supported.lowerBound else { return nil }
+                return .minutes(min(minutes, supported.upperBound))
             case "endOfHeading": return .endOfHeading
             case "endOfDocument": return .endOfDocument
             default: return nil

@@ -211,9 +211,13 @@ struct Book: Identifiable, Codable, Hashable {
         self.contentIndexVersion = contentIndexVersion
     }
 
-    // Custom decoding to handle missing fields from old library.json
+    // Custom decoding to handle missing fields from old library.json.
+    // Counts, speed, and pitch are validated with `SettingsPolicy` (and
+    // positions and bookmarks validate themselves), so a hand-edited or
+    // damaged value is repaired instead of failing the whole library.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
         id = try container.decode(UUID.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         author = try container.decode(String.self, forKey: .author)
@@ -225,15 +229,17 @@ struct Book: Identifiable, Codable, Hashable {
         lastOpened = try container.decodeIfPresent(Date.self, forKey: .lastOpened)
         readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
         bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
-        totalWordCount = try container.decodeIfPresent(Int.self, forKey: .totalWordCount)
-        totalCharacterCount = try container.decodeIfPresent(Int.self, forKey: .totalCharacterCount)
+        totalWordCount = fields.count(.totalWordCount)
+        totalCharacterCount = fields.count(.totalCharacterCount)
         tmbDirectoryName = try container.decodeIfPresent(String.self, forKey: .tmbDirectoryName) ?? ""
         sourceFilePath = try container.decodeIfPresent(String.self, forKey: .sourceFilePath)
         lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
         lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
         localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
-        localWPM = try container.decodeIfPresent(Double.self, forKey: .localWPM)
-        localPitch = try container.decodeIfPresent(Double.self, forKey: .localPitch)
+        // `localWPM` holds words per minute for text and a multiplier for audio.
+        let isAudio = format.isAudio
+        localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
+        localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
         localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
@@ -472,6 +478,20 @@ struct ReadingPosition: Codable, Hashable {
         self.globalCharacterOffset = globalCharacterOffset
         self.lastUpdated = Date()
     }
+
+    /// Decodes a saved position, repairing indices and offsets no position
+    /// can have (negative, or too large for an `Int`) instead of failing the
+    /// book and, with it, the whole library. The reader still clamps the
+    /// result against the loaded content.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
+        chapterIndex = fields.position(.chapterIndex)
+        headingIndex = fields.optionalPosition(.headingIndex)
+        characterOffset = fields.position(.characterOffset)
+        globalCharacterOffset = fields.optionalPosition(.globalCharacterOffset)
+        lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
+    }
 }
 
 struct Bookmark: Identifiable, Codable, Hashable {
@@ -496,6 +516,19 @@ struct Bookmark: Identifiable, Codable, Hashable {
         self.characterOffset = characterOffset
         self.label = label
         self.dateCreated = dateCreated
+    }
+
+    /// Decodes a saved bookmark, repairing a location no bookmark can have
+    /// (negative, or too large for an `Int`) instead of failing the book.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
+        id = try container.decode(UUID.self, forKey: .id)
+        number = try container.decode(Int.self, forKey: .number)
+        chapterIndex = fields.position(.chapterIndex)
+        characterOffset = fields.position(.characterOffset)
+        label = try container.decode(String.self, forKey: .label)
+        dateCreated = try container.decode(Date.self, forKey: .dateCreated)
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as

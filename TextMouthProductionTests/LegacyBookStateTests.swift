@@ -323,4 +323,229 @@ final class LegacyBookStateTests: XCTestCase {
     func testHalfPitchConvertsToNegativeOctave() {
         XCTAssertEqual(AudioEngineService.pitchCents(for: 0.5), -1_200, accuracy: 0.001)
     }
+
+    // MARK: - Repairing saved positions
+
+    /// Negative indices and offsets in a saved position become 0 instead of
+    /// reaching the reader.
+    func testSavedPositionWithNegativeIndicesDecodesToZero() throws {
+        let position = try decodeSaved(ReadingPosition.self, """
+        {"chapterIndex": -3, "headingIndex": -2, "characterOffset": -40,
+         "globalCharacterOffset": -1, "lastUpdated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(position.chapterIndex, 0)
+        XCTAssertEqual(position.headingIndex, 0)
+        XCTAssertEqual(position.characterOffset, 0)
+        XCTAssertEqual(position.globalCharacterOffset, 0)
+    }
+
+    /// An offset no `Int` can hold, or one saved as text, no longer fails the
+    /// whole position: a required one becomes 0 and an optional one is dropped.
+    func testSavedPositionWithUnreadableOffsetsStillDecodes() throws {
+        let position = try decodeSaved(ReadingPosition.self, """
+        {"chapterIndex": 2, "characterOffset": 1e30, "globalCharacterOffset": "far",
+         "headingIndex": 3.5, "lastUpdated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(position.chapterIndex, 2)
+        XCTAssertEqual(position.characterOffset, 0)
+        XCTAssertNil(position.globalCharacterOffset)
+        XCTAssertNil(position.headingIndex)
+    }
+
+    /// Valid positions decode unchanged, including an offset past any real
+    /// content, which the reader clamps against the loaded text.
+    func testValidSavedPositionDecodesUnchanged() throws {
+        let original = ReadingPosition(
+            chapterIndex: 4, headingIndex: 1, characterOffset: 12_345, globalCharacterOffset: Int.max
+        )
+
+        let decoded = try roundTrip(original)
+
+        XCTAssertEqual(decoded.chapterIndex, 4)
+        XCTAssertEqual(decoded.headingIndex, 1)
+        XCTAssertEqual(decoded.characterOffset, 12_345)
+        XCTAssertEqual(decoded.globalCharacterOffset, Int.max)
+    }
+
+    /// A bookmark saved at a negative location decodes at the start instead
+    /// of failing its book; its other fields are kept.
+    func testBookmarkWithNegativeLocationDecodesToZero() throws {
+        let bookmark = try decodeSaved(Bookmark.self, """
+        {"id": "3F2A6C1E-0000-4000-8000-000000000001", "number": 2, "chapterIndex": -1,
+         "characterOffset": -500, "label": "Margin note", "dateCreated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(bookmark.chapterIndex, 0)
+        XCTAssertEqual(bookmark.characterOffset, 0)
+        XCTAssertEqual(bookmark.number, 2)
+        XCTAssertEqual(bookmark.label, "Margin note")
+    }
+
+    /// One book with an unreadable position used to fail library.json as a
+    /// whole, which loads as an empty library. Every book now loads, and the
+    /// damaged position is repaired.
+    func testLibraryWithOneDamagedPositionStillLoadsEveryBook() throws {
+        let intact = Book(
+            title: "Intact", format: .txt, filePath: "/tmp/intact.txt", md5Hash: "intact",
+            readingPosition: ReadingPosition(chapterIndex: 1, characterOffset: 20)
+        )
+        let damaged = Book(
+            title: "Damaged", format: .txt, filePath: "/tmp/damaged.txt", md5Hash: "damaged",
+            readingPosition: ReadingPosition(chapterIndex: 2, characterOffset: 30)
+        )
+        var file = try jsonObject(Library(books: [intact, damaged]))
+        var books = try XCTUnwrap(file["books"] as? [[String: Any]])
+        var position = try XCTUnwrap(books[1]["readingPosition"] as? [String: Any])
+        position["chapterIndex"] = -2
+        position["characterOffset"] = "thirty"
+        books[1]["readingPosition"] = position
+        file["books"] = books
+
+        let library = try savedDataDecoder.decode(Library.self, from: JSONSerialization.data(withJSONObject: file))
+
+        XCTAssertEqual(library.books.map(\.title), ["Intact", "Damaged"])
+        XCTAssertEqual(library.books[0].readingPosition?.characterOffset, 20)
+        XCTAssertEqual(library.books[1].readingPosition?.chapterIndex, 0)
+        XCTAssertEqual(library.books[1].readingPosition?.characterOffset, 0)
+    }
+
+    // MARK: - Repairing saved speeds, pitches, and counts
+
+    /// A text book's saved speed is clamped to the words-per-minute range and
+    /// its pitch to the pitch range, like the global settings.
+    func testTextBookSpeedAndPitchAreClampedToTheSettingsRanges() throws {
+        let fast = try decodeLibraryBook(format: .txt, #""localWPM": 10000, "localPitch": 9"#)
+        let slow = try decodeLibraryBook(format: .txt, #""localWPM": 12, "localPitch": 0.1"#)
+
+        XCTAssertEqual(fast.localWPM, 650)
+        XCTAssertEqual(fast.localPitch, 2)
+        XCTAssertEqual(slow.localWPM, 50)
+        XCTAssertEqual(slow.localPitch, 0.5)
+    }
+
+    /// Speeds and pitches that cannot be one (zero, negative, a number too
+    /// large for `Double`, or text) are dropped, so the book follows the
+    /// global settings, and the rest of the book still loads.
+    func testUnusableSavedSpeedsAndPitchesAreDropped() throws {
+        let cases = [
+            #""localWPM": -200, "localPitch": 0"#,
+            #""localWPM": 0, "localPitch": -1"#,
+            #""localWPM": 1e999, "localPitch": 1e999"#,
+            #""localWPM": "fast", "localPitch": "high""#,
+        ]
+        for fields in cases {
+            let book = try decodeLibraryBook(
+                format: .txt,
+                fields + #", "totalWordCount": 1000, "totalCharacterCount": 5000"#
+            )
+            XCTAssertNil(book.localWPM, fields)
+            XCTAssertNil(book.localPitch, fields)
+            XCTAssertEqual(book.title, "Saved", fields)
+            // The estimate falls back to the global speed: 1,000 words at 200 WPM.
+            XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200) ?? -1, 300, accuracy: 0.001, fields)
+        }
+    }
+
+    /// An audio book's saved multiplier is normalized exactly as the reader
+    /// and player normalize it; an unusable one plays at normal speed.
+    func testAudioBookSpeedIsNormalizedLikeThePlayer() throws {
+        for (saved, expected) in [(1.2345, 1.25), (99, 4), (0.1, 0.25), (1.5, 1.5)] {
+            let book = try decodeLibraryBook(format: .audio, #""localWPM": \#(saved)"#)
+            XCTAssertEqual(book.localWPM, expected, "\(saved)")
+            XCTAssertEqual(book.localWPM, AudioSpeed.normalized(saved), "\(saved)")
+        }
+        XCTAssertNil(try decodeLibraryBook(format: .audio, #""localWPM": 0"#).localWPM)
+    }
+
+    /// Negative or unreadable word and character counts are dropped, as for
+    /// a book that has not been measured yet; valid counts are kept.
+    func testNegativeOrUnreadableCountsAreDropped() throws {
+        let damaged = try decodeLibraryBook(format: .txt, #""totalWordCount": -5, "totalCharacterCount": "many""#)
+        let intact = try decodeLibraryBook(format: .txt, #""totalWordCount": 0, "totalCharacterCount": 42"#)
+
+        XCTAssertNil(damaged.totalWordCount)
+        XCTAssertNil(damaged.totalCharacterCount)
+        XCTAssertNil(damaged.percentComplete)
+        XCTAssertEqual(intact.totalWordCount, 0)
+        XCTAssertEqual(intact.totalCharacterCount, 42)
+    }
+
+    /// bookInfo.json applies the same rules: its state repairs counts and
+    /// pitch and drops speeds no book can have, and the package applies the
+    /// format's speed range once it knows the format.
+    func testBookInfoAppliesTheFormatSpeedRange() throws {
+        let audio = try decodePackage(format: .audio, #""localWPM": 99, "localPitch": 5, "totalWordCount": -3"#)
+        let text = try decodePackage(format: .txt, #""localWPM": 10000"#)
+        let unusable = try decodePackage(format: .epub, #""localWPM": -1"#)
+
+        XCTAssertEqual(audio.state.localWPM, 4)
+        XCTAssertEqual(audio.state.localPitch, 2)
+        XCTAssertNil(audio.state.totalWordCount)
+        XCTAssertEqual(text.state.localWPM, 650)
+        XCTAssertNil(unusable.state.localWPM)
+    }
+
+    /// Without its package, saved state cannot know the format, so it only
+    /// drops impossible speeds and leaves the range to `BookInfo`.
+    func testStandaloneStateOnlyDropsImpossibleSpeeds() throws {
+        let fast = try decodeSaved(BookState.self, #"{"isNew": false, "tmbDirectoryName": "x.tmb", "localWPM": 10000}"#)
+        let negative = try decodeSaved(BookState.self, #"{"isNew": false, "tmbDirectoryName": "x.tmb", "localWPM": -1}"#)
+
+        XCTAssertEqual(fast.localWPM, 10_000)
+        XCTAssertNil(negative.localWPM)
+    }
+
+    // MARK: - Saved data helpers
+
+    /// Decodes a library.json book entry with `fields` added to a minimal,
+    /// valid entry.
+    private func decodeLibraryBook(format: BookFormat, _ fields: String) throws -> Book {
+        try decodeSaved(Book.self, """
+        {"id": "5D1E7A20-0000-4000-8000-000000000002", "title": "Saved", "author": "Unknown",
+         "format": "\(format.rawValue)", "filePath": "/tmp/saved", "md5Hash": "saved",
+         "folderPath": "", "dateAdded": "2026-01-02T03:04:05Z", "bookmarks": [], \(fields)}
+        """)
+    }
+
+    /// Decodes a bookInfo.json with `stateFields` added to a minimal state.
+    private func decodePackage(format: BookFormat, _ stateFields: String) throws -> BookInfo {
+        try decodeSaved(BookInfo.self, """
+        {"metadata": {"title": "Saved", "author": "Unknown", "format": "\(format.rawValue)",
+          "md5Hash": "saved", "dateAdded": "2026-01-02T03:04:05Z", "originalFileName": "saved",
+          "folderPath": "", "bookID": "5D1E7A20-0000-4000-8000-000000000003"},
+         "state": {"isNew": false, "tmbDirectoryName": "saved.tmb", \(stateFields)},
+         "bookmarks": []}
+        """)
+    }
+
+    /// Decoder configured like the app's library and bookInfo.json readers.
+    private var savedDataDecoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+
+    /// Encoder configured like the app's library and bookInfo.json writers.
+    private var savedDataEncoder: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    /// Decodes hand-written saved data, as someone editing the file would.
+    private func decodeSaved<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
+        try savedDataDecoder.decode(type, from: Data(json.utf8))
+    }
+
+    /// Encodes and decodes a value the way the app saves and reloads it.
+    private func roundTrip<T: Codable>(_ value: T) throws -> T {
+        try savedDataDecoder.decode(T.self, from: savedDataEncoder.encode(value))
+    }
+
+    /// The JSON object the app saves for `value`, for editing into damage.
+    private func jsonObject<T: Encodable>(_ value: T) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: savedDataEncoder.encode(value)) as? [String: Any])
+    }
 }
