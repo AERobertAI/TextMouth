@@ -102,6 +102,7 @@ struct BookSearchResult: Identifiable, Equatable, Sendable {
     let chapterIndex: Int
     /// UTF-16 offset of the match within its content unit.
     let characterOffset: Int
+    /// The text that matched, as it appears in the book.
     let matchedText: String
     /// The match with up to 30 characters of context on each side.
     let contextSnippet: String
@@ -120,7 +121,10 @@ struct BookSearchResult: Identifiable, Equatable, Sendable {
 /// The parts of an open book that a search reads. All are immutable value
 /// copies, so a search can run off the main actor while the reader changes.
 struct BookSearchCorpus: Sendable {
+    /// Text of each content unit (chapter), searched in reading order.
     let chapterTexts: [String]
+    /// Title of each content unit, which names a match's location in a book
+    /// without headings.
     let chapterTitles: [String]
     /// Every heading in the book, used to name where each match is.
     let headings: [Heading]
