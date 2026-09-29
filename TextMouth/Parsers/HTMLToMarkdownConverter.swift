@@ -59,7 +59,10 @@ enum HTMLToMarkdownConverter {
         navigationElements: inout [Element]
     ) {
         for child in node.getChildNodes() {
-            guard let element = child as? Element else { continue }
+            // Hidden content, page lists, and landmarks are never converted,
+            // so they neither count as headings nor need removing as navigation.
+            guard let element = child as? Element,
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
             let tag = element.tagName().lowercased()
             let isNavigation = insideNavigation || tag == "nav"
             if tag == "nav" {
@@ -102,6 +105,9 @@ enum HTMLToMarkdownConverter {
 
     /// Convert a single HTML element to its Markdown equivalent.
     private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+        // Content outside the rendered reading flow (the hidden attribute, page
+        // lists, and landmarks) contributes no words, headings, or destinations.
+        guard !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
         let tag = element.tagName().lowercased()
 
         // Preserve a TOC target in the Markdown stream at its actual DOM
@@ -250,9 +256,12 @@ enum HTMLToMarkdownConverter {
 
     /// Convert list item children of a <ul> or <ol> to Markdown.
     private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+        // A hidden item is not rendered: it must neither leave an empty bullet
+        // nor take a number from the visible items that follow it.
         let items = listElement.getChildNodes().compactMap { node -> Element? in
             guard let element = node as? Element,
-                  element.tagName().lowercased() == "li" else { return nil }
+                  element.tagName().lowercased() == "li",
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { return nil }
             return element
         }
         for (index, item) in items.enumerated() {

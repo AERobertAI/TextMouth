@@ -404,6 +404,58 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(content.chapters.map(\.title), ["Chapter 1", "Chapter 2"])
     }
 
+    /// Content outside the rendered reading flow contributes no words,
+    /// headings, or navigation destinations, in cached and direct reading.
+    /// The `hidden` attribute counts with any value, including `until-found`.
+    func testHiddenContentPageListsAndLandmarksAreNeverRead() throws {
+        let html = """
+        <html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+        <h1>Visible title</h1>
+        <p>Shown <span hidden="">secret </span>words.</p>
+        <section hidden="until-found"><h2 id="hidden-target">Hidden heading</h2><p>Hidden paragraph.</p></section>
+        <nav epub:type="page-list"><h2>Page List</h2><ol><li><a href="#p1">1</a></li></ol></nav>
+        <nav role="doc-landmarks"><ol><li><a href="#start">Begin Reading</a></li></ol></nav>
+        <ol><li>First item</li><li hidden="">Hidden item</li><li>Second item</li></ol>
+        </body></html>
+        """
+        let markdown = try HTMLToMarkdownConverter.convert(
+            html,
+            stripDuplicateNavigation: true,
+            headingTargets: ["hidden-target": MarkdownHeadingAnnotation(level: 2, text: "Hidden destination")]
+        )
+        XCTAssertFalse(markdown.contains("textmouth-heading"))
+        // A hidden list item leaves no empty bullet and takes no number.
+        XCTAssertTrue(markdown.hasSuffix("1. First item\n2. Second item"))
+        let cached = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
+        let direct = try XCTUnwrap(HTMLParser.parse(html: html).chapters.first)
+        XCTAssertEqual(cached.text, "Visible title\n\nShown words.\n\nFirst item\n\nSecond item")
+        // Direct HTML reading separates blocks with spaces; its words match.
+        let words = ["Visible", "title", "Shown", "words.", "First", "item", "Second", "item"]
+        XCTAssertEqual(direct.text.split(whereSeparator: \.isWhitespace).map(String.init), words)
+        for chapter in [cached, direct] {
+            XCTAssertEqual(chapter.headings.map(\.text), ["Visible title"])
+        }
+    }
+
+    /// Visible TOC stripping keeps its rule: a TOC is removed only when real
+    /// headings exist outside navigation. Hidden navigation is never read and
+    /// its headings never count toward that decision.
+    func testDuplicateNavigationStrippingIgnoresHiddenNavigation() throws {
+        let toc = "<nav epub:type='toc'><h1>Contents</h1><ol><li><a href='#c1'>Chapter one</a></li></ol></nav>"
+        let pageList = "<nav epub:type='page-list' hidden=''><h2>Page List</h2><ol><li><a href='#p1'>1</a></li></ol></nav>"
+        let page = { (body: String) in "<html xmlns:epub='http://www.idpf.org/2007/ops'><body>\(body)</body></html>" }
+
+        // With only navigation headings, the visible TOC is the chapter's content.
+        let navigationOnly = try EPUBParser.parseChapterHTML(page(toc + pageList))
+        XCTAssertEqual(navigationOnly.headings.map(\.text), ["Contents"])
+        XCTAssertEqual(navigationOnly.text, "Contents\n\nChapter one")
+
+        // A real heading outside navigation makes the visible TOC a duplicate.
+        let withHeading = try EPUBParser.parseChapterHTML(page(toc + pageList + "<h1 id='c1'>Chapter one</h1><p>Body.</p>"))
+        XCTAssertEqual(withHeading.headings.map(\.text), ["Chapter one"])
+        XCTAssertEqual(withHeading.text, "Chapter one\n\nBody.")
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
