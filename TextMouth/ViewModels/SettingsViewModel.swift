@@ -428,7 +428,7 @@ final class SettingsViewModel: ObservableObject {
             wrappedValue: false, "restartTimerGestureEnabled", store: userDefaults
         )
         _restartTimerGesturePattern = AppStorage(
-            wrappedValue: "previousTrack,previousTrack,previousTrack", "restartTimerGesturePattern",
+            wrappedValue: ConfigService.AppConfig.defaultRestartTimerGesturePattern, "restartTimerGesturePattern",
             store: userDefaults
         )
         _storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.appStorage(in: userDefaults)

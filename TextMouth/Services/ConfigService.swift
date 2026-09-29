@@ -80,7 +80,7 @@ final class ConfigService: ObservableObject {
         /// Comma-separated event-type sequence (see
         /// MediaGestureDetector.EventType) that triggers a sleep timer
         /// restart when matched within the configured time window.
-        var restartTimerGesturePattern: String = "previousTrack,previousTrack,previousTrack"
+        var restartTimerGesturePattern: String = AppConfig.defaultRestartTimerGesturePattern
         /// Maximum elapsed time in seconds across the gesture's event
         /// sequence. Anything longer breaks the match and starts the
         /// pattern over.
@@ -154,6 +154,10 @@ final class ConfigService: ObservableObject {
         static var currentDataDirectoryPath: String {
             TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
         }
+
+        /// Three previous-track presses in a row: the restart-timer gesture
+        /// until the user picks another, shared with the Settings model.
+        static let defaultRestartTimerGesturePattern = "previousTrack,previousTrack,previousTrack"
     }
 
     private init() {
