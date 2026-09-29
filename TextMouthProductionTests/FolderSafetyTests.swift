@@ -315,4 +315,210 @@ final class FolderSafetyTests: XCTestCase {
             "Choose a destination outside \"A\". \"A/B\" is that folder or one of its subfolders."
         )
     }
+
+    // MARK: - Removing a Folder and Moving Its Contents
+
+    /// Asserts that a refused edit left folders, books, and sort settings as
+    /// they were in `snapshot`.
+    private func assertUnchanged(
+        _ library: Library,
+        since snapshot: Library,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(library.folders, snapshot.folders, file: file, line: line)
+        XCTAssertEqual(library.books, snapshot.books, file: file, line: line)
+        XCTAssertEqual(library.folderSortSettings, snapshot.folderSortSettings, file: file, line: line)
+    }
+
+    /// A library with "Old" (holding "Sub" and "Notes", with books in "Old"
+    /// and "Old/Sub" and a sort setting on "Old/Sub") and "Target" (holding
+    /// `targetChild`), built under `rule`. Returns the library and "Old".
+    private func removalLibrary(
+        targetChild: String,
+        rule: FolderPathEquivalence
+    ) throws -> (library: Library, old: BookFolder) {
+        var library = Library()
+        let old = try library.createFolderThrowing(name: "Old", equivalence: rule)
+        try library.createFolderThrowing(name: "Sub", parentPath: "Old", equivalence: rule)
+        try library.createFolderThrowing(name: "Notes", parentPath: "Old", equivalence: rule)
+        try library.createFolderThrowing(name: "Target", equivalence: rule)
+        try library.createFolderThrowing(name: targetChild, parentPath: "Target", equivalence: rule)
+        library.addBook(book("Loose", folder: "Old"))
+        library.addBook(book("Filed", folder: "Old/Sub"))
+        library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "Old/Sub")
+        return (library, old)
+    }
+
+    /// A subfolder whose name is already used at the destination refuses the
+    /// removal under both policies when spelled identically, and where the
+    /// volume ignores case when only the capitalization differs.
+    func testRemovalRejectsSubfolderNamesAlreadyUsedAtTheDestination() throws {
+        for rule in bothPolicies {
+            let fixture = try removalLibrary(targetChild: "Notes", rule: rule)
+            var library = fixture.library
+            XCTAssertEqual(
+                conflict {
+                    try library.removeFolderThrowing(id: fixture.old.id, movingContentsTo: "Target", equivalence: rule)
+                },
+                .nameInUse(proposedPath: "Target/Notes", existingPath: "Target/Notes")
+            )
+            XCTAssertFalse(library.removeFolder(id: fixture.old.id, movingContentsTo: "Target", equivalence: rule))
+            assertUnchanged(library, since: fixture.library)
+        }
+
+        for rule in bothPolicies {
+            let fixture = try removalLibrary(targetChild: "sub", rule: rule)
+            var library = fixture.library
+            let removal = conflict {
+                try library.removeFolderThrowing(id: fixture.old.id, movingContentsTo: "Target", equivalence: rule)
+            }
+            if rule.isCaseSensitive {
+                XCTAssertNil(removal)
+                XCTAssertEqual(
+                    library.folders.map(\.fullPath).sorted(),
+                    ["Target", "Target/Notes", "Target/Sub", "Target/sub"]
+                )
+            } else {
+                XCTAssertEqual(removal, .nameInUse(proposedPath: "Target/Sub", existingPath: "Target/sub"))
+                assertUnchanged(library, since: fixture.library)
+            }
+        }
+    }
+
+    /// Subfolders whose names differ only in case would collide with each
+    /// other when moved together onto a case-insensitive volume.
+    func testRemovalRejectsSubfoldersThatWouldCollideWithEachOther() {
+        for rule in bothPolicies {
+            let old = BookFolder(name: "Old")
+            let original = Library(folders: [
+                old,
+                BookFolder(name: "Reports", parentPath: "Old"),
+                BookFolder(name: "reports", parentPath: "Old"),
+            ])
+            var library = original
+
+            let removal = conflict {
+                try library.removeFolderThrowing(id: old.id, movingContentsTo: "", equivalence: rule)
+            }
+
+            if rule.isCaseSensitive {
+                XCTAssertNil(removal)
+                XCTAssertEqual(library.folders.map(\.fullPath), ["Reports", "reports"])
+            } else {
+                XCTAssertEqual(
+                    removal,
+                    .namesCollide(firstPath: "Old/Reports", secondPath: "Old/reports", parentPath: "")
+                )
+                assertUnchanged(library, since: original)
+            }
+        }
+    }
+
+    /// The destination can be neither the removed folder nor anything inside
+    /// it, including a spelling the volume treats as the same folder.
+    func testRemovalRejectsDestinationsInsideTheRemovedFolder() throws {
+        for rule in bothPolicies {
+            let fixture = try removalLibrary(targetChild: "Other", rule: rule)
+            var library = fixture.library
+            for destination in ["Old", "Old/Sub"] {
+                XCTAssertEqual(
+                    conflict {
+                        try library.removeFolderThrowing(id: fixture.old.id, movingContentsTo: destination, equivalence: rule)
+                    },
+                    .destinationInsideFolder(folderPath: "Old", destinationPath: destination)
+                )
+            }
+            assertUnchanged(library, since: fixture.library)
+        }
+
+        let fixture = try removalLibrary(targetChild: "Other", rule: .caseInsensitive)
+        var library = fixture.library
+        XCTAssertEqual(
+            conflict {
+                try library.removeFolderThrowing(
+                    id: fixture.old.id, movingContentsTo: "OLD/sub", equivalence: .caseInsensitive
+                )
+            },
+            .destinationInsideFolder(folderPath: "Old", destinationPath: "Old/Sub")
+        )
+        assertUnchanged(library, since: fixture.library)
+    }
+
+    /// Moving contents deeper must keep every relocated subfolder within
+    /// `BookFolder.maxDepth`.
+    func testRemovalRejectsSubtreesThatWouldExceedTheDepthLimit() throws {
+        for rule in bothPolicies {
+            var library = Library()
+            let top = try library.createFolderThrowing(name: "A", equivalence: rule)
+            try library.createFolderThrowing(name: "B", parentPath: "A", equivalence: rule)
+            try library.createFolderThrowing(name: "C", parentPath: "A/B", equivalence: rule)
+            try library.createFolderThrowing(name: "X", equivalence: rule)
+            try library.createFolderThrowing(name: "Y", parentPath: "X", equivalence: rule)
+            try library.createFolderThrowing(name: "Z", parentPath: "X/Y", equivalence: rule)
+            library.addBook(book("Deep", folder: "A/B/C"))
+            let original = library
+
+            XCTAssertEqual(
+                conflict { try library.removeFolderThrowing(id: top.id, movingContentsTo: "X/Y/Z", equivalence: rule) },
+                .tooDeep("X/Y/Z/B/C")
+            )
+            assertUnchanged(library, since: original)
+        }
+    }
+
+    /// The destination must be the library root or an existing folder, and
+    /// the folder being removed must still be in the library.
+    func testRemovalRejectsMissingOrInvalidDestinations() throws {
+        let fixture = try removalLibrary(targetChild: "Other", rule: .caseInsensitive)
+        var library = fixture.library
+
+        XCTAssertEqual(
+            conflict { try library.removeFolderThrowing(id: fixture.old.id, movingContentsTo: "Nowhere") },
+            .destinationNotFound("Nowhere")
+        )
+        XCTAssertEqual(
+            conflict { try library.removeFolderThrowing(id: fixture.old.id, movingContentsTo: "../Outside") },
+            .invalidPath("../Outside")
+        )
+        XCTAssertEqual(
+            conflict { try library.removeFolderThrowing(id: UUID(), movingContentsTo: "") },
+            .folderNotFound
+        )
+        assertUnchanged(library, since: fixture.library)
+    }
+
+    /// The removed folder's own name is free for its contents, a destination
+    /// in another spelling resolves to the stored folder, and books and sort
+    /// settings keep their structure.
+    func testRemovalReusesTheRemovedNameAndResolvesDestinationSpelling() throws {
+        for rule in bothPolicies {
+            var library = Library()
+            let outer = try library.createFolderThrowing(name: "Books", equivalence: rule)
+            try library.createFolderThrowing(name: "Books", parentPath: "Books", equivalence: rule)
+            library.addBook(book("Inner", folder: "Books/Books"))
+
+            XCTAssertNil(conflict {
+                try library.removeFolderThrowing(id: outer.id, movingContentsTo: "", equivalence: rule)
+            })
+            XCTAssertEqual(library.folders.map(\.fullPath), ["Books"])
+            XCTAssertEqual(library.books.first?.folderPath, "Books")
+        }
+
+        let fixture = try removalLibrary(targetChild: "Other", rule: .caseInsensitive)
+        var library = fixture.library
+        XCTAssertNil(conflict {
+            try library.removeFolderThrowing(
+                id: fixture.old.id, movingContentsTo: "tArGeT", equivalence: .caseInsensitive
+            )
+        })
+        XCTAssertEqual(
+            library.folders.map(\.fullPath).sorted(),
+            ["Target", "Target/Notes", "Target/Other", "Target/Sub"]
+        )
+        XCTAssertEqual(library.books.first { $0.title == "Loose" }?.folderPath, "Target")
+        XCTAssertEqual(library.books.first { $0.title == "Filed" }?.folderPath, "Target/Sub")
+        XCTAssertEqual(library.sortSetting(for: "Target/Sub").sortField, .author)
+        XCTAssertNil(library.folderSortSettings["Old/Sub"])
+    }
 }

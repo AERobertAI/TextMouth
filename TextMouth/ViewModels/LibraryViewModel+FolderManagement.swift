@@ -26,20 +26,23 @@ extension LibraryViewModel {
 
     /// Remove a folder, moving its contents to the given destination path.
     /// Subfolders are reparented under the destination; books are reassigned.
-    /// The folder's disk directory is removed after all contents have been moved out.
+    /// The whole subtree is validated first: a refused removal explains the
+    /// conflict and leaves both the library and the disk untouched. The
+    /// folder's disk directory is removed after all contents have been moved out.
     func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
-        let oldPath = folder.fullPath
-        let affectedBookIDs = Set(library.books.filter {
-            $0.folderPath == oldPath || $0.folderPath.hasPrefix(oldPath + "/")
-        }.map(\.id))
         var proposed = library
-        proposed.removeFolder(id: folder.id, movingContentsTo: destination)
+        do {
+            try proposed.removeFolderThrowing(id: folder.id, movingContentsTo: destination)
+        } catch {
+            presentFolderConflict(error, context: "Could not delete \"\(folder.name)\" and move its contents")
+            return
+        }
 
         do {
             for proposedFolder in proposed.folders {
                 try TextMouthPaths.ensureLibrarySubfolder(proposedFolder.fullPath)
             }
-            try commitLibraryTransition(proposed, affectedBookIDs: affectedBookIDs)
+            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
         } catch {
             presentFilesystemError("Could not relocate folder contents", error: error)
         }
@@ -120,6 +123,30 @@ extension LibraryViewModel {
     /// Check whether a folder has any books or subfolders
     func folderHasContents(_ folder: BookFolder) -> Bool {
         library.folderHasContents(folder)
+    }
+
+    /// IDs of books whose folder differs between the published library and
+    /// `proposed`, so a transition moves exactly the packages the model
+    /// edit moved. Spellings are compared exactly: a case-only or
+    /// normalization-only change still counts and rewrites the package record.
+    func bookIDsChangingFolder(in proposed: Library) -> Set<UUID> {
+        let currentFolderPaths = Dictionary(
+            library.books.map { ($0.id, $0.folderPath) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        return Set(proposed.books.compactMap { book in
+            guard let currentPath = currentFolderPaths[book.id],
+                  !BookFolder.spellingsMatch(currentPath, book.folderPath) else { return nil }
+            return book.id
+        })
+    }
+
+    /// Explains a refused folder edit with a message that names the folders
+    /// involved. An unchanged request stays a silent no-op, matching the
+    /// sheets, which simply disable their buttons for it.
+    func presentFolderConflict(_ conflict: FolderOperationConflict, context: String) {
+        guard conflict != .unchanged else { return }
+        presentFilesystemError(context, error: conflict)
     }
 
     /// Legacy: remove folder, moving contents to parent

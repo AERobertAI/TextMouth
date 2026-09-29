@@ -85,6 +85,137 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertTrue(viewModel.showError)
     }
 
+    // MARK: - Refused Folder Removal
+
+    /// A subfolder name already used at the destination refuses the whole
+    /// removal before anything moves, and the message names the clash.
+    func testRefusedRemovalForDuplicateSubfolderNameLeavesModelAndDiskUntouched() throws {
+        let old = uniqueFolder("Old")
+        let target = uniqueFolder("Target")
+        defer { cleanup([old, target]) }
+
+        let message = try refusedRemovalMessage(
+            folders: [old, "\(old)/Sub", target, "\(target)/Sub"],
+            bookIn: "\(old)/Sub",
+            removing: old,
+            into: target
+        )
+
+        XCTAssertEqual(
+            message,
+            "Could not delete \"\(old)\" and move its contents: "
+                + "A folder named \"Sub\" already exists in \"\(target)\"."
+        )
+    }
+
+    /// Choosing the removed folder's own subfolder as the destination is
+    /// refused without touching the model or the disk.
+    func testRefusedRemovalIntoItsOwnSubfolderLeavesModelAndDiskUntouched() throws {
+        let old = uniqueFolder("Old")
+        defer { cleanup([old]) }
+
+        let message = try refusedRemovalMessage(
+            folders: [old, "\(old)/Sub"],
+            bookIn: "\(old)/Sub",
+            removing: old,
+            into: "\(old)/Sub"
+        )
+
+        XCTAssertEqual(
+            message,
+            "Could not delete \"\(old)\" and move its contents: Choose a destination outside "
+                + "\"\(old)\". \"\(old)/Sub\" is that folder or one of its subfolders."
+        )
+    }
+
+    /// Contents that would end up deeper than the folder limit are refused
+    /// without touching the model or the disk.
+    func testRefusedRemovalBeyondTheDepthLimitLeavesModelAndDiskUntouched() throws {
+        let old = uniqueFolder("Old")
+        let deep = uniqueFolder("Deep")
+        defer { cleanup([old, deep]) }
+
+        let message = try refusedRemovalMessage(
+            folders: [old, "\(old)/B", "\(old)/B/C", deep, "\(deep)/Y", "\(deep)/Y/Z"],
+            bookIn: "\(old)/B/C",
+            removing: old,
+            into: "\(deep)/Y/Z"
+        )
+
+        XCTAssertEqual(
+            message,
+            "Could not delete \"\(old)\" and move its contents: That would place "
+                + "\"\(deep)/Y/Z/B/C\" 5 levels deep, but folders can be nested at most 4 levels."
+        )
+    }
+
+    /// Creates `folderPaths` as real folders through the view model, files one
+    /// managed book in `bookFolder`, asks to remove `removed` into
+    /// `destination`, and asserts the refusal left folders, books, sort
+    /// settings, directories, and package files exactly as they were.
+    /// Returns the error message shown to the user.
+    private func refusedRemovalMessage(
+        folders folderPaths: [String],
+        bookIn bookFolder: String,
+        removing removed: String,
+        into destination: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> String? {
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.library = Library()
+        for path in folderPaths {
+            viewModel.createFolder(
+                name: (path as NSString).lastPathComponent,
+                parentPath: (path as NSString).deletingLastPathComponent
+            )
+        }
+        XCTAssertEqual(viewModel.library.folders.map(\.fullPath), folderPaths, file: file, line: line)
+        viewModel.library.books = [try makeManagedBook(folderPath: bookFolder)]
+        let folder = try XCTUnwrap(
+            viewModel.library.folders.first { $0.fullPath == removed },
+            file: file,
+            line: line
+        )
+        let topLevelFolders = Set(folderPaths.map { $0.components(separatedBy: "/")[0] })
+        let modelBefore = viewModel.library
+        let diskBefore = diskSnapshot(of: topLevelFolders)
+
+        viewModel.removeFolderMovingContents(folder, toPath: destination)
+
+        XCTAssertTrue(viewModel.showError, file: file, line: line)
+        XCTAssertEqual(viewModel.library.folders, modelBefore.folders, file: file, line: line)
+        XCTAssertEqual(viewModel.library.books, modelBefore.books, file: file, line: line)
+        XCTAssertEqual(
+            viewModel.library.folderSortSettings,
+            modelBefore.folderSortSettings,
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(diskSnapshot(of: topLevelFolders), diskBefore, file: file, line: line)
+        return viewModel.errorMessage
+    }
+
+    /// Every directory and file below the given top-level library folders,
+    /// keyed by relative path, with file contents (directories map to empty
+    /// data). Equal snapshots prove an edit neither moved, created, deleted,
+    /// nor rewrote anything there.
+    private func diskSnapshot(of folderPaths: Set<String>) -> [String: Data] {
+        let fileManager = FileManager.default
+        var snapshot: [String: Data] = [:]
+        for folderPath in folderPaths {
+            let root = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
+            guard fileManager.fileExists(atPath: root.path),
+                  let enumerator = fileManager.enumerator(atPath: root.path) else { continue }
+            snapshot[folderPath] = Data()
+            while let relative = enumerator.nextObject() as? String {
+                let url = root.appendingPathComponent(relative)
+                snapshot[folderPath + "/" + relative] = fileManager.contents(atPath: url.path) ?? Data()
+            }
+        }
+        return snapshot
+    }
+
     private func makeManagedBook(folderPath: String) throws -> Book {
         try TextMouthPaths.ensureLibrarySubfolder(folderPath)
         let packageName = "\(UUID().uuidString).tmb"

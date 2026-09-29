@@ -141,21 +141,61 @@ struct Library: Codable {
         try? createFolderThrowing(name: name, parentPath: parentPath, equivalence: equivalence)
     }
 
-    /// Remove a folder, moving its contents to a destination path.
-    /// Pass empty string to move contents to library root.
-    mutating func removeFolder(id: UUID, movingContentsTo destination: String = "") {
-        guard let folder = folders.first(where: { $0.id == id }) else { return }
-        let folderPath = folder.fullPath
+    /// Removes a folder and moves its books and subfolders, structure intact,
+    /// into `destination` (empty for the library root), or throws the
+    /// conflict that prevents it. Everything is validated before anything
+    /// changes: the destination must be the root or an existing folder outside
+    /// the removed subtree, no moved subfolder may land on a name already in
+    /// use there or on another moved subfolder's name, and the moved subtree
+    /// must stay within `BookFolder.maxDepth`. The removed folder's own name
+    /// is free for its contents, because it disappears in the same edit.
+    mutating func removeFolderThrowing(
+        id: UUID,
+        movingContentsTo destination: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        let (_, folder) = try editableFolder(id: id)
+        guard BookFolder.isValidLibraryPath(destination) else { throw .invalidPath(destination) }
+
+        // Resolve the destination to the stored spelling of the folder it names.
+        let target: String
+        if destination.isEmpty {
+            target = ""
+        } else if let existing = existingFolder(equivalentTo: destination, equivalence: equivalence) {
+            target = existing.fullPath
+        } else {
+            throw .destinationNotFound(destination)
+        }
+
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        guard !subtree.contains(target) else {
+            throw .destinationInsideFolder(folderPath: folder.fullPath, destinationPath: target)
+        }
+        try validateRelocation(of: subtree, to: target, vacating: folder.id)
 
         // The removed folder's own sort setting goes away; the settings of
         // its subfolders move with them.
-        folderSortSettings.removeValue(forKey: folderPath)
+        folderSortSettings = folderSortSettings.filter {
+            !equivalence.areEquivalent($0.key, folder.fullPath)
+        }
 
         // Books and subfolders keep their structure under the destination.
-        relocate(FolderSubtree(rootPath: folderPath, equivalence: .caseSensitive), to: destination)
+        relocate(subtree, to: target)
 
         // Remove only the folder itself (children have been reparented)
-        folders.removeAll { $0.id == id }
+        folders.removeAll { $0.id == folder.id }
+    }
+
+    /// Removes a folder, moving its contents to `destination` (the library
+    /// root by default). Returns false, changing nothing, when
+    /// `removeFolderThrowing` refuses the edit.
+    @discardableResult
+    mutating func removeFolder(
+        id: UUID,
+        movingContentsTo destination: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? removeFolderThrowing(id: id, movingContentsTo: destination, equivalence: equivalence)) != nil
     }
 
     /// Remove a folder and ALL its contents (books and subfolders) from the library model.
