@@ -12,6 +12,23 @@ struct FolderSortSetting: Codable, Equatable {
     static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 }
 
+/// What `Library.mergeEquivalentFolders` changed, for logging and for
+/// persisting the package records of books that moved.
+struct EquivalentFolderRepair: Equatable {
+    /// A duplicate folder row folded into the earlier equivalent folder.
+    struct Merge: Equatable {
+        let duplicatePath: String
+        let survivingPath: String
+    }
+
+    /// Duplicate rows removed, parents before children.
+    var merges: [Merge] = []
+    /// Books whose folder path moved onto a surviving folder's spelling.
+    var relocatedBookIDs: [UUID] = []
+    /// Whether any folder, book, or sort setting changed.
+    var changedLibrary = false
+}
+
 struct Library: Codable {
     var books: [Book]
     var folders: [BookFolder]
@@ -322,13 +339,24 @@ struct Library: Codable {
         of path: String,
         equivalence: FolderPathEquivalence = .library
     ) -> String {
-        guard !path.isEmpty else { return path }
         // The first spelling wins, matching the row duplicate repair keeps.
         var spellings: [String: String] = [:]
         for folder in folders {
             let key = equivalence.comparisonKey(for: folder.fullPath)
             if spellings[key] == nil { spellings[key] = folder.fullPath }
         }
+        return Self.resolve(path, against: spellings, equivalence: equivalence)
+    }
+
+    /// Resolves `path` one component at a time against `spellings`, which
+    /// maps comparison keys to stored folder paths, so each prefix takes the
+    /// stored spelling of the folder it names. Unmatched components are kept.
+    private static func resolve(
+        _ path: String,
+        against spellings: [String: String],
+        equivalence: FolderPathEquivalence
+    ) -> String {
+        guard !path.isEmpty else { return path }
         var resolved: [String] = []
         for component in FolderSubtree.components(of: path) {
             let candidate = FolderSubtree.path(from: resolved + [component])
@@ -336,6 +364,98 @@ struct Library: Codable {
             resolved = FolderSubtree.components(of: stored)
         }
         return FolderSubtree.path(from: resolved)
+    }
+
+    // MARK: - Equivalent Folder Repair
+
+    /// Merges folder rows whose paths name the same directory under
+    /// `equivalence`, which older versions could create (`Reports` and
+    /// `reports` on a case-insensitive volume). The first row in library
+    /// order survives; a later duplicate's books, subfolders, and sort
+    /// settings move onto it and the duplicate row is removed. A surviving
+    /// folder's own sort setting wins over a duplicate's. Only the model
+    /// changes: such rows already share one directory, so nothing on disk
+    /// moves or is deleted. Running the repair again changes nothing.
+    mutating func mergeEquivalentFolders(
+        equivalence: FolderPathEquivalence = .library
+    ) -> EquivalentFolderRepair {
+        var repair = EquivalentFolderRepair()
+        let originalPositions = Dictionary(
+            folders.enumerated().map { ($0.element.fullPath, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        // Visit parents before children (library order among equals), so a
+        // subfolder resolves against its parent's surviving spelling and
+        // same-named subfolders of merged duplicates merge as well.
+        var survivors: [String: String] = [:]
+        var duplicateIDs: Set<UUID> = []
+        let visitOrder = folders.indices.sorted { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
+        for index in visitOrder {
+            let folder = folders[index]
+            let parentPath = Self.resolve(folder.parentPath, against: survivors, equivalence: equivalence)
+            let path = BookFolder(name: folder.name, parentPath: parentPath).fullPath
+            let key = equivalence.comparisonKey(for: path)
+            if let survivingPath = survivors[key] {
+                duplicateIDs.insert(folder.id)
+                repair.merges.append(.init(duplicatePath: folder.fullPath, survivingPath: survivingPath))
+            } else {
+                survivors[key] = path
+                if !BookFolder.spellingsMatch(parentPath, folder.parentPath) {
+                    folders[index].parentPath = parentPath
+                    repair.changedLibrary = true
+                }
+            }
+        }
+        if !duplicateIDs.isEmpty {
+            folders.removeAll { duplicateIDs.contains($0.id) }
+            repair.changedLibrary = true
+        }
+
+        // Books follow their folder onto the surviving spelling. The package
+        // already sits in the shared directory; only recorded paths change.
+        for index in books.indices {
+            let currentPath = books[index].folderPath
+            let survivingPath = Self.resolve(currentPath, against: survivors, equivalence: equivalence)
+            guard !BookFolder.spellingsMatch(survivingPath, currentPath) else { continue }
+            let hasPackage = !books[index].tmbDirectoryName.isEmpty
+            let oldPackagePrefix = books[index].tmbDirectory.path + "/"
+            books[index].folderPath = survivingPath
+            if hasPackage, books[index].filePath.hasPrefix(oldPackagePrefix) {
+                let innerPath = books[index].filePath.dropFirst(oldPackagePrefix.count)
+                books[index].filePath = books[index].tmbDirectory.path + "/" + innerPath
+            }
+            repair.relocatedBookIDs.append(books[index].id)
+            repair.changedLibrary = true
+        }
+
+        // Sort settings keyed by a merged spelling fill in only where the
+        // surviving folder has none, earlier duplicate rows first. Root and
+        // category keys are not folder paths and stay as they are.
+        var settings: [String: FolderSortSetting] = [:]
+        var respelled: [(originalKey: String, survivingKey: String, setting: FolderSortSetting)] = []
+        for (key, setting) in folderSortSettings {
+            let survivingKey = key.isEmpty || !BookFolder.isValidLibraryPath(key)
+                ? key
+                : Self.resolve(key, against: survivors, equivalence: equivalence)
+            if BookFolder.spellingsMatch(survivingKey, key) {
+                settings[key] = setting
+            } else {
+                respelled.append((key, survivingKey, setting))
+            }
+        }
+        let byLibraryOrder = respelled.sorted {
+            (originalPositions[$0.originalKey] ?? Int.max, $0.originalKey)
+                < (originalPositions[$1.originalKey] ?? Int.max, $1.originalKey)
+        }
+        for entry in byLibraryOrder where settings[entry.survivingKey] == nil {
+            settings[entry.survivingKey] = entry.setting
+        }
+        if !respelled.isEmpty {
+            folderSortSettings = settings
+            repair.changedLibrary = true
+        }
+        return repair
     }
 
     /// The index and row of the folder with `id`, provided it can be edited.

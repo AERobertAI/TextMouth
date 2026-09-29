@@ -49,6 +49,10 @@ extension LibraryViewModel {
     func migrateOldBooksIfNeeded() {
         var needsSave = false
 
+        // Merge folder rows that name one directory on this volume before the
+        // repairs below reason about where each book's package lives.
+        if repairEquivalentFolderDuplicates() { needsSave = true }
+
         // Fix stale file paths — if the file doesn't exist at the stored path,
         // search for the .tmb in the expected folder, then fall back to the root
         // Library directory (fixes a bug where folder moves updated the path
@@ -118,6 +122,42 @@ extension LibraryViewModel {
         if needsSave {
             save()
         }
+    }
+
+    /// Merges folder rows that older versions let share one directory
+    /// (`Reports` and `reports` on a case-insensitive volume, or composed and
+    /// decomposed spellings of a name on any volume). Part of the startup
+    /// repair path: it changes only the model, logs each merge, and rewrites
+    /// the package records of books that moved; nothing is deleted from disk.
+    /// Returns whether the library changed and needs saving. A second run
+    /// finds nothing to merge.
+    @discardableResult
+    func repairEquivalentFolderDuplicates(
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        let repair = library.mergeEquivalentFolders(equivalence: equivalence)
+        guard repair.changedLibrary else { return false }
+
+        for merge in repair.merges {
+            logFolderRepair("merged duplicate folder '\(merge.duplicatePath)' into '\(merge.survivingPath)'")
+        }
+        if !repair.relocatedBookIDs.isEmpty {
+            logFolderRepair(
+                "moved \(repair.relocatedBookIDs.count) book(s) onto surviving folders; nothing was deleted from disk"
+            )
+        }
+        let relocated = Set(repair.relocatedBookIDs)
+        for book in library.books where relocated.contains(book.id) {
+            LibraryPersistenceService.saveBookInfo(for: book)
+        }
+        return true
+    }
+
+    /// Records a startup folder repair in the console and the debug log.
+    private func logFolderRepair(_ message: String) {
+        let line = "FOLDER_REPAIR: \(message)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
     }
 
     /// Migrate data from the old sandbox container to the real ~/.TextMouth
