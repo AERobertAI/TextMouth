@@ -115,16 +115,37 @@ extension LibraryViewModel {
     /// Rename a folder, updating disk directory and all book file paths. A
     /// refused name is explained with a message naming the conflict.
     func renameFolder(_ folder: BookFolder, to newName: String) {
+        let equivalence = FolderPathEquivalence.library
         var proposed = library
         do {
-            try proposed.renameFolderThrowing(id: folder.id, to: newName)
+            try proposed.renameFolderThrowing(id: folder.id, to: newName, equivalence: equivalence)
         } catch {
             presentFolderConflict(error, context: "Could not rename \"\(folder.name)\"")
             return
         }
+        // The rename just found this folder in the library, so both exist.
+        guard let oldPath = library.folders.first(where: { $0.id == folder.id })?.fullPath,
+              let newPath = proposed.folders.first(where: { $0.id == folder.id })?.fullPath else { return }
+
+        // A case-only or normalization-only rename still names the same
+        // directory on this volume. Rename that directory in place first; the
+        // transition then only rewrites the book paths and package records.
+        let respellsDirectory = equivalence.areEquivalent(oldPath, newPath)
+        var respelled = false
         do {
-            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
+            if respellsDirectory {
+                respelled = try TextMouthPaths.respellLibrarySubfolder(from: oldPath, to: newPath)
+            }
+            try commitLibraryTransition(
+                proposed,
+                affectedBookIDs: bookIDsChangingFolder(in: proposed),
+                equivalence: equivalence
+            )
         } catch {
+            if respelled {
+                // Best effort: give the directory back its original spelling.
+                _ = try? TextMouthPaths.respellLibrarySubfolder(from: newPath, to: oldPath)
+            }
             presentFilesystemError("Could not rename folder", error: error)
         }
     }

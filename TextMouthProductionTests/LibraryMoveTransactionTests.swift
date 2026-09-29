@@ -85,6 +85,142 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertTrue(viewModel.showError)
     }
 
+    // MARK: - Spelling-Only Folder Renames
+
+    /// A capitalization-only rename renames the folder's directory in place:
+    /// the listing shows the new spelling, the package and subfolder stay
+    /// inside it, and the book's path and package record follow. The case-
+    /// insensitive rule is forced so the in-place path runs on any volume.
+    func testCaseOnlyFolderRenameRespellsTheDirectoryOnDisk() throws {
+        let token = UUID().uuidString
+        let oldName = "archive-\(token)"
+        let newName = "Archive-\(token)"
+        defer { cleanup([oldName, newName]) }
+        let folder = BookFolder(name: oldName)
+        let book = try makeManagedBook(folderPath: oldName)
+        try TextMouthPaths.ensureLibrarySubfolder("\(oldName)/Sub")
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.library = Library(
+            books: [book],
+            folders: [folder, BookFolder(name: "Sub", parentPath: oldName)]
+        )
+
+        FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            viewModel.renameFolder(folder, to: newName)
+        }
+
+        XCTAssertFalse(viewModel.showError, viewModel.errorMessage ?? "")
+        XCTAssertEqual(viewModel.library.folders.map(\.fullPath), [newName, "\(newName)/Sub"])
+        let listing = try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path)
+        XCTAssertTrue(listing.contains(newName))
+        XCTAssertFalse(listing.contains(oldName))
+        XCTAssertFalse(listing.contains { $0.hasPrefix(".textmouth-rename-") })
+        let contents = try FileManager.default.contentsOfDirectory(
+            atPath: TextMouthPaths.libraryDir.appendingPathComponent(newName).path
+        )
+        XCTAssertEqual(Set(contents), [book.tmbDirectoryName, "Sub"])
+
+        let renamedBook = try XCTUnwrap(viewModel.library.books.first)
+        XCTAssertEqual(renamedBook.folderPath, newName)
+        XCTAssertTrue(renamedBook.filePath.contains("/\(newName)/"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: renamedBook.filePath))
+        XCTAssertEqual(try BookInfo.load(from: renamedBook.tmbDirectory).metadata.folderPath, newName)
+    }
+
+    /// Renaming a folder saved with a decomposed name to its composed
+    /// spelling keeps one directory and leaves the package where it is.
+    func testNormalizationOnlyFolderRenameKeepsThePackageInPlace() throws {
+        let token = UUID().uuidString
+        let decomposed = "Cafe\u{301}-\(token)"
+        let composed = "Caf\u{E9}-\(token)"
+        defer { cleanup([composed]) }
+        let folder = BookFolder(name: decomposed)
+        let book = try makeManagedBook(folderPath: decomposed)
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.library = Library(books: [book], folders: [folder])
+
+        viewModel.renameFolder(folder, to: composed)
+
+        XCTAssertFalse(viewModel.showError, viewModel.errorMessage ?? "")
+        XCTAssertTrue(BookFolder.spellingsMatch(try XCTUnwrap(viewModel.library.folders.first).name, composed))
+        let renamedBook = try XCTUnwrap(viewModel.library.books.first)
+        XCTAssertTrue(BookFolder.spellingsMatch(renamedBook.folderPath, composed))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: renamedBook.filePath))
+        let listing = try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path)
+        XCTAssertEqual(listing.filter { $0 == composed }.count, 1)
+        let contents = try FileManager.default.contentsOfDirectory(
+            atPath: TextMouthPaths.libraryDir.appendingPathComponent(composed).path
+        )
+        XCTAssertEqual(contents, [book.tmbDirectoryName])
+    }
+
+    /// When a package record cannot be rewritten, a capitalization-only
+    /// rename is rolled back: the directory gets its old spelling again and
+    /// the library keeps the old name.
+    func testFailedCaseOnlyRenameRestoresTheDirectorySpelling() throws {
+        let token = UUID().uuidString
+        let oldName = "ledger-\(token)"
+        let newName = "Ledger-\(token)"
+        defer { cleanup([oldName, newName]) }
+        let folder = BookFolder(name: oldName)
+        let book = try makeManagedBook(folderPath: oldName)
+        // A directory where bookInfo.json belongs makes the rewrite fail.
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        try FileManager.default.removeItem(at: record)
+        try FileManager.default.createDirectory(at: record, withIntermediateDirectories: false)
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.library = Library(books: [book], folders: [folder])
+
+        FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            viewModel.renameFolder(folder, to: newName)
+        }
+
+        XCTAssertTrue(viewModel.showError)
+        XCTAssertEqual(viewModel.library.folders.map(\.name), [oldName])
+        XCTAssertEqual(viewModel.library.books.first?.folderPath, oldName)
+        let listing = try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path)
+        XCTAssertTrue(listing.contains(oldName))
+        XCTAssertFalse(listing.contains(newName))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath))
+    }
+
+    /// The two-step fallback reaches the new spelling through a hidden
+    /// temporary name, keeps the directory's contents, and leaves nothing
+    /// behind.
+    func testTwoStepRespellingFallbackRenamesTheDirectory() throws {
+        let token = UUID().uuidString
+        let oldName = "draft-\(token)"
+        let newName = "Draft-\(token)"
+        defer { cleanup([oldName, newName]) }
+        try TextMouthPaths.ensureLibrarySubfolder("\(oldName)/Inner")
+
+        XCTAssertTrue(try TextMouthPaths.respellLibrarySubfolder(
+            from: oldName,
+            to: newName,
+            tryingDirectRenameFirst: false
+        ))
+
+        let listing = try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path)
+        XCTAssertTrue(listing.contains(newName))
+        XCTAssertFalse(listing.contains(oldName))
+        XCTAssertFalse(listing.contains { $0.hasPrefix(".textmouth-rename-") })
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: TextMouthPaths.libraryDir.appendingPathComponent("\(newName)/Inner").path
+        ))
+    }
+
+    /// The respelling helper leaves a missing directory alone rather than
+    /// creating one, and refuses unsafe paths.
+    func testRespellingHelperSkipsMissingDirectoriesAndRejectsUnsafePaths() throws {
+        let missing = uniqueFolder("missing")
+        XCTAssertFalse(try TextMouthPaths.respellLibrarySubfolder(from: missing, to: missing.uppercased()))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: TextMouthPaths.libraryDir.appendingPathComponent(missing).path
+        ))
+        XCTAssertThrowsError(try TextMouthPaths.respellLibrarySubfolder(from: "..", to: "Anything"))
+        XCTAssertThrowsError(try TextMouthPaths.respellLibrarySubfolder(from: "", to: "Anything"))
+    }
+
     // MARK: - Refused Folder Removal
 
     /// A subfolder name already used at the destination refuses the whole

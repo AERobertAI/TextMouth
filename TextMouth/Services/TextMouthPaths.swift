@@ -280,6 +280,64 @@ enum TextMouthPaths {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
 
+    /// Renames a library folder's directory to another spelling of the same
+    /// name: a capitalization change on a case-insensitive volume, or a
+    /// Unicode normalization change. Only the last component may differ, so
+    /// both paths share a parent. Returns false when the folder has no
+    /// directory yet and there is nothing to rename.
+    ///
+    /// A direct rename works on APFS, but some Foundation versions refuse a
+    /// case-only move because the destination "already exists", and some
+    /// file systems accept one without changing the stored name. The parent
+    /// listing is therefore checked afterwards, and the rename falls back to
+    /// two steps through a hidden temporary sibling. Tests pass false for
+    /// `tryingDirectRenameFirst` to exercise that fallback on volumes where
+    /// the direct rename always works.
+    @discardableResult
+    static func respellLibrarySubfolder(
+        from oldPath: String,
+        to newPath: String,
+        tryingDirectRenameFirst: Bool = true
+    ) throws -> Bool {
+        guard !oldPath.isEmpty, !newPath.isEmpty,
+              BookFolder.isValidLibraryPath(oldPath),
+              BookFolder.isValidLibraryPath(newPath) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+        let fileManager = FileManager.default
+        let source = libraryDir.appendingPathComponent(oldPath, isDirectory: true)
+        let destination = libraryDir.appendingPathComponent(newPath, isDirectory: true)
+        guard fileManager.fileExists(atPath: source.path) else { return false }
+
+        let parent = destination.deletingLastPathComponent()
+        let newName = destination.lastPathComponent
+        // Swift's == is case-sensitive but ignores normalization form, which
+        // is exactly the difference a listing may legitimately keep.
+        let listingShowsNewName = {
+            (try? fileManager.contentsOfDirectory(atPath: parent.path))?.contains(newName) ?? false
+        }
+
+        if tryingDirectRenameFirst,
+           (try? fileManager.moveItem(at: source, to: destination)) != nil,
+           listingShowsNewName() {
+            return true
+        }
+
+        let temporary = parent.appendingPathComponent(
+            ".textmouth-rename-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.moveItem(at: source, to: temporary)
+        do {
+            try fileManager.moveItem(at: temporary, to: destination)
+        } catch {
+            // Restore the original name before reporting the failure.
+            try? fileManager.moveItem(at: temporary, to: source)
+            throw error
+        }
+        return true
+    }
+
     /// Check if the .TextMouth directory exists at the current root
     static var directoryExists: Bool {
         FileManager.default.fileExists(atPath: root.path)

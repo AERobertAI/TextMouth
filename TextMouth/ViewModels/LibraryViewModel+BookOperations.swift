@@ -98,12 +98,21 @@ extension LibraryViewModel {
 
     /// Move every changed package, persist its new metadata, and then commit the
     /// proposed library model. Completed disk moves are reversed on any failure.
-    func commitLibraryTransition(_ proposedLibrary: Library, affectedBookIDs: Set<UUID>) throws {
+    /// A book whose old and new folders name the same directory under
+    /// `equivalence` (a case- or normalization-only respelling) stays where it
+    /// is; only its recorded path and package record change.
+    func commitLibraryTransition(
+        _ proposedLibrary: Library,
+        affectedBookIDs: Set<UUID>,
+        equivalence: FolderPathEquivalence = .library
+    ) throws {
         struct Move {
             let original: Book
             var updated: Book
             let source: URL
             let destination: URL
+            /// False when the package already sits in its destination directory.
+            let needsDiskMove: Bool
         }
 
         var proposed = proposedLibrary
@@ -126,7 +135,10 @@ extension LibraryViewModel {
                 folderPath: updated.folderPath,
                 tmbName: original.tmbDirectoryName
             )
-            if source != destination {
+            // Equivalent folder paths name one directory on this volume, so a
+            // "move" there would find its own source occupying the destination.
+            let needsDiskMove = !equivalence.areEquivalent(original.folderPath, updated.folderPath)
+            if needsDiskMove {
                 guard FileManager.default.fileExists(atPath: source.path) else {
                     throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: source.path])
                 }
@@ -138,17 +150,25 @@ extension LibraryViewModel {
             let fileName = URL(fileURLWithPath: original.filePath).lastPathComponent
             updated.filePath = destination.appendingPathComponent(fileName).path
             proposed.books[proposedIndex] = updated
-            moves.append(Move(original: original, updated: updated, source: source, destination: destination))
+            moves.append(Move(
+                original: original,
+                updated: updated,
+                source: source,
+                destination: destination,
+                needsDiskMove: needsDiskMove
+            ))
         }
 
         var completedMoves: [Move] = []
+        var rewrittenRecordIDs: Set<UUID> = []
         do {
-            for move in moves where move.source != move.destination {
+            for move in moves where move.needsDiskMove {
                 try FileManager.default.moveItem(at: move.source, to: move.destination)
                 completedMoves.append(move)
             }
             for move in moves {
                 try move.updated.saveBookInfoThrowing()
+                rewrittenRecordIDs.insert(move.original.id)
             }
             // Empty folders have no book move to create their destinations.
             // Materialize changed folder paths before publishing the model.
@@ -158,6 +178,10 @@ extension LibraryViewModel {
         } catch {
             for move in completedMoves.reversed() {
                 try? FileManager.default.moveItem(at: move.destination, to: move.source)
+                try? move.original.saveBookInfoThrowing()
+            }
+            // Packages that stayed in place may already carry the new record.
+            for move in moves where !move.needsDiskMove && rewrittenRecordIDs.contains(move.original.id) {
                 try? move.original.saveBookInfoThrowing()
             }
             throw error
