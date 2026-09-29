@@ -424,6 +424,89 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    // MARK: - Seeking onto silent text
+
+    /// Speakability from an offset reads the text exactly as speech starting
+    /// there would: past either end is clamped, and an offset inside a
+    /// character starts at that character.
+    func testSpeakableTextFromAnOffsetReadsLikeSpeechStartingThere() {
+        let text = "Words 🎙️\n\n"
+        let emoji = (text as NSString).range(of: "🎙️").location
+
+        XCTAssertTrue(ReaderViewModel.hasSpeakableText(in: text, fromSpokenOffset: -4))
+        XCTAssertTrue(ReaderViewModel.hasSpeakableText(in: text, fromSpokenOffset: emoji + 1))
+        XCTAssertFalse(ReaderViewModel.hasSpeakableText(in: text, fromSpokenOffset: text.utf16.count - 2))
+        XCTAssertFalse(ReaderViewModel.hasSpeakableText(in: text, fromSpokenOffset: text.utf16.count + 5))
+    }
+
+    /// Moving playing speech within its chapter onto a skipped section that
+    /// closes the chapter, by position or by words, restarts speech at the
+    /// next chapter instead of seeking to where nothing is left to say.
+    func testMovingPlayingSpeechOntoASkippedClosingSectionContinuesAtTheNextChapter() throws {
+        let opening = chapter(sections: [("Opening", "First words."), ("Appendix", "Back matter.")])
+        let appendix = (opening.text as NSString).range(of: "Appendix").location
+        let moves: [(name: String, move: (ReaderViewModel) -> Void)] = [
+            ("position", { $0.navigateTo(chapterIndex: 0, characterOffset: appendix) }),
+            ("words", { $0.skipWords(count: 3) }),
+        ]
+        for (name, move) in moves {
+            try withReader(
+                chapters: [opening, Chapter(title: "Two", text: "Next chapter.")],
+                skipping: ["Appendix"]
+            ) { reader in
+                reader.play()
+                move(reader)
+                let continuedSpeaking = reader.speechService.isSpeaking
+                silence(reader)
+
+                XCTAssertTrue(continuedSpeaking, name)
+                XCTAssertEqual(reader.currentChapterIndex, 1, name)
+                XCTAssertEqual(reader.currentCharacterOffset, 0, name)
+                XCTAssertEqual(reader.currentTransformation?.modifiedText, "Next chapter.", name)
+            }
+        }
+    }
+
+    /// With nothing speakable after that closing section, the move ends the
+    /// book instead, and Now Playing is not told that playback continues.
+    func testMovingPlayingSpeechOntoTheBooksSilentEndEndsTheBook() throws {
+        let opening = chapter(sections: [("Opening", "First words."), ("Appendix", "Back matter.")])
+        let appendix = (opening.text as NSString).range(of: "Appendix").location
+        try withReader(chapters: [opening], skipping: ["Appendix"]) { reader in
+            reader.play()
+            reader.navigateTo(chapterIndex: 0, characterOffset: appendix)
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+        }
+    }
+
+    /// A skip made while paused can land where the loaded speech has nothing
+    /// left to say. Resuming then restarts from the cursor, which passes over
+    /// the silent text to the next chapter.
+    func testResumingAfterAPausedSkipOntoSilentTextContinuesAtTheNextChapter() throws {
+        let opening = chapter(sections: [("Opening", "First words."), ("Appendix", "Back matter.")])
+        let appendix = (opening.text as NSString).range(of: "Appendix").location
+        try withReader(
+            chapters: [opening, Chapter(title: "Two", text: "Next chapter.")],
+            skipping: ["Appendix"]
+        ) { reader in
+            reader.play()
+            reader.pause()
+            reader.skipWords(count: 3)
+            let skippedOntoSilence = reader.currentChapterIndex == 0 && reader.currentCharacterOffset >= appendix
+
+            reader.togglePlayPause()
+            let resumedSpeaking = reader.speechService.isSpeaking && !reader.speechService.isPaused
+            silence(reader)
+
+            XCTAssertTrue(skippedOntoSilence)
+            XCTAssertTrue(resumedSpeaking)
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "Next chapter.")
+        }
+    }
+
     // MARK: - Chapter ends and look-ahead
 
     /// A book with one speakable chapter among skipped ones plays only that

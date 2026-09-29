@@ -106,7 +106,12 @@ extension ReaderViewModel {
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
         sleepTimerService.resumeCountdown(by: book.id)
-        if restartPlaybackBackendOnNextResume {
+        // Restart from the cursor instead of resuming after an audio-route
+        // change, and when nothing speakable follows the cursor in the loaded
+        // speech (a skip made while paused can land there), since resuming
+        // would restart that speech with nothing to say.
+        if restartPlaybackBackendOnNextResume
+            || !loadedSpeechHasSpeakableText(afterOriginalOffset: currentCharacterOffset) {
             restartPlaybackBackendOnNextResume = false
             speechService.stop()
             // The book ends instead when nothing speakable remains, for
@@ -300,12 +305,23 @@ extension ReaderViewModel {
         // spoken text; an offset inside a removed section can map past the
         // spoken text's end, so clamp it there.
         let offset = min(current.offsetMap.toModified(currentCharacterOffset), current.text.utf16Length)
-        let rest = current.text[current.text.index(atUTF16Offset: offset)...]
-        if Self.hasSpeakableText(rest) {
+        if Self.hasSpeakableText(in: current.text, fromSpokenOffset: offset) {
             return SpeechStart(speech: current, offset: offset)
         }
         return nextSpeakableChapterSpeech(from: currentChapterIndex + 1)
             .map { SpeechStart(speech: $0, offset: 0) }
+    }
+
+    /// Whether the speech loaded for the cursor's chapter has anything
+    /// speakable after an original-text offset. A seek or resume that lands
+    /// where nothing follows, such as in a skipped section that closes the
+    /// chapter, must restart from the cursor instead, because continuing
+    /// the loaded speech there would restart it with nothing to say.
+    /// True when no speech is loaded, since nothing would be continued.
+    func loadedSpeechHasSpeakableText(afterOriginalOffset offset: Int) -> Bool {
+        guard let spokenText = currentTransformation?.modifiedText else { return true }
+        let spokenOffset = currentOffsetMap?.toModified(offset) ?? offset
+        return Self.hasSpeakableText(in: spokenText, fromSpokenOffset: spokenOffset)
     }
 
     /// Speak `start`'s chapter from its offset, then look ahead to the next
@@ -459,6 +475,14 @@ extension ReaderViewModel {
     /// over a chapter with no text at all.
     nonisolated static func hasSpeakableText(_ text: some StringProtocol) -> Bool {
         text.contains { !$0.isWhitespace }
+    }
+
+    /// Whether anything speakable follows `spokenOffset` in `spokenText`,
+    /// read exactly as speech starting there would read it: an offset past
+    /// the end leaves nothing, and one inside a character starts at that
+    /// character.
+    nonisolated static func hasSpeakableText(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Bool {
+        hasSpeakableText(spokenText[spokenText.index(atUTF16Offset: spokenOffset)...])
     }
 
     /// The index of the first chapter at or after `start` that `isSpeakable`
