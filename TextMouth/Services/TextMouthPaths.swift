@@ -339,15 +339,25 @@ enum TextMouthPaths {
     // MARK: - Async Logging
 
     /// Serial background queue for all log file writes. Logging uses
-    /// synchronous FileHandle I/O (seekToEndOfFile, write, closeFile)
+    /// synchronous FileHandle I/O (seekToEnd, write(contentsOf:), close)
     /// which blocks the calling thread. Without this queue, logging
     /// during playback callbacks blocks the main thread and causes
     /// UI freezes — especially when disk I/O is slow (Spotlight
-    /// indexing, Time Machine backup, etc.).
+    /// indexing, Time Machine backup, etc.). One queue for every log
+    /// file also keeps lines from different writers from interleaving.
     private static let logQueue = DispatchQueue(
         label: "com.textmouth.logging",
         qos: .utility
     )
+
+    /// Size at which a log file is rotated. Playback and VoiceOver focus
+    /// diagnostics are written many times per minute, so without a cap a log
+    /// grows for as long as the app is used.
+    static let maxLogFileSize: UInt64 = 2 * 1024 * 1024
+
+    /// Path extension of the single retained older generation of a log file,
+    /// e.g. `textmouth_debug.log.previous`.
+    static let rotatedLogExtension = "previous"
 
     /// Append a timestamped line to a log file on a background queue.
     /// Safe to call from any thread including main — the actual I/O
@@ -355,17 +365,54 @@ enum TextMouthPaths {
     static func appendLog(to logFile: URL, message: String) {
         let line = "\(Date()): \(message)\n"
         guard let data = line.data(using: .utf8) else { return }
-        let path = logFile.path
         logQueue.async {
-            if FileManager.default.fileExists(atPath: path),
-               let handle = FileHandle(forWritingAtPath: path) {
-                handle.seekToEndOfFile()
-                handle.write(data)
-                handle.closeFile()
-            } else {
-                try? data.write(to: URL(fileURLWithPath: path))
-            }
+            appendNow(data, to: logFile)
         }
+    }
+
+    /// Block until every log line queued so far has been written (or
+    /// dropped). Tests use this to observe log files deterministically.
+    static func flushLogs() {
+        logQueue.sync {}
+    }
+
+    /// Perform one append on the log queue.
+    ///
+    /// Logging is diagnostic only, so every failure is swallowed: a full disk,
+    /// an unwritable file, or a missing directory must never crash or stall
+    /// reading. The legacy `seekToEndOfFile`/`write(_:)` calls raised
+    /// Objective-C exceptions on such failures and took the whole app down
+    /// (observed with ENOSPC); the throwing FileHandle APIs report them as
+    /// errors instead. The end offset returned by `seekToEnd()` doubles as the
+    /// size check that decides whether to rotate before writing.
+    private static func appendNow(_ data: Data, to logFile: URL) {
+        do {
+            guard FileManager.default.fileExists(atPath: logFile.path) else {
+                try data.write(to: logFile)
+                return
+            }
+            let handle = try FileHandle(forWritingTo: logFile)
+            let currentSize = try handle.seekToEnd()
+            if currentSize >= maxLogFileSize {
+                try handle.close()
+                rotate(logFile)
+                try data.write(to: logFile)
+            } else {
+                defer { try? handle.close() }
+                try handle.write(contentsOf: data)
+            }
+        } catch {
+            // Intentionally dropped: see above.
+        }
+    }
+
+    /// Keep the full log as its one `.previous` generation and let the caller
+    /// start a fresh file, so a log never occupies more than two generations.
+    /// Failures leave the current file in place; the next append retries.
+    private static func rotate(_ logFile: URL) {
+        let rotated = logFile.appendingPathExtension(rotatedLogExtension)
+        try? FileManager.default.removeItem(at: rotated)
+        try? FileManager.default.moveItem(at: logFile, to: rotated)
     }
 
     // MARK: - Private
