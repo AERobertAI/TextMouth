@@ -8,12 +8,13 @@ import SwiftSoup
 /// the original file on every open.
 enum MarkdownCacheService {
 
-    /// Current semantic version of the cache format. Bump this whenever the
-    /// extraction or parsing logic changes so existing caches are regenerated
-    /// on the next app launch. Books with a stored version lower than this
-    /// (or nil for pre-versioning books) will have their content.md rebuilt.
+    /// Current semantic version of the extracted Markdown. Bump this when source
+    /// extraction or the stored representation changes. Changes confined to
+    /// reading-text/index derivation should bump BookContentIndex.currentVersion
+    /// instead, so existing Markdown can be reindexed without source conversion.
+    /// Older versions (or nil) regenerate through startup maintenance.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "3.0.2"
+    static let currentCacheVersion: String = "3.0.4"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -36,26 +37,59 @@ enum MarkdownCacheService {
     private static let chapterMarkerPrefix = "<!-- chapter: "
     private static let chapterMarkerSuffix = " -->"
 
+    /// EPUB extraction already produces reading chapters to resolve heading
+    /// coordinates. Keep those results until indexing instead of parsing the
+    /// newly written Markdown a second time. Other formats supply Markdown only.
+    private struct ExtractedCache {
+        var markdown: String
+        var chapters: [Chapter]? = nil
+    }
+
     // MARK: - Cache Generation
 
     /// Generate and write the content.md cache file for a book.
     /// Returns true if the cache was successfully created.
     @discardableResult
     static func generateCache(for book: Book) -> Bool {
-        guard !book.format.isAudio else { return false }
-        guard !book.tmbDirectoryName.isEmpty else { return false }
+        generateCacheContent(for: book) != nil
+    }
+
+    /// Generate the cache and its reading content together. Index construction
+    /// reuses EPUB's prepared chapters and performs only one Markdown pass for
+    /// other formats. No result escapes until the atomic cache write succeeds.
+    static func generateCacheContent(for book: Book) -> DocumentContent? {
+        guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
 
         let tmbDir = book.tmbDirectory
         let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
         let fileURL = URL(fileURLWithPath: book.filePath)
 
         do {
-            let markdown = try extractMarkdown(from: fileURL, format: book.format)
-            try markdown.write(to: cachePath, atomically: true, encoding: .utf8)
-            return true
+            let extracted = try extractCache(from: fileURL, format: book.format)
+            let content: DocumentContent
+            if let chapters = extracted.chapters, !chapters.isEmpty {
+                content = DocumentContent(
+                    title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
+                    author: book.author,
+                    chapters: chapters,
+                    contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
+                )
+            } else {
+                // Preserve the cache reader's empty-document and chapter-marker
+                // behavior as well as its title fallback for non-EPUB formats.
+                let parsed = parseMultiChapterMarkdown(
+                    extracted.markdown, bookTitle: book.title, bookAuthor: book.author
+                )
+                content = DocumentContent(
+                    title: parsed.title, author: parsed.author, chapters: parsed.chapters,
+                    contentIndex: parsed.contentIndex.replacingFormat(book.format)
+                )
+            }
+            try extracted.markdown.write(to: cachePath, atomically: true, encoding: .utf8)
+            return content
         } catch {
             print("Failed to generate content cache for \(book.title): \(error)")
-            return false
+            return nil
         }
     }
 
@@ -71,9 +105,9 @@ enum MarkdownCacheService {
     /// Import-time variant that also computes the persisted navigation index
     /// while already executing on the serial import queue.
     static func generateCacheAnalyzeAndStamp(for book: inout Book) -> BookContentIndex? {
-        guard generateCacheAndStampVersion(for: &book),
-              let content = try? loadFromCache(for: book) else { return nil }
-        let index = content.contentIndex.replacingFormat(book.format)
+        guard let content = generateCacheContent(for: book) else { return nil }
+        book.cacheFormatVersion = currentCacheVersion
+        let index = content.contentIndex
         book.applyContentIndexSummary(index)
         return index
     }
@@ -122,36 +156,36 @@ enum MarkdownCacheService {
     /// HTML: converts the HTML to Markdown.
     /// Markdown: uses the file as-is.
     /// Plain text: wraps with minimal Markdown formatting (detects headings).
-    private static func extractMarkdown(from url: URL, format: BookFormat) throws -> String {
+    private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
+        let markdown: String
         switch format {
         case .epub:
             return try extractFromEPUB(url: url)
         case .html:
             let html = try String(contentsOf: url, encoding: .utf8)
-            return try HTMLToMarkdownConverter.convert(html)
+            markdown = try HTMLToMarkdownConverter.convert(html)
         case .markdown:
             // Already Markdown — use as-is
-            return try String(contentsOf: url, encoding: .utf8)
+            markdown = try String(contentsOf: url, encoding: .utf8)
         case .txt:
-            return try extractFromPlainText(url: url)
+            markdown = try extractFromPlainText(url: url)
         case .docx:
-            return try DOCXParser.extractMarkdown(from: url)
+            markdown = try DOCXParser.extractMarkdown(from: url)
         case .daisy:
-            return try DAISYParser.extractMarkdown(from: url)
+            markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:
-            return try PDFTextParser.extractMarkdown(from: url)
+            markdown = try PDFTextParser.extractMarkdown(from: url)
         case .audio:
             // Audio books don't get text caching
-            return ""
+            markdown = ""
         }
+        return ExtractedCache(markdown: markdown)
     }
 
-    /// Extract Markdown from an EPUB file. Each spine chapter is converted from HTML
-    /// to Markdown and separated by chapter markers. When the HTML lacks semantic
-    /// heading tags, falls back to the NCX table of contents for chapter titles and
-    /// injects a `# Title` heading at the top of each chapter's Markdown so that
-    /// MarkdownDocParser will find headings during cache loading.
-    private static func extractFromEPUB(url: URL) throws -> String {
+    /// Use the direct EPUB parser's navigation recovery as the cache source.
+    /// Chapter markers preserve boundaries; heading annotations preserve TOC
+    /// labels and offsets without inserting any extra text into the book.
+    private static func extractFromEPUB(url: URL) throws -> ExtractedCache {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
         }
@@ -161,136 +195,15 @@ enum MarkdownCacheService {
         } catch {
             throw EPUBParserError.invalidArchive
         }
-
-        // Use shared EPUB parsing helpers from EPUBParser
         let containerXML = try EPUBParser.extractString(archive: archive, path: "META-INF/container.xml")
         let opfPath = try EPUBParser.parseContainerForOPFPath(containerXML)
         let opfXML = try EPUBParser.extractString(archive: archive, path: opfPath)
-        let opfDirectory = (opfPath as NSString).deletingLastPathComponent
         let opfData = try EPUBParser.parseOPF(opfXML)
-
-        // Build a mapping from content file href to NCX navigation title.
-        // Many EPUBs use styled <div>/<span> instead of <h1>-<h6> for chapter
-        // headings, so the HTML-to-Markdown converter produces no `#` headings.
-        // The NCX provides the authoritative chapter titles in those cases.
-        let ncxTitles = parseNCXTitles(archive: archive, opfData: opfData, opfDirectory: opfDirectory)
-
-        var markdownParts: [String] = []
-
-        for itemRef in opfData.spineItemRefs {
-            guard let manifestItem = opfData.manifest[itemRef],
-                  manifestItem.mediaType.contains("html") || manifestItem.mediaType.contains("xml") else {
-                continue
-            }
-
-            let chapterPath: String
-            if opfDirectory.isEmpty {
-                chapterPath = manifestItem.href
-            } else {
-                chapterPath = "\(opfDirectory)/\(manifestItem.href)"
-            }
-
-            let decodedPath = chapterPath.removingPercentEncoding ?? chapterPath
-            guard !decodedPath.contains("..") && !decodedPath.hasPrefix("/") else {
-                continue
-            }
-
-            guard let chapterHTML = try? EPUBParser.extractString(archive: archive, path: decodedPath) else {
-                continue
-            }
-
-            // Convert chapter HTML to Markdown. EPUB cache generation uses the
-            // same duplicate nav/TOC stripping rule as direct EPUB parsing.
-            var chapterMD = (try? HTMLToMarkdownConverter.convert(
-                chapterHTML,
-                stripDuplicateNavigation: true
-            )) ?? ""
-            guard !chapterMD.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                continue
-            }
-
-            // Extract chapter title from the first heading in the Markdown
-            var chapterTitle = extractFirstHeading(from: chapterMD)
-
-            // If no heading was found in the HTML, look up the NCX title for this
-            // content file and inject it as a level-1 Markdown heading at the top.
-            // This ensures MarkdownDocParser will pick it up as a proper heading.
-            if chapterTitle.isEmpty {
-                let ncxTitle = ncxTitles[manifestItem.href] ?? ""
-                if !ncxTitle.isEmpty {
-                    chapterTitle = ncxTitle
-                    // Prepend the heading so it appears in the parsed content
-                    chapterMD = "# \(ncxTitle)\n\n\(chapterMD)"
-                }
-            }
-
-            markdownParts.append("\(chapterMarkerPrefix)\(chapterTitle)\(chapterMarkerSuffix)\n\(chapterMD)")
-        }
-
-        // If only one chapter, skip the chapter markers for simplicity
-        if markdownParts.count == 1, let single = markdownParts.first {
-            // Strip the chapter marker line from the single chapter
-            let lines = single.components(separatedBy: "\n")
-            if lines.first?.hasPrefix(chapterMarkerPrefix) == true {
-                return lines.dropFirst().joined(separator: "\n")
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            return single
-        }
-
-        return markdownParts.joined(separator: "\n\n")
-    }
-
-    /// Parse the NCX table of contents from an EPUB archive and return a mapping
-    /// from content file href (relative to OPF directory) to navigation title.
-    /// Returns an empty dictionary if no NCX is found or parsing fails.
-    private static func parseNCXTitles(
-        archive: Archive,
-        opfData: EPUBParser.OPFData,
-        opfDirectory: String
-    ) -> [String: String] {
-        // Find the NCX file from the manifest (media-type application/x-dtbncx+xml)
-        let ncxItem = opfData.manifest.values.first { $0.mediaType.contains("ncx") }
-        guard let ncxHref = ncxItem?.href else { return [:] }
-
-        let ncxPath = opfDirectory.isEmpty ? ncxHref : "\(opfDirectory)/\(ncxHref)"
-        guard let ncxXML = try? EPUBParser.extractString(archive: archive, path: ncxPath) else {
-            return [:]
-        }
-
-        // Parse navPoints from the NCX XML
-        guard let doc = try? XMLDocument(xmlString: ncxXML) else { return [:] }
-        guard let navPoints = try? doc.nodes(forXPath: "//*[local-name()='navPoint']") else {
-            return [:]
-        }
-
-        var titles: [String: String] = [:]
-        for navPoint in navPoints {
-            guard let element = navPoint as? XMLElement else { continue }
-
-            // Extract the label text
-            let labelText = (try? element.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?
-                .first?.stringValue ?? ""
-            guard !labelText.isEmpty else { continue }
-
-            // Extract the content src (may include a fragment like "file.html#id")
-            guard let contentNode = (try? element.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement,
-                  let src = contentNode.attribute(forName: "src")?.stringValue else {
-                continue
-            }
-
-            // Strip fragment identifier — we map by filename only so the title
-            // applies to the spine item regardless of which anchor the NCX points to
-            let fileOnly = src.components(separatedBy: "#").first ?? src
-            let decoded = fileOnly.removingPercentEncoding ?? fileOnly
-
-            // Only store the first title for each file (the primary chapter heading)
-            if titles[decoded] == nil {
-                titles[decoded] = labelText
-            }
-        }
-
-        return titles
+        let chapters = try EPUBParser.preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
+        let markdown = chapters.map { prepared in
+            "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
+        }.joined(separator: "\n\n")
+        return ExtractedCache(markdown: markdown, chapters: chapters.map(\.chapter))
     }
 
     /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.
@@ -363,7 +276,7 @@ enum MarkdownCacheService {
 
         if sections.isEmpty {
             // No chapter markers — treat entire file as single chapter
-            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle))
+            let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle, includeNavigationHeadings: true))
                 ?? Chapter(title: bookTitle, text: markdown, headings: [])
             return DocumentContent(
                 title: chapter.title.isEmpty ? bookTitle : chapter.title,
@@ -377,7 +290,8 @@ enum MarkdownCacheService {
         for section in sections {
             let parsedChapter = try? MarkdownDocParser.parseChapter(
                 markdown: section.content,
-                title: section.title
+                title: section.title,
+                includeNavigationHeadings: true
             )
             if var ch = parsedChapter {
                 // Use the chapter marker title, falling back to what the parser found
@@ -447,25 +361,6 @@ enum MarkdownCacheService {
         }
 
         return sections
-    }
-
-    // MARK: - Helpers
-
-    /// Extract the first heading text from Markdown content (for chapter title detection).
-    private static func extractFirstHeading(from markdown: String) -> String {
-        for line in markdown.components(separatedBy: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("#") {
-                let level = trimmed.prefix(while: { $0 == "#" }).count
-                if level >= 1 && level <= 6 {
-                    return String(trimmed.dropFirst(level))
-                        .trimmingCharacters(in: .whitespaces)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-                        .trimmingCharacters(in: .whitespaces)
-                }
-            }
-        }
-        return ""
     }
 
 }

@@ -53,6 +53,30 @@ struct HeadingNavigatorView: View {
         Array(Set(headings.map(\.level))).sorted()
     }
 
+    /// Return the end offset for every heading currently displayed in the
+    /// navigator. A filtered-out heading must not terminate a visible row's
+    /// duration: when the user selects H1 only, each H1 describes the whole
+    /// span through the next displayed H1 (or through the end of the book).
+    static func nextDisplayedHeadingOffsets(
+        _ displayedHeadings: [Heading],
+        globalOffsetsByID: [String: Int],
+        totalCharacterCount: Int
+    ) -> [String: Int] {
+        var nextOffsetsByID: [String: Int] = [:]
+        nextOffsetsByID.reserveCapacity(displayedHeadings.count)
+
+        for (index, heading) in displayedHeadings.enumerated() {
+            if index + 1 < displayedHeadings.count {
+                let nextHeading = displayedHeadings[index + 1]
+                nextOffsetsByID[heading.id] = globalOffsetsByID[nextHeading.id] ?? totalCharacterCount
+            } else {
+                nextOffsetsByID[heading.id] = totalCharacterCount
+            }
+        }
+
+        return nextOffsetsByID
+    }
+
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
@@ -278,7 +302,9 @@ struct HeadingNavigatorView: View {
             }
         }
 
-        let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.count))
+        // Heading offsets and totalCharacterCount use UTF-16 coordinates;
+        // grapheme counts shift every later chapter after emoji/combining text.
+        let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.utf16Length))
         let allHeadings = viewModel.headings
         let totalCharacterCount = max(content.totalCharacterCount, 1)
         let totalWordCount = content.totalWordCount
@@ -288,15 +314,14 @@ struct HeadingNavigatorView: View {
             (heading.id, chapterStartOffsets[safe: heading.chapterIndex, default: 0] + heading.characterOffset)
         })
 
-        var nextOffsetsByID: [String: Int] = [:]
-        for (index, heading) in allHeadings.enumerated() {
-            if index + 1 < allHeadings.count {
-                let nextHeading = allHeadings[index + 1]
-                nextOffsetsByID[heading.id] = globalOffsetsByID[nextHeading.id] ?? totalCharacterCount
-            } else {
-                nextOffsetsByID[heading.id] = totalCharacterCount
-            }
-        }
+        // Duration rows use the next heading visible under the current level
+        // filter. Hidden subheadings remain part of the measured content, but
+        // no longer truncate the displayed parent heading's duration.
+        let nextOffsetsByID = Self.nextDisplayedHeadingOffsets(
+            filtered,
+            globalOffsetsByID: globalOffsetsByID,
+            totalCharacterCount: totalCharacterCount
+        )
 
         return filtered.map { heading in
             let isSkipped = skippedIDs.contains(heading.id)

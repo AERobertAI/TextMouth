@@ -40,6 +40,9 @@ final class SleepTimerService: ObservableObject {
     /// Called during fade-out with a volume value from 1.0 down to 0.0.
     /// Set by the owner via `start(...)`; cleared on stop.
     var onFadeStep: ((Float) -> Void)?
+    /// Restores the owning playback backend when an in-progress fade is
+    /// cancelled, restarted, or replaced by another book's timer.
+    var onFadeCancelled: (() -> Void)?
 
     /// Fade-out duration in seconds (0 = instant pause, no fade)
     var fadeOutDuration: TimeInterval = 0
@@ -214,12 +217,14 @@ final class SleepTimerService: ObservableObject {
     ///     scoping works correctly.
     ///   - onExpire: fires after the timer finishes (after any fade).
     ///   - onFadeStep: optional per-step volume callback during fade.
+    ///   - onFadeCancelled: restores playback if the fade is interrupted.
     ///   - fadeOutDuration: seconds to fade audio before pausing (0 = no fade).
     func start(
         duration: SleepTimerDuration,
         ownerID: UUID? = nil,
         onExpire: @escaping () -> Void,
         onFadeStep: ((Float) -> Void)? = nil,
+        onFadeCancelled: (() -> Void)? = nil,
         fadeOutDuration: TimeInterval = 0
     ) {
         // stop() clears callbacks and ownerID, so set them AFTER stop().
@@ -238,6 +243,7 @@ final class SleepTimerService: ObservableObject {
         }
         self.onTimerExpired = onExpire
         self.onFadeStep = onFadeStep
+        self.onFadeCancelled = onFadeCancelled
         self.fadeOutDuration = fadeOutDuration
         self.duration = duration
         self.lastUsedDuration = duration
@@ -278,12 +284,14 @@ final class SleepTimerService: ObservableObject {
         // them after the implicit stop() inside it clears them.
         let owner = ownerID
         let onFade = onFadeStep
+        let onFadeCancel = onFadeCancelled
         let fadeDuration = fadeOutDuration ?? self.fadeOutDuration
         start(
             duration: current,
             ownerID: owner,
             onExpire: onExpire,
             onFadeStep: onFade,
+            onFadeCancelled: onFadeCancel,
             fadeOutDuration: fadeDuration
         )
     }
@@ -294,6 +302,10 @@ final class SleepTimerService: ObservableObject {
         let previousDurationLabel = duration?.displayName ?? "none"
         let previousSummary = "wasActive=\(isActive) wasDuration=\(previousDurationLabel) "
             + "wasRemaining=\(remainingSeconds) wasFading=\(isFadingOut)"
+        // Capture the callback before clearing state. Calling it only for an
+        // active fade prevents ordinary timer cancellation from needlessly
+        // touching playback volume or restarting direct speech.
+        let fadeCancellation = isFadingOut ? onFadeCancelled : nil
         generation += 1
         timer?.invalidate()
         timer = nil
@@ -309,7 +321,9 @@ final class SleepTimerService: ObservableObject {
         ownerID = nil
         onTimerExpired = nil
         onFadeStep = nil
+        onFadeCancelled = nil
         timerLog("STOP reason=\(reason) \(previousSummary)")
+        fadeCancellation?()
     }
 
     /// Returns true once after a fade reaches silence and the timer is

@@ -3,6 +3,29 @@ import XCTest
 
 /// Regression coverage for recoverable data-directory migration.
 final class DataDirectoryMigrationTests: XCTestCase {
+    /// An alias must not bypass the no-parent/no-child migration rule and
+    /// cause the staging copy to be written recursively into its own source.
+    func testSymlinkCannotDisguiseDestinationInsideSource() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let library = try makeLibrary(at: source)
+        let alias = base.appendingPathComponent("Alias", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: source)
+
+        for destination in [alias, alias.appendingPathComponent("Nested", isDirectory: true)] {
+            XCTAssertThrowsError(
+                try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+            ) { error in
+                guard case DataDirectoryMigrationError.invalidRelationship = error else {
+                    return XCTFail("Expected relationship rejection, received \(error)")
+                }
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.appendingPathComponent("Nested").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: library.books[0].filePath))
+    }
+
     func testMigrationPublishesValidatedCopyAndRetainsSource() throws {
         let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let source = base.appendingPathComponent("Source", isDirectory: true)

@@ -7,6 +7,13 @@ extension ReaderViewModel {
 
     // MARK: - Speed & Voice
 
+    /// Use the same step for keyboard commands, menus, and playback buttons.
+    /// Audio multipliers and speech WPM are different units.
+    func stepSpeed(forward: Bool) {
+        let step = isAudioBook ? 0.25 : 25.0
+        adjustSpeed(delta: forward ? step : -step)
+    }
+
     /// Adjust TTS speed by a delta (e.g. +25 or -25 WPM).
     /// For audio books, delegates to adjustAudioSpeed instead.
     func adjustSpeed(delta: Double) {
@@ -50,6 +57,9 @@ extension ReaderViewModel {
 
     /// Copy this book's local voice, speed, and pitch to the global settings
     func saveSettingsToGlobal() {
+        // Global speed is measured in WPM; audio multipliers cannot be copied
+        // into it. Audio speed remains a per-book setting.
+        guard !isAudioBook else { return }
         let localSettings = book.localVoiceSettings
         if let localWPM = localSettings.wordsPerMinute {
             settingsViewModel.wordsPerMinute = localWPM
@@ -72,6 +82,12 @@ extension ReaderViewModel {
             wpm: nil,
             pitch: nil
         )
+        if isAudioBook {
+            audioSpeed = 1
+            audioPlaybackService.setSpeed(audioSpeed)
+            announceToVoiceOver("Using normal audio speed")
+            return
+        }
         // Apply global settings
         speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
         speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)

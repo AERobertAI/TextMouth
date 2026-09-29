@@ -56,20 +56,14 @@ final class LegacyWhereAmIProductionTests: XCTestCase {
     func testWhereAmIHeadingTimeRemainingCalculation() throws {
         let content = try alice()
         let headings = content.allHeadings
-        let heading = try XCTUnwrap(headings.first)
-        let start = content.globalOffset(
-            chapterIndex: heading.chapterIndex,
-            localOffset: heading.characterOffset
-        )
-        let end: Int
-        if headings.count > 1 {
-            end = content.globalOffset(
-                chapterIndex: headings[1].chapterIndex,
-                localOffset: headings[1].characterOffset
-            )
-        } else {
-            end = content.totalCharacterCount
+        // Image-only cover chapters now have navigation entries too. Select
+        // a heading with actual reading text for this positive-duration check.
+        let starts = headings.map {
+            content.globalOffset(chapterIndex: $0.chapterIndex, localOffset: $0.characterOffset)
         }
+        let ends = Array(starts.dropFirst()) + [content.totalCharacterCount]
+        let span = try XCTUnwrap(zip(starts, ends).first { $0 < $1 })
+        let (start, end) = span
 
         let atStart = content.estimatedTimeRemaining(fromGlobalOffset: start, wpm: 200)
         let atEnd = content.estimatedTimeRemaining(fromGlobalOffset: end, wpm: 200)

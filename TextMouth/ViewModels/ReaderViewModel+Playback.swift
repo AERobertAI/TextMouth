@@ -12,6 +12,9 @@ extension ReaderViewModel {
     /// Start speaking the current chapter from the current offset.
     /// For audio books, delegates to playAudioChapter().
     func play() {
+        // Loading or closed readers cannot own a playback/statistics session.
+        guard !hasClosed, !isLoading, let content,
+              content.chapters.indices.contains(currentChapterIndex) else { return }
         // Don't start playback while Where Am I is speaking
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
@@ -68,11 +71,16 @@ extension ReaderViewModel {
             playAudioChapter()
             return
         }
-        audioPlaybackService.resume()
-        isCurrentlyPaused = false
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: true
-        )
+        if audioPlaybackService.resume() {
+            isCurrentlyPaused = false
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+        } else {
+            debugLog("audio resume rejected by backend; reloading current chapter")
+            audioPlaybackService.stop()
+            playAudioChapter()
+        }
     }
 
     private func resumeSpeechPlayback() {
@@ -92,10 +100,20 @@ extension ReaderViewModel {
             )
             return
         }
-        speechService.resume()
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: true
-        )
+        if speechService.resume() {
+            nowPlayingService.updateNowPlayingInfo(
+                title: book.title, author: book.author, isPlaying: true
+            )
+        } else {
+            debugLog("speech resume rejected by backend; restarting current chapter at cursor")
+            speechService.stop()
+            speakCurrentChapter()
+            if speechService.isSpeaking && !speechService.isPaused {
+                nowPlayingService.updateNowPlayingInfo(
+                    title: book.title, author: book.author, isPlaying: true
+                )
+            }
+        }
     }
 
     /// Pause the current playback (TTS or audio) and save position.
@@ -115,8 +133,17 @@ extension ReaderViewModel {
     /// Bluetooth device, so the next resume cold-starts the backend at the
     /// saved cursor while preserving the user-facing paused state.
     func pauseForAudioRouteChange() {
-        restartPlaybackBackendOnNextResume = true
+        invalidatePlaybackBackendForAudioRouteChange()
         pause(playingPauseSound: true)
+    }
+
+    /// Mark retained audio state as route-stale without altering playback.
+    /// CoreAudio sends this for transitions both to and from AirPods. A paused
+    /// engine can otherwise claim to resume successfully while remaining
+    /// attached to the old, now-silent output device.
+    func invalidatePlaybackBackendForAudioRouteChange() {
+        restartPlaybackBackendOnNextResume = true
+        debugLog("audio route changed; next resume will cold-start playback backend")
     }
 
     /// Stop TextMouth's current media session and release Now Playing /
@@ -181,9 +208,7 @@ extension ReaderViewModel {
             wasActive = speechService.isSpeaking || speechService.isPaused
         }
 
-        if sleepTimerService.isFadingOut {
-            sleepTimerService.stop()
-        }
+        let wasSleepTimerFading = sleepTimerService.ownerID == book.id && sleepTimerService.isFadingOut
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
@@ -196,7 +221,13 @@ extension ReaderViewModel {
             speechService.stop()
             speechService.audioEngine.restoreVolume()
         }
-        readingStatsService.endSession()
+        // Cancel the timer after playback is stopped. Its fade-cancellation
+        // callback can now restore volume without briefly restarting direct
+        // speech that this stop operation would immediately halt again.
+        if wasSleepTimerFading {
+            sleepTimerService.stop()
+        }
+        readingStatsService.endSession(bookID: book.id)
         nowPlayingService.clearNowPlaying()
         if wasActive {
             recordPlaybackStopped()
@@ -208,7 +239,7 @@ extension ReaderViewModel {
     /// Applies section filtering, punctuation pauses, and text substitutions before speaking.
     func speakCurrentChapter() {
         guard let content = content,
-              currentChapterIndex < content.chapters.count else { return }
+              content.chapters.indices.contains(currentChapterIndex) else { return }
 
         // Skip empty chapters
         var idx = currentChapterIndex
@@ -233,7 +264,7 @@ extension ReaderViewModel {
         let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
         let transformation = substitutionService.transform(pausedText)
         currentTransformation = transformation
-        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap, transformation.offsetMap])
+        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
         let speakText = transformation.modifiedText
         // Convert original-text offset to modified-text offset using the full composed map
         let speakOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
@@ -492,7 +523,7 @@ extension ReaderViewModel {
                     self.currentCharacterOffset = 0
                     self.playAudioChapter()
                 } else {
-                    self.readingStatsService.endSession()
+                    self.readingStatsService.endSession(bookID: self.book.id)
                     self.handleEndOfBook()
                 }
             }
@@ -503,7 +534,7 @@ extension ReaderViewModel {
     /// Handles multi-file audio books and DAISY segmented audio with clip boundaries.
     func playAudioChapter() {
         guard isAudioBook, let content = content,
-              currentChapterIndex < content.chapters.count else { return }
+              content.chapters.indices.contains(currentChapterIndex) else { return }
 
         let audioURL: URL
         if !audioChapterFiles.isEmpty && currentChapterIndex < audioChapterFiles.count {
@@ -582,6 +613,10 @@ extension ReaderViewModel {
     /// Called when the last chapter finishes playing.
     /// Behavior depends on per-book override or global setting: stop, loop, or continue to next book.
     func handleEndOfBook() {
+        // Audio completion does not flow through SpeechService's publishers.
+        // Clear its mirrored UI state before applying stop/loop/continue.
+        isCurrentlyPlaying = false
+        isCurrentlyPaused = false
         // Determine behavior: per-book override or global setting
         let behavior: EndOfBookBehavior
         if let localRaw = book.localEndOfBookBehavior,
@@ -605,10 +640,9 @@ extension ReaderViewModel {
             chapterPlaybackGeneration += 1
             savePosition()
             announceToVoiceOver("Restarting: \(book.title)")
-            speakCurrentChapter()
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            // Route through the correct backend and start the next listening
+            // session. Audiobook placeholder text cannot be looped via TTS.
+            play()
 
         case .continueNext:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
@@ -659,6 +693,10 @@ extension ReaderViewModel {
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
     /// resumed or started so the armed timer has audio to count against.
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
+        // Capture one value for both timer scheduling and direct-speech fade
+        // planning. A settings edit while the timer runs must not make the
+        // utterance queue disagree with the timer's already-armed duration.
+        let fadeOutDuration = settingsViewModel.sleepFadeOutDuration
         sleepTimerService.start(
             duration: duration,
             ownerID: book.id,
@@ -701,10 +739,21 @@ extension ReaderViewModel {
                 if self.isAudioBook {
                     self.audioPlaybackService.setVolume(volume)
                 } else {
-                    self.speechService.audioEngine.setVolume(volume)
+                    self.speechService.setSleepTimerFadeVolume(
+                        volume,
+                        duration: fadeOutDuration
+                    )
                 }
             },
-            fadeOutDuration: settingsViewModel.sleepFadeOutDuration
+            onFadeCancelled: { [weak self] in
+                guard let self else { return }
+                if self.isAudioBook {
+                    self.audioPlaybackService.restoreVolume()
+                } else {
+                    self.speechService.cancelSleepTimerFade()
+                }
+            },
+            fadeOutDuration: fadeOutDuration
         )
         if startPlaybackIfNeeded {
             startSleepTimerPlaybackIfNeeded()
@@ -722,10 +771,12 @@ extension ReaderViewModel {
     /// latest fade-out settings. Used by the "Reset Timer" button in
     /// the sleep timer sheet.
     func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
-        sleepTimerService.restart(fadeOutDuration: settingsViewModel.sleepFadeOutDuration)
-        if startPlaybackIfNeeded {
-            startSleepTimerPlaybackIfNeeded()
-        }
+        guard let duration = sleepTimerService.duration else { return }
+        // Rebuild every callback rather than asking the service to retain the
+        // old closures. The direct-speech callback captures the effective fade
+        // duration, so retaining it after a settings change would arm the new
+        // timer with stale utterance-planning input.
+        startSleepTimer(duration: duration, startPlaybackIfNeeded: startPlaybackIfNeeded)
     }
 
     /// Reset a running timer or — if the previous one already ended —
@@ -798,8 +849,9 @@ extension ReaderViewModel {
         // lives in the fade-cleanup branch below, which is why the
         // sleep timer must keep a one-shot "fade just completed"
         // marker until this helper runs.
-        let completedSleepTimerFade = sleepTimerService.consumePendingFadeCompletion()
-        let completingSleepFade = sleepTimerService.isFadingOut || completedSleepTimerFade
+        let ownsSleepTimer = sleepTimerService.ownerID == book.id
+        let completedSleepTimerFade = ownsSleepTimer && sleepTimerService.consumePendingFadeCompletion()
+        let completingSleepFade = ownsSleepTimer && (sleepTimerService.isFadingOut || completedSleepTimerFade)
         // Halt audio output before any volume restoration. For TTS engine
         // playback, a sleep fade needs stronger handling than pause(): the
         // engine is stopped at volume 0 so downstream time-pitch/mixer
@@ -832,7 +884,7 @@ extension ReaderViewModel {
             // are no-ops — the service guards on duration kind.
             sleepTimerService.pauseCountdown(by: book.id)
         }
-        readingStatsService.endSession()
+        readingStatsService.endSession(bookID: book.id)
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )

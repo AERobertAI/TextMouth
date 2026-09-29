@@ -11,8 +11,13 @@ INSTALL_DIR = /Applications
 
 # Where xcodebuild puts the built product
 DERIVED_BUILD_DIR = $(BUILD_DIR)/DerivedData
+BUILT_APP = $(DERIVED_BUILD_DIR)/Build/Products/$(CONFIG)/$(APP_NAME).app
+BUILD_LOG = $(BUILD_DIR)/xcodebuild-$(CONFIG).log
+GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 
-.PHONY: all clean build run install uninstall generate test open help
+.PHONY: all clean build debug run install uninstall generate test open xcode help
 
 ## Default: build the app
 all: build
@@ -28,7 +33,7 @@ help:
 	@echo "  make open       - Build, package, and open the .app"
 	@echo "  make install    - Copy the app to /Applications"
 	@echo "  make uninstall  - Remove from /Applications"
-	@echo "  make test       - Run the parser test suite"
+	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make clean      - Remove build artifacts"
 	@echo "  make xcode      - Open the project in Xcode"
@@ -43,45 +48,28 @@ generate:
 ## Build Release
 build: generate
 	@echo "==> Building $(APP_NAME) ($(CONFIG))..."
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p "$(BUILD_DIR)"
 	xcodebuild \
 		-project $(PROJECT) \
 		-scheme $(SCHEME) \
 		-configuration $(CONFIG) \
-		-derivedDataPath $(DERIVED_BUILD_DIR) \
+		-derivedDataPath "$(DERIVED_BUILD_DIR)" \
 		-destination 'platform=macOS' \
-		build \
-		| tail -5
-	@# Copy the .app bundle to build/ for easy access
-	@APP_PATH=$$(find $(DERIVED_BUILD_DIR) -name "$(APP_NAME).app" -type d | head -1) && \
-		if [ -n "$$APP_PATH" ]; then \
-			rm -rf "$(APP_BUNDLE)" && \
-			cp -R "$$APP_PATH" "$(APP_BUNDLE)" && \
-			echo "==> App built: $(APP_BUNDLE)"; \
-		else \
-			echo "ERROR: Could not find built .app bundle" && exit 1; \
-		fi
+		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
+		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
+		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
+		build > "$(BUILD_LOG)" 2>&1 || { cat "$(BUILD_LOG)"; exit 1; }
+	@tail -5 "$(BUILD_LOG)"
+	@# Only package the requested configuration after xcodebuild succeeds.
+	@# Searching DerivedData can select an older app from another configuration.
+	@test -d "$(BUILT_APP)"
+	@rm -rf "$(APP_BUNDLE)"
+	cp -R "$(BUILT_APP)" "$(APP_BUNDLE)"
+	@echo "==> App built: $(APP_BUNDLE)"
 
 ## Build Debug
-debug: generate
-	@echo "==> Building $(APP_NAME) (Debug)..."
-	@mkdir -p $(BUILD_DIR)
-	xcodebuild \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration Debug \
-		-derivedDataPath $(DERIVED_BUILD_DIR) \
-		-destination 'platform=macOS' \
-		build \
-		| tail -5
-	@APP_PATH=$$(find $(DERIVED_BUILD_DIR) -name "$(APP_NAME).app" -type d | head -1) && \
-		if [ -n "$$APP_PATH" ]; then \
-			rm -rf "$(APP_BUNDLE)" && \
-			cp -R "$$APP_PATH" "$(APP_BUNDLE)" && \
-			echo "==> App built: $(APP_BUNDLE)"; \
-		else \
-			echo "ERROR: Could not find built .app bundle" && exit 1; \
-		fi
+debug: CONFIG = Debug
+debug: build
 
 ## Build and launch the app
 run: build
@@ -108,9 +96,9 @@ uninstall:
 	rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 	@echo "==> Removed."
 
-## Run the parser test suite
+## Run tests against the real application through the hosted test runner
 test:
-	@echo "==> Running parser tests..."
+	@echo "==> Running hosted production tests..."
 	@cd TextMouthTests && swift run 2>&1
 	@echo ""
 

@@ -110,6 +110,128 @@ final class LegacyBookStateTests: XCTestCase {
         XCTAssertNil(decoded.localWPM)
     }
 
+    /// Per-book playback navigation defaults must survive package-state round trips.
+    func testBookStateRoundTripsLocalSkipUnits() throws {
+        let state = BookState(
+            localSkipForwardUnit: SkipUnit.heading.rawValue,
+            localSkipBackwardUnit: SkipUnit.sentence.rawValue
+        )
+
+        let decoded = try JSONDecoder().decode(
+            BookState.self,
+            from: JSONEncoder().encode(state)
+        )
+
+        XCTAssertEqual(decoded.localSkipForwardUnit, SkipUnit.heading.rawValue)
+        XCTAssertEqual(decoded.localSkipBackwardUnit, SkipUnit.sentence.rawValue)
+    }
+
+    /// The library model must copy navigation defaults into package metadata,
+    /// which is the durable source used when a managed book is adopted again.
+    func testBookInfoIncludesLocalSkipUnits() {
+        let book = Book(
+            title: "Navigation State Test",
+            format: .txt,
+            filePath: "/tmp/navigation-state-test.txt",
+            md5Hash: "navigation-state-test",
+            localSkipForwardUnit: SkipUnit.heading.rawValue,
+            localSkipBackwardUnit: SkipUnit.seconds30.rawValue
+        )
+
+        let info = book.makeBookInfo()
+
+        XCTAssertEqual(info.state.localSkipForwardUnit, SkipUnit.heading.rawValue)
+        XCTAssertEqual(info.state.localSkipBackwardUnit, SkipUnit.seconds30.rawValue)
+    }
+
+    /// Older package state has no navigation overrides and must keep using globals.
+    func testBookStateDecodesWithoutLocalSkipUnits() throws {
+        let data = Data(#"{"isNew":true,"tmbDirectoryName":"old.tmb"}"#.utf8)
+        let decoded = try JSONDecoder().decode(BookState.self, from: data)
+
+        XCTAssertNil(decoded.localSkipForwardUnit)
+        XCTAssertNil(decoded.localSkipBackwardUnit)
+    }
+
+    /// Hidden menus always use the two global units, even when a book retains
+    /// overrides that should become available again if menus are re-enabled.
+    func testHiddenPlaybackNavigationMenusUseGlobalUnits() {
+        let resolved = PlaybackSkipUnitPolicy.resolve(
+            mode: .none,
+            localForwardRawValue: SkipUnit.heading.rawValue,
+            localBackwardRawValue: SkipUnit.paragraph.rawValue,
+            globalForward: .seconds30,
+            globalBackward: .seconds15
+        )
+
+        XCTAssertEqual(resolved.forward, .seconds30)
+        XCTAssertEqual(resolved.backward, .seconds15)
+    }
+
+    /// Shared mode deliberately applies one per-book unit to both buttons.
+    func testSharedPlaybackNavigationMenuUsesOneUnitForBothDirections() {
+        let resolved = PlaybackSkipUnitPolicy.resolve(
+            mode: .shared,
+            localForwardRawValue: SkipUnit.bookmark.rawValue,
+            localBackwardRawValue: SkipUnit.paragraph.rawValue,
+            globalForward: .seconds15,
+            globalBackward: .seconds30
+        )
+
+        XCTAssertEqual(resolved.forward, .bookmark)
+        XCTAssertEqual(resolved.backward, .bookmark)
+    }
+
+    /// Separate mode preserves independent book defaults and safely falls back
+    /// when a manually edited package contains an unknown value.
+    func testSeparatePlaybackNavigationMenusResolveEachDirection() {
+        let resolved = PlaybackSkipUnitPolicy.resolve(
+            mode: .separate,
+            localForwardRawValue: "Unknown unit",
+            localBackwardRawValue: SkipUnit.subheading.rawValue,
+            globalForward: .seconds60,
+            globalBackward: .seconds10
+        )
+
+        XCTAssertEqual(resolved.forward, .seconds60)
+        XCTAssertEqual(resolved.backward, .subheading)
+    }
+
+    /// Direction-aware symbols must update when the effective unit changes.
+    func testSkipUnitIconsReflectUnitAndDirection() {
+        XCTAssertEqual(SkipUnit.seconds30.iconName(forward: true), "goforward.30")
+        XCTAssertEqual(SkipUnit.seconds30.iconName(forward: false), "gobackward.30")
+        XCTAssertEqual(SkipUnit.heading.iconName(forward: true), "forward.end.fill")
+        XCTAssertEqual(SkipUnit.heading.iconName(forward: false), "backward.end.fill")
+    }
+
+    /// Closed navigation menus expose one complete phrase without repeating
+    /// or abbreviating the selected time unit.
+    func testPlaybackNavigationMenuAccessibilityLabelsAreComplete() {
+        XCTAssertEqual(
+            SkipUnit.seconds15.playbackMenuAccessibilityLabel(),
+            "Navigation unit: 15 seconds"
+        )
+        XCTAssertEqual(
+            SkipUnit.seconds30.playbackMenuAccessibilityLabel(direction: .forward),
+            "Forward navigation unit: 30 seconds"
+        )
+        XCTAssertEqual(
+            SkipUnit.paragraph.playbackMenuAccessibilityLabel(direction: .backward),
+            "Backward navigation unit: Paragraph"
+        )
+        XCTAssertFalse(SkipUnit.seconds15.playbackMenuAccessibilityLabel().contains("15s"))
+    }
+
+    /// Updated labels describe the actual control layouts while persisted raw
+    /// values stay compatible with existing AppStorage data.
+    func testPlaybackNavigationControlModeDisplayNamesDescribeCurrentLayouts() {
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.shared.displayName, "One Unit for Both Directions")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.separate.displayName, "Separate Forward and Backward Units")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.shared.rawValue, "One Shared Menu")
+        XCTAssertEqual(PlaybackNavigationUnitControlMode.separate.rawValue, "Menu for Each Button")
+    }
+
     /// A book-specific speed should override the supplied global fallback.
     func testEffectiveWPMUsesLocalOverride() {
         XCTAssertEqual(makeBook(localWPM: 350).effectiveWPM(fallback: 200), 350)

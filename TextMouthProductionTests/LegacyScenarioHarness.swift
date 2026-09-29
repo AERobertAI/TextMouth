@@ -149,7 +149,7 @@ final class LegacyKeyboardShortcutScenarioTests: XCTestCase {
         runKeyboardShortcutTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            36,
+            37,
             "Every inventoried keyboard-shortcut and sound scenario should remain registered"
         )
     }

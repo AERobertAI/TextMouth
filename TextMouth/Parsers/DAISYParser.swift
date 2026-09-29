@@ -172,7 +172,9 @@ enum DAISYParser {
     /// MarkdownCacheService cache generation.
     static func extractMarkdown(from url: URL) throws -> String {
         let provider = try makeFileProvider(from: url)
-        let version = detectVersion(in: provider)
+        guard let version = detectVersion(in: provider) else {
+            throw DAISYParserError.notDAISYBook
+        }
 
         switch version {
         case .daisy3:
@@ -185,7 +187,9 @@ enum DAISYParser {
     /// Read metadata (title, author) from a DAISY book
     static func readMetadata(from url: URL) throws -> DAISYMetadata? {
         let provider = try makeFileProvider(from: url)
-        let version = detectVersion(in: provider)
+        guard let version = detectVersion(in: provider) else {
+            throw DAISYParserError.notDAISYBook
+        }
 
         switch version {
         case .daisy3:
@@ -200,20 +204,13 @@ enum DAISYParser {
     static func isDAISYZip(url: URL) -> Bool {
         guard let archive = try? Archive(url: url, accessMode: .read) else { return false }
         let provider = ArchiveFileProvider(archive: archive)
-        let version = detectVersion(in: provider)
-        // notDAISYBook means we couldn't detect either format
-        switch version {
-        case .daisy202, .daisy3: return true
-        }
+        return detectVersion(in: provider) != nil
     }
 
     /// Detect whether a directory contains a DAISY book
     static func isDAISYDirectory(url: URL) -> Bool {
         let provider = DirectoryFileProvider(baseURL: url)
-        let version = detectVersion(in: provider)
-        switch version {
-        case .daisy202, .daisy3: return true
-        }
+        return detectVersion(in: provider) != nil
     }
 
     // MARK: - File Access Abstraction
@@ -262,14 +259,17 @@ enum DAISYParser {
 
     // MARK: - Version Detection
 
-    /// Detect the DAISY version by checking for signature files
-    private static func detectVersion(in provider: DAISYFileProvider) -> DAISYVersion {
-        // DAISY 2.02: has ncc.html (case-insensitive)
+    /// Detect the DAISY version by checking for format-specific signatures.
+    /// Returns nil when the provider contains no DAISY package structure.
+    private static func detectVersion(in provider: DAISYFileProvider) -> DAISYVersion? {
         let allFiles = provider.listFiles()
-        let lowerFiles = allFiles.map { $0.lowercased() }
 
-        if lowerFiles.contains("ncc.html") || lowerFiles.contains(where: {
-            $0.hasSuffix("/ncc.html") || $0 == "ncc.htm"
+        // DAISY 2.02 packages use ncc.html (or the older .htm spelling) as
+        // their navigation entry point. Compare the final path component so
+        // packages nested inside a directory are detected consistently.
+        if allFiles.contains(where: {
+            let fileName = ($0 as NSString).lastPathComponent.lowercased()
+            return fileName == "ncc.html" || fileName == "ncc.htm"
         }) {
             return .daisy202
         }
@@ -279,14 +279,13 @@ enum DAISYParser {
             return .daisy3
         }
 
-        // Check for DTBook XML as fallback (standalone DTBook)
-        if allFiles.contains(where: { $0.lowercased().hasSuffix(".xml") }) {
-            // Could be a standalone DTBook — treat as DAISY 3
+        // A standalone DTBook can omit the OPF package. Inspect candidate XML
+        // files rather than treating every archive containing XML as DAISY.
+        if findDTBookXML(in: allFiles, provider: provider) != nil {
             return .daisy3
         }
 
-        // Default to DAISY 3 (will fail later with appropriate error)
-        return .daisy3
+        return nil
     }
 
     // MARK: - DAISY 3 Extraction

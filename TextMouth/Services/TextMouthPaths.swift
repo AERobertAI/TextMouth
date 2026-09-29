@@ -31,9 +31,13 @@ enum DataDirectoryMigrator {
         let destination = newRoot.standardizedFileURL
         let sourcePath = source.path
         let destinationPath = destination.path
-        guard sourcePath != destinationPath,
-              !destinationPath.hasPrefix(sourcePath + "/"),
-              !sourcePath.hasPrefix(destinationPath + "/") else {
+        // Compare physical locations before copying: a selected symlink can
+        // otherwise disguise a child directory and stage a copy inside itself.
+        let physicalSource = physicalLocation(of: source, fileManager: fileManager).path
+        let physicalDestination = physicalLocation(of: destination, fileManager: fileManager).path
+        guard physicalSource != physicalDestination,
+              !physicalDestination.hasPrefix(physicalSource + "/"),
+              !physicalSource.hasPrefix(physicalDestination + "/") else {
             throw DataDirectoryMigrationError.invalidRelationship
         }
         guard fileManager.fileExists(atPath: sourcePath) else {
@@ -91,6 +95,23 @@ enum DataDirectoryMigrator {
         }
         try fileManager.moveItem(at: staging, to: destination)
         return migratedLibrary
+    }
+
+    /// Foundation does not reliably resolve a symlink ancestor when the final
+    /// destination does not exist yet. Resolve its closest existing ancestor,
+    /// then reattach the missing path components before checking containment.
+    private static func physicalLocation(of url: URL, fileManager: FileManager) -> URL {
+        var ancestor = url.standardizedFileURL
+        var missingComponents: [String] = []
+        while !fileManager.fileExists(atPath: ancestor.path), ancestor.path != "/" {
+            missingComponents.append(ancestor.lastPathComponent)
+            ancestor.deleteLastPathComponent()
+        }
+        var resolved = ancestor.resolvingSymlinksInPath()
+        for component in missingComponents.reversed() {
+            resolved.appendPathComponent(component, isDirectory: true)
+        }
+        return resolved.standardizedFileURL
     }
 }
 
@@ -251,6 +272,9 @@ enum TextMouthPaths {
 
     /// Create a library subfolder on disk
     static func ensureLibrarySubfolder(_ folderPath: String) throws {
+        guard BookFolder.isValidLibraryPath(folderPath) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
         guard !folderPath.isEmpty else { return }
         let dir = libraryDir.appendingPathComponent(folderPath, isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

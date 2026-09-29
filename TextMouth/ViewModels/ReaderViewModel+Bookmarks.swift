@@ -148,7 +148,10 @@ extension ReaderViewModel {
             $0.chapterIndex > currentChapterIndex ||
             ($0.chapterIndex == currentChapterIndex && $0.characterOffset > currentCharacterOffset)
         }) {
-            navigateTo(chapterIndex: next.chapterIndex, characterOffset: next.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: next.chapterIndex,
+                characterOffset: next.characterOffset
+            )
             announceToVoiceOver("Bookmark \(next.number)")
         }
     }
@@ -160,7 +163,10 @@ extension ReaderViewModel {
             $0.chapterIndex < currentChapterIndex ||
             ($0.chapterIndex == currentChapterIndex && $0.characterOffset < currentCharacterOffset)
         }) {
-            navigateTo(chapterIndex: prev.chapterIndex, characterOffset: prev.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: prev.chapterIndex,
+                characterOffset: prev.characterOffset
+            )
             announceToVoiceOver("Bookmark \(prev.number)")
         }
     }
@@ -173,15 +179,19 @@ extension ReaderViewModel {
 
     /// Navigate to a bookmark (from the bookmarks list), saving current position for return
     func navigateToBookmark(_ bookmark: Bookmark) {
-        savePositionForReturn()
-        navigateTo(chapterIndex: bookmark.chapterIndex, characterOffset: bookmark.characterOffset)
+        navigatePreservingReturnPosition(
+            chapterIndex: bookmark.chapterIndex,
+            characterOffset: bookmark.characterOffset
+        )
         autoPlayIfEnabled()
     }
 
     /// Navigate to a search result, saving current position for return
     func navigateToSearchResult(chapterIndex: Int, characterOffset: Int) {
-        savePositionForReturn()
-        navigateTo(chapterIndex: chapterIndex, characterOffset: characterOffset)
+        navigatePreservingReturnPosition(
+            chapterIndex: chapterIndex,
+            characterOffset: characterOffset
+        )
         autoPlayIfEnabled()
     }
 
@@ -201,6 +211,17 @@ extension ReaderViewModel {
         savedChapterIndex = currentChapterIndex
         savedCharacterOffset = currentCharacterOffset
         hasSavedPosition = true
+    }
+
+    /// Record the departure point and navigate through one shared path so every
+    /// heading, bookmark, search, and explicit jump supports the Return button.
+    /// Invalid unloaded-reader requests do not replace an existing return point.
+    @discardableResult
+    func navigatePreservingReturnPosition(chapterIndex: Int, characterOffset: Int) -> Bool {
+        guard content?.chapters.isEmpty == false else { return false }
+        savePositionForReturn()
+        navigateTo(chapterIndex: chapterIndex, characterOffset: characterOffset)
+        return true
     }
 
     /// Return to the position saved before the last heading/bookmark navigation

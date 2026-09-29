@@ -3,6 +3,68 @@ import XCTest
 
 /// Regression coverage for partial ZIP import reporting.
 final class ZIPImportTests: XCTestCase {
+    /// A successful member cannot authorize deletion of failed members' only
+    /// source. Exercise the real completion path with automatic deletion on.
+    @MainActor
+    func testPartialImportKeepsOriginalArchive() throws {
+        try verifyOriginalHandling(hasFailure: true, hasBook: true, shouldDelete: false)
+    }
+
+    /// Empty and duplicate-only results must preserve the source archive.
+    @MainActor
+    func testImportWithoutAcceptedBooksKeepsOriginalArchive() throws {
+        try verifyOriginalHandling(hasFailure: false, hasBook: false, shouldDelete: false)
+    }
+
+    /// Preserve the explicit delete-after-import preference after success.
+    @MainActor
+    func testSuccessfulImportStillHonorsOriginalDeletionPreference() throws {
+        try verifyOriginalHandling(hasFailure: false, hasBook: true, shouldDelete: true)
+    }
+
+    /// ZIP books use the same Replace/Keep Both/Cancel flow as documents.
+    @MainActor
+    func testSingleZIPBookRequestsDuplicateResolution() {
+        let existing = Book(title: "Existing", format: .audio, filePath: "/tmp/existing", md5Hash: "same")
+        let imported = Book(title: "Imported", format: .audio, filePath: "/tmp/imported", md5Hash: "same")
+        let viewModel = LibraryViewModel()
+        viewModel.library = Library(books: [existing])
+
+        viewModel.completeSingleImportedBook(imported, originalURL: URL(fileURLWithPath: "/tmp/source.zip"))
+
+        XCTAssertEqual(viewModel.library.books.map(\.id), [existing.id])
+        XCTAssertEqual(viewModel.pendingDuplicateBook?.id, imported.id)
+        XCTAssertTrue(viewModel.showDuplicateDialog)
+    }
+
+    /// Use a disposable file and restore the config preference after each
+    /// scenario; no test deletes or overwrites a developer-owned archive.
+    @MainActor
+    private func verifyOriginalHandling(hasFailure: Bool, hasBook: Bool, shouldDelete: Bool) throws {
+        let original = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).zip")
+        try Data("archive source".utf8).write(to: original)
+        let config = ConfigService.shared
+        let previous = config.config.importDeleteBehavior
+        defer {
+            config.config.importDeleteBehavior = previous
+            try? FileManager.default.removeItem(at: original)
+        }
+        config.config.importDeleteBehavior = .deleteAfterImport
+        let viewModel = LibraryViewModel()
+        viewModel.library = Library()
+        let book = Book(title: "Accepted", format: .txt, filePath: "/tmp/accepted", md5Hash: UUID().uuidString)
+        let result = ZipImportResult(
+            books: hasBook ? [book] : [],
+            failures: hasFailure ? [ZipImportFailure(fileName: "failed.epub", message: "unreadable")] : []
+        )
+
+        viewModel.completeZIPImport(result, originalURL: original, folderPath: "")
+
+        XCTAssertEqual(FileManager.default.fileExists(atPath: original.path), !shouldDelete)
+        XCTAssertEqual(viewModel.library.books.count, hasBook ? 1 : 0)
+        XCTAssertEqual(viewModel.showError, hasFailure)
+    }
+
     func testSupportedFileLoopReturnsBooksAndPerFileFailures() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

@@ -33,6 +33,7 @@ final class AudioRouteMonitoringTests: XCTestCase {
         let ownerID: UUID
         let logs: () -> [String]
         let pauseCount: () -> Int
+        let invalidationCount: () -> Int
         let setPlaying: (Bool) -> Void
     }
 
@@ -50,6 +51,7 @@ final class AudioRouteMonitoringTests: XCTestCase {
 
         XCTAssertTrue(harness.service.isRouteCommandSuppressed)
         XCTAssertEqual(harness.pauseCount(), 1)
+        XCTAssertEqual(harness.invalidationCount(), 1)
         XCTAssertEqual(harness.service.previousDeviceID, 99)
         XCTAssertFalse(harness.service.previousDeviceWasBluetooth)
     }
@@ -79,7 +81,26 @@ final class AudioRouteMonitoringTests: XCTestCase {
 
         XCTAssertFalse(harness.service.isRouteCommandSuppressed)
         XCTAssertEqual(harness.pauseCount(), 0)
+        XCTAssertEqual(harness.invalidationCount(), 1)
         XCTAssertTrue(harness.logs().contains { $0.contains("outgoing-not-bluetooth") })
+    }
+
+    /// Connecting AirPods while paused must invalidate the retained backend
+    /// even though it must not pause, play, or arm disconnect suppression.
+    func testIncomingBluetoothRouteWhilePausedInvalidatesBackend() {
+        let devices = DeviceState(defaultID: 99, deviceIDs: [99])
+        let harness = makeHarness(devices: devices, playing: false)
+        harness.service.refreshPreviousDeviceInfo()
+
+        devices.defaultID = 42
+        devices.deviceIDs = [42, 99]
+        devices.bluetoothIDs = [42]
+        harness.service.handleDefaultOutputChange()
+
+        XCTAssertEqual(harness.invalidationCount(), 1)
+        XCTAssertEqual(harness.pauseCount(), 0)
+        XCTAssertFalse(harness.service.isRouteCommandSuppressed)
+        XCTAssertTrue(harness.logs().contains { $0.contains("audio backends invalidated") })
     }
 
     func testRemovedBluetoothDeviceArmsSuppressionAndClearsCachedState() {
@@ -97,6 +118,55 @@ final class AudioRouteMonitoringTests: XCTestCase {
         XCTAssertTrue(harness.logs().contains {
             $0.contains("trigger=cached-bluetooth-device-removed")
         })
+    }
+
+    /// Battery-drain removal must invalidate a paused reader even though no
+    /// pause callback is appropriate when audio is already stopped.
+    func testRemovedBluetoothDeviceInvalidatesPausedBackend() {
+        let devices = DeviceState(defaultID: 42, deviceIDs: [42, 99], bluetoothIDs: [42])
+        let harness = makeHarness(devices: devices, playing: false)
+        harness.service.refreshPreviousDeviceInfo()
+
+        devices.deviceIDs = [99]
+        harness.service.handleDeviceListChange()
+
+        XCTAssertEqual(harness.invalidationCount(), 1)
+        XCTAssertEqual(harness.pauseCount(), 0)
+        XCTAssertTrue(harness.service.isRouteCommandSuppressed)
+    }
+
+    /// Route invalidation is process-wide, but it must not transfer the media
+    /// focus or playing-owner bookkeeping between open reader windows.
+    func testDefaultOutputChangeInvalidatesEveryOwnerWithoutChangingOwnership() {
+        let devices = DeviceState(defaultID: 99, deviceIDs: [99])
+        let harness = makeHarness(devices: devices, playing: false)
+        let originalActiveOwner = harness.service.activeOwnerID
+        let secondOwnerID = UUID()
+        var secondInvalidationCount = 0
+        harness.service.setup(
+            ownerID: secondOwnerID,
+            onPlay: {},
+            onPause: {},
+            onAudioRouteInvalidated: { secondInvalidationCount += 1 },
+            onAudioRouteChangePause: {},
+            onTogglePlayPause: {},
+            onSkipForward: {},
+            onSkipBackward: {},
+            isCurrentlyPlaying: { false },
+            bluetoothMonitoring: true,
+            bluetoothDelay: 2
+        )
+        harness.service.refreshPreviousDeviceInfo()
+
+        devices.defaultID = 42
+        devices.deviceIDs = [42, 99]
+        devices.bluetoothIDs = [42]
+        harness.service.handleDefaultOutputChange()
+
+        XCTAssertEqual(harness.invalidationCount(), 1)
+        XCTAssertEqual(secondInvalidationCount, 1)
+        XCTAssertEqual(harness.service.activeOwnerID, originalActiveOwner)
+        XCTAssertNil(harness.service.playingOwnerID)
     }
 
     func testBluetoothDeviceStillInListOnlyRefreshesBaseline() {
@@ -232,6 +302,7 @@ final class AudioRouteMonitoringTests: XCTestCase {
     ) -> Harness {
         var messages: [String] = []
         var pauseCalls = 0
+        var invalidationCalls = 0
         var isPlaying = playing
         let ownerID = UUID()
         let service = NowPlayingService(
@@ -246,6 +317,7 @@ final class AudioRouteMonitoringTests: XCTestCase {
             ownerID: ownerID,
             onPlay: { isPlaying = true },
             onPause: { isPlaying = false },
+            onAudioRouteInvalidated: { invalidationCalls += 1 },
             onAudioRouteChangePause: {
                 pauseCalls += 1
                 isPlaying = false
@@ -263,6 +335,7 @@ final class AudioRouteMonitoringTests: XCTestCase {
             ownerID: ownerID,
             logs: { messages },
             pauseCount: { pauseCalls },
+            invalidationCount: { invalidationCalls },
             setPlaying: { isPlaying = $0 }
         )
     }

@@ -117,7 +117,7 @@ struct NewFolderSheet: View {
                 Spacer()
                 Button("Create", action: onCreate)
                     .keyboardShortcut(.return, modifiers: [])
-                    .disabled(folderName.isEmpty)
+                    .disabled(BookFolder.normalizedName(folderName) == nil)
             }
         }
         .padding()
@@ -201,18 +201,15 @@ struct MoveFolderSheet: View {
                             }
                             Spacer()
                             Button("Create") {
-                                let name = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-                                guard !name.isEmpty else { return }
+                                guard let name = BookFolder.normalizedName(newFolderName) else { return }
                                 onCreateFolder(name, newFolderParent)
                                 // Select the newly created folder as destination
-                                let sanitized = name.replacingOccurrences(of: "/", with: "-")
-                                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                                let newPath = newFolderParent.isEmpty ? sanitized : "\(newFolderParent)/\(sanitized)"
+                                let newPath = newFolderParent.isEmpty ? name : "\(newFolderParent)/\(name)"
                                 selectedPath = newPath
                                 newFolderName = ""
                                 showNewFolder = false
                             }
-                            .disabled(newFolderName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(BookFolder.normalizedName(newFolderName) == nil)
                         }
                     }
                     .padding(.vertical, 4)
@@ -275,8 +272,8 @@ struct RenameFolderSheet: View {
                 Spacer()
                 Button("Rename", action: onRename)
                     .keyboardShortcut(.return, modifiers: [])
-                    .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                              || newName.trimmingCharacters(in: .whitespacesAndNewlines) == currentName)
+                    .disabled(BookFolder.normalizedName(newName) == nil
+                              || BookFolder.normalizedName(newName) == currentName)
             }
         }
         .padding()

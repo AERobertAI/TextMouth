@@ -77,6 +77,52 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
         ), .heading)
     }
 
+    /// F and B provide quick, unmodified cycling while text-field focus policy
+    /// still prevents either key from interrupting typing.
+    func testNavigationUnitCycleShortcutsDefaultToPlainFAndB() {
+        XCTAssertEqual(
+            ShortcutAction.defaultBindings[.cycleForwardNavigationUnit],
+            [KeyBinding(key: "f")]
+        )
+        XCTAssertEqual(
+            ShortcutAction.defaultBindings[.cycleBackwardNavigationUnit],
+            [KeyBinding(key: "b")]
+        )
+    }
+
+    /// Keyboard cycling follows the picker order and wraps continuously.
+    func testNavigationUnitCyclingUsesPickerOrderAndWraps() {
+        for (current, next) in zip(SkipUnit.allCases, SkipUnit.allCases.dropFirst()) {
+            XCTAssertEqual(current.nextNavigationUnit, next)
+        }
+        XCTAssertEqual(SkipUnit.bookmark.nextNavigationUnit, .seconds10)
+    }
+
+    /// Adding F/B defaults in an upgrade must never steal a binding that the
+    /// user already assigned to an older action.
+    func testNewShortcutDefaultsDoNotDuplicateLegacyCustomBindings() throws {
+        let suiteName = UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let existingForwardBinding = KeyBinding(key: "f")
+        let saved = [
+            ShortcutAction.whereAmI.rawValue: [existingForwardBinding],
+        ]
+        defaults.set(try JSONEncoder().encode(saved), forKey: "customKeyboardBindings")
+
+        let manager = KeyboardShortcutManager(
+            userDefaults: defaults,
+            installsEventMonitor: false
+        )
+
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [existingForwardBinding])
+        XCTAssertTrue(manager.bindingsFor(.cycleForwardNavigationUnit).isEmpty)
+        XCTAssertEqual(
+            manager.bindingsFor(.cycleBackwardNavigationUnit),
+            [KeyBinding(key: "b")]
+        )
+    }
+
     func testAddingBindingRemovesItFromPreviousAction() throws {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
         let manager = KeyboardShortcutManager(

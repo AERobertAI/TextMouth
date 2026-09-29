@@ -107,6 +107,13 @@ extension LibraryViewModel {
         }
 
         var proposed = proposedLibrary
+        let existingPaths = Set(library.folders.map(\.fullPath))
+        let changedFolders = proposed.folders.filter { !existingPaths.contains($0.fullPath) }
+        guard changedFolders.allSatisfy({ BookFolder.isValidLibraryPath($0.fullPath) }),
+              proposed.books.filter({ affectedBookIDs.contains($0.id) })
+                .allSatisfy({ BookFolder.isValidLibraryPath($0.folderPath) }) else {
+            throw FileImportError.importFailed("A destination folder path is invalid.")
+        }
         var moves: [Move] = []
         for bookID in affectedBookIDs {
             guard let original = library.books.first(where: { $0.id == bookID }),
@@ -143,6 +150,11 @@ extension LibraryViewModel {
             for move in moves {
                 try move.updated.saveBookInfoThrowing()
             }
+            // Empty folders have no book move to create their destinations.
+            // Materialize changed folder paths before publishing the model.
+            for folder in changedFolders {
+                try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+            }
         } catch {
             for move in completedMoves.reversed() {
                 try? FileManager.default.moveItem(at: move.destination, to: move.source)
@@ -163,12 +175,34 @@ extension LibraryViewModel {
 
     // MARK: - Metadata and State Updates
 
-    func updateReadingPosition(bookID: UUID, position: ReadingPosition) {
+    /// Updates the shared in-memory snapshot used by library rows without
+    /// writing to disk. Reader windows call this at a throttled cadence so the
+    /// library and reader calculate remaining time from the same cursor.
+    func updateLiveReadingPosition(bookID: UUID, position: ReadingPosition) {
+        guard let index = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        let existing = library.books[index].readingPosition
+        guard existing?.chapterIndex != position.chapterIndex
+                || existing?.characterOffset != position.characterOffset
+                || existing?.globalCharacterOffset != position.globalCharacterOffset else {
+            return
+        }
+        library.books[index].readingPosition = position
+    }
+
+    /// Persists a reading checkpoint to both the library index and the book's
+    /// package metadata. This is intentionally separate from live publication.
+    func persistReadingPosition(bookID: UUID, position: ReadingPosition) {
         library.updateReadingPosition(bookID: bookID, position: position)
         save()
         if let book = library.books.first(where: { $0.id == bookID }) {
             LibraryPersistenceService.saveBookInfo(for: book)
         }
+    }
+
+    /// Compatibility name for navigation and bookmark call sites that expect
+    /// an immediate durable checkpoint.
+    func updateReadingPosition(bookID: UUID, position: ReadingPosition) {
+        persistReadingPosition(bookID: bookID, position: position)
     }
 
     func updateBookMetadata(_ updatedBook: Book) {
@@ -197,6 +231,15 @@ extension LibraryViewModel {
             book.localVoiceID = voiceID
             book.localWPM = wpm
             book.localPitch = pitch
+        }
+    }
+
+    /// Persist both per-book navigation-unit overrides as one atomic update so
+    /// shared-menu changes cannot briefly leave the two directions out of sync.
+    func updateLocalSkipUnits(bookID: UUID, forward: String?, backward: String?) {
+        updateBook(id: bookID) { book in
+            book.localSkipForwardUnit = forward
+            book.localSkipBackwardUnit = backward
         }
     }
 

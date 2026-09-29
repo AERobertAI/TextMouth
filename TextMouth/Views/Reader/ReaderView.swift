@@ -151,9 +151,9 @@ struct ReaderView: View {
                 Button {
                     showVoicePicker.toggle()
                 } label: {
-                    Label("Voice", systemImage: "person.wave.2")
+                        Label(viewModel.isAudioBook ? "Speed" : "Voice", systemImage: "person.wave.2")
                 }
-                .accessibilityLabel("Change voice for this book")
+                .accessibilityLabel(viewModel.isAudioBook ? "Change audio speed for this book" : "Change voice for this book")
 
                 Button {
                     showMetadataEditor.toggle()
@@ -290,47 +290,61 @@ struct BookVoicePickerView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Voice & Speed for This Book")
+            Text(viewModel.isAudioBook ? "Audio Speed for This Book" : "Voice & Speed for This Book")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
             Form {
-                Section {
-                    Picker("Language", selection: $selectedLanguage) {
-                        Text("All").tag("")
-                        ForEach(availableLanguages, id: \.self) { lang in
-                            Text(Locale.current.localizedString(forLanguageCode: lang) ?? lang)
-                                .tag(lang)
+                if viewModel.isAudioBook {
+                    // Audio settings use multipliers throughout; the TTS WPM
+                    // slider would otherwise write incompatible local state.
+                    Section("Audio Speed") {
+                        Slider(value: Binding(
+                            get: { viewModel.audioSpeed },
+                            set: { viewModel.adjustAudioSpeed(delta: $0 - viewModel.audioSpeed) }
+                        ), in: 0.25...4.0, step: 0.25) {
+                            Text("Audio speed")
                         }
+                        .accessibilityValue(String(format: "%.2f times speed", viewModel.audioSpeed))
+                        Text(String(format: "%.2fx", viewModel.audioSpeed))
                     }
-                    .accessibilityLabel("Voice language filter")
-
-                    Picker("Voice", selection: Binding(
-                        get: { viewModel.speechService.currentVoice?.identifier ?? "" },
-                        set: { id in
-                            if let voice = AVSpeechSynthesisVoice(identifier: id) {
-                                viewModel.setLocalVoice(voice)
+                } else {
+                    Section {
+                        Picker("Language", selection: $selectedLanguage) {
+                            Text("All").tag("")
+                            ForEach(availableLanguages, id: \.self) { lang in
+                                Text(Locale.current.localizedString(forLanguageCode: lang) ?? lang)
+                                    .tag(lang)
                             }
                         }
-                    )) {
-                        ForEach(filteredVoices, id: \.identifier) { voice in
-                            HStack {
-                                Text(voice.name)
-                                Text("(\(voiceQualityLabel(voice)))")
-                                    .foregroundColor(.secondary)
-                            }
-                            .tag(voice.identifier)
-                            .accessibilityLabel("\(voice.name), \(voiceQualityLabel(voice)) quality")
-                        }
-                    }
-                    .accessibilityLabel("Select voice for this book")
+                        .accessibilityLabel("Voice language filter")
 
-                    Button("Preview Voice") {
-                        previewVoice()
-                    }
-                    .accessibilityLabel("Preview selected voice")
-                } header: {
-                    Text("Voice")
+                        Picker("Voice", selection: Binding(
+                            get: { viewModel.speechService.currentVoice?.identifier ?? "" },
+                            set: { id in
+                                if let voice = AVSpeechSynthesisVoice(identifier: id) {
+                                    viewModel.setLocalVoice(voice)
+                                }
+                            }
+                        )) {
+                            ForEach(filteredVoices, id: \.identifier) { voice in
+                                HStack {
+                                    Text(voice.name)
+                                    Text("(\(voiceQualityLabel(voice)))")
+                                        .foregroundColor(.secondary)
+                                }
+                                .tag(voice.identifier)
+                                .accessibilityLabel("\(voice.name), \(voiceQualityLabel(voice)) quality")
+                            }
+                        }
+                        .accessibilityLabel("Select voice for this book")
+
+                        Button("Preview Voice") {
+                            previewVoice()
+                        }
+                        .accessibilityLabel("Preview selected voice")
+                    } header: {
+                        Text("Voice")
                 }
 
                 Section {
@@ -387,6 +401,7 @@ struct BookVoicePickerView: View {
                 } header: {
                     Text("Pitch")
                 }
+                }
 
                 Section {
                     Picker("When this book ends", selection: Binding(
@@ -410,18 +425,20 @@ struct BookVoicePickerView: View {
                 }
 
                 Section {
-                    Button("Save to Global Settings") {
-                        viewModel.saveSettingsToGlobal()
+                    if !viewModel.isAudioBook {
+                        Button("Save to Global Settings") {
+                            viewModel.saveSettingsToGlobal()
+                        }
+                        .accessibilityLabel("Save this book's voice and speed as the global defaults")
+                        .accessibilityHint("Updates the default voice and speed for all books that don't have their own settings")
                     }
-                    .accessibilityLabel("Save this book's voice and speed as the global defaults")
-                    .accessibilityHint("Updates the default voice and speed for all books that don't have their own settings")
 
                     if viewModel.hasLocalSettings {
-                        Button("Reset to Global Settings") {
+                        Button(viewModel.isAudioBook ? "Reset to Normal Speed" : "Reset to Global Settings") {
                             viewModel.resetToGlobalSettings()
                         }
-                        .accessibilityLabel("Reset to global voice and speed settings")
-                        .accessibilityHint("Removes book-specific voice and speed, uses global defaults instead")
+                        .accessibilityLabel(viewModel.isAudioBook ? "Reset to normal audio speed" : "Reset to global voice and speed settings")
+                        .accessibilityHint(viewModel.isAudioBook ? "Resets this book to 1 times speed" : "Removes book-specific voice and speed, uses global defaults instead")
                     }
                 }
             }
@@ -431,7 +448,7 @@ struct BookVoicePickerView: View {
         }
         .padding()
         .frame(width: 450, height: 600)
-        .navigationTitle("Voice & Speed: \(viewModel.book.title)")
+        .navigationTitle("\(viewModel.isAudioBook ? "Audio Speed" : "Voice & Speed"): \(viewModel.book.title)")
         .onAppear {
             // Default to the current voice's language
             if let voice = viewModel.speechService.currentVoice {
@@ -673,8 +690,10 @@ enum JumpInputValidator {
         let (hoursValue, minutesValue, secondsValue) = (values[0], values[1], values[2])
         guard minutesValue < 60 else { return .error("Minutes must be less than 60.") }
         guard secondsValue < 60 else { return .error("Seconds must be less than 60.") }
-        let total = TimeInterval(hoursValue * 3_600 + minutesValue * 60 + secondsValue)
-        guard total <= bookLength else {
+        // Convert before multiplying: a valid Int in the hours field can still
+        // overflow integer arithmetic before normal book-length validation.
+        let total = TimeInterval(hoursValue) * 3_600 + TimeInterval(minutesValue) * 60 + TimeInterval(secondsValue)
+        guard bookLength.isFinite, total <= bookLength else {
             return .error("Time exceeds book length. Maximum is \(TimeFormatting.spoken(bookLength)).")
         }
         return .value(total)

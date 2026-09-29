@@ -4,6 +4,76 @@ import XCTest
 /// Regression coverage for non-destructive Trash failures.
 @MainActor
 final class DeletionSafetyTests: XCTestCase {
+    /// A failed legacy migration must never turn Remove Book into deletion of
+    /// Library or one of its folders. Validate without invoking Trash.
+    func testLegacyBookWithoutPackageNameIsRejectedAsDeletionTarget() {
+        var book = makeBook(title: "Legacy")
+        book.tmbDirectoryName = ""
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book))
+        book.folderPath = "Essays"
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book))
+    }
+
+    /// Traversal and unrelated content paths must fail the same production
+    /// guard used immediately before deleting a package.
+    func testDeletionRejectsTraversalAndMismatchedContent() {
+        var book = makeBook(title: "Invalid Path")
+        book.tmbDirectoryName = "../Outside.tmb"
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book))
+        book.tmbDirectoryName = "Book.tmb"
+        book.folderPath = ".."
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book))
+        book.folderPath = ""
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book))
+    }
+
+    /// A package symlink must not redirect deletion outside the managed root.
+    func testDeletionRejectsPackageSymlinkOutsideLibrary() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let library = root.appendingPathComponent("Library")
+        let outside = root.appendingPathComponent("Outside.tmb")
+        try FileManager.default.createDirectory(at: library, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let alias = library.appendingPathComponent("Alias.tmb")
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: outside)
+        var book = makeBook(title: "Alias")
+        book.tmbDirectoryName = "Alias.tmb"
+        book.filePath = alias.appendingPathComponent("book.txt").path
+
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book, libraryDirectory: library))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: outside.path))
+    }
+
+    /// Library containment alone cannot authorize deleting another package
+    /// reached through an alias. Neither the alias nor its target is removed.
+    func testDeletionRejectsPackageSymlinkToAnotherManagedBook() throws {
+        let library = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: library) }
+        let target = library.appendingPathComponent("Target.tmb")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let content = target.appendingPathComponent("book.txt")
+        try Data("Retain this book".utf8).write(to: content)
+        let alias = library.appendingPathComponent("Alias.tmb")
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: target)
+        var book = makeBook(title: "Alias")
+        book.tmbDirectoryName = "Alias.tmb"
+        book.filePath = alias.appendingPathComponent("book.txt").path
+
+        XCTAssertThrowsError(try FileImportService.managedPackageURLForDeletion(book, libraryDirectory: library))
+        XCTAssertEqual(try String(contentsOf: content), "Retain this book")
+    }
+
+    /// Ordinary managed packages retain their existing deletion path.
+    func testDeletionAcceptsManagedPackage() throws {
+        var book = makeBook(title: "Managed")
+        book.filePath = book.tmbDirectory.appendingPathComponent("book.txt").path
+        XCTAssertEqual(
+            try FileImportService.managedPackageURLForDeletion(book),
+            book.tmbDirectory.standardizedFileURL.resolvingSymlinksInPath()
+        )
+    }
+
     func testTrashFailureNeverFallsBackToPermanentDeletion() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try Data("keep me".utf8).write(to: file)

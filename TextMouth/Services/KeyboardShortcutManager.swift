@@ -33,9 +33,18 @@ final class KeyboardShortcutManager: ObservableObject {
             }
             // Merge with defaults for any new actions not yet saved
             let defaults = ShortcutAction.defaultBindings
+            var claimedBindings = Set(loaded.values.flatMap { $0 })
             for action in ShortcutAction.allCases {
                 if loaded[action] == nil {
-                    loaded[action] = defaults[action] ?? []
+                    // Preserve existing custom ownership during upgrades. A
+                    // newly introduced default must not duplicate an older
+                    // user-assigned binding because dictionary iteration would
+                    // otherwise make the action that fires nondeterministic.
+                    let availableDefaults = (defaults[action] ?? []).filter {
+                        !claimedBindings.contains($0)
+                    }
+                    loaded[action] = availableDefaults
+                    claimedBindings.formUnion(availableDefaults)
                 }
             }
             bindings = loaded

@@ -73,10 +73,11 @@ extension ReaderViewModel {
     func jumpToGlobalOffset(_ globalOffset: Int) {
         guard let content = content else { return }
         let target = content.location(forGlobalOffset: globalOffset)
-        // savePositionForReturn so the user can press Return-to-Saved
-        // to undo a jump that landed them somewhere unexpected — same
-        // affordance heading/bookmark navigation provides.
-        savePositionForReturn()
-        navigateTo(chapterIndex: target.chapterIndex, characterOffset: target.localOffset)
+        // Route through the shared departure-point helper so percent/time
+        // jumps retain the same Return affordance as heading and bookmark jumps.
+        navigatePreservingReturnPosition(
+            chapterIndex: target.chapterIndex,
+            characterOffset: target.localOffset
+        )
     }
 }

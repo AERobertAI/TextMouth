@@ -2,6 +2,14 @@ import SwiftUI
 
 struct PlaybackControlsView: View {
     @ObservedObject var viewModel: ReaderViewModel
+    /// Settings are a separate observable object from the reader. Observing
+    /// both is required for already-open playback bars to reflect changes.
+    @ObservedObject private var settingsViewModel: SettingsViewModel
+
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        self.settingsViewModel = viewModel.settingsViewModel
+    }
 
     var body: some View {
         HStack(spacing: 20) {
@@ -12,7 +20,7 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipBackwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip backward: \(viewModel.settingsViewModel.skipBackwardUnit.rawValue)")
+            .accessibilityLabel("Skip backward: \(viewModel.playbackSkipBackwardUnit.rawValue)")
             .buttonStyle(.plain)
 
             // Play/Pause
@@ -34,11 +42,17 @@ struct PlaybackControlsView: View {
                 Image(systemName: skipForwardIcon)
                     .font(.title2)
             }
-            .accessibilityLabel("Skip forward: \(viewModel.settingsViewModel.skipForwardUnit.rawValue)")
+            .accessibilityLabel("Skip forward: \(viewModel.playbackSkipForwardUnit.rawValue)")
             .buttonStyle(.plain)
 
+            if settingsViewModel.playbackNavigationUnitControlMode == .separate {
+                separateNavigationUnitsMenu
+            } else if settingsViewModel.playbackNavigationUnitControlMode == .shared {
+                sharedNavigationUnitPicker
+            }
+
             // Bookmark toggle button (hidden by default, shown via settings)
-            if viewModel.settingsViewModel.showBookmarkInPlaybackControls {
+            if settingsViewModel.showBookmarkInPlaybackControls {
                 Button {
                     viewModel.toggleBookmarkAtCurrentPosition()
                 } label: {
@@ -52,10 +66,10 @@ struct PlaybackControlsView: View {
             Spacer()
 
             // Speed controls (can be hidden via settings)
-            if viewModel.settingsViewModel.showSpeedInPlaybackControls {
+            if settingsViewModel.showSpeedInPlaybackControls {
             HStack(spacing: 8) {
                 Button {
-                    viewModel.adjustSpeed(delta: viewModel.isAudioBook ? -0.25 : -25)
+                    viewModel.stepSpeed(forward: false)
                 } label: {
                     Image(systemName: "tortoise")
                         .font(.caption)
@@ -64,10 +78,10 @@ struct PlaybackControlsView: View {
                 .buttonStyle(.plain)
 
                 if viewModel.isAudioBook {
-                    Text(String(format: "%.1fx", viewModel.audioSpeed))
+                    Text(String(format: "%.2fx", viewModel.audioSpeed))
                         .font(.system(.body, design: .monospaced))
-                        .frame(width: 40)
-                        .accessibilityLabel(String(format: "%.1f times speed", viewModel.audioSpeed))
+                        .frame(minWidth: 50)
+                        .accessibilityLabel(String(format: "%.2f times speed", viewModel.audioSpeed))
                 } else {
                     Text("\(Int(viewModel.currentWPM))")
                         .font(.system(.body, design: .monospaced))
@@ -76,7 +90,7 @@ struct PlaybackControlsView: View {
                 }
 
                 Button {
-                    viewModel.adjustSpeed(delta: viewModel.isAudioBook ? 0.25 : 25)
+                    viewModel.stepSpeed(forward: true)
                 } label: {
                     Image(systemName: "hare")
                         .font(.caption)
@@ -84,7 +98,7 @@ struct PlaybackControlsView: View {
                 .accessibilityLabel(viewModel.isAudioBook ? "Increase speed by 0.25x" : "Increase speed by 25 words per minute")
                 .buttonStyle(.plain)
 
-                if viewModel.hasLocalSettings {
+                if viewModel.hasLocalSettings && !viewModel.isAudioBook {
                     Button {
                         viewModel.saveSettingsToGlobal()
                     } label: {
@@ -136,30 +150,66 @@ struct PlaybackControlsView: View {
     }
 
     private var skipBackwardIcon: String {
-        let unit = viewModel.settingsViewModel.skipBackwardUnit
-        switch unit {
-        case .seconds10: return "gobackward.10"
-        case .seconds15: return "gobackward.15"
-        case .seconds30: return "gobackward.30"
-        case .seconds60: return "gobackward.60"
-        case .sentence: return "text.line.first.and.arrowtriangle.forward"
-        case .paragraph: return "text.justify.left"
-        case .heading, .subheading: return "backward.end.fill"
-        case .bookmark: return "bookmark.fill"
-        }
+        viewModel.playbackSkipBackwardUnit.iconName(forward: false)
     }
 
     private var skipForwardIcon: String {
-        let unit = viewModel.settingsViewModel.skipForwardUnit
-        switch unit {
-        case .seconds10: return "goforward.10"
-        case .seconds15: return "goforward.15"
-        case .seconds30: return "goforward.30"
-        case .seconds60: return "goforward.60"
-        case .sentence: return "text.line.last.and.arrowtriangle.forward"
-        case .paragraph: return "text.justify.right"
-        case .heading, .subheading: return "forward.end.fill"
-        case .bookmark: return "bookmark.fill"
+        viewModel.playbackSkipForwardUnit.iconName(forward: true)
+    }
+
+    /// Match the settings-panel style in shared mode: one directly operable
+    /// popup picker, without an otherwise redundant one-item parent menu.
+    private var sharedNavigationUnitPicker: some View {
+        Picker("Navigation unit", selection: Binding(
+            get: { viewModel.playbackSkipForwardUnit },
+            set: { viewModel.setSharedPlaybackSkipUnit($0) }
+        )) {
+            ForEach(SkipUnit.allCases, id: \.self) { unit in
+                Text(unit.rawValue).tag(unit)
+            }
         }
+        .pickerStyle(.menu)
+        // Supplying label and value separately preserves the popup role while
+        // producing “Navigation unit, 15 seconds” without an abbreviated or
+        // duplicated native value.
+        .accessibilityLabel("Navigation unit")
+        .accessibilityValue(viewModel.playbackSkipForwardUnit.rawValue)
+        .help("Change this book's forward and backward navigation unit")
+    }
+
+    /// Separate mode uses one top-level control. Its two labeled picker
+    /// submenus keep independent values without scattering controls around
+    /// the rewind and fast-forward buttons.
+    private var separateNavigationUnitsMenu: some View {
+        Menu {
+            Picker("Forward navigation unit", selection: Binding(
+                get: { viewModel.playbackSkipForwardUnit },
+                set: { viewModel.setPlaybackSkipUnit($0, direction: .forward) }
+            )) {
+                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                    Text(unit.rawValue).tag(unit)
+                }
+            }
+
+            Picker("Backward navigation unit", selection: Binding(
+                get: { viewModel.playbackSkipBackwardUnit },
+                set: { viewModel.setPlaybackSkipUnit($0, direction: .backward) }
+            )) {
+                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                    Text(unit.rawValue).tag(unit)
+                }
+            }
+        } label: {
+            Label("Navigation units", systemImage: "arrow.left.arrow.right.circle")
+                .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .accessibilityLabel("Navigation units")
+        .accessibilityValue(
+            "Forward navigation unit: \(viewModel.playbackSkipForwardUnit.rawValue); "
+                + "backward navigation unit: \(viewModel.playbackSkipBackwardUnit.rawValue)"
+        )
+        .accessibilityHint("Choose separate forward and backward navigation units for this book")
+        .help("Change this book's forward and backward navigation units")
     }
 }

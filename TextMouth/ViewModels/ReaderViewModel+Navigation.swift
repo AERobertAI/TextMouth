@@ -5,6 +5,86 @@ import AppKit
 
 extension ReaderViewModel {
 
+    /// Effective unit shown and used by the playback forward button. Hidden
+    /// menus intentionally ignore saved book overrides and use global choices.
+    var playbackSkipForwardUnit: SkipUnit {
+        playbackSkipUnits.forward
+    }
+
+    /// Effective unit shown and used by the playback backward button.
+    var playbackSkipBackwardUnit: SkipUnit {
+        playbackSkipUnits.backward
+    }
+
+    /// Resolve both directions once through the shared, independently-tested
+    /// policy so UI labels, button icons, and navigation actions cannot drift.
+    private var playbackSkipUnits: (forward: SkipUnit, backward: SkipUnit) {
+        PlaybackSkipUnitPolicy.resolve(
+            mode: settingsViewModel.playbackNavigationUnitControlMode,
+            localForwardRawValue: book.localSkipForwardUnit,
+            localBackwardRawValue: book.localSkipBackwardUnit,
+            globalForward: settingsViewModel.skipForwardUnit,
+            globalBackward: settingsViewModel.skipBackwardUnit
+        )
+    }
+
+    /// Save one per-book unit for both playback directions.
+    func setSharedPlaybackSkipUnit(_ unit: SkipUnit) {
+        persistPlaybackSkipUnits(forward: unit, backward: unit)
+        announceToVoiceOver(unit.playbackMenuAccessibilityLabel())
+    }
+
+    /// Save a per-book unit for one playback direction while preserving the
+    /// other direction's current effective choice.
+    func setPlaybackSkipUnit(_ unit: SkipUnit, direction: PlaybackSkipDirection) {
+        switch direction {
+        case .forward:
+            persistPlaybackSkipUnits(forward: unit, backward: playbackSkipBackwardUnit)
+            announceToVoiceOver(unit.playbackMenuAccessibilityLabel(direction: .forward))
+        case .backward:
+            persistPlaybackSkipUnits(forward: playbackSkipForwardUnit, backward: unit)
+            announceToVoiceOver(unit.playbackMenuAccessibilityLabel(direction: .backward))
+        }
+    }
+
+    /// Advance one direction through the unit picker and announce the complete
+    /// new value. Shared mode intentionally treats either key as editing the
+    /// one common unit. Hidden-control mode edits the corresponding global
+    /// fallback because no per-book choice is active in that mode.
+    func cyclePlaybackSkipUnit(direction: PlaybackSkipDirection) {
+        let currentUnit = direction == .forward
+            ? playbackSkipForwardUnit
+            : playbackSkipBackwardUnit
+        let nextUnit = currentUnit.nextNavigationUnit
+
+        switch settingsViewModel.playbackNavigationUnitControlMode {
+        case .none:
+            switch direction {
+            case .forward:
+                settingsViewModel.skipForwardUnit = nextUnit
+            case .backward:
+                settingsViewModel.skipBackwardUnit = nextUnit
+            }
+            announceToVoiceOver(nextUnit.playbackMenuAccessibilityLabel(direction: direction))
+        case .shared:
+            setSharedPlaybackSkipUnit(nextUnit)
+        case .separate:
+            setPlaybackSkipUnit(nextUnit, direction: direction)
+        }
+    }
+
+    /// Update the observable reader copy and the durable library/package copy
+    /// together so icons refresh immediately and values survive reopening.
+    private func persistPlaybackSkipUnits(forward: SkipUnit, backward: SkipUnit) {
+        book.localSkipForwardUnit = forward.rawValue
+        book.localSkipBackwardUnit = backward.rawValue
+        libraryViewModel.updateLocalSkipUnits(
+            bookID: book.id,
+            forward: forward.rawValue,
+            backward: backward.rawValue
+        )
+    }
+
     /// Convert an original-text offset to modified-text space and seek the speech service.
     /// Falls back to using the offset directly if no transformation pipeline is active.
     func seekSpeechService(toOriginalOffset offset: Int) {
@@ -25,7 +105,7 @@ extension ReaderViewModel {
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipForward)
         let unit = Self.selectedSkipUnit(
-            primary: settingsViewModel.skipForwardUnit,
+            primary: playbackSkipForwardUnit,
             secondary: settingsViewModel.shiftSkipForwardUnit,
             useSecondary: useShiftUnit
         )
@@ -40,7 +120,7 @@ extension ReaderViewModel {
         cancelWhereAmIIfActive()
         soundEffectService?.play(for: .skipBackward)
         let unit = Self.selectedSkipUnit(
-            primary: settingsViewModel.skipBackwardUnit,
+            primary: playbackSkipBackwardUnit,
             secondary: settingsViewModel.shiftSkipBackwardUnit,
             useSecondary: useShiftUnit
         )
@@ -592,7 +672,10 @@ extension ReaderViewModel {
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
-            navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: heading.chapterIndex,
+                characterOffset: heading.characterOffset
+            )
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
         }
@@ -606,7 +689,10 @@ extension ReaderViewModel {
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset
         ) {
-            navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+            navigatePreservingReturnPosition(
+                chapterIndex: heading.chapterIndex,
+                characterOffset: heading.characterOffset
+            )
             sleepTimerService.notifyHeadingBoundary(by: book.id)
             announceToVoiceOver("Heading: \(heading.text)")
         }
@@ -614,8 +700,10 @@ extension ReaderViewModel {
 
     /// Navigate to a specific heading (from table of contents), saving current position for return.
     func navigateToHeading(_ heading: Heading) {
-        savePositionForReturn()
-        navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
+        navigatePreservingReturnPosition(
+            chapterIndex: heading.chapterIndex,
+            characterOffset: heading.characterOffset
+        )
         autoPlayIfEnabled()
     }
 

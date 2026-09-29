@@ -8,6 +8,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let menuVisibilityManager = MenuVisibilityManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let buildIdentity = BuildIdentity.current
+        NSLog("%@", buildIdentity.diagnosticLine)
+        try? TextMouthPaths.ensureDirectoryStructure()
+        TextMouthPaths.appendLog(
+            to: TextMouthPaths.debugLogFile,
+            message: buildIdentity.diagnosticLine
+        )
+
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
 

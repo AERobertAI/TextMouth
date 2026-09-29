@@ -90,6 +90,53 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), 0)
     }
 
+    func testLibraryAndReaderTextEstimatesUseSameSnapshot() {
+        let totalWords = 12_000
+        let totalCharacters = 60_000
+        let cursor = 18_000
+        let wpm = 240.0
+        let totalDuration = Double(totalWords) / wpm * 60
+        let book = Book(
+            title: "Test",
+            format: .txt,
+            filePath: "test.txt",
+            md5Hash: "hash",
+            readingPosition: ReadingPosition(globalCharacterOffset: cursor),
+            totalWordCount: totalWords,
+            totalCharacterCount: totalCharacters
+        )
+        let readerEstimate = ReadingTimeEstimator.remaining(
+            totalDuration: totalDuration,
+            globalOffset: cursor,
+            totalCharacterCount: totalCharacters
+        )
+
+        XCTAssertEqual(book.estimatedTimeRemaining(wpm: wpm), readerEstimate)
+    }
+
+    func testAudioEstimateUsesAnalyzedDurationInsteadOfPlaceholderRounding() {
+        let analyzedDuration: TimeInterval = 7_321.75
+        let totalCharacters = 73_200
+        let cursor = 18_300
+        let book = Book(
+            title: "Audio",
+            format: .audio,
+            filePath: "audio.m4b",
+            md5Hash: "hash",
+            readingPosition: ReadingPosition(globalCharacterOffset: cursor),
+            totalCharacterCount: totalCharacters,
+            localWPM: 1.25,
+            audioDuration: analyzedDuration
+        )
+        let readerEstimate = ReadingTimeEstimator.remaining(
+            totalDuration: analyzedDuration / 1.25,
+            globalOffset: cursor,
+            totalCharacterCount: totalCharacters
+        )
+
+        XCTAssertEqual(book.estimatedTimeRemaining(wpm: 200), readerEstimate)
+    }
+
     func testMinuteCountdownExpiresAtZero() {
         var expirations = 0
         start(.minutes(1), onExpire: { expirations += 1 })
@@ -281,6 +328,56 @@ final class SleepTimerServiceTests: XCTestCase {
 
         XCTAssertTrue(service.isFadingOut)
         XCTAssertTrue(service.isActive)
+    }
+
+    func testStoppingActiveFadeInvokesCancellationCleanupOnce() {
+        var cancellationCount = 0
+        service.start(
+            duration: .minutes(1),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { cancellationCount += 1 },
+            fadeOutDuration: 30
+        )
+        service._expireForTesting()
+
+        service.stop()
+        service.stop()
+
+        XCTAssertEqual(cancellationCount, 1)
+    }
+
+    func testReplacingActiveFadeCleansUpPreviousOwner() {
+        var previousOwnerCleanups = 0
+        service.start(
+            duration: .minutes(1),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { previousOwnerCleanups += 1 },
+            fadeOutDuration: 30
+        )
+        service._expireForTesting()
+
+        start(.minutes(5), ownerID: UUID())
+
+        XCTAssertEqual(previousOwnerCleanups, 1)
+        XCTAssertTrue(service.isActive)
+        XCTAssertFalse(service.isFadingOut)
+    }
+
+    func testOrdinaryTimerStopDoesNotInvokeFadeCancellationCleanup() {
+        var cancellationCount = 0
+        service.start(
+            duration: .minutes(10),
+            ownerID: owner,
+            onExpire: {},
+            onFadeCancelled: { cancellationCount += 1 },
+            fadeOutDuration: 30
+        )
+
+        service.stop()
+
+        XCTAssertEqual(cancellationCount, 0)
     }
 
     func testStopClearsPausedStateForNextTimer() {

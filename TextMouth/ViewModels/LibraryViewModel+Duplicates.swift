@@ -110,8 +110,9 @@ extension LibraryViewModel {
         let parentPath = pendingZipFolderPath
         var proposed = library
         guard let folder = proposed.createFolder(name: folderName, parentPath: parentPath) else { return }
-        let hashes = Set(pendingZipBooks.map(\.md5Hash))
-        let affectedIDs = Set(proposed.books.filter { hashes.contains($0.md5Hash) }.map(\.id))
+        // Keeping both copies is supported; their hash cannot identify which
+        // copy belongs to this import's organization dialog.
+        let affectedIDs = Set(pendingZipBooks.map(\.id))
         for index in proposed.books.indices where affectedIDs.contains(proposed.books[index].id) {
             proposed.books[index].folderPath = folder.fullPath
         }

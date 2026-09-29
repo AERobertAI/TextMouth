@@ -47,6 +47,14 @@ final class ReadingStatsService: ObservableObject {
         save()
     }
 
+    /// Reader windows may stop or close while a different book is playing.
+    /// Only the session's owner can finalize it; app shutdown and starting a
+    /// different session retain the explicit unscoped operation above.
+    func endSession(bookID: UUID, at endTime: Date = Date()) {
+        guard sessionBookID == bookID else { return }
+        endSession(at: endTime)
+    }
+
     var hasActiveSession: Bool {
         sessionStartTime != nil && sessionBookID != nil
     }

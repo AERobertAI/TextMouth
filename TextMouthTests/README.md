@@ -40,7 +40,7 @@ during ordinary suites because the library-root build setting is otherwise empty
 
 ## Persisted content indexes
 
-Cache format `3.0.2` rebuilds every text-format cache once. During that background
+Cache format `3.0.4` rebuilds every older text-format cache once. During that background
 rebuild, TextMouth writes a versioned `contentIndex` into each package's
 `bookInfo.json`. The index stores chapter starts and lengths, per-chapter word
 counts, normalized heading IDs and local/global offsets, total counts, and—for
@@ -57,3 +57,38 @@ succeeds.
 The production profiler reports both `loadMilliseconds` for a cold index build
 and `indexedLoadMilliseconds` for the persisted-index path, plus
 `contentIndexBytes`, JSON encode/decode timing, and repeated derivation timing.
+
+## EPUB heading recovery
+
+`EPUBHeadingRecoveryTests` exercises synthetic EPUB 2/3 archives, incomplete
+navigation, nested fragment targets, chapter fallbacks, stale-cache/index
+replacement, retained reading state, and the actual reader's headings. Recovered
+labels use encoded `textmouth-heading` comments in generated Markdown so they
+provide destinations without adding speech. Ordinary Markdown parsing does not
+interpret those comments as headings.
+
+An optional corpus test reproduces the reported Helliconia 27-headings versus
+122-chapters mismatch. Point `TEXTMOUTH_EPUB_REGRESSION_FIXTURE` at a disposable
+directory containing a copy of that EPUB and its old `content.md`. Supply the
+value as an `xcodebuild test` build setting; the test bundle receives it through
+its Info.plist. The test skips when this setting is absent and never searches a
+user's library. See the [fix record](../EPUB-HEADINGS-FIX-2026-09-08.md) for the
+complete command and cache compatibility notes.
+
+`LibraryLifecycleTests` covers the utility-queue final release that caused the
+reported test-host crash, including actual timer invalidation and replacement.
+
+## Automatic cache-update performance
+
+`CacheUpdateTests` covers per-book progress, recovery from newer package
+checkpoints, forced manual extraction, failed updates, and bounded worker
+scheduling. Ordinary EPUBs use two utility workers; large sources and other
+formats run alone. The corpus test above also reports diagnostic single-book
+and serial/parallel batch times against disposable copies, with no timing-based
+assertions. See the [performance record](../CACHE-UPDATES-2026-09-09.md).
+
+Choose version bumps by processing stage: change
+`MarkdownCacheService.currentCacheVersion` for source-to-Markdown changes, and
+`BookContentIndex.currentVersion` for changes confined to reading/index
+derivation. The latter can reuse the existing Markdown instead of reconverting
+every source. This performance update leaves both version values unchanged.

@@ -313,12 +313,14 @@ test("DAISY 2.02 fragment extraction avoids whole-file duplicate wrapper text") 
     let refs = ["book.html#title_heading", "book.html#body_sentence"]
     let fragmentMarkdown = try extractDAISY202TestFragmentsFromHTML(["book.html": html], refs: refs)
 
-    try assertTrue(wholeFileMarkdown.contains("Opening Title Opening Title"),
-                   "Whole-file extraction should include duplicated wrapper text")
+    // Count occurrences directly so this tests duplication regardless of the
+    // paragraph separators used by a particular extraction path.
+    try assertEqual(wholeFileMarkdown.components(separatedBy: "Opening Title").count - 1, 2,
+                    "Whole-file extraction should include duplicated wrapper text")
     try assertTrue(fragmentMarkdown.contains("Opening Title"), "Fragment extraction should keep the heading text")
     try assertTrue(fragmentMarkdown.contains("First real sentence."), "Fragment extraction should keep the body text")
-    try assertTrue(!fragmentMarkdown.contains("Opening Title Opening Title"),
-                   "Fragment extraction should not repeat the title wrapper text")
+    try assertEqual(fragmentMarkdown.components(separatedBy: "Opening Title").count - 1, 1,
+                    "Fragment extraction should not repeat the title wrapper text")
 }
 
 test("DAISY 2.02 Markdown extraction follows SMIL text fragments") {

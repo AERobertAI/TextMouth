@@ -96,12 +96,15 @@ final class LibraryViewModel: ObservableObject {
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
-    /// Periodic refresh timer for time estimate updates
-    var refreshTimer: Timer?
+    /// Owns the main-run-loop timer through a handle that can cancel from any thread.
+    var refreshTimer: LibraryRefreshTimer?
     /// Shared config service used across extension files
     let configService = ConfigService.shared
 
-    init() {
+    /// An inert model lets previews and lifecycle tests opt out of disk migration,
+    /// observers, and background maintenance; the app uses the default startup.
+    init(initializeServices: Bool = true) {
+        guard initializeServices else { return }
         // Migrate from old sandbox container if needed (before loading library)
         migrateFromSandboxContainer()
 
@@ -130,7 +133,9 @@ final class LibraryViewModel: ObservableObject {
     }
 
     deinit {
-        MainActor.assumeIsolated { refreshTimer?.invalidate() }
+        // Background analysis can release the final reference. The handle moves
+        // timer cleanup to its owning thread without capturing this dying model.
+        refreshTimer?.invalidate()
     }
 
     // MARK: - Book Update Helpers
@@ -180,6 +185,29 @@ final class LibraryViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+}
+
+/// Keeps a Timer on the main run loop while allowing its owner to die on a worker
+/// queue. Global-actor isolation makes this handle Sendable; the Timer itself is
+/// accessed only on the thread where it was scheduled.
+@MainActor
+final class LibraryRefreshTimer {
+    let timer: Timer
+
+    /// Wrap a timer that was created on the main actor.
+    init(timer: Timer) {
+        self.timer = timer
+    }
+
+    /// Cancel immediately on the main thread, or keep just this handle alive until
+    /// the main queue can cancel. Repeated cancellation is safe for Foundation timers.
+    nonisolated func invalidate() {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { timer.invalidate() }
+        } else {
+            DispatchQueue.main.async { self.timer.invalidate() }
+        }
+    }
 }
 
 extension Notification.Name {

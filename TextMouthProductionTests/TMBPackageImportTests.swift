@@ -167,6 +167,36 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(repaired.folderPath, "Managed")
     }
 
+    /// Package-backed navigation defaults repair a legacy library snapshot
+    /// without overwriting any explicit unit already present in the library.
+    func testReconciliationRestoresMissingLocalSkipUnits() {
+        let id = UUID()
+        let existing = Book(
+            id: id,
+            title: "Book",
+            format: .txt,
+            filePath: "/old/book.txt",
+            md5Hash: "hash",
+            localSkipBackwardUnit: SkipUnit.seconds10.rawValue
+        )
+        let managed = Book(
+            id: id,
+            title: "Book",
+            format: .txt,
+            filePath: "/managed/Book.tmb/book.txt",
+            md5Hash: "hash",
+            tmbDirectoryName: "Book.tmb",
+            localSkipForwardUnit: SkipUnit.heading.rawValue,
+            localSkipBackwardUnit: SkipUnit.paragraph.rawValue
+        )
+
+        let repaired = FileImportService.reconciledLibraryBook(existing, with: managed)
+
+        XCTAssertEqual(repaired.localSkipForwardUnit, SkipUnit.heading.rawValue)
+        XCTAssertEqual(repaired.localSkipBackwardUnit, SkipUnit.seconds10.rawValue)
+        XCTAssertNotEqual(repaired, existing)
+    }
+
     private func makePackage(
         in parent: URL? = nil,
         originalFileName: String = "book.txt",

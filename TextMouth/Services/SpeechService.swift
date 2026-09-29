@@ -18,6 +18,173 @@ private final class RenderResultBox: @unchecked Sendable {
     }
 }
 
+/// Chooses a concrete recovery path for a paused TTS session. Keeping the
+/// decision independent from AVFoundation makes every desynchronized backend
+/// state testable, including the state seen in logs where TextMouth was paused
+/// but neither synthesizer nor audio engine could actually continue.
+enum SpeechResumePolicy {
+    enum Action: Equatable {
+        case switchToEngine(offset: Int)
+        case resumeEngine(offset: Int)
+        case continueDirect(offset: Int)
+        case restartDirect(offset: Int)
+        case startRenderedEngine(offset: Int)
+        case alreadyPlaying
+        case unavailable
+    }
+
+    static func action(
+        usingDirectMode: Bool,
+        pendingDirectSeekOffset: Int?,
+        engineHasRenderedAudio: Bool,
+        engineIsPaused: Bool,
+        engineIsPlaying: Bool,
+        directSynthIsPaused: Bool,
+        currentOffset: Int,
+        hasText: Bool
+    ) -> Action {
+        let safeOffset = max(0, currentOffset)
+
+        if let pendingOffset = pendingDirectSeekOffset {
+            if engineHasRenderedAudio {
+                return .switchToEngine(offset: max(0, pendingOffset))
+            }
+            return hasText ? .restartDirect(offset: max(0, pendingOffset)) : .unavailable
+        }
+        if !usingDirectMode, engineIsPaused {
+            return .resumeEngine(offset: safeOffset)
+        }
+        if usingDirectMode, engineHasRenderedAudio {
+            return .switchToEngine(offset: safeOffset)
+        }
+        if usingDirectMode, directSynthIsPaused {
+            return .continueDirect(offset: safeOffset)
+        }
+        if usingDirectMode {
+            // App state can remain paused after AVSpeechSynthesizer silently
+            // loses its utterance. A fresh utterance is the only useful path.
+            return hasText ? .restartDirect(offset: safeOffset) : .unavailable
+        }
+        if engineHasRenderedAudio, !engineIsPlaying {
+            return .startRenderedEngine(offset: safeOffset)
+        }
+        if engineIsPlaying {
+            return .alreadyPlaying
+        }
+        return hasText ? .restartDirect(offset: safeOffset) : .unavailable
+    }
+}
+
+/// A short, pre-volume-adjusted utterance used to fade direct speech.
+/// `AVSpeechUtterance.volume` only takes effect when assigned before the
+/// utterance is enqueued, so direct `AVSpeechSynthesizer` playback cannot use
+/// the audio engine's live mixer-volume updates.
+struct DirectSpeechFadeSegment: Equatable {
+    let text: String
+    let baseUTF16Offset: Int
+    let volume: Float
+
+    var endUTF16Offset: Int {
+        baseUTF16Offset + text.utf16Length
+    }
+}
+
+/// Builds the small utterance queue required to fade direct speech without
+/// losing the reader's absolute position. Kept independent of AVFoundation so
+/// Unicode offsets, volume progression, and edge cases can be unit-tested.
+enum DirectSpeechFadePlanner {
+    /// Two volume changes per second sound gradual without introducing the
+    /// many tiny utterance boundaries that can make synthesized speech choppy.
+    private static let segmentsPerSecond = 2.0
+    private static let maximumSegmentCount = 8
+
+    static func segments(
+        in text: String,
+        fromUTF16Offset requestedOffset: Int,
+        duration: TimeInterval,
+        wordsPerMinute: Double,
+        startingVolume: Float = 1
+    ) -> [DirectSpeechFadeSegment] {
+        guard !text.isEmpty, duration > 0 else { return [] }
+
+        let clampedOffset = max(0, min(requestedOffset, text.utf16Length))
+        let startIndex = text.index(atUTF16Offset: clampedOffset)
+        let normalizedOffset = text.utf16Offset(of: startIndex)
+        guard startIndex < text.endIndex else { return [] }
+
+        // Include a modest margin because voices do not all speak at exactly
+        // the calibrated WPM. The timer still stops playback at the requested
+        // wall-clock duration; extra queued words are never allowed to leak.
+        let estimatedWords = max(
+            1,
+            Int(ceil(max(1, wordsPerMinute) * duration / 60.0 * 1.25))
+        )
+        let remaining = text[startIndex...]
+        var wordRanges: [Range<String.Index>] = []
+        text.enumerateSubstrings(
+            in: startIndex..<text.endIndex,
+            options: [.byWords, .substringNotRequired]
+        ) { _, range, _, stop in
+            wordRanges.append(range)
+            if wordRanges.count >= estimatedWords {
+                stop = true
+            }
+        }
+
+        // A punctuation-only tail has no `.byWords` ranges, but it is still
+        // valid speakable input. Fade that remaining text as one utterance.
+        guard !wordRanges.isEmpty else {
+            return [DirectSpeechFadeSegment(
+                text: String(remaining),
+                baseUTF16Offset: normalizedOffset,
+                volume: max(0, min(startingVolume, 1)) * 0.5
+            )]
+        }
+
+        let requestedSegmentCount = max(1, Int(ceil(duration * segmentsPerSecond)))
+        let segmentCount = min(wordRanges.count, maximumSegmentCount, requestedSegmentCount)
+        var segments: [DirectSpeechFadeSegment] = []
+        var segmentStart = startIndex
+
+        for segmentIndex in 0..<segmentCount {
+            // Proportional endpoints distribute an uneven word count across
+            // the requested segment count without dropping any whitespace.
+            let wordEndIndex = Int(
+                ceil(Double(segmentIndex + 1) * Double(wordRanges.count) / Double(segmentCount))
+            ) - 1
+            let segmentEnd = wordRanges[wordEndIndex].upperBound
+            let segmentText = String(text[segmentStart..<segmentEnd])
+            // Use each interval's midpoint so even a one-second/two-segment
+            // fade audibly decreases instead of spending its first half at
+            // full volume and ending far above silence.
+            let relativeVolume = 1 - Float(segmentIndex * 2 + 1) / Float(segmentCount * 2)
+            let volume = max(0, min(startingVolume, 1)) * relativeVolume
+            segments.append(DirectSpeechFadeSegment(
+                text: segmentText,
+                baseUTF16Offset: text.utf16Offset(of: segmentStart),
+                volume: volume
+            ))
+            segmentStart = segmentEnd
+        }
+
+        return segments
+    }
+
+    enum CompletionAction: Equatable {
+        case continueFade(offset: Int)
+        case finishChapter
+    }
+
+    /// A fade queue that ends before the chapter must enqueue another quiet
+    /// continuation. Reaching the real text end follows ordinary chapter
+    /// completion so the reader cannot remain logically active but silent.
+    static func completionAction(queueEndOffset: Int, textUTF16Length: Int) -> CompletionAction {
+        queueEndOffset < textUTF16Length
+            ? .continueFade(offset: max(0, queueEndOffset))
+            : .finishChapter
+    }
+}
+
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
 /// Current-chapter and look-ahead renders must therefore never overlap.
@@ -117,13 +284,25 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// legitimate finish (and the next direct-speech chunk) to be discarded.
     private var liveDirectUtterance: AVSpeechUtterance?
 
+    /// Absolute offsets for the short utterances queued during a direct-mode
+    /// sleep fade. AVFoundation reports ranges relative to each utterance, so
+    /// callbacks need identity-based offsets to preserve the reader cursor.
+    private var directFadeOffsets: [ObjectIdentifier: Int] = [:]
+    private var directFadeLengths: [ObjectIdentifier: Int] = [:]
+    private var directFadeFinalUtteranceID: ObjectIdentifier?
+    private var isDirectSleepFadeActive = false
+    private var directFadeStartOffset = 0
+    private var directFadeContinuationDuration: TimeInterval = 0
+    private var directFadeTerminalVolume: Float = 0
+
     @Published var isSpeaking = false
     @Published var isPaused = false
     @Published var currentWordRange: NSRange?
     @Published var currentVoice: AVSpeechSynthesisVoice?
     @Published var wordsPerMinute: Double = 200 {
         didSet {
-            UserDefaults.standard.set(wordsPerMinute, forKey: "wordsPerMinute")
+            // This is a reader's effective speed. Only SettingsViewModel may
+            // persist global defaults; per-book overrides must stay local.
             if !usingDirectMode && audioEngine.isPlaying {
                 audioEngine.setSpeed(wpm: wordsPerMinute)
             }
@@ -132,7 +311,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Pitch multiplier (0.5 = half pitch, 1.0 = normal, 2.0 = double pitch)
     @Published var pitchMultiplier: Double = 1.0 {
         didSet {
-            UserDefaults.standard.set(pitchMultiplier, forKey: "pitchMultiplier")
+            // Applying a book's pitch must not overwrite the global setting.
             if !usingDirectMode && (audioEngine.isPlaying || audioEngine.isPaused) {
                 audioEngine.setPitch(multiplier: pitchMultiplier)
             }
@@ -535,12 +714,162 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private func stopDirectSynthesizer() {
         stopDirectPlaybackWatchdog()
         liveDirectUtterance = nil
+        clearDirectSleepFadeState()
         directSynth.stopSpeaking(at: .immediate)
+    }
+
+    /// Clear bookkeeping for a direct-speech fade. This does not alter the
+    /// synthesizer by itself and is safe from every stop and recovery path.
+    private func clearDirectSleepFadeState() {
+        directFadeOffsets.removeAll(keepingCapacity: false)
+        directFadeLengths.removeAll(keepingCapacity: false)
+        directFadeFinalUtteranceID = nil
+        isDirectSleepFadeActive = false
+        directFadeStartOffset = 0
+        directFadeContinuationDuration = 0
+        directFadeTerminalVolume = 0
+    }
+
+    /// Apply a sleep timer volume update to whichever speech backend is
+    /// actually audible. Rendered playback supports mixer updates directly.
+    /// Direct synthesis is switched to rendered audio when available; very
+    /// large chapters instead use pre-volume-adjusted utterance segments.
+    func setSleepTimerFadeVolume(_ volume: Float, duration: TimeInterval) {
+        guard isSpeaking, !isPaused else { return }
+
+        if usingDirectMode && !isDirectSleepFadeActive {
+            let offset = max(
+                0,
+                min(currentWordRange?.location ?? directModeBaseOffset, currentText.utf16Length)
+            )
+
+            if audioEngine.hasRenderedAudio {
+                transitionLog("SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
+                stopDirectSynthesizer()
+                usingDirectMode = false
+                audioEngine.setSpeed(wpm: wordsPerMinute)
+                audioEngine.setPitch(multiplier: pitchMultiplier)
+                audioEngine.play(fromCharOffset: offset)
+                if audioEngine.isPlaying {
+                    startPositionTracking()
+                } else {
+                    // Preserve an audible fade when a retained render cannot
+                    // restart, for example after a device-route transition.
+                    transitionLog("SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
+                    audioEngine.stop()
+                    prepareDirectSleepFade(
+                        fromUTF16Offset: offset,
+                        duration: duration * Double(max(0, volume)),
+                        startingVolume: volume
+                    )
+                }
+            } else {
+                prepareDirectSleepFade(
+                    fromUTF16Offset: offset,
+                    duration: duration * Double(max(0, volume)),
+                    startingVolume: volume
+                )
+            }
+        }
+
+        if !usingDirectMode {
+            audioEngine.setVolume(volume)
+        }
+    }
+
+    /// Replace the current direct utterance with a bounded queue whose volume
+    /// decreases segment by segment. The queue deliberately contains slightly
+    /// more speech than the timer should need; expiry always stops it at the
+    /// exact wall-clock deadline.
+    private func prepareDirectSleepFade(
+        fromUTF16Offset offset: Int,
+        duration: TimeInterval,
+        startingVolume: Float
+    ) {
+        let segments = DirectSpeechFadePlanner.segments(
+            in: currentText,
+            fromUTF16Offset: offset,
+            duration: duration,
+            wordsPerMinute: wordsPerMinute,
+            startingVolume: startingVolume
+        )
+        guard !segments.isEmpty else { return }
+
+        stopDirectSynthesizer()
+        usingDirectMode = true
+        directModeChunked = false
+        directModeBaseOffset = segments[0].baseUTF16Offset
+        directModeChunkEnd = segments.last?.endUTF16Offset ?? offset
+        directFadeStartOffset = segments[0].baseUTF16Offset
+        directFadeContinuationDuration = duration
+        directFadeTerminalVolume = segments.last?.volume ?? startingVolume
+        isDirectSleepFadeActive = true
+
+        let utterances = segments.map { segment -> AVSpeechUtterance in
+            let utterance = AVSpeechUtterance(string: segment.text)
+            utterance.voice = currentVoice
+            utterance.rate = Self.rateForWPM(wordsPerMinute)
+            utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
+            utterance.prefersAssistiveTechnologySettings = false
+            utterance.volume = segment.volume
+            let identifier = ObjectIdentifier(utterance)
+            directFadeOffsets[identifier] = segment.baseUTF16Offset
+            directFadeLengths[identifier] = segment.text.utf16Length
+            return utterance
+        }
+        guard let finalUtterance = utterances.last else { return }
+        directFadeFinalUtteranceID = ObjectIdentifier(finalUtterance)
+        // Keep a strong reference to the final queued utterance so resume
+        // policy sees a live direct session until the fade is stopped.
+        liveDirectUtterance = finalUtterance
+        transitionLog(
+            "SLEEP_FADE_DIRECT_STARTED: offset=\(directFadeStartOffset) segments=\(utterances.count) "
+                + "plannedEnd=\(directModeChunkEnd) duration=\(duration)"
+        )
+        for utterance in utterances {
+            directSynth.speak(utterance)
+        }
+    }
+
+    /// Restore normal-volume direct speech when a running fade is cancelled.
+    /// Rendered playback only needs its mixer volume restored.
+    func cancelSleepTimerFade() {
+        audioEngine.restoreVolume()
+        guard isDirectSleepFadeActive else { return }
+
+        let offset = max(
+            directFadeStartOffset,
+            min(currentWordRange?.location ?? directFadeStartOffset, currentText.utf16Length)
+        )
+        let shouldRestart = isSpeaking && !isPaused
+        transitionLog("SLEEP_FADE_CANCELLED: offset=\(offset) restart=\(shouldRestart)")
+        stopDirectSynthesizer()
+        if shouldRestart {
+            speakDirect(currentText, fromCharOffset: offset)
+        }
+    }
+
+    /// Stop a queued direct fade while retaining the latest confirmed reader
+    /// position. Returns true when this method owned the active backend.
+    @discardableResult
+    private func stopDirectSleepFadePreservingPosition() -> Bool {
+        guard isDirectSleepFadeActive else { return false }
+        let offset = max(
+            directFadeStartOffset,
+            min(currentWordRange?.location ?? directFadeStartOffset, currentText.utf16Length)
+        )
+        stopDirectSynthesizer()
+        currentWordRange = NSRange(location: offset, length: 0)
+        usingDirectMode = true
+        return true
     }
 
     func pause() {
         guard isSpeaking && !isPaused else { return }
-        if usingDirectMode {
+        if stopDirectSleepFadePreservingPosition() {
+            // The helper stopped the fade queue and retained direct mode so a
+            // later resume recreates normal-volume speech at this cursor.
+        } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
         } else if audioEngine.isPlaying {
             audioEngine.pause()
@@ -563,7 +892,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
         guard isSpeaking && !isPaused else { return }
 
-        if usingDirectMode {
+        if stopDirectSleepFadePreservingPosition() {
+            // The helper stopped the fade queue before engine volume is reset.
+        } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
         } else if audioEngine.isPlaying || audioEngine.isPaused {
             let offset = audioEngine.stopAfterFadePreservingPosition()
@@ -574,58 +905,92 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopPositionTracking()
     }
 
-    func resume() {
-        guard isPaused else { return }
-        isPaused = false
+    /// Resumes a paused backend and reports whether an audible path was
+    /// accepted. Callers can cold-start the chapter when false is returned
+    /// instead of publishing a false "playing" state.
+    @discardableResult
+    func resume() -> Bool {
+        guard isPaused else { return false }
 
-        if usingDirectMode, let pendingOffset = pendingDirectSeekOffset {
-            pendingDirectSeekOffset = nil
-            if audioEngine.hasRenderedAudio {
-                transitionLog("RESUME_SWITCH: direct→engine at offset=\(pendingOffset)")
-                stopDirectSynthesizer()
-                usingDirectMode = false
-                audioEngine.setSpeed(wpm: wordsPerMinute)
-                audioEngine.setPitch(multiplier: pitchMultiplier)
-                audioEngine.play(fromCharOffset: pendingOffset)
-                startPositionTracking()
-            } else {
-                speakDirect(currentText, fromCharOffset: pendingOffset)
-            }
-        } else if !usingDirectMode && audioEngine.isPaused {
-            // The Mac may have stopped AVAudioEngine while sleeping. The
-            // audio service restarts it before asking the player node to
-            // continue. If restart itself fails, direct speech provides a
-            // usable fallback at the same reading position.
-            let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
-            if audioEngine.resume() {
-                transitionLog("ENGINE_RESUME: resumed at offset=\(offset)")
-                startPositionTracking()
-            } else {
-                transitionLog("ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(offset)")
-                audioEngine.stop()
-                speakDirect(currentText, fromCharOffset: offset)
-            }
-        } else if usingDirectMode && audioEngine.hasRenderedAudio {
-            // Paused in direct mode but engine is ready — switch to engine for better seeking/speed
-            let offset = currentWordRange?.location ?? 0
-            transitionLog("RESUME_SWITCH: direct→engine at offset=\(offset)")
+        let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
+        let action = SpeechResumePolicy.action(
+            usingDirectMode: usingDirectMode,
+            pendingDirectSeekOffset: pendingDirectSeekOffset,
+            engineHasRenderedAudio: audioEngine.hasRenderedAudio,
+            engineIsPaused: audioEngine.isPaused,
+            engineIsPlaying: audioEngine.isPlaying,
+            directSynthIsPaused: directSynth.isPaused,
+            currentOffset: offset,
+            hasText: !currentText.isEmpty
+        )
+        pendingDirectSeekOffset = nil
+
+        var resumed: Bool
+        switch action {
+        case .switchToEngine(let resumeOffset), .startRenderedEngine(let resumeOffset):
+            transitionLog("RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
             stopDirectSynthesizer()
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
             audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: offset)
-            startPositionTracking()
-        } else if usingDirectMode {
-            // Still in direct mode, engine not ready — just continue direct
-            directSynth.continueSpeaking()
-        } else if audioEngine.hasRenderedAudio && !audioEngine.isPlaying {
-            // Engine ready but not playing — start it
-            let offset = currentWordRange?.location ?? 0
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: offset)
-            startPositionTracking()
+            audioEngine.play(fromCharOffset: resumeOffset)
+            resumed = audioEngine.isPlaying
+            if resumed {
+                startPositionTracking()
+            }
+
+        case .resumeEngine(let resumeOffset):
+            // The Mac may have stopped AVAudioEngine while sleeping. The
+            // audio service restarts it before asking the player node to
+            // continue. If restart fails, restart direct speech below.
+            resumed = audioEngine.resume()
+            if resumed {
+                transitionLog("ENGINE_RESUME: resumed at offset=\(resumeOffset)")
+                startPositionTracking()
+            } else {
+                transitionLog(
+                    "ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(resumeOffset)"
+                )
+                audioEngine.stop()
+                resumed = restartDirectSpeech(at: resumeOffset)
+            }
+
+        case .continueDirect(let resumeOffset):
+            if directSynth.continueSpeaking() {
+                resumed = true
+            } else {
+                transitionLog(
+                    "DIRECT_RESUME_FAILED: restarting utterance at offset=\(resumeOffset)"
+                )
+                resumed = restartDirectSpeech(at: resumeOffset)
+            }
+
+        case .restartDirect(let resumeOffset):
+            transitionLog("DIRECT_RESUME_RECOVERY: restarting utterance at offset=\(resumeOffset)")
+            resumed = restartDirectSpeech(at: resumeOffset)
+
+        case .alreadyPlaying:
+            resumed = true
+
+        case .unavailable:
+            transitionLog("RESUME_UNAVAILABLE: no rendered audio, live utterance, or text")
+            resumed = false
         }
+
+        isPaused = !resumed
+        if resumed {
+            isSpeaking = true
+        }
+        return resumed
+    }
+
+    /// Recreates direct speech after AVFoundation loses the paused utterance.
+    /// The live-utterance marker provides a synchronous acceptance signal.
+    private func restartDirectSpeech(at offset: Int) -> Bool {
+        guard !currentText.isEmpty else { return false }
+        stopDirectSynthesizer()
+        speakDirect(currentText, fromCharOffset: offset)
+        return liveDirectUtterance != nil
     }
 
     func togglePlayPause() {
@@ -932,21 +1297,44 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         // NEW utterance) and emit a wildly wrong absolute position —
         // exactly the symptom that makes seeks feel like they jumped
         // to a random place.
-        guard usingDirectMode,
-              Self.isLiveDirectUtterance(utterance, liveUtterance: liveDirectUtterance) else { return }
-        let baseOffset = directModeBaseOffset
+        guard usingDirectMode else { return }
+        let utteranceID = ObjectIdentifier(utterance)
+        let baseOffset: Int
+        if isDirectSleepFadeActive, let fadeOffset = directFadeOffsets[utteranceID] {
+            baseOffset = fadeOffset
+        } else {
+            guard Self.isLiveDirectUtterance(utterance, liveUtterance: liveDirectUtterance) else { return }
+            baseOffset = directModeBaseOffset
+        }
         let word = (utterance.speechString as NSString).substring(with: characterRange)
         DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let isCurrentFadeSegment = self.isDirectSleepFadeActive
+                && self.directFadeOffsets[utteranceID] != nil
+            let isCurrentNormalUtterance = Self.isLiveDirectUtterance(
+                utterance,
+                liveUtterance: self.liveDirectUtterance
+            )
+            guard self.usingDirectMode,
+                  isCurrentFadeSegment || isCurrentNormalUtterance else { return }
             // Adjust range to be absolute within the full chapter text
             let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)
-            self?.currentWordRange = absoluteRange
-            self?.onWordSpoken?(absoluteRange, word)
+            self.currentWordRange = absoluteRange
+            self.onWordSpoken?(absoluteRange, word)
         }
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            let utteranceID = ObjectIdentifier(utterance)
+            if self.isDirectSleepFadeActive,
+               let fadeOffset = self.directFadeOffsets[utteranceID] {
+                self.transitionLog("SLEEP_FADE_DIRECT_SEGMENT_STARTED: offset=\(fadeOffset)")
+                self.isSpeaking = true
+                self.isPaused = false
+                return
+            }
             guard Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance),
                   self.usingDirectMode else {
                 self.transitionLog("DIRECT_START_IGNORED: stale utterance or direct mode inactive")
@@ -963,6 +1351,41 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let finishedUtteranceID = ObjectIdentifier(utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            if self.isDirectSleepFadeActive,
+               let baseOffset = self.directFadeOffsets.removeValue(forKey: finishedUtteranceID),
+               let length = self.directFadeLengths.removeValue(forKey: finishedUtteranceID) {
+                let endOffset = min(baseOffset + length, self.currentText.utf16Length)
+                self.currentWordRange = NSRange(location: endOffset, length: 0)
+                if self.directFadeFinalUtteranceID == finishedUtteranceID {
+                    self.liveDirectUtterance = nil
+                    self.transitionLog("SLEEP_FADE_DIRECT_QUEUE_FINISHED: offset=\(endOffset)")
+                    switch DirectSpeechFadePlanner.completionAction(
+                        queueEndOffset: endOffset,
+                        textUTF16Length: self.currentText.utf16Length
+                    ) {
+                    case .continueFade(let continuationOffset):
+                        let continuationDuration = self.directFadeContinuationDuration
+                        let continuationVolume = self.directFadeTerminalVolume
+                        self.prepareDirectSleepFade(
+                            fromUTF16Offset: continuationOffset,
+                            duration: continuationDuration,
+                            startingVolume: continuationVolume
+                        )
+
+                    case .finishChapter:
+                        self.stopDirectPlaybackWatchdog()
+                        self.clearDirectSleepFadeState()
+                        self.isSpeaking = false
+                        self.isPaused = false
+                        self.currentWordRange = nil
+                        self.directModeChunked = false
+                        self.onUtteranceFinished?()
+                    }
+                }
+                // Timer expiry, not natural utterance completion, owns the
+                // pause unless the content itself reached its natural end.
+                return
+            }
             // Identity check: a finish for an utterance we no longer
             // consider live is an artefact of an internal stopSpeaking
             // (mode switch / seek / stop). Drop it so it doesn't trigger
@@ -1014,6 +1437,11 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let cancelledUtteranceID = ObjectIdentifier(utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            if self.isDirectSleepFadeActive,
+               self.directFadeOffsets[cancelledUtteranceID] != nil {
+                self.transitionLog("SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
+                return
+            }
             let isCurrent = self.liveDirectUtterance.map(ObjectIdentifier.init) == cancelledUtteranceID
             if isCurrent, self.usingDirectMode, self.isSpeaking, !self.isPaused {
                 // Do not advance or restart directly from the callback. The
@@ -1029,6 +1457,11 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            if self.isDirectSleepFadeActive,
+               self.directFadeOffsets[ObjectIdentifier(utterance)] != nil {
+                self.isPaused = true
+                return
+            }
             guard self.usingDirectMode,
                   Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
                 self.transitionLog("DIRECT_PAUSE_IGNORED: stale utterance or direct mode inactive")
@@ -1041,6 +1474,11 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            if self.isDirectSleepFadeActive,
+               self.directFadeOffsets[ObjectIdentifier(utterance)] != nil {
+                self.isPaused = false
+                return
+            }
             guard self.usingDirectMode,
                   Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
                 self.transitionLog("DIRECT_CONTINUE_IGNORED: stale utterance or direct mode inactive")

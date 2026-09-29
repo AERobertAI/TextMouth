@@ -91,9 +91,10 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
             // List numbering properties -- handled via child elements
             break
         case "ilvl":
-            // List indent level (0-based)
+            // Word lists support nine levels. Malformed values must not reach
+            // an array index or a potentially enormous indentation allocation.
             if let val = attributes["w:val"], let level = Int(val) {
-                listLevel = level
+                listLevel = (0...8).contains(level) ? level : 0
             }
         case "numId":
             // List numbering definition ID
@@ -125,9 +126,12 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
             if val != "0" && val != "false" {
                 runIsStrikethrough = true
             }
-        case "br":
-            // Line break within a paragraph
-            currentParagraphText += "\n"
+        case "br" where isInRun:
+            // Keep breaks in their run; the paragraph has not received the
+            // preceding run text yet, so appending there reverses their order.
+            runText += "\n"
+        case "tab" where isInRun:
+            runText += "\t"
         case "hyperlink":
             // Start of a hyperlink -- capture the relationship ID for the URL
             isInHyperlink = true
@@ -153,9 +157,6 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         // Only capture text inside <w:t> elements (handled by element context)
         if let lastElement = elementStack.last, lastElement == "t" {
-            if isInHyperlink {
-                hyperlinkText += string
-            }
             runText += string
         }
     }
@@ -320,7 +321,13 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
             formatted = "~~\(formatted)~~"
         }
 
-        currentParagraphText += formatted
+        // Hyperlink runs belong to the link label until </w:hyperlink> emits
+        // it once. Appending here and at link end duplicates the spoken text.
+        if isInHyperlink {
+            hyperlinkText += formatted
+        } else {
+            currentParagraphText += formatted
+        }
         paragraphHasContent = true
     }
 

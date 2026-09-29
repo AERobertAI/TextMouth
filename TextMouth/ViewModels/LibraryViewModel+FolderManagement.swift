@@ -7,14 +7,21 @@ extension LibraryViewModel {
     // MARK: - Folder Operations
 
     func createFolder(name: String, parentPath: String) {
-        // Strip filesystem-unsafe characters (/ is used as internal path separator)
-        let sanitized = name.replacingOccurrences(of: "/", with: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !sanitized.isEmpty else { return }
-        if let folder = library.createFolder(name: sanitized, parentPath: parentPath) {
-            try? TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+        // Publish the folder only after its directory exists, matching book
+        // moves and renames when storage is unavailable or a file collides.
+        var proposed = library
+        guard let folder = proposed.createFolder(name: name, parentPath: parentPath) else {
+            errorMessage = "Choose a unique folder name without reserved path or package names."
+            showError = true
+            return
         }
-        save()
+        do {
+            try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+            library = proposed
+            save()
+        } catch {
+            presentFilesystemError("Could not create folder", error: error)
+        }
     }
 
     /// Remove a folder, moving its contents to the given destination path.
@@ -41,6 +48,15 @@ extension LibraryViewModel {
     /// Remove a folder and permanently delete all its contents (books, subfolders, .tmb files).
     func removeFolderAndEverything(_ folder: BookFolder) {
         let path = folder.fullPath
+        // Validate again at the destructive boundary: legacy/edited indexes
+        // can contain names rejected by today's creation UI, and an open
+        // confirmation may refer to a folder moved in another window.
+        guard !path.isEmpty, BookFolder.isValidLibraryPath(path),
+              library.folders.contains(where: { $0.id == folder.id && $0.fullPath == path }) else {
+            errorMessage = "Could not remove folder: its library path is invalid or has changed."
+            showError = true
+            return
+        }
         let booksToRemove = library.books.filter {
             $0.folderPath == path || $0.folderPath.hasPrefix(path + "/")
         }

@@ -62,6 +62,104 @@ enum SkipUnit: String, CaseIterable, Codable {
         default: return nil
         }
     }
+
+    /// Complete, non-duplicated label for a playback-bar navigation menu.
+    /// The directionless form matches the shared menu; separate menus include
+    /// their direction so VoiceOver users can distinguish them immediately.
+    func playbackMenuAccessibilityLabel(direction: PlaybackSkipDirection? = nil) -> String {
+        switch direction {
+        case .forward:
+            return "Forward navigation unit: \(rawValue)"
+        case .backward:
+            return "Backward navigation unit: \(rawValue)"
+        case nil:
+            return "Navigation unit: \(rawValue)"
+        }
+    }
+
+    /// Advance through the same stable order shown by every navigation-unit
+    /// picker, wrapping from Bookmark back to 10 seconds.
+    var nextNavigationUnit: SkipUnit {
+        guard let index = Self.allCases.firstIndex(of: self) else {
+            return Self.allCases[0]
+        }
+        let nextIndex = Self.allCases.index(after: index)
+        return nextIndex == Self.allCases.endIndex
+            ? Self.allCases[0]
+            : Self.allCases[nextIndex]
+    }
+
+    /// Return the direction-aware SF Symbol for a skip button. Keeping this
+    /// mapping on the unit makes icon refresh behavior consistent everywhere.
+    func iconName(forward: Bool) -> String {
+        switch (self, forward) {
+        case (.seconds10, false): return "gobackward.10"
+        case (.seconds15, false): return "gobackward.15"
+        case (.seconds30, false): return "gobackward.30"
+        case (.seconds60, false): return "gobackward.60"
+        case (.seconds10, true): return "goforward.10"
+        case (.seconds15, true): return "goforward.15"
+        case (.seconds30, true): return "goforward.30"
+        case (.seconds60, true): return "goforward.60"
+        case (.sentence, false): return "text.line.first.and.arrowtriangle.forward"
+        case (.sentence, true): return "text.line.last.and.arrowtriangle.forward"
+        case (.paragraph, false): return "text.justify.left"
+        case (.paragraph, true): return "text.justify.right"
+        case (.heading, false), (.subheading, false): return "backward.end.fill"
+        case (.heading, true), (.subheading, true): return "forward.end.fill"
+        case (.bookmark, _): return "bookmark.fill"
+        }
+    }
+}
+
+/// Identifies which navigation direction a separate playback-bar menu edits.
+enum PlaybackSkipDirection: Equatable {
+    case forward
+    case backward
+}
+
+/// Controls whether per-book skip-unit menus appear in the playback bar.
+/// The global forward/backward choices remain the fallback in every mode.
+enum PlaybackNavigationUnitControlMode: String, CaseIterable, Codable {
+    case none = "None (Use Global)"
+    case shared = "One Shared Menu"
+    case separate = "Menu for Each Button"
+
+    /// Current user-facing wording. Raw values remain unchanged so existing
+    /// AppStorage selections continue to decode after the control redesign.
+    var displayName: String {
+        switch self {
+        case .none: return "None (Use Global)"
+        case .shared: return "One Unit for Both Directions"
+        case .separate: return "Separate Forward and Backward Units"
+        }
+    }
+}
+
+/// Pure policy for resolving global and per-book units under each playback-bar
+/// presentation mode. Keeping this out of SwiftUI makes fallback behavior easy
+/// to verify, including malformed values from manually edited book state.
+enum PlaybackSkipUnitPolicy {
+    static func resolve(
+        mode: PlaybackNavigationUnitControlMode,
+        localForwardRawValue: String?,
+        localBackwardRawValue: String?,
+        globalForward: SkipUnit,
+        globalBackward: SkipUnit
+    ) -> (forward: SkipUnit, backward: SkipUnit) {
+        let localForward = localForwardRawValue.flatMap(SkipUnit.init(rawValue:))
+        let localBackward = localBackwardRawValue.flatMap(SkipUnit.init(rawValue:))
+
+        switch mode {
+        case .none:
+            return (globalForward, globalBackward)
+        case .shared:
+            let shared = localForward ?? localBackward ?? globalForward
+            return (shared, shared)
+        case .separate:
+            return (localForward ?? globalForward, localBackward ?? globalBackward)
+        }
+    }
 }
 
 @MainActor
@@ -79,10 +177,10 @@ final class SettingsViewModel: ObservableObject {
         didSet { syncToConfig() }
     }
     @AppStorage("skipForwardUnit") var skipForwardUnitRaw: String = SkipUnit.seconds15.rawValue {
-        didSet { syncToConfig() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
     @AppStorage("skipBackwardUnit") var skipBackwardUnitRaw: String = SkipUnit.seconds15.rawValue {
-        didSet { syncToConfig() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
 
     @AppStorage("shiftSkipForwardUnit") var shiftSkipForwardUnitRaw: String = SkipUnit.seconds30.rawValue {
@@ -116,8 +214,16 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage("autoPlayOnNavigate") var autoPlayOnNavigate: Bool = false {
         didSet { syncToConfig() }
     }
-    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false
-    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true
+    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false {
+        didSet { publishPlaybackControlsChange() }
+    }
+    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true {
+        didSet { publishPlaybackControlsChange() }
+    }
+    @AppStorage("playbackNavigationUnitControlMode")
+    var playbackNavigationUnitControlModeRaw: String = PlaybackNavigationUnitControlMode.none.rawValue {
+        didSet { publishPlaybackControlsChange() }
+    }
 
     /// Whether to monitor Bluetooth device disconnections and suppress
     /// spurious media commands from macOS's rcd daemon.
@@ -157,6 +263,10 @@ final class SettingsViewModel: ObservableObject {
 
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
     @Published var availableLanguages: [String] = []
+    /// Changes whenever an option affecting the open playback bar changes.
+    /// `PlaybackControlsView` observes this model directly, so incrementing the
+    /// revision invalidates existing book windows without reopening them.
+    @Published private(set) var playbackControlsSettingsRevision = 0
 
     private let configService = ConfigService.shared
     private let notificationCenter: NotificationCenter
@@ -183,6 +293,15 @@ final class SettingsViewModel: ObservableObject {
         set { shiftSkipBackwardUnitRaw = newValue.rawValue }
     }
 
+    /// Typed view of the persisted playback-bar navigation control mode.
+    var playbackNavigationUnitControlMode: PlaybackNavigationUnitControlMode {
+        get {
+            PlaybackNavigationUnitControlMode(rawValue: playbackNavigationUnitControlModeRaw)
+                ?? .none
+        }
+        set { playbackNavigationUnitControlModeRaw = newValue.rawValue }
+    }
+
     var endOfBookBehavior: EndOfBookBehavior {
         get { EndOfBookBehavior(rawValue: endOfBookBehaviorRaw) ?? .stop }
         set { endOfBookBehaviorRaw = newValue.rawValue }
@@ -191,6 +310,13 @@ final class SettingsViewModel: ObservableObject {
     var rewindOnResumeUnit: RewindUnit {
         get { RewindUnit(rawValue: rewindOnResumeUnitRaw) ?? .none }
         set { rewindOnResumeUnitRaw = newValue.rawValue }
+    }
+
+    /// Publish one coalescible settings-model change for open playback bars.
+    /// The revision also gives tests a deterministic signal independent of
+    /// SwiftUI's rendering schedule.
+    private func publishPlaybackControlsChange() {
+        playbackControlsSettingsRevision &+= 1
     }
 
     init(

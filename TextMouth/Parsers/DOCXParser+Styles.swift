@@ -55,7 +55,7 @@ class DOCXStylesParser: NSObject, XMLParserDelegate {
         case "outlineLvl" where inStyle:
             // Explicit outline level -- most reliable indicator of heading level
             if let val = attributes["w:val"], let level = Int(val) {
-                currentOutlineLevel = level + 1 // outline levels are 0-based
+                currentOutlineLevel = level
             }
         default:
             break
@@ -88,9 +88,11 @@ class DOCXStylesParser: NSObject, XMLParserDelegate {
 
     /// Determine heading level from style name and/or outline level
     private func resolveHeadingLevel() -> Int? {
-        // Prefer explicit outline level
+        // OOXML levels 0...8 are headings; 9 explicitly means body text.
+        // Validate before adding one, including malformed Int.max values.
         if let level = currentOutlineLevel {
-            return min(level, 6)
+            guard (0...8).contains(level) else { return nil }
+            return min(level + 1, 6)
         }
 
         // Fall back to style name pattern matching (works for "heading 1", "Heading1", etc.)

@@ -1,5 +1,20 @@
 import Foundation
 
+/// Shared proportional remaining-time calculation for library rows and reader
+/// windows. Both surfaces must provide the same total duration and cursor.
+enum ReadingTimeEstimator {
+    static func remaining(
+        totalDuration: TimeInterval,
+        globalOffset: Int,
+        totalCharacterCount: Int
+    ) -> TimeInterval {
+        guard totalDuration > 0, totalCharacterCount > 0 else { return 0 }
+        let clampedOffset = min(max(globalOffset, 0), totalCharacterCount)
+        let remainingFraction = 1 - Double(clampedOffset) / Double(totalCharacterCount)
+        return totalDuration * remainingFraction
+    }
+}
+
 enum BookFormat: String, Codable, CaseIterable {
     case epub
     case txt
@@ -91,6 +106,10 @@ struct Book: Identifiable, Codable, Hashable {
     var skippedHeadingIDs: [String]?
     /// Per-book end-of-book behavior override (nil = use global)
     var localEndOfBookBehavior: String?
+    /// Per-book forward navigation unit (nil or invalid = use global).
+    var localSkipForwardUnit: String?
+    /// Per-book backward navigation unit (nil or invalid = use global).
+    var localSkipBackwardUnit: String?
     /// Manual sort order within folder (lower = earlier)
     var manualSortOrder: Int?
     /// Total audio duration in seconds (for audio books only)
@@ -137,6 +156,8 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch: Double? = nil,
         skippedHeadingIDs: [String]? = nil,
         localEndOfBookBehavior: String? = nil,
+        localSkipForwardUnit: String? = nil,
+        localSkipBackwardUnit: String? = nil,
         manualSortOrder: Int? = nil,
         audioDuration: TimeInterval? = nil,
         audioAlbum: String? = nil,
@@ -173,6 +194,8 @@ struct Book: Identifiable, Codable, Hashable {
         self.localPitch = localPitch
         self.skippedHeadingIDs = skippedHeadingIDs
         self.localEndOfBookBehavior = localEndOfBookBehavior
+        self.localSkipForwardUnit = localSkipForwardUnit
+        self.localSkipBackwardUnit = localSkipBackwardUnit
         self.manualSortOrder = manualSortOrder
         self.audioDuration = audioDuration
         self.audioAlbum = audioAlbum
@@ -213,6 +236,8 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch = try container.decodeIfPresent(Double.self, forKey: .localPitch)
         skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
+        localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
+        localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
         manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
         audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
         audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
@@ -248,6 +273,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// The effective WPM for this book: local override if set, otherwise the provided fallback
     func effectiveWPM(fallback: Double) -> Double {
         localWPM ?? fallback
+    }
+
+    /// Resolve the saved forward unit, safely falling back for legacy or
+    /// manually edited state containing no value or an unknown value.
+    func effectiveSkipForwardUnit(fallback: SkipUnit) -> SkipUnit {
+        localSkipForwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
+    }
+
+    /// Resolve the saved backward unit with the same compatibility behavior.
+    func effectiveSkipBackwardUnit(fallback: SkipUnit) -> SkipUnit {
+        localSkipBackwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
     }
 
     mutating func applyContentIndexSummary(_ index: BookContentIndex) {
@@ -312,14 +348,19 @@ struct Book: Identifiable, Codable, Hashable {
     /// For text books: uses WPM-based estimate with per-book override.
     func estimatedTimeRemaining(wpm: Double) -> TimeInterval? {
         if format.isAudio {
-            guard let duration = audioDuration, duration > 0 else { return nil }
-            let speed = localWPM ?? 1.0 // For audio, localWPM stores the speed multiplier
+            guard let duration = audioDuration, duration.isFinite, duration > 0 else { return nil }
+            // For audio, localWPM stores the multiplier. Match the runtime
+            // clamp before division, including legacy zero-speed values.
+            let speed = AudioPlaybackService.clampedSpeed(localWPM ?? 1.0)
             let adjustedDuration = duration / speed
             guard let pos = readingPosition else { return adjustedDuration }
             let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
             guard let totalChars = totalCharacterCount, totalChars > 0 else { return adjustedDuration }
-            let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
-            return adjustedDuration * (1.0 - fraction)
+            return ReadingTimeEstimator.remaining(
+                totalDuration: adjustedDuration,
+                globalOffset: globalOffset,
+                totalCharacterCount: totalChars
+            )
         }
 
         let effectiveSpeed = effectiveWPM(fallback: wpm)
@@ -328,8 +369,11 @@ struct Book: Identifiable, Codable, Hashable {
         let totalTime = Double(totalWords) / effectiveSpeed * 60.0
         guard let pos = readingPosition else { return totalTime }
         let globalOffset = pos.globalCharacterOffset ?? pos.characterOffset
-        let fraction = min(Double(globalOffset) / Double(totalChars), 1.0)
-        return totalTime * (1.0 - fraction)
+        return ReadingTimeEstimator.remaining(
+            totalDuration: totalTime,
+            globalOffset: globalOffset,
+            totalCharacterCount: totalChars
+        )
     }
 
     /// Save this book's data to its bookInfo.json
@@ -387,6 +431,8 @@ struct Book: Identifiable, Codable, Hashable {
                 localPitch: localPitch,
                 skippedHeadingIDs: skippedHeadingIDs,
                 localEndOfBookBehavior: localEndOfBookBehavior,
+                localSkipForwardUnit: localSkipForwardUnit,
+                localSkipBackwardUnit: localSkipBackwardUnit,
                 manualSortOrder: manualSortOrder,
                 audioDuration: audioDuration,
                 cacheFormatVersion: cacheFormatVersion,

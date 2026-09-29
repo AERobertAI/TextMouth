@@ -109,6 +109,8 @@ struct Library: Codable {
     // MARK: - Folder Operations
 
     mutating func createFolder(name: String, parentPath: String = "") -> BookFolder? {
+        guard let name = BookFolder.normalizedName(name),
+              BookFolder.isValidLibraryPath(parentPath) else { return nil }
         let folder = BookFolder(name: name, parentPath: parentPath)
         guard folder.depth <= BookFolder.maxDepth else { return nil }
         guard !folders.contains(where: { $0.fullPath == folder.fullPath }) else { return nil }
@@ -202,6 +204,7 @@ struct Library: Codable {
     /// Returns false if the move is invalid (cycle, depth exceeded, duplicate name).
     @discardableResult
     mutating func moveFolder(id: UUID, toParentPath newParent: String) -> Bool {
+        guard BookFolder.isValidLibraryPath(newParent) else { return false }
         guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
         let folder = folders[folderIdx]
         let oldPath = folder.fullPath
@@ -267,9 +270,7 @@ struct Library: Codable {
     /// Returns false if the name is empty, unchanged, or would collide with a sibling.
     @discardableResult
     mutating func renameFolder(id: UUID, to newName: String) -> Bool {
-        let sanitized = newName.replacingOccurrences(of: "/", with: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !sanitized.isEmpty else { return false }
+        guard let sanitized = BookFolder.normalizedName(newName) else { return false }
         guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
         let folder = folders[folderIdx]
         guard sanitized != folder.name else { return false }

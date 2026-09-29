@@ -24,6 +24,34 @@ final class AudioZIPClassificationTests: XCTestCase {
         XCTAssertFalse(LibraryViewModel.isAudioZip(url: zip))
     }
 
+    func testAudioZIPWithMacOSMetadataIsNotMisclassifiedAsDAISY() throws {
+        // Finder-created archives can contain AppleDouble metadata alongside
+        // audio tracks. This mirrors the structure that exposed the import
+        // regression without depending on a developer-local test fixture.
+        let zip = try makeZIP(entries: [
+            "Episode 01.mp3": "first",
+            "Episode 02.mp3": "second",
+            "__MACOSX/._Episode 02.mp3": "apple-double metadata"
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        // ZIP routing checks DAISY before audio, so both classifications are
+        // asserted to protect the complete decision made by the importer.
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
+        XCTAssertTrue(LibraryViewModel.isAudioZip(url: zip))
+    }
+
+    func testZIPWithUnrelatedXMLIsNotClassifiedAsDAISY() throws {
+        // Standalone DTBook XML is a valid DAISY fallback, but arbitrary XML
+        // must not make an otherwise ordinary archive look like DAISY 3.
+        let zip = try makeZIP(entries: [
+            "metadata.xml": "<metadata><title>Ordinary archive</title></metadata>"
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
+    }
+
     private func makeZIP(entries: [String: String]) throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouthAudioClassification-\(UUID().uuidString).zip")

@@ -211,6 +211,8 @@ enum FileImportService {
             localPitch: info.state.localPitch,
             skippedHeadingIDs: info.state.skippedHeadingIDs,
             localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+            localSkipForwardUnit: info.state.localSkipForwardUnit,
+            localSkipBackwardUnit: info.state.localSkipBackwardUnit,
             manualSortOrder: info.state.manualSortOrder,
             audioDuration: info.state.audioDuration,
             audioAlbum: info.metadata.audioAlbum,
@@ -309,6 +311,12 @@ enum FileImportService {
         if repaired.contentIndexVersion == nil {
             repaired.contentIndexVersion = managedPackageBook.contentIndexVersion
         }
+        if repaired.localSkipForwardUnit == nil {
+            repaired.localSkipForwardUnit = managedPackageBook.localSkipForwardUnit
+        }
+        if repaired.localSkipBackwardUnit == nil {
+            repaired.localSkipBackwardUnit = managedPackageBook.localSkipBackwardUnit
+        }
 
         return repaired
     }
@@ -349,6 +357,8 @@ enum FileImportService {
                 localPitch: book.localPitch,
                 skippedHeadingIDs: book.skippedHeadingIDs,
                 localEndOfBookBehavior: book.localEndOfBookBehavior,
+                localSkipForwardUnit: book.localSkipForwardUnit,
+                localSkipBackwardUnit: book.localSkipBackwardUnit,
                 manualSortOrder: book.manualSortOrder,
                 audioDuration: book.audioDuration,
                 cacheFormatVersion: book.cacheFormatVersion,
@@ -609,8 +619,43 @@ enum FileImportService {
     /// permanent deletion otherwise.
     @MainActor
     static func deleteBookPackage(_ book: Book) throws {
-        let tmbDir = book.tmbDirectory
+        let tmbDir = try managedPackageURLForDeletion(book)
         try removeItemRespectingTrashSetting(at: tmbDir)
+    }
+
+    /// Validate the deletion target independently of filesystem mutation. A
+    /// missing legacy package name otherwise resolves to the entire folder.
+    /// Resolve symlinks as well as dot components before checking containment.
+    static func managedPackageURLForDeletion(
+        _ book: Book,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) throws -> URL {
+        let name = book.tmbDirectoryName
+        guard !name.isEmpty,
+              (name as NSString).lastPathComponent == name,
+              name.lowercased().hasSuffix(".tmb"),
+              BookFolder.isValidLibraryPath(book.folderPath) else {
+            throw FileImportError.importFailed(
+                "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it."
+            )
+        }
+        let libraryRoot = libraryDirectory.standardizedFileURL.resolvingSymlinksInPath()
+        let requestedPackage = libraryRoot.appendingPathComponent(book.folderPath, isDirectory: true)
+            .appendingPathComponent(name, isDirectory: true)
+            .standardizedFileURL
+        // Deleting a package alias must not delete the other book it points
+        // to, even when both happen to live inside the managed library.
+        guard (try? requestedPackage.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true else {
+            throw FileImportError.importFailed("A symbolic link cannot be deleted as a managed book package.")
+        }
+        let package = requestedPackage.resolvingSymlinksInPath()
+        guard package.path.hasPrefix(libraryRoot.path + "/"),
+              !book.filePath.isEmpty,
+              URL(fileURLWithPath: book.filePath).standardizedFileURL.resolvingSymlinksInPath()
+                .path.hasPrefix(package.path + "/") else {
+            throw FileImportError.importFailed("The book's package and content paths do not match a managed library location.")
+        }
+        return package
     }
 
     /// Delete just the book file from a .tmb (legacy compat - prefer deleteBookPackage)
@@ -817,16 +862,9 @@ enum FileImportService {
         try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
         try FileManager.default.unzipItem(at: zipURL, to: audioDir)
 
-        // Find audio files
-        let audioExtensions = Set(BookFormat.audio.fileExtensions)
-        let enumerator = FileManager.default.enumerator(at: audioDir, includingPropertiesForKeys: nil)
-        var audioFiles: [URL] = []
-        while let fileURL = enumerator?.nextObject() as? URL {
-            if audioExtensions.contains(fileURL.pathExtension.lowercased()) {
-                audioFiles.append(fileURL)
-            }
-        }
-        audioFiles.sort { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        // Use the reader's discovery rules, including wrapper folders and
+        // excluding Finder metadata that happens to have an audio extension.
+        let audioFiles = try AudioBookParser.audioFiles(in: audioDir)
 
         guard !audioFiles.isEmpty else {
             throw FileImportError.importFailed("No audio files found in ZIP")
@@ -1291,6 +1329,8 @@ enum FileImportService {
                 localPitch: info.state.localPitch,
                 skippedHeadingIDs: info.state.skippedHeadingIDs,
                 localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+                localSkipForwardUnit: info.state.localSkipForwardUnit,
+                localSkipBackwardUnit: info.state.localSkipBackwardUnit,
                 manualSortOrder: info.state.manualSortOrder,
                 audioDuration: info.state.audioDuration,
                 audioAlbum: info.metadata.audioAlbum,
