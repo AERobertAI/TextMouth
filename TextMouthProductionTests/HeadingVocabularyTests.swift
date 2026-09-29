@@ -498,6 +498,26 @@ final class SectionCrossingAnnouncementTests: XCTestCase {
     }
 }
 
+/// Error messages are read aloud too, so they use the same vocabulary.
+final class AudioParseErrorWordingTests: XCTestCase {
+    func testInvalidSegmentDescribesASection() {
+        XCTAssertEqual(
+            AudioParseError.invalidSegment.errorDescription,
+            "An audio section refers to a missing file or an invalid time range."
+        )
+    }
+
+    func testNoAudioErrorMentionsChapters() {
+        let errors: [AudioParseError] = [.invalidDuration, .noAudioFiles, .unsupportedFormat, .invalidSegment]
+        for error in errors {
+            XCTAssertFalse(
+                (error.errorDescription ?? "").localizedCaseInsensitiveContains("chapter"),
+                "\(error) mentions chapters"
+            )
+        }
+    }
+}
+
 /// Library rows hold only the Book model (no parsed headings), so they show
 /// overall progress in place of the old content-unit number.
 @MainActor
