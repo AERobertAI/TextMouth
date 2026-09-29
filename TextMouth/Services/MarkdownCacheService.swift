@@ -14,7 +14,11 @@ enum MarkdownCacheService {
     /// instead, so existing Markdown can be reindexed without source conversion.
     /// Older versions (or nil) regenerate through startup maintenance.
     /// Uses semantic versioning: major.minor.patch
-    static let currentCacheVersion: String = "3.0.4"
+    /// 3.0.5: EPUB page lists, landmarks, and hidden content no longer become
+    /// headings or speech; a navigation annotation never enters a heading or
+    /// begins a line (which hid that line's words); named anchors add no "[]";
+    /// and a heading with a line break stays one heading.
+    static let currentCacheVersion: String = "3.0.5"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -343,7 +347,7 @@ enum MarkdownCacheService {
                 // Extract title from marker
                 let titleStart = line.index(line.startIndex, offsetBy: chapterMarkerPrefix.count)
                 let titleEnd = line.index(line.endIndex, offsetBy: -chapterMarkerSuffix.count)
-                currentTitle = String(line[titleStart..<titleEnd])
+                currentTitle = visibleChapterTitle(String(line[titleStart..<titleEnd]))
                 currentLines = []
                 foundMarker = true
             } else {
@@ -363,4 +367,13 @@ enum MarkdownCacheService {
         return sections
     }
 
+    /// A chapter marker title is the chapter's first heading label. Caches
+    /// written before format 3.0.5 could carry a navigation annotation inside
+    /// that label; the title is shown to the reader (and becomes the chapter's
+    /// heading when it has none), so complete HTML comments are dropped.
+    private static func visibleChapterTitle(_ title: String) -> String {
+        guard title.contains("<!--") else { return title }
+        return title.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+    }
 }

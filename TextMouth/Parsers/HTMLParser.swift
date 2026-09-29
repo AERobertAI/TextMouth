@@ -57,7 +57,10 @@ private struct HTMLReadingTextExtractor {
         }
         if let element = node as? Element {
             let tag = element.tagName().lowercased()
-            guard tag != "script", tag != "style" else { return }
+            // Match the cached Markdown conversion: hidden content, page lists,
+            // and landmarks are outside the rendered reading flow.
+            guard tag != "script", tag != "style",
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
             if !text.isEmpty, (element.isBlock() || tag == "br"), !text.hasSuffix(" ") {
                 append(" ")
             }

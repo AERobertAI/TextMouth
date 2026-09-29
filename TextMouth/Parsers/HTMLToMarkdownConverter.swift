@@ -59,7 +59,10 @@ enum HTMLToMarkdownConverter {
         navigationElements: inout [Element]
     ) {
         for child in node.getChildNodes() {
-            guard let element = child as? Element else { continue }
+            // Hidden content, page lists, and landmarks are never converted,
+            // so they neither count as headings nor need removing as navigation.
+            guard let element = child as? Element,
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
             let tag = element.tagName().lowercased()
             let isNavigation = insideNavigation || tag == "nav"
             if tag == "nav" {
@@ -102,24 +105,16 @@ enum HTMLToMarkdownConverter {
 
     /// Convert a single HTML element to its Markdown equivalent.
     private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+        // Content outside the rendered reading flow (the hidden attribute, page
+        // lists, and landmarks) contributes no words, headings, or destinations.
+        guard !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
         let tag = element.tagName().lowercased()
 
         // Preserve a TOC target in the Markdown stream at its actual DOM
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
-        // Most chapters have no fragment destinations. Avoid attribute lookups
-        // at every node when there is no possible navigation match.
-        if !headingTargets.isEmpty, tag != "script", tag != "style" {
-            let id = (try? element.attr("id")) ?? ""
-            let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
-            if let annotation = headingTargets[id] ?? headingTargets[legacyName] {
-                if element.isBlock() {
-                    ensureBlankLine(&result)
-                    result += annotation.markdown + "\n\n"
-                } else {
-                    result += annotation.markdown
-                }
-            }
+        if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+            emit(annotation, inline: !element.isBlock(), into: &result)
         }
 
         switch tag {
@@ -132,9 +127,17 @@ enum HTMLToMarkdownConverter {
             let level = Int(String(tag.last!)) ?? 1
             let prefix = String(repeating: "#", count: level)
             ensureBlankLine(&result)
-            result += "\(prefix) "
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "\n\n"
+            // A destination inside a heading (such as an anchor before its
+            // words) names that heading. Emit it as its own block immediately
+            // before the heading line, never inside the label: the Markdown
+            // parser gives both the same offset and keeps the visible heading,
+            // and a heading without visible text still keeps its destination.
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                emit(annotation, inline: false, into: &result)
+            }
+            var label = ""
+            convertNode(element, into: &label, headingTargets: [:])
+            result += "\(prefix) \(singleLine(label))\n\n"
 
         // Paragraphs
         case "p":
@@ -161,11 +164,16 @@ enum HTMLToMarkdownConverter {
         // Links
         case "a":
             let href = (try? element.attr("href")) ?? ""
-            result += "["
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "]"
-            if !href.isEmpty {
-                result += "(\(href))"
+            if href.isEmpty {
+                // A named anchor such as <a id="page_12"/> marks a destination;
+                // it is not a link. Markdown would keep bare brackets as literal
+                // text in speech and in heading labels ("[]2"), so emit only
+                // whatever the anchor encloses.
+                convertNode(element, into: &result, headingTargets: headingTargets)
+            } else {
+                result += "["
+                convertNode(element, into: &result, headingTargets: headingTargets)
+                result += "](\(href))"
             }
 
         // Images — emit alt text for accessibility
@@ -246,13 +254,100 @@ enum HTMLToMarkdownConverter {
         }
     }
 
+    // MARK: - Navigation Annotations
+
+    /// Where the next output lands in the Markdown being built.
+    private enum LinePosition {
+        /// After visible content on the current line.
+        case withinLine
+        /// At the start of a line that continues a paragraph (after a hard break).
+        case continuationLine
+        /// At the start of a new block: the beginning, or after a blank line.
+        case blockStart
+    }
+
+    /// Classify the end of `result` from its last two lines only, so the cost
+    /// does not grow with the chapter. Spaces and tabs are indentation, not
+    /// content, as in CommonMark. Scalars keep "\r\n" from hiding a newline.
+    private static func linePosition(of result: String) -> LinePosition {
+        let scalars = result.unicodeScalars
+        let isIndentation: (Unicode.Scalar) -> Bool = { $0 == " " || $0 == "\t" }
+        guard let lineBreak = scalars.lastIndex(of: "\n") else {
+            return scalars.allSatisfy(isIndentation) ? .blockStart : .withinLine
+        }
+        guard scalars[scalars.index(after: lineBreak)...].allSatisfy(isIndentation) else { return .withinLine }
+        let earlierLines = scalars[..<lineBreak]
+        let previousLineStart = earlierLines.lastIndex(of: "\n").map { earlierLines.index(after: $0) }
+            ?? earlierLines.startIndex
+        return earlierLines[previousLineStart...].allSatisfy(isIndentation) ? .blockStart : .continuationLine
+    }
+
+    /// Write a destination without changing the words around it. CommonMark
+    /// opens an HTML block at any line that begins with "<!--", and that block
+    /// swallows the rest of the line: an anchor at the start of a paragraph
+    /// used to delete the paragraph's words from speech. An annotation therefore
+    /// never begins a line. At a block boundary it becomes a block of its own,
+    /// which names the same position as the block that follows. After a hard
+    /// line break, four spaces keep it inside the paragraph, because an HTML
+    /// block may be indented by at most three and a continuation line's
+    /// indentation is not part of its text.
+    private static func emit(_ annotation: MarkdownHeadingAnnotation, inline: Bool, into result: inout String) {
+        switch inline ? linePosition(of: result) : .blockStart {
+        case .withinLine:
+            result += annotation.markdown
+        case .continuationLine:
+            result += "    " + annotation.markdown
+        case .blockStart:
+            ensureBlankLine(&result)
+            result += annotation.markdown + "\n\n"
+        }
+    }
+
+    /// The TOC destination an element carries through its id, or through the
+    /// name of a legacy anchor.
+    private static func headingAnnotation(
+        for element: Element,
+        tag: String,
+        headingTargets: [String: MarkdownHeadingAnnotation]
+    ) -> MarkdownHeadingAnnotation? {
+        // Most chapters have no fragment destinations. Avoid attribute lookups
+        // at every node when there is no possible navigation match.
+        guard !headingTargets.isEmpty, tag != "script", tag != "style" else { return nil }
+        let id = (try? element.attr("id")) ?? ""
+        let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
+        return headingTargets[id] ?? headingTargets[legacyName]
+    }
+
+    /// Destinations carried by a heading's descendants, in document order.
+    /// Content outside the reading flow is skipped exactly as conversion skips it.
+    private static func headingAnnotations(
+        inside heading: Element,
+        headingTargets: [String: MarkdownHeadingAnnotation]
+    ) -> [MarkdownHeadingAnnotation] {
+        guard !headingTargets.isEmpty else { return [] }
+        var annotations: [MarkdownHeadingAnnotation] = []
+        for child in heading.getChildNodes() {
+            guard let element = child as? Element,
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+            let tag = element.tagName().lowercased()
+            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+                annotations.append(annotation)
+            }
+            annotations += headingAnnotations(inside: element, headingTargets: headingTargets)
+        }
+        return annotations
+    }
+
     // MARK: - List Conversion
 
     /// Convert list item children of a <ul> or <ol> to Markdown.
     private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+        // A hidden item is not rendered: it must neither leave an empty bullet
+        // nor take a number from the visible items that follow it.
         let items = listElement.getChildNodes().compactMap { node -> Element? in
             guard let element = node as? Element,
-                  element.tagName().lowercased() == "li" else { return nil }
+                  element.tagName().lowercased() == "li",
+                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { return nil }
             return element
         }
         for (index, item) in items.enumerated() {
@@ -298,6 +393,15 @@ enum HTMLToMarkdownConverter {
             with: " ",
             options: .regularExpression
         )
+    }
+
+    /// A Markdown heading is a single line. Join a heading's converted lines
+    /// with spaces: a line break (<br/>) or stray block inside a heading would
+    /// otherwise end it early, cutting its label short and leaving the rest of
+    /// its words, with any enclosing link syntax, as literal prose to be read.
+    private static func singleLine(_ text: String) -> String {
+        guard text.contains("\n") else { return text }
+        return text.replacingOccurrences(of: "[ \\t]*\\n[ \\t\\n]*", with: " ", options: .regularExpression)
     }
 
     /// Collapse three or more consecutive newlines into exactly two.

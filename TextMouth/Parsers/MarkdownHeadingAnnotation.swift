@@ -11,8 +11,20 @@ struct MarkdownHeadingAnnotation: Codable {
 
     /// Emit an inert HTML comment that the cache parser can recognize.
     var markdown: String {
-        guard let data = try? JSONEncoder().encode(self) else { return "" }
+        guard let data = try? Self.encoder.encode(self) else { return "" }
         return Self.prefix + data.base64EncodedString() + Self.suffix
+    }
+
+    /// Sorted keys make every encoding of an annotation identical. Without
+    /// them JSONEncoder's key order can differ between encodings, so the same
+    /// destination produced different markers and content.md was not
+    /// reproducible. Decoding ignores key order, so existing markers still read.
+    /// A fresh encoder per use, as before, keeps parallel cache workers from
+    /// sharing a non-Sendable instance.
+    private static var encoder: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
     }
 
     /// Accept only our complete, well-formed annotation; ordinary source HTML
