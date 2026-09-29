@@ -374,6 +374,54 @@ extension ReaderViewModel {
         )
     }
 
+    // MARK: - Speakable Chapters
+
+    /// Whether text gives the speech engine anything to say: at least one
+    /// character that is not whitespace or a line break. Playback passes
+    /// over a chapter whose prepared speech fails this, exactly as it passes
+    /// over a chapter with no text at all.
+    nonisolated static func hasSpeakableText(_ text: some StringProtocol) -> Bool {
+        text.contains { !$0.isWhitespace }
+    }
+
+    /// The index of the first chapter at or after `start` that `isSpeakable`
+    /// accepts, or nil when none does.
+    ///
+    /// The search moves forward only and ends at the last chapter; it never
+    /// wraps around to the beginning of the book. It therefore asks about
+    /// each chapter at most once and always finishes, however many chapters
+    /// are silent. A negative `start` searches from the first chapter.
+    nonisolated static func nextSpeakableChapterIndex(
+        from start: Int,
+        chapterCount: Int,
+        isSpeakable: (Int) -> Bool
+    ) -> Int? {
+        let first = max(0, start)
+        guard first < chapterCount else { return nil }
+        return (first..<chapterCount).first(where: isSpeakable)
+    }
+
+    /// The prepared speech of the first chapter at or after `start` that has
+    /// anything to say once skipped sections, punctuation pauses, and text
+    /// substitutions are applied, or nil when every remaining chapter is
+    /// silent: empty, entirely inside skipped sections, or deleted by
+    /// substitutions.
+    func nextSpeakableChapterSpeech(from start: Int) -> ChapterSpeech? {
+        guard let content else { return nil }
+        // The search stops at the first chapter whose speech qualifies, so
+        // the speech prepared last belongs to that chapter. Keeping it spares
+        // the chosen chapter a second trip through the text pipeline.
+        var lastPrepared: ChapterSpeech?
+        let index = Self.nextSpeakableChapterIndex(
+            from: start,
+            chapterCount: content.chapters.count
+        ) { chapterIndex in
+            lastPrepared = preparedSpeech(forChapterAt: chapterIndex)
+            return lastPrepared.map { Self.hasSpeakableText($0.text) } ?? false
+        }
+        return index == nil ? nil : lastPrepared
+    }
+
     // MARK: - Audio Book Playback
 
     /// Three audio-book layouts handled by this VM, each with a
