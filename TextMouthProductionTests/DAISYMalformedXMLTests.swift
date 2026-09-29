@@ -46,6 +46,57 @@ final class DAISYMalformedXMLTests: XCTestCase {
     </level1></bodymatter></book></dtbook>
     """
 
+    /// A DAISY 2.02 navigation file with two headings, one per SMIL file.
+    private static let ncc = """
+    <?xml version="1.0" encoding="utf-8"?>
+    <html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta name="dc:title" content="Harbor Soundings"/>
+    <meta name="dc:creator" content="Odile Marchetti"/>
+    </head><body>
+    <h1 id="h1"><a href="part1.smil#p1">Leadline Readings</a></h1>
+    <h1 id="h2"><a href="part2.smil#p3">Breakwater Survey</a></h1>
+    </body></html>
+    """
+
+    /// The first chapter's synchronization: a heading, then a paragraph.
+    private static let part1SMIL = """
+    <?xml version="1.0" encoding="utf-8"?>
+    <smil><body><seq>
+    <par id="p1"><text src="text.html#t1"/></par>
+    <par id="p2"><text src="text.html#t2"/></par>
+    </seq></body></smil>
+    """
+
+    /// The second chapter's synchronization: a heading, then a paragraph.
+    private static let part2SMIL = """
+    <?xml version="1.0" encoding="utf-8"?>
+    <smil><body><seq>
+    <par id="p3"><text src="text.html#t3"/></par>
+    <par id="p4"><text src="text.html#t4"/></par>
+    </seq></body></smil>
+    """
+
+    /// The DAISY 2.02 text content the SMIL files point into.
+    private static let contentHTML = """
+    <html><body>
+    <h1 id="t1">Leadline Readings</h1>
+    <p id="t2">The first sounding came up at nine fathoms.</p>
+    <h1 id="t3">Breakwater Survey</h1>
+    <p id="t4">The second sounding struck gravel near the breakwater.</p>
+    </body></html>
+    """
+
+    /// A complete DAISY 2.02 text package, with `overrides` replacing files.
+    private static func daisy202Package(_ overrides: [String: String] = [:]) -> [String: String] {
+        let files = [
+            "ncc.html": ncc,
+            "part1.smil": part1SMIL,
+            "part2.smil": part2SMIL,
+            "text.html": contentHTML
+        ]
+        return files.merging(overrides) { _, override in override }
+    }
+
     /// `text` up to, not including, the first `marker`: a copy cut off
     /// partway, as an interrupted download or extraction leaves it.
     private static func truncated(_ text: String, before marker: String) -> String {
@@ -196,6 +247,36 @@ final class DAISYMalformedXMLTests: XCTestCase {
             try DAISYAudioConverter.convertToAudioBook(from: package, version: .daisy3, toDirectory: audioDirectory)
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])
+    }
+
+    // MARK: - SMIL Text References
+
+    /// A synchronization file cut off after its first reference throws
+    /// instead of returning the references read before the cut.
+    func testTruncatedTextSMILThrowsErrorNamingTheFile() throws {
+        let complete = try DAISYSMILParser(data: Data(Self.part1SMIL.utf8), file: "part1.smil").parseTextReferences()
+        XCTAssertEqual(complete, ["text.html#t1", "text.html#t2"])
+
+        let damaged = Self.truncated(Self.part1SMIL, before: "<par id=\"p2\"")
+        malformedXMLReason(naming: "part1.smil") {
+            try DAISYSMILParser(data: Data(damaged.utf8), file: "part1.smil").parseTextReferences()
+        }
+    }
+
+    /// The package reads in full while intact; with a damaged SMIL file the
+    /// book fails, naming that file, rather than losing a paragraph.
+    func testDAISY202BookWithTruncatedSMILReportsTheSynchronizationFile() throws {
+        let intact = try makeTemporaryDAISYZip(entries: Self.daisy202Package())
+        defer { try? FileManager.default.removeItem(at: intact) }
+        let markdown = try DAISYParser.extractMarkdown(from: intact)
+        XCTAssertTrue(markdown.contains("The first sounding came up at nine fathoms."), markdown)
+        XCTAssertTrue(markdown.contains("The second sounding struck gravel near the breakwater."), markdown)
+
+        let damaged = try makeTemporaryDAISYZip(entries: Self.daisy202Package([
+            "part1.smil": Self.truncated(Self.part1SMIL, before: "<par id=\"p2\"")
+        ]))
+        defer { try? FileManager.default.removeItem(at: damaged) }
+        malformedXMLReason(naming: "part1.smil") { try DAISYParser.extractMarkdown(from: damaged) }
     }
 
     // MARK: - Helpers

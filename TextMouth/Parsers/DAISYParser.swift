@@ -426,9 +426,9 @@ enum DAISYParser {
                 preserveFragment: false
             )
 
-            if let smilData = try? provider.readFile(at: smilFile) {
-                let smilParser = DAISYSMILParser(data: smilData)
-                let textRefs = smilParser.parseTextReferences()
+            // A missing SMIL file is skipped as before; a damaged one throws.
+            if let smilParser = try? DAISYSMILParser(path: smilFile, in: provider) {
+                let textRefs = try smilParser.parseTextReferences()
                 for ref in textRefs {
                     let textPath = ParserUtilities.resolvedPackagePath(
                         ref,
