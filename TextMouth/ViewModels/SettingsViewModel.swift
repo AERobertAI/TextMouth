@@ -478,30 +478,39 @@ final class SettingsViewModel: ObservableObject {
     /// Push current AppStorage settings to config.json
     func syncToConfig() {
         guard !isSyncingFromConfig else { return }
-        configService.config.selectedVoiceID = selectedVoiceID
-        configService.config.wordsPerMinute = wordsPerMinute
-        configService.config.pitchMultiplier = pitchMultiplier
-        configService.config.selectedLanguage = selectedLanguage
-        configService.config.skipForwardUnit = skipForwardUnitRaw
-        configService.config.skipBackwardUnit = skipBackwardUnitRaw
-        configService.config.shiftSkipForwardUnit = shiftSkipForwardUnitRaw
-        configService.config.shiftSkipBackwardUnit = shiftSkipBackwardUnitRaw
-        configService.config.rewindOnResumeUnit = rewindOnResumeUnitRaw
-        configService.config.rewindSmartMode = rewindSmartMode
-        configService.config.rewindSmartThreshold = rewindSmartThreshold
-        configService.config.sleepFadeOutDuration = sleepFadeOutDuration
-        configService.config.sleepTimerAutoClose = sleepTimerAutoClose
-        configService.config.endOfBookBehavior = endOfBookBehaviorRaw
-        configService.config.punctuationPauseLevel = punctuationPauseLevel
-        configService.config.autoPlayOnNavigate = autoPlayOnNavigate
-        configService.config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
-        configService.config.bluetoothDisconnectDelay = bluetoothDisconnectDelay
-        configService.config.restartTimerGestureEnabled = restartTimerGestureEnabled
-        configService.config.restartTimerGesturePattern = restartTimerGesturePattern
-        configService.config.restartTimerGestureWindow = restartTimerGestureWindow
-        // Preserve dataDirectoryPath — it's managed by the Storage settings tab
-        configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
+        // One in-place update publishes a single complete snapshot.
+        writePreferences(into: &configService.config)
         configService.saveToDisk()
+    }
+
+    /// Copies the mirrored preferences into `config`, leaving fields that
+    /// other screens manage (import and deletion choices, the last opened
+    /// book) as they are. Every value is the validated one consumers see, so
+    /// a value injected with `defaults write` is written in its repaired form.
+    func writePreferences(into config: inout ConfigService.AppConfig) {
+        config.selectedVoiceID = selectedVoiceID
+        config.wordsPerMinute = wordsPerMinute
+        config.pitchMultiplier = pitchMultiplier
+        config.selectedLanguage = selectedLanguage
+        config.skipForwardUnit = skipForwardUnit.rawValue
+        config.skipBackwardUnit = skipBackwardUnit.rawValue
+        config.shiftSkipForwardUnit = shiftSkipForwardUnit.rawValue
+        config.shiftSkipBackwardUnit = shiftSkipBackwardUnit.rawValue
+        config.rewindOnResumeUnit = rewindOnResumeUnit.rawValue
+        config.rewindSmartMode = rewindSmartMode
+        config.rewindSmartThreshold = rewindSmartThreshold
+        config.sleepFadeOutDuration = sleepFadeOutDuration
+        config.sleepTimerAutoClose = sleepTimerAutoClose
+        config.endOfBookBehavior = endOfBookBehavior.rawValue
+        config.punctuationPauseLevel = punctuationPauseLevel
+        config.autoPlayOnNavigate = autoPlayOnNavigate
+        config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
+        config.bluetoothDisconnectDelay = bluetoothDisconnectDelay
+        config.restartTimerGestureEnabled = restartTimerGestureEnabled
+        config.restartTimerGesturePattern = restartTimerGesturePattern
+        config.restartTimerGestureWindow = restartTimerGestureWindow
+        // Preserve dataDirectoryPath — it's managed by the Storage settings tab
+        config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
     }
 
     /// Pull settings from config.json (only for values that differ, i.e., external edits)
@@ -521,83 +530,83 @@ final class SettingsViewModel: ObservableObject {
 
     /// Sync local @AppStorage properties from a config snapshot.
     /// Used both on initial load and when config.json is externally modified.
+    ///
+    /// Snapshots can be built in code as well as decoded, so every value
+    /// passes through the same `SettingsPolicy` rules as the decoder: numbers
+    /// are clamped before assignment, and an empty or unsupported choice, an
+    /// unset speed or pitch, or empty text leaves the current preference alone.
     func applyConfigChanges(_ config: ConfigService.AppConfig) {
         isSyncingFromConfig = true
-        if !config.selectedVoiceID.isEmpty && config.selectedVoiceID != selectedVoiceID {
-            selectedVoiceID = config.selectedVoiceID
-        }
-        if config.wordsPerMinute > 0 && config.wordsPerMinute != wordsPerMinute {
-            wordsPerMinute = config.wordsPerMinute
-        }
-        if config.pitchMultiplier > 0 && config.pitchMultiplier != pitchMultiplier {
-            pitchMultiplier = config.pitchMultiplier
-        }
-        if !config.selectedLanguage.isEmpty && config.selectedLanguage != selectedLanguage {
-            selectedLanguage = config.selectedLanguage
-        }
-        if !config.skipForwardUnit.isEmpty && config.skipForwardUnit != skipForwardUnitRaw {
-            skipForwardUnitRaw = config.skipForwardUnit
-        }
-        if !config.skipBackwardUnit.isEmpty && config.skipBackwardUnit != skipBackwardUnitRaw {
-            skipBackwardUnitRaw = config.skipBackwardUnit
-        }
-        if !config.shiftSkipForwardUnit.isEmpty && config.shiftSkipForwardUnit != shiftSkipForwardUnitRaw {
-            shiftSkipForwardUnitRaw = config.shiftSkipForwardUnit
-        }
-        if !config.shiftSkipBackwardUnit.isEmpty && config.shiftSkipBackwardUnit != shiftSkipBackwardUnitRaw {
-            shiftSkipBackwardUnitRaw = config.shiftSkipBackwardUnit
-        }
-        if !config.rewindOnResumeUnit.isEmpty && config.rewindOnResumeUnit != rewindOnResumeUnitRaw {
-            rewindOnResumeUnitRaw = config.rewindOnResumeUnit
-        }
-        if config.rewindSmartMode != rewindSmartMode {
-            rewindSmartMode = config.rewindSmartMode
-        }
-        if config.rewindSmartThreshold > 0 && config.rewindSmartThreshold != rewindSmartThreshold {
-            rewindSmartThreshold = config.rewindSmartThreshold
-        }
-        if config.sleepFadeOutDuration != sleepFadeOutDuration {
-            sleepFadeOutDuration = config.sleepFadeOutDuration
-        }
-        if config.sleepTimerAutoClose != sleepTimerAutoClose {
-            sleepTimerAutoClose = config.sleepTimerAutoClose
-        }
-        if !config.endOfBookBehavior.isEmpty && config.endOfBookBehavior != endOfBookBehaviorRaw {
-            endOfBookBehaviorRaw = config.endOfBookBehavior
-        }
-        if config.punctuationPauseLevel != punctuationPauseLevel {
-            punctuationPauseLevel = config.punctuationPauseLevel
-        }
-        if config.autoPlayOnNavigate != autoPlayOnNavigate {
-            autoPlayOnNavigate = config.autoPlayOnNavigate
-        }
-        if config.bluetoothMonitoringEnabled != bluetoothMonitoringEnabled {
-            bluetoothMonitoringEnabled = config.bluetoothMonitoringEnabled
-        }
-        if config.bluetoothDisconnectDelay > 0 && config.bluetoothDisconnectDelay != bluetoothDisconnectDelay {
-            bluetoothDisconnectDelay = config.bluetoothDisconnectDelay
-        }
-        if config.restartTimerGestureEnabled != restartTimerGestureEnabled {
-            restartTimerGestureEnabled = config.restartTimerGestureEnabled
-        }
-        if !config.restartTimerGesturePattern.isEmpty &&
-           config.restartTimerGesturePattern != restartTimerGesturePattern {
-            restartTimerGesturePattern = config.restartTimerGesturePattern
-        }
-        if config.restartTimerGestureWindow > 0 &&
-           config.restartTimerGestureWindow != restartTimerGestureWindow {
-            restartTimerGestureWindow = config.restartTimerGestureWindow
-        }
+        defer { isSyncingFromConfig = false }
+
+        adopt(config.selectedVoiceID.nonEmpty, into: \.selectedVoiceID)
+        adopt(config.wordsPerMinute, rule: SettingsPolicy.wordsPerMinute, into: \.wordsPerMinute)
+        adopt(config.pitchMultiplier, rule: SettingsPolicy.pitchMultiplier, into: \.pitchMultiplier)
+        adopt(config.selectedLanguage.nonEmpty, into: \.selectedLanguage)
+        adopt(config.skipForwardUnit, rule: SettingsPolicy.skipForwardUnit, into: \.skipForwardUnitRaw)
+        adopt(config.skipBackwardUnit, rule: SettingsPolicy.skipBackwardUnit, into: \.skipBackwardUnitRaw)
+        adopt(config.shiftSkipForwardUnit, rule: SettingsPolicy.shiftSkipForwardUnit, into: \.shiftSkipForwardUnitRaw)
+        adopt(config.shiftSkipBackwardUnit, rule: SettingsPolicy.shiftSkipBackwardUnit, into: \.shiftSkipBackwardUnitRaw)
+        adopt(config.rewindOnResumeUnit, rule: SettingsPolicy.rewindOnResumeUnit, into: \.rewindOnResumeUnitRaw)
+        adopt(config.rewindSmartMode, into: \.rewindSmartMode)
+        adopt(config.rewindSmartThreshold, rule: SettingsPolicy.rewindSmartThreshold, into: \.rewindSmartThreshold)
+        adopt(config.sleepFadeOutDuration, rule: SettingsPolicy.sleepFadeOutDuration, into: \.sleepFadeOutDuration)
+        adopt(config.sleepTimerAutoClose, into: \.sleepTimerAutoClose)
+        adopt(config.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior, into: \.endOfBookBehaviorRaw)
+        adopt(config.punctuationPauseLevel, rule: SettingsPolicy.punctuationPauseLevel, into: \.punctuationPauseLevel)
+        adopt(config.autoPlayOnNavigate, into: \.autoPlayOnNavigate)
+        adopt(config.bluetoothMonitoringEnabled, into: \.bluetoothMonitoringEnabled)
+        adopt(
+            config.bluetoothDisconnectDelay,
+            rule: SettingsPolicy.bluetoothDisconnectDelay,
+            into: \.bluetoothDisconnectDelay
+        )
+        adopt(config.restartTimerGestureEnabled, into: \.restartTimerGestureEnabled)
+        adopt(config.restartTimerGesturePattern.nonEmpty, into: \.restartTimerGesturePattern)
+        adopt(
+            config.restartTimerGestureWindow,
+            rule: SettingsPolicy.restartTimerGestureWindow,
+            into: \.restartTimerGestureWindow
+        )
         // Handle external change to dataDirectoryPath
-        let currentCustom = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
-        if config.dataDirectoryPath != currentCustom {
+        if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
             notificationCenter.post(
                 name: .dataDirectoryChangeRequested,
                 object: nil,
                 userInfo: ["path": config.dataDirectoryPath]
             )
         }
-        isSyncingFromConfig = false
+    }
+
+    /// Assigns a value config.json asks for, when it differs from the current
+    /// one, so unchanged fields cause no didSet side effects. A nil request
+    /// means the file leaves this preference alone.
+    private func adopt<Value: Equatable>(
+        _ requested: Value?,
+        into keyPath: ReferenceWritableKeyPath<SettingsViewModel, Value>
+    ) {
+        guard let requested, self[keyPath: keyPath] != requested else { return }
+        self[keyPath: keyPath] = requested
+    }
+
+    /// Adopts a config.json number validated by `rule`: clamped, or ignored
+    /// when it means "not chosen yet".
+    private func adopt(
+        _ configValue: Double,
+        rule: NumericSettingRule,
+        into keyPath: ReferenceWritableKeyPath<SettingsViewModel, Double>
+    ) {
+        adopt(rule.requestedValue(fromConfig: configValue), into: keyPath)
+    }
+
+    /// Adopts a config.json raw value for an enum-backed preference, ignoring
+    /// an empty or unsupported value.
+    private func adopt<Choice>(
+        _ configRawValue: String,
+        rule: EnumSettingRule<Choice>,
+        into keyPath: ReferenceWritableKeyPath<SettingsViewModel, String>
+    ) {
+        adopt(rule.requestedValue(fromConfig: configRawValue)?.rawValue, into: keyPath)
     }
 
     private func broadcastChanges() {
@@ -630,6 +639,11 @@ private extension EnumSettingRule {
     func appStorage(in store: UserDefaults) -> AppStorage<String> {
         AppStorage(wrappedValue: defaultValue.rawValue, key, store: store)
     }
+}
+
+private extension String {
+    /// nil for the empty string, which config.json uses for "not chosen yet".
+    var nonEmpty: String? { isEmpty ? nil : self }
 }
 
 extension Notification.Name {

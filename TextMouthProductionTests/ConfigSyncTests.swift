@@ -290,6 +290,140 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, PlaybackNavigationUnitControlMode.none)
     }
 
+    // MARK: - Applying and saving config.json
+
+    /// Extreme values in a config snapshot are clamped before assignment, so
+    /// the stored preferences themselves stay in range, not just the reads.
+    func testApplyingExtremeConfigValuesKeepsTheStoreInRange() throws {
+        let defaults = try isolatedDefaults()
+        let initial: [String: Any] = [
+            "wordsPerMinute": 300.0, "pitchMultiplier": 1.2, "rewindSmartThreshold": 95.0,
+            "sleepFadeOutDuration": 5.0, "punctuationPauseLevel": 1.0, "bluetoothDisconnectDelay": 3.0,
+            "restartTimerGestureWindow": 4.0, "skipForwardUnit": SkipUnit.heading.rawValue,
+        ]
+        for (key, value) in initial {
+            defaults.set(value, forKey: key)
+        }
+        let viewModel = makeIsolatedViewModel(defaults)
+        var config = ConfigService.AppConfig()
+        config.wordsPerMinute = 1e308
+        config.pitchMultiplier = -.infinity
+        config.rewindSmartThreshold = .nan
+        config.sleepFadeOutDuration = -5
+        config.punctuationPauseLevel = 99
+        config.bluetoothDisconnectDelay = 1e9
+        config.restartTimerGestureWindow = 0.01
+        config.skipForwardUnit = "17 seconds"
+        config.endOfBookBehavior = EndOfBookBehavior.loop.rawValue
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(defaults.double(forKey: "wordsPerMinute"), 650)
+        XCTAssertEqual(defaults.double(forKey: "pitchMultiplier"), 1.2, "a non-finite pitch means not chosen")
+        XCTAssertEqual(defaults.double(forKey: "rewindSmartThreshold"), 70, "a non-finite number acts as missing")
+        XCTAssertEqual(defaults.double(forKey: "sleepFadeOutDuration"), 0)
+        XCTAssertEqual(defaults.double(forKey: "punctuationPauseLevel"), 3)
+        XCTAssertEqual(defaults.double(forKey: "bluetoothDisconnectDelay"), 10)
+        XCTAssertEqual(defaults.double(forKey: "restartTimerGestureWindow"), 0.5)
+        XCTAssertEqual(defaults.string(forKey: "skipForwardUnit"), SkipUnit.heading.rawValue)
+        XCTAssertEqual(defaults.string(forKey: "endOfBookBehavior"), EndOfBookBehavior.loop.rawValue)
+        for rule in allNumericRules {
+            XCTAssertTrue(rule.range.contains(defaults.double(forKey: rule.key)), rule.key)
+        }
+    }
+
+    /// An unset speed or pitch, empty text, and empty or unsupported choices
+    /// leave the current preferences alone, and announce no speech change.
+    func testUnsetAndUnsupportedConfigValuesLeaveSettingsAlone() throws {
+        let defaults = try isolatedDefaults()
+        let stored: [String: Any] = [
+            "selectedVoiceID": "voice.kept", "wordsPerMinute": 300.0, "pitchMultiplier": 1.2,
+            "selectedLanguage": "de", "skipForwardUnit": SkipUnit.heading.rawValue,
+            "rewindOnResumeUnit": RewindUnit.sentence.rawValue,
+            "restartTimerGesturePattern": "nextTrack,nextTrack",
+        ]
+        for (key, value) in stored {
+            defaults.set(value, forKey: key)
+        }
+        let notificationCenter = NotificationCenter()
+        let viewModel = SettingsViewModel(
+            notificationCenter: notificationCenter,
+            initializeServices: false,
+            userDefaults: defaults
+        )
+        let noSpeechChange = XCTNSNotificationExpectation(
+            name: .speechSettingsChanged,
+            object: nil,
+            notificationCenter: notificationCenter
+        )
+        noSpeechChange.isInverted = true
+        // A fresh config leaves speed and pitch at 0 ("not chosen yet").
+        var config = ConfigService.AppConfig()
+        config.skipForwardUnit = "Sideways"
+        config.rewindOnResumeUnit = ""
+        config.restartTimerGesturePattern = ""
+
+        viewModel.applyConfigChanges(config)
+
+        wait(for: [noSpeechChange], timeout: 0.1)
+        XCTAssertEqual(viewModel.selectedVoiceID, "voice.kept")
+        XCTAssertEqual(viewModel.wordsPerMinute, 300)
+        XCTAssertEqual(viewModel.pitchMultiplier, 1.2)
+        XCTAssertEqual(viewModel.selectedLanguage, "de")
+        XCTAssertEqual(viewModel.skipForwardUnit, .heading)
+        XCTAssertEqual(viewModel.rewindOnResumeUnit, .sentence)
+        XCTAssertEqual(viewModel.restartTimerGesturePattern, "nextTrack,nextTrack")
+    }
+
+    /// Saving writes the validated preferences, so a value injected with
+    /// `defaults write` reaches config.json repaired, and the fields other
+    /// screens manage keep their values.
+    func testSavedPreferencesAreTheValidatedValues() throws {
+        let defaults = try isolatedDefaults()
+        defaults.set(1e308, forKey: "wordsPerMinute")
+        defaults.set(-3.0, forKey: "punctuationPauseLevel")
+        defaults.set("17 seconds", forKey: "skipForwardUnit")
+        defaults.set("Shuffle", forKey: "endOfBookBehavior")
+        let viewModel = makeIsolatedViewModel(defaults)
+        let original = customizedConfig()
+        var config = original
+
+        viewModel.writePreferences(into: &config)
+
+        XCTAssertEqual(config.wordsPerMinute, 650)
+        XCTAssertEqual(config.punctuationPauseLevel, 0)
+        XCTAssertEqual(config.skipForwardUnit, SkipUnit.seconds15.rawValue)
+        XCTAssertEqual(config.endOfBookBehavior, EndOfBookBehavior.stop.rawValue)
+        XCTAssertEqual(config.importDeleteBehavior, original.importDeleteBehavior)
+        XCTAssertEqual(config.confirmBeforeDelete, original.confirmBeforeDelete)
+        XCTAssertEqual(config.lastOpenedBookID, original.lastOpenedBookID)
+        XCTAssertEqual(config.moveToTrashInsteadOfDeleting, original.moveToTrashInsteadOfDeleting)
+    }
+
+    /// A file with one extreme value round-trips through the settings model:
+    /// the value is clamped on load and saved clamped, and every other
+    /// preference is saved exactly as the file had it.
+    func testLoadingThenSavingRewritesOnlyTheClampedPreference() throws {
+        var file = try jsonObject(customizedConfig())
+        file["punctuationPauseLevel"] = 40
+        let loaded = try JSONDecoder().decode(
+            ConfigService.AppConfig.self,
+            from: JSONSerialization.data(withJSONObject: file)
+        )
+        let viewModel = makeIsolatedViewModel(try isolatedDefaults())
+
+        viewModel.applyConfigChanges(loaded)
+        var saved = loaded
+        viewModel.writePreferences(into: &saved)
+
+        let rewritten = try jsonObject(saved)
+        XCTAssertEqual(rewritten["punctuationPauseLevel"] as? Double, 3)
+        // The data directory is always the one in use, never the file's.
+        for (key, value) in file where key != "punctuationPauseLevel" && key != "dataDirectoryPath" {
+            XCTAssertEqual(rewritten[key] as? NSObject, value as? NSObject, key)
+        }
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or
@@ -431,6 +565,14 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Every numeric rule the settings model stores.
+    private let allNumericRules = [
+        SettingsPolicy.wordsPerMinute, SettingsPolicy.pitchMultiplier,
+        SettingsPolicy.rewindSmartThreshold, SettingsPolicy.sleepFadeOutDuration,
+        SettingsPolicy.punctuationPauseLevel, SettingsPolicy.bluetoothDisconnectDelay,
+        SettingsPolicy.restartTimerGestureWindow,
+    ]
 
     /// A throwaway preferences suite, deleted when the test ends, so tests
     /// never read or change the user's real settings.
