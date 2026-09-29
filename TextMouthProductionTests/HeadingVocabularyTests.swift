@@ -305,4 +305,35 @@ final class ReaderHeadingLocationTests: XCTestCase {
         XCTAssertEqual(reader.locationTitle(for: position, chapterIndex: 0), "Appendix Notes")
         XCTAssertNil(reader.locationTitle(for: position, chapterIndex: 7))
     }
+
+    /// Where Am I reads the live cursor: both detail levels name the heading
+    /// being read exactly once and number it among all headings.
+    func testWhereAmIDescribesTheLiveCursorByHeading() {
+        let reader = makeReader()
+        defer { reader.close() }
+        let content = threeUnitContent()
+        reader.content = content
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 12
+
+        let brief = reader.buildBriefWhereAmI()
+        let full = reader.buildFullWhereAmI(content: content)
+
+        XCTAssertTrue(brief.hasPrefix("Heading Vocabulary. Middle. Heading 2 of 2. "), brief)
+        XCTAssertTrue(full.hasPrefix("Heading Vocabulary. Middle. Heading 2 of 2. "), full)
+        XCTAssertEqual(full.components(separatedBy: "Middle").count - 1, 1)
+        XCTAssertFalse(full.localizedCaseInsensitiveContains("chapter"))
+    }
+
+    /// The start of a content unit whose heading comes later still belongs
+    /// to the previous unit's heading, as the headings panel shows it.
+    func testWhereAmIBeforeAUnitsFirstHeadingNamesTheEarlierHeading() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = threeUnitContent()
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 0
+
+        XCTAssertTrue(reader.buildBriefWhereAmI().hasPrefix("Heading Vocabulary. Opening. Heading 1 of 2. "))
+    }
 }

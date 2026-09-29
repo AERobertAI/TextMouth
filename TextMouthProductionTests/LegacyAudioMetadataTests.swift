@@ -116,51 +116,60 @@ final class LegacyAudioMetadataTests: XCTestCase {
         XCTAssertEqual(metadata.title, "Old Book")
     }
 
+    /// Audio books carry one heading per audio section, so Where Am I names
+    /// the section's heading and numbers it among the book's headings.
     func testBriefWhereAmIIncludesHeadingAndPosition() {
+        let headings = ["Boarding the Train", "Night Ferry", "Customs", "Harbor", "Home"].enumerated().map {
+            Heading(level: 1, text: $0.element, chapterIndex: $0.offset, characterOffset: 0)
+        }
+        let position = HeadingPosition(in: headings, chapterIndex: 0, characterOffset: 40)
+
         let summary = ReaderViewModel.briefWhereAmISummary(
             bookTitle: "My Book",
-            headingTitle: "Boarding the Train",
-            chapterTitle: "The Departure",
-            chapterIndex: 0,
-            chapterCount: 5,
+            locationTitle: position.title(contentTitle: "The Departure", bookTitle: "My Book"),
+            headingPosition: position,
             percentComplete: 12,
             timeRemaining: 9_000
         )
 
         XCTAssertTrue(summary.contains("Boarding the Train"))
-        XCTAssertTrue(summary.contains("Chapter 1 of 5"))
+        XCTAssertTrue(summary.contains("Heading 1 of 5"))
         XCTAssertTrue(summary.contains("12 percent"))
+        XCTAssertFalse(summary.contains("The Departure"))
     }
 
-    func testBriefWhereAmIFallsBackToChapterTitle() {
+    /// Only a book without any headings names its content unit's title, and
+    /// it then has no heading number to speak.
+    func testBriefWhereAmIFallsBackToContentTitleWithoutHeadings() {
+        let position = HeadingPosition(in: [], chapterIndex: 0, characterOffset: 0)
+
         let summary = ReaderViewModel.briefWhereAmISummary(
             bookTitle: "My Book",
-            headingTitle: nil,
-            chapterTitle: "Introduction",
-            chapterIndex: 0,
-            chapterCount: 3,
+            locationTitle: position.title(contentTitle: "Introduction", bookTitle: "My Book"),
+            headingPosition: position,
             percentComplete: 0,
             timeRemaining: 60
         )
 
-        XCTAssertTrue(summary.contains("Introduction"))
-        XCTAssertTrue(summary.contains("Chapter 1 of 3"))
+        XCTAssertEqual(summary, "My Book. Introduction. 0 percent. 1 minute remaining.")
     }
 
-    func testBriefWhereAmIPlacesHeadingBeforeChapterNumber() throws {
+    func testBriefWhereAmIPlacesHeadingTextBeforeHeadingNumber() throws {
+        let headings = (0..<20).map {
+            Heading(level: 1, text: "Part \($0 + 1)", chapterIndex: $0, characterOffset: 0)
+        }
+
         let summary = ReaderViewModel.briefWhereAmISummary(
             bookTitle: "Book Title",
-            headingTitle: "The Final Stand",
-            chapterTitle: nil,
-            chapterIndex: 14,
-            chapterCount: 20,
+            locationTitle: "The Final Stand",
+            headingPosition: HeadingPosition(in: headings, chapterIndex: 14, characterOffset: 10),
             percentComplete: 75,
             timeRemaining: 3_600
         )
 
         let heading = try XCTUnwrap(summary.range(of: "The Final Stand"))
-        let chapter = try XCTUnwrap(summary.range(of: "Chapter 15"))
-        XCTAssertLessThan(heading.lowerBound, chapter.lowerBound)
+        let number = try XCTUnwrap(summary.range(of: "Heading 15 of 20"))
+        XCTAssertLessThan(heading.lowerBound, number.lowerBound)
     }
 
     func testEPUBUsesRichMetadataEditor() {
