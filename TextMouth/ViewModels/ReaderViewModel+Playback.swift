@@ -11,6 +11,11 @@ extension ReaderViewModel {
 
     /// Start speaking the current chapter from the current offset.
     /// For audio books, delegates to playAudioChapter().
+    ///
+    /// A text book first finds what it will say. When nothing speakable
+    /// remains from the cursor, the book ends at once through its
+    /// end-of-book behavior, without claiming media controls, making the
+    /// play sound, or starting a Playing state or listening session.
     func play() {
         // Loading or closed readers cannot own a playback/statistics session.
         guard !hasClosed, !isLoading, let content,
@@ -19,6 +24,16 @@ extension ReaderViewModel {
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) { return }
+        // Find what a text book will say before claiming playback, so a book
+        // with nothing left to say ends before any playback state is claimed.
+        var speechStart: SpeechStart?
+        if !isAudioBook {
+            guard let start = speechStartFromCursor() else {
+                endBookWithNothingLeftToSpeak()
+                return
+            }
+            speechStart = start
+        }
         restartPlaybackBackendOnNextResume = false
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
@@ -31,8 +46,8 @@ extension ReaderViewModel {
         sleepTimerService.resumeCountdown(by: book.id)
         if isAudioBook {
             playAudioChapter()
-        } else {
-            speakCurrentChapter()
+        } else if let speechStart {
+            startSpeaking(speechStart)
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -91,13 +106,21 @@ extension ReaderViewModel {
         recordPlaybackStarted()
         readingStatsService.startSession(bookID: book.id)
         sleepTimerService.resumeCountdown(by: book.id)
-        if restartPlaybackBackendOnNextResume {
+        // Restart from the cursor instead of resuming after an audio-route
+        // change, and when nothing speakable follows the cursor in the loaded
+        // speech (a skip made while paused can land there), since resuming
+        // would restart that speech with nothing to say.
+        if restartPlaybackBackendOnNextResume
+            || !loadedSpeechHasSpeakableText(afterOriginalOffset: currentCharacterOffset) {
             restartPlaybackBackendOnNextResume = false
             speechService.stop()
-            speakCurrentChapter()
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            // The book ends instead when nothing speakable remains, for
+            // example after skipping the rest of it while paused.
+            if speakCurrentChapter() {
+                nowPlayingService.updateNowPlayingInfo(
+                    title: book.title, author: book.author, isPlaying: true
+                )
+            }
             return
         }
         if speechService.resume() {
@@ -235,108 +258,149 @@ extension ReaderViewModel {
         }
     }
 
-    /// Speak the current chapter's text from the current character offset.
-    /// Applies section filtering, punctuation pauses, and text substitutions before speaking.
-    func speakCurrentChapter() {
+    /// Speak from the cursor, passing over text with nothing to say.
+    ///
+    /// Speech starts at the cursor when anything speakable follows it in its
+    /// chapter, and otherwise at the start of the next chapter whose
+    /// prepared speech has something to say. Chapters that are empty,
+    /// entirely inside skipped sections, or deleted by substitutions are
+    /// passed over. When nothing speakable remains, nothing is spoken and
+    /// the book ends through its end-of-book behavior instead.
+    ///
+    /// - Returns: True when speech started. False when the cursor is not in
+    ///   a chapter, or when the book ended instead (its end-of-book behavior
+    ///   may itself have restarted playback).
+    @discardableResult
+    func speakCurrentChapter() -> Bool {
         guard let content = content,
-              content.chapters.indices.contains(currentChapterIndex) else { return }
-
-        // Skip empty chapters
-        var idx = currentChapterIndex
-        while idx < content.chapters.count && content.chapters[idx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            idx += 1
+              content.chapters.indices.contains(currentChapterIndex) else { return false }
+        guard let start = speechStartFromCursor() else {
+            endBookWithNothingLeftToSpeak()
+            return false
         }
-        if idx != currentChapterIndex {
-            currentChapterIndex = idx
+        startSpeaking(start)
+        return true
+    }
+
+    /// Where speaking begins: a chapter's prepared speech and the offset in
+    /// its spoken text to start from. The offset is 0 unless the chapter is
+    /// the one holding the cursor.
+    struct SpeechStart {
+        let speech: ChapterSpeech
+        let offset: Int
+    }
+
+    /// Where speech resumes from the cursor: the rest of the cursor's
+    /// chapter when anything speakable follows the cursor there, otherwise
+    /// the start of the next speakable chapter. Nil when nothing speakable
+    /// remains in the book, and when no content is loaded or the cursor is
+    /// outside it, which callers rule out first.
+    ///
+    /// A chapter that is speakable as a whole can still have nothing left
+    /// after the cursor, when the cursor sits in a skipped section at the
+    /// end of the chapter or in its trailing blank lines.
+    func speechStartFromCursor() -> SpeechStart? {
+        guard let current = preparedSpeech(forChapterAt: currentChapterIndex) else { return nil }
+        // The cursor is an offset in the original text. Map it into the
+        // spoken text; an offset inside a removed section can map past the
+        // spoken text's end, so clamp it there.
+        let offset = min(current.offsetMap.toModified(currentCharacterOffset), current.text.utf16Length)
+        if Self.hasSpeakableText(in: current.text, fromSpokenOffset: offset) {
+            return SpeechStart(speech: current, offset: offset)
+        }
+        return nextSpeakableChapterSpeech(from: currentChapterIndex + 1)
+            .map { SpeechStart(speech: $0, offset: 0) }
+    }
+
+    /// Whether the speech loaded for the cursor's chapter has anything
+    /// speakable after an original-text offset. A seek or resume that lands
+    /// where nothing follows, such as in a skipped section that closes the
+    /// chapter, must restart from the cursor instead, because continuing
+    /// the loaded speech there would restart it with nothing to say.
+    /// True when no speech is loaded, since nothing would be continued.
+    func loadedSpeechHasSpeakableText(afterOriginalOffset offset: Int) -> Bool {
+        guard let spokenText = currentTransformation?.modifiedText else { return true }
+        let spokenOffset = currentOffsetMap?.toModified(offset) ?? offset
+        return Self.hasSpeakableText(in: spokenText, fromSpokenOffset: spokenOffset)
+    }
+
+    /// Speak `start`'s chapter from its offset, then look ahead to the next
+    /// speakable chapter. Starting a chapter other than the cursor's moves
+    /// the cursor to the beginning of that chapter.
+    func startSpeaking(_ start: SpeechStart) {
+        let speech = start.speech
+        if speech.chapterIndex != currentChapterIndex {
+            debugLog("passing over silent text from chapter \(currentChapterIndex) to \(speech.chapterIndex)")
+            currentChapterIndex = speech.chapterIndex
             currentCharacterOffset = 0
         }
-        guard idx < content.chapters.count else { return }
+        debugLog("startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
 
-        let chapter = content.chapters[currentChapterIndex]
-        guard !chapter.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-
-        debugLog("speakCurrentChapter: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
-
-        // Filter out skipped sections, apply punctuation pauses, then text substitutions.
-        // Each stage returns an OffsetMap tracking how character positions shifted.
-        // Compose all three into a single bidirectional map for offset conversion.
-        let (filteredText, filterMap) = filterSkippedSections(chapterIndex: currentChapterIndex, text: chapter.text)
-        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
-        let transformation = substitutionService.transform(pausedText)
-        currentTransformation = transformation
-        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
-        let speakText = transformation.modifiedText
-        // Convert original-text offset to modified-text offset using the full composed map
-        let speakOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
-
-        // Start playback from the current offset.
+        currentTransformation = speech.transformation
+        currentOffsetMap = speech.offsetMap
         utteranceBaseOffset = 0
-        speechService.speak(speakText, fromCharOffset: speakOffset)
+        speechService.speak(speech.text, fromCharOffset: start.offset)
 
         // Pre-render the next chapter so it can start instantly when this one ends
         preRenderNextChapter()
     }
 
-    /// Pre-render the next chapter's audio in background so chapter transitions are instant
+    /// End the book because nothing speakable remains from the cursor. The
+    /// cursor stays where it is, and the end-of-book behavior decides what
+    /// happens next.
+    private func endBookWithNothingLeftToSpeak() {
+        debugLog("nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
+        handleEndOfBook()
+    }
+
+    /// Pre-render the next speakable chapter's audio in the background so
+    /// the chapter transition is instant. Chapters with nothing to say are
+    /// passed over exactly as the utterance-finished path passes over them.
     func preRenderNextChapter() {
-        guard let content = content else { return }
-        var nextIdx = currentChapterIndex + 1
-        while nextIdx < content.chapters.count && content.chapters[nextIdx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            nextIdx += 1
-        }
-        guard nextIdx < content.chapters.count else {
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
-            return
-        }
-
-        // Cancel any stale pre-render before starting a new one
+        // Forget any earlier look-ahead before choosing a new one. A
+        // cancelled engine keeps the audio it already rendered, and the next
+        // speakable chapter changes when sections are skipped, so an old
+        // engine must never stay paired with a newly chosen chapter.
         nextChapterEngine?.cancelRender()
+        nextChapterEngine = nil
+        nextChapterIndex = nil
 
-        let engine = AudioEngineService()
-        // Apply the full text transformation pipeline so pre-rendered audio
-        // matches what speakCurrentChapter would produce.
-        let rawText = content.chapters[nextIdx].text
-        let (filteredText, _) = filterSkippedSections(chapterIndex: nextIdx, text: rawText)
-        let (pausedText, _) = applyPunctuationPauses(filteredText)
-        let chapterText = substitutionService.transform(pausedText).modifiedText
-        nextChapterIndex = nextIdx
+        // Render exactly the text playback will speak for that chapter.
+        guard let speech = nextSpeakableChapterSpeech(from: currentChapterIndex + 1) else { return }
+        let nextIdx = speech.chapterIndex
+        let chapterText = speech.text
 
         // Keep look-ahead rendering under the same safety limit as the current
         // chapter. Oversized chapters remain playable through direct chunking.
         guard chapterText.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
-            nextChapterEngine = nil
-            nextChapterIndex = nil
             debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.utf16Length) UTF-16 units)")
             return
         }
 
+        let engine = AudioEngineService()
+        nextChapterIndex = nextIdx
         // Capture generation so stale renders from rapid navigation are discarded
         let renderGeneration = chapterPlaybackGeneration
+        // Checked before the render starts and again when it finishes.
+        let isStillWanted: @MainActor @Sendable () -> Bool = { [weak self] in
+            guard let self else { return false }
+            return Self.isCurrentLookAhead(
+                capturedGeneration: renderGeneration,
+                currentGeneration: self.chapterPlaybackGeneration,
+                renderedChapterIndex: nextIdx,
+                chosenChapterIndex: self.nextChapterIndex
+            )
+        }
         SpeechRenderCoordinator.shared.render(
             text: chapterText,
             engine: engine,
             voice: speechService.currentVoice,
             wpm: speechService.wordsPerMinute,
-            shouldStart: { [weak self] in
-                guard let self else { return false }
-                return Self.isCurrentPlaybackGeneration(
-                    captured: renderGeneration,
-                    current: self.chapterPlaybackGeneration
-                )
-            },
+            shouldStart: isStillWanted,
             completion: { [weak self] success in
-            guard let self = self else { return }
-            // Discard result if playback generation changed (user navigated elsewhere)
-            guard Self.isCurrentPlaybackGeneration(
-                captured: renderGeneration,
-                current: self.chapterPlaybackGeneration
-            ) else { return }
-            if success {
+                guard let self, success, isStillWanted() else { return }
                 self.nextChapterEngine = engine
                 self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.utf16Length) UTF-16 units)")
-            }
             }
         )
     }
@@ -345,6 +409,118 @@ extension ReaderViewModel {
     /// captured is still current. Navigation increments the generation.
     nonisolated static func isCurrentPlaybackGeneration(captured: Int, current: Int) -> Bool {
         captured == current
+    }
+
+    /// A look-ahead render may start, and its engine may be kept, only while
+    /// playback is still on the generation it captured and its chapter is
+    /// still the chosen look-ahead. Within one generation a newer look-ahead
+    /// can choose a different chapter, for example after a section is
+    /// skipped, and an engine must never be paired with a chapter it did not
+    /// render.
+    nonisolated static func isCurrentLookAhead(
+        capturedGeneration: Int,
+        currentGeneration: Int,
+        renderedChapterIndex: Int,
+        chosenChapterIndex: Int?
+    ) -> Bool {
+        isCurrentPlaybackGeneration(captured: capturedGeneration, current: currentGeneration)
+            && chosenChapterIndex == renderedChapterIndex
+    }
+
+    // MARK: - Chapter Speech
+
+    /// One chapter as the speech engine hears it, with the map back to the
+    /// chapter's original text.
+    struct ChapterSpeech {
+        /// Index of the chapter this speech was prepared from.
+        let chapterIndex: Int
+        /// Result of the text substitutions, the pipeline's last stage.
+        let transformation: TextTransformation
+        /// Offsets through every stage (skipped sections, punctuation
+        /// pauses, substitutions), between original and spoken text.
+        let offsetMap: ComposedOffsetMap
+
+        /// The exact text handed to the speech engine.
+        var text: String { transformation.modifiedText }
+    }
+
+    /// Run one chapter through the playback text pipeline: remove skipped
+    /// sections, add punctuation pauses, then apply text substitutions.
+    /// Speaking a chapter and pre-rendering the next one both use this, so
+    /// look-ahead audio always matches what playback would speak.
+    ///
+    /// - Returns: Nil when no content is loaded or the index is out of range.
+    func preparedSpeech(forChapterAt chapterIndex: Int) -> ChapterSpeech? {
+        guard let content, content.chapters.indices.contains(chapterIndex) else { return nil }
+        // Each stage reports how it shifted character offsets; composing the
+        // stages converts between original chapter text and spoken text.
+        let (filteredText, filterMap) = filterSkippedSections(
+            chapterIndex: chapterIndex,
+            text: content.chapters[chapterIndex].text
+        )
+        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
+        let transformation = substitutionService.transform(pausedText)
+        return ChapterSpeech(
+            chapterIndex: chapterIndex,
+            transformation: transformation,
+            offsetMap: ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
+        )
+    }
+
+    // MARK: - Speakable Chapters
+
+    /// Whether text gives the speech engine anything to say: at least one
+    /// character that is not whitespace or a line break. Playback passes
+    /// over a chapter whose prepared speech fails this, exactly as it passes
+    /// over a chapter with no text at all.
+    nonisolated static func hasSpeakableText(_ text: some StringProtocol) -> Bool {
+        text.contains { !$0.isWhitespace }
+    }
+
+    /// Whether anything speakable follows `spokenOffset` in `spokenText`,
+    /// read exactly as speech starting there would read it: an offset past
+    /// the end leaves nothing, and one inside a character starts at that
+    /// character.
+    nonisolated static func hasSpeakableText(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Bool {
+        hasSpeakableText(spokenText[spokenText.index(atUTF16Offset: spokenOffset)...])
+    }
+
+    /// The index of the first chapter at or after `start` that `isSpeakable`
+    /// accepts, or nil when none does.
+    ///
+    /// The search moves forward only and ends at the last chapter; it never
+    /// wraps around to the beginning of the book. It therefore asks about
+    /// each chapter at most once and always finishes, however many chapters
+    /// are silent. A negative `start` searches from the first chapter.
+    nonisolated static func nextSpeakableChapterIndex(
+        from start: Int,
+        chapterCount: Int,
+        isSpeakable: (Int) -> Bool
+    ) -> Int? {
+        let first = max(0, start)
+        guard first < chapterCount else { return nil }
+        return (first..<chapterCount).first(where: isSpeakable)
+    }
+
+    /// The prepared speech of the first chapter at or after `start` that has
+    /// anything to say once skipped sections, punctuation pauses, and text
+    /// substitutions are applied, or nil when every remaining chapter is
+    /// silent: empty, entirely inside skipped sections, or deleted by
+    /// substitutions.
+    func nextSpeakableChapterSpeech(from start: Int) -> ChapterSpeech? {
+        guard let content else { return nil }
+        // The search stops at the first chapter whose speech qualifies, so
+        // the speech prepared last belongs to that chapter. Keeping it spares
+        // the chosen chapter a second trip through the text pipeline.
+        var lastPrepared: ChapterSpeech?
+        let index = Self.nextSpeakableChapterIndex(
+            from: start,
+            chapterCount: content.chapters.count
+        ) { chapterIndex in
+            lastPrepared = preparedSpeech(forChapterAt: chapterIndex)
+            return lastPrepared.map { Self.hasSpeakableText($0.text) } ?? false
+        }
+        return index == nil ? nil : lastPrepared
     }
 
     // MARK: - Audio Book Playback
@@ -523,7 +699,6 @@ extension ReaderViewModel {
                     self.currentCharacterOffset = 0
                     self.playAudioChapter()
                 } else {
-                    self.readingStatsService.endSession(bookID: self.book.id)
                     self.handleEndOfBook()
                 }
             }
@@ -627,17 +802,23 @@ extension ReaderViewModel {
     /// Called when the last chapter finishes playing.
     /// Behavior depends on per-book override or global setting: stop, loop, or continue to next book.
     func handleEndOfBook() {
+        // Time after the end of the book is not listening time, so close this
+        // book's session here, once, for every way a book can end. Another
+        // window's session is left running.
+        readingStatsService.endSession(bookID: book.id)
         // Audio completion does not flow through SpeechService's publishers.
         // Clear its mirrored UI state before applying stop/loop/continue.
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
         // Determine behavior: per-book override or global setting
-        let behavior: EndOfBookBehavior
-        if let localRaw = book.localEndOfBookBehavior,
-           let local = EndOfBookBehavior(rawValue: localRaw) {
-            behavior = local
-        } else {
-            behavior = settingsViewModel.endOfBookBehavior
+        var behavior = effectiveEndOfBookBehavior
+        // Looping restarts speech at the first chapter with anything to say.
+        // A text book with none (every section skipped, or all text deleted
+        // by substitutions) would reach its end again at once, forever, so
+        // it stops instead.
+        if behavior == .loop, !isAudioBook, nextSpeakableChapterSpeech(from: 0) == nil {
+            debugLog("end of book: nothing speakable to loop to; stopping")
+            behavior = .stop
         }
 
         switch behavior {
@@ -1026,11 +1207,18 @@ extension ReaderViewModel {
         Self.applyPunctuationPauses(text, level: settingsViewModel.punctuationPauseLevel)
     }
 
+    /// Insert pause marks into `text` at `level` (see the instance method).
+    ///
+    /// Text with nothing to speak is returned unchanged at every level. The
+    /// heavy level turns each blank-line break into "\n\n.\n\n", which would
+    /// otherwise give blank lines, such as those left in front of a skipped
+    /// section, a speakable "." and stop a silent chapter from being passed
+    /// over.
     static func applyPunctuationPauses(
         _ text: String,
         level: Double
     ) -> (text: String, offsetMap: OffsetMap) {
-        guard level > 0 else { return (text, .identity) }
+        guard level > 0, hasSpeakableText(text) else { return (text, .identity) }
 
         // Build the set of (pattern, replacement) pairs.
         // Each replacement is the full string that replaces the pattern.

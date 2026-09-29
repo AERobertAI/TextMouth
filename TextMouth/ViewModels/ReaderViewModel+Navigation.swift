@@ -92,6 +92,18 @@ extension ReaderViewModel {
         speechService.seek(toCharOffset: seekOffset)
     }
 
+    /// Whether a move to `offset` in chapter `chapterIndex` can seek the
+    /// speech already loaded instead of restarting it. The move must stay in
+    /// the cursor's chapter, and while speech plays it must land where
+    /// something speakable follows: seeking onto silent text, such as a
+    /// skipped section that closes the chapter, would restart speech with
+    /// nothing to say. Restarting from the cursor instead passes over that
+    /// text, or ends the book when nothing speakable remains.
+    private func canSeekLoadedSpeech(toChapter chapterIndex: Int, offset: Int, whilePlaying isPlaying: Bool) -> Bool {
+        chapterIndex == currentChapterIndex
+            && (!isPlaying || loadedSpeechHasSpeakableText(afterOriginalOffset: offset))
+    }
+
     /// Skip forward by the configured unit (or shift-unit if shift is held).
     /// Debounces rapid-fire calls. The window is wide enough to absorb
     /// a single physical press that arrives via two paths
@@ -520,11 +532,14 @@ extension ReaderViewModel {
             }
         }
 
-        let sameChapter = (chapIdx == currentChapterIndex)
+        let seeksInPlace = canSeekLoadedSpeech(toChapter: chapIdx, offset: charOffset, whilePlaying: wasPlaying)
 
-        debugLog("skipWords result -> chapter=\(chapIdx) offset=\(charOffset) sameChapter=\(sameChapter)")
+        debugLog("skipWords result -> chapter=\(chapIdx) offset=\(charOffset) seeksInPlace=\(seeksInPlace)")
 
-        if sameChapter {
+        // Whether speech still plays after the skip. Restarting it ends the
+        // book instead when nothing speakable remains from the new cursor.
+        var isStillPlaying = wasPlaying
+        if seeksInPlace {
             // Same chapter: seek without re-rendering.
             // If engine has rendered audio, this is an instant buffer seek.
             // If still in direct mode, this restarts direct speech from the new offset
@@ -532,7 +547,8 @@ extension ReaderViewModel {
             currentCharacterOffset = charOffset
             seekSpeechService(toOriginalOffset: charOffset)
         } else {
-            // Different chapter — invalidate stale callbacks before changing state
+            // Different chapter, or silent text after the new cursor while
+            // playing — invalidate stale callbacks before changing state
             chapterPlaybackGeneration += 1
             // Cancel stale pre-rendered chapter
             nextChapterEngine?.cancelRender()
@@ -546,11 +562,11 @@ extension ReaderViewModel {
             currentCharacterOffset = charOffset
 
             if wasPlaying {
-                speakCurrentChapter()
+                isStillPlaying = speakCurrentChapter()
             }
         }
 
-        if wasPlaying {
+        if isStillPlaying {
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -604,9 +620,12 @@ extension ReaderViewModel {
         let text = content.chapters[chapIdx].text
         charOffset = Self.snappedWordStart(in: text, at: charOffset)
 
-        let sameChapter = (chapIdx == currentChapterIndex)
+        let seeksInPlace = canSeekLoadedSpeech(toChapter: chapIdx, offset: charOffset, whilePlaying: wasPlaying)
 
-        if sameChapter {
+        // Whether speech still plays after the skip. Restarting it ends the
+        // book instead when nothing speakable remains from the new cursor.
+        var isStillPlaying = wasPlaying
+        if seeksInPlace {
             currentCharacterOffset = charOffset
             seekSpeechService(toOriginalOffset: charOffset)
         } else {
@@ -620,11 +639,11 @@ extension ReaderViewModel {
             currentCharacterOffset = charOffset
 
             if wasPlaying {
-                speakCurrentChapter()
+                isStillPlaying = speakCurrentChapter()
             }
         }
 
-        if wasPlaying {
+        if isStillPlaying {
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -776,13 +795,14 @@ extension ReaderViewModel {
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 
-        if chapterIndex == currentChapterIndex && wasPlaying {
+        if wasPlaying && canSeekLoadedSpeech(toChapter: chapterIndex, offset: characterOffset, whilePlaying: true) {
             // Same chapter: instant seek, no re-rendering.
             // Convert original-text offset to modified-text offset for the speech service.
             currentCharacterOffset = characterOffset
             seekSpeechService(toOriginalOffset: characterOffset)
         } else {
-            // Different chapter — invalidate stale callbacks first
+            // Different chapter, not playing, or silent text after the new
+            // position — invalidate stale callbacks first
             chapterPlaybackGeneration += 1
             nextChapterEngine?.cancelRender()
             nextChapterEngine = nil
@@ -791,8 +811,10 @@ extension ReaderViewModel {
             speechService.stop()
             currentChapterIndex = chapterIndex
             currentCharacterOffset = characterOffset
-            if wasPlaying {
-                speakCurrentChapter()
+            // Restarting speech ends the book instead when nothing speakable
+            // remains from the new position; Now Playing must not then claim
+            // that playback continues.
+            if wasPlaying && speakCurrentChapter() {
                 nowPlayingService.updateNowPlayingInfo(
                     title: book.title, author: book.author, isPlaying: true
                 )
