@@ -19,32 +19,36 @@ struct NumericSettingRule: Sendable {
     let range: ClosedRange<Double>
     /// Value used when nothing usable is stored. Always inside `range`.
     let defaultValue: Double
-    /// The `config.json` value meaning "not chosen yet": applying the file
-    /// then keeps the app's current preference. Only speed and pitch have
-    /// one (0), because early config files did not mirror those settings.
-    let configUnsetValue: Double?
+    /// The value meaning "not chosen yet" rather than a setting. Only speed
+    /// and pitch have one (0): early config files were written before the
+    /// user chose either, and the speech engine has always read a stored 0
+    /// as unset. In `config.json` it keeps the app's current preference;
+    /// read from the preferences store it yields `defaultValue`.
+    let unsetValue: Double?
 
-    /// Creates a rule. `configUnsetValue` is nil for preferences whose config
-    /// field always holds a real value.
-    init(key: String, range: ClosedRange<Double>, defaultValue: Double, configUnsetValue: Double? = nil) {
+    /// Creates a rule. `unsetValue` is nil for preferences whose stored
+    /// value is always a real setting.
+    init(key: String, range: ClosedRange<Double>, defaultValue: Double, unsetValue: Double? = nil) {
         assert(range.contains(defaultValue), "The default of \(key) must be a supported value")
         self.key = key
         self.range = range
         self.defaultValue = defaultValue
-        self.configUnsetValue = configUnsetValue
+        self.unsetValue = unsetValue
     }
 
     /// What `config.json` holds when this field is missing or unreadable.
-    var configDefault: Double { configUnsetValue ?? defaultValue }
+    var configDefault: Double { unsetValue ?? defaultValue }
 
     /// The supported values, for log lines.
     var supportedDescription: String { "\(range.lowerBound)...\(range.upperBound)" }
 
-    /// Brings `value` into `range`. A finite value moves to the nearest bound.
-    /// NaN and infinities carry no usable magnitude, so they become
-    /// `defaultValue`, the same choice `AudioSpeed.normalized(_:)` makes.
-    func clamped(_ value: Double) -> Double {
-        guard value.isFinite else { return defaultValue }
+    /// Validates a value from the preferences store, or one about to be
+    /// stored. The unset value and non-finite values (NaN and infinities
+    /// carry no usable magnitude, the reasoning `AudioSpeed.normalized(_:)`
+    /// also follows) become `defaultValue`; any other value is clamped to
+    /// the nearest bound of `range`.
+    func validated(_ value: Double) -> Double {
+        guard value.isFinite, value != unsetValue else { return defaultValue }
         return min(max(value, range.lowerBound), range.upperBound)
     }
 
@@ -53,25 +57,25 @@ struct NumericSettingRule: Sendable {
     /// were missing, and any other value is clamped.
     func validatedConfigValue(_ value: Double) -> Double {
         guard value.isFinite else { return configDefault }
-        if let configUnsetValue, value == configUnsetValue { return configUnsetValue }
-        return clamped(value)
+        if let unsetValue, value == unsetValue { return unsetValue }
+        return validated(value)
     }
 
     /// The validated preference a `config.json` value asks the app to adopt,
     /// or nil when the value means "not chosen yet".
     func requestedValue(fromConfig value: Double) -> Double? {
         let validated = validatedConfigValue(value)
-        return validated == configUnsetValue ? nil : validated
+        return validated == unsetValue ? nil : validated
     }
 
     /// Reads this preference straight from `defaults`, validated. Services
     /// that bypass `@AppStorage` use this so they interpret a stored value
     /// exactly as the Settings model does: a missing key yields the default,
     /// and anything present is read the way `@AppStorage` reads it (numeric
-    /// text parses, any other non-number reads as 0) and then clamped.
+    /// text parses, any other non-number reads as 0) and then validated.
     func storedValue(in defaults: UserDefaults) -> Double {
         guard defaults.object(forKey: key) != nil else { return defaultValue }
-        return clamped(defaults.double(forKey: key))
+        return validated(defaults.double(forKey: key))
     }
 }
 
@@ -125,11 +129,11 @@ enum SettingsPolicy {
 
     /// Global speech speed in words per minute (Voice settings slider).
     static let wordsPerMinute = NumericSettingRule(
-        key: "wordsPerMinute", range: 50...650, defaultValue: 200, configUnsetValue: 0
+        key: "wordsPerMinute", range: 50...650, defaultValue: 200, unsetValue: 0
     )
     /// Global pitch multiplier; 1 is normal (Voice settings slider).
     static let pitchMultiplier = NumericSettingRule(
-        key: "pitchMultiplier", range: 0.5...2.0, defaultValue: 1.0, configUnsetValue: 0
+        key: "pitchMultiplier", range: 0.5...2.0, defaultValue: 1.0, unsetValue: 0
     )
     /// Seconds a pause must last before smart rewind-on-resume rewinds
     /// (Playback settings stepper).
@@ -202,7 +206,7 @@ extension SettingsPolicy {
     /// player do.
     static func validatedLocalSpeed(_ value: Double, isAudio: Bool) -> Double? {
         guard let speed = usableLocalSpeed(value) else { return nil }
-        return isAudio ? AudioSpeed.normalized(speed) : wordsPerMinute.clamped(speed)
+        return isAudio ? AudioSpeed.normalized(speed) : wordsPerMinute.validated(speed)
     }
 
     /// The format-independent part of `validatedLocalSpeed(_:isAudio:)`: NaN,
@@ -216,7 +220,7 @@ extension SettingsPolicy {
     /// (follow the global pitch) when the value cannot be a pitch.
     static func validatedLocalPitch(_ value: Double) -> Double? {
         guard value.isFinite, value > 0 else { return nil }
-        return pitchMultiplier.clamped(value)
+        return pitchMultiplier.validated(value)
     }
 
     /// Chapter and heading indices and character offsets count from 0, so a

@@ -26,14 +26,14 @@ final class SettingsPolicyTests: XCTestCase {
         }
     }
 
-    /// Only speed and pitch use 0 in config.json to mean "not chosen yet";
-    /// every other numeric field defaults to its real default there.
-    func testOnlySpeedAndPitchHaveAConfigUnsetValue() {
+    /// Only speed and pitch use 0 to mean "not chosen yet"; every other
+    /// numeric field defaults to its real default in config.json.
+    func testOnlySpeedAndPitchHaveAnUnsetValue() {
         XCTAssertEqual(SettingsPolicy.wordsPerMinute.configDefault, 0)
         XCTAssertEqual(SettingsPolicy.pitchMultiplier.configDefault, 0)
         XCTAssertEqual(SettingsPolicy.rewindSmartThreshold.configDefault, 70)
         XCTAssertEqual(SettingsPolicy.bluetoothDisconnectDelay.configDefault, 2)
-        XCTAssertNil(SettingsPolicy.sleepFadeOutDuration.configUnsetValue)
+        XCTAssertNil(SettingsPolicy.sleepFadeOutDuration.unsetValue)
     }
 
     /// The enum rules fall back to the same cases the Settings model always
@@ -67,23 +67,35 @@ final class SettingsPolicyTests: XCTestCase {
     /// Finite values move to the nearest bound; in-range values are untouched.
     func testClampMovesFiniteValuesToTheNearestBound() {
         let rule = SettingsPolicy.wordsPerMinute
-        XCTAssertEqual(rule.clamped(1e308), 650)
-        XCTAssertEqual(rule.clamped(Double.greatestFiniteMagnitude), 650)
-        XCTAssertEqual(rule.clamped(-5), 50)
-        XCTAssertEqual(rule.clamped(-Double.greatestFiniteMagnitude), 50)
-        XCTAssertEqual(rule.clamped(10), 50)
-        XCTAssertEqual(rule.clamped(337), 337)
-        XCTAssertEqual(SettingsPolicy.punctuationPauseLevel.clamped(-1), 0)
-        XCTAssertEqual(SettingsPolicy.punctuationPauseLevel.clamped(99), 3)
+        XCTAssertEqual(rule.validated(1e308), 650)
+        XCTAssertEqual(rule.validated(Double.greatestFiniteMagnitude), 650)
+        XCTAssertEqual(rule.validated(-5), 50)
+        XCTAssertEqual(rule.validated(-Double.greatestFiniteMagnitude), 50)
+        XCTAssertEqual(rule.validated(10), 50)
+        XCTAssertEqual(rule.validated(337), 337)
+        XCTAssertEqual(SettingsPolicy.punctuationPauseLevel.validated(-1), 0)
+        XCTAssertEqual(SettingsPolicy.punctuationPauseLevel.validated(99), 3)
     }
 
     /// NaN and infinities have no usable magnitude, so they become the default.
     func testClampReplacesNonFiniteValuesWithTheDefault() {
         for value in [Double.nan, Double.infinity, -Double.infinity, Double.signalingNaN] {
-            XCTAssertEqual(SettingsPolicy.wordsPerMinute.clamped(value), 200, "\(value)")
-            XCTAssertEqual(SettingsPolicy.sleepFadeOutDuration.clamped(value), 0, "\(value)")
-            XCTAssertEqual(SettingsPolicy.restartTimerGestureWindow.clamped(value), 2, "\(value)")
+            XCTAssertEqual(SettingsPolicy.wordsPerMinute.validated(value), 200, "\(value)")
+            XCTAssertEqual(SettingsPolicy.sleepFadeOutDuration.validated(value), 0, "\(value)")
+            XCTAssertEqual(SettingsPolicy.restartTimerGestureWindow.validated(value), 2, "\(value)")
         }
+    }
+
+    /// A stored speed or pitch of 0 means "not chosen yet", as the speech
+    /// engine has always read it, so it becomes the default rather than the
+    /// minimum. Zero is an ordinary value for the other settings.
+    func testStoredZeroSpeedOrPitchMeansNotChosen() {
+        XCTAssertEqual(SettingsPolicy.wordsPerMinute.validated(0), 200)
+        XCTAssertEqual(SettingsPolicy.wordsPerMinute.validated(-0.0), 200)
+        XCTAssertEqual(SettingsPolicy.wordsPerMinute.validated(0.5), 50)
+        XCTAssertEqual(SettingsPolicy.pitchMultiplier.validated(0), 1)
+        XCTAssertEqual(SettingsPolicy.sleepFadeOutDuration.validated(0), 0)
+        XCTAssertEqual(SettingsPolicy.bluetoothDisconnectDelay.validated(0), 1)
     }
 
     /// In config.json, 0 still means "not chosen yet" for speed and pitch,
@@ -112,8 +124,9 @@ final class SettingsPolicyTests: XCTestCase {
     }
 
     /// Direct `UserDefaults` readers see exactly what the Settings model sees:
-    /// a missing key is the default, and anything stored is clamped.
-    func testStoredValueReadsDefaultsLikeAppStorageAndClamps() throws {
+    /// a missing key is the default, and anything stored is validated. Text
+    /// that is not a number reads as 0, which for speed means "not chosen".
+    func testStoredValueReadsDefaultsLikeAppStorageAndValidates() throws {
         let suiteName = "com.textmouth.tests.settings-policy.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -121,8 +134,8 @@ final class SettingsPolicyTests: XCTestCase {
 
         XCTAssertEqual(rule.storedValue(in: defaults), 200, "missing key")
         let cases: [(Any, Double)] = [
-            (1e308, 650), (-40.0, 50), (Double.nan, 200), (Double.infinity, 200),
-            (315, 315), ("450", 450), ("fast", 50), (true, 50),
+            (1e308, 650), (-40.0, 50), (Double.nan, 200), (Double.infinity, 200), (0.0, 200),
+            (315, 315), ("450", 450), ("fast", 200), (true, 50),
         ]
         for (stored, expected) in cases {
             defaults.set(stored, forKey: rule.key)

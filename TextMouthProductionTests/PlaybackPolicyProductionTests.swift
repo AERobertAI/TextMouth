@@ -138,6 +138,11 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         service.reloadSettings()
         XCTAssertEqual(service.wordsPerMinute, 425)
         XCTAssertEqual(service.pitchMultiplier, 1)
+
+        // A stored 0 has always meant "not chosen yet" to the speech engine.
+        defaults.set(0.0, forKey: "wordsPerMinute")
+        service.reloadSettings()
+        XCTAssertEqual(service.wordsPerMinute, 200)
     }
 
     func testAudioEngineSpeedRatioUsesProductionMultiplier() {

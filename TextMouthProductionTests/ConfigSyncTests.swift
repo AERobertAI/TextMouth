@@ -290,6 +290,20 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, PlaybackNavigationUnitControlMode.none)
     }
 
+    /// A stored speed or pitch of 0, or text that reads as 0, means "not
+    /// chosen yet", as the speech engine has always read it: the model
+    /// reports the default rather than the slowest speed or lowest pitch.
+    func testStoredZeroSpeedAndPitchReadAsTheDefaults() throws {
+        let defaults = try isolatedDefaults()
+        defaults.set(0.0, forKey: "wordsPerMinute")
+        defaults.set("not a number", forKey: "pitchMultiplier")
+
+        let viewModel = makeIsolatedViewModel(defaults)
+
+        XCTAssertEqual(viewModel.wordsPerMinute, 200)
+        XCTAssertEqual(viewModel.pitchMultiplier, 1)
+    }
+
     // MARK: - Applying and saving config.json
 
     /// Extreme values in a config snapshot are clamped before assignment, so

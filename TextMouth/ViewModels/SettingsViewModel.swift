@@ -284,45 +284,45 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Validated numeric preferences
     //
-    // Consumers read these instead of the stored values. A read clamps
-    // whatever is stored and a write clamps before storing, so every value
+    // Consumers read these instead of the stored values. A read validates
+    // whatever is stored and a write validates before storing, so every value
     // that leaves this model is one the Settings controls could produce.
 
     /// Global speech speed in words per minute.
     var wordsPerMinute: Double {
-        get { SettingsPolicy.wordsPerMinute.clamped(storedWordsPerMinute) }
-        set { storedWordsPerMinute = SettingsPolicy.wordsPerMinute.clamped(newValue) }
+        get { SettingsPolicy.wordsPerMinute.validated(storedWordsPerMinute) }
+        set { storedWordsPerMinute = SettingsPolicy.wordsPerMinute.validated(newValue) }
     }
 
     /// Global pitch multiplier; 1 is normal.
     var pitchMultiplier: Double {
-        get { SettingsPolicy.pitchMultiplier.clamped(storedPitchMultiplier) }
-        set { storedPitchMultiplier = SettingsPolicy.pitchMultiplier.clamped(newValue) }
+        get { SettingsPolicy.pitchMultiplier.validated(storedPitchMultiplier) }
+        set { storedPitchMultiplier = SettingsPolicy.pitchMultiplier.validated(newValue) }
     }
 
     /// Seconds a pause must last before smart rewind-on-resume rewinds.
     var rewindSmartThreshold: Double {
-        get { SettingsPolicy.rewindSmartThreshold.clamped(storedRewindSmartThreshold) }
-        set { storedRewindSmartThreshold = SettingsPolicy.rewindSmartThreshold.clamped(newValue) }
+        get { SettingsPolicy.rewindSmartThreshold.validated(storedRewindSmartThreshold) }
+        set { storedRewindSmartThreshold = SettingsPolicy.rewindSmartThreshold.validated(newValue) }
     }
 
     /// Seconds the sleep timer fades out before pausing; 0 pauses instantly.
     var sleepFadeOutDuration: Double {
-        get { SettingsPolicy.sleepFadeOutDuration.clamped(storedSleepFadeOutDuration) }
-        set { storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.clamped(newValue) }
+        get { SettingsPolicy.sleepFadeOutDuration.validated(storedSleepFadeOutDuration) }
+        set { storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.validated(newValue) }
     }
 
     /// Punctuation pause level: 0 off, 1 subtle, 2 moderate, 3 heavy.
     var punctuationPauseLevel: Double {
-        get { SettingsPolicy.punctuationPauseLevel.clamped(storedPunctuationPauseLevel) }
-        set { storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.clamped(newValue) }
+        get { SettingsPolicy.punctuationPauseLevel.validated(storedPunctuationPauseLevel) }
+        set { storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.validated(newValue) }
     }
 
     /// How long (in seconds) to suppress spurious media commands after
     /// a Bluetooth audio device disconnects. Range: 1–10, default 2.
     var bluetoothDisconnectDelay: Double {
-        get { SettingsPolicy.bluetoothDisconnectDelay.clamped(storedBluetoothDisconnectDelay) }
-        set { storedBluetoothDisconnectDelay = SettingsPolicy.bluetoothDisconnectDelay.clamped(newValue) }
+        get { SettingsPolicy.bluetoothDisconnectDelay.validated(storedBluetoothDisconnectDelay) }
+        set { storedBluetoothDisconnectDelay = SettingsPolicy.bluetoothDisconnectDelay.validated(newValue) }
     }
 
     /// Maximum total elapsed time (seconds) for the gesture to count
@@ -330,8 +330,8 @@ final class SettingsViewModel: ObservableObject {
     /// deliberate sequence, short enough that real navigation use
     /// won't accidentally trigger.
     var restartTimerGestureWindow: Double {
-        get { SettingsPolicy.restartTimerGestureWindow.clamped(storedRestartTimerGestureWindow) }
-        set { storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.clamped(newValue) }
+        get { SettingsPolicy.restartTimerGestureWindow.validated(storedRestartTimerGestureWindow) }
+        set { storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.validated(newValue) }
     }
 
     // MARK: - Typed enum-backed preferences
