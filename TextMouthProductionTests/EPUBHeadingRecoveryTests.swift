@@ -540,6 +540,56 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         }
     }
 
+    /// The reported EPUB listed every print page as a heading. Only its TOC and
+    /// real headings are chapter navigation: the hidden page list, landmarks,
+    /// the guide's second route to the nav document, and the NCX pageList add
+    /// nothing, and page anchors inside headings never alter their labels.
+    func testPageListsLandmarksAndGuideDuplicatesNeverBecomeHeadings() throws {
+        let book = try makePageListBook()
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try EPUBParser.parse(url: URL(fileURLWithPath: book.filePath))
+        let expected: [(chapter: Int, level: Int, text: String)] = [
+            (0, 1, "Contents"), (1, 1, "1"), (1, 1, "Arrival"),
+            (2, 1, "2"), (2, 1, "Departure"), (2, 2, "Interlude"), (3, 1, "3: Return")
+        ]
+
+        for content in [cached, direct] {
+            XCTAssertEqual(content.chapters.count, 4)
+            XCTAssertEqual(content.allHeadings.map(\.chapterIndex), expected.map(\.chapter))
+            XCTAssertEqual(content.allHeadings.map(\.level), expected.map(\.level))
+            XCTAssertEqual(content.allHeadings.map(\.text), expected.map(\.text))
+            // Chapter-number headings are numeric too, but only page numbers
+            // would appear anywhere other than the start of their chapter.
+            for heading in content.allHeadings where heading.text.allSatisfy(\.isNumber) {
+                XCTAssertEqual(heading.characterOffset, 0, "Page \(heading.text) became a heading")
+            }
+            XCTAssertFalse(content.allHeadings.contains { $0.text.contains("<!--") })
+            XCTAssertFalse(content.chapters.contains { $0.title.contains("<!--") })
+            XCTAssertEqual(content.chapters[1].text, "1\n\nArrival\n\nOpening words.\n\nMore words on the second page.")
+            XCTAssertEqual(content.chapters[2].text, "2\n\nDeparture\n\nLeaving home.\n\nAn interlude begins.")
+            XCTAssertEqual(content.chapters[3].text, "Return\n\nComing back.")
+            // The visible contents list is still read; hidden navigation is not.
+            let contents = content.chapters[0].text
+            XCTAssertTrue(contents.contains("2: Departure"))
+            for hidden in ["Page List", "Begin Reading", "Table of Contents", "xiv", "13"] {
+                XCTAssertFalse(contents.contains(hidden), "Hidden navigation text \(hidden) was read")
+            }
+            let interlude = try XCTUnwrap(content.chapters[2].text.range(of: "An interlude"))
+            XCTAssertEqual(
+                content.allHeadings.first { $0.text == "Interlude" }?.characterOffset,
+                content.chapters[2].text.utf16Offset(of: interlude.lowerBound)
+            )
+        }
+        XCTAssertEqual(cached.allHeadings, direct.allHeadings)
+        XCTAssertEqual(cached.chapters.map(\.text), direct.chapters.map(\.text))
+
+        // The guide names the in-spine nav document without a fragment. It
+        // must add nothing beyond what the TOC nav already supplied.
+        let withoutGuide = try MarkdownCacheService.loadFromCache(for: makePageListBook(includeGuide: false))
+        XCTAssertEqual(withoutGuide.allHeadings, cached.allHeadings)
+        XCTAssertEqual(withoutGuide.chapters.map(\.text), cached.chapters.map(\.text))
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
@@ -632,6 +682,74 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
             }
             return ("Text/chapter\(number).xhtml", "<html><head><title>Fixture Book</title></head><body>\(body)</body></html>")
         }
+    }
+
+    /// Print-page destinations shared by the fixture's nav page list and NCX.
+    private let fixturePages: [(file: String, id: String, label: String)] = [
+        ("chapter1.xhtml", "page_1", "1"), ("chapter1.xhtml", "page_2", "2"),
+        ("chapter2.xhtml", "page_12", "12"), ("chapter2.xhtml", "page_13", "13"),
+        ("chapter3.xhtml", "page_xiv", "xiv")
+    ]
+
+    /// Model the reported navigation without its text: the in-spine nav
+    /// document holds a TOC, hidden landmarks, and a hidden page list; the
+    /// guide names that document without a fragment; the NCX has a navMap and
+    /// a pageList; and page anchors sit inside chapter-number headings as well
+    /// as inside paragraphs.
+    private func makePageListBook(includeGuide: Bool = true) throws -> Book {
+        let pageLinks = fixturePages.map { "<li><a href='\($0.file)#\($0.id)'>\($0.label)</a></li>" }.joined()
+        let pageTargets = fixturePages.map {
+            "<pageTarget type='normal' value='\($0.label)'><navLabel><text>\($0.label)</text></navLabel>"
+                + "<content src='\($0.file)#\($0.id)'/></pageTarget>"
+        }.joined()
+        let navigation = """
+        <nav epub:type="toc" id="toc" role="doc-toc"><h1>Contents</h1><ol>
+        <li><a href="chapter1.xhtml">1: Arrival</a><ol><li><a href="chapter1.xhtml#arrival">Arrival from the contents</a></li></ol></li>
+        <li><a href="chapter2.xhtml">2: Departure</a><ol><li><a href="chapter2.xhtml#interlude">Interlude</a></li></ol></li>
+        <li><a href="chapter3.xhtml">3: Return</a></li>
+        </ol></nav>
+        <nav class="hidden-tag" epub:type="landmarks" hidden="hidden"><ol>
+        <li><a epub:type="bodymatter" href="chapter1.xhtml">Begin Reading</a></li>
+        <li><a epub:type="toc" href="nav.xhtml#toc">Table of Contents</a></li>
+        </ol></nav>
+        <nav epub:type="page-list" hidden="hidden" role="doc-pagelist"><h2>Page List</h2><ol>\(pageLinks)</ol></nav>
+        """
+        return try makeBook(
+            chapters: [
+                ("Text/nav.xhtml", fixturePage(navigation)),
+                ("Text/chapter1.xhtml", fixturePage("""
+                <h1><a id="page_1"/>1</h1><h1><a id="arrival"/>Arrival</h1>
+                <p>Opening words.</p><p>More words <a id="page_2"/>on the second page.</p>
+                """)),
+                ("Text/chapter2.xhtml", fixturePage("""
+                <h1 id="hd-2"><span epub:type="pagebreak" id="page_12" role="doc-pagebreak" title="12"/>2</h1>
+                <h1>Departure</h1><p>Leaving <span epub:type="pagebreak" id="page_13" role="doc-pagebreak" title="13"/>home.</p>
+                <p id="interlude">An interlude begins.</p>
+                """)),
+                ("Text/chapter3.xhtml", fixturePage("<p class='chapter-title'>Return</p><p>Coming <a id='page_xiv'/>back.</p>"))
+            ],
+            extraFiles: ["Text/toc.ncx": """
+            <ncx><navMap>
+            <navPoint><navLabel><text>1: Arrival</text></navLabel><content src="chapter1.xhtml"/></navPoint>
+            <navPoint><navLabel><text>2: Departure</text></navLabel><content src="chapter2.xhtml"/></navPoint>
+            <navPoint><navLabel><text>3: Return</text></navLabel><content src="chapter3.xhtml"/></navPoint>
+            </navMap><pageList>\(pageTargets)</pageList></ncx>
+            """],
+            manifest: "<item id='ncx' href='../Text/toc.ncx' media-type='application/x-dtbncx+xml'/>",
+            spineAttributes: "toc='ncx'",
+            navigationSpineIndex: 0,
+            guide: includeGuide
+                ? "<guide><reference type='toc' title='Table of Contents' href='../Text/nav.xhtml'/></guide>" : ""
+        )
+    }
+
+    /// Wrap fixture markup in an XHTML page whose title repeats the book's, so
+    /// it never serves as a chapter label, as in the reported EPUB.
+    private func fixturePage(_ body: String) -> String {
+        """
+        <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+        <head><title>Fixture Book</title></head><body>\(body)</body></html>
+        """
     }
 
     /// Build and import a real ZIP in the hosted tests' isolated library.
