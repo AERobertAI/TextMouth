@@ -1101,11 +1101,18 @@ extension ReaderViewModel {
         Self.applyPunctuationPauses(text, level: settingsViewModel.punctuationPauseLevel)
     }
 
+    /// Insert pause marks into `text` at `level` (see the instance method).
+    ///
+    /// Text with nothing to speak is returned unchanged at every level. The
+    /// heavy level turns each blank-line break into "\n\n.\n\n", which would
+    /// otherwise give blank lines, such as those left in front of a skipped
+    /// section, a speakable "." and stop a silent chapter from being passed
+    /// over.
     static func applyPunctuationPauses(
         _ text: String,
         level: Double
     ) -> (text: String, offsetMap: OffsetMap) {
-        guard level > 0 else { return (text, .identity) }
+        guard level > 0, hasSpeakableText(text) else { return (text, .identity) }
 
         // Build the set of (pattern, replacement) pairs.
         // Each replacement is the full string that replaces the pattern.

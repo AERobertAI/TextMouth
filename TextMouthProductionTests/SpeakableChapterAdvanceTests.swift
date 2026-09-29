@@ -33,6 +33,19 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         XCTAssertFalse(ReaderViewModel.hasSpeakableText(sentence.suffix(2)))
     }
 
+    /// Pause marks never make blank text speakable: whitespace alone comes
+    /// back unchanged, with no offset shifts, at every pause level, while
+    /// text with words still gets its paragraph pause.
+    func testPunctuationPausesLeaveBlankTextUnchanged() {
+        let blank = " \n\n\t\n\n "
+        for level in [1.0, 2, 3] {
+            let result = ReaderViewModel.applyPunctuationPauses(blank, level: level)
+            XCTAssertEqual(result.text, blank, "level \(level)")
+            XCTAssertFalse(result.offsetMap.hasChanges, "level \(level)")
+        }
+        XCTAssertEqual(ReaderViewModel.applyPunctuationPauses("One\n\nTwo", level: 3).text, "One\n\n.\n\nTwo")
+    }
+
     // MARK: - Next speakable chapter search
 
     /// A speakable starting chapter is found without looking further.
@@ -152,14 +165,28 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
     /// Blank lines left in front of a skipped heading are not speakable, so
     /// the chapter counts as silent.
     func testBlankLinesBeforeASkippedSectionAreNotSpeakable() throws {
-        let appendix = Chapter(
-            title: "Appendix",
-            text: "\n\nAppendix\n\nTables.",
-            headings: [Heading(level: 1, text: "Appendix", characterOffset: 2)]
-        )
-        try withReader(chapters: [appendix], skipping: ["Appendix"]) { reader in
+        try withReader(
+            chapters: [chapterWithBlankLines(before: "Appendix", body: "Tables.")],
+            skipping: ["Appendix"]
+        ) { reader in
             XCTAssertEqual(reader.preparedSpeech(forChapterAt: 0)?.text, "\n\n")
             XCTAssertNil(reader.nextSpeakableChapterSpeech(from: 0))
+        }
+    }
+
+    /// Heavy punctuation pauses do not turn those blank lines into a
+    /// speakable pause mark, so the next chapter is still the one found.
+    func testHeavyPausesLeaveASkippedChapterSilent() throws {
+        try withReader(
+            chapters: [
+                chapterWithBlankLines(before: "Appendix", body: "Tables."),
+                Chapter(title: "Index", text: "Entries follow."),
+            ],
+            skipping: ["Appendix"],
+            punctuationPauseLevel: 3
+        ) { reader in
+            XCTAssertEqual(reader.preparedSpeech(forChapterAt: 0)?.text, "\n\n")
+            XCTAssertEqual(reader.nextSpeakableChapterSpeech(from: 0)?.chapterIndex, 1)
         }
     }
 
@@ -193,6 +220,16 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             text += "\(section.heading)\n\n\(section.body)"
         }
         return Chapter(title: sections.first?.heading ?? "", text: text, headings: headings)
+    }
+
+    /// A chapter whose only section follows two blank lines, as converted
+    /// documents often begin; skipping the section leaves just those lines.
+    private func chapterWithBlankLines(before heading: String, body: String) -> Chapter {
+        Chapter(
+            title: heading,
+            text: "\n\n\(heading)\n\n\(body)",
+            headings: [Heading(level: 1, text: heading, characterOffset: 2)]
+        )
     }
 
     /// Run `body` with a loaded, in-memory text reader over `chapters`, then
