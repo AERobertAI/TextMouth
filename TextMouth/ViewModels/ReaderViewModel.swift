@@ -108,7 +108,10 @@ final class ReaderViewModel: ObservableObject {
         ownerID: UUID(),
         diagnosticLabel: "book-\(book.id.uuidString.prefix(8))"
     )
-    let substitutionService = TextSubstitutionService.shared
+    /// Text substitution rules applied to every chapter before it is spoken:
+    /// the shared rules edited in Substitutions settings, unless the reader
+    /// was created with its own.
+    let substitutionService: TextSubstitutionService
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -229,10 +232,27 @@ final class ReaderViewModel: ObservableObject {
     /// older window left vulnerable to a brief macOS scheduling hiccup.
     nonisolated static let skipDebounceWindow: TimeInterval = 0.4
 
-    init(book: Book, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
+    /// Open a reader for `book` and start loading its content.
+    ///
+    /// - Parameters:
+    ///   - book: The book to read; the reader keeps its own copy.
+    ///   - libraryViewModel: The library that persists this book's state.
+    ///   - settingsViewModel: The global settings playback follows.
+    ///   - substitutionService: Rules applied to text before it is spoken.
+    ///     Nil uses the shared rules edited in Substitutions settings; tests
+    ///     pass their own so the user's rules cannot change what is spoken.
+    init(
+        book: Book,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        substitutionService: TextSubstitutionService? = nil
+    ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
         self.settingsViewModel = settingsViewModel
+        // Resolved here rather than as a default argument, so the shared
+        // main-actor service is read inside this main-actor initializer.
+        self.substitutionService = substitutionService ?? .shared
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
