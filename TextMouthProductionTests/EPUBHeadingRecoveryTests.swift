@@ -456,6 +456,22 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(withHeading.text, "Chapter one\n\nBody.")
     }
 
+    /// A named anchor marks a destination, not a link. SwiftSoup closes the
+    /// self-closing form immediately; neither form may leave brackets in
+    /// speech or heading labels, while real links keep only their words.
+    func testNamedAnchorsAreReadWithoutLinkBrackets() throws {
+        let html = """
+        <h2><a id="page_12"/>Twelve</h2>
+        <p>Before <a id="page_13"/>after, <a name="legacy">named</a> and <a href="notes.xhtml#n1">linked</a>.</p>
+        """
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertFalse(markdown.contains("[]"))
+        XCTAssertTrue(markdown.contains("[linked](notes.xhtml#n1)"))
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown)
+        XCTAssertEqual(chapter.text, "Twelve\n\nBefore after, named and linked.")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Twelve"])
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {

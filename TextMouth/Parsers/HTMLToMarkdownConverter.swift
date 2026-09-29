@@ -167,11 +167,16 @@ enum HTMLToMarkdownConverter {
         // Links
         case "a":
             let href = (try? element.attr("href")) ?? ""
-            result += "["
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "]"
-            if !href.isEmpty {
-                result += "(\(href))"
+            if href.isEmpty {
+                // A named anchor such as <a id="page_12"/> marks a destination;
+                // it is not a link. Markdown would keep bare brackets as literal
+                // text in speech and in heading labels ("[]2"), so emit only
+                // whatever the anchor encloses.
+                convertNode(element, into: &result, headingTargets: headingTargets)
+            } else {
+                result += "["
+                convertNode(element, into: &result, headingTargets: headingTargets)
+                result += "](\(href))"
             }
 
         // Images — emit alt text for accessibility
