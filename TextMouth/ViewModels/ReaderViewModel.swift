@@ -459,16 +459,13 @@ final class ReaderViewModel: ObservableObject {
                     // Use pre-rendered engine if available for instant chapter start
                     if let preEngine = self.nextChapterEngine,
                        self.nextChapterIndex == nextIndex,
-                       preEngine.hasRenderedAudio {
+                       preEngine.hasRenderedAudio,
+                       let speech = self.preparedSpeech(forChapterAt: nextIndex) {
                         self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
-                        // Apply full text pipeline so offset map covers all stages
-                        let (filteredText, filterMap) = self.filterSkippedSections(
-                            chapterIndex: nextIndex, text: content.chapters[nextIndex].text)
-                        let (pausedText, pauseMap) = self.applyPunctuationPauses(filteredText)
-                        let transform = self.substitutionService.transform(pausedText)
-                        self.currentTransformation = transform
-                        self.currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transform.offsetMap.stages)
-                        self.speechService.usePreRenderedEngine(preEngine, text: transform.modifiedText)
+                        // The prepared speech's map covers every pipeline stage
+                        self.currentTransformation = speech.transformation
+                        self.currentOffsetMap = speech.offsetMap
+                        self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
                         self.nextChapterEngine = nil
                         self.nextChapterIndex = nil
                         // Pre-render the chapter after that

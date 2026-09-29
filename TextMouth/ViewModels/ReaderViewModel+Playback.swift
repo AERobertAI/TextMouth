@@ -250,28 +250,19 @@ extension ReaderViewModel {
             currentChapterIndex = idx
             currentCharacterOffset = 0
         }
-        guard idx < content.chapters.count else { return }
-
-        let chapter = content.chapters[currentChapterIndex]
-        guard !chapter.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        // The loop stopped on a non-empty chapter unless it ran past the end.
+        guard let speech = preparedSpeech(forChapterAt: idx) else { return }
 
         debugLog("speakCurrentChapter: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
 
-        // Filter out skipped sections, apply punctuation pauses, then text substitutions.
-        // Each stage returns an OffsetMap tracking how character positions shifted.
-        // Compose all three into a single bidirectional map for offset conversion.
-        let (filteredText, filterMap) = filterSkippedSections(chapterIndex: currentChapterIndex, text: chapter.text)
-        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
-        let transformation = substitutionService.transform(pausedText)
-        currentTransformation = transformation
-        currentOffsetMap = ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
-        let speakText = transformation.modifiedText
+        currentTransformation = speech.transformation
+        currentOffsetMap = speech.offsetMap
         // Convert original-text offset to modified-text offset using the full composed map
-        let speakOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
+        let speakOffset = speech.offsetMap.toModified(currentCharacterOffset)
 
         // Start playback from the current offset.
         utteranceBaseOffset = 0
-        speechService.speak(speakText, fromCharOffset: speakOffset)
+        speechService.speak(speech.text, fromCharOffset: speakOffset)
 
         // Pre-render the next chapter so it can start instantly when this one ends
         preRenderNextChapter()
@@ -284,7 +275,9 @@ extension ReaderViewModel {
         while nextIdx < content.chapters.count && content.chapters[nextIdx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             nextIdx += 1
         }
-        guard nextIdx < content.chapters.count else {
+        // Render exactly the text speakCurrentChapter would speak for it.
+        guard nextIdx < content.chapters.count,
+              let chapterText = preparedSpeech(forChapterAt: nextIdx)?.text else {
             nextChapterEngine?.cancelRender()
             nextChapterEngine = nil
             nextChapterIndex = nil
@@ -295,12 +288,6 @@ extension ReaderViewModel {
         nextChapterEngine?.cancelRender()
 
         let engine = AudioEngineService()
-        // Apply the full text transformation pipeline so pre-rendered audio
-        // matches what speakCurrentChapter would produce.
-        let rawText = content.chapters[nextIdx].text
-        let (filteredText, _) = filterSkippedSections(chapterIndex: nextIdx, text: rawText)
-        let (pausedText, _) = applyPunctuationPauses(filteredText)
-        let chapterText = substitutionService.transform(pausedText).modifiedText
         nextChapterIndex = nextIdx
 
         // Keep look-ahead rendering under the same safety limit as the current
@@ -345,6 +332,46 @@ extension ReaderViewModel {
     /// captured is still current. Navigation increments the generation.
     nonisolated static func isCurrentPlaybackGeneration(captured: Int, current: Int) -> Bool {
         captured == current
+    }
+
+    // MARK: - Chapter Speech
+
+    /// One chapter as the speech engine hears it, with the map back to the
+    /// chapter's original text.
+    struct ChapterSpeech {
+        /// Index of the chapter this speech was prepared from.
+        let chapterIndex: Int
+        /// Result of the text substitutions, the pipeline's last stage.
+        let transformation: TextTransformation
+        /// Offsets through every stage (skipped sections, punctuation
+        /// pauses, substitutions), between original and spoken text.
+        let offsetMap: ComposedOffsetMap
+
+        /// The exact text handed to the speech engine.
+        var text: String { transformation.modifiedText }
+    }
+
+    /// Run one chapter through the playback text pipeline: remove skipped
+    /// sections, add punctuation pauses, then apply text substitutions.
+    /// Speaking a chapter and pre-rendering the next one both use this, so
+    /// look-ahead audio always matches what playback would speak.
+    ///
+    /// - Returns: Nil when no content is loaded or the index is out of range.
+    func preparedSpeech(forChapterAt chapterIndex: Int) -> ChapterSpeech? {
+        guard let content, content.chapters.indices.contains(chapterIndex) else { return nil }
+        // Each stage reports how it shifted character offsets; composing the
+        // stages converts between original chapter text and spoken text.
+        let (filteredText, filterMap) = filterSkippedSections(
+            chapterIndex: chapterIndex,
+            text: content.chapters[chapterIndex].text
+        )
+        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
+        let transformation = substitutionService.transform(pausedText)
+        return ChapterSpeech(
+            chapterIndex: chapterIndex,
+            transformation: transformation,
+            offsetMap: ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
+        )
     }
 
     // MARK: - Audio Book Playback
