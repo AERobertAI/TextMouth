@@ -637,6 +637,43 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(reopened.content.allHeadings, repaired.allHeadings)
     }
 
+    /// A Markdown line that begins with "<!--" opens an HTML block, which used
+    /// to swallow the words of any paragraph that began with a destination
+    /// anchor (145 paragraphs of the reported book). Paragraphs, list items,
+    /// and quotations that begin with an anchor keep every word, and each
+    /// destination lands exactly where its words begin, even after a line break.
+    func testDestinationsAtLineStartsKeepTheirWords() throws {
+        let html = """
+        <p><a id="opening"/>Chapter Five</p>
+        <p>
+          <span id="spaced"></span>Spaced opening.</p>
+        <p>Line one<br/><a id="broken"/>Line two</p>
+        <ul><li><a id="item"/>Listed words</li></ul>
+        <blockquote><span id="quote"></span>Quoted words</blockquote>
+        """
+        let destinations = [
+            ("opening", "Chapter Five"), ("spaced", "Spaced opening."), ("broken", "Line two"),
+            ("item", "Listed words"), ("quote", "Quoted words")
+        ]
+        let targets = Dictionary(uniqueKeysWithValues: destinations.map {
+            ($0.0, MarkdownHeadingAnnotation(level: 2, text: "TOC \($0.0)"))
+        })
+        let markdown = try HTMLToMarkdownConverter.convert(html, headingTargets: targets)
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
+        let unannotated = try MarkdownDocParser.parseChapter(markdown: HTMLToMarkdownConverter.convert(html))
+        XCTAssertEqual(chapter.text, "Chapter Five\n\nSpaced opening.\n\nLine one\nLine two\n\nListed words\n\nQuoted words")
+        XCTAssertEqual(chapter.text, unannotated.text)
+        XCTAssertEqual(chapter.headings.map(\.text), destinations.map { "TOC \($0.0)" })
+        for (id, words) in destinations {
+            let range = try XCTUnwrap(chapter.text.range(of: words))
+            XCTAssertEqual(
+                chapter.headings.first { $0.text == "TOC \(id)" }?.characterOffset,
+                chapter.text.utf16Offset(of: range.lowerBound),
+                "Destination \(id)"
+            )
+        }
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {

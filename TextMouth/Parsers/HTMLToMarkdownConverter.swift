@@ -114,12 +114,7 @@ enum HTMLToMarkdownConverter {
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
         if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
-            if element.isBlock() {
-                ensureBlankLine(&result)
-                result += annotation.markdown + "\n\n"
-            } else {
-                result += annotation.markdown
-            }
+            emit(annotation, inline: !element.isBlock(), into: &result)
         }
 
         switch tag {
@@ -138,7 +133,7 @@ enum HTMLToMarkdownConverter {
             // parser gives both the same offset and keeps the visible heading,
             // and a heading without visible text still keeps its destination.
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
-                result += annotation.markdown + "\n\n"
+                emit(annotation, inline: false, into: &result)
             }
             result += "\(prefix) "
             convertNode(element, into: &result, headingTargets: [:])
@@ -260,6 +255,53 @@ enum HTMLToMarkdownConverter {
     }
 
     // MARK: - Navigation Annotations
+
+    /// Where the next output lands in the Markdown being built.
+    private enum LinePosition {
+        /// After visible content on the current line.
+        case withinLine
+        /// At the start of a line that continues a paragraph (after a hard break).
+        case continuationLine
+        /// At the start of a new block: the beginning, or after a blank line.
+        case blockStart
+    }
+
+    /// Classify the end of `result` from its last two lines only, so the cost
+    /// does not grow with the chapter. Spaces and tabs are indentation, not
+    /// content, as in CommonMark. Scalars keep "\r\n" from hiding a newline.
+    private static func linePosition(of result: String) -> LinePosition {
+        let scalars = result.unicodeScalars
+        let isIndentation: (Unicode.Scalar) -> Bool = { $0 == " " || $0 == "\t" }
+        guard let lineBreak = scalars.lastIndex(of: "\n") else {
+            return scalars.allSatisfy(isIndentation) ? .blockStart : .withinLine
+        }
+        guard scalars[scalars.index(after: lineBreak)...].allSatisfy(isIndentation) else { return .withinLine }
+        let earlierLines = scalars[..<lineBreak]
+        let previousLineStart = earlierLines.lastIndex(of: "\n").map { earlierLines.index(after: $0) }
+            ?? earlierLines.startIndex
+        return earlierLines[previousLineStart...].allSatisfy(isIndentation) ? .blockStart : .continuationLine
+    }
+
+    /// Write a destination without changing the words around it. CommonMark
+    /// opens an HTML block at any line that begins with "<!--", and that block
+    /// swallows the rest of the line: an anchor at the start of a paragraph
+    /// used to delete the paragraph's words from speech. An annotation therefore
+    /// never begins a line. At a block boundary it becomes a block of its own,
+    /// which names the same position as the block that follows. After a hard
+    /// line break, four spaces keep it inside the paragraph, because an HTML
+    /// block may be indented by at most three and a continuation line's
+    /// indentation is not part of its text.
+    private static func emit(_ annotation: MarkdownHeadingAnnotation, inline: Bool, into result: inout String) {
+        switch inline ? linePosition(of: result) : .blockStart {
+        case .withinLine:
+            result += annotation.markdown
+        case .continuationLine:
+            result += "    " + annotation.markdown
+        case .blockStart:
+            ensureBlankLine(&result)
+            result += annotation.markdown + "\n\n"
+        }
+    }
 
     /// The TOC destination an element carries through its id, or through the
     /// name of a legacy anchor.
