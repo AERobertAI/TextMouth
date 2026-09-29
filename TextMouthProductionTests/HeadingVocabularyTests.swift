@@ -668,3 +668,66 @@ final class HeadingSweepTests: XCTestCase {
         XCTAssertEqual(sweep.position(chapterIndex: 0, characterOffset: 5).label, "Heading 1 of 2")
     }
 }
+
+/// Search results say where each match is by heading, not by content unit.
+@MainActor
+final class SearchResultLocationTests: XCTestCase {
+    func testMatchesAreNamedByTheirContainingHeading() {
+        let headings = [
+            Heading(level: 1, text: "Opening", chapterIndex: 0, characterOffset: 0),
+            Heading(level: 2, text: "Middle", chapterIndex: 1, characterOffset: 9),
+        ]
+
+        let titles = BookSearchView.locationTitles(
+            of: [(0, 3), (1, 2), (1, 30), (2, 4)],
+            headings: headings,
+            chapterTitles: ["Unit One", "Unit Two", "Unit Three"],
+            bookTitle: "Fixture"
+        )
+
+        XCTAssertEqual(titles, ["Opening", "Opening", "Middle", "Middle"])
+    }
+
+    /// Text formats hold the whole book in one content unit titled after its
+    /// first heading; every match must still name its own heading.
+    func testMatchesInASingleUnitBookNameTheirOwnHeadings() {
+        let headings = ["Harbor", "Crossing", "Landfall"].enumerated().map {
+            Heading(level: 1, text: $0.element, chapterIndex: 0, characterOffset: $0.offset * 100)
+        }
+
+        let titles = BookSearchView.locationTitles(
+            of: [(0, 50), (0, 150), (0, 250)],
+            headings: headings,
+            chapterTitles: ["Harbor"],
+            bookTitle: "Voyage"
+        )
+
+        XCTAssertEqual(titles, ["Harbor", "Crossing", "Landfall"])
+    }
+
+    func testMatchBeforeTheFirstHeadingHasNoLocation() {
+        let headings = [Heading(level: 1, text: "Story", chapterIndex: 0, characterOffset: 50)]
+
+        let titles = BookSearchView.locationTitles(
+            of: [(0, 10), (0, 60)],
+            headings: headings,
+            chapterTitles: ["Cover"],
+            bookTitle: "Voyage"
+        )
+
+        XCTAssertEqual(titles, [nil, "Story"])
+    }
+
+    /// Without headings, a match names its content unit only when that title
+    /// says more than the book title.
+    func testBookWithoutHeadingsNamesOnlyDistinctContentTitles() {
+        let titles = BookSearchView.locationTitles(
+            of: [(0, 5), (1, 5)],
+            headings: [],
+            chapterTitles: ["Voyage", "Appendix"],
+            bookTitle: "Voyage"
+        )
+
+        XCTAssertEqual(titles, [nil, "Appendix"])
+    }
+}

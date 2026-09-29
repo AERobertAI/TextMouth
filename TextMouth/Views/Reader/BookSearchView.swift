@@ -27,6 +27,11 @@ enum BookTextSearch {
 struct BookSearchView: View {
     let chapterTexts: [String]
     let chapterTitles: [String]
+    /// Every heading in the book, used to name where each match is.
+    let headings: [Heading]
+    /// The book's title, so a content title that merely repeats it is not
+    /// offered as a match's location.
+    let bookTitle: String
     let totalCharacterCount: Int
     let totalWordCount: Int
     let currentWPM: Double
@@ -57,6 +62,33 @@ struct BookSearchView: View {
         let matchedText: String
         let contextSnippet: String
         let globalOffset: Int
+        /// Heading containing the match, or nil when there is none to name.
+        var locationTitle: String?
+
+        /// The matching context, then where it is: the rotor entry, and the
+        /// start of the row's spoken label.
+        var contextAndLocation: String {
+            [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
+        }
+    }
+
+    /// Name each match's location by the heading containing it, using the
+    /// same rule and fallback as the reader header. Matches should arrive in
+    /// reading order, as a search produces them, so one sweep serves them all.
+    static func locationTitles(
+        of matches: [(chapterIndex: Int, characterOffset: Int)],
+        headings: [Heading],
+        chapterTitles: [String],
+        bookTitle: String
+    ) -> [String?] {
+        var sweep = HeadingSweep(headings: headings)
+        return matches.map { match in
+            let contentTitle = chapterTitles.indices.contains(match.chapterIndex)
+                ? chapterTitles[match.chapterIndex]
+                : nil
+            return sweep.position(chapterIndex: match.chapterIndex, characterOffset: match.characterOffset)
+                .title(contentTitle: contentTitle, bookTitle: bookTitle)
+        }
     }
 
     private enum SearchOutcome {
@@ -149,7 +181,6 @@ struct BookSearchView: View {
                                 SearchResultRow(
                                     result: result,
                                     displayMode: displayMode,
-                                    chapterTitle: chapterTitles[result.chapterIndex],
                                     totalCharacterCount: totalCharacterCount,
                                     totalWordCount: totalWordCount,
                                     currentWPM: currentWPM
@@ -167,10 +198,7 @@ struct BookSearchView: View {
                 .accessibilityLabel("\(results.count) \(results.count == 1 ? "match" : "matches") found")
                 .accessibilityRotor("Search Results") {
                     ForEach(results) { result in
-                        AccessibilityRotorEntry(
-                            "\(result.contextSnippet), \(chapterTitles[result.chapterIndex])",
-                            id: result.id
-                        )
+                        AccessibilityRotorEntry(result.contextAndLocation, id: result.id)
                     }
                 }
             }
@@ -220,6 +248,17 @@ struct BookSearchView: View {
             cumulativeCount += chapterText.utf16Length
         }
 
+        // Matches were collected in reading order; name each by its heading.
+        let locationTitles = Self.locationTitles(
+            of: results.map { (chapterIndex: $0.chapterIndex, characterOffset: $0.characterOffset) },
+            headings: headings,
+            chapterTitles: chapterTitles,
+            bookTitle: bookTitle
+        )
+        for index in results.indices {
+            results[index].locationTitle = locationTitles[index]
+        }
+
         return results.isEmpty ? .empty : .results(results)
     }
 
@@ -241,7 +280,6 @@ struct BookSearchView: View {
 private struct SearchResultRow: View {
     let result: BookSearchView.SearchResult
     let displayMode: BookSearchView.DisplayMode
-    let chapterTitle: String
     let totalCharacterCount: Int
     let totalWordCount: Int
     let currentWPM: Double
@@ -253,9 +291,11 @@ private struct SearchResultRow: View {
                 .lineLimit(2)
 
             HStack {
-                Text(chapterTitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                if let locationTitle = result.locationTitle {
+                    Text(locationTitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
@@ -291,12 +331,14 @@ private struct SearchResultRow: View {
         }
     }
 
+    /// Spoken row label: the context and location, then the position in the
+    /// selected display mode.
     private var accessibilityDescription: String {
         switch displayMode {
         case .percentage:
-            return "\(result.contextSnippet), \(chapterTitle), at \(String(format: "%.1f percent", percentage)) of book"
+            return "\(result.contextAndLocation), at \(String(format: "%.1f percent", percentage)) of book"
         case .time:
-            return "\(result.contextSnippet), \(chapterTitle), at \(TimeFormatting.spoken(timeInSeconds)) into book"
+            return "\(result.contextAndLocation), at \(TimeFormatting.spoken(timeInSeconds)) into book"
         }
     }
 }

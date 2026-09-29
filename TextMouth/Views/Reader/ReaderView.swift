@@ -239,6 +239,8 @@ struct ReaderView: View {
                 BookSearchView(
                     chapterTexts: content.chapters.map { $0.text },
                     chapterTitles: content.chapters.map { $0.title },
+                    headings: viewModel.headings,
+                    bookTitle: viewModel.book.title,
                     totalCharacterCount: content.totalCharacterCount,
                     totalWordCount: content.totalWordCount,
                     currentWPM: viewModel.speechService.wordsPerMinute,
