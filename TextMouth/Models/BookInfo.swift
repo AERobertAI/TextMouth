@@ -21,6 +21,21 @@ struct BookInfo: Codable {
         self.bookmarks = bookmarks
         self.contentIndex = contentIndex
     }
+
+    /// Decodes a package's bookInfo.json. `BookState` repairs what it can
+    /// check on its own; the per-book speed also depends on the format, so
+    /// its range is applied here, once the metadata is known.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        metadata = try container.decode(BookMetadata.self, forKey: .metadata)
+        state = try container.decode(BookState.self, forKey: .state)
+        bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
+        contentIndex = try container.decodeIfPresent(BookContentIndex.self, forKey: .contentIndex)
+        state.applyLocalSpeedRange(
+            isAudio: metadata.format.isAudio,
+            codingPath: container.codingPath + [CodingKeys.state]
+        )
+    }
 }
 
 /// Built-in and user-editable metadata for a book
@@ -170,6 +185,50 @@ struct BookState: Codable {
         self.audioDuration = audioDuration
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
+    }
+
+    /// Decodes saved state, repairing the values `SettingsPolicy` checks
+    /// (counts, speed, and pitch; positions and bookmarks repair themselves)
+    /// instead of failing the package. Every other field decodes exactly as
+    /// the synthesized decoder did. The state cannot know its book's format,
+    /// so this only drops speeds no book can have; `BookInfo` then applies
+    /// the format's range.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
+        readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
+        totalWordCount = fields.count(.totalWordCount)
+        totalCharacterCount = fields.count(.totalCharacterCount)
+        isNew = try container.decode(Bool.self, forKey: .isNew)
+        tmbDirectoryName = try container.decode(String.self, forKey: .tmbDirectoryName)
+        lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
+        lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
+        localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
+        localWPM = fields.optionalValue(.localWPM, validate: SettingsPolicy.usableLocalSpeed)
+        localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
+        skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
+        localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
+        localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
+        localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
+        manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
+        audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
+        cacheFormatVersion = try container.decodeIfPresent(String.self, forKey: .cacheFormatVersion)
+        contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+    }
+}
+
+extension BookState {
+    /// Applies the book format's range to `localWPM`: the words-per-minute
+    /// range for text, `AudioSpeed` normalization for an audio multiplier.
+    /// `BookInfo` calls this once it has decoded the format; `codingPath`
+    /// locates this state in the file for the repair log.
+    fileprivate mutating func applyLocalSpeedRange(isAudio: Bool, codingPath: [CodingKey]) {
+        guard let saved = localWPM else { return }
+        localWPM = StoredValueRepair.validated(
+            saved,
+            source: SettingsPolicy.bookStateSource,
+            codingPath: codingPath + [CodingKeys.localWPM]
+        ) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
     }
 }
 

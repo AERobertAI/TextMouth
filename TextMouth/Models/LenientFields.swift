@@ -158,6 +158,11 @@ extension LenientFields {
     func optionalPosition(_ key: Key) -> Int? {
         optionalValue(key) { SettingsPolicy.validatedPosition($0) }
     }
+
+    /// A word or character count; nil when missing, unreadable, or negative.
+    func count(_ key: Key) -> Int? {
+        optionalValue(key, validate: SettingsPolicy.validatedCount)
+    }
 }
 
 // MARK: - Repair log
