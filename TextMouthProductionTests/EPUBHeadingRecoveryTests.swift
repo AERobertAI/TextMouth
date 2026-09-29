@@ -1,4 +1,5 @@
 import Combine
+import SwiftSoup
 import XCTest
 import ZIPFoundation
 @testable import TextMouth
@@ -689,18 +690,99 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         }
     }
 
-    /// Optional corpus verification uses only a disposable copy supplied by the
-    /// build setting. Ordinary test runs have no dependency on a user's library.
-    func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
-        let fixturePath = Bundle(for: Self.self).object(forInfoDictionaryKey: "TextMouthEPUBRegressionFixture") as? String ?? ""
-        guard !fixturePath.isEmpty, !fixturePath.hasPrefix("$(") else {
-            throw XCTSkip("Set TEXTMOUTH_EPUB_REGRESSION_FIXTURE to a copied EPUB package.")
+    /// Optional corpus verification for any copied EPUB (see
+    /// `copiedEPUBFixture`). Every book's navigation must satisfy these rules:
+    /// direct and cached reading agree; heading labels and chapter titles carry
+    /// no annotation markup; no chapter has two headings at one offset; and a
+    /// page-list label is a heading no more often than the book's own headings
+    /// or TOC entries use it. Against a previous cache, chapter text may only
+    /// lose characters (hidden navigation, "[]" from named anchors) once the
+    /// words that older caches hid behind a line-leading annotation are
+    /// counted, and unchanged chapters keep every heading that is not a page
+    /// number.
+    func testCopiedEPUBSatisfiesNavigationInvariants() throws {
+        let fixture = try copiedEPUBFixture()
+        let book = try FileImportService.importFile(from: fixture.epub)
+        let package = book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try EPUBParser.parse(url: URL(fileURLWithPath: book.filePath))
+        XCTAssertEqual(cached.allHeadings, direct.allHeadings)
+        XCTAssertEqual(cached.chapters.map(\.text), direct.chapters.map(\.text))
+
+        // Report chapter numbers on failure without dumping an entire book.
+        for (index, chapter) in cached.chapters.enumerated() {
+            XCTAssertFalse(chapter.title.contains("<!--"), "Chapter \(index + 1) title contains markup")
+            XCTAssertFalse(chapter.headings.contains { $0.text.contains("<!--") }, "Chapter \(index + 1) heading contains markup")
+            let offsets = chapter.headings.map(\.characterOffset)
+            XCTAssertEqual(offsets, Array(Set(offsets)).sorted(), "Chapter \(index + 1) repeats or reorders heading offsets")
         }
-        let fixture = URL(fileURLWithPath: fixturePath)
-        let oldMarkdown = try String(contentsOf: fixture.appendingPathComponent("content.md"), encoding: .utf8)
+
+        let inventory = try EPUBNavigationInventory(epub: fixture.epub)
+        let headingCounts = Dictionary(cached.allHeadings.map { ($0.text, 1) }, uniquingKeysWith: +)
+        for label in Set(inventory.pageLabels) {
+            XCTAssertLessThanOrEqual(
+                headingCounts[label, default: 0],
+                inventory.headingSourceCounts[label, default: 0],
+                "Page \(label) became a heading"
+            )
+        }
+
+        var changedChapters: [String] = []
+        if let previousMarkdown = fixture.previousMarkdown {
+            // Caches before 3.0.5 could begin a line with an annotation, which
+            // hid the rest of that line from speech. Compare with the words the
+            // old cache should have read by giving each such annotation a block.
+            let lineLeadingAnnotation = try NSRegularExpression(
+                pattern: "^([ \\t]{0,3}<!-- textmouth-heading: [A-Za-z0-9+/=]+ -->)(?=[ \\t]*\\S)",
+                options: .anchorsMatchLines
+            )
+            let wholeCache = NSRange(previousMarkdown.startIndex..., in: previousMarkdown)
+            let hiddenLines = lineLeadingAnnotation.numberOfMatches(in: previousMarkdown, range: wholeCache)
+            let readableMarkdown = lineLeadingAnnotation.stringByReplacingMatches(
+                in: previousMarkdown, range: wholeCache, withTemplate: "$1\n\n"
+            )
+            let previous = MarkdownCacheService.parseMultiChapterMarkdown(readableMarkdown, bookTitle: "Fixture", bookAuthor: "")
+            XCTAssertEqual(cached.chapters.count, previous.chapters.count)
+            var unchangedChapters: Set<Int> = []
+            for (index, (current, old)) in zip(cached.chapters, previous.chapters).enumerated() {
+                guard current.text != old.text else {
+                    unchangedChapters.insert(index)
+                    continue
+                }
+                XCTAssertTrue(isSubsequence(current.text, of: old.text), "Chapter \(index + 1) gained or reordered text")
+                changedChapters.append("\(index + 1): -\(old.text.utf16.count - current.text.utf16.count)")
+            }
+            let pageLabels = Set(inventory.pageLabels)
+            let currentIDs = Set(cached.allHeadings.map(\.id))
+            let lost = previous.allHeadings.filter {
+                unchangedChapters.contains($0.chapterIndex) && !pageLabels.contains($0.text) && !currentIDs.contains($0.id)
+            }
+            XCTAssertTrue(lost.isEmpty, "Headings lost from unchanged chapters: \(lost.prefix(5).map(\.text))")
+            print(
+                "EPUB_NAVIGATION_PREVIOUS chapters=\(previous.chapters.count) headings=\(previous.allHeadings.count)",
+                "hiddenLinesRestored=\(hiddenLines)"
+            )
+        }
+        let numericHeadings = cached.allHeadings.filter { $0.text.allSatisfy(\.isNumber) }.count
+        print(
+            "EPUB_NAVIGATION_SUMMARY chapters=\(cached.chapters.count) headings=\(cached.allHeadings.count)",
+            "numericHeadings=\(numericHeadings) pageLabels=\(inventory.pageLabels.count)",
+            "changedChapters=\(changedChapters)"
+        )
+    }
+
+    /// Optional corpus verification of the Helliconia package reported on
+    /// September 8, from a disposable copy supplied by the build setting.
+    /// Other copied EPUBs are covered by the invariant test above.
+    func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
+        let fixture = try copiedEPUBFixture()
+        guard try EPUBParser.readMetadata(url: fixture.epub).title.localizedCaseInsensitiveContains("Helliconia") else {
+            throw XCTSkip("These expectations describe the copied Helliconia package only.")
+        }
+        let oldMarkdown = try XCTUnwrap(fixture.previousMarkdown, "The Helliconia package needs its previous content.md.")
         let previous = MarkdownCacheService.parseMultiChapterMarkdown(oldMarkdown, bookTitle: "Fixture", bookAuthor: "")
-        let source = try XCTUnwrap(FileManager.default.contentsOfDirectory(at: fixture, includingPropertiesForKeys: nil).first { $0.pathExtension == "epub" })
-        var book = try FileImportService.importFile(from: source)
+        var book = try FileImportService.importFile(from: fixture.epub)
         let package = book.tmbDirectory
         addTeardownBlock { try? FileManager.default.removeItem(at: package) }
         // Compare the full regeneration/index path before and after performance
@@ -849,6 +931,99 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
         <head><title>Fixture Book</title></head><body>\(body)</body></html>
         """
+    }
+
+    /// A copied corpus EPUB and, when its package supplied one, the cache that
+    /// preceded the current extraction.
+    private struct CopiedEPUBFixture {
+        var epub: URL
+        var previousMarkdown: String?
+    }
+
+    /// Resolve TEXTMOUTH_EPUB_REGRESSION_FIXTURE, skipping when it is unset.
+    /// It names a copied package directory (the source EPUB, optionally with
+    /// its previous content.md) or a single .epub file. Importing only reads
+    /// the copy; every write goes to the hosted tests' isolated library.
+    private func copiedEPUBFixture() throws -> CopiedEPUBFixture {
+        let fixturePath = Bundle(for: Self.self).object(forInfoDictionaryKey: "TextMouthEPUBRegressionFixture") as? String ?? ""
+        guard !fixturePath.isEmpty, !fixturePath.hasPrefix("$(") else {
+            throw XCTSkip("Set TEXTMOUTH_EPUB_REGRESSION_FIXTURE to a copied EPUB package or .epub file.")
+        }
+        let fixture = URL(fileURLWithPath: fixturePath)
+        if fixture.pathExtension.lowercased() == "epub" {
+            return CopiedEPUBFixture(epub: fixture, previousMarkdown: nil)
+        }
+        let files = try FileManager.default.contentsOfDirectory(at: fixture, includingPropertiesForKeys: nil)
+        let epub = try XCTUnwrap(files.first { $0.pathExtension.lowercased() == "epub" }, "No EPUB in \(fixturePath)")
+        let previous = try? String(contentsOf: fixture.appendingPathComponent("content.md"), encoding: .utf8)
+        return CopiedEPUBFixture(epub: epub, previousMarkdown: previous)
+    }
+
+    /// An inventory of an EPUB's navigation vocabulary read straight from its
+    /// archive, independent of the parser under test.
+    private struct EPUBNavigationInventory {
+        /// Every page-list label: EPUB 3 page-list navs and the NCX pageList.
+        var pageLabels: [String] = []
+        /// How often each label is offered by a TOC or landmarks entry, an NCX
+        /// navPoint, or the text of an h1-h6 element anywhere in the book.
+        var headingSourceCounts: [String: Int] = [:]
+
+        init(epub: URL) throws {
+            let archive = try Archive(url: epub, accessMode: .read)
+            let container = try EPUBParser.extractString(archive: archive, path: "META-INF/container.xml")
+            let opfPath = try EPUBParser.parseContainerForOPFPath(container)
+            let opf = try EPUBParser.parseOPF(EPUBParser.extractString(archive: archive, path: opfPath))
+            for item in opf.manifest.values {
+                let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+                guard let source = try? EPUBParser.extractString(archive: archive, path: path) else { continue }
+                if item.mediaType.contains("ncx") {
+                    let ncx = try XMLDocument(xmlString: source)
+                    pageLabels += try Self.labels(in: ncx, of: "pageTarget")
+                    tally(try Self.labels(in: ncx, of: "navPoint"))
+                } else if item.mediaType.contains("html") {
+                    let document = try SwiftSoup.parse(source)
+                    for nav in try document.select("nav").array() {
+                        let links = try nav.select("a").array().map { try Self.normalized($0.text()) }
+                        let semantics = (nav.getAttributes()?.asList() ?? []).map { $0.getValue() }.joined(separator: " ")
+                        if semantics.contains("page-list") || semantics.contains("doc-pagelist") {
+                            pageLabels += links
+                        } else {
+                            tally(links)
+                        }
+                    }
+                    tally(try document.select("h1, h2, h3, h4, h5, h6").array().map { try Self.normalized($0.text()) })
+                }
+            }
+        }
+
+        /// Count labels the book itself offers as headings or TOC entries.
+        private mutating func tally(_ labels: [String]) {
+            for label in labels where !label.isEmpty {
+                headingSourceCounts[label, default: 0] += 1
+            }
+        }
+
+        /// NCX labels of one navigation element type, in document order.
+        private static func labels(in ncx: XMLDocument, of element: String) throws -> [String] {
+            try ncx.nodes(forXPath: "//*[local-name()='\(element)']/*[local-name()='navLabel']/*[local-name()='text']")
+                .map { normalized($0.stringValue ?? "") }
+        }
+
+        /// Collapse whitespace as navigation labels are normalized.
+        private static func normalized(_ label: String) -> String {
+            label.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+    }
+
+    /// Whether `text` can be formed only by deleting characters from `source`,
+    /// compared as UTF-16 code units like reading coordinates.
+    private func isSubsequence(_ text: String, of source: String) -> Bool {
+        var remaining = text.utf16.makeIterator()
+        var next = remaining.next()
+        for unit in source.utf16 where unit == next {
+            next = remaining.next()
+        }
+        return next == nil
     }
 
     /// Build and import a real ZIP in the hosted tests' isolated library.
