@@ -302,6 +302,18 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertFalse(LibraryIndexRecoveryOutcome.rebuilt(bookCount: 2, preservedCopy: nil).message.contains("kept at"))
     }
 
+    /// The Rebuild Library Index choice says what is lost and names the saved
+    /// copy that keeps the old data.
+    func testRebuildDescriptionNamesTheLossAndTheSavedCopy() {
+        let copy = URL(fileURLWithPath: "/tmp/library.json.unreadable-20260921T141320Z")
+
+        let described = LibraryIndexRecoveryText.rebuild(savedCopy: copy)
+
+        XCTAssertTrue(described.contains("Folder placement, sort settings, and manual order"))
+        XCTAssertTrue(described.contains("The saved copy at \(copy.path) keeps the old data."))
+        XCTAssertTrue(LibraryIndexRecoveryText.rebuild(savedCopy: nil).contains("does not rebuild if it cannot"))
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test
