@@ -38,6 +38,14 @@ enum LibraryIndexRecoveryText {
 
     static let banner = "The library index could not be read. This is a temporary library, and "
         + "library changes are not being saved."
+
+    /// The Storage settings status while recovering.
+    static let settingsStatus = "Library index unreadable"
+
+    static let settingsExplanation = "The library index could not be read, so library changes are "
+        + "not being saved. Choose Try Again or Rebuild Library Index from Recovery Options at the "
+        + "top of the Library window. Until then, changing the location and rebuilding the "
+        + "directory are unavailable."
 }
 
 /// The choices offered when the library index cannot be read, shown as a

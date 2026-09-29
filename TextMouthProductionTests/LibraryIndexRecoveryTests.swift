@@ -314,6 +314,17 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertTrue(LibraryIndexRecoveryText.rebuild(savedCopy: nil).contains("does not rebuild if it cannot"))
     }
 
+    /// Storage settings name an unreadable index in words, ahead of the data
+    /// directory's own state.
+    func testStorageStatusNamesAnUnreadableIndex() {
+        XCTAssertEqual(
+            StorageSettingsView.statusText(isRecoveringIndex: true, directoryExists: true),
+            "Library index unreadable"
+        )
+        XCTAssertEqual(StorageSettingsView.statusText(isRecoveringIndex: false, directoryExists: true), "Active")
+        XCTAssertEqual(StorageSettingsView.statusText(isRecoveringIndex: false, directoryExists: false), "Not Created")
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test
