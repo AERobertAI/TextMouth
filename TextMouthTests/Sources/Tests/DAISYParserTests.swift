@@ -20,9 +20,15 @@ private func parseDAISYToMarkdown(from url: URL) throws -> String {
     try DAISYParser.extractMarkdown(from: url)
 }
 
-func convertDTBookSnippet(_ xml: String) -> String {
-    guard let data = xml.data(using: .utf8) else { return "" }
-    return DTBookToMarkdownConverter().convert(data: data)
+/// Convert a well-formed DTBook snippet through the production converter.
+/// A snippet the parser finds damaged fails the scenario instead of being
+/// compared as partial text.
+func convertDTBookSnippet(_ xml: String) throws -> String {
+    let conversion = try DTBookToMarkdownConverter(data: Data(xml.utf8), file: "snippet.xml").convert()
+    if let diagnostic = conversion.diagnostic {
+        throw TestError.assertionFailed("DTBook snippet is damaged: \(diagnostic.localizedDescription)")
+    }
+    return conversion.markdown
 }
 
 private func parseDAISY202MetadataFromZip(url: URL) throws -> DAISYMetadata {
@@ -215,7 +221,7 @@ test("DTBook emphasis converts to Markdown italic") {
     <p>This has <em>emphasized</em> and <strong>strong</strong> text.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("*emphasized*"), "Should contain italic text")
     try assertTrue(markdown.contains("**strong**"), "Should contain bold text")
 }
@@ -237,7 +243,7 @@ test("DTBook lists convert to Markdown lists") {
     </list>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("- First item"), "Should have bullet list")
     try assertTrue(markdown.contains("- Second item"), "Should have second bullet")
     try assertTrue(markdown.contains("1. Numbered one"), "Should have numbered list")
@@ -254,7 +260,7 @@ test("DTBook doctitle converts to h1") {
     <docauthor>Test Author</docauthor>
     </frontmatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("# My Great Book"), "doctitle should become h1")
     try assertTrue(markdown.contains("*Test Author*"), "docauthor should become italic")
 }
@@ -395,7 +401,7 @@ test("DTBook blockquote converts to Markdown blockquote") {
     <blockquote><p>To be or not to be.</p></blockquote>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains(">"), "Should contain blockquote marker")
 }
 

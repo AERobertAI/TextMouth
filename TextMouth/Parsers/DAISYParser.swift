@@ -178,7 +178,14 @@ enum DAISYParser {
 
     /// Extract Markdown from a DAISY book. Main conversion entry point for
     /// MarkdownCacheService cache generation.
-    static func extractMarkdown(from url: URL) throws -> String {
+    /// - Parameter reportIncompleteContent: receives a diagnostic for each
+    ///   DTBook content file that broke off after some of its text was read.
+    ///   That text stays in the result; the diagnostic never enters it. The
+    ///   default writes the diagnostic to the console and the debug log.
+    static func extractMarkdown(
+        from url: URL,
+        reportIncompleteContent: (DAISYParserError) -> Void = DAISYParser.logIncompleteContent
+    ) throws -> String {
         let provider = try makeFileProvider(from: url)
         guard let version = detectVersion(in: provider) else {
             throw DAISYParserError.notDAISYBook
@@ -186,10 +193,20 @@ enum DAISYParser {
 
         switch version {
         case .daisy3:
-            return try extractDAISY3Markdown(from: provider)
+            return try extractDAISY3Markdown(from: provider, reportIncompleteContent: reportIncompleteContent)
         case .daisy202:
             return try extractDAISY202Markdown(from: provider)
         }
+    }
+
+    /// Default report for a content file that broke off after some of its
+    /// text was read: one line in the console and in the debug log. The
+    /// import layer has no warning channel yet, so the reader is not told;
+    /// the recovered words stay readable either way.
+    static func logIncompleteContent(_ diagnostic: DAISYParserError) {
+        let line = "DAISY_INCOMPLETE_CONTENT: \(diagnostic.localizedDescription)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
     }
 
     /// Read metadata (title, author) from a DAISY book
@@ -299,7 +316,10 @@ enum DAISYParser {
     // MARK: - DAISY 3 Extraction
 
     /// Extract Markdown from a DAISY 3 book (DTBook XML content)
-    private static func extractDAISY3Markdown(from provider: DAISYFileProvider) throws -> String {
+    private static func extractDAISY3Markdown(
+        from provider: DAISYFileProvider,
+        reportIncompleteContent: (DAISYParserError) -> Void
+    ) throws -> String {
         // Find the OPF file
         let allFiles = provider.listFiles()
         guard let opfPath = allFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) else {
@@ -307,8 +327,7 @@ enum DAISYParser {
             guard let xmlPath = findDTBookXML(in: allFiles, provider: provider) else {
                 throw DAISYParserError.missingContent("No OPF or DTBook XML found")
             }
-            let xmlData = try provider.readFile(at: xmlPath)
-            return try convertDTBookToMarkdown(xmlData)
+            return try convertDTBook(at: xmlPath, in: provider, reportIncompleteContent: reportIncompleteContent)
         }
 
         // Parse OPF to find the DTBook XML file
@@ -353,13 +372,29 @@ enum DAISYParser {
         // Convert each content file and concatenate in reading order
         var allMarkdown: [String] = []
         for path in dtbookPaths {
-            let xmlData = try provider.readFile(at: path)
-            let markdown = try convertDTBookToMarkdown(xmlData)
+            let markdown = try convertDTBook(at: path, in: provider, reportIncompleteContent: reportIncompleteContent)
             if !markdown.isEmpty {
                 allMarkdown.append(markdown)
             }
         }
         return allMarkdown.joined(separator: "\n\n")
+    }
+
+    /// Convert one DTBook content file to Markdown. Text read before any
+    /// damage is kept, and the damage goes to `reportIncompleteContent`
+    /// instead of into the book's text.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   damaged before any text, or the provider's error when it is missing.
+    private static func convertDTBook(
+        at path: String,
+        in provider: DAISYFileProvider,
+        reportIncompleteContent: (DAISYParserError) -> Void
+    ) throws -> String {
+        let conversion = try DTBookToMarkdownConverter(path: path, in: provider).convert()
+        if let diagnostic = conversion.diagnostic {
+            reportIncompleteContent(diagnostic)
+        }
+        return conversion.markdown
     }
 
     /// Find a DTBook XML file by scanning for files with <dtbook> root element
@@ -545,13 +580,5 @@ enum DAISYParser {
         let parser = DAISY202NCCParser(html: nccHTML)
         let result = parser.parse()
         return DAISYMetadata(title: result.title, author: result.author)
-    }
-
-    // MARK: - DTBook XML → Markdown Converter
-
-    /// Convert DTBook XML data to Markdown text
-    private static func convertDTBookToMarkdown(_ data: Data) throws -> String {
-        let converter = DTBookToMarkdownConverter()
-        return converter.convert(data: data)
     }
 }

@@ -3,7 +3,9 @@ import XCTest
 
 /// A damaged DAISY file must never turn silently into a shorter book (TODO T04).
 /// Structure files (OPF, NCX, SMIL) that break off or are not well-formed
-/// throw an error naming the file, and every caller propagates it.
+/// throw an error naming the file, and every caller propagates it. DTBook
+/// content keeps the text read before any damage and reports the damage
+/// beside that text; content damaged before any text throws like structure.
 final class DAISYMalformedXMLTests: XCTestCase {
 
     // MARK: - Fixtures
@@ -351,7 +353,127 @@ final class DAISYMalformedXMLTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audioDirectory.path), [])
     }
 
+    // MARK: - DTBook Content
+
+    /// Content cut off mid-paragraph keeps every word read before the cut
+    /// and reports the damage beside the text, never inside it.
+    func testTruncatedDTBookKeepsTheTextReadBeforeTheCut() throws {
+        let intact = try DTBookToMarkdownConverter(data: Data(Self.dtbook.utf8), file: "book.xml").convert()
+        XCTAssertNil(intact.diagnostic)
+
+        let damaged = Self.truncated(Self.dtbook, before: "gravel near")
+        let conversion = try DTBookToMarkdownConverter(data: Data(damaged.utf8), file: "book.xml").convert()
+
+        XCTAssertTrue(conversion.markdown.hasPrefix("# Leadline Readings\n"), conversion.markdown)
+        XCTAssertEqual(
+            try Self.spokenText(of: conversion.markdown),
+            "Leadline Readings\n\nThe first sounding came up at nine fathoms.\n\nThe second sounding struck"
+        )
+        guard case let .malformedXML(file, reason)? = conversion.diagnostic else {
+            return XCTFail("Expected a diagnostic describing the damage")
+        }
+        XCTAssertEqual(file, "book.xml")
+        XCTAssertFalse(conversion.markdown.contains(reason), "The diagnostic must stay out of the spoken text")
+    }
+
+    /// Markup left open by the cut is closed as its end tags would have
+    /// closed it, so no emphasis or link syntax is read aloud as symbols.
+    func testTruncatedDTBookClosesMarkupLeftOpenByTheCut() throws {
+        let damaged = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <dtbook><book><bodymatter><level1>
+        <p>Soundings were <em>unusually shallow</em> near the pier.</p>
+        <p>See <a href="#chart">the harbor <strong>chart
+        """
+
+        let conversion = try DTBookToMarkdownConverter(data: Data(damaged.utf8), file: "book.xml").convert()
+
+        XCTAssertNotNil(conversion.diagnostic)
+        XCTAssertEqual(
+            try Self.spokenText(of: conversion.markdown),
+            "Soundings were unusually shallow near the pier.\n\nSee the harbor chart"
+        )
+    }
+
+    /// Damage before any text leaves nothing worth reading, so the file
+    /// fails like a damaged structure file, whether it breaks off in its
+    /// head or before its first words.
+    func testDTBookDamagedBeforeAnyTextThrows() {
+        for marker in ["</head>", "<h1>"] {
+            let damaged = Self.truncated(Self.dtbook, before: marker)
+            malformedXMLReason(naming: "book.xml") {
+                try DTBookToMarkdownConverter(data: Data(damaged.utf8), file: "book.xml").convert()
+            }
+        }
+    }
+
+    /// A DAISY 3 book whose content breaks off still opens with the text that
+    /// was recovered, and the damaged file is reported once, by name.
+    func testDAISY3BookKeepsTextBeforeDamageAndReportsTheContentFile() throws {
+        let zip = try makeTemporaryDAISYZip(entries: [
+            "book/package.opf": Self.opf,
+            "book/book.xml": Self.truncated(Self.dtbook, before: "The second sounding")
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        var diagnostics: [DAISYParserError] = []
+        let markdown = try DAISYParser.extractMarkdown(from: zip) { diagnostics.append($0) }
+
+        XCTAssertEqual(
+            try Self.spokenText(of: markdown),
+            "Leadline Readings\n\nThe first sounding came up at nine fathoms."
+        )
+        XCTAssertEqual(diagnostics.count, 1)
+        guard case let .malformedXML(file, _)? = diagnostics.first else {
+            return XCTFail("Expected one malformed-XML diagnostic, got \(diagnostics)")
+        }
+        XCTAssertEqual(file, "book/book.xml")
+    }
+
+    /// Content damaged before any text fails the book, whether the package
+    /// names it in an OPF or holds it as a standalone DTBook file.
+    func testDAISY3BookWithContentDamagedBeforeAnyTextFails() throws {
+        let damagedContent = Self.truncated(Self.dtbook, before: "<h1>")
+        let packaged = try makeTemporaryDAISYZip(entries: [
+            "book/package.opf": Self.opf,
+            "book/book.xml": damagedContent
+        ])
+        let standalone = try makeTemporaryDAISYZip(entries: ["book.xml": damagedContent])
+        defer {
+            try? FileManager.default.removeItem(at: packaged)
+            try? FileManager.default.removeItem(at: standalone)
+        }
+
+        malformedXMLReason(naming: "book/book.xml") { try DAISYParser.extractMarkdown(from: packaged) }
+        malformedXMLReason(naming: "book.xml") { try DAISYParser.extractMarkdown(from: standalone) }
+    }
+
+    /// With no reporter supplied, as when the Markdown cache is built, the
+    /// damaged file is recorded in the debug log.
+    func testIncompleteContentIsWrittenToTheDebugLogByDefault() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let folder = "logged-\(UUID().uuidString)"
+        let zip = try makeTemporaryDAISYZip(entries: [
+            "\(folder)/package.opf": Self.opf,
+            "\(folder)/book.xml": Self.truncated(Self.dtbook, before: "The second sounding")
+        ])
+        defer { try? FileManager.default.removeItem(at: zip) }
+
+        _ = try DAISYParser.extractMarkdown(from: zip)
+        TextMouthPaths.flushLogs()
+
+        let log = try String(contentsOf: TextMouthPaths.debugLogFile, encoding: .utf8)
+        let entry = try XCTUnwrap(log.components(separatedBy: "\n").first { $0.contains(folder) })
+        XCTAssertTrue(entry.contains("DAISY_INCOMPLETE_CONTENT: The file “\(folder)/book.xml”"), entry)
+    }
+
     // MARK: - Helpers
+
+    /// The words a reader hears for `markdown`: its plain text as the
+    /// Markdown parser extracts it for speech and display.
+    private static func spokenText(of markdown: String) throws -> String {
+        try MarkdownDocParser.parse(markdown: markdown).chapters[0].text
+    }
 
     /// A new, empty directory under the temporary directory.
     private static func makeTemporaryDirectory() throws -> URL {
