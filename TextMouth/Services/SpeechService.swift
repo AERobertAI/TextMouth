@@ -369,21 +369,28 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         TextMouthPaths.appendLog(to: logFile, message: msg)
     }
 
-    override init() {
+    /// Preferences store holding the global speed, pitch, and voice. The app
+    /// uses the standard defaults; tests inject an isolated suite.
+    private let userDefaults: UserDefaults
+
+    /// Reads the global speech defaults from the app's standard preferences.
+    override convenience init() {
+        self.init(userDefaults: .standard)
+    }
+
+    /// - Parameter userDefaults: Store holding the global speed, pitch, and voice.
+    init(userDefaults: UserDefaults) {
+        self.userDefaults = userDefaults
         super.init()
         directSynth.delegate = self
 
-        let savedWPM = UserDefaults.standard.double(forKey: "wordsPerMinute")
-        if savedWPM > 0 {
-            wordsPerMinute = savedWPM
-        }
+        // Read speed and pitch through the settings policy, so a value
+        // stored with `defaults write` is clamped exactly as the Settings
+        // window shows it instead of reaching the speech engine raw.
+        wordsPerMinute = SettingsPolicy.wordsPerMinute.storedValue(in: userDefaults)
+        pitchMultiplier = SettingsPolicy.pitchMultiplier.storedValue(in: userDefaults)
 
-        let savedPitch = UserDefaults.standard.double(forKey: "pitchMultiplier")
-        if savedPitch > 0 {
-            pitchMultiplier = savedPitch
-        }
-
-        let savedVoiceID = UserDefaults.standard.string(forKey: "selectedVoiceID")
+        let savedVoiceID = userDefaults.string(forKey: "selectedVoiceID")
         if let voiceID = savedVoiceID {
             currentVoice = AVSpeechSynthesisVoice(identifier: voiceID)
         }
@@ -400,18 +407,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
+    /// Re-reads the global speech defaults after Settings changes them,
+    /// validated the same way as at launch.
     func reloadSettings() {
-        let savedWPM = UserDefaults.standard.double(forKey: "wordsPerMinute")
-        if savedWPM > 0 && savedWPM != wordsPerMinute {
+        let savedWPM = SettingsPolicy.wordsPerMinute.storedValue(in: userDefaults)
+        if savedWPM != wordsPerMinute {
             wordsPerMinute = savedWPM
         }
 
-        let savedPitch = UserDefaults.standard.double(forKey: "pitchMultiplier")
-        if savedPitch > 0 && savedPitch != pitchMultiplier {
+        let savedPitch = SettingsPolicy.pitchMultiplier.storedValue(in: userDefaults)
+        if savedPitch != pitchMultiplier {
             pitchMultiplier = savedPitch
         }
 
-        let savedVoiceID = UserDefaults.standard.string(forKey: "selectedVoiceID")
+        let savedVoiceID = userDefaults.string(forKey: "selectedVoiceID")
         if let voiceID = savedVoiceID, voiceID != currentVoice?.identifier {
             if let newVoice = AVSpeechSynthesisVoice(identifier: voiceID) {
                 currentVoice = newVoice
@@ -432,7 +441,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     func selectVoice(_ voice: AVSpeechSynthesisVoice) {
         currentVoice = voice
-        UserDefaults.standard.set(voice.identifier, forKey: "selectedVoiceID")
+        userDefaults.set(voice.identifier, forKey: "selectedVoiceID")
     }
 
     var minimumWPM: Double { 50 }
