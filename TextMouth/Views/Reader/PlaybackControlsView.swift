@@ -74,7 +74,7 @@ struct PlaybackControlsView: View {
                     Image(systemName: "tortoise")
                         .font(.caption)
                 }
-                .accessibilityLabel(viewModel.isAudioBook ? "Decrease speed by 0.25x" : "Decrease speed by 25 words per minute")
+                .accessibilityLabel(viewModel.speedStepButtonLabel(forward: false))
                 .buttonStyle(.plain)
 
                 if viewModel.isAudioBook {
@@ -96,7 +96,7 @@ struct PlaybackControlsView: View {
                     Image(systemName: "hare")
                         .font(.caption)
                 }
-                .accessibilityLabel(viewModel.isAudioBook ? "Increase speed by 0.25x" : "Increase speed by 25 words per minute")
+                .accessibilityLabel(viewModel.speedStepButtonLabel(forward: true))
                 .buttonStyle(.plain)
 
                 if viewModel.hasLocalSettings && !viewModel.isAudioBook {

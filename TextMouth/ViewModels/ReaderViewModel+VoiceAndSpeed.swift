@@ -7,11 +7,25 @@ extension ReaderViewModel {
 
     // MARK: - Speed & Voice
 
+    /// Words per minute added or removed by one text-book speed step.
+    static let speechSpeedStep: Double = 25
+
     /// Use the same step for keyboard commands, menus, and playback buttons.
-    /// Audio multipliers and speech WPM are different units.
+    /// Audio multipliers and speech WPM are different units: audio books move
+    /// by `AudioSpeed.coarseStep`, text books by `speechSpeedStep` WPM.
     func stepSpeed(forward: Bool) {
-        let step = isAudioBook ? 0.25 : 25.0
+        let step = isAudioBook ? AudioSpeed.coarseStep : Self.speechSpeedStep
         adjustSpeed(delta: forward ? step : -step)
+    }
+
+    /// VoiceOver label for the playback bar's speed buttons, stating the
+    /// exact step `stepSpeed(forward:)` applies in this book's unit.
+    func speedStepButtonLabel(forward: Bool) -> String {
+        if isAudioBook {
+            return AudioSpeed.stepButtonLabel(increasing: forward, by: AudioSpeed.coarseStep)
+        }
+        let direction = forward ? "Increase" : "Decrease"
+        return "\(direction) speed by \(Int(Self.speechSpeedStep)) words per minute"
     }
 
     /// Adjust TTS speed by a delta (e.g. +25 or -25 WPM).

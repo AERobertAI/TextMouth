@@ -27,17 +27,114 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(defaults.double(forKey: "pitchMultiplier"), 1)
     }
 
-    /// The shared keyboard/button operation increments audio by a quarter,
-    /// rather than immediately clamping a 25x increase to the maximum.
-    func testAudioSpeedCommandsUseQuarterSteps() {
+    /// The shared keyboard, menu, and playback-bar operation moves audio by a
+    /// tenth (not a 25x WPM step clamped to the maximum), landing on exact
+    /// decimals instead of accumulating floating-point drift.
+    func testAudioSpeedCommandsUseCoarseTenthSteps() {
         let reader = makeReader(format: .audio)
         defer { reader.close() }
 
         reader.stepSpeed(forward: true)
-        XCTAssertEqual(reader.audioSpeed, 1.25)
+        XCTAssertEqual(reader.audioSpeed, 1.1)
+        reader.stepSpeed(forward: true)
+        XCTAssertEqual(reader.audioSpeed, 1.2)
+        XCTAssertEqual(reader.audioPlaybackService.playbackSpeed, 1.2)
+        reader.stepSpeed(forward: false)
         reader.stepSpeed(forward: false)
         XCTAssertEqual(reader.audioSpeed, 1)
         XCTAssertEqual(reader.libraryViewModel.bookByID(reader.book.id)?.localWPM, 1)
+    }
+
+    /// The Increase/Decrease Speed menu items and keyboard shortcuts post
+    /// these commands; an audio reader answers them with the coarse step.
+    func testIncreaseAndDecreaseSpeedCommandsUseCoarseStep() {
+        let reader = makeReader(format: .audio)
+        defer { reader.close() }
+
+        NotificationCenter.default.post(name: .increaseSpeed, object: nil)
+        XCTAssertEqual(reader.audioSpeed, 1.1)
+        NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
+        XCTAssertEqual(reader.audioSpeed, 1)
+    }
+
+    /// Steps are relative: a legacy quarter-step speed keeps its offset and
+    /// returns exactly to itself after one step each way.
+    func testCoarseStepsFromLegacyQuarterSpeedAreSymmetric() {
+        let reader = makeReader(format: .audio, localWPM: 1.25)
+        defer { reader.close() }
+
+        reader.stepSpeed(forward: true)
+        XCTAssertEqual(reader.audioSpeed, 1.35)
+        reader.stepSpeed(forward: false)
+        XCTAssertEqual(reader.audioSpeed, 1.25)
+    }
+
+    /// At either bound a coarse step clamps instead of overshooting, and the
+    /// played and saved speed stays exactly the bound.
+    func testCoarseStepsClampAtBothBounds() {
+        let reader = makeReader(format: .audio)
+        defer { reader.close() }
+
+        reader.setAudioSpeed(3.95)
+        reader.stepSpeed(forward: true)
+        XCTAssertEqual(reader.audioSpeed, 4)
+        reader.stepSpeed(forward: true)
+        XCTAssertEqual(reader.audioSpeed, 4)
+
+        reader.setAudioSpeed(0.3)
+        reader.stepSpeed(forward: false)
+        XCTAssertEqual(reader.audioSpeed, 0.25)
+        reader.stepSpeed(forward: false)
+        XCTAssertEqual(reader.audioSpeed, 0.25)
+        XCTAssertEqual(reader.audioPlaybackService.playbackSpeed, 0.25)
+        XCTAssertEqual(reader.libraryViewModel.bookByID(reader.book.id)?.localWPM, 0.25)
+    }
+
+    /// Walking the whole range with the arithmetic `adjustAudioSpeed` uses
+    /// visits only exact tenths. Because steps are relative, the first step
+    /// up from the 0.25 floor lands on 0.35.
+    func testCoarseStepsWalkTheRangeWithoutDrift() {
+        var speed = AudioSpeed.normal
+        for tenths in 11...40 {
+            speed = AudioSpeed.normalized(speed + AudioSpeed.coarseStep)
+            XCTAssertEqual(speed, Double(tenths) / 10)
+        }
+        for tenths in stride(from: 39, through: 3, by: -1) {
+            speed = AudioSpeed.normalized(speed - AudioSpeed.coarseStep)
+            XCTAssertEqual(speed, Double(tenths) / 10)
+        }
+        speed = AudioSpeed.normalized(speed - AudioSpeed.coarseStep)
+        XCTAssertEqual(speed, 0.25)
+        XCTAssertEqual(AudioSpeed.normalized(speed + AudioSpeed.coarseStep), 0.35)
+    }
+
+    /// Both steps, both bounds, and normal speed must be whole numbers of
+    /// fine steps; otherwise snapping would silently change a step's size.
+    func testAudioSpeedStepsAndBoundsLieOnTheSnappingGrid() {
+        XCTAssertEqual(AudioSpeed.coarseStep, 0.1)
+        XCTAssertEqual(AudioSpeed.fineStep, 0.05)
+        let values = [
+            AudioSpeed.coarseStep, AudioSpeed.fineStep, AudioSpeed.normal,
+            AudioSpeed.range.lowerBound, AudioSpeed.range.upperBound,
+        ]
+        for value in values {
+            let fineSteps = value / AudioSpeed.fineStep
+            XCTAssertEqual(fineSteps, fineSteps.rounded(), accuracy: 1e-9, "\(value)")
+        }
+    }
+
+    /// The playback bar's tortoise and hare buttons state the real step in
+    /// words, in each book's own unit.
+    func testPlaybackBarSpeedButtonsStateTheirStepInWords() {
+        let audio = makeReader(format: .audio)
+        defer { audio.close() }
+        XCTAssertEqual(audio.speedStepButtonLabel(forward: true), "Increase audio speed by 0.1 times")
+        XCTAssertEqual(audio.speedStepButtonLabel(forward: false), "Decrease audio speed by 0.1 times")
+
+        let text = makeReader(format: .txt)
+        defer { text.close() }
+        XCTAssertEqual(text.speedStepButtonLabel(forward: true), "Increase speed by 25 words per minute")
+        XCTAssertEqual(text.speedStepButtonLabel(forward: false), "Decrease speed by 25 words per minute")
     }
 
     /// Preserve the existing 25 WPM increment for text books.

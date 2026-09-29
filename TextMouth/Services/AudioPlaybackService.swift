@@ -80,6 +80,11 @@ enum AudioSpeed {
     /// The recording's natural speed, and the fallback for unusable values.
     static let normal: Double = 1.0
 
+    /// Step for quick adjustments: the playback bar's speed buttons and the
+    /// Increase Speed / Decrease Speed menu items and keyboard shortcuts.
+    /// Steps are relative, so a speed of 1.25 moves to 1.35 and back.
+    static let coarseStep: Double = 0.1
+
     /// Step for precise adjustments. It is also the snapping grid, so every
     /// normalized speed is a whole number of fine steps.
     static let fineStep: Double = 0.05
@@ -124,6 +129,12 @@ enum AudioSpeed {
     /// e.g. "1.25 times speed". A bare "1.25x" is read ambiguously.
     static func spokenLabel(for speed: Double) -> String {
         "\(formattedNumber(normalized(speed))) times speed"
+    }
+
+    /// Accessibility label for a button that moves the speed by `step`,
+    /// e.g. "Increase audio speed by 0.1 times".
+    static func stepButtonLabel(increasing: Bool, by step: Double) -> String {
+        "\(increasing ? "Increase" : "Decrease") audio speed by \(formattedNumber(step)) times"
     }
 }
 

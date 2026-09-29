@@ -616,7 +616,8 @@ extension ReaderViewModel {
         announceToVoiceOver(AudioSpeed.spokenLabel(for: newSpeed))
     }
 
-    /// Move the audio speed by a signed multiplier delta (e.g. +0.25x).
+    /// Move the audio speed by a signed multiplier delta, such as
+    /// `AudioSpeed.coarseStep` from the playback bar, menus, and shortcuts.
     func adjustAudioSpeed(delta: Double) {
         setAudioSpeed(audioSpeed + delta)
     }
