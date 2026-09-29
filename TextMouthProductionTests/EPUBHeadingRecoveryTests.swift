@@ -712,10 +712,10 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// no annotation markup; no chapter has two headings at one offset; and a
     /// page-list label is a heading no more often than the book's own headings
     /// or TOC entries use it. Against a previous cache, chapter text may only
-    /// lose characters (hidden navigation, "[]" from named anchors) once the
+    /// lose characters (hidden navigation, "[]" from named anchors, link syntax
+    /// stranded by a split heading) and change whitespace layout, once the
     /// words that older caches hid behind a line-leading annotation are
-    /// counted, and unchanged chapters keep every heading that is not a page
-    /// number.
+    /// counted; unchanged chapters keep every heading that is not a page number.
     func testCopiedEPUBSatisfiesNavigationInvariants() throws {
         let fixture = try copiedEPUBFixture()
         let book = try FileImportService.importFile(from: fixture.epub)
@@ -766,7 +766,12 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
                     unchangedChapters.insert(index)
                     continue
                 }
-                XCTAssertTrue(isSubsequence(current.text, of: old.text), "Chapter \(index + 1) gained or reordered text")
+                // Layout may change (a heading rejoined across a line break
+                // replaces a paragraph break with a space); words may not.
+                XCTAssertTrue(
+                    isSubsequence(collapsedWhitespace(current.text), of: collapsedWhitespace(old.text)),
+                    "Chapter \(index + 1) gained or reordered text"
+                )
                 changedChapters.append("\(index + 1): -\(old.text.utf16.count - current.text.utf16.count)")
             }
             let pageLabels = Set(inventory.pageLabels)
@@ -1029,6 +1034,12 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         private static func normalized(_ label: String) -> String {
             label.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         }
+    }
+
+    /// Reduce every run of whitespace to one space, so a comparison of reading
+    /// text sees words and punctuation rather than paragraph layout.
+    private func collapsedWhitespace(_ text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     /// Whether `text` can be formed only by deleting characters from `source`,
