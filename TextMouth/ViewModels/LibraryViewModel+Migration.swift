@@ -367,6 +367,7 @@ extension LibraryViewModel {
     /// adopt orphaned .tmb packages, and extract missing content caches.
     func rebuildDirectory() {
         do {
+            try ensureLibraryIndexIsReadable()
             try FileImportService.rebuildDirectoryStructure(library: &library)
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
@@ -381,6 +382,7 @@ extension LibraryViewModel {
     /// Rebuild to the default location (~/.TextMouth), moving data there
     func rebuildToDefault() {
         do {
+            try ensureLibraryIndexIsReadable()
             let defaultRoot = TextMouthPaths.defaultRoot
             if TextMouthPaths.root.path != defaultRoot.path {
                 try TextMouthPaths.moveDataDirectory(to: defaultRoot, library: &library)
@@ -399,6 +401,7 @@ extension LibraryViewModel {
     /// Move the data directory to a new location
     func moveDataDirectory(to newURL: URL) {
         do {
+            try ensureLibraryIndexIsReadable()
             try TextMouthPaths.moveDataDirectory(to: newURL, library: &library)
             configService.config.dataDirectoryPath = newURL.path
             configService.saveToDisk()

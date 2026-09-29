@@ -204,6 +204,33 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(resaved.books.first { $0.id == book.id }?.manualSortOrder, 7)
     }
 
+    // MARK: - Data-Directory Maintenance
+
+    /// Data-directory maintenance waits for recovery to end, because it would
+    /// act on or copy the provisional library. Rebuild Directory is refused
+    /// with an explanation and changes nothing. Change Location and Reset to
+    /// Default share the same guard, which is checked directly: driving them
+    /// here could write the test host's real preferences if it ever failed.
+    @MainActor
+    func testDataDirectoryMaintenanceWaitsForRecoveryToEnd() throws {
+        let damagedBytes = try sandbox.stage(.truncated, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        XCTAssertNoThrow(try model.ensureLibraryIndexIsReadable())
+        model.loadLibraryIndex()
+
+        XCTAssertThrowsError(try model.ensureLibraryIndexIsReadable())
+        model.rebuildDirectory()
+
+        XCTAssertTrue(model.showError)
+        XCTAssertEqual(
+            model.errorMessage,
+            "Failed to rebuild directory: \(LibraryIndexRecoveryError.indexUnreadable.localizedDescription)"
+        )
+        XCTAssertNotNil(model.indexRecovery)
+        XCTAssertFalse(model.isExtracting, "no maintenance may start")
+        XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), damagedBytes)
+    }
+
     /// Recovery actions do nothing while the index is readable.
     @MainActor
     func testRecoveryActionsDoNothingOutsideRecovery() {

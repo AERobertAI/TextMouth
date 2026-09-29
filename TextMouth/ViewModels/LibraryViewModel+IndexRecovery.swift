@@ -153,6 +153,16 @@ extension LibraryViewModel {
         NSApplication.shared.terminate(nil)
     }
 
+    /// Throws while the index cannot be read. Data-directory maintenance
+    /// (Rebuild Directory, Reset to Default, Change Location) reconciles or
+    /// copies the library index, so it would act on, or write out, the
+    /// provisional library; it waits until recovery ends.
+    func ensureLibraryIndexIsReadable() throws {
+        if indexRecovery != nil {
+            throw LibraryIndexRecoveryError.indexUnreadable
+        }
+    }
+
     /// Ends recovery: index writes resume and the recovery options close.
     private func finishRecovery() {
         LibraryPersistenceService.resumeIndexWrites()
