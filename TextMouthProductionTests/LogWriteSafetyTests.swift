@@ -104,4 +104,18 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix(filler))
         XCTAssertTrue(text.hasSuffix(": appended\n"))
     }
+
+    /// VoiceOver focus diagnostics go through the shared writer into the
+    /// debug log, marked with their prefix, instead of a second private
+    /// writer that could interleave with, or crash independently of, it.
+    func testVoiceOverFocusLogWritesToTheSharedDebugLog() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let marker = "focus-check-\(UUID().uuidString)"
+
+        voiceOverFocusLog(marker)
+        TextMouthPaths.flushLogs()
+
+        let text = try String(contentsOf: TextMouthPaths.debugLogFile, encoding: .utf8)
+        XCTAssertTrue(text.contains(": \(voiceOverFocusLogPrefix): \(marker)\n"), "missing marker line")
+    }
 }

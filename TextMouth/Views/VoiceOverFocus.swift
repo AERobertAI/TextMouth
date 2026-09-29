@@ -6,7 +6,6 @@ import Accessibility
 /// receive VoiceOver focus. VoiceOverFocus searches the accessibility tree
 /// for an element with this identifier.
 let voiceOverFocusID = "vo-focus-target"
-private let voiceOverFocusLogQueue = DispatchQueue(label: "TextMouth.VoiceOverFocusLog", qos: .utility)
 
 struct StandardVoiceOverFocus: NSViewRepresentable {
     var delay: TimeInterval = 0.8
@@ -32,22 +31,17 @@ struct VoiceOverFocus: NSViewRepresentable {
     func updateNSView(_ nsView: VoiceOverFocusTriggerView, context: Context) {}
 }
 
-/// Append a timestamped message to the debug log file.
-func voiceOverFocusLog(_ msg: String) {
-    let line = "\(Date()) [VoiceOverFocus]: \(msg)\n"
-    guard let data = line.data(using: .utf8) else { return }
+/// Prefix that marks VoiceOver focus diagnostics in the shared debug log.
+let voiceOverFocusLogPrefix = "[VoiceOverFocus]"
 
-    voiceOverFocusLogQueue.async {
-        let logPath = TextMouthPaths.debugLogFile.path
-        if FileManager.default.fileExists(atPath: logPath),
-           let handle = FileHandle(forWritingAtPath: logPath) {
-            defer { handle.closeFile() }
-            handle.seekToEndOfFile()
-            handle.write(data)
-        } else {
-            try? data.write(to: URL(fileURLWithPath: logPath))
-        }
-    }
+/// Append a timestamped VoiceOver focus message to the debug log file.
+///
+/// Goes through the shared writer so focus diagnostics share one serial
+/// queue with every other log line (two queues appending to the same file
+/// could interleave lines), obey the same size cap, and can never crash the
+/// app when the disk is full.
+func voiceOverFocusLog(_ msg: String) {
+    TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: "\(voiceOverFocusLogPrefix): \(msg)")
 }
 
 /// Marks exactly one element as the target for a sheet's one-time VoiceOver
