@@ -108,14 +108,37 @@ struct Library: Codable {
 
     // MARK: - Folder Operations
 
-    mutating func createFolder(name: String, parentPath: String = "") -> BookFolder? {
-        guard let name = BookFolder.normalizedName(name),
-              BookFolder.isValidLibraryPath(parentPath) else { return nil }
-        let folder = BookFolder(name: name, parentPath: parentPath)
-        guard folder.depth <= BookFolder.maxDepth else { return nil }
-        guard !folders.contains(where: { $0.fullPath == folder.fullPath }) else { return nil }
+    /// Creates a folder, or throws the conflict that prevents it. A parent
+    /// path given in another spelling adopts the stored spelling of the
+    /// existing folder it names, and a name equivalent to a folder already at
+    /// that location is refused under the library volume's rule.
+    @discardableResult
+    mutating func createFolderThrowing(
+        name: String,
+        parentPath: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) -> BookFolder {
+        guard let name = BookFolder.normalizedName(name) else { throw .invalidName }
+        guard BookFolder.isValidLibraryPath(parentPath) else { throw .invalidPath(parentPath) }
+        let folder = BookFolder(
+            name: name,
+            parentPath: storedSpelling(of: parentPath, equivalence: equivalence)
+        )
+        guard folder.depth <= BookFolder.maxDepth else { throw .tooDeep(folder.fullPath) }
+        if let existing = existingFolder(equivalentTo: folder.fullPath, equivalence: equivalence) {
+            throw .nameInUse(proposedPath: folder.fullPath, existingPath: existing.fullPath)
+        }
         folders.append(folder)
         return folder
+    }
+
+    /// Creates a folder, returning nil when `createFolderThrowing` refuses it.
+    mutating func createFolder(
+        name: String,
+        parentPath: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) -> BookFolder? {
+        try? createFolderThrowing(name: name, parentPath: parentPath, equivalence: equivalence)
     }
 
     /// Remove a folder, moving its contents to a destination path.
@@ -166,66 +189,172 @@ struct Library: Codable {
         return removedBooks
     }
 
-    /// Move a folder to a new parent, preserving its internal structure.
-    /// Returns false if the move is invalid (cycle, depth exceeded, duplicate name).
-    @discardableResult
-    mutating func moveFolder(id: UUID, toParentPath newParent: String) -> Bool {
-        guard BookFolder.isValidLibraryPath(newParent) else { return false }
-        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
-        let folder = folders[folderIdx]
-        let oldPath = folder.fullPath
-        let newPath = newParent.isEmpty ? folder.name : "\(newParent)/\(folder.name)"
+    /// Moves a folder under a new parent, carrying its subfolders, books, and
+    /// sort settings along, or throws the conflict that prevents it: a
+    /// destination inside the folder itself, a folder at the destination with
+    /// an equivalent name, or a subtree that would exceed the depth limit.
+    mutating func moveFolderThrowing(
+        id: UUID,
+        toParentPath newParent: String,
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        guard BookFolder.isValidLibraryPath(newParent) else { throw .invalidPath(newParent) }
+        let (index, folder) = try editableFolder(id: id)
+        let parent = storedSpelling(of: newParent, equivalence: equivalence)
+        guard !equivalence.areEquivalent(parent, folder.parentPath) else { throw .unchanged }
 
-        // Prevent no-op
-        guard newPath != oldPath else { return false }
-
-        // Prevent moving into own descendant (cycle)
-        if newParent == oldPath || newParent.hasPrefix(oldPath + "/") { return false }
-
-        // Check depth limit
-        let newDepth = newPath.components(separatedBy: "/").count
-        guard newDepth <= BookFolder.maxDepth else { return false }
-
-        // Check for name collision at destination
-        if folders.contains(where: { $0.fullPath == newPath }) { return false }
-
-        // Also check that the deepest subfolder won't exceed max depth
-        let depthIncrease = newDepth - oldPath.components(separatedBy: "/").count
-        let maxSubfolderDepth = folders
-            .filter { $0.fullPath.hasPrefix(oldPath + "/") }
-            .map { $0.depth }
-            .max() ?? 0
-        if maxSubfolderDepth + depthIncrease > BookFolder.maxDepth { return false }
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        guard !subtree.contains(parent) else {
+            throw .destinationInsideFolder(folderPath: folder.fullPath, destinationPath: parent)
+        }
+        let newPath = BookFolder(name: folder.name, parentPath: parent).fullPath
+        try validateRelocation(of: subtree, to: newPath, vacating: nil)
 
         // Carry descendants, books, and sort settings along, then reparent
         // the folder itself (its own parent lies outside the moved subtree).
-        relocate(FolderSubtree(rootPath: oldPath, equivalence: .caseSensitive), to: newPath)
-        folders[folderIdx].parentPath = newParent
-
-        return true
+        relocate(subtree, to: newPath)
+        folders[index].parentPath = parent
     }
 
-    /// Rename a folder, updating all subfolder and book paths.
-    /// Returns false if the name is empty, unchanged, or would collide with a sibling.
+    /// Moves a folder, returning false when `moveFolderThrowing` refuses it.
     @discardableResult
-    mutating func renameFolder(id: UUID, to newName: String) -> Bool {
-        guard let sanitized = BookFolder.normalizedName(newName) else { return false }
-        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
-        let folder = folders[folderIdx]
-        guard sanitized != folder.name else { return false }
+    mutating func moveFolder(
+        id: UUID,
+        toParentPath newParent: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? moveFolderThrowing(id: id, toParentPath: newParent, equivalence: equivalence)) != nil
+    }
 
-        let oldPath = folder.fullPath
-        let newPath = folder.parentPath.isEmpty ? sanitized : "\(folder.parentPath)/\(sanitized)"
+    /// Renames a folder, carrying its subfolders, books, and sort settings
+    /// along, or throws the conflict that prevents it. A case-only or
+    /// normalization-only change of the same folder is allowed: the new name
+    /// only has to differ from every other folder at that location.
+    mutating func renameFolderThrowing(
+        id: UUID,
+        to newName: String,
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        guard let sanitized = BookFolder.normalizedName(newName) else { throw .invalidName }
+        let (index, folder) = try editableFolder(id: id)
+        // Compare exact spellings: turning a decomposed legacy name into its
+        // composed form is a real rename, even though Swift's == calls the
+        // two names equal.
+        guard !BookFolder.spellingsMatch(sanitized, folder.name) else { throw .unchanged }
 
-        // Check for name collision with a sibling folder
-        if folders.contains(where: { $0.fullPath == newPath }) { return false }
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        let newPath = BookFolder(name: sanitized, parentPath: folder.parentPath).fullPath
+        try validateRelocation(of: subtree, to: newPath, vacating: nil)
 
         // Carry descendants, books, and sort settings along, then rename the
         // folder itself.
-        relocate(FolderSubtree(rootPath: oldPath, equivalence: .caseSensitive), to: newPath)
-        folders[folderIdx].name = sanitized
+        relocate(subtree, to: newPath)
+        folders[index].name = sanitized
+    }
 
-        return true
+    /// Renames a folder, returning false when `renameFolderThrowing` refuses it.
+    @discardableResult
+    mutating func renameFolder(
+        id: UUID,
+        to newName: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? renameFolderThrowing(id: id, to: newName, equivalence: equivalence)) != nil
+    }
+
+    // MARK: - Folder Path Resolution
+
+    /// The first folder whose path names the same directory as `path` under
+    /// `equivalence`.
+    func existingFolder(
+        equivalentTo path: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> BookFolder? {
+        let key = equivalence.comparisonKey(for: path)
+        return folders.first { equivalence.comparisonKey(for: $0.fullPath) == key }
+    }
+
+    /// `path` respelled with the stored spelling of each existing folder it
+    /// passes through, so "work/reports" resolves to the "Work/Reports" rows
+    /// it names on a case-insensitive volume. Components that match no folder
+    /// keep their spelling.
+    func storedSpelling(
+        of path: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> String {
+        guard !path.isEmpty else { return path }
+        // The first spelling wins, matching the row duplicate repair keeps.
+        var spellings: [String: String] = [:]
+        for folder in folders {
+            let key = equivalence.comparisonKey(for: folder.fullPath)
+            if spellings[key] == nil { spellings[key] = folder.fullPath }
+        }
+        var resolved: [String] = []
+        for component in FolderSubtree.components(of: path) {
+            let candidate = FolderSubtree.path(from: resolved + [component])
+            let stored = spellings[equivalence.comparisonKey(for: candidate)] ?? candidate
+            resolved = FolderSubtree.components(of: stored)
+        }
+        return FolderSubtree.path(from: resolved)
+    }
+
+    /// The index and row of the folder with `id`, provided it can be edited.
+    /// A folder with an empty stored path would claim every library path as
+    /// its subtree, so it is refused instead of relocated.
+    private func editableFolder(
+        id: UUID
+    ) throws(FolderOperationConflict) -> (index: Int, folder: BookFolder) {
+        guard let index = folders.firstIndex(where: { $0.id == id }) else { throw .folderNotFound }
+        guard !folders[index].fullPath.isEmpty else { throw .invalidPath("") }
+        return (index, folders[index])
+    }
+
+    /// Checks, before anything changes, that relocating every folder in
+    /// `subtree` so its root becomes `newRootPath` keeps each folder path
+    /// unique under the subtree's rule and within `BookFolder.maxDepth`.
+    /// `vacatedID` names a folder the same edit removes, which frees its path.
+    /// Parents are checked before children, so a conflict is reported at the
+    /// highest level where it occurs.
+    private func validateRelocation(
+        of subtree: FolderSubtree,
+        to newRootPath: String,
+        vacating vacatedID: UUID?
+    ) throws(FolderOperationConflict) {
+        let equivalence = subtree.equivalence
+        let travelling = folders.enumerated()
+            .filter { $0.element.id != vacatedID && subtree.contains($0.element.fullPath) }
+            .sorted { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
+            .map(\.element)
+        var departingIDs = Set(travelling.map(\.id))
+        if let vacatedID { departingIDs.insert(vacatedID) }
+
+        // Paths of the folders that stay where they are.
+        var occupied: [String: String] = [:]
+        for folder in folders where !departingIDs.contains(folder.id) {
+            let key = equivalence.comparisonKey(for: folder.fullPath)
+            if occupied[key] == nil { occupied[key] = folder.fullPath }
+        }
+
+        // Claim each destination in turn so two travelling folders can never
+        // land on one name either.
+        var claimed: [String: String] = [:]
+        for folder in travelling {
+            guard let newPath = subtree.relocating(folder.fullPath, to: newRootPath) else { continue }
+            let newComponents = FolderSubtree.components(of: newPath)
+            guard newComponents.count <= BookFolder.maxDepth else { throw .tooDeep(newPath) }
+            let key = equivalence.comparisonKey(for: newPath)
+            if let existingPath = occupied[key] {
+                throw .nameInUse(proposedPath: newPath, existingPath: existingPath)
+            }
+            if let earlierPath = claimed[key] {
+                throw .namesCollide(
+                    firstPath: earlierPath,
+                    secondPath: folder.fullPath,
+                    parentPath: FolderSubtree.path(from: Array(newComponents.dropLast()))
+                )
+            }
+            claimed[key] = folder.fullPath
+        }
     }
 
     /// Rewrites every stored path inside `subtree` so the subtree's root

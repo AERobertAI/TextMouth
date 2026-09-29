@@ -108,4 +108,211 @@ final class FolderSafetyTests: XCTestCase {
             atPath: TextMouthPaths.libraryDir.appendingPathComponent(name).path
         ))
     }
+
+    // MARK: - Equivalent Folder Names
+
+    /// Both volume policies, so every rule runs whichever way the test
+    /// machine's own volume behaves.
+    private let bothPolicies: [FolderPathEquivalence] = [.caseInsensitive, .caseSensitive]
+
+    /// A book record for model-only tests; nothing is written to disk.
+    private func book(_ title: String, folder: String) -> Book {
+        Book(title: title, format: .txt, filePath: "/tmp/\(title).txt", md5Hash: title, folderPath: folder)
+    }
+
+    /// The conflict a folder edit threw, or nil when the edit succeeded.
+    /// Closures do not infer typed throws in this language mode, so the edit
+    /// is taken as an untyped throwing closure and its error cast back.
+    private func conflict(
+        _ edit: () throws -> Void,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> FolderOperationConflict? {
+        do {
+            try edit()
+            return nil
+        } catch let conflict as FolderOperationConflict {
+            return conflict
+        } catch {
+            XCTFail("Unexpected error: \(error)", file: file, line: line)
+            return nil
+        }
+    }
+
+    /// A case variant collides only where the volume ignores case, while a
+    /// normalization variant collides on every volume. Refusals name the
+    /// folder that already exists.
+    func testCreationRejectsEquivalentNamesUnderEachVolumePolicy() {
+        for rule in bothPolicies {
+            var library = Library()
+            XCTAssertNil(conflict { _ = try library.createFolderThrowing(name: "Reports", equivalence: rule) })
+            XCTAssertNil(conflict { _ = try library.createFolderThrowing(name: "Caf\u{E9}", equivalence: rule) })
+
+            XCTAssertEqual(
+                conflict { _ = try library.createFolderThrowing(name: "Cafe\u{301}", equivalence: rule) },
+                .nameInUse(proposedPath: "Caf\u{E9}", existingPath: "Caf\u{E9}")
+            )
+            let caseVariant = conflict {
+                _ = try library.createFolderThrowing(name: "reports", equivalence: rule)
+            }
+            if rule.isCaseSensitive {
+                XCTAssertNil(caseVariant)
+                XCTAssertEqual(library.folders.map(\.fullPath), ["Reports", "Caf\u{E9}", "reports"])
+            } else {
+                XCTAssertEqual(caseVariant, .nameInUse(proposedPath: "reports", existingPath: "Reports"))
+                XCTAssertEqual(library.folders.map(\.fullPath), ["Reports", "Caf\u{E9}"])
+            }
+        }
+    }
+
+    /// A parent typed in another spelling files the new folder under the
+    /// stored spelling where the volume ignores case, so it lists there.
+    func testCreationAdoptsTheStoredSpellingOfAnEquivalentParent() throws {
+        var insensitive = Library()
+        try insensitive.createFolderThrowing(name: "Reports", equivalence: .caseInsensitive)
+        let child = try insensitive.createFolderThrowing(
+            name: "Q1", parentPath: "REPORTS", equivalence: .caseInsensitive
+        )
+        XCTAssertEqual(child.parentPath, "Reports")
+        XCTAssertEqual(insensitive.subfolders(of: "Reports").map(\.name), ["Q1"])
+
+        var sensitive = Library()
+        try sensitive.createFolderThrowing(name: "Reports", equivalence: .caseSensitive)
+        let separate = try sensitive.createFolderThrowing(
+            name: "Q1", parentPath: "REPORTS", equivalence: .caseSensitive
+        )
+        XCTAssertEqual(separate.parentPath, "REPORTS")
+    }
+
+    /// Changing only a folder's capitalization renames that same folder under
+    /// either policy, carrying its books, subfolders, and sort setting. A
+    /// sibling with an equivalent name blocks a rename only where the volume
+    /// ignores case.
+    func testRenameAllowsCaseOnlyChangeAndRejectsEquivalentSiblings() throws {
+        for rule in bothPolicies {
+            var library = Library()
+            let reports = try library.createFolderThrowing(name: "reports", equivalence: rule)
+            try library.createFolderThrowing(name: "Q1", parentPath: "reports", equivalence: rule)
+            let archive = try library.createFolderThrowing(name: "Archive", equivalence: rule)
+            library.addBook(book("Budget", folder: "reports/Q1"))
+            library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "reports")
+
+            XCTAssertNil(conflict {
+                try library.renameFolderThrowing(id: reports.id, to: "Reports", equivalence: rule)
+            })
+            XCTAssertEqual(library.folders.map(\.fullPath), ["Reports", "Reports/Q1", "Archive"])
+            XCTAssertEqual(library.books.first?.folderPath, "Reports/Q1")
+            XCTAssertEqual(library.sortSetting(for: "Reports").sortField, .author)
+            XCTAssertEqual(
+                conflict { try library.renameFolderThrowing(id: reports.id, to: "Reports", equivalence: rule) },
+                .unchanged
+            )
+
+            let siblingRename = conflict {
+                try library.renameFolderThrowing(id: archive.id, to: "REPORTS", equivalence: rule)
+            }
+            if rule.isCaseSensitive {
+                XCTAssertNil(siblingRename)
+            } else {
+                XCTAssertEqual(siblingRename, .nameInUse(proposedPath: "REPORTS", existingPath: "Reports"))
+                XCTAssertEqual(library.folders.first { $0.id == archive.id }?.name, "Archive")
+            }
+        }
+    }
+
+    /// A folder saved with a decomposed name can be renamed to the composed
+    /// spelling of the same name under either policy; the stored name and the
+    /// paths inside it change to the composed form.
+    func testNormalizationOnlyRenameRewritesTheStoredSpelling() throws {
+        for rule in bothPolicies {
+            let legacy = BookFolder(name: "Cafe\u{301}")
+            var library = Library(books: [book("Menu", folder: "Cafe\u{301}")], folders: [legacy])
+
+            XCTAssertNil(conflict {
+                try library.renameFolderThrowing(id: legacy.id, to: "Caf\u{E9}", equivalence: rule)
+            })
+
+            let renamed = try XCTUnwrap(library.folders.first)
+            XCTAssertTrue(BookFolder.spellingsMatch(renamed.name, "Caf\u{E9}"))
+            XCTAssertTrue(BookFolder.spellingsMatch(library.books[0].folderPath, "Caf\u{E9}"))
+        }
+    }
+
+    /// Moving beside an equivalent name is refused only where the volume
+    /// ignores case, and a refused move changes nothing.
+    func testMoveRejectsEquivalentNamesAtTheDestinationOnlyWhereCaseIsIgnored() throws {
+        for rule in bothPolicies {
+            var library = Library()
+            try library.createFolderThrowing(name: "Inbox", equivalence: rule)
+            let reports = try library.createFolderThrowing(name: "Reports", parentPath: "Inbox", equivalence: rule)
+            try library.createFolderThrowing(name: "Archive", equivalence: rule)
+            try library.createFolderThrowing(name: "reports", parentPath: "Archive", equivalence: rule)
+            library.addBook(book("Budget", folder: "Inbox/Reports"))
+
+            let move = conflict {
+                try library.moveFolderThrowing(id: reports.id, toParentPath: "Archive", equivalence: rule)
+            }
+
+            if rule.isCaseSensitive {
+                XCTAssertNil(move)
+                XCTAssertEqual(library.books[0].folderPath, "Archive/Reports")
+            } else {
+                XCTAssertEqual(move, .nameInUse(proposedPath: "Archive/Reports", existingPath: "Archive/reports"))
+                XCTAssertEqual(library.folders.first { $0.id == reports.id }?.fullPath, "Inbox/Reports")
+                XCTAssertEqual(library.books[0].folderPath, "Inbox/Reports")
+            }
+        }
+    }
+
+    /// On a case-insensitive volume a destination typed in another spelling
+    /// resolves to the stored folder: it is filed under that spelling, is
+    /// recognized as the folder's own subtree, or as its current parent.
+    func testMoveResolvesDestinationSpellingOnCaseInsensitiveVolumes() throws {
+        var library = Library()
+        let work = try library.createFolderThrowing(name: "Work", equivalence: .caseInsensitive)
+        let quarter = try library.createFolderThrowing(name: "Q1", parentPath: "Work", equivalence: .caseInsensitive)
+        let notes = try library.createFolderThrowing(name: "Notes", equivalence: .caseInsensitive)
+
+        XCTAssertEqual(
+            conflict { try library.moveFolderThrowing(id: work.id, toParentPath: "WORK/q1", equivalence: .caseInsensitive) },
+            .destinationInsideFolder(folderPath: "Work", destinationPath: "Work/Q1")
+        )
+        XCTAssertEqual(
+            conflict { try library.moveFolderThrowing(id: quarter.id, toParentPath: "work", equivalence: .caseInsensitive) },
+            .unchanged
+        )
+        XCTAssertNil(conflict {
+            try library.moveFolderThrowing(id: notes.id, toParentPath: "wOrK/q1", equivalence: .caseInsensitive)
+        })
+        XCTAssertEqual(library.folders.first { $0.id == notes.id }?.parentPath, "Work/Q1")
+        XCTAssertEqual(library.subfolders(of: "Work/Q1").map(\.name), ["Notes"])
+    }
+
+    /// Refusals read as complete sentences that name the folders involved.
+    func testConflictMessagesNameTheFoldersInvolved() {
+        XCTAssertEqual(
+            FolderOperationConflict.nameInUse(proposedPath: "Work/reports", existingPath: "Work/Reports").message,
+            "A folder named \"Reports\" already exists in \"Work\". Names that differ only in "
+                + "capitalization or accent encoding refer to the same folder on this disk."
+        )
+        XCTAssertEqual(
+            FolderOperationConflict.nameInUse(proposedPath: "Sub", existingPath: "Sub").message,
+            "A folder named \"Sub\" already exists in Library Root."
+        )
+        XCTAssertEqual(
+            FolderOperationConflict.namesCollide(
+                firstPath: "Old/Reports", secondPath: "Old/reports", parentPath: "Target"
+            ).message,
+            "The folders \"Reports\" and \"reports\" cannot both be moved into \"Target\", "
+                + "because their names refer to the same folder on this disk."
+        )
+        XCTAssertEqual(
+            FolderOperationConflict.tooDeep("A/B/C/D/E").message,
+            "That would place \"A/B/C/D/E\" 5 levels deep, but folders can be nested at most 4 levels."
+        )
+        XCTAssertEqual(
+            FolderOperationConflict.destinationInsideFolder(folderPath: "A", destinationPath: "A/B").message,
+            "Choose a destination outside \"A\". \"A/B\" is that folder or one of its subfolders."
+        )
+    }
 }

@@ -54,4 +54,12 @@ struct BookFolder: Identifiable, Codable, Hashable {
             normalizedName($0) == $0
         }
     }
+
+    /// Whether two names or paths use exactly the same Unicode scalars.
+    /// Swift's `==` treats canonically equivalent strings as equal, which
+    /// hides a normalization-only change such as a decomposed é becoming
+    /// composed; renames and repairs need this exact comparison to see it.
+    static func spellingsMatch(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.unicodeScalars.elementsEqual(rhs.unicodeScalars)
+    }
 }
