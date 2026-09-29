@@ -163,6 +163,10 @@ final class ReaderViewModel: ObservableObject {
     /// Track when "Where Am I?" was last triggered for brief->full escalation.
     /// Accessed from WhereAmI extension.
     var lastWhereAmITime: Date = .distantPast
+    /// Text of the most recent VoiceOver announcement, recorded even when no
+    /// window can post it, so regression tests can verify spoken wording.
+    /// Written only by `announceToVoiceOver(_:)`.
+    var lastAnnouncement: String?
 
     /// Base offset for word-spoken callback tracking
     var utteranceBaseOffset: Int = 0

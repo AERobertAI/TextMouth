@@ -384,6 +384,118 @@ final class ReaderHeadingLocationTests: XCTestCase {
             "Bookmark 1"
         )
     }
+
+    // MARK: Crossing content units by sentence or paragraph
+
+    /// Moving past the last sentence of one unit lands at the start of the
+    /// next; the announcement names the heading holding that spot (here the
+    /// earlier heading, because the new unit's heading starts later).
+    func testNextSentenceIntoANewUnitNamesTheContainingHeading() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = threeUnitContent()
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 15
+
+        reader.nextSentence()
+
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        XCTAssertEqual(reader.lastAnnouncement, "Opening")
+    }
+
+    func testNextParagraphIntoAUnitWithoutHeadingsNamesTheLastHeading() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = threeUnitContent()
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 23
+
+        reader.nextParagraph()
+
+        XCTAssertEqual(reader.currentChapterIndex, 2)
+        XCTAssertEqual(reader.lastAnnouncement, "Middle")
+    }
+
+    func testPreviousSentenceIntoTheEarlierUnitNamesItsHeading() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = threeUnitContent()
+        reader.currentChapterIndex = 2
+        reader.currentCharacterOffset = 0
+
+        reader.previousSentence()
+
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.lastAnnouncement, "Middle")
+    }
+
+    /// With no heading to name, the move is described generically and never
+    /// by an internal content-unit number.
+    func testCrossingUnitsWithoutHeadingsSaysNextOrPreviousSection() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = DocumentContent(
+            title: "Fixture",
+            author: "Tester",
+            chapters: [
+                Chapter(title: "One", text: "First unit sentence."),
+                Chapter(title: "Two", text: "Second unit sentence."),
+            ]
+        )
+
+        reader.nextSentence()
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.lastAnnouncement, "Next section")
+
+        reader.previousParagraph()
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.lastAnnouncement, "Previous section")
+    }
+}
+
+/// Wording for sentence and paragraph moves that cross content units.
+final class SectionCrossingAnnouncementTests: XCTestCase {
+    private let headings = [
+        Heading(level: 1, text: "Opening", chapterIndex: 0, characterOffset: 0),
+        Heading(level: 2, text: "Middle", chapterIndex: 1, characterOffset: 9),
+    ]
+
+    /// Announcement for a move landing at (chapter, offset).
+    private func announcement(chapter: Int, offset: Int, forward: Bool, in headings: [Heading]? = nil) -> String {
+        ReaderViewModel.sectionCrossingAnnouncement(
+            in: headings ?? self.headings,
+            chapterIndex: chapter,
+            characterOffset: offset,
+            forward: forward
+        )
+    }
+
+    func testLandingOnAHeadingNamesIt() {
+        XCTAssertEqual(announcement(chapter: 1, offset: 9, forward: true), "Middle")
+    }
+
+    func testLandingBeforeAUnitsHeadingNamesTheEarlierHeading() {
+        XCTAssertEqual(announcement(chapter: 1, offset: 0, forward: true), "Opening")
+        XCTAssertEqual(announcement(chapter: 2, offset: 0, forward: false), "Middle")
+    }
+
+    func testLandingBeforeTheFirstHeadingSaysSection() {
+        let later = [Heading(level: 1, text: "Story", chapterIndex: 1, characterOffset: 0)]
+
+        XCTAssertEqual(announcement(chapter: 0, offset: 40, forward: false, in: later), "Previous section")
+    }
+
+    func testBookWithoutHeadingsSaysNextOrPreviousSection() {
+        XCTAssertEqual(announcement(chapter: 3, offset: 0, forward: true, in: []), "Next section")
+        XCTAssertEqual(announcement(chapter: 3, offset: 0, forward: false, in: []), "Previous section")
+    }
+
+    func testBlankHeadingTextIsNotAnnounced() {
+        let blank = [Heading(level: 1, text: " ", chapterIndex: 0, characterOffset: 0)]
+
+        XCTAssertEqual(announcement(chapter: 1, offset: 0, forward: true, in: blank), "Next section")
+    }
 }
 
 /// Library rows hold only the Book model (no parsed headings), so they show
