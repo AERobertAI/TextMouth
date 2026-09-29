@@ -176,6 +176,21 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertEqual(content.chapterStartOffset(1), content.chapters[0].text.utf16.count)
     }
 
+    /// A chapter marker written before format 3.0.5 could carry a leaked
+    /// heading annotation. The chapter title, and the heading made from it
+    /// when the chapter has none, show only the visible label.
+    func testLegacyChapterMarkerTitlesDropAnnotationComments() {
+        let leaked = MarkdownHeadingAnnotation(level: 1, text: "10").markdown + "2"
+        let content = parse("""
+        <!-- chapter: \(leaked) -->
+        Body text.
+        <!-- chapter: Plain title -->
+        More text.
+        """)
+        XCTAssertEqual(content.chapters.map(\.title), ["2", "Plain title"])
+        XCTAssertEqual(content.allHeadings.map(\.text), ["2", "Plain title"])
+    }
+
     func testNilAndEmptyCacheVersionsAreOutdated() {
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: nil, current: "2.0.0"))
         XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: "", current: "2.0.0"))
