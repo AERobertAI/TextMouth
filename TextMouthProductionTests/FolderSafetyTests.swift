@@ -521,4 +521,82 @@ final class FolderSafetyTests: XCTestCase {
         XCTAssertEqual(library.sortSetting(for: "Target/Sub").sortField, .author)
         XCTAssertNil(library.folderSortSettings["Old/Sub"])
     }
+
+    // MARK: - Explaining Refused Edits
+
+    /// Deletes top-level folders a view-model test created in the test root.
+    private func removeLibraryFolders(_ paths: [String]) {
+        for path in paths {
+            try? FileManager.default.removeItem(
+                at: TextMouthPaths.libraryDir.appendingPathComponent(path, isDirectory: true)
+            )
+        }
+    }
+
+    /// Creating, renaming, or moving onto a name the volume treats as taken
+    /// is refused with a message naming the existing folder and changes
+    /// nothing. Rename and move used to fail silently.
+    func testRefusedCreateRenameAndMoveExplainTheConflict() throws {
+        let reports = "Reports-\(UUID().uuidString)"
+        let archive = "Archive-\(UUID().uuidString)"
+        defer { removeLibraryFolders([reports, archive]) }
+        let sameFolderHint = " Names that differ only in capitalization or accent encoding "
+            + "refer to the same folder on this disk."
+
+        try FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            let viewModel = LibraryViewModel(initializeServices: false)
+            viewModel.library = Library()
+            viewModel.createFolder(name: reports, parentPath: "")
+            viewModel.createFolder(name: "q1", parentPath: reports)
+            viewModel.createFolder(name: archive, parentPath: "")
+            viewModel.createFolder(name: "Q1", parentPath: archive)
+            XCTAssertFalse(viewModel.showError)
+            let snapshot = viewModel.library.folders
+
+            viewModel.createFolder(name: reports.uppercased(), parentPath: "")
+            XCTAssertTrue(viewModel.showError)
+            XCTAssertEqual(
+                viewModel.errorMessage,
+                "Could not create folder: A folder named \"\(reports)\" already exists in Library Root."
+                    + sameFolderHint
+            )
+
+            viewModel.showError = false
+            let archiveFolder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
+            viewModel.renameFolder(archiveFolder, to: reports.lowercased())
+            XCTAssertTrue(viewModel.showError)
+            XCTAssertEqual(
+                viewModel.errorMessage,
+                "Could not rename \"\(archive)\": A folder named \"\(reports)\" already exists in Library Root."
+                    + sameFolderHint
+            )
+
+            viewModel.showError = false
+            let quarter = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == "\(archive)/Q1" })
+            viewModel.moveFolder(quarter, toParent: reports)
+            XCTAssertTrue(viewModel.showError)
+            XCTAssertEqual(
+                viewModel.errorMessage,
+                "Could not move \"Q1\": A folder named \"q1\" already exists in \"\(reports)\"."
+                    + sameFolderHint
+            )
+
+            XCTAssertEqual(viewModel.library.folders, snapshot)
+        }
+    }
+
+    /// Renaming a folder to the name it already has stays a silent no-op.
+    func testRenamingToTheCurrentNameIsSilent() throws {
+        let name = "Same-\(UUID().uuidString)"
+        defer { removeLibraryFolders([name]) }
+        let viewModel = LibraryViewModel(initializeServices: false)
+        viewModel.library = Library()
+        viewModel.createFolder(name: name, parentPath: "")
+        let folder = try XCTUnwrap(viewModel.library.folders.first)
+
+        viewModel.renameFolder(folder, to: "  \(name)  ")
+
+        XCTAssertFalse(viewModel.showError)
+        XCTAssertEqual(viewModel.library.folders, [folder])
+    }
 }

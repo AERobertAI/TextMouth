@@ -6,13 +6,18 @@ extension LibraryViewModel {
 
     // MARK: - Folder Operations
 
+    /// Create a folder. A refused name (reserved, or equivalent to a folder
+    /// already at that location on this volume) is explained with a message
+    /// that names the conflict.
     func createFolder(name: String, parentPath: String) {
         // Publish the folder only after its directory exists, matching book
         // moves and renames when storage is unavailable or a file collides.
         var proposed = library
-        guard let folder = proposed.createFolder(name: name, parentPath: parentPath) else {
-            errorMessage = "Choose a unique folder name without reserved path or package names."
-            showError = true
+        let folder: BookFolder
+        do {
+            folder = try proposed.createFolderThrowing(name: name, parentPath: parentPath)
+        } catch {
+            presentFolderConflict(error, context: "Could not create folder")
             return
         }
         do {
@@ -90,31 +95,35 @@ extension LibraryViewModel {
         }
     }
 
-    /// Move a folder to a new parent, preserving its internal structure on disk.
+    /// Move a folder to a new parent, preserving its internal structure on
+    /// disk. A refused move is explained with a message naming the conflict.
     func moveFolder(_ folder: BookFolder, toParent newParentPath: String) {
-        let oldPath = folder.fullPath
-        let affectedBookIDs = Set(library.books.filter {
-            $0.folderPath == oldPath || $0.folderPath.hasPrefix(oldPath + "/")
-        }.map(\.id))
         var proposed = library
-        guard proposed.moveFolder(id: folder.id, toParentPath: newParentPath) else { return }
         do {
-            try commitLibraryTransition(proposed, affectedBookIDs: affectedBookIDs)
+            try proposed.moveFolderThrowing(id: folder.id, toParentPath: newParentPath)
+        } catch {
+            presentFolderConflict(error, context: "Could not move \"\(folder.name)\"")
+            return
+        }
+        do {
+            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
         } catch {
             presentFilesystemError("Could not move folder", error: error)
         }
     }
 
-    /// Rename a folder, updating disk directory and all book file paths.
+    /// Rename a folder, updating disk directory and all book file paths. A
+    /// refused name is explained with a message naming the conflict.
     func renameFolder(_ folder: BookFolder, to newName: String) {
-        let oldPath = folder.fullPath
-        let affectedBookIDs = Set(library.books.filter {
-            $0.folderPath == oldPath || $0.folderPath.hasPrefix(oldPath + "/")
-        }.map(\.id))
         var proposed = library
-        guard proposed.renameFolder(id: folder.id, to: newName) else { return }
         do {
-            try commitLibraryTransition(proposed, affectedBookIDs: affectedBookIDs)
+            try proposed.renameFolderThrowing(id: folder.id, to: newName)
+        } catch {
+            presentFolderConflict(error, context: "Could not rename \"\(folder.name)\"")
+            return
+        }
+        do {
+            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
         } catch {
             presentFilesystemError("Could not rename folder", error: error)
         }
