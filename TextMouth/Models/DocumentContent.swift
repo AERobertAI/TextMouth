@@ -150,11 +150,19 @@ struct HeadingPosition: Equatable {
     /// heading order; books hold at most a few thousand headings, so the cost
     /// is negligible even when the reader header re-renders during playback.
     init(in headings: [Heading], chapterIndex: Int, characterOffset: Int) {
-        let index = headings.lastIndex {
-            $0.startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset)
-        }
-        heading = index.map { headings[$0] }
-        number = index.map { $0 + 1 }
+        self.init(
+            headings: headings,
+            containingIndex: headings.lastIndex {
+                $0.startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset)
+            }
+        )
+    }
+
+    /// Build a position from the list index of its containing heading, as
+    /// found by the initializer above or by `HeadingSweep`.
+    fileprivate init(headings: [Heading], containingIndex: Int?) {
+        heading = containingIndex.map { headings[$0] }
+        number = containingIndex.map { $0 + 1 }
         count = headings.count
     }
 
@@ -197,6 +205,53 @@ struct HeadingPosition: Equatable {
     private static func isSameTitle(_ lhs: String, _ rhs: String) -> Bool {
         lhs.trimmingCharacters(in: .whitespacesAndNewlines)
             .caseInsensitiveCompare(rhs.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame
+    }
+}
+
+/// Locates a series of positions within one heading list. When positions
+/// arrive in reading order, as book search results do, each heading is
+/// visited once in total instead of once per position. Every answer equals
+/// `HeadingPosition(in:chapterIndex:characterOffset:)` for the same list,
+/// whatever order the list is in; a position earlier than the previous one
+/// simply restarts the sweep.
+struct HeadingSweep {
+    private let headings: [Heading]
+    /// List indices ordered by where each heading starts; ties keep list order.
+    private let startOrder: [Int]
+    /// How many leading entries of `startOrder` start at or before the last
+    /// position located.
+    private var passedCount = 0
+    /// Greatest list index among those passed headings, which is exactly the
+    /// index `HeadingPosition` would find with its backwards scan.
+    private var containingIndex: Int?
+    /// The previous position, to detect a move backwards.
+    private var previousPosition: (Int, Int)?
+
+    init(headings: [Heading]) {
+        self.headings = headings
+        startOrder = headings.indices.sorted { lhs, rhs in
+            (headings[lhs].chapterIndex, headings[lhs].characterOffset, lhs)
+                < (headings[rhs].chapterIndex, headings[rhs].characterOffset, rhs)
+        }
+    }
+
+    /// Locate the next position, advancing past every heading that starts at
+    /// or before it.
+    mutating func position(chapterIndex: Int, characterOffset: Int) -> HeadingPosition {
+        if let previousPosition, (chapterIndex, characterOffset) < previousPosition {
+            passedCount = 0
+            containingIndex = nil
+        }
+        previousPosition = (chapterIndex, characterOffset)
+
+        while passedCount < startOrder.count {
+            let index = startOrder[passedCount]
+            guard headings[index].startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset)
+            else { break }
+            containingIndex = max(containingIndex ?? index, index)
+            passedCount += 1
+        }
+        return HeadingPosition(headings: headings, containingIndex: containingIndex)
     }
 }
 

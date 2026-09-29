@@ -604,3 +604,67 @@ final class LibraryProgressTextTests: XCTestCase {
         XCTAssertEqual(row.rowAccessibilityLabel, "Atlas of Canals, by A. Surveyor, EPUB")
     }
 }
+
+/// A book-wide search locates every match with one sweep over the headings;
+/// the sweep must agree exactly with `HeadingPosition`.
+final class HeadingSweepTests: XCTestCase {
+    /// SplitMix64: a tiny deterministic generator, so the randomized
+    /// comparison below is repeatable run to run.
+    private struct SeededGenerator: RandomNumberGenerator {
+        var state: UInt64
+
+        mutating func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var mixed = state
+            mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+            return mixed ^ (mixed >> 31)
+        }
+    }
+
+    /// Compare against the reference lookup for sorted and unsorted heading
+    /// lists (with shared offsets), for ascending and shuffled positions.
+    func testSweepMatchesHeadingPositionForAnyHeadingOrder() {
+        var generator = SeededGenerator(state: 2_026)
+        for trial in 0..<300 {
+            var headings = (0..<Int.random(in: 0...12, using: &generator)).map { number in
+                Heading(
+                    level: 1,
+                    text: "Heading \(number)",
+                    chapterIndex: Int.random(in: 0...3, using: &generator),
+                    characterOffset: Int.random(in: 0...40, using: &generator)
+                )
+            }
+            if trial.isMultiple(of: 2) {
+                headings.sort { ($0.chapterIndex, $0.characterOffset) < ($1.chapterIndex, $1.characterOffset) }
+            }
+            var positions = (0..<15).map { _ in
+                (Int.random(in: 0...4, using: &generator), Int.random(in: -1...45, using: &generator))
+            }.sorted { $0 < $1 }
+            if trial.isMultiple(of: 3) {
+                positions.shuffle(using: &generator)
+            }
+
+            var sweep = HeadingSweep(headings: headings)
+            for (chapter, offset) in positions {
+                XCTAssertEqual(
+                    sweep.position(chapterIndex: chapter, characterOffset: offset),
+                    HeadingPosition(in: headings, chapterIndex: chapter, characterOffset: offset),
+                    "Trial \(trial), chapter \(chapter), offset \(offset)"
+                )
+            }
+        }
+    }
+
+    func testSweepRestartsWhenAPositionMovesBackwards() {
+        let headings = [
+            Heading(level: 1, text: "First", chapterIndex: 0, characterOffset: 0),
+            Heading(level: 1, text: "Second", chapterIndex: 1, characterOffset: 0),
+        ]
+        var sweep = HeadingSweep(headings: headings)
+
+        XCTAssertEqual(sweep.position(chapterIndex: 1, characterOffset: 5).headingText, "Second")
+        XCTAssertEqual(sweep.position(chapterIndex: 0, characterOffset: 5).headingText, "First")
+        XCTAssertEqual(sweep.position(chapterIndex: 0, characterOffset: 5).label, "Heading 1 of 2")
+    }
+}
