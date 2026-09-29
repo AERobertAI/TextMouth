@@ -197,6 +197,201 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    // MARK: - Starting playback
+
+    /// A first chapter entirely inside a skipped heading section is passed
+    /// over: speech starts at the top of the second chapter, and playback
+    /// opens its listening session as usual.
+    func testPlayStartsAfterAChapterEntirelyInsideASkippedSection() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Front Matter", "Copyright notice.")]),
+                Chapter(title: "One", text: "The story begins."),
+            ],
+            skipping: ["Front Matter"]
+        ) { reader in
+            reader.play()
+            let startedSpeaking = reader.speechService.isSpeaking
+            let openedSession = ReadingStatsService.shared.hasActiveSession
+            silence(reader)
+
+            XCTAssertTrue(startedSpeaking)
+            XCTAssertTrue(openedSession)
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentCharacterOffset, 0)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "The story begins.")
+            XCTAssertNil(reader.lastAnnouncement)
+        }
+    }
+
+    /// With every chapter skipped, Play ends the book through the configured
+    /// Stop behavior at once. Nothing is spoken, the reader never shows
+    /// Playing, no listening session starts, and the cursor stays put.
+    func testPlayWithEveryChapterSkippedEndsTheBookWithoutPlaying() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Foreword", "Praise.")]),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Foreword", "Notes"]
+        ) { reader in
+            reader.play()
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+            XCTAssertEqual(reader.currentChapterIndex, 0)
+            XCTAssertEqual(
+                ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
+                [reader.book.id.uuidString]
+            )
+        }
+    }
+
+    /// Continue to Next Book applies as configured: with no next book in the
+    /// folder, a silent book ends with that behavior's own announcement.
+    func testPlayOnASilentBookFollowsTheContinueBehavior() throws {
+        try withReader(
+            chapters: [chapter(sections: [("Notes", "Citations.")])],
+            skipping: ["Notes"],
+            endOfBook: .continueNext
+        ) { reader in
+            reader.play()
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages. No more books in folder.")
+        }
+    }
+
+    /// A substitution that deletes all of the book's text ends it exactly as
+    /// skipping every section does.
+    func testPlayEndsTheBookWhenSubstitutionsDeleteAllText() throws {
+        try withReader(
+            chapters: [
+                Chapter(title: "Plate 1", text: "[Illustration: The harbour at dawn]"),
+                Chapter(title: "Plate 2", text: "\n[Illustration]\n\n[Illustration: A map]\n"),
+            ],
+            substitutions: [Self.illustrationRemoval]
+        ) { reader in
+            reader.play()
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+        }
+    }
+
+    /// Loop with nothing speakable anywhere ends in the stopped state after
+    /// one pass over the book instead of restarting forever. Returning at
+    /// all shows that it terminates.
+    func testPlayWithLoopAndNothingSpeakableStopsAfterOnePass() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Foreword", "Praise.")]),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Foreword", "Notes"],
+            endOfBook: .loop
+        ) { reader in
+            reader.play()
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+        }
+    }
+
+    /// When the rest of the book is silent but earlier text is not, Loop
+    /// restarts and passes over the silent opening chapter to reach it.
+    func testLoopRestartsAtTheFirstSpeakableChapter() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Foreword", "Praise.")]),
+                Chapter(title: "One", text: "The story begins."),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Foreword", "Notes"],
+            endOfBook: .loop,
+            at: ReadingPosition(chapterIndex: 2, characterOffset: 0)
+        ) { reader in
+            reader.play()
+            let startedSpeaking = reader.speechService.isSpeaking
+            silence(reader)
+
+            XCTAssertTrue(startedSpeaking)
+            XCTAssertEqual(reader.lastAnnouncement, "Restarting: Quiet Pages")
+            XCTAssertEqual(reader.currentChapterIndex, 1)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "The story begins.")
+        }
+    }
+
+    /// A cursor before a skipped section at the end of its chapter resumes
+    /// in that chapter, at the cursor.
+    func testCursorBeforeASkippedTailResumesInItsChapter() throws {
+        let opening = chapter(sections: [("Opening", "First words."), ("Appendix", "Back matter.")])
+        let firstWords = (opening.text as NSString).range(of: "First words.").location
+        try withReader(
+            chapters: [opening, Chapter(title: "Two", text: "Next chapter.")],
+            skipping: ["Appendix"],
+            at: ReadingPosition(chapterIndex: 0, characterOffset: firstWords)
+        ) { reader in
+            let start = try XCTUnwrap(reader.speechStartFromCursor())
+
+            XCTAssertEqual(start.speech.chapterIndex, 0)
+            XCTAssertEqual(start.offset, firstWords)
+            XCTAssertEqual(start.speech.text, "Opening\n\nFirst words.\n\n")
+        }
+    }
+
+    /// A cursor inside that skipped section has nothing left to say in its
+    /// chapter, so speech resumes at the top of the next chapter.
+    func testCursorInASkippedTailResumesAtTheNextChapter() throws {
+        let opening = chapter(sections: [("Opening", "First words."), ("Appendix", "Back matter.")])
+        let backMatter = (opening.text as NSString).range(of: "Back matter.").location
+        try withReader(
+            chapters: [opening, Chapter(title: "Two", text: "Next chapter.")],
+            skipping: ["Appendix"],
+            at: ReadingPosition(chapterIndex: 0, characterOffset: backMatter)
+        ) { reader in
+            let start = try XCTUnwrap(reader.speechStartFromCursor())
+
+            XCTAssertEqual(start.speech.chapterIndex, 1)
+            XCTAssertEqual(start.offset, 0)
+            XCTAssertEqual(start.speech.text, "Next chapter.")
+        }
+    }
+
+    /// A cursor in the last chapter's trailing blank lines has nothing left
+    /// to say either, so the book ends instead of speaking blank lines.
+    func testCursorInTrailingBlankLinesOfTheLastChapterEndsTheBook() throws {
+        let text = "Final words.\n\n\n"
+        try withReader(
+            chapters: [Chapter(title: "Last", text: text)],
+            at: ReadingPosition(chapterIndex: 0, characterOffset: text.utf16.count - 2)
+        ) { reader in
+            XCTAssertFalse(reader.speakCurrentChapter())
+            settle()
+
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+        }
+    }
+
+    /// Resuming after an audio-route change restarts speech at the cursor.
+    /// When the rest of the book was skipped while paused, the book ends
+    /// instead, and Now Playing is not told that it is playing.
+    func testResumeWithNothingLeftEndsTheBookWithoutClaimingPlayback() throws {
+        try withReader(chapters: [chapter(sections: [("Only Section", "Brief text.")])]) { reader in
+            reader.play()
+            reader.pause()
+            let pausedSpeech = reader.speechService.isPaused
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first))
+            reader.invalidatePlaybackBackendForAudioRouteChange()
+
+            reader.togglePlayPause()
+            settle()
+
+            XCTAssertTrue(pausedSpeech)
+            assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages")
+        }
+    }
+
     // MARK: - End of book
 
     /// Reaching the end closes this book's listening session, and only this
@@ -300,6 +495,39 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
     private func silence(_ reader: ReaderViewModel) {
         reader.stop()
         reader.chapterPlaybackGeneration += 1
+    }
+
+    /// Let queued main-queue work run. The reader mirrors the speech
+    /// service's playing state asynchronously, so a Playing state that was
+    /// wrongly set would only show after this.
+    private func settle() {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+    }
+
+    /// Check that the book ended with `announcement` without ever playing:
+    /// nothing is speaking, the reader shows neither Playing nor Paused, no
+    /// listening session is open or recorded, and Now Playing does not list
+    /// this reader as playing.
+    private func assertEndedWithoutPlaying(
+        _ reader: ReaderViewModel,
+        announcement: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let statistics = ReadingStatsService.shared
+        XCTAssertEqual(reader.lastAnnouncement, announcement, file: file, line: line)
+        XCTAssertFalse(reader.speechService.isSpeaking, "speaking", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPlaying, "Playing state", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPaused, "Paused state", file: file, line: line)
+        XCTAssertFalse(statistics.hasActiveSession, "open listening session", file: file, line: line)
+        XCTAssertEqual(statistics.stats.totalListeningSeconds, 0, "recorded listening", file: file, line: line)
+        XCTAssertNotEqual(
+            NowPlayingService.shared.playingOwnerID,
+            reader.nowPlayingService.ownerID,
+            "Now Playing claimed",
+            file: file,
+            line: line
+        )
     }
 
     /// A chapter whose only section follows two blank lines, as converted

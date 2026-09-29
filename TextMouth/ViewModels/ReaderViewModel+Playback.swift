@@ -11,6 +11,11 @@ extension ReaderViewModel {
 
     /// Start speaking the current chapter from the current offset.
     /// For audio books, delegates to playAudioChapter().
+    ///
+    /// A text book first finds what it will say. When nothing speakable
+    /// remains from the cursor, the book ends at once through its
+    /// end-of-book behavior, without claiming media controls, making the
+    /// play sound, or starting a Playing state or listening session.
     func play() {
         // Loading or closed readers cannot own a playback/statistics session.
         guard !hasClosed, !isLoading, let content,
@@ -19,6 +24,16 @@ extension ReaderViewModel {
         if WhereAmIInterruptionPolicy.blocksBookPlayback(
             isAnnouncementSpeaking: isWhereAmISpeaking
         ) { return }
+        // Find what a text book will say before claiming playback, so a book
+        // with nothing left to say ends without touching any of the below.
+        var speechStart: SpeechStart?
+        if !isAudioBook {
+            guard let start = speechStartFromCursor() else {
+                endBookWithNothingLeftToSpeak()
+                return
+            }
+            speechStart = start
+        }
         restartPlaybackBackendOnNextResume = false
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
@@ -31,8 +46,8 @@ extension ReaderViewModel {
         sleepTimerService.resumeCountdown(by: book.id)
         if isAudioBook {
             playAudioChapter()
-        } else {
-            speakCurrentChapter()
+        } else if let speechStart {
+            startSpeaking(speechStart)
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -94,10 +109,13 @@ extension ReaderViewModel {
         if restartPlaybackBackendOnNextResume {
             restartPlaybackBackendOnNextResume = false
             speechService.stop()
-            speakCurrentChapter()
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: true
-            )
+            // The book ends instead when nothing speakable remains, for
+            // example after skipping the rest of it while paused.
+            if speakCurrentChapter() {
+                nowPlayingService.updateNowPlayingInfo(
+                    title: book.title, author: book.author, isPlaying: true
+                )
+            }
             return
         }
         if speechService.resume() {
@@ -235,37 +253,88 @@ extension ReaderViewModel {
         }
     }
 
-    /// Speak the current chapter's text from the current character offset.
-    /// Applies section filtering, punctuation pauses, and text substitutions before speaking.
-    func speakCurrentChapter() {
+    /// Speak from the cursor, passing over text with nothing to say.
+    ///
+    /// Speech starts at the cursor when anything speakable follows it in its
+    /// chapter, and otherwise at the start of the next chapter whose
+    /// prepared speech has something to say. Chapters that are empty,
+    /// entirely inside skipped sections, or deleted by substitutions are
+    /// passed over. When nothing speakable remains, nothing is spoken and
+    /// the book ends through its end-of-book behavior instead.
+    ///
+    /// - Returns: True when speech started. False when the cursor is not in
+    ///   a chapter, or when the book ended instead (its end-of-book behavior
+    ///   may itself have restarted playback).
+    @discardableResult
+    func speakCurrentChapter() -> Bool {
         guard let content = content,
-              content.chapters.indices.contains(currentChapterIndex) else { return }
-
-        // Skip empty chapters
-        var idx = currentChapterIndex
-        while idx < content.chapters.count && content.chapters[idx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            idx += 1
+              content.chapters.indices.contains(currentChapterIndex) else { return false }
+        guard let start = speechStartFromCursor() else {
+            endBookWithNothingLeftToSpeak()
+            return false
         }
-        if idx != currentChapterIndex {
-            currentChapterIndex = idx
+        startSpeaking(start)
+        return true
+    }
+
+    /// Where speaking begins: a chapter's prepared speech and the offset in
+    /// its spoken text to start from. The offset is 0 unless the chapter is
+    /// the one holding the cursor.
+    struct SpeechStart {
+        let speech: ChapterSpeech
+        let offset: Int
+    }
+
+    /// Where speech resumes from the cursor: the rest of the cursor's
+    /// chapter when anything speakable follows the cursor there, otherwise
+    /// the start of the next speakable chapter. Nil when nothing speakable
+    /// remains in the book, and when no loaded chapter holds the cursor,
+    /// which callers rule out first.
+    ///
+    /// A chapter that is speakable as a whole can still have nothing left
+    /// after the cursor, when the cursor sits in a skipped section at the
+    /// end of the chapter or in its trailing blank lines.
+    func speechStartFromCursor() -> SpeechStart? {
+        guard let current = preparedSpeech(forChapterAt: currentChapterIndex) else { return nil }
+        // The cursor is an offset in the original text. Map it into the
+        // spoken text; an offset inside a removed section can map past the
+        // spoken text's end, so clamp it there.
+        let offset = min(current.offsetMap.toModified(currentCharacterOffset), current.text.utf16Length)
+        let rest = current.text[current.text.index(atUTF16Offset: offset)...]
+        if Self.hasSpeakableText(rest) {
+            return SpeechStart(speech: current, offset: offset)
+        }
+        return nextSpeakableChapterSpeech(from: currentChapterIndex + 1)
+            .map { SpeechStart(speech: $0, offset: 0) }
+    }
+
+    /// Speak `start`'s chapter from its offset, then look ahead to the next
+    /// speakable chapter. Starting a chapter other than the cursor's moves
+    /// the cursor to the beginning of that chapter.
+    func startSpeaking(_ start: SpeechStart) {
+        let speech = start.speech
+        if speech.chapterIndex != currentChapterIndex {
+            debugLog("passing over silent text from chapter \(currentChapterIndex) to \(speech.chapterIndex)")
+            currentChapterIndex = speech.chapterIndex
             currentCharacterOffset = 0
         }
-        // The loop stopped on a non-empty chapter unless it ran past the end.
-        guard let speech = preparedSpeech(forChapterAt: idx) else { return }
-
-        debugLog("speakCurrentChapter: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
+        debugLog("startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
 
         currentTransformation = speech.transformation
         currentOffsetMap = speech.offsetMap
-        // Convert original-text offset to modified-text offset using the full composed map
-        let speakOffset = speech.offsetMap.toModified(currentCharacterOffset)
-
-        // Start playback from the current offset.
         utteranceBaseOffset = 0
-        speechService.speak(speech.text, fromCharOffset: speakOffset)
+        speechService.speak(speech.text, fromCharOffset: start.offset)
 
         // Pre-render the next chapter so it can start instantly when this one ends
         preRenderNextChapter()
+    }
+
+    /// End the book because nothing speakable remains from the cursor. The
+    /// cursor stays where it is, and the end-of-book behavior decides what
+    /// happens next.
+    private func endBookWithNothingLeftToSpeak() {
+        debugLog("nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
+        handleEndOfBook()
     }
 
     /// Pre-render the next chapter's audio in background so chapter transitions are instant
