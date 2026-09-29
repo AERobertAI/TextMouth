@@ -92,6 +92,169 @@ enum BookTextSearch {
     }
 }
 
+/// One match found by book search: where it is, and what its result row
+/// shows and speaks.
+struct BookSearchResult: Identifiable, Equatable, Sendable {
+    /// Stable across searches and view refreshes, so a result row and its
+    /// "Search Results" rotor entry keep their identity while results update.
+    var id: String { "\(chapterIndex):\(characterOffset):\(matchedText.utf16Length)" }
+    /// Content unit (chapter) holding the match.
+    let chapterIndex: Int
+    /// UTF-16 offset of the match within its content unit.
+    let characterOffset: Int
+    let matchedText: String
+    /// The match with up to 30 characters of context on each side.
+    let contextSnippet: String
+    /// UTF-16 offset of the match from the start of the book.
+    let globalOffset: Int
+    /// Heading containing the match, or nil when there is none to name.
+    var locationTitle: String?
+
+    /// The matching context, then where it is: the rotor entry, and the
+    /// start of the row's spoken label.
+    var contextAndLocation: String {
+        [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
+    }
+}
+
+/// The parts of an open book that a search reads. All are immutable value
+/// copies, so a search can run off the main actor while the reader changes.
+struct BookSearchCorpus: Sendable {
+    let chapterTexts: [String]
+    let chapterTitles: [String]
+    /// Every heading in the book, used to name where each match is.
+    let headings: [Heading]
+    /// The book's title, so a content title that merely repeats it is not
+    /// offered as a match's location.
+    let bookTitle: String
+}
+
+/// What one completed search found.
+enum BookSearchOutcome: Equatable, Sendable {
+    /// Matches in reading order. `isTruncated` is true when the book holds
+    /// more matches than the result limit, so only the first ones are listed.
+    case matches([BookSearchResult], isTruncated: Bool)
+    /// The query is not a valid regular expression; the text says why.
+    case invalidPattern(String)
+}
+
+/// Searches a whole book. Synchronous and free of shared state, so it can
+/// run off the main actor, and cancellable through `isCancelled`.
+enum BookSearchEngine {
+    /// The most matches one search lists. A broader query yields more rows
+    /// than anyone would review one at a time; stopping here also bounds the
+    /// work, memory, and rows that a query such as "e" would otherwise cost.
+    static let resultLimit = 2_000
+
+    /// Search every chapter of `corpus` for `query`, in reading order.
+    /// - Throws: `CancellationError` once `isCancelled` returns true. A
+    ///   cancelled search reports nothing, never a partial result.
+    static func search(
+        query: String,
+        useRegex: Bool,
+        in corpus: BookSearchCorpus,
+        limit: Int = resultLimit,
+        isCancelled: () -> Bool = { Task.isCancelled }
+    ) throws -> BookSearchOutcome {
+        let matcher: BookTextSearch.Matcher
+        do {
+            guard let compiled = try BookTextSearch.Matcher(query: query, useRegex: useRegex) else {
+                return .matches([], isTruncated: false)
+            }
+            matcher = compiled
+        } catch {
+            return .invalidPattern(error.localizedDescription)
+        }
+
+        let collected = try collectResults(
+            in: corpus.chapterTexts,
+            limit: limit,
+            isCancelled: isCancelled
+        ) { chapterText, visit in
+            matcher.enumerateRanges(in: chapterText, shouldStop: isCancelled, visit: visit)
+        }
+
+        // Matches were collected in reading order; name each by its heading.
+        var results = collected.results
+        let locationTitles = BookSearchView.locationTitles(
+            of: results.map { (chapterIndex: $0.chapterIndex, characterOffset: $0.characterOffset) },
+            headings: corpus.headings,
+            chapterTitles: corpus.chapterTitles,
+            bookTitle: corpus.bookTitle
+        )
+        for index in results.indices {
+            results[index].locationTitle = locationTitles[index]
+        }
+        return .matches(results, isTruncated: collected.isTruncated)
+    }
+
+    /// Turn each chapter's matches into results, in reading order, keeping
+    /// at most `limit` of them. `enumerateMatches` reports one chapter's
+    /// match ranges to a visitor that returns false once it wants no more.
+    /// Kept apart from `search` so tests can count the chapters visited.
+    /// - Throws: `CancellationError` once `isCancelled` returns true, checked
+    ///   before each chapter and after the last one.
+    static func collectResults(
+        in chapterTexts: [String],
+        limit: Int,
+        isCancelled: () -> Bool,
+        enumerateMatches: (_ chapterText: String, _ visit: (NSRange) -> Bool) -> Void
+    ) throws -> (results: [BookSearchResult], isTruncated: Bool) {
+        var results: [BookSearchResult] = []
+        var isTruncated = false
+        // UTF-16 offset where the current chapter starts within the book.
+        var chapterStart = 0
+
+        for (chapterIndex, chapterText) in chapterTexts.enumerated() {
+            if isCancelled() { throw CancellationError() }
+
+            enumerateMatches(chapterText) { match in
+                // A range with no String equivalent is skipped, exactly as
+                // before, and never counts toward the limit.
+                guard let matchRange = Range(match, in: chapterText) else { return true }
+                // Finding one more result than the limit is what proves the
+                // list is truncated; nothing further needs to be found.
+                guard results.count < limit else {
+                    isTruncated = true
+                    return false
+                }
+                results.append(BookSearchResult(
+                    chapterIndex: chapterIndex,
+                    characterOffset: match.location,
+                    matchedText: String(chapterText[matchRange]),
+                    contextSnippet: contextSnippet(in: chapterText, around: matchRange),
+                    globalOffset: chapterStart + match.location
+                ))
+                return true
+            }
+
+            if isTruncated { break }
+            chapterStart += chapterText.utf16Length
+        }
+
+        // Cancellation may have cut the final chapter's scan short; what it
+        // found must not be reported as the complete answer.
+        if isCancelled() { throw CancellationError() }
+        return (results, isTruncated)
+    }
+
+    /// The match with up to 30 characters of context on each side, marking
+    /// with "..." any text cut off before or after.
+    private static func contextSnippet(in text: String, around matchRange: Range<String.Index>) -> String {
+        let beforeStart = text.index(matchRange.lowerBound, offsetBy: -30, limitedBy: text.startIndex) ?? text.startIndex
+        let afterEnd = text.index(matchRange.upperBound, offsetBy: 30, limitedBy: text.endIndex) ?? text.endIndex
+
+        let prefix = beforeStart > text.startIndex ? "..." : ""
+        let suffix = afterEnd < text.endIndex ? "..." : ""
+
+        let before = String(text[beforeStart..<matchRange.lowerBound])
+        let matched = String(text[matchRange])
+        let after = String(text[matchRange.upperBound..<afterEnd])
+
+        return "\(prefix)\(before)\(matched)\(after)\(suffix)"
+    }
+}
+
 struct BookSearchView: View {
     let chapterTexts: [String]
     let chapterTitles: [String]
@@ -122,28 +285,11 @@ struct BookSearchView: View {
         }
     }
 
-    fileprivate struct SearchResult: Identifiable {
-        /// Keep result/rotor identity stable when SwiftUI refreshes the sheet.
-        var id: String { "\(chapterIndex):\(characterOffset):\(matchedText.utf16Length)" }
-        let chapterIndex: Int
-        let characterOffset: Int
-        let matchedText: String
-        let contextSnippet: String
-        let globalOffset: Int
-        /// Heading containing the match, or nil when there is none to name.
-        var locationTitle: String?
-
-        /// The matching context, then where it is: the rotor entry, and the
-        /// start of the row's spoken label.
-        var contextAndLocation: String {
-            [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
-        }
-    }
-
     /// Name each match's location by the heading containing it, using the
     /// same rule and fallback as the reader header. Matches should arrive in
     /// reading order, as a search produces them, so one sweep serves them all.
-    static func locationTitles(
+    /// Nonisolated because `BookSearchEngine` calls it off the main actor.
+    nonisolated static func locationTitles(
         of matches: [(chapterIndex: Int, characterOffset: Int)],
         headings: [Heading],
         chapterTitles: [String],
@@ -161,7 +307,7 @@ struct BookSearchView: View {
 
     private enum SearchOutcome {
         case empty
-        case results([SearchResult])
+        case results([BookSearchResult])
         case regexError(String)
     }
 
@@ -283,70 +429,31 @@ struct BookSearchView: View {
     private var searchOutcome: SearchOutcome {
         guard !searchText.isEmpty else { return .empty }
 
-        var results: [SearchResult] = []
-        var cumulativeCount = 0
-
-        for (chapterIndex, chapterText) in chapterTexts.enumerated() {
-            let nsMatches: [NSRange]
-            do {
-                nsMatches = try BookTextSearch.ranges(
-                    in: chapterText,
-                    query: searchText,
-                    useRegex: useRegex
-                )
-            } catch {
-                return .regexError("Invalid regex: \(error.localizedDescription)")
-            }
-
-            for nsMatch in nsMatches {
-                guard let matchRange = Range(nsMatch, in: chapterText) else { continue }
-                let characterOffset = nsMatch.location
-                let globalOffset = cumulativeCount + characterOffset
-                let snippet = buildContextSnippet(text: chapterText, matchRange: matchRange)
-
-                results.append(SearchResult(
-                    chapterIndex: chapterIndex,
-                    characterOffset: characterOffset,
-                    matchedText: String(chapterText[matchRange]),
-                    contextSnippet: snippet,
-                    globalOffset: globalOffset
-                ))
-            }
-
-            cumulativeCount += chapterText.utf16Length
-        }
-
-        // Matches were collected in reading order; name each by its heading.
-        let locationTitles = Self.locationTitles(
-            of: results.map { (chapterIndex: $0.chapterIndex, characterOffset: $0.characterOffset) },
-            headings: headings,
+        // Nothing cancels this synchronous search, so it never throws.
+        let corpus = BookSearchCorpus(
+            chapterTexts: chapterTexts,
             chapterTitles: chapterTitles,
+            headings: headings,
             bookTitle: bookTitle
         )
-        for index in results.indices {
-            results[index].locationTitle = locationTitles[index]
+        guard let outcome = try? BookSearchEngine.search(
+            query: searchText,
+            useRegex: useRegex,
+            in: corpus,
+            isCancelled: { false }
+        ) else { return .empty }
+
+        switch outcome {
+        case .matches(let results, _):
+            return results.isEmpty ? .empty : .results(results)
+        case .invalidPattern(let message):
+            return .regexError("Invalid regex: \(message)")
         }
-
-        return results.isEmpty ? .empty : .results(results)
-    }
-
-    private func buildContextSnippet(text: String, matchRange: Range<String.Index>) -> String {
-        let beforeStart = text.index(matchRange.lowerBound, offsetBy: -30, limitedBy: text.startIndex) ?? text.startIndex
-        let afterEnd = text.index(matchRange.upperBound, offsetBy: 30, limitedBy: text.endIndex) ?? text.endIndex
-
-        let prefix = beforeStart > text.startIndex ? "..." : ""
-        let suffix = afterEnd < text.endIndex ? "..." : ""
-
-        let before = String(text[beforeStart..<matchRange.lowerBound])
-        let matched = String(text[matchRange])
-        let after = String(text[matchRange.upperBound..<afterEnd])
-
-        return "\(prefix)\(before)\(matched)\(after)\(suffix)"
     }
 }
 
 private struct SearchResultRow: View {
-    let result: BookSearchView.SearchResult
+    let result: BookSearchResult
     let displayMode: BookSearchView.DisplayMode
     let totalCharacterCount: Int
     let totalWordCount: Int

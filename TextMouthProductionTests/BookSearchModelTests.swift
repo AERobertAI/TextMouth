@@ -30,6 +30,33 @@ private let regexQueries = [
     "stra(ss|ß)e", "c[aou]t", "caf(", "[",
 ]
 
+/// The Unicode chapters as a book. The first heading starts partway into the
+/// first chapter, so earlier matches have no location; headings carry over
+/// into later chapters; the last heading's text is blank, so matches under
+/// it have no location to name either.
+private let unicodeCorpus = BookSearchCorpus(
+    chapterTexts: unicodeChapters,
+    chapterTitles: ["Cafés", "Emoji", "Folding", "Blank", "Plain"],
+    headings: [
+        Heading(level: 1, text: "Morning", chapterIndex: 0, characterOffset: 12),
+        Heading(level: 2, text: "Pictures", chapterIndex: 1, characterOffset: 10),
+        Heading(level: 1, text: "Fine print", chapterIndex: 2, characterOffset: 0),
+        Heading(level: 1, text: "   ", chapterIndex: 4, characterOffset: 5),
+    ],
+    bookTitle: "Parity Fixture"
+)
+
+/// A book of `chapters` identical chapters, each holding "tock"
+/// `matchesPerChapter` times, for exercising the result limit.
+private func repeatedCorpus(chapters: Int, matchesPerChapter: Int) -> BookSearchCorpus {
+    BookSearchCorpus(
+        chapterTexts: Array(repeating: String(repeating: "tick tock ", count: matchesPerChapter), count: chapters),
+        chapterTitles: Array(repeating: "", count: chapters),
+        headings: [],
+        bookTitle: "Metronome"
+    )
+}
+
 // MARK: - Frozen oracles
 
 /// `BookTextSearch.ranges` exactly as it was before searching moved off the
@@ -55,6 +82,93 @@ private enum LegacyMatching {
             remaining = NSRange(location: nextLocation, length: fullRange.length - nextLocation)
         }
         return results
+    }
+}
+
+/// The whole-book search `BookSearchView` ran synchronously in its body
+/// before searching moved off the main actor, kept verbatim apart from
+/// reading its inputs from a corpus and matching with `LegacyMatching`. It
+/// is the oracle for parity tests: below the result limit, the engine must
+/// produce exactly these results.
+private enum LegacySynchronousSearch {
+    /// The fields of the old view's result type.
+    struct Result: Equatable {
+        let chapterIndex: Int
+        let characterOffset: Int
+        let matchedText: String
+        let contextSnippet: String
+        let globalOffset: Int
+        var locationTitle: String?
+    }
+
+    enum Outcome: Equatable {
+        case empty
+        case results([Result])
+        case regexError(String)
+    }
+
+    static func search(_ searchText: String, useRegex: Bool, in corpus: BookSearchCorpus) -> Outcome {
+        guard !searchText.isEmpty else { return .empty }
+
+        var results: [Result] = []
+        var cumulativeCount = 0
+
+        for (chapterIndex, chapterText) in corpus.chapterTexts.enumerated() {
+            let nsMatches: [NSRange]
+            do {
+                nsMatches = try LegacyMatching.ranges(
+                    in: chapterText,
+                    query: searchText,
+                    useRegex: useRegex
+                )
+            } catch {
+                return .regexError("Invalid regex: \(error.localizedDescription)")
+            }
+
+            for nsMatch in nsMatches {
+                guard let matchRange = Range(nsMatch, in: chapterText) else { continue }
+                let characterOffset = nsMatch.location
+                let globalOffset = cumulativeCount + characterOffset
+                let snippet = buildContextSnippet(text: chapterText, matchRange: matchRange)
+
+                results.append(Result(
+                    chapterIndex: chapterIndex,
+                    characterOffset: characterOffset,
+                    matchedText: String(chapterText[matchRange]),
+                    contextSnippet: snippet,
+                    globalOffset: globalOffset
+                ))
+            }
+
+            cumulativeCount += chapterText.utf16Length
+        }
+
+        // Matches were collected in reading order; name each by its heading.
+        let locationTitles = BookSearchView.locationTitles(
+            of: results.map { (chapterIndex: $0.chapterIndex, characterOffset: $0.characterOffset) },
+            headings: corpus.headings,
+            chapterTitles: corpus.chapterTitles,
+            bookTitle: corpus.bookTitle
+        )
+        for index in results.indices {
+            results[index].locationTitle = locationTitles[index]
+        }
+
+        return results.isEmpty ? .empty : .results(results)
+    }
+
+    private static func buildContextSnippet(text: String, matchRange: Range<String.Index>) -> String {
+        let beforeStart = text.index(matchRange.lowerBound, offsetBy: -30, limitedBy: text.startIndex) ?? text.startIndex
+        let afterEnd = text.index(matchRange.upperBound, offsetBy: 30, limitedBy: text.endIndex) ?? text.endIndex
+
+        let prefix = beforeStart > text.startIndex ? "..." : ""
+        let suffix = afterEnd < text.endIndex ? "..." : ""
+
+        let before = String(text[beforeStart..<matchRange.lowerBound])
+        let matched = String(text[matchRange])
+        let after = String(text[matchRange.upperBound..<afterEnd])
+
+        return "\(prefix)\(before)\(matched)\(after)\(suffix)"
     }
 }
 
@@ -174,5 +288,194 @@ final class BookTextSearchMatcherTests: XCTestCase {
         default:
             XCTFail("\(context): only one implementation rejected the query", file: file, line: line)
         }
+    }
+}
+
+// MARK: - Engine
+
+/// Whole-book search: parity with the old synchronous search, the result
+/// limit, and cancellation.
+final class BookSearchEngineTests: XCTestCase {
+    /// Below the result limit, the engine finds exactly what the old
+    /// synchronous search found: the same chapters, UTF-16 offsets, matched
+    /// text, context, global offsets, locations, and stable ids.
+    func testSearchMatchesThePreviousSynchronousSearch() throws {
+        var comparedResults = 0
+        for (queries, useRegex) in [(literalQueries, false), (regexQueries, true)] {
+            for query in queries + [""] {
+                let context = "\(useRegex ? "Regex" : "Literal") \(query.debugDescription)"
+                let outcome = try BookSearchEngine.search(query: query, useRegex: useRegex, in: unicodeCorpus)
+                switch (outcome, LegacySynchronousSearch.search(query, useRegex: useRegex, in: unicodeCorpus)) {
+                case (.matches(let results, isTruncated: false), .empty):
+                    XCTAssertEqual(results, [], context)
+                case (.matches(let results, isTruncated: false), .results(let legacy)):
+                    XCTAssertEqual(results.map(Self.legacyFields), legacy, context)
+                    XCTAssertEqual(
+                        results.map(\.id),
+                        legacy.map { "\($0.chapterIndex):\($0.characterOffset):\($0.matchedText.utf16Length)" },
+                        context
+                    )
+                    comparedResults += legacy.count
+                case (.invalidPattern(let message), .regexError(let legacyMessage)):
+                    XCTAssertEqual("Invalid regex: \(message)", legacyMessage, context)
+                default:
+                    XCTFail("\(context): the outcomes differ")
+                }
+            }
+        }
+        // Guard against a fixture that silently stops exercising anything.
+        XCTAssertGreaterThan(comparedResults, 500)
+    }
+
+    /// The documented limit, which the status line reports when reached.
+    func testResultLimitIsTwoThousand() {
+        XCTAssertEqual(BookSearchEngine.resultLimit, 2_000)
+    }
+
+    /// A query with more matches than the limit lists the first 2,000, the
+    /// same ones the old search listed first, and says more exist.
+    func testSearchStopsAtTheResultLimit() throws {
+        let corpus = repeatedCorpus(chapters: 3, matchesPerChapter: 1_000)
+        let outcome = try BookSearchEngine.search(query: "tock", useRegex: false, in: corpus)
+        guard case .matches(let results, let isTruncated) = outcome,
+              case .results(let legacy) = LegacySynchronousSearch.search("tock", useRegex: false, in: corpus)
+        else { return XCTFail("Both searches should find matches") }
+
+        XCTAssertTrue(isTruncated)
+        XCTAssertEqual(legacy.count, 3_000)
+        XCTAssertEqual(results.map(Self.legacyFields), Array(legacy.prefix(BookSearchEngine.resultLimit)))
+    }
+
+    /// Exactly as many matches as the limit is a complete list, not a
+    /// truncated one, for literal text and regular expressions alike.
+    func testExactlyTheLimitIsACompleteList() throws {
+        let corpus = repeatedCorpus(chapters: 2, matchesPerChapter: 1_000)
+        for useRegex in [false, true] {
+            let outcome = try BookSearchEngine.search(query: "tock", useRegex: useRegex, in: corpus)
+            let found = try XCTUnwrap(matchedTexts(outcome))
+            XCTAssertEqual(found.texts.count, BookSearchEngine.resultLimit, "useRegex \(useRegex)")
+            XCTAssertFalse(found.isTruncated, "useRegex \(useRegex)")
+        }
+    }
+
+    /// A range with no String equivalent is skipped, as before, and neither
+    /// counts toward the limit nor marks the list truncated. Real matchers
+    /// only report ranges inside the text, so this reports some past its end.
+    func testSkippedRangesNeverCountTowardTheLimit() throws {
+        let ranges = [
+            NSRange(location: 0, length: 1),
+            NSRange(location: 4, length: 9),
+            NSRange(location: 2, length: 1),
+            NSRange(location: 50, length: 1),
+            NSRange(location: 4, length: 1),
+        ]
+        let reportRanges: (String, (NSRange) -> Bool) -> Void = { _, visit in
+            for range in ranges {
+                guard visit(range) else { return }
+            }
+        }
+
+        let complete = try BookSearchEngine.collectResults(
+            in: ["x x x"],
+            limit: 3,
+            isCancelled: { false },
+            enumerateMatches: reportRanges
+        )
+        XCTAssertEqual(complete.results.map(\.characterOffset), [0, 2, 4])
+        XCTAssertFalse(complete.isTruncated)
+
+        let limited = try BookSearchEngine.collectResults(
+            in: ["x x x"],
+            limit: 2,
+            isCancelled: { false },
+            enumerateMatches: reportRanges
+        )
+        XCTAssertEqual(limited.results.map(\.characterOffset), [0, 2])
+        XCTAssertTrue(limited.isTruncated)
+    }
+
+    /// Cancellation stops the search between chapters: cancelled while the
+    /// third of fifty chapters is scanned, it never visits a fourth, and it
+    /// reports nothing rather than partial results.
+    func testCancellationStopsChapterIteration() {
+        var visitedChapters = 0
+        XCTAssertThrowsError(try BookSearchEngine.collectResults(
+            in: Array(repeating: "tick tock", count: 50),
+            limit: BookSearchEngine.resultLimit,
+            isCancelled: { visitedChapters >= 3 }
+        ) { _, visit in
+            visitedChapters += 1
+            _ = visit(NSRange(location: 5, length: 4))
+        }) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+        XCTAssertEqual(visitedChapters, 3)
+    }
+
+    /// Cancellation that cuts the final chapter's scan short still throws,
+    /// instead of returning what the partial scan found.
+    func testCancellationDuringTheLastChapterReportsNothing() {
+        var isCancelled = false
+        XCTAssertThrowsError(try BookSearchEngine.collectResults(
+            in: ["tick tock"],
+            limit: BookSearchEngine.resultLimit,
+            isCancelled: { isCancelled }
+        ) { _, visit in
+            _ = visit(NSRange(location: 5, length: 4))
+            isCancelled = true
+        }) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+    }
+
+    /// By default the engine follows the cancellation of the task running
+    /// it, so cancelling that task stops the search.
+    func testSearchFollowsTheRunningTasksCancellation() async {
+        let corpus = repeatedCorpus(chapters: 4, matchesPerChapter: 100)
+        let search = Task.detached { () throws -> BookSearchOutcome in
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try BookSearchEngine.search(query: "tock", useRegex: false, in: corpus)
+        }
+        do {
+            let outcome = try await search.value
+            XCTFail("A cancelled search reported \(outcome)")
+        } catch {
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+    }
+
+    /// An invalid regular expression is an outcome to show, not an error to
+    /// throw, and it explains itself.
+    func testInvalidRegexIsAnOutcome() throws {
+        let outcome = try BookSearchEngine.search(query: "caf(", useRegex: true, in: unicodeCorpus)
+        guard case .invalidPattern(let message) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertFalse(message.isEmpty)
+    }
+
+    /// A result as the old view's result type saw it, for comparison with
+    /// the oracle.
+    private static func legacyFields(_ result: BookSearchResult) -> LegacySynchronousSearch.Result {
+        LegacySynchronousSearch.Result(
+            chapterIndex: result.chapterIndex,
+            characterOffset: result.characterOffset,
+            matchedText: result.matchedText,
+            contextSnippet: result.contextSnippet,
+            globalOffset: result.globalOffset,
+            locationTitle: result.locationTitle
+        )
+    }
+
+    /// The matched texts and truncation flag of an outcome that should have
+    /// found matches; nil, after recording a failure, otherwise.
+    private func matchedTexts(
+        _ outcome: BookSearchOutcome,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> (texts: [String], isTruncated: Bool)? {
+        guard case .matches(let results, let isTruncated) = outcome else {
+            XCTFail("Expected matches, got \(outcome)", file: file, line: line)
+            return nil
+        }
+        return (results.map(\.matchedText), isTruncated)
     }
 }
