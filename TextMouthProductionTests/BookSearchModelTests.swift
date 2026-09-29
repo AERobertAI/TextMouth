@@ -479,3 +479,386 @@ final class BookSearchEngineTests: XCTestCase {
         return (results.map(\.matchedText), isTruncated)
     }
 }
+
+// MARK: - Model
+
+/// A thread-safe log of the searches a fake `BookSearchModel.Search` ran.
+/// Fakes run on background threads while tests read the log on the main
+/// actor, so every access takes the lock.
+private final class SearchLog: @unchecked Sendable {
+    /// One search a fake received.
+    struct Entry: Equatable {
+        let query: String
+        let useRegex: Bool
+        /// Whether the search ran on the main thread; it never should.
+        let ranOnMainThread: Bool
+    }
+
+    private let lock = NSLock()
+    private var recordedEntries: [Entry] = []
+    private var recordedCancellations: [Bool] = []
+
+    /// Note a search starting. Call from inside the fake search.
+    func recordSearch(query: String, useRegex: Bool) {
+        let entry = Entry(query: query, useRegex: useRegex, ranOnMainThread: Thread.isMainThread)
+        lock.lock()
+        defer { lock.unlock() }
+        recordedEntries.append(entry)
+    }
+
+    /// Note whether a fake search's task had been cancelled by the time it
+    /// finished.
+    func recordCancellation(_ isCancelled: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        recordedCancellations.append(isCancelled)
+    }
+
+    var entries: [Entry] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedEntries
+    }
+
+    var queries: [String] {
+        entries.map(\.query)
+    }
+
+    var cancellations: [Bool] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedCancellations
+    }
+}
+
+/// Records what a model announces through VoiceOver.
+@MainActor
+private final class AnnouncementLog {
+    private(set) var messages: [String] = []
+
+    func record(_ message: String) {
+        messages.append(message)
+    }
+}
+
+/// A result whose matched text is the query that produced it, so a test can
+/// tell which search's results are listed.
+private func fakeResult(for query: String) -> BookSearchResult {
+    BookSearchResult(chapterIndex: 0, characterOffset: 0, matchedText: query, contextSnippet: query, globalOffset: 0)
+}
+
+/// Debouncing, cancellation, and what the search sheet lists, shows in its
+/// status line, and announces.
+@MainActor
+final class BookSearchModelTests: XCTestCase {
+    /// Keeps tests fast; tests about debouncing itself choose their own.
+    private let quickDebounce: Duration = .milliseconds(10)
+
+    /// The sheet's own configuration: the real engine after a quarter-second
+    /// pause, announcing what it found.
+    func testDefaultConfigurationSearchesTheBookAfterAQuarterSecondPause() async throws {
+        XCTAssertEqual(BookSearchModel.debounceInterval, .milliseconds(250))
+        let announcements = AnnouncementLog()
+        let model = BookSearchModel(corpus: unicodeCorpus, announce: announcements.record)
+
+        model.query = "the"
+        XCTAssertEqual(model.status, .searching)
+        await model.searchTask?.value
+
+        let expected = try BookSearchEngine.search(query: "the", useRegex: false, in: unicodeCorpus)
+        guard case .matches(let results, isTruncated: false) = expected, !results.isEmpty else {
+            return XCTFail("The fixture should hold complete matches for \"the\": \(expected)")
+        }
+        XCTAssertEqual(model.results, results)
+        XCTAssertEqual(model.status, .found(count: results.count))
+        XCTAssertEqual(announcements.messages, [model.status.text])
+        XCTAssertNil(model.searchTask)
+    }
+
+    /// Steady typing runs one search, for the final text, however many edits
+    /// it took, and announces once.
+    func testDebounceCoalescesRapidEditsIntoOneSearch() async throws {
+        let log = SearchLog()
+        let announcements = AnnouncementLog()
+        // Generous beside the pauses between edits, so a busy machine cannot
+        // split the burst.
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            return .matches([], isTruncated: false)
+        }
+
+        for query in ["f", "fe", "fer", "ferr", "ferry"] {
+            model.query = query
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        await model.searchTask?.value
+
+        XCTAssertEqual(log.queries, ["ferry"])
+        XCTAssertEqual(model.status, .found(count: 0))
+        XCTAssertEqual(announcements.messages, ["No matches"])
+    }
+
+    /// Edits separated by more than the debounce interval each get a search.
+    func testEditsAfterAPauseSearchAgain() async {
+        let log = SearchLog()
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            return .matches([], isTruncated: false)
+        }
+
+        model.query = "ferry"
+        await model.searchTask?.value
+        model.query = "ferryman"
+        await model.searchTask?.value
+
+        XCTAssertEqual(log.queries, ["ferry", "ferryman"])
+    }
+
+    /// A newer query cancels the older search, and the older search's
+    /// completion never publishes, even when, like a runaway regular
+    /// expression, it ignores cancellation and finishes last.
+    func testNewerQueryCancelsTheOlderSearchWhoseLateCompletionNeverPublishes() async throws {
+        let log = SearchLog()
+        let announcements = AnnouncementLog()
+        let oldSearchStarted = expectation(description: "The old search started")
+        let releaseOldSearch = DispatchSemaphore(value: 0)
+        // Never leave a background thread blocked, whatever fails below.
+        defer { releaseOldSearch.signal() }
+
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            if query == "old" {
+                oldSearchStarted.fulfill()
+                releaseOldSearch.wait()
+                log.recordCancellation(Task.isCancelled)
+            }
+            return .matches([fakeResult(for: query)], isTruncated: false)
+        }
+
+        model.query = "old"
+        await fulfillment(of: [oldSearchStarted], timeout: 5)
+        let oldSearch = try XCTUnwrap(model.searchTask)
+
+        model.query = "new"
+        await model.searchTask?.value
+        XCTAssertEqual(model.results.map(\.matchedText), ["new"])
+
+        // Let the old search finish after the new one has been published.
+        releaseOldSearch.signal()
+        await oldSearch.value
+
+        XCTAssertEqual(log.queries, ["old", "new"])
+        XCTAssertEqual(log.cancellations, [true], "The old search should have been told to stop")
+        XCTAssertEqual(model.results.map(\.matchedText), ["new"])
+        XCTAssertEqual(model.status, .found(count: 1))
+        XCTAssertEqual(announcements.messages, ["1 match"])
+    }
+
+    /// Stopping the search, as closing the sheet does, publishes and
+    /// announces nothing, even from a search that finishes anyway.
+    func testCancelledSearchPublishesNothing() async throws {
+        let log = SearchLog()
+        let announcements = AnnouncementLog()
+        let searchStarted = expectation(description: "The search started")
+        let releaseSearch = DispatchSemaphore(value: 0)
+        defer { releaseSearch.signal() }
+
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            searchStarted.fulfill()
+            releaseSearch.wait()
+            log.recordCancellation(Task.isCancelled)
+            return .matches([fakeResult(for: query)], isTruncated: false)
+        }
+
+        model.query = "ferry"
+        await fulfillment(of: [searchStarted], timeout: 5)
+        let search = try XCTUnwrap(model.searchTask)
+        model.cancelSearch()
+        releaseSearch.signal()
+        await search.value
+
+        XCTAssertEqual(log.cancellations, [true])
+        XCTAssertEqual(model.results, [])
+        XCTAssertEqual(announcements.messages, [])
+        XCTAssertNil(model.searchTask)
+    }
+
+    /// With more matches than the limit, the first 2,000 are listed and the
+    /// status line and announcement ask for a narrower search.
+    func testResultLimitIsReportedInStatusAndAnnouncement() async {
+        let (model, announcements) = makeModel(searching: repeatedCorpus(chapters: 3, matchesPerChapter: 1_000))
+
+        model.query = "tock"
+        await model.searchTask?.value
+
+        XCTAssertEqual(model.results.count, BookSearchEngine.resultLimit)
+        XCTAssertEqual(model.status, .truncated(shown: BookSearchEngine.resultLimit))
+        XCTAssertEqual(model.status.text, "Showing the first \(2_000.formatted()) matches; refine your search")
+        XCTAssertEqual(announcements.messages, [model.status.text])
+    }
+
+    /// Every status reads as a complete phrase, with singular and plural
+    /// counts, and only an invalid pattern counts as an error.
+    func testStatusTexts() {
+        typealias Status = BookSearchModel.Status
+        XCTAssertEqual(Status.idle.text, "Enter a search term above.")
+        XCTAssertEqual(Status.searching.text, "Searching…")
+        XCTAssertEqual(Status.found(count: 0).text, "No matches")
+        XCTAssertEqual(Status.found(count: 1).text, "1 match")
+        XCTAssertEqual(Status.found(count: 12).text, "12 matches")
+        XCTAssertEqual(Status.found(count: 1_234).text, "\(1_234.formatted()) matches")
+        XCTAssertEqual(
+            Status.truncated(shown: 2_000).text,
+            "Showing the first \(2_000.formatted()) matches; refine your search"
+        )
+        XCTAssertEqual(
+            Status.invalidPattern("The value “[” is invalid.").text,
+            "Invalid regular expression: The value “[” is invalid."
+        )
+
+        XCTAssertTrue(Status.invalidPattern("The value “[” is invalid.").isError)
+        for status in [Status.idle, .searching, .found(count: 0), .truncated(shown: 2_000)] {
+            XCTAssertFalse(status.isError, "\(status)")
+        }
+    }
+
+    /// An invalid regular expression is reported in words once its search
+    /// runs, and the next edit searches normally.
+    func testInvalidRegexIsReportedAndTypingCarriesOn() async {
+        let (model, announcements) = makeModel(searching: unicodeCorpus)
+        model.useRegex = true
+
+        model.query = "caf("
+        await model.searchTask?.value
+        guard case .invalidPattern(let message) = model.status else {
+            return XCTFail("Expected an invalid-pattern status, got \(model.status)")
+        }
+        XCTAssertEqual(model.status.text, "Invalid regular expression: \(message)")
+        XCTAssertEqual(model.results, [])
+        XCTAssertEqual(announcements.messages, [model.status.text])
+
+        model.query = "caf(e|é)"
+        XCTAssertEqual(model.status, .searching)
+        await model.searchTask?.value
+        guard case .found(let count) = model.status else {
+            return XCTFail("Expected matches, got \(model.status)")
+        }
+        XCTAssertGreaterThan(count, 0)
+        XCTAssertEqual(model.results.count, count)
+    }
+
+    /// Clearing the field stops the pending search and resets the sheet at
+    /// once, without searching or announcing anything.
+    func testClearingTheQueryStopsThePendingSearch() async throws {
+        let log = SearchLog()
+        let announcements = AnnouncementLog()
+        let model = BookSearchModel(debounceInterval: .seconds(1), announce: announcements.record) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            return .matches([fakeResult(for: query)], isTruncated: false)
+        }
+
+        model.query = "ferry"
+        let pending = try XCTUnwrap(model.searchTask)
+        model.query = ""
+
+        XCTAssertEqual(model.status, .idle)
+        XCTAssertNil(model.searchTask)
+        // Cancelled during its debounce, the search ends without running.
+        await pending.value
+        XCTAssertEqual(log.queries, [])
+        XCTAssertEqual(announcements.messages, [])
+    }
+
+    /// Clearing the field after a search removes its results at once.
+    func testClearingTheQueryRemovesResults() async {
+        let (model, _) = makeModel(searching: unicodeCorpus)
+        model.query = "the"
+        await model.searchTask?.value
+        XCTAssertFalse(model.results.isEmpty)
+
+        model.query = ""
+
+        XCTAssertEqual(model.results, [])
+        XCTAssertEqual(model.status, .idle)
+    }
+
+    /// While a newer search runs, the previous results stay listed, so rows
+    /// do not vanish and reappear at every keystroke, and the status line
+    /// says a search is under way.
+    func testPreviousResultsStayListedWhileANewerSearchRuns() async throws {
+        let (model, _) = makeModel(searching: unicodeCorpus)
+        model.query = "the"
+        await model.searchTask?.value
+        let earlierResults = model.results
+        XCTAssertFalse(earlierResults.isEmpty)
+
+        model.query = "the c"
+        XCTAssertEqual(model.status, .searching)
+        XCTAssertEqual(model.results, earlierResults)
+
+        await model.searchTask?.value
+        let expected = try BookSearchEngine.search(query: "the c", useRegex: false, in: unicodeCorpus)
+        XCTAssertEqual(.matches(model.results, isTruncated: false), expected)
+        XCTAssertNotEqual(model.results, earlierResults)
+    }
+
+    /// Turning Use Regex on searches the same text again, now as a pattern.
+    func testTogglingRegexSearchesAgain() async {
+        let (model, announcements) = makeModel(searching: unicodeCorpus)
+        model.query = "c[aou]t"
+        await model.searchTask?.value
+        XCTAssertEqual(model.status, .found(count: 0))
+
+        model.useRegex = true
+        XCTAssertEqual(model.status, .searching)
+        await model.searchTask?.value
+
+        XCTAssertEqual(model.results.map(\.matchedText), ["cat", "cot", "cut"])
+        XCTAssertEqual(announcements.messages, ["No matches", "3 matches"])
+    }
+
+    /// Setting the same values again, as SwiftUI may while refreshing the
+    /// field, starts no new search.
+    func testUnchangedInputsDoNotSearchAgain() async {
+        let log = SearchLog()
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            return .matches([], isTruncated: false)
+        }
+
+        model.query = "ferry"
+        await model.searchTask?.value
+        model.query = "ferry"
+        model.useRegex = false
+
+        XCTAssertNil(model.searchTask)
+        XCTAssertEqual(log.queries, ["ferry"])
+    }
+
+    /// Searches run off the main thread, so typing and VoiceOver stay
+    /// responsive however long one takes.
+    func testSearchesRunOffTheMainThread() async {
+        let log = SearchLog()
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: { _ in }) { query, useRegex in
+            log.recordSearch(query: query, useRegex: useRegex)
+            return .matches([], isTruncated: false)
+        }
+
+        model.useRegex = true
+        model.query = "ferr(y|ies)"
+        await model.searchTask?.value
+
+        XCTAssertEqual(log.entries, [SearchLog.Entry(query: "ferr(y|ies)", useRegex: true, ranOnMainThread: false)])
+    }
+
+    /// A model searching `corpus` with the real engine and a short debounce,
+    /// with a log of what it announces.
+    private func makeModel(searching corpus: BookSearchCorpus) -> (BookSearchModel, AnnouncementLog) {
+        let announcements = AnnouncementLog()
+        let model = BookSearchModel(debounceInterval: quickDebounce, announce: announcements.record) { query, useRegex in
+            try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
+        }
+        return (model, announcements)
+    }
+}
