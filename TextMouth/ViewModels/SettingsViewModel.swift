@@ -164,75 +164,87 @@ enum PlaybackSkipUnitPolicy {
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
-    @AppStorage("selectedVoiceID") var selectedVoiceID: String = "" {
+    // MARK: - Stored preferences
+    //
+    // Every preference lives in one preferences store: the standard defaults
+    // in the app, an isolated suite in tests. `init` binds each property to
+    // that store under its key and default; validated preferences take both
+    // from `SettingsPolicy`. `defaults write` can put any value under these
+    // keys, so numeric preferences are stored privately and reach the rest of
+    // the app only through the validating accessors further down.
+
+    @AppStorage var selectedVoiceID: String {
         didSet { broadcastChanges(); syncToConfig() }
     }
-    @AppStorage("wordsPerMinute") var wordsPerMinute: Double = 200 {
+    /// Stored speed; use `wordsPerMinute`.
+    @AppStorage private var storedWordsPerMinute: Double {
         didSet { broadcastChanges(); syncToConfig() }
     }
-    @AppStorage("pitchMultiplier") var pitchMultiplier: Double = 1.0 {
+    /// Stored pitch; use `pitchMultiplier`.
+    @AppStorage private var storedPitchMultiplier: Double {
         didSet { broadcastChanges(); syncToConfig() }
     }
-    @AppStorage("selectedLanguage") var selectedLanguage: String = "en" {
+    @AppStorage var selectedLanguage: String {
         didSet { syncToConfig() }
     }
-    @AppStorage("skipForwardUnit") var skipForwardUnitRaw: String = SkipUnit.seconds15.rawValue {
+    @AppStorage var skipForwardUnitRaw: String {
         didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
-    @AppStorage("skipBackwardUnit") var skipBackwardUnitRaw: String = SkipUnit.seconds15.rawValue {
+    @AppStorage var skipBackwardUnitRaw: String {
         didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
 
-    @AppStorage("shiftSkipForwardUnit") var shiftSkipForwardUnitRaw: String = SkipUnit.seconds30.rawValue {
+    @AppStorage var shiftSkipForwardUnitRaw: String {
         didSet { syncToConfig() }
     }
-    @AppStorage("shiftSkipBackwardUnit") var shiftSkipBackwardUnitRaw: String = SkipUnit.seconds30.rawValue {
+    @AppStorage var shiftSkipBackwardUnitRaw: String {
         didSet { syncToConfig() }
     }
 
-    @AppStorage("rewindOnResumeUnit") var rewindOnResumeUnitRaw: String = RewindUnit.none.rawValue {
+    @AppStorage var rewindOnResumeUnitRaw: String {
         didSet { syncToConfig() }
     }
-    @AppStorage("rewindSmartMode") var rewindSmartMode: Bool = false {
+    @AppStorage var rewindSmartMode: Bool {
         didSet { syncToConfig() }
     }
-    @AppStorage("rewindSmartThreshold") var rewindSmartThreshold: Double = 70 {
+    /// Stored smart-rewind threshold; use `rewindSmartThreshold`.
+    @AppStorage private var storedRewindSmartThreshold: Double {
         didSet { syncToConfig() }
     }
-    @AppStorage("sleepFadeOutDuration") var sleepFadeOutDuration: Double = 0 {
+    /// Stored fade-out duration; use `sleepFadeOutDuration`.
+    @AppStorage private var storedSleepFadeOutDuration: Double {
         didSet { syncToConfig() }
     }
-    @AppStorage("sleepTimerAutoClose") var sleepTimerAutoClose: Bool = true {
+    @AppStorage var sleepTimerAutoClose: Bool {
         didSet { syncToConfig() }
     }
-    @AppStorage("endOfBookBehavior") var endOfBookBehaviorRaw: String = EndOfBookBehavior.stop.rawValue {
+    @AppStorage var endOfBookBehaviorRaw: String {
         didSet { syncToConfig() }
     }
-    @AppStorage("punctuationPauseLevel") var punctuationPauseLevel: Double = 0 {
+    /// Stored punctuation pause level; use `punctuationPauseLevel`.
+    @AppStorage private var storedPunctuationPauseLevel: Double {
         didSet { syncToConfig() }
     }
-    @AppStorage("autoPlayOnNavigate") var autoPlayOnNavigate: Bool = false {
+    @AppStorage var autoPlayOnNavigate: Bool {
         didSet { syncToConfig() }
     }
-    @AppStorage("showBookmarkInPlaybackControls") var showBookmarkInPlaybackControls: Bool = false {
+    @AppStorage var showBookmarkInPlaybackControls: Bool {
         didSet { publishPlaybackControlsChange() }
     }
-    @AppStorage("showSpeedInPlaybackControls") var showSpeedInPlaybackControls: Bool = true {
+    @AppStorage var showSpeedInPlaybackControls: Bool {
         didSet { publishPlaybackControlsChange() }
     }
-    @AppStorage("playbackNavigationUnitControlMode")
-    var playbackNavigationUnitControlModeRaw: String = PlaybackNavigationUnitControlMode.none.rawValue {
+    @AppStorage var playbackNavigationUnitControlModeRaw: String {
         didSet { publishPlaybackControlsChange() }
     }
 
     /// Whether to monitor Bluetooth device disconnections and suppress
     /// spurious media commands from macOS's rcd daemon.
-    @AppStorage("bluetoothMonitoringEnabled") var bluetoothMonitoringEnabled: Bool = true {
+    @AppStorage var bluetoothMonitoringEnabled: Bool {
         didSet { broadcastBluetoothChanges(); syncToConfig() }
     }
-    /// How long (in seconds) to suppress spurious media commands after
-    /// a Bluetooth audio device disconnects. Range: 1–10, default 2.
-    @AppStorage("bluetoothDisconnectDelay") var bluetoothDisconnectDelay: Double = 2.0 {
+    /// Stored Bluetooth delay; use `bluetoothDisconnectDelay`.
+    @AppStorage private var storedBluetoothDisconnectDelay: Double {
         didSet { broadcastBluetoothChanges(); syncToConfig() }
     }
 
@@ -243,21 +255,18 @@ final class SettingsViewModel: ObservableObject {
     /// opt-in because it monitors every media-key press and could
     /// surprise users who just want their headphone buttons to do
     /// what they normally do.
-    @AppStorage("restartTimerGestureEnabled") var restartTimerGestureEnabled: Bool = false {
+    @AppStorage var restartTimerGestureEnabled: Bool {
         didSet { broadcastGestureChanges(); syncToConfig() }
     }
     /// Comma-separated event-type sequence (see `MediaGestureDetector.EventType`).
     /// Default "previousTrack,previousTrack,previousTrack" — three
     /// previous-track presses in a row, picked because it's
     /// vanishingly unlikely to occur accidentally during normal use.
-    @AppStorage("restartTimerGesturePattern") var restartTimerGesturePattern: String = "previousTrack,previousTrack,previousTrack" {
+    @AppStorage var restartTimerGesturePattern: String {
         didSet { broadcastGestureChanges(); syncToConfig() }
     }
-    /// Maximum total elapsed time (seconds) for the gesture to count
-    /// as a match. 0.5–10s; 2.0 is the default — long enough for a
-    /// deliberate sequence, short enough that real navigation use
-    /// won't accidentally trigger.
-    @AppStorage("restartTimerGestureWindow") var restartTimerGestureWindow: Double = 2.0 {
+    /// Stored gesture window; use `restartTimerGestureWindow`.
+    @AppStorage private var storedRestartTimerGestureWindow: Double {
         didSet { broadcastGestureChanges(); syncToConfig() }
     }
 
@@ -273,42 +282,95 @@ final class SettingsViewModel: ObservableObject {
     private var configCancellable: AnyCancellable?
     private var isSyncingFromConfig = false
 
+    // MARK: - Validated numeric preferences
+    //
+    // Consumers read these instead of the stored values. A read clamps
+    // whatever is stored and a write clamps before storing, so every value
+    // that leaves this model is one the Settings controls could produce.
+
+    /// Global speech speed in words per minute.
+    var wordsPerMinute: Double {
+        get { SettingsPolicy.wordsPerMinute.clamped(storedWordsPerMinute) }
+        set { storedWordsPerMinute = SettingsPolicy.wordsPerMinute.clamped(newValue) }
+    }
+
+    /// Global pitch multiplier; 1 is normal.
+    var pitchMultiplier: Double {
+        get { SettingsPolicy.pitchMultiplier.clamped(storedPitchMultiplier) }
+        set { storedPitchMultiplier = SettingsPolicy.pitchMultiplier.clamped(newValue) }
+    }
+
+    /// Seconds a pause must last before smart rewind-on-resume rewinds.
+    var rewindSmartThreshold: Double {
+        get { SettingsPolicy.rewindSmartThreshold.clamped(storedRewindSmartThreshold) }
+        set { storedRewindSmartThreshold = SettingsPolicy.rewindSmartThreshold.clamped(newValue) }
+    }
+
+    /// Seconds the sleep timer fades out before pausing; 0 pauses instantly.
+    var sleepFadeOutDuration: Double {
+        get { SettingsPolicy.sleepFadeOutDuration.clamped(storedSleepFadeOutDuration) }
+        set { storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.clamped(newValue) }
+    }
+
+    /// Punctuation pause level: 0 off, 1 subtle, 2 moderate, 3 heavy.
+    var punctuationPauseLevel: Double {
+        get { SettingsPolicy.punctuationPauseLevel.clamped(storedPunctuationPauseLevel) }
+        set { storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.clamped(newValue) }
+    }
+
+    /// How long (in seconds) to suppress spurious media commands after
+    /// a Bluetooth audio device disconnects. Range: 1–10, default 2.
+    var bluetoothDisconnectDelay: Double {
+        get { SettingsPolicy.bluetoothDisconnectDelay.clamped(storedBluetoothDisconnectDelay) }
+        set { storedBluetoothDisconnectDelay = SettingsPolicy.bluetoothDisconnectDelay.clamped(newValue) }
+    }
+
+    /// Maximum total elapsed time (seconds) for the gesture to count
+    /// as a match. 0.5–10s; 2.0 is the default — long enough for a
+    /// deliberate sequence, short enough that real navigation use
+    /// won't accidentally trigger.
+    var restartTimerGestureWindow: Double {
+        get { SettingsPolicy.restartTimerGestureWindow.clamped(storedRestartTimerGestureWindow) }
+        set { storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.clamped(newValue) }
+    }
+
+    // MARK: - Typed enum-backed preferences
+    //
+    // An unsupported stored raw value reads as the rule's default case.
+
     var skipForwardUnit: SkipUnit {
-        get { SkipUnit(rawValue: skipForwardUnitRaw) ?? .seconds15 }
+        get { SettingsPolicy.skipForwardUnit.value(fromRaw: skipForwardUnitRaw) }
         set { skipForwardUnitRaw = newValue.rawValue }
     }
 
     var skipBackwardUnit: SkipUnit {
-        get { SkipUnit(rawValue: skipBackwardUnitRaw) ?? .seconds15 }
+        get { SettingsPolicy.skipBackwardUnit.value(fromRaw: skipBackwardUnitRaw) }
         set { skipBackwardUnitRaw = newValue.rawValue }
     }
 
     var shiftSkipForwardUnit: SkipUnit {
-        get { SkipUnit(rawValue: shiftSkipForwardUnitRaw) ?? .seconds30 }
+        get { SettingsPolicy.shiftSkipForwardUnit.value(fromRaw: shiftSkipForwardUnitRaw) }
         set { shiftSkipForwardUnitRaw = newValue.rawValue }
     }
 
     var shiftSkipBackwardUnit: SkipUnit {
-        get { SkipUnit(rawValue: shiftSkipBackwardUnitRaw) ?? .seconds30 }
+        get { SettingsPolicy.shiftSkipBackwardUnit.value(fromRaw: shiftSkipBackwardUnitRaw) }
         set { shiftSkipBackwardUnitRaw = newValue.rawValue }
     }
 
     /// Typed view of the persisted playback-bar navigation control mode.
     var playbackNavigationUnitControlMode: PlaybackNavigationUnitControlMode {
-        get {
-            PlaybackNavigationUnitControlMode(rawValue: playbackNavigationUnitControlModeRaw)
-                ?? .none
-        }
+        get { SettingsPolicy.playbackNavigationUnitControlMode.value(fromRaw: playbackNavigationUnitControlModeRaw) }
         set { playbackNavigationUnitControlModeRaw = newValue.rawValue }
     }
 
     var endOfBookBehavior: EndOfBookBehavior {
-        get { EndOfBookBehavior(rawValue: endOfBookBehaviorRaw) ?? .stop }
+        get { SettingsPolicy.endOfBookBehavior.value(fromRaw: endOfBookBehaviorRaw) }
         set { endOfBookBehaviorRaw = newValue.rawValue }
     }
 
     var rewindOnResumeUnit: RewindUnit {
-        get { RewindUnit(rawValue: rewindOnResumeUnitRaw) ?? .none }
+        get { SettingsPolicy.rewindOnResumeUnit.value(fromRaw: rewindOnResumeUnitRaw) }
         set { rewindOnResumeUnitRaw = newValue.rawValue }
     }
 
@@ -319,11 +381,57 @@ final class SettingsViewModel: ObservableObject {
         playbackControlsSettingsRevision &+= 1
     }
 
+    /// - Parameters:
+    ///   - notificationCenter: Receives settings-change broadcasts.
+    ///   - initializeServices: False skips voice discovery and config.json
+    ///     synchronization, for tests.
+    ///   - userDefaults: The store holding every preference. Tests pass an
+    ///     isolated suite so they never read or change the user's settings.
     init(
         notificationCenter: NotificationCenter = .default,
-        initializeServices: Bool = true
+        initializeServices: Bool = true,
+        userDefaults: UserDefaults = .standard
     ) {
         self.notificationCenter = notificationCenter
+        // Bind every preference to `userDefaults` before anything reads one.
+        // The keys are the ones every release has used, so saved preferences
+        // keep loading.
+        _selectedVoiceID = AppStorage(wrappedValue: "", "selectedVoiceID", store: userDefaults)
+        _storedWordsPerMinute = SettingsPolicy.wordsPerMinute.appStorage(in: userDefaults)
+        _storedPitchMultiplier = SettingsPolicy.pitchMultiplier.appStorage(in: userDefaults)
+        _selectedLanguage = AppStorage(wrappedValue: "en", "selectedLanguage", store: userDefaults)
+        _skipForwardUnitRaw = SettingsPolicy.skipForwardUnit.appStorage(in: userDefaults)
+        _skipBackwardUnitRaw = SettingsPolicy.skipBackwardUnit.appStorage(in: userDefaults)
+        _shiftSkipForwardUnitRaw = SettingsPolicy.shiftSkipForwardUnit.appStorage(in: userDefaults)
+        _shiftSkipBackwardUnitRaw = SettingsPolicy.shiftSkipBackwardUnit.appStorage(in: userDefaults)
+        _rewindOnResumeUnitRaw = SettingsPolicy.rewindOnResumeUnit.appStorage(in: userDefaults)
+        _rewindSmartMode = AppStorage(wrappedValue: false, "rewindSmartMode", store: userDefaults)
+        _storedRewindSmartThreshold = SettingsPolicy.rewindSmartThreshold.appStorage(in: userDefaults)
+        _storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.appStorage(in: userDefaults)
+        _sleepTimerAutoClose = AppStorage(wrappedValue: true, "sleepTimerAutoClose", store: userDefaults)
+        _endOfBookBehaviorRaw = SettingsPolicy.endOfBookBehavior.appStorage(in: userDefaults)
+        _storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.appStorage(in: userDefaults)
+        _autoPlayOnNavigate = AppStorage(wrappedValue: false, "autoPlayOnNavigate", store: userDefaults)
+        _showBookmarkInPlaybackControls = AppStorage(
+            wrappedValue: false, "showBookmarkInPlaybackControls", store: userDefaults
+        )
+        _showSpeedInPlaybackControls = AppStorage(
+            wrappedValue: true, "showSpeedInPlaybackControls", store: userDefaults
+        )
+        _playbackNavigationUnitControlModeRaw =
+            SettingsPolicy.playbackNavigationUnitControlMode.appStorage(in: userDefaults)
+        _bluetoothMonitoringEnabled = AppStorage(
+            wrappedValue: true, "bluetoothMonitoringEnabled", store: userDefaults
+        )
+        _storedBluetoothDisconnectDelay = SettingsPolicy.bluetoothDisconnectDelay.appStorage(in: userDefaults)
+        _restartTimerGestureEnabled = AppStorage(
+            wrappedValue: false, "restartTimerGestureEnabled", store: userDefaults
+        )
+        _restartTimerGesturePattern = AppStorage(
+            wrappedValue: "previousTrack,previousTrack,previousTrack", "restartTimerGesturePattern",
+            store: userDefaults
+        )
+        _storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.appStorage(in: userDefaults)
         guard initializeServices else { return }
         refreshVoices()
 
@@ -502,6 +610,25 @@ final class SettingsViewModel: ObservableObject {
 
     private func broadcastGestureChanges() {
         notificationCenter.post(name: .restartTimerGestureSettingsChanged, object: nil)
+    }
+}
+
+// MARK: - Preference storage from the policy table
+
+private extension NumericSettingRule {
+    /// `@AppStorage` storage for this preference's key and default in `store`.
+    @MainActor
+    func appStorage(in store: UserDefaults) -> AppStorage<Double> {
+        AppStorage(wrappedValue: defaultValue, key, store: store)
+    }
+}
+
+private extension EnumSettingRule {
+    /// `@AppStorage` storage for this preference's raw value in `store`,
+    /// defaulting to the rule's default case.
+    @MainActor
+    func appStorage(in store: UserDefaults) -> AppStorage<String> {
+        AppStorage(wrappedValue: defaultValue.rawValue, key, store: store)
     }
 }
 

@@ -163,6 +163,133 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(TextMouthPaths.root, originalRoot)
     }
 
+    // MARK: - Preference store read path
+
+    /// An empty store reads every preference's default, including the ones
+    /// whose defaults now come from `SettingsPolicy`.
+    func testEmptyStoreReadsEveryDefault() throws {
+        let viewModel = makeIsolatedViewModel(try isolatedDefaults())
+
+        XCTAssertEqual(viewModel.selectedVoiceID, "")
+        XCTAssertEqual(viewModel.wordsPerMinute, 200)
+        XCTAssertEqual(viewModel.pitchMultiplier, 1)
+        XCTAssertEqual(viewModel.selectedLanguage, "en")
+        XCTAssertEqual(viewModel.skipForwardUnit, .seconds15)
+        XCTAssertEqual(viewModel.skipBackwardUnit, .seconds15)
+        XCTAssertEqual(viewModel.shiftSkipForwardUnit, .seconds30)
+        XCTAssertEqual(viewModel.shiftSkipBackwardUnit, .seconds30)
+        XCTAssertEqual(viewModel.rewindOnResumeUnit, RewindUnit.none)
+        XCTAssertFalse(viewModel.rewindSmartMode)
+        XCTAssertEqual(viewModel.rewindSmartThreshold, 70)
+        XCTAssertEqual(viewModel.sleepFadeOutDuration, 0)
+        XCTAssertTrue(viewModel.sleepTimerAutoClose)
+        XCTAssertEqual(viewModel.endOfBookBehavior, .stop)
+        XCTAssertEqual(viewModel.punctuationPauseLevel, 0)
+        XCTAssertFalse(viewModel.autoPlayOnNavigate)
+        XCTAssertFalse(viewModel.showBookmarkInPlaybackControls)
+        XCTAssertTrue(viewModel.showSpeedInPlaybackControls)
+        XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, PlaybackNavigationUnitControlMode.none)
+        XCTAssertTrue(viewModel.bluetoothMonitoringEnabled)
+        XCTAssertEqual(viewModel.bluetoothDisconnectDelay, 2)
+        XCTAssertFalse(viewModel.restartTimerGestureEnabled)
+        XCTAssertEqual(viewModel.restartTimerGesturePattern, "previousTrack,previousTrack,previousTrack")
+        XCTAssertEqual(viewModel.restartTimerGestureWindow, 2)
+    }
+
+    /// Every preference reads the key it has always used, from the injected
+    /// store only, so saved preferences keep loading after the refactor.
+    func testEveryPreferenceReadsItsKeyFromTheInjectedStore() throws {
+        let defaults = try isolatedDefaults()
+        let stored: [String: Any] = [
+            "selectedVoiceID": "voice.injected",
+            "wordsPerMinute": 333.0,
+            "pitchMultiplier": 1.7,
+            "selectedLanguage": "sv",
+            "skipForwardUnit": SkipUnit.heading.rawValue,
+            "skipBackwardUnit": SkipUnit.sentence.rawValue,
+            "shiftSkipForwardUnit": SkipUnit.bookmark.rawValue,
+            "shiftSkipBackwardUnit": SkipUnit.subheading.rawValue,
+            "rewindOnResumeUnit": RewindUnit.paragraph.rawValue,
+            "rewindSmartMode": true,
+            "rewindSmartThreshold": 95.0,
+            "sleepFadeOutDuration": 4.0,
+            "sleepTimerAutoClose": false,
+            "endOfBookBehavior": EndOfBookBehavior.loop.rawValue,
+            "punctuationPauseLevel": 2.0,
+            "autoPlayOnNavigate": true,
+            "showBookmarkInPlaybackControls": true,
+            "showSpeedInPlaybackControls": false,
+            "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,
+            "bluetoothMonitoringEnabled": false,
+            "bluetoothDisconnectDelay": 6.0,
+            "restartTimerGestureEnabled": true,
+            "restartTimerGesturePattern": "nextTrack,nextTrack",
+            "restartTimerGestureWindow": 4.5,
+        ]
+        for (key, value) in stored {
+            defaults.set(value, forKey: key)
+        }
+
+        let viewModel = makeIsolatedViewModel(defaults)
+
+        XCTAssertEqual(viewModel.selectedVoiceID, "voice.injected")
+        XCTAssertEqual(viewModel.wordsPerMinute, 333)
+        XCTAssertEqual(viewModel.pitchMultiplier, 1.7)
+        XCTAssertEqual(viewModel.selectedLanguage, "sv")
+        XCTAssertEqual(viewModel.skipForwardUnit, .heading)
+        XCTAssertEqual(viewModel.skipBackwardUnit, .sentence)
+        XCTAssertEqual(viewModel.shiftSkipForwardUnit, .bookmark)
+        XCTAssertEqual(viewModel.shiftSkipBackwardUnit, .subheading)
+        XCTAssertEqual(viewModel.rewindOnResumeUnit, .paragraph)
+        XCTAssertTrue(viewModel.rewindSmartMode)
+        XCTAssertEqual(viewModel.rewindSmartThreshold, 95)
+        XCTAssertEqual(viewModel.sleepFadeOutDuration, 4)
+        XCTAssertFalse(viewModel.sleepTimerAutoClose)
+        XCTAssertEqual(viewModel.endOfBookBehavior, .loop)
+        XCTAssertEqual(viewModel.punctuationPauseLevel, 2)
+        XCTAssertTrue(viewModel.autoPlayOnNavigate)
+        XCTAssertTrue(viewModel.showBookmarkInPlaybackControls)
+        XCTAssertFalse(viewModel.showSpeedInPlaybackControls)
+        XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, .separate)
+        XCTAssertFalse(viewModel.bluetoothMonitoringEnabled)
+        XCTAssertEqual(viewModel.bluetoothDisconnectDelay, 6)
+        XCTAssertTrue(viewModel.restartTimerGestureEnabled)
+        XCTAssertEqual(viewModel.restartTimerGesturePattern, "nextTrack,nextTrack")
+        XCTAssertEqual(viewModel.restartTimerGestureWindow, 4.5)
+    }
+
+    /// Values written straight into the store, as `defaults write` does,
+    /// never leave the model unvalidated: numbers are clamped (non-finite
+    /// ones become the default) and unsupported choices read as the default.
+    func testInjectedPreferencesAreValidatedOnRead() throws {
+        let defaults = try isolatedDefaults()
+        defaults.set(1e308, forKey: "wordsPerMinute")
+        defaults.set(-4.0, forKey: "pitchMultiplier")
+        defaults.set(Double.infinity, forKey: "rewindSmartThreshold")
+        defaults.set(Double.nan, forKey: "sleepFadeOutDuration")
+        defaults.set(-2.0, forKey: "punctuationPauseLevel")
+        defaults.set(0.0, forKey: "bluetoothDisconnectDelay")
+        defaults.set("9000", forKey: "restartTimerGestureWindow")
+        defaults.set("17 seconds", forKey: "skipForwardUnit")
+        defaults.set("Chapter", forKey: "rewindOnResumeUnit")
+        defaults.set("Shuffle", forKey: "endOfBookBehavior")
+        defaults.set("Floating Menu", forKey: "playbackNavigationUnitControlMode")
+
+        let viewModel = makeIsolatedViewModel(defaults)
+
+        XCTAssertEqual(viewModel.wordsPerMinute, 650)
+        XCTAssertEqual(viewModel.pitchMultiplier, 0.5)
+        XCTAssertEqual(viewModel.rewindSmartThreshold, 70)
+        XCTAssertEqual(viewModel.sleepFadeOutDuration, 0)
+        XCTAssertEqual(viewModel.punctuationPauseLevel, 0)
+        XCTAssertEqual(viewModel.bluetoothDisconnectDelay, 1)
+        XCTAssertEqual(viewModel.restartTimerGestureWindow, 10)
+        XCTAssertEqual(viewModel.skipForwardUnit, .seconds15)
+        XCTAssertEqual(viewModel.rewindOnResumeUnit, RewindUnit.none)
+        XCTAssertEqual(viewModel.endOfBookBehavior, .stop)
+        XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, PlaybackNavigationUnitControlMode.none)
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or
@@ -304,6 +431,25 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// A throwaway preferences suite, deleted when the test ends, so tests
+    /// never read or change the user's real settings.
+    private func isolatedDefaults() throws -> UserDefaults {
+        let suiteName = "com.textmouth.tests.config-sync.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+        return defaults
+    }
+
+    /// A settings model bound to `defaults` that starts no services and
+    /// posts only to a private notification center.
+    private func makeIsolatedViewModel(_ defaults: UserDefaults) -> SettingsViewModel {
+        SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: defaults
+        )
+    }
 
     /// Decodes config.json text the way `ConfigService.loadFromDisk()` does.
     private func decodeConfig(_ json: String) throws -> ConfigService.AppConfig {
