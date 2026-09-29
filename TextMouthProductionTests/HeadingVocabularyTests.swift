@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -188,17 +189,22 @@ final class ReaderHeadingLocationTests: XCTestCase {
         )
     }
 
-    /// A reader whose source file does not exist, so its background load
-    /// fails harmlessly and each test assigns content directly. The unique
+    /// A book whose source file does not exist, so a reader's background load
+    /// fails harmlessly and the test assigns content directly. The unique
     /// path keeps fixtures from sharing persisted library state.
-    private func makeReader(bookmarks: [Bookmark] = []) -> ReaderViewModel {
-        let book = Book(
+    private func missingSourceBook(bookmarks: [Bookmark] = []) -> Book {
+        Book(
             title: "Heading Vocabulary",
             format: .txt,
             filePath: "/tmp/\(UUID().uuidString)-heading-vocabulary.txt",
             md5Hash: UUID().uuidString,
             bookmarks: bookmarks
         )
+    }
+
+    /// Open `book` in a reader backed by an isolated library and settings.
+    private func makeReader(book: Book? = nil) -> ReaderViewModel {
+        let book = book ?? missingSourceBook()
         let library = LibraryViewModel()
         library.library = Library(books: [book])
         return ReaderViewModel(
@@ -206,6 +212,34 @@ final class ReaderHeadingLocationTests: XCTestCase {
             libraryViewModel: library,
             settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
         )
+    }
+
+    /// Write `text` as a plain-text book inside a disposable package, open it
+    /// at `savedOffset`, and wait for the production loader to finish. The
+    /// loader leaves the display cursor on the saved position, just as the
+    /// reader header sees it. Callers close the returned reader.
+    private func loadPlainTextBook(_ text: String, savedOffset: Int) async throws -> ReaderViewModel {
+        let packageName = "\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let source = package.appendingPathComponent("book.txt")
+        try Data(text.utf8).write(to: source)
+        let book = Book(
+            title: "Harbor Log",
+            format: .txt,
+            filePath: source.path,
+            md5Hash: UUID().uuidString,
+            readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: savedOffset),
+            tmbDirectoryName: packageName
+        )
+        let reader = makeReader(book: book)
+        let loaded = expectation(description: "Content loaded")
+        let subscription = reader.$isLoading.filter { !$0 }.prefix(1).sink { _ in loaded.fulfill() }
+        defer { subscription.cancel() }
+        await fulfillment(of: [loaded], timeout: 10)
+        XCTAssertNil(reader.errorMessage)
+        return reader
     }
 
     func testAssigningContentPublishesItsHeadings() {
@@ -220,5 +254,55 @@ final class ReaderHeadingLocationTests: XCTestCase {
         reader.content = nil
 
         XCTAssertTrue(reader.headings.isEmpty)
+    }
+
+    /// The header names the heading holding the display cursor and numbers
+    /// it among every heading, rather than showing a content unit count.
+    func testHeaderNamesAndNumbersTheHeadingBeingRead() async throws {
+        let prose = String(repeating: "Steady prose continues here. ", count: 20)
+        let reader = try await loadPlainTextBook(
+            "# Harbor\n\nShort opening.\n\n# Crossing\n\n\(prose)",
+            savedOffset: 300
+        )
+        defer { reader.close() }
+
+        let position = reader.displayHeadingPosition
+
+        XCTAssertEqual(reader.headings.map(\.text), ["Harbor", "Crossing"])
+        XCTAssertEqual(position.label, "Heading 2 of 2")
+        XCTAssertEqual(reader.locationTitle(for: position, chapterIndex: reader.displayChapterIndex), "Crossing")
+    }
+
+    /// A single-unit book without headings shows no heading line at all: its
+    /// only content title repeats the book title, and there is no count.
+    func testHeaderOmitsHeadingLinesForABookWithoutHeadings() async throws {
+        let reader = try await loadPlainTextBook(
+            "Just a few sentences of prose. Nothing else is here to find.",
+            savedOffset: 20
+        )
+        defer { reader.close() }
+
+        let position = reader.displayHeadingPosition
+
+        XCTAssertTrue(reader.headings.isEmpty)
+        XCTAssertEqual(position.label, "")
+        XCTAssertNil(reader.locationTitle(for: position, chapterIndex: reader.displayChapterIndex))
+    }
+
+    /// Books without headings still name a content unit whose title adds
+    /// something beyond the book title.
+    func testLocationTitleFallsBackToADistinctContentTitleWithoutHeadings() {
+        let reader = makeReader()
+        defer { reader.close() }
+        reader.content = DocumentContent(
+            title: "Fixture",
+            author: "Tester",
+            chapters: [Chapter(title: "Appendix Notes", text: "Plain text without headings.")]
+        )
+
+        let position = HeadingPosition(in: reader.headings, chapterIndex: 0, characterOffset: 5)
+
+        XCTAssertEqual(reader.locationTitle(for: position, chapterIndex: 0), "Appendix Notes")
+        XCTAssertNil(reader.locationTitle(for: position, chapterIndex: 7))
     }
 }

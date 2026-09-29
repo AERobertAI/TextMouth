@@ -219,6 +219,24 @@ extension ReaderViewModel {
         whereAmISynth.speak(utterance)
     }
 
+    // MARK: - Heading Location
+
+    /// Heading-based location of the throttled display cursor. The reader
+    /// header reads it, so the header follows playback across headings
+    /// without re-rendering on every spoken word.
+    var displayHeadingPosition: HeadingPosition {
+        HeadingPosition(in: headings, chapterIndex: displayChapterIndex, characterOffset: displayCharacterOffset)
+    }
+
+    /// Name for `position`, which lies in content unit `chapterIndex`: the
+    /// containing heading's text, or for a book without headings that unit's
+    /// own title (see `HeadingPosition.title(contentTitle:bookTitle:)`).
+    func locationTitle(for position: HeadingPosition, chapterIndex: Int) -> String? {
+        let chapters = content?.chapters ?? []
+        let contentTitle = chapters.indices.contains(chapterIndex) ? chapters[chapterIndex].title : nil
+        return position.title(contentTitle: contentTitle, bookTitle: book.title)
+    }
+
     /// Find the heading at or before the current reading position
     func currentHeadingAtPosition() -> Heading? {
         guard let content = content else { return nil }
