@@ -12,6 +12,23 @@ struct FolderSortSetting: Codable, Equatable {
     static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
 }
 
+/// What `Library.mergeEquivalentFolders` changed, for logging and for
+/// persisting the package records of books that moved.
+struct EquivalentFolderRepair: Equatable {
+    /// A duplicate folder row folded into the earlier equivalent folder.
+    struct Merge: Equatable {
+        let duplicatePath: String
+        let survivingPath: String
+    }
+
+    /// Duplicate rows removed, parents before children.
+    var merges: [Merge] = []
+    /// Books whose folder path moved onto a surviving folder's spelling.
+    var relocatedBookIDs: [UUID] = []
+    /// Whether any folder, book, or sort setting changed.
+    var changedLibrary = false
+}
+
 struct Library: Codable {
     var books: [Book]
     var folders: [BookFolder]
@@ -108,65 +125,94 @@ struct Library: Codable {
 
     // MARK: - Folder Operations
 
-    mutating func createFolder(name: String, parentPath: String = "") -> BookFolder? {
-        guard let name = BookFolder.normalizedName(name),
-              BookFolder.isValidLibraryPath(parentPath) else { return nil }
-        let folder = BookFolder(name: name, parentPath: parentPath)
-        guard folder.depth <= BookFolder.maxDepth else { return nil }
-        guard !folders.contains(where: { $0.fullPath == folder.fullPath }) else { return nil }
+    /// Creates a folder, or throws the conflict that prevents it. A parent
+    /// path given in another spelling adopts the stored spelling of the
+    /// existing folder it names, and a name equivalent to a folder already at
+    /// that location is refused under the library volume's rule.
+    @discardableResult
+    mutating func createFolderThrowing(
+        name: String,
+        parentPath: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) -> BookFolder {
+        guard let name = BookFolder.normalizedName(name) else { throw .invalidName }
+        guard BookFolder.isValidLibraryPath(parentPath) else { throw .invalidPath(parentPath) }
+        let folder = BookFolder(
+            name: name,
+            parentPath: storedSpelling(of: parentPath, equivalence: equivalence)
+        )
+        guard folder.depth <= BookFolder.maxDepth else { throw .tooDeep(folder.fullPath) }
+        if let existing = existingFolder(equivalentTo: folder.fullPath, equivalence: equivalence) {
+            throw .nameInUse(proposedPath: folder.fullPath, existingPath: existing.fullPath)
+        }
         folders.append(folder)
         return folder
     }
 
-    /// Remove a folder, moving its contents to a destination path.
-    /// Pass empty string to move contents to library root.
-    mutating func removeFolder(id: UUID, movingContentsTo destination: String = "") {
-        guard let folder = folders.first(where: { $0.id == id }) else { return }
-        let folderPath = folder.fullPath
+    /// Creates a folder, returning nil when `createFolderThrowing` refuses it.
+    mutating func createFolder(
+        name: String,
+        parentPath: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) -> BookFolder? {
+        try? createFolderThrowing(name: name, parentPath: parentPath, equivalence: equivalence)
+    }
 
-        // Collect subfolders of the removed folder
-        let childFolders = folders.filter {
-            $0.parentPath == folderPath || $0.parentPath.hasPrefix(folderPath + "/")
+    /// Removes a folder and moves its books and subfolders, structure intact,
+    /// into `destination` (empty for the library root), or throws the
+    /// conflict that prevents it. Everything is validated before anything
+    /// changes: the destination must be the root or an existing folder outside
+    /// the removed subtree, no moved subfolder may land on a name already in
+    /// use there or on another moved subfolder's name, and the moved subtree
+    /// must stay within `BookFolder.maxDepth`. The removed folder's own name
+    /// is free for its contents, because it disappears in the same edit.
+    mutating func removeFolderThrowing(
+        id: UUID,
+        movingContentsTo destination: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        let (_, folder) = try editableFolder(id: id)
+        guard BookFolder.isValidLibraryPath(destination) else { throw .invalidPath(destination) }
+
+        // Resolve the destination to the stored spelling of the folder it names.
+        let target: String
+        if destination.isEmpty {
+            target = ""
+        } else if let existing = existingFolder(equivalentTo: destination, equivalence: equivalence) {
+            target = existing.fullPath
+        } else {
+            throw .destinationNotFound(destination)
         }
 
-        // Reparent direct child folders under the destination
-        for child in childFolders {
-            if let idx = folders.firstIndex(where: { $0.id == child.id }) {
-                if child.parentPath == folderPath {
-                    // Direct child of deleted folder — reparent to destination
-                    folders[idx].parentPath = destination
-                } else {
-                    // Deeper descendant — replace the deleted folder's prefix with destination
-                    let suffix = String(child.parentPath.dropFirst(folderPath.count))
-                    folders[idx].parentPath = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-                }
-            }
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        guard !subtree.contains(target) else {
+            throw .destinationInsideFolder(folderPath: folder.fullPath, destinationPath: target)
+        }
+        try validateRelocation(of: subtree, to: target, vacating: folder.id)
+
+        // The removed folder's own sort setting goes away; the settings of
+        // its subfolders move with them.
+        folderSortSettings = folderSortSettings.filter {
+            !equivalence.areEquivalent($0.key, folder.fullPath)
         }
 
-        // Move books to destination, preserving subfolder structure
-        for i in books.indices {
-            if books[i].folderPath == folderPath {
-                books[i].folderPath = destination
-            } else if books[i].folderPath.hasPrefix(folderPath + "/") {
-                let suffix = String(books[i].folderPath.dropFirst(folderPath.count))
-                books[i].folderPath = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-            }
-        }
-
-        // Update sort settings: reparent child paths, remove the deleted folder's entry
-        for key in folderSortSettings.keys {
-            if key == folderPath {
-                folderSortSettings.removeValue(forKey: key)
-            } else if key.hasPrefix(folderPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                let suffix = String(key.dropFirst(folderPath.count))
-                let newKey = destination.isEmpty ? String(suffix.dropFirst()) : destination + suffix
-                folderSortSettings[newKey] = setting
-            }
-        }
+        // Books and subfolders keep their structure under the destination.
+        relocate(subtree, to: target)
 
         // Remove only the folder itself (children have been reparented)
-        folders.removeAll { $0.id == id }
+        folders.removeAll { $0.id == folder.id }
+    }
+
+    /// Removes a folder, moving its contents to `destination` (the library
+    /// root by default). Returns false, changing nothing, when
+    /// `removeFolderThrowing` refuses the edit.
+    @discardableResult
+    mutating func removeFolder(
+        id: UUID,
+        movingContentsTo destination: String = "",
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? removeFolderThrowing(id: id, movingContentsTo: destination, equivalence: equivalence)) != nil
     }
 
     /// Remove a folder and ALL its contents (books and subfolders) from the library model.
@@ -200,120 +246,310 @@ struct Library: Codable {
         return removedBooks
     }
 
-    /// Move a folder to a new parent, preserving its internal structure.
-    /// Returns false if the move is invalid (cycle, depth exceeded, duplicate name).
-    @discardableResult
-    mutating func moveFolder(id: UUID, toParentPath newParent: String) -> Bool {
-        guard BookFolder.isValidLibraryPath(newParent) else { return false }
-        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
-        let folder = folders[folderIdx]
-        let oldPath = folder.fullPath
-        let newPath = newParent.isEmpty ? folder.name : "\(newParent)/\(folder.name)"
+    /// Moves a folder under a new parent, carrying its subfolders, books, and
+    /// sort settings along, or throws the conflict that prevents it: a
+    /// destination inside the folder itself, a folder at the destination with
+    /// an equivalent name, or a subtree that would exceed the depth limit.
+    mutating func moveFolderThrowing(
+        id: UUID,
+        toParentPath newParent: String,
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        guard BookFolder.isValidLibraryPath(newParent) else { throw .invalidPath(newParent) }
+        let (index, folder) = try editableFolder(id: id)
+        let parent = storedSpelling(of: newParent, equivalence: equivalence)
+        guard !equivalence.areEquivalent(parent, folder.parentPath) else { throw .unchanged }
 
-        // Prevent no-op
-        guard newPath != oldPath else { return false }
-
-        // Prevent moving into own descendant (cycle)
-        if newParent == oldPath || newParent.hasPrefix(oldPath + "/") { return false }
-
-        // Check depth limit
-        let newDepth = newPath.components(separatedBy: "/").count
-        guard newDepth <= BookFolder.maxDepth else { return false }
-
-        // Check for name collision at destination
-        if folders.contains(where: { $0.fullPath == newPath }) { return false }
-
-        // Also check that the deepest subfolder won't exceed max depth
-        let depthIncrease = newDepth - oldPath.components(separatedBy: "/").count
-        let maxSubfolderDepth = folders
-            .filter { $0.fullPath.hasPrefix(oldPath + "/") }
-            .map { $0.depth }
-            .max() ?? 0
-        if maxSubfolderDepth + depthIncrease > BookFolder.maxDepth { return false }
-
-        // Update the folder itself
-        folders[folderIdx].parentPath = newParent
-
-        // Update all subfolders: replace oldPath prefix with newPath
-        for i in folders.indices {
-            if folders[i].parentPath == oldPath {
-                folders[i].parentPath = newPath
-            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
-                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
-            }
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        guard !subtree.contains(parent) else {
+            throw .destinationInsideFolder(folderPath: folder.fullPath, destinationPath: parent)
         }
+        let newPath = BookFolder(name: folder.name, parentPath: parent).fullPath
+        try validateRelocation(of: subtree, to: newPath, vacating: nil)
 
-        // Update all books in the moved tree
-        for i in books.indices {
-            if books[i].folderPath == oldPath {
-                books[i].folderPath = newPath
-            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
-                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
-            }
-        }
-
-        // Remap sort settings from old paths to new paths
-        for key in folderSortSettings.keys {
-            if key == oldPath {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath] = setting
-            } else if key.hasPrefix(oldPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
-            }
-        }
-
-        return true
+        // Carry descendants, books, and sort settings along, then reparent
+        // the folder itself (its own parent lies outside the moved subtree).
+        relocate(subtree, to: newPath)
+        folders[index].parentPath = parent
     }
 
-    /// Rename a folder, updating all subfolder and book paths.
-    /// Returns false if the name is empty, unchanged, or would collide with a sibling.
+    /// Moves a folder, returning false when `moveFolderThrowing` refuses it.
     @discardableResult
-    mutating func renameFolder(id: UUID, to newName: String) -> Bool {
-        guard let sanitized = BookFolder.normalizedName(newName) else { return false }
-        guard let folderIdx = folders.firstIndex(where: { $0.id == id }) else { return false }
-        let folder = folders[folderIdx]
-        guard sanitized != folder.name else { return false }
+    mutating func moveFolder(
+        id: UUID,
+        toParentPath newParent: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? moveFolderThrowing(id: id, toParentPath: newParent, equivalence: equivalence)) != nil
+    }
 
-        let oldPath = folder.fullPath
-        let newPath = folder.parentPath.isEmpty ? sanitized : "\(folder.parentPath)/\(sanitized)"
+    /// Renames a folder, carrying its subfolders, books, and sort settings
+    /// along, or throws the conflict that prevents it. A case-only or
+    /// normalization-only change of the same folder is allowed: the new name
+    /// only has to differ from every other folder at that location.
+    mutating func renameFolderThrowing(
+        id: UUID,
+        to newName: String,
+        equivalence: FolderPathEquivalence = .library
+    ) throws(FolderOperationConflict) {
+        guard let sanitized = BookFolder.normalizedName(newName) else { throw .invalidName }
+        let (index, folder) = try editableFolder(id: id)
+        // Compare exact spellings: turning a decomposed legacy name into its
+        // composed form is a real rename, even though Swift's == calls the
+        // two names equal.
+        guard !BookFolder.spellingsMatch(sanitized, folder.name) else { throw .unchanged }
 
-        // Check for name collision with a sibling folder
-        if folders.contains(where: { $0.fullPath == newPath }) { return false }
+        let subtree = FolderSubtree(rootPath: folder.fullPath, equivalence: equivalence)
+        let newPath = BookFolder(name: sanitized, parentPath: folder.parentPath).fullPath
+        try validateRelocation(of: subtree, to: newPath, vacating: nil)
 
-        // Update the folder name
-        folders[folderIdx].name = sanitized
+        // Carry descendants, books, and sort settings along, then rename the
+        // folder itself.
+        relocate(subtree, to: newPath)
+        folders[index].name = sanitized
+    }
 
-        // Update all subfolder parentPaths that referenced the old path
-        for i in folders.indices {
-            if folders[i].parentPath == oldPath {
-                folders[i].parentPath = newPath
-            } else if folders[i].parentPath.hasPrefix(oldPath + "/") {
-                folders[i].parentPath = newPath + String(folders[i].parentPath.dropFirst(oldPath.count))
+    /// Renames a folder, returning false when `renameFolderThrowing` refuses it.
+    @discardableResult
+    mutating func renameFolder(
+        id: UUID,
+        to newName: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> Bool {
+        (try? renameFolderThrowing(id: id, to: newName, equivalence: equivalence)) != nil
+    }
+
+    // MARK: - Folder Path Resolution
+
+    /// The first folder whose path names the same directory as `path` under
+    /// `equivalence`.
+    func existingFolder(
+        equivalentTo path: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> BookFolder? {
+        let key = equivalence.comparisonKey(for: path)
+        return folders.first { equivalence.comparisonKey(for: $0.fullPath) == key }
+    }
+
+    /// `path` respelled with the stored spelling of each existing folder it
+    /// passes through, so "work/reports" resolves to the "Work/Reports" rows
+    /// it names on a case-insensitive volume. Components that match no folder
+    /// keep their spelling.
+    func storedSpelling(
+        of path: String,
+        equivalence: FolderPathEquivalence = .library
+    ) -> String {
+        // The first spelling wins, matching the row duplicate repair keeps.
+        var spellings: [String: String] = [:]
+        for folder in folders {
+            let key = equivalence.comparisonKey(for: folder.fullPath)
+            if spellings[key] == nil { spellings[key] = folder.fullPath }
+        }
+        return Self.resolve(path, against: spellings, equivalence: equivalence)
+    }
+
+    /// Resolves `path` one component at a time against `spellings`, which
+    /// maps comparison keys to stored folder paths, so each prefix takes the
+    /// stored spelling of the folder it names. Unmatched components are kept.
+    private static func resolve(
+        _ path: String,
+        against spellings: [String: String],
+        equivalence: FolderPathEquivalence
+    ) -> String {
+        guard !path.isEmpty else { return path }
+        var resolved: [String] = []
+        for component in FolderSubtree.components(of: path) {
+            let candidate = FolderSubtree.path(from: resolved + [component])
+            let stored = spellings[equivalence.comparisonKey(for: candidate)] ?? candidate
+            resolved = FolderSubtree.components(of: stored)
+        }
+        return FolderSubtree.path(from: resolved)
+    }
+
+    // MARK: - Equivalent Folder Repair
+
+    /// Merges folder rows whose paths name the same directory under
+    /// `equivalence`, which older versions could create (`Reports` and
+    /// `reports` on a case-insensitive volume). The first row in library
+    /// order survives; a later duplicate's books, subfolders, and sort
+    /// settings move onto it and the duplicate row is removed. A surviving
+    /// folder's own sort setting wins over a duplicate's. Only the model
+    /// changes: such rows already share one directory, so nothing on disk
+    /// moves or is deleted. Running the repair again changes nothing.
+    mutating func mergeEquivalentFolders(
+        equivalence: FolderPathEquivalence = .library
+    ) -> EquivalentFolderRepair {
+        var repair = EquivalentFolderRepair()
+        let originalPositions = Dictionary(
+            folders.enumerated().map { ($0.element.fullPath, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        // Visit parents before children (library order among equals), so a
+        // subfolder resolves against its parent's surviving spelling and
+        // same-named subfolders of merged duplicates merge as well.
+        var survivors: [String: String] = [:]
+        var duplicateIDs: Set<UUID> = []
+        let visitOrder = folders.indices.sorted { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
+        for index in visitOrder {
+            let folder = folders[index]
+            let parentPath = Self.resolve(folder.parentPath, against: survivors, equivalence: equivalence)
+            let path = BookFolder(name: folder.name, parentPath: parentPath).fullPath
+            let key = equivalence.comparisonKey(for: path)
+            if let survivingPath = survivors[key] {
+                duplicateIDs.insert(folder.id)
+                repair.merges.append(.init(duplicatePath: folder.fullPath, survivingPath: survivingPath))
+            } else {
+                survivors[key] = path
+                if !BookFolder.spellingsMatch(parentPath, folder.parentPath) {
+                    folders[index].parentPath = parentPath
+                    repair.changedLibrary = true
+                }
+            }
+        }
+        if !duplicateIDs.isEmpty {
+            folders.removeAll { duplicateIDs.contains($0.id) }
+            repair.changedLibrary = true
+        }
+
+        // Books follow their folder onto the surviving spelling. The package
+        // already sits in the shared directory; only recorded paths change.
+        for index in books.indices {
+            let currentPath = books[index].folderPath
+            let survivingPath = Self.resolve(currentPath, against: survivors, equivalence: equivalence)
+            guard !BookFolder.spellingsMatch(survivingPath, currentPath) else { continue }
+            let hasPackage = !books[index].tmbDirectoryName.isEmpty
+            let oldPackagePrefix = books[index].tmbDirectory.path + "/"
+            books[index].folderPath = survivingPath
+            if hasPackage, books[index].filePath.hasPrefix(oldPackagePrefix) {
+                let innerPath = books[index].filePath.dropFirst(oldPackagePrefix.count)
+                books[index].filePath = books[index].tmbDirectory.path + "/" + innerPath
+            }
+            repair.relocatedBookIDs.append(books[index].id)
+            repair.changedLibrary = true
+        }
+
+        // Sort settings keyed by a merged spelling fill in only where the
+        // surviving folder has none, earlier duplicate rows first. Root and
+        // category keys are not folder paths and stay as they are.
+        var settings: [String: FolderSortSetting] = [:]
+        var respelled: [(originalKey: String, survivingKey: String, setting: FolderSortSetting)] = []
+        for (key, setting) in folderSortSettings {
+            let survivingKey = key.isEmpty || !BookFolder.isValidLibraryPath(key)
+                ? key
+                : Self.resolve(key, against: survivors, equivalence: equivalence)
+            if BookFolder.spellingsMatch(survivingKey, key) {
+                settings[key] = setting
+            } else {
+                respelled.append((key, survivingKey, setting))
+            }
+        }
+        let byLibraryOrder = respelled.sorted {
+            (originalPositions[$0.originalKey] ?? Int.max, $0.originalKey)
+                < (originalPositions[$1.originalKey] ?? Int.max, $1.originalKey)
+        }
+        for entry in byLibraryOrder where settings[entry.survivingKey] == nil {
+            settings[entry.survivingKey] = entry.setting
+        }
+        if !respelled.isEmpty {
+            folderSortSettings = settings
+            repair.changedLibrary = true
+        }
+        return repair
+    }
+
+    /// The index and row of the folder with `id`, provided it can be edited.
+    /// A folder with an empty stored path would claim every library path as
+    /// its subtree, so it is refused instead of relocated.
+    private func editableFolder(
+        id: UUID
+    ) throws(FolderOperationConflict) -> (index: Int, folder: BookFolder) {
+        guard let index = folders.firstIndex(where: { $0.id == id }) else { throw .folderNotFound }
+        guard !folders[index].fullPath.isEmpty else { throw .invalidPath("") }
+        return (index, folders[index])
+    }
+
+    /// Checks, before anything changes, that relocating every folder in
+    /// `subtree` so its root becomes `newRootPath` keeps each folder path
+    /// unique under the subtree's rule and within `BookFolder.maxDepth`.
+    /// `vacatedID` names a folder the same edit removes, which frees its path.
+    /// Parents are checked before children, so a conflict is reported at the
+    /// highest level where it occurs.
+    private func validateRelocation(
+        of subtree: FolderSubtree,
+        to newRootPath: String,
+        vacating vacatedID: UUID?
+    ) throws(FolderOperationConflict) {
+        let equivalence = subtree.equivalence
+        let travelling = folders.enumerated()
+            .filter { $0.element.id != vacatedID && subtree.contains($0.element.fullPath) }
+            .sorted { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
+            .map(\.element)
+        var departingIDs = Set(travelling.map(\.id))
+        if let vacatedID { departingIDs.insert(vacatedID) }
+
+        // Paths of the folders that stay where they are.
+        var occupied: [String: String] = [:]
+        for folder in folders where !departingIDs.contains(folder.id) {
+            let key = equivalence.comparisonKey(for: folder.fullPath)
+            if occupied[key] == nil { occupied[key] = folder.fullPath }
+        }
+
+        // Claim each destination in turn so two travelling folders can never
+        // land on one name either.
+        var claimed: [String: String] = [:]
+        for folder in travelling {
+            guard let newPath = subtree.relocating(folder.fullPath, to: newRootPath) else { continue }
+            let newComponents = FolderSubtree.components(of: newPath)
+            guard newComponents.count <= BookFolder.maxDepth else { throw .tooDeep(newPath) }
+            let key = equivalence.comparisonKey(for: newPath)
+            if let existingPath = occupied[key] {
+                throw .nameInUse(proposedPath: newPath, existingPath: existingPath)
+            }
+            if let earlierPath = claimed[key] {
+                throw .namesCollide(
+                    firstPath: earlierPath,
+                    secondPath: folder.fullPath,
+                    parentPath: FolderSubtree.path(from: Array(newComponents.dropLast()))
+                )
+            }
+            claimed[key] = folder.fullPath
+        }
+    }
+
+    /// Rewrites every stored path inside `subtree` so the subtree's root
+    /// becomes `newRootPath`: subfolder parents, book folders, and per-folder
+    /// sort settings, including the root's own setting. The root folder's row
+    /// is left to the caller, which renames, reparents, or removes it.
+    private mutating func relocate(_ subtree: FolderSubtree, to newRootPath: String) {
+        // A folder with an empty stored path would claim the whole library
+        // as its subtree; relocating it would rewrite every path.
+        guard !subtree.rootPath.isEmpty else { return }
+
+        for index in folders.indices {
+            if let parentPath = subtree.relocating(folders[index].parentPath, to: newRootPath) {
+                folders[index].parentPath = parentPath
+            }
+        }
+        for index in books.indices {
+            if let folderPath = subtree.relocating(books[index].folderPath, to: newRootPath) {
+                books[index].folderPath = folderPath
             }
         }
 
-        // Update all book folderPaths
-        for i in books.indices {
-            if books[i].folderPath == oldPath {
-                books[i].folderPath = newPath
-            } else if books[i].folderPath.hasPrefix(oldPath + "/") {
-                books[i].folderPath = newPath + String(books[i].folderPath.dropFirst(oldPath.count))
+        // Rebuild the settings in one pass. Category keys such as
+        // "__recent__" never match a folder subtree, so they stay put; a
+        // relocated setting replaces any stale entry under its new key.
+        var relocatedSettings: [String: FolderSortSetting] = [:]
+        var otherSettings: [String: FolderSortSetting] = [:]
+        for (key, setting) in folderSortSettings {
+            if let newKey = subtree.relocating(key, to: newRootPath) {
+                relocatedSettings[newKey] = setting
+            } else {
+                otherSettings[key] = setting
             }
         }
-
-        // Remap sort settings from old paths to new paths
-        for key in folderSortSettings.keys {
-            if key == oldPath {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath] = setting
-            } else if key.hasPrefix(oldPath + "/") {
-                let setting = folderSortSettings.removeValue(forKey: key)!
-                folderSortSettings[newPath + String(key.dropFirst(oldPath.count))] = setting
-            }
-        }
-
-        return true
+        folderSortSettings = otherSettings.merging(relocatedSettings) { _, relocated in relocated }
     }
 
     /// Check whether a folder contains any books or subfolders

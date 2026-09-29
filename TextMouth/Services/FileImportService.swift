@@ -1166,14 +1166,22 @@ enum FileImportService {
 
     /// Remove empty subdirectories from the library that aren't tracked as folders.
     /// These are left behind when folders are removed from the library model but
-    /// the disk directory isn't cleaned up.
+    /// the disk directory isn't cleaned up. Directory names are matched to
+    /// folders with the volume's equivalence rule: where case is ignored, a
+    /// directory spelled `reports` *is* the folder `Reports` and must stay.
     static func removeEmptyLibrarySubdirectories(
         library: Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        equivalence: FolderPathEquivalence? = nil
     ) {
         let fm = FileManager.default
         let libraryDir = libraryDirectory
-        let knownFolderPaths = Set(library.folders.map { $0.fullPath })
+        let rule = equivalence ?? .forVolume(containing: libraryDirectory)
+        let knownFolderKeys = Set(library.folders.map { rule.comparisonKey(for: $0.fullPath) })
+        /// Whether a directory path relative to the library names a folder.
+        func isKnownFolder(_ relativePath: String) -> Bool {
+            knownFolderKeys.contains(rule.comparisonKey(for: relativePath))
+        }
 
         // Walk the library directory looking for non-.tmb subdirectories
         guard let enumerator = fm.enumerator(
@@ -1204,7 +1212,7 @@ enum FileImportService {
             guard !relativePath.isEmpty else { continue }
 
             // If this directory is a known folder, keep it
-            if knownFolderPaths.contains(relativePath) { continue }
+            if isKnownFolder(relativePath) { continue }
 
             // Check if the directory is empty (no files or subdirectories)
             let contents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
@@ -1232,7 +1240,7 @@ enum FileImportService {
                 let relativePath = parent.resolvingSymlinksInPath().path
                     .replacingOccurrences(of: resolvedLibrary, with: "")
                     .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                if relativePath.isEmpty || knownFolderPaths.contains(relativePath) { break }
+                if relativePath.isEmpty || isKnownFolder(relativePath) { break }
                 let contents = (try? fm.contentsOfDirectory(atPath: parent.path)) ?? []
                 guard contents.isEmpty else { break }
                 try? fm.removeItem(at: parent)
