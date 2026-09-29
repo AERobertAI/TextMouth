@@ -524,6 +524,9 @@ extension ReaderViewModel {
 
         debugLog("skipWords result -> chapter=\(chapIdx) offset=\(charOffset) sameChapter=\(sameChapter)")
 
+        // Whether speech still plays after the skip. Restarting it in another
+        // chapter ends the book instead when nothing speakable remains.
+        var isStillPlaying = wasPlaying
         if sameChapter {
             // Same chapter: seek without re-rendering.
             // If engine has rendered audio, this is an instant buffer seek.
@@ -546,11 +549,11 @@ extension ReaderViewModel {
             currentCharacterOffset = charOffset
 
             if wasPlaying {
-                speakCurrentChapter()
+                isStillPlaying = speakCurrentChapter()
             }
         }
 
-        if wasPlaying {
+        if isStillPlaying {
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -606,6 +609,9 @@ extension ReaderViewModel {
 
         let sameChapter = (chapIdx == currentChapterIndex)
 
+        // Whether speech still plays after the skip. Restarting it in another
+        // chapter ends the book instead when nothing speakable remains.
+        var isStillPlaying = wasPlaying
         if sameChapter {
             currentCharacterOffset = charOffset
             seekSpeechService(toOriginalOffset: charOffset)
@@ -620,11 +626,11 @@ extension ReaderViewModel {
             currentCharacterOffset = charOffset
 
             if wasPlaying {
-                speakCurrentChapter()
+                isStillPlaying = speakCurrentChapter()
             }
         }
 
-        if wasPlaying {
+        if isStillPlaying {
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -791,8 +797,10 @@ extension ReaderViewModel {
             speechService.stop()
             currentChapterIndex = chapterIndex
             currentCharacterOffset = characterOffset
-            if wasPlaying {
-                speakCurrentChapter()
+            // Restarting speech ends the book instead when nothing speakable
+            // remains from the new position; Now Playing must not then claim
+            // that playback continues.
+            if wasPlaying && speakCurrentChapter() {
                 nowPlayingService.updateNowPlayingInfo(
                     title: book.title, author: book.author, isPlaying: true
                 )

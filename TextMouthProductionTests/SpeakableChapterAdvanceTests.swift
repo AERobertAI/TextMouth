@@ -393,6 +393,37 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    // MARK: - Navigating while playing
+
+    /// Navigating while playing onto silent text in another chapter ends the
+    /// book, whether the move is by position, by words, or by time, and Now
+    /// Playing is not told that playback continues.
+    func testNavigatingWhilePlayingOntoSilentTextEndsTheBook() throws {
+        let moves: [(name: String, move: (ReaderViewModel) -> Void)] = [
+            ("position", { $0.navigateTo(chapterIndex: 1, characterOffset: 0) }),
+            ("words", { $0.skipWords(count: 10) }),
+            ("time", { $0.skipByTime(seconds: 3_600) }),
+        ]
+        for (name, move) in moves {
+            try withReader(
+                chapters: [
+                    Chapter(title: "One", text: "First chapter."),
+                    chapter(sections: [("Notes", "Citations.")]),
+                ],
+                skipping: ["Notes"]
+            ) { reader in
+                reader.play()
+                let startedSpeaking = reader.speechService.isSpeaking
+                move(reader)
+                settle()
+
+                XCTAssertTrue(startedSpeaking, name)
+                XCTAssertEqual(reader.currentChapterIndex, 1, name)
+                assertEndedWithoutPlaying(reader, announcement: "Finished: Quiet Pages", name)
+            }
+        }
+    }
+
     // MARK: - Chapter ends and look-ahead
 
     /// A book with one speakable chapter among skipped ones plays only that
@@ -646,24 +677,27 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
     /// Check that the book ended with `announcement` without ever playing:
     /// nothing is speaking, the reader shows neither Playing nor Paused, no
     /// listening session is open or recorded, and Now Playing does not list
-    /// this reader as playing.
+    /// this reader as playing. `context` names the case in failure messages.
     private func assertEndedWithoutPlaying(
         _ reader: ReaderViewModel,
         announcement: String,
+        _ context: String = "",
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         let statistics = ReadingStatsService.shared
-        XCTAssertEqual(reader.lastAnnouncement, announcement, file: file, line: line)
-        XCTAssertFalse(reader.speechService.isSpeaking, "speaking", file: file, line: line)
-        XCTAssertFalse(reader.isCurrentlyPlaying, "Playing state", file: file, line: line)
-        XCTAssertFalse(reader.isCurrentlyPaused, "Paused state", file: file, line: line)
-        XCTAssertFalse(statistics.hasActiveSession, "open listening session", file: file, line: line)
-        XCTAssertEqual(statistics.stats.totalListeningSeconds, 0, "recorded listening", file: file, line: line)
+        XCTAssertEqual(reader.lastAnnouncement, announcement, context, file: file, line: line)
+        XCTAssertFalse(reader.speechService.isSpeaking, "\(context) speaking", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPlaying, "\(context) Playing state", file: file, line: line)
+        XCTAssertFalse(reader.isCurrentlyPaused, "\(context) Paused state", file: file, line: line)
+        XCTAssertFalse(statistics.hasActiveSession, "\(context) open listening session", file: file, line: line)
+        XCTAssertEqual(
+            statistics.stats.totalListeningSeconds, 0, "\(context) recorded listening", file: file, line: line
+        )
         XCTAssertNotEqual(
             NowPlayingService.shared.playingOwnerID,
             reader.nowPlayingService.ownerID,
-            "Now Playing claimed",
+            "\(context) Now Playing claimed",
             file: file,
             line: line
         )
