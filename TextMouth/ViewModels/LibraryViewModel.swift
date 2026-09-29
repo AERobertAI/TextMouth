@@ -128,11 +128,7 @@ final class LibraryViewModel: ObservableObject {
             }
         }
         startRefreshTimer()
-        // Extract caches first, then calculate stats (which can use the caches).
-        // Both run on background queues; stats waits for extraction to finish.
-        extractMissingContentCaches(then: { [weak self] in
-            self?.calculateMissingBookStats()
-        })
+        updateContentCachesAndStatistics()
     }
 
     deinit {

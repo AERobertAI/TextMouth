@@ -242,6 +242,14 @@ extension LibraryViewModel {
         }
     }
 
+    /// Bring every book's text cache and statistics up to date: caches first,
+    /// then statistics, which can use them. Both run on background queues.
+    func updateContentCachesAndStatistics() {
+        extractMissingContentCaches(then: { [weak self] in
+            self?.calculateMissingBookStats()
+        })
+    }
+
     nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {
         book.contentIndexVersion != BookContentIndex.currentVersion
             || book.totalWordCount == nil
@@ -354,9 +362,7 @@ extension LibraryViewModel {
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
             // Extract content caches for any newly adopted books, then recalculate stats
-            extractMissingContentCaches(then: { [weak self] in
-                self?.calculateMissingBookStats()
-            })
+            updateContentCachesAndStatistics()
         } catch {
             errorMessage = "Failed to rebuild directory: \(error.localizedDescription)"
             showError = true
