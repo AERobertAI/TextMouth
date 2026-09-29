@@ -1,6 +1,5 @@
 import Foundation
 import ZIPFoundation
-import SwiftSoup
 
 #if canImport(TextMouth)
 @testable import TextMouth
@@ -56,55 +55,11 @@ test("DAISY 3 ZIP file exists (hyperion)") {
     try assertTrue(FileManager.default.fileExists(atPath: url.path))
 }
 
+/// Extract `refs` from `files` through the app's own DAISY 2.02 fragment
+/// extraction, served from memory, so this scenario describes what the app
+/// does rather than a copy of how it once did it.
 func extractDAISY202TestFragmentsFromHTML(_ files: [String: String], refs: [String]) throws -> String {
-    var documents: [String: SwiftSoup.Document] = [:]
-    var fragments: [String] = []
-    var lastNormalized = ""
-
-    for ref in refs {
-        let parts = ref.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
-        let filePath = String(parts[0])
-        let fragmentID = parts.count > 1 ? String(parts[1]) : ""
-        guard let html = files[filePath] else { continue }
-
-        let doc: SwiftSoup.Document
-        if let cached = documents[filePath] {
-            doc = cached
-        } else {
-            doc = try SwiftSoup.parse(html)
-            documents[filePath] = doc
-        }
-
-        let markdown: String
-        if fragmentID.isEmpty {
-            markdown = (try? parseHTML(html: html).chapters.first?.text) ?? ""
-        } else if let element = try doc.getElementById(fragmentID) {
-            markdown = try convertDAISY202TestFragmentElement(element)
-        } else {
-            continue
-        }
-
-        let normalized = ParserUtilities.normalizeMarkdownWhitespace(markdown)
-        guard !normalized.isEmpty, normalized != lastNormalized else { continue }
-        fragments.append(normalized)
-        lastNormalized = normalized
-    }
-
-    return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
-}
-
-func convertDAISY202TestFragmentElement(_ element: SwiftSoup.Element) throws -> String {
-    let tag = element.tagName().lowercased()
-    if tag == "a" {
-        return try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    let childElements = element.children().array()
-    if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
-       let firstChild = childElements.first {
-        return try convertDAISY202TestFragmentElement(firstChild)
-    }
-    return ((try? parseHTML(html: try element.outerHtml()).chapters.first?.text) ?? "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+    try DAISYParser.extractDAISY202Fragments(from: refs, provider: InMemoryDAISYPackage(files))
 }
 
 test("DAISY 3 ZIP opens as archive") {

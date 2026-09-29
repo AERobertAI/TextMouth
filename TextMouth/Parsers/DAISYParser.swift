@@ -491,14 +491,21 @@ enum DAISYParser {
     /// Fragment-less references still convert the whole file, but SMIL
     /// references with #ids are narrowed to that element so content.md does not
     /// bake in duplicate wrapper text or unrelated file-level content.
-    private static func extractDAISY202Fragments(
+    ///
+    /// Every word is read once, even where references overlap. A reference
+    /// inside a fragment already read (a sentence, then a word within it) is
+    /// skipped, and a fragment enclosing one already read (the word, then its
+    /// sentence) leaves the words read before out. Two different elements
+    /// with the same words are both read: a repeated line is still a line.
+    /// Internal so tests can drive it with an in-memory package.
+    static func extractDAISY202Fragments(
         from references: [String],
         provider: DAISYFileProvider
     ) throws -> String {
         var documents: [String: SwiftSoup.Document] = [:]
         var htmlByPath: [String: String] = [:]
         var fragments: [String] = []
-        var lastNormalized = ""
+        var ledger = DAISY202ReadingLedger()
 
         for reference in references {
             let split = ParserUtilities.splitFragment(reference)
@@ -522,39 +529,122 @@ enum DAISYParser {
                 htmlByPath[split.path] = decodedHTML
             }
 
-            let fragmentMarkdown: String
+            // The element a reference names, or the body for a whole file.
+            // Words already read, inside an earlier fragment, are not repeated.
+            let target: SwiftSoup.Element
             if split.fragment.isEmpty {
-                fragmentMarkdown = (try? HTMLToMarkdownConverter.convert(html)) ?? ""
+                guard let body = doc.body() else { continue }
+                target = body
             } else if let element = try doc.getElementById(split.fragment) {
-                fragmentMarkdown = try convertDAISY202FragmentElement(element)
+                target = element
             } else {
                 continue
             }
+            guard !ledger.isRead(target) else { continue }
+
+            let fragmentMarkdown: String
+            if split.fragment.isEmpty {
+                fragmentMarkdown = convertDAISY202WholeFile(html, body: target, ledger: ledger)
+            } else {
+                fragmentMarkdown = try convertDAISY202FragmentElement(target, ledger: ledger)
+            }
+            ledger.markRead(target)
 
             let normalized = ParserUtilities.normalizeMarkdownWhitespace(fragmentMarkdown)
-            guard !normalized.isEmpty, normalized != lastNormalized else { continue }
+            guard !normalized.isEmpty else { continue }
             fragments.append(normalized)
-            lastNormalized = normalized
         }
 
         return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
     }
 
-    private static func convertDAISY202FragmentElement(_ element: SwiftSoup.Element) throws -> String {
-        let tag = element.tagName().lowercased()
-        if tag == "a" {
-            return try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Tags DAISY 2.02 producers wrap sentences and phrases in. A fragment
+    /// with one of these tags is read as plain words; see `inlineWords(of:ledger:)`.
+    private static let daisy202InlineFragmentTags: Set<String> = [
+        "a", "span", "strong", "em", "b", "i", "sup", "sub"
+    ]
+
+    /// Markdown for the element a SMIL reference names, without any part of
+    /// it that an earlier fragment already read.
+    private static func convertDAISY202FragmentElement(
+        _ element: SwiftSoup.Element,
+        ledger: DAISY202ReadingLedger
+    ) throws -> String {
+        if daisy202InlineFragmentTags.contains(element.tagName().lowercased()) {
+            return inlineWords(of: element, ledger: ledger)
         }
 
-        let childElements = element.children().array()
-        if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
-           let firstChild = childElements.first {
-            return try convertDAISY202FragmentElement(firstChild)
-        }
-
-        let html = try element.outerHtml()
-        return try HTMLToMarkdownConverter.convert(html)
+        // Block fragments keep the converter's structure: headings,
+        // paragraphs, lists. A block enclosing earlier fragments is
+        // converted from a copy without them.
+        let source = try ledger.containsRead(element) ? ledger.unreadCopy(of: element) : element
+        return try HTMLToMarkdownConverter.convert(source.outerHtml())
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Markdown for a whole content file. Until some fragment of it has been
+    /// read, the file's source converts exactly as it always has; after that,
+    /// only the part of its body not yet read.
+    private static func convertDAISY202WholeFile(
+        _ html: String,
+        body: SwiftSoup.Element,
+        ledger: DAISY202ReadingLedger
+    ) -> String {
+        guard ledger.containsRead(body) else {
+            return (try? HTMLToMarkdownConverter.convert(html)) ?? ""
+        }
+        return (try? HTMLToMarkdownConverter.convert(ledger.unreadCopy(of: body).outerHtml())) ?? ""
+    }
+
+    /// The words of an inline fragment, each once and in source order, as
+    /// plain text with whitespace collapsed.
+    ///
+    /// Producers wrap each sentence or phrase in a span, emphasis, or link,
+    /// often with text beside nested elements, as in
+    /// `<span>The <em>quick</em> brown <strong>fox</strong></span>`.
+    /// Emphasis and link syntax change nothing a listener hears, yet can
+    /// corrupt what they do hear: CommonMark reads `**The **`, emphasis
+    /// ending in a space as DAISY text often does, as literal asterisks, and
+    /// a link whose SMIL destination contains a space as literal brackets.
+    /// So an inline fragment contributes its words alone. Content outside
+    /// the reading flow and parts an earlier fragment read are left out.
+    private static func inlineWords(of element: SwiftSoup.Element, ledger: DAISY202ReadingLedger) -> String {
+        guard !PublicationSemantics.isExcludedFromReadingFlow(element) else { return "" }
+        var words = ""
+        appendInlineWords(of: element, to: &words, ledger: ledger)
+        return words.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Append the text of `node`'s children to `words`, in source order.
+    private static func appendInlineWords(of node: Node, to words: inout String, ledger: DAISY202ReadingLedger) {
+        for child in node.getChildNodes() {
+            if let text = child as? TextNode {
+                words += text.getWholeText()
+                continue
+            }
+            guard let element = child as? SwiftSoup.Element,
+                  !PublicationSemantics.isExcludedFromReadingFlow(element),
+                  !ledger.wasReadItself(element) else { continue }
+            switch element.tagName().lowercased() {
+            case "script", "style":
+                continue
+            case "br":
+                // A line break still separates the words on either side.
+                words += " "
+            case "img":
+                // An image reads as its description, as block conversion renders it.
+                words += " \((try? element.attr("alt")) ?? "") "
+            default:
+                // A block nested in an inline element, invalid but seen in
+                // real books, must not run its first or last word into its
+                // neighbors.
+                let boundary = element.isBlock() ? " " : ""
+                words += boundary
+                appendInlineWords(of: element, to: &words, ledger: ledger)
+                words += boundary
+            }
+        }
     }
 
     /// Read metadata from a DAISY 2.02 ncc.html
@@ -567,5 +657,85 @@ enum DAISYParser {
         }
         let result = try DAISY202NCCParser(path: nccPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)
+    }
+}
+
+// MARK: - DAISY 2.02 Reading Ledger
+
+/// Remembers which elements of the DAISY 2.02 content documents have been
+/// read into the book's text, so SMIL references that overlap (a sentence,
+/// then a word inside it, or the reverse) never speak the same words twice.
+///
+/// Elements are recorded by identity; the parsed documents stay cached, and
+/// so alive, for the whole extraction. Deleting read elements from the DOM
+/// would be simpler, but every deletion invalidates SwiftSoup's id index, and
+/// rebuilding it for each of a long book's thousands of references is
+/// quadratic.
+private struct DAISY202ReadingLedger {
+    /// Elements whose words are already in the text.
+    private var readElements: Set<ObjectIdentifier> = []
+    /// Every ancestor of a read element: converting one of these must leave
+    /// out the part already read.
+    private var readContainers: Set<ObjectIdentifier> = []
+
+    /// Whether `element`'s words are already in the text, because it or an
+    /// element enclosing it was read.
+    func isRead(_ element: SwiftSoup.Element) -> Bool {
+        var candidate: SwiftSoup.Element? = element
+        while let current = candidate {
+            if readElements.contains(ObjectIdentifier(current)) { return true }
+            candidate = current.parent()
+        }
+        return false
+    }
+
+    /// Whether `element` itself was read. Inside a fragment being converted,
+    /// no enclosing element was read, so this is the only check needed.
+    func wasReadItself(_ element: SwiftSoup.Element) -> Bool {
+        readElements.contains(ObjectIdentifier(element))
+    }
+
+    /// Whether some element inside `element` was already read.
+    func containsRead(_ element: SwiftSoup.Element) -> Bool {
+        readContainers.contains(ObjectIdentifier(element))
+    }
+
+    /// Record that `element`'s words are now in the text.
+    mutating func markRead(_ element: SwiftSoup.Element) {
+        readElements.insert(ObjectIdentifier(element))
+        var ancestor = element.parent()
+        while let container = ancestor {
+            // A container already recorded has had all its ancestors recorded.
+            guard readContainers.insert(ObjectIdentifier(container)).inserted else { break }
+            ancestor = container.parent()
+        }
+    }
+
+    /// A detached deep copy of `element` without the elements already read.
+    /// Only the copy changes: the cached document keeps serving later lookups.
+    func unreadCopy(of element: SwiftSoup.Element) throws -> SwiftSoup.Element {
+        // `copy()` is SwiftSoup's deep copy. `copy(parent:)` would share the
+        // original children, and removing one would edit the document itself.
+        // An element's copy is always an element; the cast only satisfies the
+        // compiler, since `copy()` is typed `Any`.
+        guard let copy = element.copy() as? SwiftSoup.Element else { return element }
+        try removeReadElements(correspondingTo: element, from: copy)
+        return copy
+    }
+
+    /// Remove from `copy` the counterparts of the read elements inside
+    /// `original`. A deep copy's child lists line up with the original's.
+    private func removeReadElements(correspondingTo original: Node, from copy: Node) throws {
+        let originals = original.getChildNodes()
+        let copies = copy.getChildNodes()
+        // Work back to front, so no removal shifts an index still to visit.
+        for index in originals.indices.reversed() {
+            guard let element = originals[index] as? SwiftSoup.Element else { continue }
+            if wasReadItself(element) {
+                try copies[index].remove()
+            } else if containsRead(element) {
+                try removeReadElements(correspondingTo: element, from: copies[index])
+            }
+        }
     }
 }
