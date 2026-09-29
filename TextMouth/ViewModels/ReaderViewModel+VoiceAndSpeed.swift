@@ -167,12 +167,17 @@ extension ReaderViewModel {
     /// Returns the filtered text and an OffsetMap tracking which characters were removed,
     /// so downstream offset conversions can map back to original-text positions.
     func filterSkippedSections(chapterIndex: Int, text: String) -> (text: String, offsetMap: OffsetMap) {
-        guard let content = content else { return (text, .identity) }
-        let chapterHeadings = content.allHeadings.filter { $0.chapterIndex == chapterIndex }
+        // Most books skip nothing, and then the text is unchanged.
+        let skippedIDs = skippedHeadingIDs
+        guard content != nil, !skippedIDs.isEmpty else { return (text, .identity) }
+        // `headings` always equals `content.allHeadings`. Reading it avoids
+        // rebuilding every heading of the book for each chapter, which adds
+        // up when playback passes over many silent chapters in a row.
+        let chapterHeadings = headings.filter { $0.chapterIndex == chapterIndex }
         return SkippedSectionFilter.apply(
             text: text,
             headings: chapterHeadings,
-            skippedIDs: skippedHeadingIDs
+            skippedIDs: skippedIDs
         )
     }
 }
