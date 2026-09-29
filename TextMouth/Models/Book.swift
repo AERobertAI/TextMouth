@@ -472,6 +472,20 @@ struct ReadingPosition: Codable, Hashable {
         self.globalCharacterOffset = globalCharacterOffset
         self.lastUpdated = Date()
     }
+
+    /// Decodes a saved position, repairing indices and offsets no position
+    /// can have (negative, or too large for an `Int`) instead of failing the
+    /// book and, with it, the whole library. The reader still clamps the
+    /// result against the loaded content.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
+        chapterIndex = fields.position(.chapterIndex)
+        headingIndex = fields.optionalPosition(.headingIndex)
+        characterOffset = fields.position(.characterOffset)
+        globalCharacterOffset = fields.optionalPosition(.globalCharacterOffset)
+        lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
+    }
 }
 
 struct Bookmark: Identifiable, Codable, Hashable {
@@ -496,6 +510,19 @@ struct Bookmark: Identifiable, Codable, Hashable {
         self.characterOffset = characterOffset
         self.label = label
         self.dateCreated = dateCreated
+    }
+
+    /// Decodes a saved bookmark, repairing a location no bookmark can have
+    /// (negative, or too large for an `Int`) instead of failing the book.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
+        id = try container.decode(UUID.self, forKey: .id)
+        number = try container.decode(Int.self, forKey: .number)
+        chapterIndex = fields.position(.chapterIndex)
+        characterOffset = fields.position(.characterOffset)
+        label = try container.decode(String.self, forKey: .label)
+        dateCreated = try container.decode(Date.self, forKey: .dateCreated)
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as

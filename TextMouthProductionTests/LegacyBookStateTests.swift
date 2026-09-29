@@ -323,4 +323,122 @@ final class LegacyBookStateTests: XCTestCase {
     func testHalfPitchConvertsToNegativeOctave() {
         XCTAssertEqual(AudioEngineService.pitchCents(for: 0.5), -1_200, accuracy: 0.001)
     }
+
+    // MARK: - Repairing saved positions
+
+    /// Negative indices and offsets in a saved position become 0 instead of
+    /// reaching the reader.
+    func testSavedPositionWithNegativeIndicesDecodesToZero() throws {
+        let position = try decodeSaved(ReadingPosition.self, """
+        {"chapterIndex": -3, "headingIndex": -2, "characterOffset": -40,
+         "globalCharacterOffset": -1, "lastUpdated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(position.chapterIndex, 0)
+        XCTAssertEqual(position.headingIndex, 0)
+        XCTAssertEqual(position.characterOffset, 0)
+        XCTAssertEqual(position.globalCharacterOffset, 0)
+    }
+
+    /// An offset no `Int` can hold, or one saved as text, no longer fails the
+    /// whole position: a required one becomes 0 and an optional one is dropped.
+    func testSavedPositionWithUnreadableOffsetsStillDecodes() throws {
+        let position = try decodeSaved(ReadingPosition.self, """
+        {"chapterIndex": 2, "characterOffset": 1e30, "globalCharacterOffset": "far",
+         "headingIndex": 3.5, "lastUpdated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(position.chapterIndex, 2)
+        XCTAssertEqual(position.characterOffset, 0)
+        XCTAssertNil(position.globalCharacterOffset)
+        XCTAssertNil(position.headingIndex)
+    }
+
+    /// Valid positions decode unchanged, including an offset past any real
+    /// content, which the reader clamps against the loaded text.
+    func testValidSavedPositionDecodesUnchanged() throws {
+        let original = ReadingPosition(
+            chapterIndex: 4, headingIndex: 1, characterOffset: 12_345, globalCharacterOffset: Int.max
+        )
+
+        let decoded = try roundTrip(original)
+
+        XCTAssertEqual(decoded.chapterIndex, 4)
+        XCTAssertEqual(decoded.headingIndex, 1)
+        XCTAssertEqual(decoded.characterOffset, 12_345)
+        XCTAssertEqual(decoded.globalCharacterOffset, Int.max)
+    }
+
+    /// A bookmark saved at a negative location decodes at the start instead
+    /// of failing its book; its other fields are kept.
+    func testBookmarkWithNegativeLocationDecodesToZero() throws {
+        let bookmark = try decodeSaved(Bookmark.self, """
+        {"id": "3F2A6C1E-0000-4000-8000-000000000001", "number": 2, "chapterIndex": -1,
+         "characterOffset": -500, "label": "Margin note", "dateCreated": "2026-01-02T03:04:05Z"}
+        """)
+
+        XCTAssertEqual(bookmark.chapterIndex, 0)
+        XCTAssertEqual(bookmark.characterOffset, 0)
+        XCTAssertEqual(bookmark.number, 2)
+        XCTAssertEqual(bookmark.label, "Margin note")
+    }
+
+    /// One book with an unreadable position used to fail library.json as a
+    /// whole, which loads as an empty library. Every book now loads, and the
+    /// damaged position is repaired.
+    func testLibraryWithOneDamagedPositionStillLoadsEveryBook() throws {
+        let intact = Book(
+            title: "Intact", format: .txt, filePath: "/tmp/intact.txt", md5Hash: "intact",
+            readingPosition: ReadingPosition(chapterIndex: 1, characterOffset: 20)
+        )
+        let damaged = Book(
+            title: "Damaged", format: .txt, filePath: "/tmp/damaged.txt", md5Hash: "damaged",
+            readingPosition: ReadingPosition(chapterIndex: 2, characterOffset: 30)
+        )
+        var file = try jsonObject(Library(books: [intact, damaged]))
+        var books = try XCTUnwrap(file["books"] as? [[String: Any]])
+        var position = try XCTUnwrap(books[1]["readingPosition"] as? [String: Any])
+        position["chapterIndex"] = -2
+        position["characterOffset"] = "thirty"
+        books[1]["readingPosition"] = position
+        file["books"] = books
+
+        let library = try savedDataDecoder.decode(Library.self, from: JSONSerialization.data(withJSONObject: file))
+
+        XCTAssertEqual(library.books.map(\.title), ["Intact", "Damaged"])
+        XCTAssertEqual(library.books[0].readingPosition?.characterOffset, 20)
+        XCTAssertEqual(library.books[1].readingPosition?.chapterIndex, 0)
+        XCTAssertEqual(library.books[1].readingPosition?.characterOffset, 0)
+    }
+
+    // MARK: - Saved data helpers
+
+    /// Decoder configured like the app's library and bookInfo.json readers.
+    private var savedDataDecoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+
+    /// Encoder configured like the app's library and bookInfo.json writers.
+    private var savedDataEncoder: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    /// Decodes hand-written saved data, as someone editing the file would.
+    private func decodeSaved<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
+        try savedDataDecoder.decode(type, from: Data(json.utf8))
+    }
+
+    /// Encodes and decodes a value the way the app saves and reloads it.
+    private func roundTrip<T: Codable>(_ value: T) throws -> T {
+        try savedDataDecoder.decode(T.self, from: savedDataEncoder.encode(value))
+    }
+
+    /// The JSON object the app saves for `value`, for editing into damage.
+    private func jsonObject<T: Encodable>(_ value: T) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: savedDataEncoder.encode(value)) as? [String: Any])
+    }
 }

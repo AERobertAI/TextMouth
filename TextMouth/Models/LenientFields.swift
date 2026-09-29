@@ -143,6 +143,23 @@ extension LenientFields {
     }
 }
 
+// MARK: - Saved book state fields
+
+extension LenientFields {
+    /// A chapter index or character offset every saved position has: 0 when
+    /// the field is missing or unreadable (a number no `Int` can hold, for
+    /// example), and never negative.
+    func position(_ key: Key) -> Int {
+        value(key, default: 0, validate: SettingsPolicy.validatedPosition)
+    }
+
+    /// An optional index or offset, never negative; nil when the field is
+    /// missing or unreadable.
+    func optionalPosition(_ key: Key) -> Int? {
+        optionalValue(key) { SettingsPolicy.validatedPosition($0) }
+    }
+}
+
 // MARK: - Repair log
 
 /// Records every repair of a stored value in the debug log, so a preference
