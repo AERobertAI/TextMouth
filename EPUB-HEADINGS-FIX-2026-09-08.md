@@ -1,5 +1,11 @@
 # EPUB heading recovery and library cleanup
 
+> September 28 update: cache `3.0.5` extends this work. EPUB page lists,
+> landmarks, and `hidden` content no longer become headings or speech,
+> annotations never enter a heading label or begin a Markdown line (which
+> hid that paragraph's words), and the opt-in regression test accepts any
+> copied package. See the September 28 section of `TODO-2026-09-04.md`.
+
 Investigation: September 8, 2026; Release packaging completed September 9.
 Branch: `fix/epub-missing-headings`.
 

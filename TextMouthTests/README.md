@@ -40,7 +40,7 @@ during ordinary suites because the library-root build setting is otherwise empty
 
 ## Persisted content indexes
 
-Cache format `3.0.4` rebuilds every older text-format cache once. During that background
+Cache format `3.0.5` (September 28: page-list, hidden-content, and dropped-paragraph fixes; `3.0.4` added heading recovery) rebuilds every older text-format cache once. During that background
 rebuild, TextMouth writes a versioned `contentIndex` into each package's
 `bookInfo.json`. The index stores chapter starts and lengths, per-chapter word
 counts, normalized heading IDs and local/global offsets, total counts, and—for
