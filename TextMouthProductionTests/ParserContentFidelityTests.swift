@@ -102,4 +102,124 @@ final class ParserContentFidelityTests: XCTestCase {
         """)
         XCTAssertEqual(markdown, "First\nSecond\tThird")
     }
+
+    // MARK: - Plain Text
+
+    /// Read a plain-text source both ways TextMouth can: directly, as when no
+    /// cache can be written, and from its content.md representation exactly
+    /// as the cache loader parses it. The two must be one reading.
+    @discardableResult
+    private func assertPlainTextReadingsAgree(
+        _ source: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Chapter {
+        let direct = PlainTextParser.parse(text: source, title: "Plain")
+        let cached = MarkdownCacheService.parseMultiChapterMarkdown(
+            PlainTextParser.markdown(text: source), bookTitle: "Plain", bookAuthor: "Author"
+        )
+        return assertSamePlainTextReading(cached: cached, direct: direct, file: file, line: line) ?? Chapter()
+    }
+
+    /// Every heading style is still recognized on both paths, and each heading
+    /// sits where its label begins. ATX markers (including closing ones) and
+    /// a setext underline are heading syntax, so the listener hears the label.
+    func testPlainTextHeadingStylesAreRecognizedOnBothPaths() {
+        let chapter = assertPlainTextReadingsAgree("""
+        # Opening Words #
+        Body of the opening.
+
+        Second Part
+        ===========
+        Setext body.
+
+        Minor Part
+        ----
+        CHAPTER THREE
+        Closing words.
+        ### Deep ###
+        """)
+        let expected = """
+        Opening Words
+
+        Body of the opening.
+
+        Second Part
+
+        Setext body.
+
+        Minor Part
+
+        CHAPTER THREE
+
+        Closing words.
+
+        Deep
+        """
+        XCTAssertEqual(chapter.text, expected)
+        let labels = ["Opening Words", "Second Part", "Minor Part", "CHAPTER THREE", "Deep"]
+        XCTAssertEqual(chapter.headings.map(\.text), labels)
+        XCTAssertEqual(chapter.headings.map(\.level), [1, 1, 2, 2, 3])
+        XCTAssertEqual(
+            chapter.headings.map(\.characterOffset),
+            labels.map { (expected as NSString).range(of: $0).location }
+        )
+    }
+
+    /// The reading text differs from the source only by the documented
+    /// whitespace normalization: lines are trimmed, a paragraph's lines are
+    /// joined by single spaces, and any run of empty lines is one paragraph
+    /// break. Inner tabs survive. Every newline character ends a line, so a
+    /// CRLF pair also leaves an empty line, which separates paragraphs.
+    func testPlainTextReadingTextNormalizesOnlyWhitespace() {
+        let source = "  Indented first line\t\nwraps here  \n\n\n\tSecond paragraph\twith a tab\r"
+            + "old Mac line\u{2028}separator line\r\nWindows line"
+        let chapter = assertPlainTextReadingsAgree(source)
+        XCTAssertEqual(
+            chapter.text,
+            "Indented first line wraps here\n\n"
+                + "Second paragraph\twith a tab old Mac line separator line\n\nWindows line"
+        )
+        XCTAssertEqual(chapter.headings, [])
+    }
+
+    /// Heading offsets use UTF-16, like speech, search, and bookmarks, so an
+    /// emoji or a combining mark before a heading moves it by its UTF-16 length.
+    func testPlainTextHeadingOffsetsCountUTF16AfterEmoji() {
+        let chapter = assertPlainTextReadingsAgree("🙂 Cafe\u{301} opens\n\nTHE MENU\nTea")
+        XCTAssertEqual(chapter.text, "🙂 Cafe\u{301} opens\n\nTHE MENU\n\nTea")
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [("🙂 Cafe\u{301} opens\n\n" as NSString).length])
+    }
+
+    /// The Markdown reader must replace U+0000 with U+FFFD; the direct path
+    /// reads it the same way, in body text and in heading labels.
+    func testPlainTextNullCharacterReadsAsReplacementOnBothPaths() {
+        let chapter = assertPlainTextReadingsAgree("NUL\u{0}HEADING\n\nbody\u{0}text")
+        XCTAssertEqual(chapter.text, "NUL\u{FFFD}HEADING\n\nbody\u{FFFD}text")
+        XCTAssertEqual(chapter.headings.map(\.text), ["NUL\u{FFFD}HEADING"])
+    }
+}
+
+extension XCTestCase {
+    /// Assert that two readings of one plain-text book are the same reading:
+    /// one chapter each, equal text, and equal headings (level, label, and
+    /// UTF-16 offset) in the chapter and in the book-wide index. Returns the
+    /// direct reading's chapter for further checks.
+    @discardableResult
+    func assertSamePlainTextReading(
+        cached: DocumentContent,
+        direct: DocumentContent,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Chapter? {
+        XCTAssertEqual(cached.chapters.count, 1, "a cached plain-text book is one chapter", file: file, line: line)
+        XCTAssertEqual(direct.chapters.count, 1, "a parsed plain-text book is one chapter", file: file, line: line)
+        guard let cachedChapter = cached.chapters.first, let directChapter = direct.chapters.first else {
+            return nil
+        }
+        XCTAssertEqual(cachedChapter.text, directChapter.text, "reading text", file: file, line: line)
+        XCTAssertEqual(cachedChapter.headings, directChapter.headings, "chapter headings", file: file, line: line)
+        XCTAssertEqual(cached.allHeadings, direct.allHeadings, "indexed headings", file: file, line: line)
+        return directChapter
+    }
 }

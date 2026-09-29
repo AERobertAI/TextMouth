@@ -159,7 +159,7 @@ enum MarkdownCacheService {
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
     /// HTML: converts the HTML to Markdown.
     /// Markdown: uses the file as-is.
-    /// Plain text: wraps with minimal Markdown formatting (detects headings).
+    /// Plain text: the plain-text headings as ATX headings, lines as paragraphs.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
         let markdown: String
         switch format {
@@ -172,7 +172,10 @@ enum MarkdownCacheService {
             // Already Markdown — use as-is
             markdown = try String(contentsOf: url, encoding: .utf8)
         case .txt:
-            markdown = try extractFromPlainText(url: url)
+            // The same line analysis as the direct parser, so a cached book
+            // has the headings and paragraphs PlainTextParser.parse(text:) reads.
+            let text = try String(contentsOf: url, encoding: .utf8)
+            markdown = PlainTextParser.markdown(text: text)
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url)
         case .daisy:
@@ -208,61 +211,6 @@ enum MarkdownCacheService {
             "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
         return ExtractedCache(markdown: markdown, chapters: chapters.map(\.chapter))
-    }
-
-    /// Convert plain text to Markdown, promoting detected headings to proper Markdown headings.
-    private static func extractFromPlainText(url: URL) throws -> String {
-        let text = try String(contentsOf: url, encoding: .utf8)
-        let lines = text.components(separatedBy: .newlines)
-        var result: [String] = []
-        var setextLines: Set<Int> = []
-
-        // First pass: identify setext underline lines
-        for (index, line) in lines.enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.count >= 3 && (trimmed.allSatisfy({ $0 == "=" }) || trimmed.allSatisfy({ $0 == "-" })) {
-                setextLines.insert(index)
-            }
-        }
-
-        for (index, line) in lines.enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            // Skip setext underline lines (already part of headings in Markdown)
-            if setextLines.contains(index) {
-                result.append(line)
-                continue
-            }
-
-            // Already has markdown heading syntax — keep as-is
-            if trimmed.hasPrefix("#") {
-                result.append(line)
-                continue
-            }
-
-            // Setext-style heading: line followed by === or ---
-            if !trimmed.isEmpty && index + 1 < lines.count && setextLines.contains(index + 1) {
-                // Already valid Markdown setext heading — keep as-is
-                result.append(line)
-                continue
-            }
-
-            // All-caps short lines → convert to ## headings
-            if trimmed.count >= 3 && trimmed.count <= 80
-                && trimmed.uppercased() == trimmed
-                && trimmed.rangeOfCharacter(from: .letters) != nil {
-                let letters = trimmed.filter { $0.isLetter }
-                if letters.count >= 3 {
-                    result.append("## \(trimmed)")
-                    continue
-                }
-            }
-
-            // Regular line — keep as-is
-            result.append(line)
-        }
-
-        return result.joined(separator: "\n")
     }
 
     // MARK: - Multi-Chapter Markdown Parsing
