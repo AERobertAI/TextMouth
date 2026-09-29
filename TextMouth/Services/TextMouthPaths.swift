@@ -381,8 +381,20 @@ enum TextMouthPaths {
         return nil
     }
 
+    /// The Application Support directory used by the oldest TextMouth
+    /// versions, which kept their library index and books there.
+    ///
+    /// Hosted tests get a location inside their isolated root instead. The
+    /// legacy directory lies outside the data root, so without this the test
+    /// host's startup could migrate, quarantine, or delete a developer's real
+    /// legacy library, and legacy-location tests could not run safely.
     static var oldAppSupportDir: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        if let unitTestRoot {
+            return unitTestRoot
+                .appendingPathComponent("LegacyApplicationSupport", isDirectory: true)
+                .appendingPathComponent("TextMouth", isDirectory: true)
+        }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("TextMouth", isDirectory: true)
     }
 
