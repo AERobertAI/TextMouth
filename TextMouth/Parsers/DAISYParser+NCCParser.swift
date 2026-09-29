@@ -1,4 +1,5 @@
 import Foundation
+import SwiftSoup
 
 // MARK: - DAISY 2.02 NCC Parser
 
@@ -16,105 +17,129 @@ struct NCCHeading {
     var href: String
 }
 
-/// SAX parser for DAISY 2.02 ncc.html files.
-/// Extracts metadata from <meta> tags and navigation structure from headings.
-class DAISY202NCCParser: NSObject, XMLParserDelegate {
-    private let html: String
-    private var result = DAISY202NCCResult()
+/// Reads a DAISY 2.02 `ncc.html`: Dublin Core metadata from its `<meta>`
+/// tags and the book's navigation from its `<h1>`–`<h6>` headings.
+///
+/// The DAISY 2.02 specification calls for XHTML, but NCC files in the wild
+/// are often ordinary HTML, with unclosed `<meta>` and `<br>` tags, named
+/// entities such as `&nbsp;`, and upper-case tag names, which no XML parser
+/// accepts. The file is therefore parsed as HTML, the way a browser reads
+/// it. HTML parsing hides one kind of damage: a file cut short simply ends,
+/// its open elements closed. Truncation always removes the end of a file
+/// first, and with it the closing `</body>` and `</html>` tags, so a file
+/// missing both is reported instead of being read as a shorter book.
+struct DAISY202NCCParser {
+    /// The file's text.
+    let html: String
+    /// The file's path inside the package, named in errors.
+    let file: String
 
-    // Parsing state
-    private var elementStack: [String] = []
-    private var currentText = ""
-    private var currentHeadingLevel: Int?
-    private var currentHref = ""
-    private var inHeading = false
-    private var inAnchor = false
+    /// Heading tags and the navigation level each one gives.
+    private static let headingLevels = ["h1": 1, "h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6]
 
-    init(html: String) {
+    /// Prepare to parse `html`, reporting problems under the name `file`.
+    init(html: String, file: String) {
         self.html = html
+        self.file = file
     }
 
-    func parse() -> DAISY202NCCResult {
-        // NCC files may not be well-formed XML, so try to clean them up
-        var cleanedHTML = html
-        // Add XML declaration if missing (check trimmed to handle leading whitespace)
-        let trimmedHTML = cleanedHTML.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedHTML.hasPrefix("<?xml") {
-            cleanedHTML = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + cleanedHTML
+    /// Read `path` from `provider` and decode it as UTF-8 when valid, or as
+    /// ISO Latin 1, the encoding older NCC files use, when it is not.
+    /// - Throws: the provider's error when the file cannot be read.
+    init(path: String, in provider: DAISYFileProvider) throws {
+        let data = try provider.readFile(at: path)
+        guard let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+            throw DAISYParserError.parseError("Cannot decode \(path)")
         }
+        self.init(html: html, file: path)
+    }
 
-        guard let data = cleanedHTML.data(using: .utf8) else { return result }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.parse()
+    /// Parse the file's metadata and headings, in document order.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it has
+    ///   neither closing tag, since the headings after the cut are missing.
+    func parse() throws -> DAISY202NCCResult {
+        guard Self.containsDocumentEnd(html) else {
+            throw DAISYParserError.malformedXML(
+                file: file,
+                reason: "it stops before its closing body and html tags, so the end of the book's navigation is missing"
+            )
+        }
+        var result = DAISY202NCCResult()
+        Self.collect(from: try SwiftSoup.parse(html), into: &result)
         return result
     }
 
-    func parser(_ parser: XMLParser, didStartElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?,
-                attributes: [String: String] = [:]) {
-        let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
-        elementStack.append(localName)
+    // MARK: - Document Walk
 
-        switch localName {
-        case "meta":
-            // Extract Dublin Core metadata from meta tags
-            let name = (attributes["name"] ?? "").lowercased()
-            let content = attributes["content"] ?? ""
-            switch name {
-            case "dc:title":
-                if result.title.isEmpty { result.title = content }
-            case "dc:creator":
-                if result.author.isEmpty { result.author = content }
-            default:
-                break
-            }
-
-        case "h1", "h2", "h3", "h4", "h5", "h6":
-            let level = Int(String(localName.last!)) ?? 1
-            currentHeadingLevel = level
-            currentText = ""
-            currentHref = ""
-            inHeading = true
-
-        case "a" where inHeading:
-            currentHref = attributes["href"] ?? ""
-            inAnchor = true
-
-        default:
-            break
-        }
+    /// Whether the file still ends with a closing body or html tag.
+    /// Searching backwards finds them at once in an intact file.
+    private static func containsDocumentEnd(_ html: String) -> Bool {
+        ["</body", "</html"].contains { html.range(of: $0, options: [.caseInsensitive, .backwards]) != nil }
     }
 
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
-        if inHeading {
-            currentText += string
-        }
-    }
-
-    func parser(_ parser: XMLParser, didEndElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?) {
-        let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
-
-        switch localName {
-        case "h1", "h2", "h3", "h4", "h5", "h6":
-            if let level = currentHeadingLevel {
-                let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !text.isEmpty {
-                    result.headings.append(NCCHeading(level: level, text: text, href: currentHref))
+    /// Gather metadata and headings from `node`'s descendants in document
+    /// order. A direct walk keeps SwiftSoup's selector cache, whose cached
+    /// results retain the document, out of a one-shot parse.
+    private static func collect(from node: Node, into result: inout DAISY202NCCResult) {
+        for child in node.getChildNodes() {
+            guard let element = child as? Element else { continue }
+            let tag = element.tagName().lowercased()
+            if tag == "meta" {
+                recordMetadata(from: element, into: &result)
+            } else if let level = headingLevels[tag] {
+                // HTML never nests headings, so nothing inside one is another entry.
+                if let heading = heading(from: element, level: level) {
+                    result.headings.append(heading)
                 }
+            } else {
+                collect(from: element, into: &result)
             }
-            inHeading = false
-            currentHeadingLevel = nil
+        }
+    }
 
-        case "a":
-            inAnchor = false
-
+    /// Keep the first non-empty `dc:title` and `dc:creator` values. Meta
+    /// names match regardless of case, as DAISY producers vary.
+    private static func recordMetadata(from meta: Element, into result: inout DAISY202NCCResult) {
+        let name = ((try? meta.attr("name")) ?? "").lowercased()
+        let content = normalizedWhitespace((try? meta.attr("content")) ?? "")
+        switch name {
+        case "dc:title" where result.title.isEmpty:
+            result.title = content
+        case "dc:creator" where result.author.isEmpty:
+            result.author = content
         default:
             break
         }
+    }
 
-        if !elementStack.isEmpty { elementStack.removeLast() }
+    /// The navigation entry for a heading: its words, and the destination of
+    /// its first link. A heading without words is no destination at all.
+    private static func heading(from element: Element, level: Int) -> NCCHeading? {
+        let text = normalizedWhitespace((try? element.text()) ?? "")
+        guard !text.isEmpty else { return nil }
+        return NCCHeading(level: level, text: text, href: firstLinkDestination(in: element) ?? "")
+    }
+
+    /// The `href` of the first link inside `node` that has one.
+    private static func firstLinkDestination(in node: Node) -> String? {
+        for child in node.getChildNodes() {
+            guard let element = child as? Element else { continue }
+            if element.tagName().lowercased() == "a",
+               let href = try? element.attr("href"), !href.isEmpty {
+                return href
+            }
+            if let nested = firstLinkDestination(in: element) {
+                return nested
+            }
+        }
+        return nil
+    }
+
+    /// Collapse each run of whitespace, including the no-break spaces that
+    /// `&nbsp;` produces, to one space, and trim the ends. Labels and titles
+    /// then read and compare the same however the file was laid out.
+    private static func normalizedWhitespace(_ text: String) -> String {
+        text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

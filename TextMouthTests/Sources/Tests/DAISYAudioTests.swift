@@ -14,9 +14,8 @@ func parseDAISYTimeString(_ value: String) -> Double {
     DAISYAudioSMILParser.parseTime(value)
 }
 
-func parseDAISYAudioSMIL(_ xml: String) -> [DAISYAudioClip] {
-    guard let data = xml.data(using: .utf8) else { return [] }
-    return DAISYAudioSMILParser(data: data).parse()
+func parseDAISYAudioSMIL(_ xml: String) throws -> [DAISYAudioClip] {
+    try DAISYAudioSMILParser(data: Data(xml.utf8), file: "test.smil").parse()
 }
 
 func testResolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String {
@@ -93,7 +92,7 @@ test("Extract audio clips from DAISY 2.02 SMIL") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 2, "Should find 2 audio clips")
     try assertEqual(clips[0].file, "chapter01.mp3")
     try assertTrue(abs(clips[0].startTime - 0.0) < 0.001)
@@ -120,7 +119,7 @@ test("Extract audio clips from DAISY 3 SMIL") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 2, "Should find 2 audio clips")
     try assertEqual(clips[0].file, "speech001.mp3")
     try assertTrue(abs(clips[0].startTime - 0.0) < 0.001)
@@ -184,7 +183,7 @@ test("Fire Safety SMIL files contain audio references — optional") {
         var data = Data()
         _ = try archive.extract(entry) { chunk in data.append(chunk) }
         guard let smilXML = String(data: data, encoding: .utf8) else { continue }
-        let clips = parseDAISYAudioSMIL(smilXML)
+        let clips = try parseDAISYAudioSMIL(smilXML)
         if !clips.isEmpty {
             foundAudioClips = true
             break
@@ -211,8 +210,8 @@ test("DAISY audio boundary compares resolved paths, not basenames") {
       <par id="b"><audio src="dirB/shared.mp3" clipBegin="5.0" clipEnd="45.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
     let currentClip = parser.clip(forFragment: "a")!
     let nextClip = parser.clip(forFragment: "b")!
 
@@ -243,8 +242,8 @@ test("DAISY audio boundary uses canonical same-file next clip") {
       <par id="b"><audio src="audio/book.mp3" clipBegin="25.0" clipEnd="50.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
     let currentClip = parser.clip(forFragment: "a")!
     let nextClip = parser.clip(forFragment: "b")!
 
@@ -271,8 +270,8 @@ test("DAISY audio boundary defaults to current audio file last clip") {
       <par id="b1"><audio src="partB.mp3" clipBegin="0.0" clipEnd="90.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
     let currentClip = parser.clip(forFragment: "a1")!
     let nextClip = parser.clip(forFragment: "b1")!
 

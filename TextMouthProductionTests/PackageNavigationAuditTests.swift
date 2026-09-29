@@ -6,7 +6,7 @@ import ZIPFoundation
 final class PackageNavigationAuditTests: XCTestCase {
     /// A nested NCX child must not replace its parent or move ahead of it.
     /// DAISY audio segments use this exact list as their playback sequence.
-    func testNestedDAISYNCXRetainsParentsAndDocumentOrder() {
+    func testNestedDAISYNCXRetainsParentsAndDocumentOrder() throws {
         let data = Data("""
         <ncx><navMap>
         <navPoint><navLabel><text>Part One</text></navLabel><content src="one.smil"/>
@@ -18,7 +18,7 @@ final class PackageNavigationAuditTests: XCTestCase {
         </navMap></ncx>
         """.utf8)
 
-        let points = DAISYNCXParser(data: data).parse()
+        let points = try DAISYNCXParser(data: data, file: "book.ncx").parse()
 
         XCTAssertEqual(points.map(\.label), ["Part One", "Section One", "Detail", "Part Two"])
         XCTAssertEqual(points.map(\.contentSrc), ["one.smil", "one.smil#section", "one.smil#detail", "two.smil"])

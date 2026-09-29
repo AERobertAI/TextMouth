@@ -1,6 +1,5 @@
 import Foundation
 import ZIPFoundation
-import SwiftSoup
 
 #if canImport(TextMouth)
 @testable import TextMouth
@@ -20,9 +19,15 @@ private func parseDAISYToMarkdown(from url: URL) throws -> String {
     try DAISYParser.extractMarkdown(from: url)
 }
 
-func convertDTBookSnippet(_ xml: String) -> String {
-    guard let data = xml.data(using: .utf8) else { return "" }
-    return DTBookToMarkdownConverter().convert(data: data)
+/// Convert a well-formed DTBook snippet through the production converter.
+/// A snippet the parser finds damaged fails the scenario instead of being
+/// compared as partial text.
+func convertDTBookSnippet(_ xml: String) throws -> String {
+    let conversion = try DTBookToMarkdownConverter(data: Data(xml.utf8), file: "snippet.xml").convert()
+    if let diagnostic = conversion.diagnostic {
+        throw TestError.assertionFailed("DTBook snippet is damaged: \(diagnostic.localizedDescription)")
+    }
+    return conversion.markdown
 }
 
 private func parseDAISY202MetadataFromZip(url: URL) throws -> DAISYMetadata {
@@ -50,55 +55,11 @@ test("DAISY 3 ZIP file exists (hyperion)") {
     try assertTrue(FileManager.default.fileExists(atPath: url.path))
 }
 
+/// Extract `refs` from `files` through the app's own DAISY 2.02 fragment
+/// extraction, served from memory, so this scenario describes what the app
+/// does rather than a copy of how it once did it.
 func extractDAISY202TestFragmentsFromHTML(_ files: [String: String], refs: [String]) throws -> String {
-    var documents: [String: SwiftSoup.Document] = [:]
-    var fragments: [String] = []
-    var lastNormalized = ""
-
-    for ref in refs {
-        let parts = ref.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
-        let filePath = String(parts[0])
-        let fragmentID = parts.count > 1 ? String(parts[1]) : ""
-        guard let html = files[filePath] else { continue }
-
-        let doc: SwiftSoup.Document
-        if let cached = documents[filePath] {
-            doc = cached
-        } else {
-            doc = try SwiftSoup.parse(html)
-            documents[filePath] = doc
-        }
-
-        let markdown: String
-        if fragmentID.isEmpty {
-            markdown = (try? parseHTML(html: html).chapters.first?.text) ?? ""
-        } else if let element = try doc.getElementById(fragmentID) {
-            markdown = try convertDAISY202TestFragmentElement(element)
-        } else {
-            continue
-        }
-
-        let normalized = ParserUtilities.normalizeMarkdownWhitespace(markdown)
-        guard !normalized.isEmpty, normalized != lastNormalized else { continue }
-        fragments.append(normalized)
-        lastNormalized = normalized
-    }
-
-    return ParserUtilities.normalizeMarkdownWhitespace(fragments.joined(separator: "\n\n"))
-}
-
-func convertDAISY202TestFragmentElement(_ element: SwiftSoup.Element) throws -> String {
-    let tag = element.tagName().lowercased()
-    if tag == "a" {
-        return try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    let childElements = element.children().array()
-    if ["span", "strong", "em", "b", "i", "sup", "sub"].contains(tag),
-       let firstChild = childElements.first {
-        return try convertDAISY202TestFragmentElement(firstChild)
-    }
-    return ((try? parseHTML(html: try element.outerHtml()).chapters.first?.text) ?? "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+    try DAISYParser.extractDAISY202Fragments(from: refs, provider: InMemoryDAISYPackage(files))
 }
 
 test("DAISY 3 ZIP opens as archive") {
@@ -215,7 +176,7 @@ test("DTBook emphasis converts to Markdown italic") {
     <p>This has <em>emphasized</em> and <strong>strong</strong> text.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("*emphasized*"), "Should contain italic text")
     try assertTrue(markdown.contains("**strong**"), "Should contain bold text")
 }
@@ -237,7 +198,7 @@ test("DTBook lists convert to Markdown lists") {
     </list>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("- First item"), "Should have bullet list")
     try assertTrue(markdown.contains("- Second item"), "Should have second bullet")
     try assertTrue(markdown.contains("1. Numbered one"), "Should have numbered list")
@@ -254,7 +215,7 @@ test("DTBook doctitle converts to h1") {
     <docauthor>Test Author</docauthor>
     </frontmatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("# My Great Book"), "doctitle should become h1")
     try assertTrue(markdown.contains("*Test Author*"), "docauthor should become italic")
 }
@@ -324,7 +285,7 @@ test("DAISY 2.02 fragment extraction avoids whole-file duplicate wrapper text") 
 }
 
 test("DAISY 2.02 Markdown extraction follows SMIL text fragments") {
-    let daisyURL = try makeTemporaryDAISY202FragmentZip(entries: [
+    let daisyURL = try makeTemporaryDAISYZip(entries: [
         "ncc.html": """
         <html><head>
         <meta name="dc:title" content="Fragment Test"/>
@@ -395,7 +356,7 @@ test("DTBook blockquote converts to Markdown blockquote") {
     <blockquote><p>To be or not to be.</p></blockquote>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains(">"), "Should contain blockquote marker")
 }
 
@@ -422,8 +383,8 @@ test("SMIL parser records par IDs on audio clips") {
     </body>
     </smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     try assertEqual(clips.count, 3, "Should parse 3 audio clips")
     try assertEqual(clips[0].parID, "par_001", "First clip should have par_001 ID")
@@ -440,8 +401,8 @@ test("SMIL parser clip(forFragment:) finds correct clip") {
       <par id="verse2"><audio src="ch1.mp3" clipBegin="20.0" clipEnd="38.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    _ = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    _ = try parser.parse()
 
     let clip1 = parser.clip(forFragment: "intro")
     try assertTrue(clip1 != nil, "Should find clip for 'intro'")
@@ -470,8 +431,8 @@ test("Segments from same SMIL get distinct non-overlapping time ranges") {
       <par id="body_ch2"><audio src="book.mp3" clipBegin="0:06:00" clipEnd="0:10:00"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     // NavPoint 1 references heading_ch1, NavPoint 2 references heading_ch2
     let clip1 = parser.clip(forFragment: "heading_ch1")!
@@ -513,10 +474,10 @@ test("Segments from different SMIL files use their own clip ranges") {
     </seq></body></smil>
     """
 
-    let parser1 = TestFragmentAwareSMILParser(data: smil1.data(using: .utf8)!)
-    let clips1 = parser1.parse()
-    let parser2 = TestFragmentAwareSMILParser(data: smil2.data(using: .utf8)!)
-    let clips2 = parser2.parse()
+    let parser1 = TestFragmentAwareSMILParser(data: smil1.data(using: .utf8)!, file: "test.smil")
+    let clips1 = try parser1.parse()
+    let parser2 = TestFragmentAwareSMILParser(data: smil2.data(using: .utf8)!, file: "test.smil")
+    let clips2 = try parser2.parse()
 
     let seg1Clip = parser1.clip(forFragment: "s1") ?? clips1[0]
     let seg2Clip = parser2.clip(forFragment: "s2") ?? clips2[0]
@@ -545,8 +506,8 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
       </par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!)
-    let clips = parser.parse()
+    let parser = TestFragmentAwareSMILParser(data: smilXML.data(using: .utf8)!, file: "test.smil")
+    let clips = try parser.parse()
 
     try assertEqual(clips.count, 2)
     try assertEqual(clips[0].parID, "tcp1")
@@ -558,9 +519,11 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
 
 }
 
-private func makeTemporaryDAISY202FragmentZip(entries: [String: String]) throws -> URL {
+/// Write a DAISY package with the given text files (path → contents) to a new
+/// ZIP in the temporary directory. Callers remove the returned file.
+func makeTemporaryDAISYZip(entries: [String: String]) throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("TextMouthDAISYFragmentTest-\(UUID().uuidString).zip")
+        .appendingPathComponent("TextMouthDAISYTest-\(UUID().uuidString).zip")
     let archive = try Archive(url: url, accessMode: .create)
 
     for (path, contents) in entries {
@@ -579,3 +542,27 @@ private func makeTemporaryDAISY202FragmentZip(entries: [String: String]) throws 
 
     return url
 }
+
+#if canImport(TextMouth)
+/// Serves a DAISY package from memory (path → bytes), so converter tests can
+/// exercise production code without writing an archive to disk.
+struct InMemoryDAISYPackage: DAISYFileProvider {
+    let files: [String: Data]
+
+    /// Package the given text files (path → contents) as UTF-8.
+    init(_ textFiles: [String: String]) {
+        files = textFiles.mapValues { Data($0.utf8) }
+    }
+
+    func listFiles() -> [String] {
+        files.keys.sorted()
+    }
+
+    func readFile(at path: String) throws -> Data {
+        guard let data = files[path] else {
+            throw DAISYParserError.missingContent("File not found in test package: \(path)")
+        }
+        return data
+    }
+}
+#endif

@@ -22,7 +22,7 @@ test("DTBook pagenum text is preserved") {
     <p>Some text after.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("42"), "Page number text should be present")
     try assertTrue(markdown.contains("Some text before"), "Text before pagenum preserved")
     try assertTrue(markdown.contains("Some text after"), "Text after pagenum preserved")
@@ -39,7 +39,7 @@ test("DTBook link with href produces markdown link") {
     <p>Visit <a href="http://example.com">the site</a> for more.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     // The test converter doesn't have the fix, but the app converter does.
     // Just verify the basic structure works.
     try assertTrue(markdown.contains("the site"), "Should contain link text")
@@ -57,7 +57,7 @@ test("DTBook image context text preserved") {
     <p>Here is an image.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("Here is an image"), "Should contain surrounding text")
     try assertTrue(markdown.contains("# Images"), "Should contain heading")
 }
@@ -81,7 +81,7 @@ test("DTBook nested lists indent correctly") {
     </list>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("- Outer A"), "Should have outer bullet")
     try assertTrue(markdown.contains("    - Inner 1"), "Should have indented inner bullet")
     try assertTrue(markdown.contains("- Outer B"), "Should have second outer bullet")
@@ -101,7 +101,7 @@ test("DTBook poem preserves line structure") {
     </poem>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("Roses are red,"), "Should contain first line")
     try assertTrue(markdown.contains("Violets are blue."), "Should contain second line")
 }
@@ -119,7 +119,7 @@ test("DTBook hr converts to markdown rule") {
     <p>After.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("---"), "Should contain horizontal rule")
 }
 
@@ -136,7 +136,7 @@ test("DTBook prodnote content is skipped") {
     <p>More visible text.</p>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("Visible text"), "Should have visible text")
     try assertTrue(!markdown.contains("producer note"), "Should skip prodnote content")
     try assertTrue(markdown.contains("More visible"), "Should have text after prodnote")
@@ -158,7 +158,7 @@ test("DTBook all heading levels convert correctly") {
     </level6></level5></level4></level3></level2></level1>
     </bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("# Level 1"), "Should have h1")
     try assertTrue(markdown.contains("## Level 2"), "Should have h2")
     try assertTrue(markdown.contains("### Level 3"), "Should have h3")
@@ -177,7 +177,7 @@ test("DTBook empty bodymatter produces minimal output") {
     <h1>Empty Chapter</h1>
     </level1></bodymatter></book></dtbook>
     """
-    let markdown = convertDTBookSnippet(dtbook)
+    let markdown = try convertDTBookSnippet(dtbook)
     try assertTrue(markdown.contains("# Empty Chapter"), "Should have the heading")
 }
 
@@ -217,7 +217,7 @@ test("SMIL with no audio returns empty clips") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 0, "Should find no audio clips in text-only SMIL")
 }
 
@@ -235,7 +235,7 @@ test("SMIL audio without src is skipped") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 0, "Should skip audio elements without src")
 }
 
@@ -256,7 +256,7 @@ test("SMIL with mixed time formats") {
     </body>
     </smil>
     """
-    let clips = parseDAISYAudioSMIL(smil)
+    let clips = try parseDAISYAudioSMIL(smil)
     try assertEqual(clips.count, 2, "Should parse both time formats")
     try assertTrue(abs(clips[0].endTime - 5.5) < 0.001, "First clip should use npt format")
     try assertTrue(abs(clips[1].startTime - 5.5) < 0.001, "Second clip should use H:MM:SS format")

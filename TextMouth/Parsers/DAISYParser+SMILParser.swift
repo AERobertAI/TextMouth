@@ -4,19 +4,15 @@ import Foundation
 
 /// Minimal SAX parser for DAISY SMIL files.
 /// Extracts text content references (the src attributes of <text> elements).
-class DAISYSMILParser: NSObject, XMLParserDelegate {
-    private let data: Data
+class DAISYSMILParser: DAISYSAXParser {
     private var textReferences: [String] = []
 
-    init(data: Data) {
-        self.data = data
-    }
-
-    func parseTextReferences() -> [String] {
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.parse()
+    /// The text fragments the file synchronizes, in reading order.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   truncated or not well-formed; the references after the damage would
+    ///   otherwise vanish from the book's text without notice.
+    func parseTextReferences() throws -> [String] {
+        try parseDocument()
         return textReferences
     }
 

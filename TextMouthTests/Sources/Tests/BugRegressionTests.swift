@@ -36,8 +36,8 @@ test("DAISY 3 OPF parser extracts spine item refs") {
     </package>
     """
     let data = opfXML.data(using: .utf8)!
-    let parser = DAISYOPFParser(data: data)
-    let result = parser.parse()
+    let parser = DAISYOPFParser(data: data, file: "package.opf")
+    let result = try parser.parse()
 
     try assertEqual(result.title, "Multi-Part Book")
     try assertEqual(result.author, "Test Author")
@@ -70,8 +70,8 @@ test("DAISY 3 OPF spine preserves reading order distinct from manifest order") {
     </package>
     """
     let data = opfXML.data(using: .utf8)!
-    let parser = DAISYOPFParser(data: data)
-    let result = parser.parse()
+    let parser = DAISYOPFParser(data: data, file: "package.opf")
+    let result = try parser.parse()
 
     try assertEqual(result.spineItemRefs, ["partC", "partA", "partB"],
                     "Spine order should match OPF spine element, not manifest order")
@@ -93,8 +93,8 @@ test("DAISY 3 OPF with empty spine still parses manifest") {
     </package>
     """
     let data = opfXML.data(using: .utf8)!
-    let parser = DAISYOPFParser(data: data)
-    let result = parser.parse()
+    let parser = DAISYOPFParser(data: data, file: "package.opf")
+    let result = try parser.parse()
 
     try assertTrue(result.spineItemRefs.isEmpty, "Spine should be empty")
     try assertEqual(result.manifest.count, 1, "Manifest should have 1 item")
@@ -127,8 +127,8 @@ test("DAISY 3 OPF spine skips non-DTBook items") {
     </package>
     """
     let data = opfXML.data(using: .utf8)!
-    let parser = DAISYOPFParser(data: data)
-    let result = parser.parse()
+    let parser = DAISYOPFParser(data: data, file: "package.opf")
+    let result = try parser.parse()
 
     // The extraction logic in DAISYParser filters to DTBook media types,
     // so spine refs for non-DTBook items are harmless but present

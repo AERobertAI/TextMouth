@@ -2,9 +2,20 @@ import Foundation
 
 // MARK: - DTBook XML → Markdown Converter
 
+/// Markdown converted from one DTBook file.
+struct DTBookConversion {
+    /// The book text: everything read from the file, up to any damage.
+    let markdown: String
+    /// Set when the file broke off or stopped being well-formed after some
+    /// of its text had been read. That text is kept in `markdown`; this
+    /// describes the damage so callers can report the file as incomplete.
+    /// It never becomes part of the text.
+    let diagnostic: DAISYParserError?
+}
+
 /// Converts DTBook XML (DAISY 3 text content) to Markdown.
 /// Uses SAX parsing to walk the DTBook element tree and emit Markdown output.
-class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
+class DTBookToMarkdownConverter: DAISYSAXParser {
     private var markdown = ""
     private var elementStack: [String] = []
 
@@ -26,17 +37,27 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
     // Skip elements (head, prodnote content, etc.)
     private var skipDepth = 0
 
-    /// Convert DTBook XML data to Markdown
-    func convert(data: Data) -> String {
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        // Disable external entity resolution to prevent delays from DTD loading.
-        // DTBook XML files reference dtbook-2005-3.dtd which isn't accessible
-        // when parsing from in-memory data extracted from a ZIP archive.
-        parser.shouldResolveExternalEntities = false
-        parser.parse()
-        return normalizeWhitespace(markdown)
+    /// Whether any readable character data has been written. Damage after
+    /// this point leaves text worth keeping; damage before it leaves none.
+    private var producedText = false
+
+    /// Convert the file to Markdown.
+    ///
+    /// When the file breaks off or becomes malformed after some of its text
+    /// was read, that text is kept: a book missing its last pages is more
+    /// use read than refused. Elements still open at the damage are closed
+    /// as though the file ended there, so no stray `*`, `[`, or `[Page`
+    /// reaches speech, and the damage is returned as the diagnostic.
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   damaged before any text.
+    func convert() throws -> DTBookConversion {
+        do {
+            try parseDocument()
+            return DTBookConversion(markdown: normalizeWhitespace(markdown), diagnostic: nil)
+        } catch let damage as DAISYParserError where producedText {
+            closeOpenElements()
+            return DTBookConversion(markdown: normalizeWhitespace(markdown), diagnostic: damage)
+        }
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String,
@@ -174,13 +195,27 @@ class DTBookToMarkdownConverter: NSObject, XMLParserDelegate {
         markdown += string
         if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             lastOutputWasBlock = false
+            producedText = true
         }
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?) {
-        let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
+        endElement(ParserUtilities.stripNamespacePrefix(elementName).lowercased())
+    }
 
+    /// Close every element the damage left open, innermost first, exactly as
+    /// their end tags would have: emphasis, links, and page markers are
+    /// finished rather than left dangling in the text.
+    private func closeOpenElements() {
+        while let innermost = elementStack.last {
+            endElement(innermost)
+        }
+    }
+
+    /// Emit the Markdown that ends the element named `localName` (a lowercase
+    /// name without prefix) and pop it from the element stack.
+    private func endElement(_ localName: String) {
         // Handle skip depth tracking
         if skipDepth > 0 {
             skipDepth -= 1
