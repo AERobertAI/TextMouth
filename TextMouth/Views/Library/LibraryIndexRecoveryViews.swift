@@ -123,8 +123,9 @@ struct LibraryIndexRecoverySheet: View {
     }
 
     /// A labelled value, such as the reason or a file path, read by VoiceOver
-    /// as one element ("Reason, The file is empty."). Paths can be selected
-    /// and copied with the mouse or keyboard.
+    /// as one element ("Reason, The file is empty."). The value can be
+    /// selected and copied; Show Saved Copy in Finder reaches the saved copy
+    /// without selecting or typing its path.
     private func detail(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
