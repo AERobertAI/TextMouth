@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -392,6 +393,136 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         }
     }
 
+    // MARK: - Chapter ends and look-ahead
+
+    /// A book with one speakable chapter among skipped ones plays only that
+    /// chapter: speech starts there, nothing is chosen to look ahead to, and
+    /// when it finishes the book ends without visiting a skipped chapter.
+    func testOnlySpeakableChapterAmongSkippedOnesPlaysAlone() throws {
+        try withReader(
+            chapters: [
+                chapter(sections: [("Foreword", "Praise.")]),
+                chapter(sections: [("Preface", "Background.")]),
+                Chapter(title: "One", text: "The only story."),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Foreword", "Preface", "Notes"]
+        ) { reader in
+            var visitedChapters: [Int] = []
+            let visits = reader.$currentChapterIndex.sink { visitedChapters.append($0) }
+            defer { visits.cancel() }
+
+            reader.play()
+            let spokenText = reader.currentTransformation?.modifiedText
+            let lookAhead = reader.nextChapterIndex
+            finishChapter(reader)
+            settle()
+
+            XCTAssertEqual(spokenText, "The only story.")
+            XCTAssertNil(lookAhead)
+            XCTAssertEqual(visitedChapters, [0, 2])
+            XCTAssertEqual(reader.currentChapterIndex, 2)
+            XCTAssertEqual(reader.lastAnnouncement, "Finished: Quiet Pages")
+            XCTAssertFalse(reader.speechService.isSpeaking)
+            XCTAssertFalse(reader.isCurrentlyPlaying)
+            XCTAssertFalse(ReadingStatsService.shared.hasActiveSession)
+        }
+    }
+
+    /// When a chapter finishes, a fully skipped next chapter is passed over
+    /// exactly like an empty one: the look-ahead already chose the chapter
+    /// after it, and speech continues there.
+    func testFinishedChapterPassesOverAFullySkippedNextChapter() throws {
+        try withReader(
+            chapters: [
+                Chapter(title: "One", text: "First chapter."),
+                chapter(sections: [("Interlude", "Short scene.")]),
+                Chapter(title: "Three", text: "Third chapter."),
+            ],
+            skipping: ["Interlude"]
+        ) { reader in
+            var visitedChapters: [Int] = []
+            let visits = reader.$currentChapterIndex.sink { visitedChapters.append($0) }
+            defer { visits.cancel() }
+
+            reader.play()
+            let lookAhead = reader.nextChapterIndex
+            finishChapter(reader)
+            let continuedSpeaking = reader.speechService.isSpeaking
+            silence(reader)
+
+            XCTAssertEqual(lookAhead, 2)
+            XCTAssertTrue(continuedSpeaking)
+            XCTAssertEqual(visitedChapters, [0, 2])
+            XCTAssertEqual(reader.currentChapterIndex, 2)
+            XCTAssertEqual(reader.currentTransformation?.modifiedText, "Third chapter.")
+        }
+    }
+
+    /// A look-ahead chosen before a section was skipped is forgotten when the
+    /// next one is chosen: its engine is dropped instead of being paired
+    /// with the new chapter, and the new choice passes over the now-silent
+    /// chapter.
+    func testLookAheadForgetsAnEngineChosenBeforeASkip() throws {
+        try withReader(
+            chapters: [
+                Chapter(title: "One", text: "First chapter."),
+                chapter(sections: [("Interlude", "Short scene.")]),
+                Chapter(title: "Three", text: "Third chapter."),
+            ]
+        ) { reader in
+            reader.nextChapterEngine = AudioEngineService()
+            reader.nextChapterIndex = 1
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first))
+
+            reader.preRenderNextChapter()
+            // Keep the newly queued render from starting.
+            reader.chapterPlaybackGeneration += 1
+
+            XCTAssertNil(reader.nextChapterEngine)
+            XCTAssertEqual(reader.nextChapterIndex, 2)
+        }
+    }
+
+    /// With nothing speakable after the current chapter, no look-ahead is
+    /// kept at all.
+    func testLookAheadIsClearedWhenNothingSpeakableFollows() throws {
+        try withReader(
+            chapters: [
+                Chapter(title: "One", text: "First chapter."),
+                chapter(sections: [("Notes", "Citations.")]),
+            ],
+            skipping: ["Notes"]
+        ) { reader in
+            reader.nextChapterEngine = AudioEngineService()
+            reader.nextChapterIndex = 1
+
+            reader.preRenderNextChapter()
+
+            XCTAssertNil(reader.nextChapterEngine)
+            XCTAssertNil(reader.nextChapterIndex)
+        }
+    }
+
+    /// A finished look-ahead render is kept only for the chapter that is
+    /// still chosen, in the playback generation the render started in.
+    func testLookAheadRenderIsKeptOnlyForTheChosenChapterInItsGeneration() {
+        XCTAssertTrue(ReaderViewModel.isCurrentLookAhead(
+            capturedGeneration: 4, currentGeneration: 4, renderedChapterIndex: 2, chosenChapterIndex: 2
+        ))
+        // Navigation has moved playback on.
+        XCTAssertFalse(ReaderViewModel.isCurrentLookAhead(
+            capturedGeneration: 4, currentGeneration: 5, renderedChapterIndex: 2, chosenChapterIndex: 2
+        ))
+        // A newer look-ahead chose another chapter, or found none.
+        XCTAssertFalse(ReaderViewModel.isCurrentLookAhead(
+            capturedGeneration: 4, currentGeneration: 4, renderedChapterIndex: 2, chosenChapterIndex: 3
+        ))
+        XCTAssertFalse(ReaderViewModel.isCurrentLookAhead(
+            capturedGeneration: 4, currentGeneration: 4, renderedChapterIndex: 2, chosenChapterIndex: nil
+        ))
+    }
+
     // MARK: - End of book
 
     /// Reaching the end closes this book's listening session, and only this
@@ -495,6 +626,14 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
     private func silence(_ reader: ReaderViewModel) {
         reader.stop()
         reader.chapterPlaybackGeneration += 1
+    }
+
+    /// Finish the chapter being spoken the way the speech service does when
+    /// an utterance ends: speech stops, then completion is reported.
+    /// Stopping first also keeps the test from ever being audible.
+    private func finishChapter(_ reader: ReaderViewModel) {
+        reader.speechService.stop()
+        reader.speechService.onUtteranceFinished?()
     }
 
     /// Let queued main-queue work run. The reader mirrors the speech

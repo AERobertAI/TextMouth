@@ -442,41 +442,39 @@ final class ReaderViewModel: ObservableObject {
 
             self.savePosition()
             self.sleepTimerService.notifyDocumentEnd(by: self.book.id)
-            // Advance to next non-empty chapter if available
-            if let content = self.content {
-                var nextIndex = self.currentChapterIndex + 1
-                while nextIndex < content.chapters.count && content.chapters[nextIndex].text.isEmpty {
-                    nextIndex += 1
-                }
-                if nextIndex < content.chapters.count {
-                    self.debugLog("advancing to chapter \(nextIndex) (from \(self.currentChapterIndex))")
-                    self.currentChapterIndex = nextIndex
-                    self.currentCharacterOffset = 0
+            guard self.content != nil else { return }
+            // Advance to the next chapter with anything to say, passing over
+            // chapters that are empty, entirely inside skipped sections, or
+            // deleted by substitutions, exactly as starting playback does.
+            guard let speech = self.nextSpeakableChapterSpeech(from: self.currentChapterIndex + 1) else {
+                self.debugLog("no more speakable chapters, book ended")
+                self.handleEndOfBook()
+                return
+            }
+            let nextIndex = speech.chapterIndex
+            self.debugLog("advancing to chapter \(nextIndex) (from \(self.currentChapterIndex))")
+            self.currentChapterIndex = nextIndex
+            self.currentCharacterOffset = 0
 
-                    // Increment generation for the new chapter
-                    self.chapterPlaybackGeneration += 1
+            // Increment generation for the new chapter
+            self.chapterPlaybackGeneration += 1
 
-                    // Use pre-rendered engine if available for instant chapter start
-                    if let preEngine = self.nextChapterEngine,
-                       self.nextChapterIndex == nextIndex,
-                       preEngine.hasRenderedAudio,
-                       let speech = self.preparedSpeech(forChapterAt: nextIndex) {
-                        self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
-                        // The prepared speech's map covers every pipeline stage
-                        self.currentTransformation = speech.transformation
-                        self.currentOffsetMap = speech.offsetMap
-                        self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
-                        self.nextChapterEngine = nil
-                        self.nextChapterIndex = nil
-                        // Pre-render the chapter after that
-                        self.preRenderNextChapter()
-                    } else {
-                        self.speakCurrentChapter()
-                    }
-                } else {
-                    self.debugLog("no more chapters, book ended")
-                    self.handleEndOfBook()
-                }
+            // Use the pre-rendered engine for an instant start when it holds
+            // this chapter's audio
+            if let preEngine = self.nextChapterEngine,
+               self.nextChapterIndex == nextIndex,
+               preEngine.hasRenderedAudio {
+                self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
+                // The prepared speech's map covers every pipeline stage
+                self.currentTransformation = speech.transformation
+                self.currentOffsetMap = speech.offsetMap
+                self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
+                self.nextChapterEngine = nil
+                self.nextChapterIndex = nil
+                // Pre-render the chapter after that
+                self.preRenderNextChapter()
+            } else {
+                self.startSpeaking(SpeechStart(speech: speech, offset: 0))
             }
         }
 

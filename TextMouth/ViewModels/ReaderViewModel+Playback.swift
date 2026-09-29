@@ -337,62 +337,54 @@ extension ReaderViewModel {
         handleEndOfBook()
     }
 
-    /// Pre-render the next chapter's audio in background so chapter transitions are instant
+    /// Pre-render the next speakable chapter's audio in the background so
+    /// the chapter transition is instant. Chapters with nothing to say are
+    /// passed over exactly as the utterance-finished path passes over them.
     func preRenderNextChapter() {
-        guard let content = content else { return }
-        var nextIdx = currentChapterIndex + 1
-        while nextIdx < content.chapters.count && content.chapters[nextIdx].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            nextIdx += 1
-        }
-        // Render exactly the text speakCurrentChapter would speak for it.
-        guard nextIdx < content.chapters.count,
-              let chapterText = preparedSpeech(forChapterAt: nextIdx)?.text else {
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
-            return
-        }
-
-        // Cancel any stale pre-render before starting a new one
+        // Forget any earlier look-ahead before choosing a new one. A
+        // cancelled engine keeps the audio it already rendered, and the next
+        // speakable chapter changes when sections are skipped, so an old
+        // engine must never stay paired with a newly chosen chapter.
         nextChapterEngine?.cancelRender()
+        nextChapterEngine = nil
+        nextChapterIndex = nil
 
-        let engine = AudioEngineService()
-        nextChapterIndex = nextIdx
+        // Render exactly the text playback will speak for that chapter.
+        guard let speech = nextSpeakableChapterSpeech(from: currentChapterIndex + 1) else { return }
+        let nextIdx = speech.chapterIndex
+        let chapterText = speech.text
 
         // Keep look-ahead rendering under the same safety limit as the current
         // chapter. Oversized chapters remain playable through direct chunking.
         guard chapterText.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
-            nextChapterEngine = nil
-            nextChapterIndex = nil
             debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.utf16Length) UTF-16 units)")
             return
         }
 
+        let engine = AudioEngineService()
+        nextChapterIndex = nextIdx
         // Capture generation so stale renders from rapid navigation are discarded
         let renderGeneration = chapterPlaybackGeneration
+        // Checked before the render starts and again when it finishes.
+        let isStillWanted: @MainActor @Sendable () -> Bool = { [weak self] in
+            guard let self else { return false }
+            return Self.isCurrentLookAhead(
+                capturedGeneration: renderGeneration,
+                currentGeneration: self.chapterPlaybackGeneration,
+                renderedChapterIndex: nextIdx,
+                chosenChapterIndex: self.nextChapterIndex
+            )
+        }
         SpeechRenderCoordinator.shared.render(
             text: chapterText,
             engine: engine,
             voice: speechService.currentVoice,
             wpm: speechService.wordsPerMinute,
-            shouldStart: { [weak self] in
-                guard let self else { return false }
-                return Self.isCurrentPlaybackGeneration(
-                    captured: renderGeneration,
-                    current: self.chapterPlaybackGeneration
-                )
-            },
+            shouldStart: isStillWanted,
             completion: { [weak self] success in
-            guard let self = self else { return }
-            // Discard result if playback generation changed (user navigated elsewhere)
-            guard Self.isCurrentPlaybackGeneration(
-                captured: renderGeneration,
-                current: self.chapterPlaybackGeneration
-            ) else { return }
-            if success {
+                guard let self, success, isStillWanted() else { return }
                 self.nextChapterEngine = engine
                 self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.utf16Length) UTF-16 units)")
-            }
             }
         )
     }
@@ -401,6 +393,22 @@ extension ReaderViewModel {
     /// captured is still current. Navigation increments the generation.
     nonisolated static func isCurrentPlaybackGeneration(captured: Int, current: Int) -> Bool {
         captured == current
+    }
+
+    /// A look-ahead render may start, and its engine may be kept, only while
+    /// playback is still on the generation it captured and its chapter is
+    /// still the chosen look-ahead. Within one generation a newer look-ahead
+    /// can choose a different chapter, for example after a section is
+    /// skipped, and an engine must never be paired with a chapter it did not
+    /// render.
+    nonisolated static func isCurrentLookAhead(
+        capturedGeneration: Int,
+        currentGeneration: Int,
+        renderedChapterIndex: Int,
+        chosenChapterIndex: Int?
+    ) -> Bool {
+        isCurrentPlaybackGeneration(captured: capturedGeneration, current: currentGeneration)
+            && chosenChapterIndex == renderedChapterIndex
     }
 
     // MARK: - Chapter Speech
