@@ -42,6 +42,22 @@ final class FolderSafetyTests: XCTestCase {
         XCTAssertNil(library.createFolder(name: "Child", parentPath: "/Absolute"))
     }
 
+    /// New names are stored in NFC with the user's casing, while decomposed
+    /// names saved by older versions remain valid library paths.
+    func testFolderNamesAreStoredComposedAndLegacyDecomposedPathsStayValid() throws {
+        let decomposed = "Cafe\u{301} Notes"
+        let composed = "Caf\u{E9} Notes"
+
+        let normalized = try XCTUnwrap(BookFolder.normalizedName("  \(decomposed)  "))
+        XCTAssertTrue(normalized.unicodeScalars.elementsEqual(composed.unicodeScalars))
+        XCTAssertEqual(BookFolder.normalizedName("MiXeD Case"), "MiXeD Case")
+        XCTAssertTrue(BookFolder.isValidLibraryPath("Work/\(decomposed)"))
+
+        var library = Library()
+        let folder = try XCTUnwrap(library.createFolder(name: decomposed))
+        XCTAssertTrue(folder.name.unicodeScalars.elementsEqual(composed.unicodeScalars))
+    }
+
     /// Reject a rename or move before any book or descendant paths change.
     func testRenameAndMoveRejectTraversal() throws {
         var library = Library()
