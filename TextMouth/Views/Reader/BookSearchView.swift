@@ -1,26 +1,94 @@
 import SwiftUI
 import Foundation
 
+/// Case-insensitive matching shared by book search: literal text, or a
+/// regular expression. Ranges are UTF-16 `NSRange`s, TextMouth's text
+/// coordinate system (see `OffsetMap.swift`).
 enum BookTextSearch {
+    /// Every match of `query` in `text`, in reading order. An empty query
+    /// matches nothing; an invalid regular expression throws.
     static func ranges(in text: String, query: String, useRegex: Bool) throws -> [NSRange] {
-        guard !query.isEmpty else { return [] }
-        let fullRange = NSRange(location: 0, length: text.utf16Length)
-        if useRegex {
-            let regex = try NSRegularExpression(pattern: query, options: [.caseInsensitive])
-            return regex.matches(in: text, range: fullRange).map(\.range)
+        guard let matcher = try Matcher(query: query, useRegex: useRegex) else { return [] }
+        var ranges: [NSRange] = []
+        matcher.enumerateRanges(in: text) { range in
+            ranges.append(range)
+            return true
+        }
+        return ranges
+    }
+
+    /// A query compiled once, so a search across many chapters parses its
+    /// regular expression a single time, and whose matching can stop early:
+    /// at a result limit, or when the search is cancelled.
+    struct Matcher {
+        /// The compiled form of a non-empty query.
+        private enum Pattern {
+            case literal(String)
+            case regex(NSRegularExpression)
         }
 
-        let nsText = text as NSString
-        var results: [NSRange] = []
-        var remaining = fullRange
-        while remaining.length > 0 {
-            let match = nsText.range(of: query, options: [.caseInsensitive], range: remaining)
-            guard match.location != NSNotFound else { break }
-            results.append(match)
-            let nextLocation = NSMaxRange(match)
-            remaining = NSRange(location: nextLocation, length: fullRange.length - nextLocation)
+        private let pattern: Pattern
+
+        /// Compile `query`, or return nil for an empty query, which matches
+        /// nothing. Throws when `useRegex` is set and `query` is not a valid
+        /// regular expression.
+        init?(query: String, useRegex: Bool) throws {
+            guard !query.isEmpty else { return nil }
+            pattern = useRegex
+                ? .regex(try NSRegularExpression(pattern: query, options: [.caseInsensitive]))
+                : .literal(query)
         }
-        return results
+
+        /// Report each match in `text` to `visit`, in reading order, until
+        /// `visit` returns false, `shouldStop` returns true, or the text ends.
+        ///
+        /// How promptly a stop request is heard:
+        /// - Literal text: before each lookup. One lookup scans only as far as
+        ///   the next match, which takes tens of milliseconds even across a
+        ///   whole plain-text book held as a single chapter.
+        /// - Regular expression: `.reportProgress` makes Foundation call the
+        ///   block periodically during long-running matching, not only when a
+        ///   match is found. ICU calls back between match attempts and from
+        ///   inside a long backtracking attempt, so even a runaway pattern
+        ///   normally stops promptly.
+        ///
+        /// Known limitation: how often Foundation calls back is undocumented,
+        /// so a single pathological match attempt (catastrophic backtracking)
+        /// is not guaranteed to be interruptible mid-backtrack. The interface
+        /// stays responsive regardless: searches run off the main actor, and
+        /// a search superseded by a newer query is cancelled and its results
+        /// are discarded.
+        func enumerateRanges(
+            in text: String,
+            shouldStop: () -> Bool = { false },
+            visit: (NSRange) -> Bool
+        ) {
+            let fullRange = NSRange(location: 0, length: text.utf16Length)
+            switch pattern {
+            case .regex(let regex):
+                // Progress callbacks arrive without a result; like every
+                // match, each one is a chance to stop.
+                regex.enumerateMatches(in: text, options: [.reportProgress], range: fullRange) { result, _, stop in
+                    if shouldStop() {
+                        stop.pointee = true
+                    } else if let result, !visit(result.range) {
+                        stop.pointee = true
+                    }
+                }
+
+            case .literal(let query):
+                let nsText = text as NSString
+                var remaining = fullRange
+                while remaining.length > 0, !shouldStop() {
+                    let match = nsText.range(of: query, options: [.caseInsensitive], range: remaining)
+                    guard match.location != NSNotFound, visit(match) else { return }
+                    // Resume after the match, always moving forward so the
+                    // loop ends even if a lookup ever returned an empty range.
+                    let nextLocation = max(NSMaxRange(match), match.location + 1)
+                    remaining = NSRange(location: nextLocation, length: fullRange.length - nextLocation)
+                }
+            }
+        }
     }
 }
 
