@@ -47,9 +47,12 @@ extension EPUBParser {
             // Some converted EPUBs have an incomplete machine TOC but a full
             // linked contents section in the reading order (including Helliconia).
             // Only explicitly identified TOCs contribute labels, never prose links.
+            // A contents section must also be rendered: page lists, landmarks,
+            // and hidden subtrees are never searched for one.
             let body = doc.body() ?? doc
-            for element in elements(in: body) where isContentsContainer(element) {
-                navigation += linkedTargets(in: element, relativeTo: path)
+            for element in elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
+            where isContentsContainer(element) {
+                navigation += tocTargets(in: element, relativeTo: path)
             }
         }
 
@@ -97,15 +100,22 @@ extension EPUBParser {
 
     /// Discover the EPUB 3 navigation document via its manifest properties and
     /// the EPUB 2 NCX via the spine's toc attribute. All URLs use their own base.
+    /// Only table-of-contents semantics are chapter navigation: the EPUB 3 TOC
+    /// nav, the NCX navMap, and the legacy guide's TOC. Page lists (including
+    /// the NCX pageList) and landmarks are never read.
     private static func readNavigation(archive: Archive, opfPath: String, opfData: OPFData) -> [NavigationTarget] {
         var result: [NavigationTarget] = []
+        // A guide reference to a navigation document read here would only find
+        // the same TOC again, next to that document's page list and landmarks.
+        var navigationDocumentPaths: Set<String> = []
         let manifest = opfData.manifest.sorted { $0.key < $1.key }
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
                   let doc = try? SwiftSoup.parse(html) else { continue }
-            for element in elements(in: doc) where element.tagName() == "nav" && hasSemanticType("toc", element: element) {
-                result += linkedTargets(in: element, relativeTo: path)
+            navigationDocumentPaths.insert(path)
+            for toc in tableOfContentsNavigations(in: doc) {
+                result += tocTargets(in: toc, relativeTo: path)
             }
         }
 
@@ -124,15 +134,48 @@ extension EPUBParser {
 
         // Legacy guides can refer to a visible TOC that is not itself in the
         // reading order. Honor its fragment so unrelated page links stay out.
+        // The EPUB 3 navigation document was already read above.
         for href in opfData.guideTOCHrefs {
             let path = ParserUtilities.resolvedPackagePath(href, relativeTo: opfPath, preserveFragment: false)
-            guard let html = try? extractString(archive: archive, path: path),
+            guard !navigationDocumentPaths.contains(path),
+                  let html = try? extractString(archive: archive, path: path),
                   let doc = try? SwiftSoup.parse(html) else { continue }
             let fragment = ParserUtilities.splitFragment(href).fragment
-            let target = fragment.isEmpty ? nil : elements(in: doc).first { (try? $0.attr("id")) == fragment }
-            result += linkedTargets(in: target ?? doc.body() ?? doc, relativeTo: path)
+            for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment) {
+                result += tocTargets(in: container, relativeTo: path)
+            }
         }
         return result
+    }
+
+    /// EPUB 3 TOCs are `nav` elements typed `toc` (or given the `doc-toc` role).
+    /// They remain navigation data even when hidden from the rendered page
+    /// (EPUB 3.3 §7.5), so only page lists and landmarks are pruned here.
+    private static func tableOfContentsNavigations(in node: Node) -> [Element] {
+        elements(in: node, pruning: PublicationSemantics.isSupplementaryNavigation).filter {
+            $0.tagName() == "nav" && PublicationSemantics.isTableOfContents($0)
+        }
+    }
+
+    /// Choose what a guide TOC reference names: the element its fragment
+    /// identifies when that element is rendered; otherwise the document's
+    /// semantic TOCs; and only for an older contents page that has neither,
+    /// its body. `linkedTargets` still filters whichever container is chosen.
+    private static func guideTOCContainers(in body: Element, fragment: String) -> [Element] {
+        if !fragment.isEmpty,
+           let target = elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
+            .first(where: { (try? $0.attr("id")) == fragment }) {
+            return [target]
+        }
+        let tocs = tableOfContentsNavigations(in: body)
+        return tocs.isEmpty ? [body] : tocs
+    }
+
+    /// Collect one TOC container's destinations. A semantic TOC keeps its hidden
+    /// branches: EPUB 3.3 (§7.5, example 54) hides them only from the rendered
+    /// content flow, never from navigation interfaces such as the headings list.
+    private static func tocTargets(in container: Element, relativeTo path: String) -> [NavigationTarget] {
+        linkedTargets(in: container, relativeTo: path, insideTOC: PublicationSemantics.isTableOfContents(container))
     }
 
     /// Traverse NCX children directly so labels stay with their own parent and
@@ -152,16 +195,31 @@ extension EPUBParser {
     }
 
     /// Follow a TOC's linked labels in DOM order, retaining nested list levels.
-    private static func linkedTargets(in node: Node, relativeTo path: String, level: Int = 0) -> [NavigationTarget] {
+    /// Page lists and landmarks are never entered. Hidden subtrees are skipped
+    /// unless they belong to a semantic TOC (see `tocTargets`).
+    private static func linkedTargets(
+        in node: Node,
+        relativeTo path: String,
+        level: Int = 0,
+        insideTOC: Bool
+    ) -> [NavigationTarget] {
         var result: [NavigationTarget] = []
         for element in node.getChildNodes().compactMap({ $0 as? Element }) {
+            let withinTOC = insideTOC || PublicationSemantics.isTableOfContents(element)
+            guard !PublicationSemantics.isSupplementaryNavigation(element),
+                  withinTOC || !PublicationSemantics.isHidden(element) else { continue }
             let tag = element.tagName()
             if tag == "a", let href = try? element.attr("href"),
                let label = try? element.text(),
                let target = navigationTarget(href: href, label: label, level: max(1, level), relativeTo: path) {
                 result.append(target)
             }
-            result += linkedTargets(in: element, relativeTo: path, level: level + (tag == "ol" || tag == "ul" ? 1 : 0))
+            result += linkedTargets(
+                in: element,
+                relativeTo: path,
+                level: level + (tag == "ol" || tag == "ul" ? 1 : 0),
+                insideTOC: withinTOC
+            )
         }
         return result
     }
@@ -185,30 +243,26 @@ extension EPUBParser {
 
     /// Recognize semantic TOCs and conventional converted-book containers,
     /// without treating arbitrary lists or links in the prose as navigation.
+    /// A page list or landmarks nav is never a contents section, whatever its id.
     private static func isContentsContainer(_ element: Element) -> Bool {
-        guard ["nav", "section", "div", "article"].contains(element.tagName()) else { return false }
-        if hasSemanticType("toc", element: element) { return true }
-        let role = (try? element.attr("role")) ?? ""
-        if role.split(whereSeparator: \.isWhitespace).contains("doc-toc") { return true }
+        guard PublicationSemantics.isNavigationContainer(element),
+              !PublicationSemantics.isSupplementaryNavigation(element) else { return false }
+        if PublicationSemantics.isTableOfContents(element) { return true }
         let id = ((try? element.attr("id")) ?? "").lowercased()
         return ["toc", "contents", "table-of-contents"].contains(id) || id.hasSuffix("-toc")
     }
 
-    /// EPUB permits namespace aliases for epub:type; check the local attribute
-    /// name and whitespace-separated tokens instead of assuming one prefix.
-    private static func hasSemanticType(_ type: String, element: Element) -> Bool {
-        (element.getAttributes()?.asList() ?? []).contains {
-            $0.getKey().hasSuffix(":type") && $0.getValue().split(whereSeparator: \.isWhitespace).contains(Substring(type))
-        }
-    }
-
     /// Walk without selector caches, releasing each temporary document after
     /// its metadata is collected. Reversing children preserves source order.
-    private static func elements(in node: Node) -> [Element] {
+    /// A pruned element is skipped together with everything inside it.
+    private static func elements(in node: Node, pruning isPruned: (Element) -> Bool) -> [Element] {
         var pending: [Node] = [node]
         var result: [Element] = []
         while let current = pending.popLast() {
-            if let element = current as? Element { result.append(element) }
+            if let element = current as? Element {
+                guard !isPruned(element) else { continue }
+                result.append(element)
+            }
             pending.append(contentsOf: current.getChildNodes().reversed())
         }
         return result

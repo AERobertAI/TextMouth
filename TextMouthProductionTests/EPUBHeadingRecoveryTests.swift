@@ -316,6 +316,94 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(chapter.headings.first?.characterOffset, chapter.text.utf16Offset(of: range.lowerBound))
     }
 
+    /// A guide may name a contents document without a fragment. When that
+    /// document has a semantic TOC (here only a `doc-toc` role), just its
+    /// entries count: page lists, landmarks, and prose links beside it add no
+    /// chapter names or headings, even when none of them is hidden.
+    func testGuideTOCWithoutFragmentUsesOnlyItsSemanticTOC() throws {
+        let book = try makeBook(
+            chapters: [
+                ("Text/one.xhtml", "<p>Body <span id='p1'></span>one.</p>"),
+                ("Text/two.xhtml", "<p>Body two.</p>")
+            ],
+            extraFiles: ["Navigation/contents.xhtml": """
+            <html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+            <p>See <a href="../Text/two.xhtml">an unrelated prose link</a>.</p>
+            <nav role="doc-toc"><ol><li><a href="../Text/one.xhtml">Title one</a></li>
+            <li><a href="../Text/two.xhtml">Title two</a></li></ol></nav>
+            <nav epub:type="landmarks"><ol><li><a href="../Text/two.xhtml">Begin Reading</a></li></ol></nav>
+            <nav epub:type="page-list"><ol><li><a href="../Text/one.xhtml#p1">1</a></li></ol></nav>
+            </body></html>
+            """],
+            guide: "<guide><reference type='toc' href='../Navigation/contents.xhtml'/></guide>"
+        )
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(content.allHeadings.map(\.text), ["Title one", "Title two"])
+        XCTAssertEqual(content.allHeadings.map(\.characterOffset), [0, 0])
+        XCTAssertEqual(content.chapters.map(\.title), ["Title one", "Title two"])
+        let direct = try EPUBParser.parse(url: URL(fileURLWithPath: book.filePath))
+        XCTAssertEqual(direct.allHeadings, content.allHeadings)
+    }
+
+    /// An older contents page without TOC semantics still names chapters by
+    /// its rendered links, but hidden links and landmarks never do.
+    func testLegacyGuideContentsSkipHiddenLinksAndLandmarks() throws {
+        let book = try makeBook(
+            chapters: [("Text/one.xhtml", "<p>Body.</p>")],
+            extraFiles: ["Navigation/contents.xhtml": """
+            <html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+            <div hidden="hidden"><a href="../Text/one.xhtml">Hidden label</a></div>
+            <nav epub:type="landmarks"><ol><li><a href="../Text/one.xhtml">Begin Reading</a></li></ol></nav>
+            <p><a href="../Text/one.xhtml">Visible label</a></p>
+            </body></html>
+            """],
+            guide: "<guide><reference type='toc' href='../Navigation/contents.xhtml'/></guide>"
+        )
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(content.allHeadings.map(\.text), ["Visible label"])
+    }
+
+    /// EPUB 3.3 (§7.5, example 54) hides a TOC, or a branch of one, only from
+    /// the rendered page; navigation interfaces still offer every entry. A
+    /// `doc-toc` role alone also identifies the navigation document's TOC.
+    func testHiddenTOCBranchesRemainInTheHeadingsList() throws {
+        let book = try makeBook(
+            chapters: [("Text/one.xhtml", "<p>Introduction.</p><p id='s1'>Section text.</p><p id='s11'>Subsection text.</p>")],
+            extraFiles: ["Navigation/nav.xhtml": """
+            <html><body><nav role="doc-toc" hidden=""><ol>
+            <li><a href="../Text/one.xhtml">Chapter one</a><ol>
+            <li><a href="../Text/one.xhtml#s1">Section 1</a><ol hidden="">
+            <li><a href="../Text/one.xhtml#s11">Section 1.1</a></li>
+            </ol></li></ol></li></ol></nav></body></html>
+            """],
+            manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>"
+        )
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        let chapter = try XCTUnwrap(content.chapters.first)
+        XCTAssertEqual(chapter.text, "Introduction.\n\nSection text.\n\nSubsection text.")
+        XCTAssertEqual(content.allHeadings.map(\.text), ["Chapter one", "Section 1", "Section 1.1"])
+        XCTAssertEqual(content.allHeadings.map(\.level), [1, 2, 3])
+        let subsection = try XCTUnwrap(chapter.text.range(of: "Subsection"))
+        XCTAssertEqual(content.allHeadings.last?.characterOffset, chapter.text.utf16Offset(of: subsection.lowerBound))
+    }
+
+    /// A contents section in the reading order names chapters only when it
+    /// is rendered: hidden containers and page lists never supply labels.
+    func testReadingOrderContentsIgnoreHiddenAndPageListContainers() throws {
+        let book = try makeBook(chapters: [
+            ("Text/one.xhtml", """
+            <html xmlns:epub="http://www.idpf.org/2007/ops"><body><p>Opening.</p>
+            <div id="toc" hidden=""><p><a href="two.xhtml">Hidden label</a></p></div>
+            <nav epub:type="page-list"><div id="contents"><a href="two.xhtml#p5">5</a></div></nav>
+            </body></html>
+            """),
+            ("Text/two.xhtml", "<p>Body <span id='p5'></span>two.</p>")
+        ])
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(content.allHeadings.map(\.text), ["Chapter 1", "Chapter 2"])
+        XCTAssertEqual(content.chapters.map(\.title), ["Chapter 1", "Chapter 2"])
+    }
+
     /// Optional corpus verification uses only a disposable copy supplied by the
     /// build setting. Ordinary test runs have no dependency on a user's library.
     func testCopiedHelliconiaRetainsTextAndRecoversEveryChapter() throws {
