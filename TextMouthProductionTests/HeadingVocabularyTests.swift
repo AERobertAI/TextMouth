@@ -149,6 +149,12 @@ final class HeadingPositionTests: XCTestCase {
         XCTAssertNil(position.title(contentTitle: nil, bookTitle: "Travels"))
     }
 
+    func testNonBlankKeepsVisibleTextAndDropsWhitespace() {
+        XCTAssertEqual(" Arrival ".nonBlank, " Arrival ")
+        XCTAssertNil(" \n\t".nonBlank)
+        XCTAssertNil("".nonBlank)
+    }
+
     func testBlankTitlesAreOmitted() {
         let blank = [Heading(level: 1, text: "  ", chapterIndex: 0, characterOffset: 0)]
 

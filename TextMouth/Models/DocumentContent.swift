@@ -130,6 +130,14 @@ struct Heading: Identifiable, Hashable {
     }
 }
 
+extension String {
+    /// This string, or nil when it holds only whitespace, so a blank title is
+    /// left out of labels instead of being shown or spoken as an empty phrase.
+    var nonBlank: String? {
+        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : self
+    }
+}
+
 /// A reading position described by the book's headings — the same list the
 /// headings panel shows. Internally a book is divided into content units
 /// (EPUB spine documents, audio files, or one whole text file) whose count
@@ -178,7 +186,7 @@ struct HeadingPosition: Equatable {
     /// The containing heading's text, or nil before the first heading or when
     /// that heading's text is blank.
     var headingText: String? {
-        Self.visibleText(heading?.text)
+        heading?.text.nonBlank
     }
 
     /// Name for the position, or nil when nothing beyond `label` is worth
@@ -187,17 +195,10 @@ struct HeadingPosition: Equatable {
     /// then not when that title merely repeats the book title.
     func title(contentTitle: String?, bookTitle: String) -> String? {
         guard count == 0 else { return headingText }
-        guard let contentTitle = Self.visibleText(contentTitle),
+        guard let contentTitle = contentTitle?.nonBlank,
               !Self.isSameTitle(contentTitle, bookTitle)
         else { return nil }
         return contentTitle
-    }
-
-    /// Return `text` when it contains something other than whitespace, so a
-    /// blank title is omitted instead of producing an empty spoken phrase.
-    private static func visibleText(_ text: String?) -> String? {
-        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return text
     }
 
     /// Compare titles the way a listener hears them: ignoring letter case and

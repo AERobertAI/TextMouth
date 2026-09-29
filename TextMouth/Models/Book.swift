@@ -504,7 +504,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// internal content-unit numbers are never shown in its place.
     func accessibilityLabel(headingText: String?) -> String {
         var parts = ["Bookmark \(number)"]
-        if let headingText, !headingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if let headingText = headingText?.nonBlank {
             parts.append(headingText)
         }
         if !label.isEmpty { parts.append("Note: \(label)") }
