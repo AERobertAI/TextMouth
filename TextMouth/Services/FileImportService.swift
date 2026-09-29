@@ -1376,4 +1376,70 @@ enum FileImportService {
         }
         return adopted
     }
+
+    /// Recreates folder rows for the folders on disk and for every folder a
+    /// book lives in. Only the library index records folder rows, so when it
+    /// cannot be read, the directories under the library directory are the
+    /// best remaining evidence of the user's folders. Without rows, books in
+    /// folders would be unreachable from the Folders view, and Rebuild Library
+    /// Index would save a library whose folders had vanished.
+    ///
+    /// Package directories, their contents, and hidden entries are skipped.
+    /// Paths deeper than `BookFolder.maxDepth`, names folder creation refuses,
+    /// and folders equivalent to an existing row are left out. Returns the
+    /// number of rows added; running it again adds none.
+    @discardableResult
+    static func adoptLibraryFolders(
+        library: inout Library,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> Int {
+        var paths = folderDirectoryPaths(in: libraryDirectory)
+        for book in library.books where !book.folderPath.isEmpty {
+            let components = book.folderPath.components(separatedBy: "/")
+            for depth in 1...components.count {
+                paths.insert(components.prefix(depth).joined(separator: "/"))
+            }
+        }
+
+        // Parents first, so every row's parent already exists when it is added.
+        let parentsFirst = paths.sorted { lhs, rhs in
+            let lhsDepth = lhs.components(separatedBy: "/").count
+            let rhsDepth = rhs.components(separatedBy: "/").count
+            return lhsDepth == rhsDepth ? lhs < rhs : lhsDepth < rhsDepth
+        }
+        var added = 0
+        for path in parentsFirst where library.existingFolder(equivalentTo: path) == nil {
+            var components = path.components(separatedBy: "/")
+            let name = components.removeLast()
+            let parentPath = components.joined(separator: "/")
+            if (try? library.createFolderThrowing(name: name, parentPath: parentPath)) != nil {
+                added += 1
+            }
+        }
+        return added
+    }
+
+    /// Relative paths of the folder directories under `libraryDirectory`:
+    /// directories that are not packages, not inside a package, not hidden,
+    /// and no deeper than a folder row can be.
+    private static func folderDirectoryPaths(in libraryDirectory: URL) -> Set<String> {
+        guard let enumerator = FileManager.default.enumerator(atPath: libraryDirectory.path) else {
+            return []
+        }
+        var paths = Set<String>()
+        while let relativePath = enumerator.nextObject() as? String {
+            // Attributes come from lstat, so a symbolic link is never followed.
+            guard (enumerator.fileAttributes?[.type] as? FileAttributeType) == .typeDirectory else {
+                continue
+            }
+            let name = (relativePath as NSString).lastPathComponent
+            let depth = relativePath.components(separatedBy: "/").count
+            if name.hasPrefix(".") || name.lowercased().hasSuffix(".tmb") || depth > BookFolder.maxDepth {
+                enumerator.skipDescendants()
+                continue
+            }
+            paths.insert(relativePath)
+        }
+        return paths
+    }
 }
