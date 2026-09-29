@@ -45,6 +45,27 @@ extension ReaderViewModel {
         announceToVoiceOver("Voice changed to \(voice.name)")
     }
 
+    /// Apply this book's saved voice, speed, and pitch overrides to the speech
+    /// engine. Runs when the reader opens and again after global speech
+    /// settings change, because per-book overrides take priority.
+    ///
+    /// Audio books store their playback multiplier in `localWPM`, so their
+    /// saved speed must never reach the speech engine: 1.25 would clamp to
+    /// the 50 WPM minimum and make "Where Am I?" speak at a crawl. Voice and
+    /// pitch mean the same thing for every format and are still applied.
+    func applyLocalSpeechOverrides() {
+        if !isAudioBook, let localWPM = book.localWPM {
+            speechService.setSpeedRealtime(localWPM)
+        }
+        if let localPitch = book.localPitch {
+            speechService.setPitchRealtime(localPitch)
+        }
+        if let localVoiceID = book.localVoiceID,
+           let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
+            speechService.currentVoice = voice
+        }
+    }
+
     /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
     func saveLocalVoiceSettings() {
         libraryViewModel.updateLocalVoiceAndSpeed(

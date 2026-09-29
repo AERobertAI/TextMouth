@@ -232,17 +232,8 @@ final class ReaderViewModel: ObservableObject {
             currentCharacterOffset = pos.characterOffset
         }
 
-        // Apply per-book voice/speed/pitch overrides
-        if let localWPM = book.localWPM {
-            speechService.setSpeedRealtime(localWPM)
-        }
-        if let localPitch = book.localPitch {
-            speechService.setPitchRealtime(localPitch)
-        }
-        if let localVoiceID = book.localVoiceID,
-           let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
-            speechService.currentVoice = voice
-        }
+        // Apply per-book voice/speed/pitch overrides (never an audio multiplier)
+        applyLocalSpeechOverrides()
 
         setupCallbacks()
         setupNotifications()
@@ -691,16 +682,7 @@ final class ReaderViewModel: ObservableObject {
                 // the user committed to a fade duration when they started.
                 // The next timer will pick up the new value automatically.
                 // Re-apply per-book overrides (they take priority over global)
-                if let localWPM = self.book.localWPM {
-                    self.speechService.setSpeedRealtime(localWPM)
-                }
-                if let localPitch = self.book.localPitch {
-                    self.speechService.setPitchRealtime(localPitch)
-                }
-                if let localVoiceID = self.book.localVoiceID,
-                   let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
-                    self.speechService.currentVoice = voice
-                }
+                self.applyLocalSpeechOverrides()
             }
             .store(in: &cancellables)
 

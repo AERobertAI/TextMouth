@@ -603,6 +603,9 @@ extension ReaderViewModel {
     /// is clamped and snapped by `AudioSpeed.normalized(_:)`, so the speed
     /// that plays is exactly the one that is shown, announced, and saved.
     func setAudioSpeed(_ requestedSpeed: Double) {
+        // A text book's `localWPM` holds words per minute; writing a
+        // multiplier there would corrupt its speech speed.
+        guard isAudioBook else { return }
         let newSpeed = AudioSpeed.normalized(requestedSpeed)
         audioSpeed = newSpeed
         audioPlaybackService.setSpeed(newSpeed)

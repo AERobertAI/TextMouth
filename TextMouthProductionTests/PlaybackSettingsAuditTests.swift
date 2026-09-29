@@ -151,6 +151,60 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(reader.totalEstimatedTime, libraryEstimate)
     }
 
+    // MARK: - Keeping audio multipliers out of speech WPM
+
+    /// Opening an audio book must not push its saved multiplier into the
+    /// speech engine, where 1.25 would clamp to 50 WPM and slow "Where Am I?".
+    func testOpeningAudioBookLeavesSpeechSpeedAtGlobalDefault() {
+        withGlobalSpeechSpeed(240) {
+            let reader = makeReader(format: .audio, localWPM: 1.25)
+            defer { reader.close() }
+
+            XCTAssertEqual(reader.speechService.wordsPerMinute, 240)
+            XCTAssertEqual(reader.audioSpeed, 1.25)
+        }
+    }
+
+    /// Global speech-setting changes re-apply per-book overrides; for an
+    /// audio book that must not include the multiplier stored in `localWPM`.
+    func testSpeechSettingsChangeKeepsAudioMultiplierOutOfSpeechSpeed() {
+        withGlobalSpeechSpeed(240) {
+            let reader = makeReader(format: .audio, localWPM: 1.25)
+            defer { reader.close() }
+
+            NotificationCenter.default.post(name: .speechSettingsChanged, object: nil)
+
+            XCTAssertEqual(reader.speechService.wordsPerMinute, 240)
+            XCTAssertEqual(reader.audioSpeed, 1.25)
+        }
+    }
+
+    /// Text books still apply their saved WPM when opened and after a global
+    /// speech-setting change.
+    func testTextBookStillAppliesItsSavedWPM() {
+        withGlobalSpeechSpeed(240) {
+            let reader = makeReader(format: .txt, localWPM: 300)
+            defer { reader.close() }
+            XCTAssertEqual(reader.speechService.wordsPerMinute, 300)
+
+            NotificationCenter.default.post(name: .speechSettingsChanged, object: nil)
+
+            XCTAssertEqual(reader.speechService.wordsPerMinute, 300)
+        }
+    }
+
+    /// The audio write path must never store a multiplier in a text book's
+    /// words-per-minute slot, even if a caller reaches it by mistake.
+    func testSetAudioSpeedIgnoresTextBooks() {
+        let reader = makeReader(format: .txt, localWPM: 300)
+        defer { reader.close() }
+
+        reader.setAudioSpeed(1.5)
+
+        XCTAssertEqual(reader.book.localWPM, 300)
+        XCTAssertEqual(reader.audioSpeed, 1)
+    }
+
     // MARK: - Audio speed labels
 
     /// Visible text keeps hundredths only when present and always shows at
@@ -192,6 +246,16 @@ final class PlaybackSettingsAuditTests: XCTestCase {
             XCTAssertEqual(Double(number), speed, "Visible label for \(speed)")
             XCTAssertEqual(AudioSpeed.spokenLabel(for: speed), "\(number) times speed")
         }
+    }
+
+    /// Run `body` with a known global speech speed so WPM assertions are
+    /// exact, then restore the saved preference (removing it if it was unset).
+    private func withGlobalSpeechSpeed(_ wordsPerMinute: Double, _ body: () -> Void) {
+        let defaults = UserDefaults.standard
+        let savedSpeed = defaults.object(forKey: "wordsPerMinute")
+        defer { defaults.set(savedSpeed, forKey: "wordsPerMinute") }
+        defaults.set(wordsPerMinute, forKey: "wordsPerMinute")
+        body()
     }
 
     /// Use an isolated notification center and a nonexistent file: these
