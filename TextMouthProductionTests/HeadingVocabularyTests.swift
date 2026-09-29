@@ -160,3 +160,65 @@ final class HeadingPositionTests: XCTestCase {
             .title(contentTitle: "\n", bookTitle: "Travels"))
     }
 }
+
+/// Reader-level wiring: locations are computed from the reader's published
+/// heading list, which always mirrors the content the reader holds.
+@MainActor
+final class ReaderHeadingLocationTests: XCTestCase {
+    /// Three content units: the first opens with a heading, the second has a
+    /// heading part-way through, and the third has none. Each unit holds
+    /// several sentences so navigation can cross unit boundaries.
+    private func threeUnitContent() -> DocumentContent {
+        DocumentContent(
+            title: "Fixture",
+            author: "Tester",
+            chapters: [
+                Chapter(
+                    title: "Unit One",
+                    text: "Opening words. More words.",
+                    headings: [Heading(level: 1, text: "Opening", characterOffset: 0)]
+                ),
+                Chapter(
+                    title: "Unit Two",
+                    text: "Lead in. Middle words. More middle.",
+                    headings: [Heading(level: 2, text: "Middle", characterOffset: 9)]
+                ),
+                Chapter(title: "Unit Three", text: "Closing words. Final words."),
+            ]
+        )
+    }
+
+    /// A reader whose source file does not exist, so its background load
+    /// fails harmlessly and each test assigns content directly. The unique
+    /// path keeps fixtures from sharing persisted library state.
+    private func makeReader(bookmarks: [Bookmark] = []) -> ReaderViewModel {
+        let book = Book(
+            title: "Heading Vocabulary",
+            format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-heading-vocabulary.txt",
+            md5Hash: UUID().uuidString,
+            bookmarks: bookmarks
+        )
+        let library = LibraryViewModel()
+        library.library = Library(books: [book])
+        return ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+    }
+
+    func testAssigningContentPublishesItsHeadings() {
+        let reader = makeReader()
+        defer { reader.close() }
+
+        reader.content = threeUnitContent()
+
+        XCTAssertEqual(reader.headings.map(\.text), ["Opening", "Middle"])
+        XCTAssertEqual(reader.headings.map(\.id), reader.content?.allHeadings.map(\.id))
+
+        reader.content = nil
+
+        XCTAssertTrue(reader.headings.isEmpty)
+    }
+}
