@@ -47,6 +47,15 @@ extension LibraryViewModel {
     /// Migrate any books still using old storage paths to .tmb packages,
     /// and fix any stale file paths pointing to old locations.
     func migrateOldBooksIfNeeded() {
+        // Every repair below reconciles the index with the disk and then saves
+        // the index. While the index cannot be read there is nothing to
+        // reconcile, and saving would replace the evidence the user may still
+        // recover, so show a library rebuilt from disk and save nothing.
+        guard indexRecovery == nil else {
+            buildProvisionalLibrary()
+            return
+        }
+
         var needsSave = false
 
         // Merge folder rows that name one directory on this volume before the
@@ -242,6 +251,14 @@ extension LibraryViewModel {
         }
     }
 
+    /// Bring every book's text cache and statistics up to date: caches first,
+    /// then statistics, which can use them. Both run on background queues.
+    func updateContentCachesAndStatistics() {
+        extractMissingContentCaches(then: { [weak self] in
+            self?.calculateMissingBookStats()
+        })
+    }
+
     nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {
         book.contentIndexVersion != BookContentIndex.currentVersion
             || book.totalWordCount == nil
@@ -350,13 +367,12 @@ extension LibraryViewModel {
     /// adopt orphaned .tmb packages, and extract missing content caches.
     func rebuildDirectory() {
         do {
+            try ensureLibraryIndexIsReadable()
             try FileImportService.rebuildDirectoryStructure(library: &library)
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
             // Extract content caches for any newly adopted books, then recalculate stats
-            extractMissingContentCaches(then: { [weak self] in
-                self?.calculateMissingBookStats()
-            })
+            updateContentCachesAndStatistics()
         } catch {
             errorMessage = "Failed to rebuild directory: \(error.localizedDescription)"
             showError = true
@@ -366,6 +382,7 @@ extension LibraryViewModel {
     /// Rebuild to the default location (~/.TextMouth), moving data there
     func rebuildToDefault() {
         do {
+            try ensureLibraryIndexIsReadable()
             let defaultRoot = TextMouthPaths.defaultRoot
             if TextMouthPaths.root.path != defaultRoot.path {
                 try TextMouthPaths.moveDataDirectory(to: defaultRoot, library: &library)
@@ -384,6 +401,7 @@ extension LibraryViewModel {
     /// Move the data directory to a new location
     func moveDataDirectory(to newURL: URL) {
         do {
+            try ensureLibraryIndexIsReadable()
             try TextMouthPaths.moveDataDirectory(to: newURL, library: &library)
             configService.config.dataDirectoryPath = newURL.path
             configService.saveToDisk()

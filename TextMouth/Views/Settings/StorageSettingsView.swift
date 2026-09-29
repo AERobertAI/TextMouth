@@ -45,10 +45,22 @@ struct StorageSettingsView: View {
                 .accessibilityLabel("Data directory: \(TextMouthPaths.rootPath)")
 
                 LabeledContent("Status") {
-                    Text(TextMouthPaths.directoryExists ? "Active" : "Not Created")
-                        .foregroundColor(TextMouthPaths.directoryExists ? .green : .red)
+                    Text(Self.statusText(
+                        isRecoveringIndex: isRecoveringIndex,
+                        directoryExists: TextMouthPaths.directoryExists
+                    ))
+                    .foregroundColor(isRecoveringIndex || !TextMouthPaths.directoryExists ? .red : .green)
                 }
 
+                if isRecoveringIndex {
+                    Text(LibraryIndexRecoveryText.settingsExplanation)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Moving or rebuilding the directory would act on the
+                // temporary library while the index cannot be read.
                 HStack {
                     Button("Change Location...") {
                         showFolderPicker = true
@@ -64,10 +76,12 @@ struct StorageSettingsView: View {
                         .accessibilityHint("Moves data back to the default location at ~/.TextMouth")
                     }
                 }
+                .disabled(isRecoveringIndex)
 
                 Button("Rebuild Directory") {
                     showRebuildConfirmation = true
                 }
+                .disabled(isRecoveringIndex)
                 .accessibilityLabel("Rebuild TextMouth directory")
                 .accessibilityHint("Recreates the directory structure and migrates any books using old storage")
 
@@ -247,6 +261,21 @@ struct StorageSettingsView: View {
         .sheet(isPresented: $showDuplicateFinder) {
             DuplicateFinderView(libraryViewModel: libraryViewModel)
         }
+    }
+
+    /// Whether the library index could not be read and is being recovered.
+    private var isRecoveringIndex: Bool {
+        libraryViewModel.indexRecovery != nil
+    }
+
+    /// The data directory status, as shown and as VoiceOver reads it. An
+    /// unreadable library index outranks "Active": the directory exists, but
+    /// its library index is not being saved.
+    nonisolated static func statusText(isRecoveringIndex: Bool, directoryExists: Bool) -> String {
+        if isRecoveringIndex {
+            return LibraryIndexRecoveryText.settingsStatus
+        }
+        return directoryExists ? "Active" : "Not Created"
     }
 
     private func performRebuild() {

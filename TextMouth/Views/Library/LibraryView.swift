@@ -136,6 +136,14 @@ struct LibraryView: View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
 
         VStack(spacing: 0) {
+            // While the library index cannot be read, keep that visible after
+            // the recovery sheet closes, with a way back to its options.
+            if libraryViewModel.indexRecovery != nil {
+                LibraryIndexRecoveryBanner {
+                    libraryViewModel.showIndexRecoveryOptions = true
+                }
+            }
+
             // Category picker
             Picker("View", selection: $category) {
                 ForEach(LibraryCategory.allCases, id: \.self) { cat in
@@ -512,6 +520,19 @@ struct LibraryView: View {
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
         }))
+        // Library index recovery: presented at launch when library.json
+        // cannot be read, and again from the recovery banner.
+        .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
+            if let recovery = libraryViewModel.indexRecovery {
+                LibraryIndexRecoverySheet(
+                    recovery: recovery,
+                    onTryAgain: { announceRecoveryOutcome(libraryViewModel.retryLibraryIndex()) },
+                    onRebuild: { announceRecoveryOutcome(libraryViewModel.rebuildLibraryIndex()) },
+                    onContinue: { libraryViewModel.showIndexRecoveryOptions = false },
+                    onQuit: { libraryViewModel.quitWithoutWritingLibraryIndex() }
+                )
+            }
+        }
         .sheet(item: $bookInfoTarget) { book in
             if book.format == .epub, let metadata = richInfoEPUBMetadata {
                 // EPUB books get the rich metadata editor with publisher, date, etc.
@@ -905,6 +926,20 @@ struct LibraryView: View {
         ) {
             let position = result.direction < 0 ? "above" : "below"
             let message = "Moved \(result.movedTitle) \(position) \(result.adjacentTitle)"
+            announceToVoiceOver(message)
+        }
+    }
+
+    /// Announce what a library index recovery action did. When the action
+    /// closed the recovery sheet, wait for VoiceOver to settle on the library
+    /// first, so the change of focus does not cut the announcement off.
+    private func announceRecoveryOutcome(_ outcome: LibraryIndexRecoveryOutcome) {
+        let message = outcome.message
+        guard !libraryViewModel.showIndexRecoveryOptions else {
+            announceToVoiceOver(message)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             announceToVoiceOver(message)
         }
     }

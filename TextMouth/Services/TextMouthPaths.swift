@@ -27,6 +27,13 @@ enum DataDirectoryMigrator {
         library: Library,
         fileManager: FileManager = .default
     ) throws -> Library {
+        // The copy's library.json is written from `library`. While the index
+        // cannot be read, that library is only the provisional one rebuilt
+        // from disk, and publishing it would bypass the index write
+        // suspension, so migration waits until the index is recovered.
+        guard !LibraryPersistenceService.areIndexWritesSuspended else {
+            throw LibraryIndexRecoveryError.indexUnreadable
+        }
         let source = oldRoot.standardizedFileURL
         let destination = newRoot.standardizedFileURL
         let sourcePath = source.path
@@ -381,8 +388,20 @@ enum TextMouthPaths {
         return nil
     }
 
+    /// The Application Support directory used by the oldest TextMouth
+    /// versions, which kept their library index and books there.
+    ///
+    /// Hosted tests get a location inside their isolated root instead. The
+    /// legacy directory lies outside the data root, so without this the test
+    /// host's startup could migrate, quarantine, or delete a developer's real
+    /// legacy library, and legacy-location tests could not run safely.
     static var oldAppSupportDir: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        if let unitTestRoot {
+            return unitTestRoot
+                .appendingPathComponent("LegacyApplicationSupport", isDirectory: true)
+                .appendingPathComponent("TextMouth", isDirectory: true)
+        }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("TextMouth", isDirectory: true)
     }
 

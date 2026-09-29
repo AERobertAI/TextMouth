@@ -19,7 +19,10 @@ final class CacheUpdateTests: XCTestCase {
             XCTAssertEqual(model.library.books[0].cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
             XCTAssertEqual(model.library.books[1].cacheFormatVersion, "3.0.3")
             LibraryPersistenceService.flushPendingSave()
-            XCTAssertEqual(LibraryPersistenceService.load().books[0].cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+            XCTAssertEqual(
+                LibraryPersistenceService.load().library?.books.first?.cacheFormatVersion,
+                MarkdownCacheService.currentCacheVersion
+            )
             firstCheckpoint.fulfill()
         }
         defer { subscription.cancel() }
@@ -240,7 +243,7 @@ final class CacheUpdateTests: XCTestCase {
     /// Keep the shared hosted-test library index intact after UI batch tests.
     private func preserveLibraryIndex() {
         LibraryPersistenceService.flushPendingSave()
-        let previous = LibraryPersistenceService.load()
+        let previous = LibraryPersistenceService.load().library ?? Library()
         addTeardownBlock {
             LibraryPersistenceService.save(previous)
             LibraryPersistenceService.flushPendingSave()
