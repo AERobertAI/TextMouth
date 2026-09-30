@@ -511,6 +511,32 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertNil(singleFileIndex().validationFailure(for: .audio, audioBaseURL: emptyFolder))
     }
 
+    // MARK: - Alignment with the reading text
+
+    /// An index is aligned with the chapters it was built from.
+    func testIndexIsAlignedWithItsOwnChapters() {
+        XCTAssertNil(textIndex().alignmentFailure(with: textChapters()))
+    }
+
+    /// Text with another number of chapters cannot share the index's offsets.
+    func testIndexIsMisalignedWithAnotherChapterCount() {
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: Array(textChapters().prefix(1))),
+            "chapters has 2 entries, but the reading text has 1"
+        )
+    }
+
+    /// A chapter of another length shifts every offset after it.
+    func testIndexIsMisalignedWithAnotherChapterLength() {
+        var chapters = textChapters()
+        chapters[1].text += "!"
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            "chapters[1].characterCount is 15, but the reading text holds 16"
+        )
+    }
+
     // MARK: - Opening a book
 
     /// A sound saved text index keeps the fast path.
@@ -542,6 +568,31 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(
             rejections(of: book),
             ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].startCharacterOffset is \(start + 7), expected \(start)"]
+        )
+        try assertRepairIsReused(result, for: book)
+    }
+
+    /// A sound index describing other text than content.md now holds is set
+    /// aside and the cache re-indexed, so offsets point into the words the
+    /// reader shows.
+    func testTextIndexDescribingOtherTextIsRebuilt() throws {
+        let book = try makeTextBook()
+        let saved = try savedIndex(of: book)
+        let addition = " Nine ten."
+        let cache = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
+        try String(contentsOf: cache, encoding: .utf8)
+            .replacingOccurrences(of: "Six seven eight.", with: "Six seven eight.\(addition)")
+            .write(to: cache, atomically: true, encoding: .utf8)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        let savedLength = saved.chapters[1].characterCount
+        XCTAssertEqual(result.index.chapters[1].characterCount, savedLength + addition.utf16.count)
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].characterCount is \(savedLength), but the reading text holds \(savedLength + addition.utf16.count)"]
         )
         try assertRepairIsReused(result, for: book)
     }
@@ -688,20 +739,22 @@ final class ContentIndexValidationTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// A two-chapter text index. The emoji makes the first chapter's UTF-16
-    /// length (10) differ from its character count; the second chapter
-    /// (15 long, starting at 10) has headings at offsets 0 and 11.
+    /// Two chapters of reading text. The emoji makes the first chapter's
+    /// UTF-16 length (10) differ from its character count; the second
+    /// chapter (15 long, starting at 10) has headings at offsets 0 and 11.
+    private func textChapters() -> [Chapter] {
+        [
+            Chapter(title: "One", text: "🙂 one two", headings: [Heading(level: 1, text: "One")]),
+            Chapter(title: "Two", text: "three four five", headings: [
+                Heading(level: 2, text: "Two", chapterIndex: 1),
+                Heading(level: 3, text: "Five", chapterIndex: 1, characterOffset: 11),
+            ]),
+        ]
+    }
+
+    /// The index the builder makes for `textChapters()` as an EPUB.
     private func textIndex() -> BookContentIndex {
-        BookContentIndex.build(
-            fromChapters: [
-                Chapter(title: "One", text: "🙂 one two", headings: [Heading(level: 1, text: "One")]),
-                Chapter(title: "Two", text: "three four five", headings: [
-                    Heading(level: 2, text: "Two", chapterIndex: 1),
-                    Heading(level: 3, text: "Five", chapterIndex: 1, characterOffset: 11),
-                ]),
-            ],
-            format: .epub
-        )
+        BookContentIndex.build(fromChapters: textChapters(), format: .epub)
     }
 
     /// One chapter spanning a whole audio file, whose chapters name no file.

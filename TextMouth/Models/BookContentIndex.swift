@@ -321,6 +321,26 @@ extension BookContentIndex {
             ?? (kind == .audio ? audioFailure(audioBaseURL: audioBaseURL) : textFailure())
     }
 
+    /// Why this index cannot describe `chapters`, the reading text it is
+    /// about to be paired with, or nil when it can: both must hold the same
+    /// number of chapters, each as long as the index records. A text book's
+    /// index and its content.md are written separately, so a sound index can
+    /// still describe other text. Once `validationFailure` passes, matching
+    /// lengths are all it takes for every offset in the index to point into
+    /// the same words as the chapters.
+    func alignmentFailure(with chapters: [Chapter]) -> String? {
+        guard self.chapters.count == chapters.count else {
+            return "chapters has \(self.chapters.count) entries, but the reading text has \(chapters.count)"
+        }
+        for (position, (stored, chapter)) in zip(self.chapters, chapters).enumerated() {
+            let length = chapter.text.utf16Length
+            if stored.characterCount != length {
+                return "chapters[\(position)].characterCount is \(stored.characterCount), but the reading text holds \(length)"
+            }
+        }
+        return nil
+    }
+
     /// Whether the current builder made this index for a book of `format`.
     private func identityFailure(for format: BookFormat) -> String? {
         if !isCurrent {

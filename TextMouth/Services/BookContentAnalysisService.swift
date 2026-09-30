@@ -31,9 +31,10 @@ enum BookContentAnalysisService {
 
     /// Load `book`'s content with its index. The index saved in the book's
     /// package is reused, skipping audio analysis or re-indexing the text
-    /// cache, only when it passes validation; one that fails is reported in
-    /// the debug log and the book is analyzed afresh, returning
-    /// `usedPersistedIndex == false` so the caller's usual save replaces it.
+    /// cache, only when it passes validation (and, for text, matches the
+    /// cached chapters); one that fails is reported in the debug log and the
+    /// book is analyzed afresh, returning `usedPersistedIndex == false` so
+    /// the caller's usual save replaces it.
     static func load(
         book: Book,
         regenerateTextCache: Bool = false
@@ -99,11 +100,19 @@ enum BookContentAnalysisService {
             && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
         // Validate only an index that would be used, so a rebuild that
         // replaces the saved index anyway reports nothing about it.
-        let precomputed = mayUseSavedIndex ? trustedSavedIndex(for: book, audioBaseURL: nil) : nil
-        let content = try MarkdownCacheService.loadFromCache(
+        var precomputed = mayUseSavedIndex ? trustedSavedIndex(for: book, audioBaseURL: nil) : nil
+        var content = try MarkdownCacheService.loadFromCache(
             for: book,
             contentIndex: precomputed
         )
+        // A sound index may still describe other text than content.md holds.
+        // Its offsets would then point into the wrong words, so index the
+        // parsed chapters afresh, exactly as a load without a saved index does.
+        if let saved = precomputed, let reason = saved.alignmentFailure(with: content.chapters) {
+            reportRejectedIndex(of: book, reason: reason)
+            precomputed = nil
+            content = DocumentContent(title: content.title, author: content.author, chapters: content.chapters)
+        }
         let index = precomputed ?? content.contentIndex.replacingFormat(book.format)
         let indexedContent: DocumentContent
         if content.contentIndex.format == index.format {
