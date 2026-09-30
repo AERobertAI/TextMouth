@@ -195,6 +195,41 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
         XCTAssertEqual(recorder.announcements, [])
     }
 
+    /// Dragging one rule to a new place announces where it landed, just as
+    /// the Move commands do.
+    func testDraggingOneRuleAnnouncesItsNewPosition() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let service = TextSubstitutionService(rules: makeRules(count: 4))
+
+        let recorder = recordingAnnouncements {
+            // SwiftUI reports a drop just above the fourth rule as offset 3.
+            SubstitutionsSettingsView.moveByDragging(from: [0], to: 3, in: service)
+        }
+
+        XCTAssertEqual(service.rules.map(\.name), ["B", "C", "A", "D"])
+        XCTAssertEqual(try sandbox.savedRules(), service.rules)
+        XCTAssertEqual(recorder.announcements, [
+            VoiceOverAnnouncement(message: "A moved to position 3 of 4", priority: .high)
+        ])
+    }
+
+    /// A drop back in place, or a drag of several rules at once, moves as
+    /// asked but announces nothing, having no single new place to report.
+    func testDraggingInPlaceOrSeveralRulesStaysSilent() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let service = TextSubstitutionService(rules: makeRules(count: 4))
+
+        let recorder = recordingAnnouncements {
+            SubstitutionsSettingsView.moveByDragging(from: [1], to: 2, in: service)
+            SubstitutionsSettingsView.moveByDragging(from: [0, 1], to: 4, in: service)
+        }
+
+        XCTAssertEqual(service.rules.map(\.name), ["C", "D", "A", "B"])
+        XCTAssertEqual(recorder.announcements, [])
+    }
+
     // MARK: - Rendered rows
 
     /// Each rendered row draws its enable checkbox, showing whether the rule

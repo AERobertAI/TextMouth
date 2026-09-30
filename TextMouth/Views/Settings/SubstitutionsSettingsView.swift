@@ -105,7 +105,7 @@ struct SubstitutionsSettingsView: View {
                 .contextMenu { ruleMenu(for: rule, at: index) }
             }
             .onMove { source, destination in
-                service.moveRule(from: source, to: destination)
+                Self.moveByDragging(from: source, to: destination, in: service)
             }
         }
     }
@@ -166,6 +166,24 @@ extension SubstitutionsSettingsView {
     ) {
         guard let index = service.moveRule(id: rule.id, direction: direction) else { return }
         announcePosition(of: rule, at: index, in: service)
+    }
+
+    /// Apply a drag from the list. When the drag took a single rule to a new
+    /// place, tell VoiceOver where it landed, as the Move commands do.
+    static func moveByDragging(
+        from source: IndexSet,
+        to destination: Int,
+        in service: TextSubstitutionService
+    ) {
+        // Note the dragged rule and where it started before the move
+        // renumbers the list.
+        let start = source.count == 1 ? source.first : nil
+        let dragged = start.flatMap { service.rules.indices.contains($0) ? service.rules[$0] : nil }
+        service.moveRule(from: source, to: destination)
+        guard let dragged, let start,
+              let index = service.rules.firstIndex(where: { $0.id == dragged.id }),
+              index != start else { return }
+        announcePosition(of: dragged, at: index, in: service)
     }
 
     /// What VoiceOver says after a rule moves, counting positions from one:
