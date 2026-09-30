@@ -277,9 +277,12 @@ final class SettingsViewModel: ObservableObject {
     /// revision invalidates existing book windows without reopening them.
     @Published private(set) var playbackControlsSettingsRevision = 0
 
-    private let configService = ConfigService.shared
+    private let configService: ConfigService
     private let notificationCenter: NotificationCenter
     private var configCancellable: AnyCancellable?
+    /// True while config.json's values are applied, and while launch
+    /// reconciles the preferences with the file: preference changes made
+    /// then are not saved back to the file one at a time.
     private var isSyncingFromConfig = false
 
     // MARK: - Validated numeric preferences
@@ -387,12 +390,16 @@ final class SettingsViewModel: ObservableObject {
     ///     synchronization, for tests.
     ///   - userDefaults: The store holding every preference. Tests pass an
     ///     isolated suite so they never read or change the user's settings.
+    ///   - configService: The config.json mirror to keep in step with the
+    ///     preferences. Tests pass one bound to a file of their own.
     init(
         notificationCenter: NotificationCenter = .default,
         initializeServices: Bool = true,
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        configService: ConfigService = .shared
     ) {
         self.notificationCenter = notificationCenter
+        self.configService = configService
         // Bind every preference to `userDefaults` before anything reads one.
         // The keys are the ones every release has used, so saved preferences
         // keep loading.
@@ -433,18 +440,33 @@ final class SettingsViewModel: ObservableObject {
         )
         _storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.appStorage(in: userDefaults)
         guard initializeServices else { return }
-        refreshVoices()
+        startConfigSync()
+    }
 
-        // AppStorage is the source of truth. If an existing config.json has
-        // different values (external edit), apply those. Otherwise write
-        // current AppStorage values to config.json.
-        if configService.hasExistingConfig {
-            loadFromConfig()
+    /// Reconciles the preferences with config.json at launch, then watches
+    /// the file for edits made outside TextMouth.
+    ///
+    /// `ConfigService` read the file when it was created, so its snapshot is
+    /// complete before anything here runs. The file's values are applied
+    /// first, as one snapshot, because the file is where settings can be
+    /// edited while TextMouth is closed. Voice discovery follows, so a default
+    /// voice is chosen only when neither the file nor the preferences name
+    /// one. No preference change in between is saved on its own: the
+    /// preferences are saved once at the end, which writes only when the
+    /// file's bytes change, so a launch on a consistent file writes nothing.
+    private func startConfigSync() {
+        withoutSyncingToConfig {
+            if configService.hasExistingConfig {
+                applyConfigChanges(configService.config)
+            }
+            refreshVoices()
         }
-        // Always write current values to config.json so it's in sync
-        syncToConfig()
-
-        // Now start watching for external edits
+        writePreferences(into: &configService.config)
+        // A file that could not be read is someone's edit in progress. It
+        // stays on disk to be corrected; the watcher applies the correction.
+        if configService.loadedFile != .unreadable {
+            configService.saveToDisk()
+        }
         configService.startWatching()
         observeConfigChanges()
     }
@@ -513,9 +535,14 @@ final class SettingsViewModel: ObservableObject {
         config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
     }
 
-    /// Pull settings from config.json (only for values that differ, i.e., external edits)
-    private func loadFromConfig() {
-        applyConfigChanges(configService.config)
+    /// Runs `body` with `syncToConfig()` suspended, then restores the previous
+    /// state rather than clearing it, so the scopes nest: the snapshot applied
+    /// during launch reconciliation must not end the launch's suspension.
+    private func withoutSyncingToConfig(_ body: () -> Void) {
+        let wasSyncing = isSyncingFromConfig
+        isSyncingFromConfig = true
+        defer { isSyncingFromConfig = wasSyncing }
+        body()
     }
 
     /// Watch for external config.json changes
@@ -536,45 +563,64 @@ final class SettingsViewModel: ObservableObject {
     /// are clamped before assignment, and an empty or unsupported choice, an
     /// unset speed or pitch, or empty text leaves the current preference alone.
     func applyConfigChanges(_ config: ConfigService.AppConfig) {
-        isSyncingFromConfig = true
-        defer { isSyncingFromConfig = false }
-
-        adopt(config.selectedVoiceID.nonEmpty, into: \.selectedVoiceID)
-        adopt(config.wordsPerMinute, rule: SettingsPolicy.wordsPerMinute, into: \.wordsPerMinute)
-        adopt(config.pitchMultiplier, rule: SettingsPolicy.pitchMultiplier, into: \.pitchMultiplier)
-        adopt(config.selectedLanguage.nonEmpty, into: \.selectedLanguage)
-        adopt(config.skipForwardUnit, rule: SettingsPolicy.skipForwardUnit, into: \.skipForwardUnitRaw)
-        adopt(config.skipBackwardUnit, rule: SettingsPolicy.skipBackwardUnit, into: \.skipBackwardUnitRaw)
-        adopt(config.shiftSkipForwardUnit, rule: SettingsPolicy.shiftSkipForwardUnit, into: \.shiftSkipForwardUnitRaw)
-        adopt(config.shiftSkipBackwardUnit, rule: SettingsPolicy.shiftSkipBackwardUnit, into: \.shiftSkipBackwardUnitRaw)
-        adopt(config.rewindOnResumeUnit, rule: SettingsPolicy.rewindOnResumeUnit, into: \.rewindOnResumeUnitRaw)
-        adopt(config.rewindSmartMode, into: \.rewindSmartMode)
-        adopt(config.rewindSmartThreshold, rule: SettingsPolicy.rewindSmartThreshold, into: \.rewindSmartThreshold)
-        adopt(config.sleepFadeOutDuration, rule: SettingsPolicy.sleepFadeOutDuration, into: \.sleepFadeOutDuration)
-        adopt(config.sleepTimerAutoClose, into: \.sleepTimerAutoClose)
-        adopt(config.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior, into: \.endOfBookBehaviorRaw)
-        adopt(config.punctuationPauseLevel, rule: SettingsPolicy.punctuationPauseLevel, into: \.punctuationPauseLevel)
-        adopt(config.autoPlayOnNavigate, into: \.autoPlayOnNavigate)
-        adopt(config.bluetoothMonitoringEnabled, into: \.bluetoothMonitoringEnabled)
-        adopt(
-            config.bluetoothDisconnectDelay,
-            rule: SettingsPolicy.bluetoothDisconnectDelay,
-            into: \.bluetoothDisconnectDelay
-        )
-        adopt(config.restartTimerGestureEnabled, into: \.restartTimerGestureEnabled)
-        adopt(config.restartTimerGesturePattern.nonEmpty, into: \.restartTimerGesturePattern)
-        adopt(
-            config.restartTimerGestureWindow,
-            rule: SettingsPolicy.restartTimerGestureWindow,
-            into: \.restartTimerGestureWindow
-        )
-        // Handle external change to dataDirectoryPath
-        if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
-            notificationCenter.post(
-                name: .dataDirectoryChangeRequested,
-                object: nil,
-                userInfo: ["path": config.dataDirectoryPath]
+        withoutSyncingToConfig {
+            adopt(config.selectedVoiceID.nonEmpty, into: \.selectedVoiceID)
+            adopt(config.wordsPerMinute, rule: SettingsPolicy.wordsPerMinute, into: \.wordsPerMinute)
+            adopt(config.pitchMultiplier, rule: SettingsPolicy.pitchMultiplier, into: \.pitchMultiplier)
+            adopt(config.selectedLanguage.nonEmpty, into: \.selectedLanguage)
+            adopt(config.skipForwardUnit, rule: SettingsPolicy.skipForwardUnit, into: \.skipForwardUnitRaw)
+            adopt(config.skipBackwardUnit, rule: SettingsPolicy.skipBackwardUnit, into: \.skipBackwardUnitRaw)
+            adopt(
+                config.shiftSkipForwardUnit,
+                rule: SettingsPolicy.shiftSkipForwardUnit,
+                into: \.shiftSkipForwardUnitRaw
             )
+            adopt(
+                config.shiftSkipBackwardUnit,
+                rule: SettingsPolicy.shiftSkipBackwardUnit,
+                into: \.shiftSkipBackwardUnitRaw
+            )
+            adopt(config.rewindOnResumeUnit, rule: SettingsPolicy.rewindOnResumeUnit, into: \.rewindOnResumeUnitRaw)
+            adopt(config.rewindSmartMode, into: \.rewindSmartMode)
+            adopt(
+                config.rewindSmartThreshold,
+                rule: SettingsPolicy.rewindSmartThreshold,
+                into: \.rewindSmartThreshold
+            )
+            adopt(
+                config.sleepFadeOutDuration,
+                rule: SettingsPolicy.sleepFadeOutDuration,
+                into: \.sleepFadeOutDuration
+            )
+            adopt(config.sleepTimerAutoClose, into: \.sleepTimerAutoClose)
+            adopt(config.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior, into: \.endOfBookBehaviorRaw)
+            adopt(
+                config.punctuationPauseLevel,
+                rule: SettingsPolicy.punctuationPauseLevel,
+                into: \.punctuationPauseLevel
+            )
+            adopt(config.autoPlayOnNavigate, into: \.autoPlayOnNavigate)
+            adopt(config.bluetoothMonitoringEnabled, into: \.bluetoothMonitoringEnabled)
+            adopt(
+                config.bluetoothDisconnectDelay,
+                rule: SettingsPolicy.bluetoothDisconnectDelay,
+                into: \.bluetoothDisconnectDelay
+            )
+            adopt(config.restartTimerGestureEnabled, into: \.restartTimerGestureEnabled)
+            adopt(config.restartTimerGesturePattern.nonEmpty, into: \.restartTimerGesturePattern)
+            adopt(
+                config.restartTimerGestureWindow,
+                rule: SettingsPolicy.restartTimerGestureWindow,
+                into: \.restartTimerGestureWindow
+            )
+            // Handle external change to dataDirectoryPath
+            if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
+                notificationCenter.post(
+                    name: .dataDirectoryChangeRequested,
+                    object: nil,
+                    userInfo: ["path": config.dataDirectoryPath]
+                )
+            }
         }
     }
 
