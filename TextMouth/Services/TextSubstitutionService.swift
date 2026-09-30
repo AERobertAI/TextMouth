@@ -71,6 +71,23 @@ struct SubstitutionRule: Codable, Identifiable, Equatable {
     }
 }
 
+/// One step up or down in the ordered rule list. Rules apply from the top
+/// down, so moving a rule up makes it apply earlier.
+enum SubstitutionRuleMoveDirection {
+    case up
+    case down
+
+    /// The index one step from `index` in a list of `count` rules, or nil
+    /// when there is no such step: the rule is already first (moving up) or
+    /// last (moving down), or `index` is not a position in the list.
+    func destination(from index: Int, count: Int) -> Int? {
+        // Check `index` first so the step below can never overflow.
+        guard index >= 0, index < count else { return nil }
+        let destination = self == .up ? index - 1 : index + 1
+        return destination >= 0 && destination < count ? destination : nil
+    }
+}
+
 /// Result of applying substitutions: modified text + bidirectional offset mapping.
 /// Uses OffsetMap internally for offset conversion, and exposes it for pipeline composition.
 struct TextTransformation {
@@ -171,6 +188,24 @@ final class TextSubstitutionService: ObservableObject {
     func moveRule(from source: IndexSet, to destination: Int) {
         rules.move(fromOffsets: source, toOffset: destination)
         saveRules()
+    }
+
+    /// Move the rule with `id` one step up or down and save the new order.
+    ///
+    /// One step swaps the rule with its neighbour, so every other rule keeps
+    /// its place. Nothing changes, and nothing is saved, when the rule is
+    /// unknown or already at that end of the list.
+    ///
+    /// - Returns: The rule's new index, or nil when it did not move.
+    @discardableResult
+    func moveRule(id: UUID, direction: SubstitutionRuleMoveDirection) -> Int? {
+        guard let index = rules.firstIndex(where: { $0.id == id }),
+              let destination = direction.destination(from: index, count: rules.count) else {
+            return nil
+        }
+        rules.swapAt(index, destination)
+        saveRules()
+        return destination
     }
 
     // MARK: - Text Transformation
