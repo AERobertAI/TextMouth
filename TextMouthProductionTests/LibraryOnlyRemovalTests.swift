@@ -79,6 +79,40 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         XCTAssertFalse(RemovedFromLibraryMarker.retires(legacy))
     }
 
+    // MARK: - Orphan Adoption
+
+    /// Adoption skips a package whose marker retires its book, even with a
+    /// readable bookInfo.json left in it, and leaves every file in it as it
+    /// was. An unmarked package beside it is adopted as before.
+    func testAdoptionSkipsAPackageWhoseMarkerRetiresItsBook() throws {
+        let orphan = try makePackage(title: "Interrupted Import")
+        let removed = try makePackage(title: "Removed Book")
+        try RemovedFromLibraryMarker(book: removed).write(into: removed.tmbDirectory)
+        let before = try packageSnapshot(of: removed)
+
+        let adopted = adoptedFromLibraryDirectory()
+
+        XCTAssertTrue(adopted.books.contains { $0.id == orphan.id })
+        XCTAssertFalse(adopted.books.contains { $0.id == removed.id })
+        XCTAssertEqual(try packageSnapshot(of: removed), before)
+    }
+
+    /// A marker naming another book, as a removal can leave in a legacy
+    /// package still shared by two records, does not stop the package's own
+    /// book from being adopted, and is never taken for its content file.
+    func testAdoptionIgnoresAMarkerNamingAnotherBook() throws {
+        let owner = try makePackage(title: "Package Owner")
+        try RemovedFromLibraryMarker(book: fixtureBook(title: "Former Sharer")).write(into: owner.tmbDirectory)
+
+        let adopted = try XCTUnwrap(adoptedFromLibraryDirectory().books.first { $0.id == owner.id })
+
+        XCTAssertEqual(URL(fileURLWithPath: adopted.filePath).lastPathComponent, "book.txt")
+        XCTAssertEqual(
+            URL(fileURLWithPath: adopted.filePath).resolvingSymlinksInPath().path,
+            URL(fileURLWithPath: owner.filePath).resolvingSymlinksInPath().path
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test
@@ -95,6 +129,50 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         createdDirectories.append(directory)
         return directory
+    }
+
+    /// Creates a real package in a folder of its own, as an import leaves it:
+    /// a text file whose unique words give it a unique hash, and a
+    /// bookInfo.json that orphan adoption could read.
+    private func makePackage(title: String) throws -> Book {
+        let folder = uniqueFolderName("Removal Shelf")
+        try makeFolder(folder)
+        let packageName = "LibraryOnlyRemoval-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let content = package.appendingPathComponent("book.txt")
+        try Data("Words that outlive the removal of \(title), \(UUID().uuidString).".utf8).write(to: content)
+        let book = Book(
+            title: title,
+            author: "Test Fixture",
+            format: .txt,
+            filePath: content.path,
+            md5Hash: try FileImportService.md5Hash(of: content),
+            folderPath: folder,
+            tmbDirectoryName: packageName
+        )
+        try book.saveBookInfoThrowing()
+        return book
+    }
+
+    /// Every file in `book`'s package by name, with its bytes. Equal
+    /// snapshots show nothing in the package was added, removed, or changed.
+    private func packageSnapshot(of book: Book) throws -> [String: Data] {
+        let names = try FileManager.default.contentsOfDirectory(atPath: book.tmbDirectory.path)
+        var snapshot: [String: Data] = [:]
+        for name in names {
+            snapshot[name] = try Data(contentsOf: book.tmbDirectory.appendingPathComponent(name))
+        }
+        return snapshot
+    }
+
+    /// What orphan adoption finds in the test root's library directory, as
+    /// startup, index recovery, and rebuild would adopt it into an index that
+    /// lists none of it.
+    private func adoptedFromLibraryDirectory() -> Library {
+        var adopted = Library()
+        FileImportService.adoptOrphanedTMBPackages(library: &adopted)
+        return adopted
     }
 
     /// A package directory outside the library, for checks of the marker
