@@ -439,6 +439,14 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.text, "Run echo `date` *now* \\n, type ` or ``x`` then spaced .")
     }
 
+    /// Code beside code is read as written. A second span's opening fence
+    /// would merge with the first span's closing fence into one run of
+    /// backticks; neither span would close, and the backticks would be read.
+    func testCachedHTMLAdjacentCodeSpansKeepTheirWords() throws {
+        let chapter = try cachedHTMLReading("<p>Type <code>``</code><code>|</code><code>x</code> now.</p>")
+        XCTAssertEqual(chapter.text, "Type ``|x now.")
+    }
+
     /// Alt text is read as written, brackets included.
     func testCachedHTMLImageAltTextKeepsBrackets() throws {
         let chapter = try cachedHTMLReading("<p>Chart <img src=\"c.png\" alt=\"Figure [1]: tides\"/> here.</p>")

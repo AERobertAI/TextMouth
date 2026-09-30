@@ -197,7 +197,7 @@ enum HTMLToMarkdownConverter {
         case "img":
             let alt = HTMLReadingText.collapsingWhitespace((try? element.attr("alt")) ?? "")
             let src = (try? element.attr("src")) ?? ""
-            appendSpaced(alt, to: &result) { core in
+            appendSpaced(alt, to: &result) { core, _ in
                 "![" + MarkdownLiteral.escaped(core) + "](" + destination(src) + ")"
             }
 
@@ -238,7 +238,7 @@ enum HTMLToMarkdownConverter {
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
                 emit(annotation, inline: true, into: &result)
             }
-            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan)
+            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
 
         // Horizontal rules
         case "hr":
@@ -443,11 +443,16 @@ enum HTMLToMarkdownConverter {
     }
 
     /// Write inline words (`text`, with whitespace collapsed) as `render`
-    /// writes them. The space collapsing leaves at either end is written
-    /// outside, as an ordinary space, so the rendered syntax never begins or
-    /// ends with one (a code span would drop it and run the words around it
-    /// together). Any other character, a no-break space included, is words.
-    private static func appendSpaced(_ text: String, to result: inout String, _ render: (String) -> String) {
+    /// writes them after the Markdown's last scalar. The space collapsing
+    /// leaves at either end is written outside, as an ordinary space, so the
+    /// rendered syntax never begins or ends with one (a code span would drop
+    /// it and run the words around it together). Any other character, a
+    /// no-break space included, is words.
+    private static func appendSpaced(
+        _ text: String,
+        to result: inout String,
+        _ render: (_ words: String, _ previous: Unicode.Scalar?) -> String
+    ) {
         // Scalars decide where the words begin and end: a combining mark
         // after a space joins it into one Character with the space.
         let scalars = text.unicodeScalars
@@ -457,7 +462,7 @@ enum HTMLToMarkdownConverter {
         if start > scalars.startIndex {
             appendText(" ", to: &result)
         }
-        result += render(core)
+        result += render(core, result.unicodeScalars.last)
         if !core.isEmpty, end < scalars.endIndex {
             appendText(" ", to: &result)
         }
@@ -469,9 +474,13 @@ enum HTMLToMarkdownConverter {
     /// inside, so none of them can close it, and CommonMark's padding space
     /// separates a backtick at either end from the fence. Code ending in a
     /// backslash is padded too, so a backslash never stands before a closing
-    /// backtick, where `emphasize` would take it for an escape.
-    private static func codeSpan(_ code: String) -> String {
+    /// backtick, where `emphasize` would take it for an escape. Straight
+    /// after a backtick (another span's closing fence) an opening fence would
+    /// merge with it into one run, and neither span would close, so the code
+    /// is written as literal text, which reads the same.
+    private static func codeSpan(_ code: String, after previous: Unicode.Scalar?) -> String {
         guard !code.isEmpty else { return "" }
+        guard previous != "`" else { return MarkdownLiteral.escaped(code) }
         let fence = String(repeating: "`", count: longestRun(of: "`", in: code) + 1)
         let scalars = code.unicodeScalars
         let padding = scalars.first == "`" || scalars.last == "`" || scalars.last == "\\" ? " " : ""
