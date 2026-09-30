@@ -32,24 +32,25 @@ func wrapDocumentXML(_ bodyContent: String) -> String {
 /// Convert a synthetic document.xml to Markdown using DOCX converter logic
 func convertDOCXSnippet(_ bodyXML: String, styles: DOCXStyles = DOCXStyles(),
                          numbering: DOCXNumbering = DOCXNumbering(),
-                         relationships: [String: String] = [:]) -> String {
+                         relationships: [String: String] = [:]) throws -> String {
     let xml = wrapDocumentXML(bodyXML)
 #if canImport(TextMouth)
-    let converter = DOCXToMarkdownConverter(
+    return try DOCXToMarkdownConverter(
+        data: Data(xml.utf8),
         styles: styles,
         numbering: numbering,
         relationships: relationships
-    )
+    ).convert().markdown
 #else
     let converter = TestDOCXConverter(styles: styles, numbering: numbering,
                                       relationships: relationships)
-#endif
     return converter.convert(xmlString: xml)
+#endif
 }
 
 // Empty document
 test("DOCX empty document produces empty output") {
-    let result = convertDOCXSnippet("")
+    let result = try convertDOCXSnippet("")
     try assertTrue(result.isEmpty || result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                    "Empty body should produce empty output")
 }
@@ -61,7 +62,7 @@ test("DOCX simple paragraph converts correctly") {
     <w:r><w:t>Hello world</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("Hello world"), "Should contain paragraph text")
 }
 
@@ -75,7 +76,7 @@ test("DOCX bold text wraps in double asterisks") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("**bold text**"), "Should wrap bold text, got: \(result)")
 }
 
@@ -89,7 +90,7 @@ test("DOCX italic text wraps in single asterisks") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("*italic text*"), "Should wrap italic text, got: \(result)")
 }
 
@@ -103,7 +104,7 @@ test("DOCX bold-italic wraps in triple asterisks") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("***bold italic***"), "Should wrap bold-italic text, got: \(result)")
 }
 
@@ -117,7 +118,7 @@ test("DOCX strikethrough wraps in tildes") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("~~deleted~~"), "Should wrap strikethrough text, got: \(result)")
 }
 
@@ -131,7 +132,7 @@ test("DOCX bold val=0 means not bold") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(!result.contains("**not bold**"), "val=0 should mean not bold, got: \(result)")
     try assertTrue(result.contains("not bold"), "Should still contain text")
 }
@@ -146,7 +147,7 @@ test("DOCX bold val=false means not bold") {
     </w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(!result.contains("**plain text**"), "val=false should mean not bold")
 }
 
@@ -166,7 +167,7 @@ test("DOCX heading style maps to markdown heading") {
     <w:r><w:t>Section Title</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, styles: styles)
+    let result = try convertDOCXSnippet(xml, styles: styles)
     try assertTrue(result.contains("# Chapter Title"), "Should have h1, got: \(result)")
     try assertTrue(result.contains("## Section Title"), "Should have h2, got: \(result)")
 }
@@ -194,7 +195,7 @@ test("DOCX numbered lists restart after non-list paragraph") {
     <w:r><w:t>Restarted item</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, numbering: numbering)
+    let result = try convertDOCXSnippet(xml, numbering: numbering)
     try assertTrue(result.contains("1. First item"), "First list should start at 1")
     try assertTrue(result.contains("2. Second item"), "First list should continue to 2")
     // After the intervening paragraph, the counter should reset
@@ -218,7 +219,7 @@ test("DOCX bullet list uses dash prefix") {
     <w:r><w:t>Bullet B</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, numbering: numbering)
+    let result = try convertDOCXSnippet(xml, numbering: numbering)
     try assertTrue(result.contains("- Bullet A"), "Should have bullet A")
     try assertTrue(result.contains("- Bullet B"), "Should have bullet B")
 }
@@ -233,7 +234,7 @@ test("DOCX hyperlink produces markdown link") {
     </w:hyperlink>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, relationships: rels)
+    let result = try convertDOCXSnippet(xml, relationships: rels)
     try assertTrue(result.contains("[click here](http://example.com)"),
                    "Should produce markdown link, got: \(result)")
 }
@@ -248,7 +249,7 @@ test("DOCX hyperlink escapes parentheses in URL") {
     </w:hyperlink>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, relationships: rels)
+    let result = try convertDOCXSnippet(xml, relationships: rels)
     try assertTrue(result.contains("%28") && result.contains("%29"),
                    "Should escape parentheses in URL, got: \(result)")
 }
@@ -262,7 +263,7 @@ test("DOCX hyperlink without relationship shows plain text") {
     </w:hyperlink>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("orphan link"), "Should fall back to plain text")
     try assertTrue(!result.contains("[orphan link]"), "Should not have bracket notation")
 }
@@ -281,7 +282,7 @@ test("DOCX table converts to markdown table with header separator") {
     </w:tr>
     </w:tbl>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("| Name | Value |"), "Should have header row, got: \(result)")
     try assertTrue(result.contains("| --- | --- |"), "Should have separator row")
     try assertTrue(result.contains("| Alpha | 100 |"), "Should have data row")
@@ -302,7 +303,7 @@ test("DOCX table pads shorter rows") {
     </w:tr>
     </w:tbl>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     let lines = result.components(separatedBy: "\n").filter { $0.contains("|") }
     try assertGreater(lines.count, 2, "Should have header, separator, and data rows")
 }
@@ -316,7 +317,7 @@ test("DOCX line break emits newline") {
     <w:r><w:t>Line two</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(result.contains("Line one"), "Should have first line")
     try assertTrue(result.contains("Line two"), "Should have second line")
 }
@@ -331,7 +332,7 @@ test("DOCX excessive blank lines are collapsed") {
     <w:p></w:p>
     <w:p><w:r><w:t>More text</w:t></w:r></w:p>
     """
-    let result = convertDOCXSnippet(xml)
+    let result = try convertDOCXSnippet(xml)
     try assertTrue(!result.contains("\n\n\n\n"), "Should collapse excessive blank lines")
     try assertTrue(result.contains("Text"), "Should have first text")
     try assertTrue(result.contains("More text"), "Should have second text")
@@ -358,7 +359,7 @@ test("DOCX mixed content converts in order") {
     <w:r><w:t>Item one</w:t></w:r>
     </w:p>
     """
-    let result = convertDOCXSnippet(xml, styles: styles, numbering: numbering)
+    let result = try convertDOCXSnippet(xml, styles: styles, numbering: numbering)
     let headingPos = result.range(of: "# My Chapter")?.lowerBound
     let paraPos = result.range(of: "Introductory paragraph")?.lowerBound
     let listPos = result.range(of: "- Item one")?.lowerBound

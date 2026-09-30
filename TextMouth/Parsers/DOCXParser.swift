@@ -8,7 +8,6 @@ enum DOCXParserError: LocalizedError {
     case fileNotFound(String)
     case invalidArchive
     case missingEntry(String)
-    case parseError(String)
     /// A part of the package is damaged: its markup breaks off or is not
     /// well-formed, so reading on would silently yield a partial document.
     /// `file` is the part's path inside the package; `reason` completes the
@@ -20,7 +19,6 @@ enum DOCXParserError: LocalizedError {
         case .fileNotFound(let path): return "DOCX file not found at: \(path)"
         case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive."
         case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)"
-        case .parseError(let msg): return "DOCX parse error: \(msg)"
         case .malformedXML(let file, let reason):
             return PackageDamage.message(
                 file: file, reason: reason, container: "this document", original: "the document"
@@ -71,11 +69,19 @@ enum DOCXParser {
 
     /// Extract Markdown text from a DOCX file. This is the main conversion entry point
     /// used by MarkdownCacheService for generating the content.md cache.
+    /// - Parameter reportIncompleteContent: receives a diagnostic when the
+    ///   document's text part broke off after some of its text was read.
+    ///   That text stays in the result; the diagnostic never enters it. The
+    ///   default writes the diagnostic to the console and the debug log.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when the
-    ///   styles, numbering, or relationships part is present but damaged.
-    ///   Reading on would silently turn headings into plain paragraphs,
-    ///   numbered steps into bullets, or links into bare text.
-    static func extractMarkdown(from url: URL) throws -> String {
+    ///   styles, numbering, or relationships part is present but damaged, or
+    ///   the text part is damaged before any text. Reading on would silently
+    ///   turn headings into plain paragraphs, numbered steps into bullets, or
+    ///   links into bare text.
+    static func extractMarkdown(
+        from url: URL,
+        reportIncompleteContent: (DOCXParserError) -> Void = DOCXParser.logIncompleteContent
+    ) throws -> String {
         let archive = try openArchive(at: url)
 
         // Parse styles first so we can identify heading paragraph styles
@@ -84,21 +90,32 @@ enum DOCXParser {
         // Parse numbering definitions for bullet and numbered lists
         let numbering = try parseNumbering(from: archive)
 
-        // Parse the main document content
+        // Read the main document content. Its raw bytes go to the parser,
+        // which honors the declared encoding and reports any invalid byte.
         let documentXML = try extractData(from: archive, path: Part.document)
-        guard let xmlString = String(data: documentXML, encoding: .utf8) else {
-            throw DOCXParserError.parseError("Could not decode \(Part.document) as UTF-8")
-        }
 
         // Parse relationships for hyperlink targets
         let relationships = try parseRelationships(from: archive)
 
-        let converter = DOCXToMarkdownConverter(
+        let conversion = try DOCXToMarkdownConverter(
+            data: documentXML,
+            file: Part.document,
             styles: styles,
             numbering: numbering,
             relationships: relationships
-        )
-        return converter.convert(xmlString: xmlString)
+        ).convert()
+        if let diagnostic = conversion.diagnostic {
+            reportIncompleteContent(diagnostic)
+        }
+        return conversion.markdown
+    }
+
+    /// Default report for a document whose text part broke off after some of
+    /// its text was read: one line in the console and in the debug log. The
+    /// import layer has no warning channel yet, so the reader is not told;
+    /// the recovered words stay readable either way.
+    static func logIncompleteContent(_ diagnostic: DOCXParserError) {
+        PackageDamage.log(diagnostic, tag: "DOCX_INCOMPLETE_CONTENT")
     }
 
     /// Read basic metadata (title, author) from the DOCX core properties

@@ -4,7 +4,10 @@ import XCTest
 /// A damaged Word document must never turn silently into a shorter or plainer
 /// one (TODO T04). Structure parts (styles, list numbering, and the document's
 /// relationships) that break off or are not well-formed throw an error naming
-/// the part, while a part the package simply lacks is still no error.
+/// the part, while a part the package simply lacks is still no error. The
+/// text part keeps the text read before any damage, closes what the damage
+/// left open, and reports the damage beside that text; a text part damaged
+/// before any text throws like a structure part.
 final class DOCXMalformedXMLTests: XCTestCase {
 
     // MARK: - Fixtures
@@ -125,7 +128,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
         return docx
     }
 
-    /// A package whose part at `path` is `text` cut off before `marker`.
+    /// A package whose intact part at `path` is cut off before its first `marker`.
     private func makeDOCX(truncating path: String, before marker: String) throws -> URL {
         let text = try XCTUnwrap(Self.intactParts[path], "No fixture part at \(path)")
         return try makeDOCX(replacing: [path: Data(Self.truncated(text, before: marker).utf8)])
@@ -150,6 +153,36 @@ final class DOCXMalformedXMLTests: XCTestCase {
             XCTFail("Expected a malformed-XML error naming \(expectedFile), got \(error)", file: file, line: line)
         }
         return ""
+    }
+
+    /// Convert `docx`, requiring exactly one incomplete-content diagnostic,
+    /// and return the Markdown with the part and reason the diagnostic gives.
+    private func convertIncomplete(
+        _ docx: URL,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> (markdown: String, part: String, reason: String) {
+        var diagnostics: [DOCXParserError] = []
+        let markdown = try DOCXParser.extractMarkdown(from: docx) { diagnostics.append($0) }
+        guard diagnostics.count == 1, case let .malformedXML(part, reason)? = diagnostics.first else {
+            XCTFail("Expected one malformed-XML diagnostic, got \(diagnostics)", file: file, line: line)
+            return (markdown, "", "")
+        }
+        XCTAssertFalse(markdown.contains(reason), "The diagnostic must stay out of the text", file: file, line: line)
+        return (markdown, part, reason)
+    }
+
+    /// The debug-log lines written while `body` runs.
+    private func debugLogLines(writtenDuring body: () throws -> Void) rethrows -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        try body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        // A log rotated meanwhile starts a new file holding only new lines.
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 
     /// The position a reason gives for a file that breaks off at the end of
@@ -271,6 +304,172 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertFalse(markdown.contains("#"), "Without styles no paragraph is a heading: \(markdown)")
         XCTAssertTrue(markdown.contains("\n- Cut new cloth"), "Without numbering a list reads as bullets: \(markdown)")
         XCTAssertFalse(markdown.contains("](https://"), "Without relationships a link has no target: \(markdown)")
+    }
+
+    // MARK: - Document Text
+
+    /// Text cut off mid-paragraph keeps every paragraph read before the cut,
+    /// with its heading and list numbering, and the words of the list item in
+    /// progress. The damage is reported beside the text, never inside it,
+    /// naming the part and where it breaks off; the direct reader reads the
+    /// same words.
+    func testTruncatedDocumentKeepsTheTextReadBeforeTheCut() throws {
+        let damaged = Self.truncated(Self.documentXML, before: "wider than the spine.")
+        let docx = try makeDOCX(replacing: [DOCXParser.Part.document: Data(damaged.utf8)])
+        let recovered = """
+        Mending Cloth Spines
+
+        Lift the worn cloth with a thin bone folder before it tears further.
+
+        Cut new cloth two centimetres
+        """
+
+        let conversion = try convertIncomplete(docx)
+
+        XCTAssertEqual(try Self.spokenText(of: conversion.markdown), recovered)
+        XCTAssertTrue(conversion.markdown.hasPrefix("# Mending Cloth Spines\n"), conversion.markdown)
+        XCTAssertTrue(conversion.markdown.hasSuffix("\n1. Cut new cloth two centimetres"), conversion.markdown)
+        XCTAssertEqual(conversion.part, "word/document.xml")
+        XCTAssertTrue(conversion.reason.hasPrefix("its markup breaks off early"), conversion.reason)
+        XCTAssertTrue(conversion.reason.contains(Self.endPosition(of: damaged)), conversion.reason)
+        XCTAssertEqual(try DOCXParser.parse(url: docx).chapters.map(\.text), [recovered])
+    }
+
+    /// A cut inside a bold link closes the run, the link, and the paragraph
+    /// as their end tags would have. The link keeps its target, and the space
+    /// before the cut does not keep the bold from closing, so no asterisk or
+    /// bracket is read aloud.
+    func testTruncatedDocumentClosesTheBoldLinkLeftOpen() throws {
+        let docx = try makeDOCX(truncating: DOCXParser.Part.document, before: "chart</w:t>")
+
+        let conversion = try convertIncomplete(docx)
+
+        XCTAssertTrue(
+            conversion.markdown.hasSuffix("\n\nCheck the [**paste**](https://example.org/paste-chart)"),
+            conversion.markdown
+        )
+        let spoken = try Self.spokenText(of: conversion.markdown)
+        XCTAssertTrue(spoken.hasSuffix("\n\nCheck the paste"), spoken)
+        XCTAssertFalse(spoken.contains("*") || spoken.contains("["), spoken)
+    }
+
+    /// A cut inside a table cell finishes the cell, its row, and the table,
+    /// so the rows read before the cut stay one table.
+    func testTruncatedDocumentClosesTheTableLeftOpen() throws {
+        let document = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+        <w:p><w:r><w:t>Paste strengths by volume:</w:t></w:r></w:p>
+        <w:tbl>
+        <w:tr><w:tc><w:p><w:r><w:t>Paste</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Water</w:t></w:r></w:p></w:tc></w:tr>
+        <w:tr><w:tc><w:p><w:r><w:t>Wheat starch</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Six parts</w:t></w:r></w:p></w:tc></w:tr>
+        </w:tbl>
+        </w:body>
+        </w:document>
+        """
+        let docx = try makeDOCX(replacing: [
+            DOCXParser.Part.document: Data(Self.truncated(document, before: "parts</w:t>").utf8)
+        ])
+
+        let conversion = try convertIncomplete(docx)
+
+        XCTAssertEqual(conversion.markdown, """
+        Paste strengths by volume:
+
+        | Paste | Water |
+        | --- | --- |
+        | Wheat starch | Six |
+        """)
+    }
+
+    /// Damage before any text leaves nothing worth reading, so the document
+    /// fails like a damaged structure part and reports no partial content,
+    /// whether the part is empty or breaks off before its first words.
+    func testDocumentDamagedBeforeAnyTextThrows() throws {
+        let damagedParts = [
+            Data(),
+            Data(Self.truncated(Self.documentXML, before: "<w:body>").utf8),
+            Data(Self.truncated(Self.documentXML, before: "<w:t>Mending").utf8)
+        ]
+        for damaged in damagedParts {
+            let docx = try makeDOCX(replacing: [DOCXParser.Part.document: damaged])
+
+            malformedXMLReason(naming: "word/document.xml") {
+                try DOCXParser.extractMarkdown(from: docx) { XCTFail("Unexpected partial-content report: \($0)") }
+            }
+            malformedXMLReason(naming: "word/document.xml") { try DOCXParser.parse(url: docx) }
+        }
+    }
+
+    /// Markup after the document's root element comes after all of its text,
+    /// so every word is kept, exactly as from the intact part, and the damage
+    /// is still reported.
+    func testContentAfterTheDocumentRootKeepsAllTextAndReportsTheDamage() throws {
+        let intact = try DOCXParser.extractMarkdown(from: try makeDOCX()) {
+            XCTFail("Unexpected partial-content report: \($0)")
+        }
+        let docx = try makeDOCX(replacing: [
+            DOCXParser.Part.document: Data((Self.documentXML + "\n<w:p/>").utf8)
+        ])
+
+        let conversion = try convertIncomplete(docx)
+
+        XCTAssertEqual(conversion.markdown, intact)
+        XCTAssertTrue(
+            conversion.reason.hasPrefix("its markup breaks off early or has extra content after the end"),
+            conversion.reason
+        )
+    }
+
+    /// A byte that is not UTF-8 partway through the text keeps every
+    /// paragraph before it and reports an encoding problem.
+    func testMisencodedDocumentKeepsTheTextBeforeTheBadByte() throws {
+        let docx = try makeDOCX(replacing: [
+            DOCXParser.Part.document: Self.misencoded(Self.documentXML, before: "Drying and Pressing")
+        ])
+
+        let conversion = try convertIncomplete(docx)
+
+        XCTAssertEqual(
+            try Self.spokenText(of: conversion.markdown),
+            Self.truncated(Self.spokenDocument, before: "\n\nDrying and Pressing")
+        )
+        XCTAssertTrue(
+            conversion.reason.hasPrefix("it contains characters that are not valid in its declared text encoding"),
+            conversion.reason
+        )
+    }
+
+    /// With no reporter supplied, as when the Markdown cache is built on
+    /// import, the damage is recorded in the debug log.
+    func testIncompleteContentIsWrittenToTheDebugLogByDefault() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let docx = try makeDOCX(truncating: DOCXParser.Part.document, before: "wider than the spine.")
+
+        let lines = try debugLogLines { _ = try DOCXParser.extractMarkdown(from: docx) }
+
+        let entries = lines.filter { $0.contains("DOCX_INCOMPLETE_CONTENT:") }
+        XCTAssertEqual(entries.count, 1, "\(lines)")
+        XCTAssertTrue(entries.first?.contains(
+            "DOCX_INCOMPLETE_CONTENT: The file “word/document.xml” in this document is damaged or incomplete: "
+                + "its markup breaks off early"
+        ) == true, "\(entries)")
+    }
+
+    /// Importing a document whose text breaks off still adds the book, with
+    /// the recovered text as its cached reading text.
+    func testImportKeepsTheTextOfADocumentThatBreaksOff() throws {
+        let docx = try makeDOCX(truncating: DOCXParser.Part.document, before: "wider than the spine.")
+
+        let book = try FileImportService.importFile(from: docx)
+        let package = book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+
+        let cached = try String(contentsOf: TextMouthPaths.contentMarkdownPath(in: package), encoding: .utf8)
+        XCTAssertEqual(cached, try DOCXParser.extractMarkdown(from: docx) { _ in })
+        XCTAssertTrue(cached.hasSuffix("\n1. Cut new cloth two centimetres"), cached)
+        XCTAssertEqual(book.title, "Mending Cloth Spines")
     }
 
     // MARK: - Helpers
