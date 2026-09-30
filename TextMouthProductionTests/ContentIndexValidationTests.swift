@@ -27,6 +27,39 @@ final class ContentIndexValidationTests: XCTestCase {
         }
     }
 
+    // MARK: - Building
+
+    /// A heading placed past its chapter's end, or before its start, is
+    /// built at the nearest end, with the ID `Heading` derives there, so
+    /// the builder never writes an index validation would reject.
+    func testBuilderKeepsHeadingsInsideTheirChapter() {
+        let chapter = Chapter(title: "Body", text: "Body.", headings: [
+            Heading(level: 1, text: "Before", characterOffset: -3),
+            Heading(level: 1, text: "<br>", characterOffset: 7),
+        ])
+
+        let index = BookContentIndex.build(fromChapters: [chapter], format: .markdown)
+
+        XCTAssertEqual(index.chapters[0].headings.map(\.characterOffset), [0, 5])
+        XCTAssertEqual(index.chapters[0].headings.map(\.globalCharacterOffset), [0, 5])
+        XCTAssertEqual(index.chapters[0].headings.map(\.id), index.allHeadings.map(\.id))
+        XCTAssertNil(index.validationFailure(for: .markdown, audioBaseURL: nil))
+    }
+
+    /// A Markdown heading made only of inline HTML adds no reading text; at
+    /// the end of a chapter it still yields a valid index, so such a book is
+    /// not rejected and rebuilt every time it opens.
+    func testHeadingOfInlineHTMLAtAChapterEndYieldsAValidIndex() {
+        for markdown in ["Body.\n\n# <br>", "<!-- chapter: A -->\nBody.\n\n# <b></b>\n\n<!-- chapter: B -->\nMore."] {
+            let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "Book", bookAuthor: "Author")
+
+            XCTAssertNil(
+                content.contentIndex.replacingFormat(.markdown).validationFailure(for: .markdown, audioBaseURL: nil),
+                String(reflecting: markdown)
+            )
+        }
+    }
+
     // MARK: - Identity
 
     /// An index from another builder version may derive text differently.

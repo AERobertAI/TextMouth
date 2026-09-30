@@ -136,12 +136,18 @@ struct BookContentIndex: Codable, Hashable {
             totalWords += wordCount
 
             let headings = chapter.headings.map { heading in
-                BookContentHeadingIndex(
-                    id: "\(chapterIndex)-\(heading.characterOffset)-\(heading.level)-\(heading.text)",
+                // A heading whose label adds no reading text (one made only of
+                // inline HTML, such as "# <br>") can be recorded past the end
+                // of its chapter's trimmed text. Keep it at the chapter's end,
+                // where validation expects every heading to lie. The ID is the
+                // one `Heading` derives, so it matches `allHeadings`.
+                let offset = min(max(0, heading.characterOffset), characterCount)
+                return BookContentHeadingIndex(
+                    id: Heading(level: heading.level, text: heading.text, chapterIndex: chapterIndex, characterOffset: offset).id,
                     level: heading.level,
                     text: heading.text,
-                    characterOffset: heading.characterOffset,
-                    globalCharacterOffset: cumulativeCharacters + heading.characterOffset
+                    characterOffset: offset,
+                    globalCharacterOffset: cumulativeCharacters + offset
                 )
             }
 
