@@ -208,17 +208,20 @@ extension LibraryViewModel {
     /// user's acceptance, and `openAfterImport` opens the book once added.
     ///
     /// An import that left chapters out still adds its book, but announces
-    /// what is missing once through the library's alert, and its original
-    /// is never deleted or offered for deletion, whatever the preference.
-    /// Such a book is not opened automatically either: the reader window
-    /// would take focus from the warning in the library window.
+    /// what is missing once through the library's alert (or, for a duplicate,
+    /// with the duplicate choice, so two alerts never compete), and its
+    /// original is never deleted or offered for deletion, whatever the
+    /// preference. Such a book is not opened automatically either: the
+    /// reader window would take focus from the warning in the library window.
     func completeSingleImportedBook(_ imported: ImportedBook, originalURL: URL, openAfterImport: Bool = false) {
         importProgressMessage = ""
         let book = imported.book
         // Without an original to offer, a later duplicate choice cannot
         // delete it either.
         let deletableOriginal = imported.keepsOriginal ? nil : originalURL
-        guard addBookCheckingDuplicate(book, toFolder: book.folderPath, originalURL: deletableOriginal) else {
+        guard addBookCheckingDuplicate(
+            book, toFolder: book.folderPath, originalURL: deletableOriginal, warning: imported.warning
+        ) else {
             return
         }
         save()

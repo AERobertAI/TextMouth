@@ -170,7 +170,12 @@ struct LibraryWindowView: View {
             }
         } message: {
             if let existing = libraryViewModel.pendingDuplicateExisting {
-                Text("A book matching \"\(existing.title)\" is already in your library. Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?")
+                let choice = "A book matching \"\(existing.title)\" is already in your library. Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?"
+                // A new copy missing chapters says so with the choice, so it
+                // never replaces a complete copy unannounced.
+                let incomplete = libraryViewModel.pendingDuplicateWarning
+                    .map { "\n\nThe copy just imported is incomplete. \($0)" } ?? ""
+                Text(verbatim: choice + incomplete)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBookFile)) { _ in

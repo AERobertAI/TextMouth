@@ -482,6 +482,38 @@ final class EPUBPartialExtractionTests: XCTestCase {
         }
     }
 
+    /// An incomplete copy of a book already in the library raises only the
+    /// duplicate choice, which carries the warning, so two alerts never
+    /// compete; keeping both copies still leaves the original untouched.
+    @MainActor
+    func testIncompleteDuplicateTellsItsWarningWithTheDuplicateChoice() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        try withImportDeleteBehavior(.deleteAfterImport) {
+            let imported = try importWithReport(epub)
+            let existing = Book(
+                title: "Roadside Repairs", format: .epub, filePath: "/tmp/existing.epub", md5Hash: imported.book.md5Hash
+            )
+            let library = LibraryViewModel(initializeServices: false)
+            library.library = Library(books: [existing])
+
+            library.completeSingleImportedBook(imported, originalURL: epub)
+
+            XCTAssertTrue(library.showDuplicateDialog)
+            XCTAssertFalse(library.showError)
+            XCTAssertEqual(library.pendingDuplicateWarning, imported.warning)
+            XCTAssertNil(library.pendingDuplicateOriginalURL)
+
+            library.keepDuplicate()
+
+            XCTAssertEqual(library.library.books.map(\.id), [existing.id, imported.book.id])
+            XCTAssertNil(library.pendingDuplicateWarning)
+            XCTAssertFalse(library.showDeleteOriginalDialog)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path))
+        }
+    }
+
     /// Opening a book that is missing chapters would put its reader window
     /// over the warning, so an incomplete import is not opened automatically.
     @MainActor
