@@ -550,17 +550,9 @@ final class SleepTimerService: ObservableObject {
             message = "Sleep timer: \(remainingSeconds) seconds remaining"
         }
 
-        // Post VoiceOver announcement
-        if let window = NSApp?.keyWindow ?? NSApp?.mainWindow {
-            NSAccessibility.post(
-                element: window,
-                notification: .announcementRequested,
-                userInfo: [
-                    .announcement: message,
-                    .priority: NSAccessibilityPriorityLevel.medium.rawValue
-                ]
-            )
-        }
+        // Medium rather than high priority, so VoiceOver may finish what it
+        // is already saying before this countdown reminder.
+        VoiceOverAnnouncer.announce(message, priority: .medium)
     }
 
     var formattedRemaining: String {

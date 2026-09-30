@@ -336,18 +336,11 @@ extension ReaderViewModel {
 
     // MARK: - VoiceOver Announcement
 
-    /// Post a VoiceOver announcement to the key window with high priority
+    /// Post a VoiceOver announcement from the key (or main) window with high
+    /// priority, and remember it in `lastAnnouncement` for tests.
     func announceToVoiceOver(_ message: String) {
         lastAnnouncement = message
-        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else { return }
-        NSAccessibility.post(
-            element: window,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.high.rawValue
-            ]
-        )
+        VoiceOverAnnouncer.announce(message)
     }
 }
 
