@@ -59,6 +59,22 @@ enum AudioPositionObserverPolicy {
     }
 }
 
+/// Decides whether audio that should be playing has stalled.
+enum AudioStallPolicy {
+    /// Whether playback the service believes is running has stalled: the
+    /// player is not advancing, and it has not simply reached the end of its
+    /// file, whose completion is on its way. Paused or stopped playback
+    /// never counts as stalled.
+    static func isStalled(
+        isPlaying: Bool,
+        isPaused: Bool,
+        playerIsAdvancing: Bool,
+        reachedEndOfFile: Bool
+    ) -> Bool {
+        isPlaying && !isPaused && !playerIsAdvancing && !reachedEndOfFile
+    }
+}
+
 // MARK: - Audio Speed Rules
 
 /// The single source of truth for audio book playback speed: the supported
@@ -258,6 +274,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private var endObserver: NSObjectProtocol?
     /// Observes the current item failing to play to its end.
     private var failedToPlayToEndObserver: NSObjectProtocol?
+    /// Observes the current item stalling: audio not arriving in time.
+    private var stallObserver: NSObjectProtocol?
+    /// The pending check that playback is really advancing; see
+    /// `scheduleProgressCheck()`.
+    private var progressCheck: DispatchWorkItem?
     /// Key-value observations of the current item's and player's status,
     /// either of which can become `.failed`.
     private var itemStatusObservation: NSKeyValueObservation?
@@ -291,6 +312,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Slowest and fastest supported multipliers (see `AudioSpeed.range`).
     let minimumSpeed: Double = AudioSpeed.range.lowerBound
     let maximumSpeed: Double = AudioSpeed.range.upperBound
+
+    /// How long playback may go without advancing, after it was asked to
+    /// start, resume, seek, or recover from a stall, before it is reported
+    /// as a `.stalled` failure. A local file starts within milliseconds, so
+    /// the margin is wide; hosted tests shorten it.
+    var stallRecoveryTimeout: TimeInterval = 10
 
     override init() {
         super.init()
@@ -421,6 +448,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
+        scheduleProgressCheck()
         return true
     }
 
@@ -428,6 +456,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         guard isPlaying, !isPaused else { return }
         player?.pause()
         isPaused = true
+        // A paused player is not expected to advance.
+        cancelProgressCheck()
     }
 
     /// Resumes only when a live AVPlayer item still exists and has not
@@ -443,6 +473,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         player.rate = Float(playbackSpeed)
         isPaused = false
         isPlaying = true
+        scheduleProgressCheck()
         return true
     }
 
@@ -460,6 +491,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private func releasePlayer() {
         durationTask?.cancel()
         durationTask = nil
+        cancelProgressCheck()
         removeObservers()
         player?.pause()
         player = nil
@@ -494,6 +526,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             self?.seekGate.complete(seekToken)
         }
         currentTime = clampedTime
+        // Playing on from the new position is a fresh start to check.
+        if isPlaying && !isPaused {
+            scheduleProgressCheck()
+        }
     }
 
     /// Set an optional clip end time for segmented audio playback.
@@ -537,6 +573,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// The item being played, or nil when no player exists. Hosted tests
     /// read its status and post the notifications AVFoundation posts for it.
     var _playerItemForTesting: AVPlayerItem? { playerItem }
+
+    /// Pause the player without the service knowing, exactly as AVFoundation
+    /// pauses it when a stall empties its buffer. Hosted tests use it to
+    /// stall playback of a local file, which never stalls by itself.
+    func _pausePlayerForTesting() {
+        player?.pause()
+    }
 
     // MARK: - Chapter/Marker Extraction
 
@@ -687,8 +730,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// Observe each way AVFoundation reports that the current file cannot
-    /// be played: the item's status, the player's status, and the item
-    /// failing to play to its end.
+    /// be played: the item's status, the player's status, the item failing
+    /// to play to its end, and the item stalling.
     ///
     /// Every observation is acted on from the main queue, like the other
     /// observers, and only while its item or player is still the current
@@ -715,6 +758,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         ) { [weak self] notification in
             let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             self?.itemDidFailToPlayToEnd(notification.object as AnyObject?, error: error)
+        }
+        stallObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemPlaybackStalled,
+            object: item,
+            queue: .main
+        ) { [weak self] notification in
+            self?.playbackDidStall(notification.object as AnyObject?)
         }
     }
 
@@ -755,16 +805,75 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         reportFailure(AudioPlaybackFailure(reason: reason, url: url, underlyingError: error))
     }
 
+    // MARK: - Stalls
+
+    /// Try to recover from a stall of the current item: audio that did not
+    /// arrive in time to keep playing.
+    ///
+    /// With automatic waiting off, for immediate starts, a stall leaves the
+    /// player paused, and it never restarts by itself. Turning waiting on
+    /// and asking for the rate again lets AVFoundation resume as soon as
+    /// enough audio has arrived. A stall while paused needs nothing: resume
+    /// asks for the rate and checks progress itself.
+    private func playbackDidStall(_ object: AnyObject?) {
+        guard let player, let item = playerItem, object === item,
+              isPlaying, !isPaused else { return }
+        player.automaticallyWaitsToMinimizeStalling = true
+        player.rate = Float(playbackSpeed)
+        scheduleProgressCheck()
+    }
+
+    /// Check, `stallRecoveryTimeout` from now, that playback of the current
+    /// item is really advancing, replacing any check already pending.
+    ///
+    /// Asking to start, resume, or seek sets `isPlaying` at once, whether or
+    /// not audio ever arrives, and a stall pauses the player without telling
+    /// the service. Without this check either would leave the service
+    /// claiming to play in silence.
+    private func scheduleProgressCheck() {
+        cancelProgressCheck()
+        guard let item = playerItem else { return }
+        let check = DispatchWorkItem { [weak self] in
+            self?.checkProgress(of: item)
+        }
+        progressCheck = check
+        DispatchQueue.main.asyncAfter(deadline: .now() + stallRecoveryTimeout, execute: check)
+    }
+
+    /// Drop the pending progress check, if any.
+    private func cancelProgressCheck() {
+        progressCheck?.cancel()
+        progressCheck = nil
+    }
+
+    /// Report a stall when `item`, still the current item and meant to be
+    /// playing, is not advancing.
+    private func checkProgress(of item: AVPlayerItem) {
+        guard item === playerItem, let player, let url = loadedURL else { return }
+        // Only the newest check runs; scheduling another cancelled this one.
+        progressCheck = nil
+        let reachedEndOfFile = item.duration.isNumeric
+            && CMTimeCompare(item.currentTime(), item.duration) >= 0
+        guard AudioStallPolicy.isStalled(
+            isPlaying: isPlaying,
+            isPaused: isPaused,
+            playerIsAdvancing: player.timeControlStatus == .playing,
+            reachedEndOfFile: reachedEndOfFile
+        ) else { return }
+        reportFailure(AudioPlaybackFailure(reason: .stalled, url: url))
+    }
+
     private func removeObservers() {
         if let observer = timeObserver, let player = player {
             player.removeTimeObserver(observer)
             timeObserver = nil
         }
-        for observer in [endObserver, failedToPlayToEndObserver].compactMap({ $0 }) {
+        for observer in [endObserver, failedToPlayToEndObserver, stallObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
         endObserver = nil
         failedToPlayToEndObserver = nil
+        stallObserver = nil
         itemStatusObservation?.invalidate()
         itemStatusObservation = nil
         playerStatusObservation?.invalidate()

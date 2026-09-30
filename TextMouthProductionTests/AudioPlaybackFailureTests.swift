@@ -298,6 +298,133 @@ final class AudioPlaybackFailureTests: XCTestCase {
         XCTAssertEqual(reason(nil, true), .failedDuringPlayback)
     }
 
+    // MARK: - Stalls
+
+    /// Playback that stops advancing, as a stall stops it, is reported as
+    /// stalled once the recovery time has passed, and never finishes.
+    func testPlaybackThatStopsAdvancingIsReportedStalled() throws {
+        try withFixtureDirectory { directory in
+            let playback = AudioPlaybackService()
+            defer { playback.stop() }
+            playback.stallRecoveryTimeout = 1
+            let events = PlaybackEvents(observing: playback)
+            let url = directory.appendingPathComponent("11.wav")
+            try AudioTestFixtures.writeSilence(to: url, duration: 5)
+            let failed = expectation(description: "Stall reported")
+            events.failureExpectation = failed
+            XCTAssertTrue(playback.load(url: url))
+            XCTAssertTrue(playback.play())
+            waitUntilReady(try XCTUnwrap(playback._playerItemForTesting))
+
+            playback._pausePlayerForTesting()
+            wait(for: [failed], timeout: 5)
+
+            XCTAssertEqual(events.failures, [
+                AudioPlaybackFailure(reason: .stalled, url: url.standardizedFileURL)
+            ])
+            XCTAssertFalse(playback.isPlaying)
+            XCTAssertFalse(playback.isPaused)
+            XCTAssertEqual(events.finishedCount, 0)
+        }
+    }
+
+    /// A stall that playback recovers from is no failure: the service asks
+    /// the stalled player to play on, and it does.
+    func testStallThatPlaybackRecoversFromIsNotAFailure() throws {
+        try withFixtureDirectory { directory in
+            let playback = AudioPlaybackService()
+            defer { playback.stop() }
+            playback.stallRecoveryTimeout = 0.5
+            let events = PlaybackEvents(observing: playback)
+            let url = directory.appendingPathComponent("12.wav")
+            try AudioTestFixtures.writeSilence(to: url, duration: 5)
+            XCTAssertTrue(playback.load(url: url))
+            XCTAssertTrue(playback.play())
+            let item = try XCTUnwrap(playback._playerItemForTesting)
+            waitUntilReady(item)
+
+            // A stall pauses the player; then AVFoundation reports it.
+            playback._pausePlayerForTesting()
+            let positionAtStall = playback.currentTime
+            NotificationCenter.default.post(name: .AVPlayerItemPlaybackStalled, object: item)
+            spinMainRunLoop(for: 1.5)
+
+            XCTAssertEqual(events.failures, [])
+            XCTAssertNil(playback.failure)
+            XCTAssertTrue(playback.isPlaying)
+            XCTAssertGreaterThan(playback.currentTime, positionAtStall + 0.5)
+        }
+    }
+
+    /// A stall reported while paused is left alone: the player stays
+    /// paused, nothing is reported, and Resume still works.
+    func testStallWhilePausedIsLeftAlone() throws {
+        try withFixtureDirectory { directory in
+            let playback = AudioPlaybackService()
+            defer { playback.stop() }
+            playback.stallRecoveryTimeout = 0.3
+            let events = PlaybackEvents(observing: playback)
+            let url = directory.appendingPathComponent("13.wav")
+            try AudioTestFixtures.writeSilence(to: url, duration: 5)
+            XCTAssertTrue(playback.load(url: url))
+            XCTAssertTrue(playback.play())
+            let item = try XCTUnwrap(playback._playerItemForTesting)
+            waitUntilReady(item)
+            playback.pause()
+            // Let the pause's last position update arrive.
+            spinMainRunLoop(for: 0.2)
+            let pausedPosition = playback.currentTime
+
+            NotificationCenter.default.post(name: .AVPlayerItemPlaybackStalled, object: item)
+            spinMainRunLoop(for: 1)
+
+            XCTAssertEqual(events.failures, [])
+            XCTAssertTrue(playback.isPaused)
+            XCTAssertEqual(playback.currentTime, pausedPosition, accuracy: 0.05)
+            XCTAssertTrue(playback.resume())
+        }
+    }
+
+    /// A file that plays to its end finishes, and is not reported stalled
+    /// when its player stops advancing there.
+    func testFileThatPlaysToItsEndFinishesWithoutStalling() throws {
+        try withFixtureDirectory { directory in
+            let playback = AudioPlaybackService()
+            defer { playback.stop() }
+            playback.stallRecoveryTimeout = 0.5
+            let events = PlaybackEvents(observing: playback)
+            let url = directory.appendingPathComponent("14.wav")
+            try AudioTestFixtures.writeSilence(to: url, duration: 0.3)
+            XCTAssertTrue(playback.load(url: url))
+            XCTAssertTrue(playback.play())
+
+            XCTAssertTrue(eventually { events.finishedCount == 1 })
+            spinMainRunLoop(for: 1)
+
+            XCTAssertEqual(events.finishedCount, 1)
+            XCTAssertEqual(events.failures, [])
+            XCTAssertFalse(playback.isPlaying)
+        }
+    }
+
+    /// Only playback that should be advancing, is not, and has not reached
+    /// the end of its file counts as stalled.
+    func testStallPolicyCountsOnlyPlaybackThatShouldBeAdvancing() {
+        func stalled(playing: Bool, paused: Bool, advancing: Bool, atEnd: Bool) -> Bool {
+            AudioStallPolicy.isStalled(
+                isPlaying: playing,
+                isPaused: paused,
+                playerIsAdvancing: advancing,
+                reachedEndOfFile: atEnd
+            )
+        }
+        XCTAssertTrue(stalled(playing: true, paused: false, advancing: false, atEnd: false))
+        XCTAssertFalse(stalled(playing: true, paused: false, advancing: true, atEnd: false))
+        XCTAssertFalse(stalled(playing: true, paused: false, advancing: false, atEnd: true))
+        XCTAssertFalse(stalled(playing: true, paused: true, advancing: false, atEnd: false))
+        XCTAssertFalse(stalled(playing: false, paused: false, advancing: false, atEnd: false))
+    }
+
     // MARK: - Wording
 
     /// Every failure names its file, by name alone, in a sentence fit to be
