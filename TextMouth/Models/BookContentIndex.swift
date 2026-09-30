@@ -330,17 +330,20 @@ extension BookContentIndex {
     /// derives from the index must hold here: chapters numbered in order,
     /// offsets that are the running sums of their lengths, matching totals,
     /// headings inside their chapters, counts within
-    /// `maximumCharacterCount`, finite audio timing, and audio files that
-    /// exist inside the book's folder. Each chapter and heading is read once
-    /// and each distinct audio file looked up once, so the cost is linear in
-    /// the size of the index.
+    /// `maximumCharacterCount`, finite audio timing, and audio paths that
+    /// stay inside the book's folder and, where they exist, name regular
+    /// files. A missing audio file or folder is not a failure here: playback
+    /// reports it for the chapter that needs it. Each chapter and heading is
+    /// read once and each distinct audio file looked up once, so the cost is
+    /// linear in the size of the index.
     ///
     /// - Parameter audioBaseURL: The folder the chapters' relative audio
     ///   paths resolve against: the book's file path, which for a multi-file
     ///   or segmented audiobook is its audio folder. With nil, the checks
-    ///   that need the file system (that each file exists, and stays inside
-    ///   the folder once symbolic links are resolved) are skipped, while each
-    ///   path's own form is still checked.
+    ///   that need the file system (that what exists of each path stays
+    ///   inside the folder once symbolic links are resolved, and is a
+    ///   regular file) are skipped, while each path's own form is still
+    ///   checked.
     func validationFailure(for format: BookFormat, audioBaseURL: URL?) -> String? {
         identityFailure(for: format)
             ?? chapterFailure()
@@ -474,7 +477,7 @@ extension BookContentIndex {
 
     /// The audio layout, each chapter's placeholder length, timing, and (for
     /// layouts that name a file per chapter) file, and the duration total.
-    /// `audioBaseURL` is the folder those files must exist in, as for
+    /// `audioBaseURL` is the folder those files must stay inside, as for
     /// `validationFailure(for:audioBaseURL:)`.
     private func audioFailure(audioBaseURL: URL?) -> String? {
         guard let audioLayout else { return "audioLayout is missing" }
@@ -519,18 +522,23 @@ extension BookContentIndex {
     }
 
     /// Checks the audio file each chapter names: first the path's own form,
-    /// then, given the folder the paths resolve against, that it names an
-    /// existing regular file that is still inside that folder once every
-    /// symbolic link is resolved. Paths already found sound are remembered,
-    /// so a file that many segments share is looked up only once.
+    /// then, given the folder the paths resolve against, whatever of the
+    /// path exists on disk. What exists must stay inside that folder once
+    /// every symbolic link is resolved, and a path that exists in full must
+    /// name a regular file. A file that does not exist, like a folder that
+    /// does not exist, is no reason to distrust the index: playback reports
+    /// the missing file and offers Retry, where analyzing the book again
+    /// would silently drop its chapter and shift every later one. Paths
+    /// already checked are remembered, so a file that many segments share
+    /// is looked up only once.
     private struct AudioFileCheck {
         /// The folder the paths resolve against; nil checks only their form.
         private let folder: URL?
-        /// The folder's canonical path, or nil when the folder cannot be
-        /// resolved because it does not exist.
+        /// The folder's canonical path, or nil when the folder does not
+        /// exist, which leaves nothing of any path on disk to check.
         private let canonicalFolder: String?
-        /// Relative paths already found to name a file inside the folder.
-        private var soundPaths: Set<String> = []
+        /// Relative paths already checked and found acceptable.
+        private var checkedPaths: Set<String> = []
 
         init(folder: URL?) {
             self.folder = folder
@@ -538,38 +546,55 @@ extension BookContentIndex {
         }
 
         /// Why `path`, a chapter's audio file relative to the folder, cannot
-        /// be trusted, or nil when it can. `field` names the path in reasons.
+        /// be trusted, or nil when it can. `field` names the path in reasons,
+        /// which are, in the order checked: the path is missing from the
+        /// index, is absolute, contains a ".." component, resolves outside
+        /// the audio folder, or is not a regular file. The last two apply
+        /// only to what exists on disk.
         mutating func failure(for path: String?, field: String) -> String? {
             guard let path else {
                 return "\(field) is missing"
             }
             let quotedPath = String(reflecting: path)
+            let components = path.split(separator: "/")
             if path.hasPrefix("/") {
                 return "\(field) \(quotedPath) is absolute"
             }
-            if path.split(separator: "/").contains("..") {
+            if components.contains("..") {
                 return "\(field) \(quotedPath) contains a \"..\" component"
             }
-            guard let folder, !soundPaths.contains(path) else { return nil }
-            // Resolution fails for a missing file, and for every file of a
-            // missing folder.
-            guard let canonicalFolder,
-                  let canonicalFile = BookContentIndex.canonicalPath(of: folder.appendingPathComponent(path).path) else {
-                return "\(field) \(quotedPath) does not exist"
+            guard let folder, let canonicalFolder, !checkedPaths.contains(path) else { return nil }
+            // Resolve the deepest part of the path that exists, starting with
+            // the whole path. A missing file, or a missing subfolder on the
+            // way to it, only shortens that part; so does a broken symbolic
+            // link, which playback also reports as a missing file.
+            for depth in stride(from: components.count, through: 1, by: -1) {
+                let existingPart = components.prefix(depth).joined(separator: "/")
+                guard let canonical = BookContentIndex.canonicalPath(
+                    of: folder.appendingPathComponent(existingPart).path
+                ) else { continue }
+                // A symbolic link inside the folder can point anywhere on disk.
+                guard Self.isWithin(canonicalFolder, canonical) else {
+                    return "\(field) \(quotedPath) resolves outside the audio folder"
+                }
+                if depth == components.count, !Self.isRegularFile(atPath: canonical) {
+                    return "\(field) \(quotedPath) is not a regular file"
+                }
+                break
             }
-            // A symbolic link inside the folder can point anywhere on disk.
-            guard BookContentIndex.relativePath(of: canonicalFile, inside: canonicalFolder) != nil else {
-                return "\(field) \(quotedPath) resolves outside the audio folder"
-            }
-            guard Self.isRegularFile(atPath: canonicalFile) else {
-                return "\(field) \(quotedPath) is not a regular file"
-            }
-            soundPaths.insert(path)
+            checkedPaths.insert(path)
             return nil
         }
 
+        /// Whether `canonical`, a resolved path, is `canonicalFolder` itself
+        /// or lies inside it.
+        private static func isWithin(_ canonicalFolder: String, _ canonical: String) -> Bool {
+            canonical == canonicalFolder
+                || BookContentIndex.relativePath(of: canonical, inside: canonicalFolder) != nil
+        }
+
         /// Whether `path`, already canonical, names a regular file rather
-        /// than a folder or a device.
+        /// than a folder, a named pipe, or a device.
         private static func isRegularFile(atPath path: String) -> Bool {
             let attributes = try? FileManager.default.attributesOfItem(atPath: path)
             return attributes?[.type] as? FileAttributeType == .typeRegular
