@@ -275,6 +275,8 @@ struct BookContentIndex: Codable, Hashable {
     }
 
     /// `path` without its leading `folder`, or nil when it is not inside it.
+    /// The builder records paths with it and validation's containment check
+    /// tests them with it, so both draw the folder's boundary identically.
     private static func relativePath(of path: String, inside folder: String) -> String? {
         let prefix = folder.hasSuffix("/") ? folder : folder + "/"
         return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : nil
@@ -504,7 +506,9 @@ extension BookContentIndex {
     /// Why `seconds`, a start time or duration, is unusable: NaN, infinite,
     /// or negative. Nil when it is a finite, non-negative number of seconds.
     private static func timeFailure(_ seconds: TimeInterval, field: String) -> String? {
-        guard !seconds.isFinite || seconds < 0 else { return nil }
+        if seconds.isFinite && seconds >= 0 {
+            return nil
+        }
         return "\(field) is \(seconds), expected a finite number of seconds, 0 or more"
     }
 
@@ -516,17 +520,15 @@ extension BookContentIndex {
     private struct AudioFileCheck {
         /// The folder the paths resolve against; nil checks only their form.
         private let folder: URL?
-        /// The folder's canonical path ending in "/", or nil when the folder
-        /// cannot be resolved because it does not exist.
-        private let canonicalFolderPrefix: String?
+        /// The folder's canonical path, or nil when the folder cannot be
+        /// resolved because it does not exist.
+        private let canonicalFolder: String?
         /// Relative paths already found to name a file inside the folder.
         private var soundPaths: Set<String> = []
 
         init(folder: URL?) {
             self.folder = folder
-            canonicalFolderPrefix = folder
-                .flatMap { BookContentIndex.canonicalPath(of: $0.path) }
-                .map { $0.hasSuffix("/") ? $0 : $0 + "/" }
+            canonicalFolder = folder.flatMap { BookContentIndex.canonicalPath(of: $0.path) }
         }
 
         /// Why `path`, a chapter's audio file relative to the folder, cannot
@@ -545,12 +547,12 @@ extension BookContentIndex {
             guard let folder, !soundPaths.contains(path) else { return nil }
             // Resolution fails for a missing file, and for every file of a
             // missing folder.
-            guard let canonicalFolderPrefix,
+            guard let canonicalFolder,
                   let canonicalFile = BookContentIndex.canonicalPath(of: folder.appendingPathComponent(path).path) else {
                 return "\(field) \(quotedPath) does not exist"
             }
             // A symbolic link inside the folder can point anywhere on disk.
-            guard canonicalFile.hasPrefix(canonicalFolderPrefix) else {
+            guard BookContentIndex.relativePath(of: canonicalFile, inside: canonicalFolder) != nil else {
                 return "\(field) \(quotedPath) resolves outside the audio folder"
             }
             guard Self.isRegularFile(atPath: canonicalFile) else {
