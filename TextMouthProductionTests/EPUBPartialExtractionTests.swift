@@ -2,8 +2,11 @@ import XCTest
 import ZIPFoundation
 @testable import TextMouth
 
-/// EPUB files that cannot be read in full: a damaged file is named, and the
-/// book's damage is never mistaken for its content.
+/// EPUB books that cannot be read in full. A damaged file is named rather
+/// than read as garbled text; every chapter left out is reported by number,
+/// file, and reason while the rest are read; cache generation logs what is
+/// missing; and an import that left chapters out warns once and keeps its
+/// original, while one that found nothing readable fails and leaves nothing.
 final class EPUBPartialExtractionTests: XCTestCase {
 
     // MARK: - Damaged Package Files
