@@ -16,7 +16,7 @@ struct ReaderView: View {
                 ProgressView("Loading book...")
                     .accessibilityLabel("Loading \(viewModel.book.title)")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = viewModel.errorMessage {
+            } else if let error = viewModel.loadErrorMessage {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.largeTitle)
@@ -190,6 +190,30 @@ struct ReaderView: View {
         .onAppear {
             viewModel.soundEffectService = soundEffectService
         }
+        // A problem met after the book has loaded, such as a chapter whose
+        // audio cannot be played, is shown over the reader, which stays
+        // usable behind it. Return chooses the default button, Retry for
+        // audio and OK otherwise, and Escape cancels.
+        .alert(
+            viewModel.errorAlert?.title ?? "",
+            isPresented: errorAlertIsPresented,
+            presenting: viewModel.errorAlert
+        ) { alert in
+            if alert.offersRetry {
+                Button("Retry") {
+                    // SwiftUI closes the alert around this action. Retrying
+                    // on the next turn of the main queue lets a retry that
+                    // fails again present a fresh alert, rather than having
+                    // the closing alert clear its message.
+                    DispatchQueue.main.async { viewModel.retryAudioPlayback() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } else {
+                Button("OK", role: .cancel) {}
+            }
+        } message: { alert in
+            Text(alert.message)
+        }
         .sheet(isPresented: $showHeadingNavigator) {
             HeadingNavigatorView(viewModel: viewModel)
         }
@@ -284,6 +308,20 @@ struct ReaderView: View {
             }
             showMetadataEditor = true
         }
+    }
+
+    /// Whether the error alert is showing: while the reader has an error to
+    /// show over its content. Closing the alert by any button, or with
+    /// Escape, forgets the error.
+    private var errorAlertIsPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorAlert != nil },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.dismissErrorAlert()
+                }
+            }
+        )
     }
 
     /// Accept panel commands from the reader window itself or from a sheet
