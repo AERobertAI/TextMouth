@@ -27,19 +27,67 @@ extension LibraryViewModel {
         }
     }
 
-    /// Remove books from the library index only, leaving .tmb files on disk.
-    /// Deletes bookInfo.json from each .tmb so orphan adoption won't re-add them.
+    /// Remove books from the library index only, keeping each .tmb package
+    /// and its content file on disk for a later re-import (TODO S06). Each
+    /// package is retired before its row is removed
+    /// (`LibraryPersistenceService.retirePackage(of:)`): its removal marker
+    /// keeps orphan adoption from bringing the book back after a restart or
+    /// a rebuild, and metadata writes still queued or in flight for it are
+    /// dropped. A book whose package cannot be marked stays in the library,
+    /// and a bookInfo.json that cannot be deleted does not undo the removal;
+    /// either problem is reported through the library's error alert.
     func removeBooksFromLibraryOnly(_ books: [Book]) {
-        for book in books {
-            // Remove bookInfo.json so adoptOrphanedTMBPackages won't re-adopt this book.
-            // The .tmb and its book file remain on disk for the user to reimport if desired.
-            if !book.tmbDirectoryName.isEmpty {
-                let infoURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
-                try? FileManager.default.removeItem(at: infoURL)
+        var refused: [String] = []
+        var recordsLeft: [String] = []
+        var removedAny = false
+        for requested in books {
+            // The confirmation captured these books when it opened. Act on
+            // the current row, so a book moved meanwhile is marked where its
+            // package is now; a book no longer listed needs nothing.
+            guard let book = bookByID(requested.id) else { continue }
+            do {
+                let retirement = try LibraryPersistenceService.retirePackage(of: book)
+                if let error = retirement.recordDeletionError {
+                    recordsLeft.append("\(book.title): \(error.localizedDescription)")
+                }
+            } catch {
+                refused.append("\(book.title): \(error.localizedDescription)")
+                continue
             }
             library.removeBook(id: book.id)
+            removedAny = true
         }
-        save()
+        if removedAny {
+            save()
+        }
+        if let message = Self.libraryOnlyRemovalProblems(refused: refused, recordsLeft: recordsLeft) {
+            errorMessage = message
+            showError = true
+        }
+    }
+
+    /// What Remove from Library Only could not do, as the error alert says
+    /// it, or nil when it did everything. `refused` lists the books kept in
+    /// the library because their package could not be marked; `recordsLeft`
+    /// lists removed books whose bookInfo.json could not be deleted. Each
+    /// entry reads "Title: reason".
+    nonisolated static func libraryOnlyRemovalProblems(refused: [String], recordsLeft: [String]) -> String? {
+        var paragraphs: [String] = []
+        if !refused.isEmpty {
+            let heading = refused.count == 1
+                ? "This book could not be removed from the library and remains in it:"
+                : "These books could not be removed from the library and remain in it:"
+            paragraphs.append(([heading] + refused).joined(separator: "\n"))
+        }
+        if !recordsLeft.isEmpty {
+            let heading = recordsLeft.count == 1
+                ? "This book was removed from the library, but its bookInfo.json file could not be deleted. "
+                    + "It will still stay out of the library:"
+                : "These books were removed from the library, but their bookInfo.json files could not be deleted. "
+                    + "They will still stay out of the library:"
+            paragraphs.append(([heading] + recordsLeft).joined(separator: "\n"))
+        }
+        return paragraphs.isEmpty ? nil : paragraphs.joined(separator: "\n\n")
     }
 
     /// Remove books from the library and delete their .tmb packages

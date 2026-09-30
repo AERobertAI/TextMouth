@@ -254,6 +254,16 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent("bookInfo.json")
     }
 
+    /// Name of the marker recording that a package's book was removed from
+    /// the library while the package stayed on disk. See
+    /// `RemovedFromLibraryMarker`.
+    static let removedFromLibraryMarkerName = "removedFromLibrary.json"
+
+    /// Path to that removal marker inside a .tmb package
+    static func removedFromLibraryMarkerPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(removedFromLibraryMarkerName)
+    }
+
     /// Path to the cached Markdown content file inside a .tmb package
     static func contentMarkdownPath(in tmbDir: URL) -> URL {
         tmbDir.appendingPathComponent("content.md")

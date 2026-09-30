@@ -58,6 +58,11 @@ extension LibraryViewModel {
 
         var needsSave = false
 
+        // A book taken out with Remove from Library Only stays out, even when
+        // this index was saved before the removal. It goes first, so no
+        // repair below touches its package.
+        if !RemovedFromLibraryMarker.removeRetiredBooks(from: &library).isEmpty { needsSave = true }
+
         // Merge folder rows that name one directory on this volume before the
         // repairs below reason about where each book's package lives.
         if repairEquivalentFolderDuplicates() { needsSave = true }

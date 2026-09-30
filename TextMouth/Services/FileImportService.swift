@@ -901,14 +901,19 @@ enum FileImportService {
         return types
     }
 
-    /// Rebuild the .TextMouth directory structure, migrating any books from old storage,
-    /// moving misplaced .tmb packages to their correct folders, and adopting orphans.
+    /// Rebuild the .TextMouth directory structure, keeping books removed with Remove
+    /// from Library Only out, migrating any books from old storage, moving misplaced
+    /// .tmb packages to their correct folders, and adopting orphans.
     /// Returns what the legacy migration did: a book that could not move keeps
     /// its record and original and is listed with the reason, for the caller
     /// to show. This throws only when the data directory itself cannot be made.
     @discardableResult
     static func rebuildDirectoryStructure(library: inout Library) throws -> LegacyMigrationReport {
         try TextMouthPaths.ensureDirectoryStructure()
+
+        // Books taken out with Remove from Library Only stay out, as at
+        // startup, before any step below touches their packages.
+        RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
 
         // Migrate books that don't have .tmb packages yet. Each copy is
         // verified before its original is removed, and a failure for one
@@ -1212,6 +1217,12 @@ enum FileImportService {
     ///
     /// This handles cases where the app was quit or crashed during import before
     /// the book could be saved to library.json, leaving orphaned .tmb packages.
+    ///
+    /// A package whose book was taken out with Remove from Library Only is not
+    /// an orphan: its `RemovedFromLibraryMarker` keeps it out at startup,
+    /// during index recovery, and on rebuild alike, even when a late write has
+    /// left a readable bookInfo.json in it. Such a package is left untouched
+    /// on disk for a deliberate re-import.
     @discardableResult
     static func adoptOrphanedTMBPackages(
         library: inout Library,
@@ -1247,13 +1258,18 @@ enum FileImportService {
             // Try to load bookInfo.json from the orphaned .tmb
             guard let info = try? BookInfo.load(from: url) else { continue }
 
-            // Find the actual book file inside the .tmb (skip metadata/cache files)
+            // The user removed this book from the library; it stays out.
+            if RemovedFromLibraryMarker.retires(info.metadata.bookID, in: url) { continue }
+
+            // Find the actual book file inside the .tmb (skip metadata/cache
+            // files, including a removal marker that names some other book)
             let tmbContents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
             let bookFileName = tmbContents.first { name in
                 !name.hasPrefix(".")
                 && name != "bookInfo.json"
                 && name != "content.md"
                 && name != "cachedAudio"
+                && name != TextMouthPaths.removedFromLibraryMarkerName
             }
 
             guard let fileName = bookFileName else { continue }

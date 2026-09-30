@@ -11,6 +11,11 @@ import Foundation
 /// (`resumeIndexWrites()`) or the user replaces the unreadable one
 /// (`replaceUnreadableIndex(with:)`). Package metadata (bookInfo.json)
 /// writes continue, so reading positions are still saved.
+///
+/// Package metadata is never written into a package that Remove from
+/// Library Only retired (`retirePackage(of:)`): queued, flushed, and
+/// analysis writes for it are dropped, so none can recreate the
+/// bookInfo.json that orphan adoption would read.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -37,6 +42,23 @@ enum LibraryPersistenceService {
     nonisolated(unsafe) private static var loggedSkippedIndexWrite = false
     nonisolated(unsafe) private static var pendingBookInfos: [UUID: (book: Book, contentIndex: BookContentIndex?)] = [:]
     nonisolated(unsafe) private static var bookInfoGenerations: [UUID: UInt] = [:]
+    /// Packages retired by Remove from Library Only: those retired in this
+    /// session, and those whose marker a write has already found. Confined
+    /// to bookInfoSaveQueue, where every package metadata write checks it.
+    nonisolated(unsafe) private static var retiredPackages: Set<RetiredPackage> = []
+
+    /// A retired package: the removed book's ID and its package directory.
+    /// Both identify it because a .tmb import of the same book keeps the ID
+    /// in a new package, whose writes must not be dropped with this one's.
+    private struct RetiredPackage: Hashable {
+        let bookID: UUID
+        let packagePath: String
+
+        init(_ book: Book) {
+            bookID = book.id
+            packagePath = book.tmbDirectory.path
+        }
+    }
 
     private static var libraryFileURL: URL {
         TextMouthPaths.libraryIndexFile
@@ -94,7 +116,7 @@ enum LibraryPersistenceService {
             let pending = pendingBookInfos
             pendingBookInfos.removeAll()
             for (_, update) in pending {
-                try? update.book.saveBookInfoThrowing(contentIndex: update.contentIndex)
+                try? writeBookInfo(update.book, contentIndex: update.contentIndex)
             }
         }
     }
@@ -156,6 +178,8 @@ enum LibraryPersistenceService {
     /// Commit a completed parser result immediately while preserving any newer
     /// reading-state snapshot already waiting on the metadata queue. Batch
     /// migrations use this instead of retaining every full index until the end.
+    /// A result for a book removed with Remove from Library Only while it was
+    /// being parsed is dropped without an error.
     static func saveContentAnalysis(
         for book: Book,
         index: BookContentIndex,
@@ -170,7 +194,7 @@ enum LibraryPersistenceService {
             if let cacheFormatVersion {
                 mergedBook.cacheFormatVersion = cacheFormatVersion
             }
-            try mergedBook.saveBookInfoThrowing(contentIndex: index)
+            try writeBookInfo(mergedBook, contentIndex: index)
         }
     }
 
@@ -191,8 +215,124 @@ enum LibraryPersistenceService {
             bookInfoSaveQueue.asyncAfter(deadline: .now() + 0.5) {
                 guard bookInfoGenerations[book.id] == generation,
                       let update = pendingBookInfos.removeValue(forKey: book.id) else { return }
-                try? update.book.saveBookInfoThrowing(contentIndex: update.contentIndex)
+                try? writeBookInfo(update.book, contentIndex: update.contentIndex)
             }
+        }
+    }
+
+    /// Writes one package's metadata unless Remove from Library Only retired
+    /// the package. Debounced saves, the termination flush, and analysis
+    /// results all end here. Must run on bookInfoSaveQueue.
+    private static func writeBookInfo(_ book: Book, contentIndex: BookContentIndex?) throws {
+        guard !isRetired(book) else { return }
+        try book.saveBookInfoThrowing(contentIndex: contentIndex)
+    }
+
+    // MARK: - Remove from Library Only
+
+    /// Retires `book`'s package for Remove from Library Only, before its
+    /// library row is removed. The removal marker is written first. Only once
+    /// it is on disk are writes queued for the book cancelled, the package
+    /// remembered so later writes into it are dropped, and bookInfo.json
+    /// deleted. It all runs on the metadata queue, so no queued, flushed, or
+    /// analysis write can land in between: one that ran earlier is deleted
+    /// with bookInfo.json, and any later one is dropped.
+    ///
+    /// Throws `LibraryRemovalError` when the marker cannot be written; then
+    /// nothing has changed, and the book must stay in the library. A record
+    /// without a package on disk (a legacy record, or a package that is gone)
+    /// leaves adoption nothing to find, so it needs no marker.
+    ///
+    /// Deleting bookInfo.json is only a courtesy to older TextMouth versions,
+    /// which know nothing of the marker. When it fails, the failure is logged
+    /// and returned, and the package stays retired regardless.
+    static func retirePackage(of book: Book, removedAt: Date = Date()) throws -> PackageRetirement {
+        try bookInfoSaveQueue.sync { () throws -> PackageRetirement in
+            guard !book.tmbDirectoryName.isEmpty, !isMissing(book.tmbDirectory) else {
+                cancelQueuedWrites(for: book)
+                RemovedFromLibraryMarker.log("removed from the library; it has no package on disk", for: book)
+                return PackageRetirement(isPackageMarked: false, recordDeletionError: nil)
+            }
+            let package = book.tmbDirectory
+            do {
+                try RemovedFromLibraryMarker(book: book, removedAt: removedAt).write(into: package)
+            } catch {
+                RemovedFromLibraryMarker.log(
+                    "stays in the library: could not write the removal marker in \(package.path): \(error)",
+                    for: book
+                )
+                throw LibraryRemovalError.couldNotMarkPackage(packageName: book.tmbDirectoryName, underlying: error)
+            }
+            retiredPackages.insert(RetiredPackage(book))
+            cancelQueuedWrites(for: book)
+            RemovedFromLibraryMarker.log("removed from the library; its package stays at \(package.path)", for: book)
+            return PackageRetirement(isPackageMarked: true, recordDeletionError: deleteRecord(of: book))
+        }
+    }
+
+    /// Undoes a retirement for a deliberate return of the retained package,
+    /// such as importing it again or an explicit adopt action: deletes the
+    /// removal marker, then forgets the retirement, so the book's metadata
+    /// is saved again. Throws when the marker cannot be deleted, and the
+    /// package then stays retired.
+    static func reinstatePackage(of book: Book) throws {
+        guard !book.tmbDirectoryName.isEmpty else { return }
+        try bookInfoSaveQueue.sync {
+            try RemovedFromLibraryMarker.remove(from: book.tmbDirectory)
+            retiredPackages.remove(RetiredPackage(book))
+            RemovedFromLibraryMarker.log("returned to the library from \(book.tmbDirectory.path)", for: book)
+        }
+    }
+
+    /// Whether `book`'s package is retired, so a metadata write into it must
+    /// be dropped: remembered here, or found on disk as a marker naming the
+    /// book. A marker found on disk is remembered, so it is logged once and
+    /// read once. Must run on bookInfoSaveQueue.
+    private static func isRetired(_ book: Book) -> Bool {
+        let package = RetiredPackage(book)
+        if retiredPackages.contains(package) { return true }
+        guard RemovedFromLibraryMarker.retires(book) else { return false }
+        retiredPackages.insert(package)
+        RemovedFromLibraryMarker.log(
+            "dropping metadata writes: \(book.tmbDirectory.path) records its removal from the library",
+            for: book
+        )
+        return true
+    }
+
+    /// Forgets any write queued for `book` and strands its scheduled debounce
+    /// block. Must run on bookInfoSaveQueue.
+    private static func cancelQueuedWrites(for book: Book) {
+        pendingBookInfos.removeValue(forKey: book.id)
+        bookInfoGenerations[book.id] = (bookInfoGenerations[book.id] ?? 0) &+ 1
+    }
+
+    /// Deletes bookInfo.json from `book`'s retired package, returning why it
+    /// could not be deleted, if it could not. Must run on bookInfoSaveQueue.
+    private static func deleteRecord(of book: Book) -> (any Error)? {
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        guard FileManager.default.fileExists(atPath: record.path) else { return nil }
+        do {
+            try FileManager.default.removeItem(at: record)
+            return nil
+        } catch {
+            RemovedFromLibraryMarker.log(
+                "could not delete \(record.path), but the removal marker keeps the book out: \(error)",
+                for: book
+            )
+            return error
+        }
+    }
+
+    /// Whether nothing at all exists at `url`. Unlike `fileExists(atPath:)`,
+    /// this is false for an item that exists but cannot be examined (inside a
+    /// folder without permission), which must not be mistaken for a missing one.
+    private static func isMissing(_ url: URL) -> Bool {
+        do {
+            _ = try FileManager.default.attributesOfItem(atPath: url.path)
+            return false
+        } catch {
+            return (error as? CocoaError)?.code == .fileReadNoSuchFile
         }
     }
 
