@@ -522,25 +522,7 @@ test("DAISY 2.02 SMIL with npt= time format preserves par IDs") {
 /// Write a DAISY package with the given text files (path → contents) to a new
 /// ZIP in the temporary directory. Callers remove the returned file.
 func makeTemporaryDAISYZip(entries: [String: String]) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("TextMouthDAISYTest-\(UUID().uuidString).zip")
-    let archive = try Archive(url: url, accessMode: .create)
-
-    for (path, contents) in entries {
-        let data = Data(contents.utf8)
-        try archive.addEntry(
-            with: path,
-            type: .file,
-            uncompressedSize: Int64(data.count),
-            provider: { position, size in
-                let start = Int(position)
-                let end = min(start + size, data.count)
-                return data[start..<end]
-            }
-        )
-    }
-
-    return url
+    try makeTemporaryZip(prefix: "TextMouthDAISYTest", entries: entries.mapValues { Data($0.utf8) })
 }
 
 #if canImport(TextMouth)
