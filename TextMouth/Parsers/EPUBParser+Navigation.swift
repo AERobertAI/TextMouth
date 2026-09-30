@@ -33,16 +33,29 @@ extension EPUBParser {
         case omitted(ExtractionOmission.Reason)
     }
 
+    /// What a spine item is to a reader, judged by its declared media type.
+    private enum SpineItemRole {
+        /// An HTML or XML document, read as a chapter.
+        case document
+        /// A resource the book uses, such as an image or a stylesheet, which
+        /// is not a chapter: it is neither counted nor reported.
+        case resource
+        /// A document of a type that cannot be read as text, such as plain
+        /// text or PDF: a chapter that is left out and reported.
+        case unsupportedDocument
+    }
+
     /// Recover semantic and TOC headings, then give every retained spine
     /// document a start destination without inserting words into its speech.
     ///
     /// Reading is tolerant, but nothing is left out silently. A spine entry
-    /// with no manifest file, a document missing from the archive or unable
-    /// to be decoded, and markup that cannot be read are each recorded in
-    /// the report while the other chapters are still read. A document that
-    /// converts to no text at all, such as a cover page whose image comes
-    /// from its stylesheet, is counted as blank and is not a problem.
-    /// Resources in the spine, such as images, are not chapters.
+    /// with no manifest file, a document of a type that cannot be read as
+    /// text, a document missing from the archive or unable to be decoded,
+    /// and markup that cannot be read are each recorded in the report while
+    /// the other chapters are still read. A document that converts to no
+    /// text at all, such as a cover page whose image comes from its
+    /// stylesheet, is counted as blank and is not a problem. Resources in
+    /// the spine, such as images, are not chapters.
     /// - Throws: `EPUBParserError.noReadableChapters` with the report when
     ///   no chapter holds text, since an empty book is not a reading.
     static func preparedChapters(
@@ -63,10 +76,18 @@ extension EPUBParser {
                 report.omissions.append(ExtractionOmission(chapterNumber: number, member: itemRef, reason: .unlistedItem))
                 continue
             }
-            guard item.mediaType.contains("html") || item.mediaType.contains("xml") else { continue }
+            let role = spineRole(ofMediaType: item.mediaType)
+            guard role != .resource else { continue }
             report.chapterCount += 1
 
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+            guard role == .document else {
+                let type = item.mediaType.trimmingCharacters(in: .whitespaces)
+                report.omissions.append(
+                    ExtractionOmission(chapterNumber: number, member: path, reason: .unsupportedMediaType(type))
+                )
+                continue
+            }
             switch readSpineDocument(archive: archive, path: path, number: number) {
             case .document(let document, let contentsTargets):
                 documents.append(document)
@@ -106,6 +127,28 @@ extension EPUBParser {
         report.omissions.sort { $0.chapterNumber < $1.chapterNumber }
         guard !chapters.isEmpty else { throw EPUBParserError.noReadableChapters(report) }
         return (chapters, report)
+    }
+
+    /// The role of a spine item whose declared media type is `mediaType`.
+    /// Media types ignore case, and parameters after ";" (such as a charset)
+    /// do not change the role. HTML and XML types are documents, as they
+    /// always were; images, sound, video, fonts, stylesheets, and scripts
+    /// are resources; anything else is a document that cannot be read.
+    private static func spineRole(ofMediaType mediaType: String) -> SpineItemRole {
+        let essence = (mediaType.split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+            .trimmingCharacters(in: .whitespaces)
+            .lowercased()
+        if essence.contains("html") || essence.contains("xml") { return .document }
+
+        let resourceFamilies = ["image/", "audio/", "video/", "font/", "application/font-", "application/x-font"]
+        let resourceTypes: Set<String> = [
+            "text/css", "text/javascript", "application/javascript", "application/ecmascript",
+            "application/vnd.ms-opentype"
+        ]
+        if resourceFamilies.contains(where: essence.hasPrefix) || resourceTypes.contains(essence) {
+            return .resource
+        }
+        return .unsupportedDocument
     }
 
     /// Read the spine document at `path`, the `number`th in reading order,

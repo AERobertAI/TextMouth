@@ -23,6 +23,11 @@ struct ExtractionOmission: Equatable, Sendable {
         /// The reading order names an item for which the package lists no
         /// file, so there is nothing to read.
         case unlistedItem
+        /// The file is a document of a type the app cannot read as text,
+        /// named by its declared media type ("text/plain"), which is empty
+        /// when the package declares none. Resources such as images are not
+        /// chapters, so they never have this reason.
+        case unsupportedMediaType(String)
     }
 
     /// The chapter's position in the reading order, counting from 1: the
@@ -121,6 +126,10 @@ struct ExtractionReport: Equatable, Sendable {
             return "has markup that could not be read"
         case .unlistedItem:
             return "has no file listed in \(container)"
+        case .unsupportedMediaType(let type):
+            return type.isEmpty
+                ? "has no media type, so TextMouth cannot read it"
+                : "is a “\(type)” file, which TextMouth cannot read"
         }
     }
 }

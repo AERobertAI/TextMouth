@@ -171,6 +171,58 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertEqual(book.chapters.count, 3)
     }
 
+    /// A spine document of a type that cannot be read as text is a chapter
+    /// left out, and is reported with its type, where it used to vanish.
+    func testSpineDocumentOfAnUnreadableTypeIsReported() throws {
+        let notes = FixtureChapter(
+            id: "notes", href: "notes.txt", markup: "Carry a spare tube and two levers.", mediaType: "text/plain"
+        )
+        let epub = try makeEPUB(chapters: Self.threeChapters + [notes], spine: ["ch01", "notes", "ch02", "ch03"])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.count, 3)
+        XCTAssertEqual(
+            book.report.message,
+            "1 of 4 chapters could not be read: chapter 2 (“OEBPS/notes.txt”) is a “text/plain” file, "
+                + "which TextMouth cannot read."
+        )
+    }
+
+    /// Stylesheets, fonts, sound, and images in the spine, whatever the case
+    /// of their media types or any parameters, are resources: not counted.
+    func testResourcesOfEveryKindInTheSpineAreNotChapters() throws {
+        let resources = [
+            FixtureChapter(id: "style", href: "style.css", markup: "p { margin: 0 }", mediaType: "text/css"),
+            FixtureChapter(id: "face", href: "face.otf", markup: "font", mediaType: "application/vnd.ms-opentype"),
+            FixtureChapter(id: "bell", href: "bell.mp3", markup: "sound", mediaType: "audio/mpeg"),
+            FixtureChapter(id: "plan", href: "plan.png", markup: "image", mediaType: "IMAGE/PNG; q=0.9")
+        ]
+        let epub = try makeEPUB(
+            chapters: Self.threeChapters + resources,
+            spine: ["style", "ch01", "face", "ch02", "bell", "ch03", "plan"]
+        )
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertTrue(book.report.isComplete, book.report.message)
+        XCTAssertEqual(book.report.chapterCount, 3)
+        XCTAssertEqual(book.chapters.count, 3)
+    }
+
+    /// Media types ignore case, so a document declared in capitals is read
+    /// as a chapter rather than passed over.
+    func testDocumentTypesAreRecognizedWithoutRegardToCase() throws {
+        var shouting = Self.threeChapters[1]
+        shouting.mediaType = "Application/XHTML+XML"
+        let epub = try makeEPUB(chapters: [Self.threeChapters[0], shouting, Self.threeChapters[2]])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertTrue(book.report.isComplete, book.report.message)
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Truing a Wheel", "Adjusting the Brakes"])
+    }
+
     /// With no chapter readable there is no book to open: both readers
     /// throw an error that names every chapter and says what to do.
     func testBookWithNoReadableChapterNamesEveryChapter() throws {

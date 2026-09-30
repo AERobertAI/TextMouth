@@ -64,21 +64,25 @@ final class ExtractionReportTests: XCTestCase {
     func testEveryReasonHasItsOwnClause() {
         let report = ExtractionReport(
             container: "this DAISY book",
-            chapterCount: 5,
+            chapterCount: 7,
             omissions: [
                 omission(1, "a.xml", .missingMember),
                 omission(2, "b.xml", .unreadableMember),
                 omission(3, "c.xml", .malformedMarkup),
-                omission(4, "d", .unlistedItem)
+                omission(4, "d", .unlistedItem),
+                omission(5, "e.txt", .unsupportedMediaType("text/plain")),
+                omission(6, "f", .unsupportedMediaType(""))
             ]
         )
 
         XCTAssertEqual(
             report.message,
-            "4 of 5 chapters could not be read: chapter 1 (“a.xml”) is missing from this DAISY book; "
+            "6 of 7 chapters could not be read: chapter 1 (“a.xml”) is missing from this DAISY book; "
                 + "chapter 2 (“b.xml”) is damaged or incomplete; "
                 + "chapter 3 (“c.xml”) has markup that could not be read; "
-                + "chapter 4 (“d”) has no file listed in this DAISY book."
+                + "chapter 4 (“d”) has no file listed in this DAISY book; "
+                + "chapter 5 (“e.txt”) is a “text/plain” file, which TextMouth cannot read; "
+                + "chapter 6 (“f”) has no media type, so TextMouth cannot read it."
         )
     }
 
