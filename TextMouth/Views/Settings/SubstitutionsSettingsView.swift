@@ -189,6 +189,109 @@ struct SubstitutionRuleRow: View {
     }
 }
 
+// MARK: - Announcements
+
+extension SubstitutionsSettingsView {
+    /// What VoiceOver says after a rule moves, counting positions from one:
+    /// "Mr. moved to position 3 of 7" for index 2 in a list of 7.
+    nonisolated static func movedAnnouncement(ruleName: String, index: Int, count: Int) -> String {
+        "\(ruleName) moved to position \(index + 1) of \(count)"
+    }
+}
+
+// MARK: - Rule commands
+
+/// A command for one substitution rule. Each row shows every command as a
+/// button, offers those that can act as VoiceOver actions, and repeats them
+/// in its context menu, always under the same name.
+enum SubstitutionRuleCommand: CaseIterable {
+    case edit
+    case moveUp
+    case moveDown
+    case delete
+
+    /// The command's name: its button's spoken label and tooltip, its
+    /// VoiceOver action, and its context menu item.
+    var title: String {
+        switch self {
+        case .edit: return "Edit"
+        case .moveUp: return "Move Up"
+        case .moveDown: return "Move Down"
+        case .delete: return "Delete"
+        }
+    }
+
+    /// The SF Symbol drawn on the command's row button.
+    var systemImage: String {
+        switch self {
+        case .edit: return "pencil"
+        case .moveUp: return "arrow.up"
+        case .moveDown: return "arrow.down"
+        case .delete: return "trash"
+        }
+    }
+
+    /// The step this command moves a rule, or nil when it moves nothing.
+    var moveDirection: SubstitutionRuleMoveDirection? {
+        switch self {
+        case .moveUp: return .up
+        case .moveDown: return .down
+        case .edit, .delete: return nil
+        }
+    }
+
+    /// Whether the command can act on the rule at `index` in a list of
+    /// `count` rules. Only moves depend on position: the first rule cannot
+    /// move up and the last cannot move down.
+    func isAvailable(at index: Int, of count: Int) -> Bool {
+        guard let moveDirection else { return true }
+        return moveDirection.destination(from: index, count: count) != nil
+    }
+
+    /// The commands that can act on the rule at `index`, in button order.
+    /// VoiceOver actions have no dimmed state, so a row offers only these.
+    static func available(at index: Int, of count: Int) -> [SubstitutionRuleCommand] {
+        allCases.filter { $0.isAvailable(at: index, of: count) }
+    }
+}
+
+// MARK: - Spoken descriptions
+
+extension SubstitutionRule {
+    /// The rule's name without surrounding white space; empty when unnamed.
+    fileprivate var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// What the settings list calls the rule: its name, or else its pattern,
+    /// or "Untitled rule" when both are blank.
+    var displayName: String {
+        if !trimmedName.isEmpty { return trimmedName }
+        let trimmedPattern = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedPattern.isEmpty ? "Untitled rule" : trimmedPattern
+    }
+
+    /// The label of the rule's enable checkbox, such as "Enable Mr.".
+    var enableLabel: String {
+        "Enable \(displayName)"
+    }
+
+    /// What VoiceOver reads for the rule itself: its name, pattern,
+    /// replacement, and matching options, such as
+    /// "Mr., Pattern: \bMr\., Replace with: Mister, Regular expression".
+    /// It leaves out whether the rule is enabled; its checkbox says that.
+    var accessibilitySummary: String {
+        var parts: [String] = []
+        if !trimmedName.isEmpty { parts.append(trimmedName) }
+        parts.append("Pattern: \(pattern)")
+        parts.append(replacement.isEmpty ? "Action: skip" : "Replace with: \(replacement)")
+        if isRegex { parts.append("Regular expression") }
+        if caseSensitive { parts.append("Case sensitive") }
+        if isWholeWordEffective { parts.append("Whole word only") }
+        return parts.joined(separator: ", ")
+    }
+}
+
 struct SubstitutionRuleEditorView: View {
     @State var rule: SubstitutionRule
     let isNew: Bool

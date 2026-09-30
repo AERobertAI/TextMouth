@@ -1,8 +1,10 @@
+import AppKit
 import XCTest
 @testable import TextMouth
 
 /// Keyboard- and VoiceOver-operable substitution editing and reordering
-/// (TODO A03): one-step moves in the rule service.
+/// (TODO A03): one-step moves in the rule service, and the words and
+/// commands every rule row is built from.
 @MainActor
 final class SubstitutionKeyboardAccessTests: XCTestCase {
     // MARK: - One-step moves
@@ -62,6 +64,91 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
 
         XCTAssertEqual(service.rules, rules)
         XCTAssertFalse(sandbox.hasSavedRules, "A refused move must not save")
+    }
+
+    // MARK: - Rule wording
+
+    /// The checkbox names the rule it enables: by its name, or else by its
+    /// pattern, or as "Untitled rule" when both are blank.
+    func testEnableLabelNamesTheRule() {
+        XCTAssertEqual(SubstitutionRule(name: "Mr.", pattern: "\\bMr\\.").enableLabel, "Enable Mr.")
+        XCTAssertEqual(SubstitutionRule(name: "  Mr.  ", pattern: "\\bMr\\.").enableLabel, "Enable Mr.")
+        XCTAssertEqual(SubstitutionRule(pattern: "colour").enableLabel, "Enable colour")
+        XCTAssertEqual(SubstitutionRule(name: " ", pattern: " colour ").enableLabel, "Enable colour")
+        XCTAssertEqual(SubstitutionRule(pattern: "   ").enableLabel, "Enable Untitled rule")
+        XCTAssertEqual(SubstitutionRule(pattern: "").enableLabel, "Enable Untitled rule")
+    }
+
+    /// A rule's description gives its name, pattern, replacement, and
+    /// options, and reads the same whether or not the rule is enabled.
+    func testSummaryDescribesTheRuleWithoutItsEnabledState() {
+        let enabled = SubstitutionRule(
+            name: "Dr.",
+            pattern: "\\bDr\\.",
+            replacement: "Doctor",
+            isRegex: true,
+            caseSensitive: true
+        )
+        var disabled = enabled
+        disabled.isEnabled = false
+
+        XCTAssertEqual(
+            enabled.accessibilitySummary,
+            "Dr., Pattern: \\bDr\\., Replace with: Doctor, Regular expression, Case sensitive"
+        )
+        XCTAssertEqual(disabled.accessibilitySummary, enabled.accessibilitySummary)
+    }
+
+    /// An unnamed rule that deletes its matches says so, and a plain rule
+    /// matching whole words says that; a regex rule never claims whole words.
+    func testSummaryDescribesSkipsAndWholeWordMatching() {
+        XCTAssertEqual(SubstitutionRule(pattern: "[1]").accessibilitySummary, "Pattern: [1], Action: skip")
+        XCTAssertEqual(
+            SubstitutionRule(pattern: "|", replacement: "I", wholeWord: true).accessibilitySummary,
+            "Pattern: |, Replace with: I, Whole word only"
+        )
+        XCTAssertEqual(
+            SubstitutionRule(pattern: "\\bI\\b", replacement: "one", isRegex: true, wholeWord: true).accessibilitySummary,
+            "Pattern: \\bI\\b, Replace with: one, Regular expression"
+        )
+    }
+
+    // MARK: - Rule commands
+
+    /// The commands come in a fixed order under fixed names, and each names
+    /// an SF Symbol that exists, so no row button is drawn blank.
+    func testCommandsHaveFixedNamesAndExistingSymbols() {
+        XCTAssertEqual(
+            SubstitutionRuleCommand.allCases.map(\.title),
+            ["Edit", "Move Up", "Move Down", "Delete"]
+        )
+        for command in SubstitutionRuleCommand.allCases {
+            XCTAssertNotNil(
+                NSImage(systemSymbolName: command.systemImage, accessibilityDescription: nil),
+                command.title
+            )
+        }
+    }
+
+    /// Edit and Delete always apply. Move Up cannot act on the first rule,
+    /// Move Down cannot act on the last, and a lone rule cannot move at all.
+    func testMovesAreUnavailablePastTheEnds() {
+        XCTAssertEqual(SubstitutionRuleCommand.available(at: 0, of: 3), [.edit, .moveDown, .delete])
+        XCTAssertEqual(SubstitutionRuleCommand.available(at: 1, of: 3), [.edit, .moveUp, .moveDown, .delete])
+        XCTAssertEqual(SubstitutionRuleCommand.available(at: 2, of: 3), [.edit, .moveUp, .delete])
+        XCTAssertEqual(SubstitutionRuleCommand.available(at: 0, of: 1), [.edit, .delete])
+    }
+
+    /// Moves are announced with positions counted from one.
+    func testMovedAnnouncementCountsPositionsFromOne() {
+        XCTAssertEqual(
+            SubstitutionsSettingsView.movedAnnouncement(ruleName: "Mr.", index: 2, count: 7),
+            "Mr. moved to position 3 of 7"
+        )
+        XCTAssertEqual(
+            SubstitutionsSettingsView.movedAnnouncement(ruleName: "Skip URLs", index: 0, count: 1),
+            "Skip URLs moved to position 1 of 1"
+        )
     }
 
     // MARK: - Helpers
