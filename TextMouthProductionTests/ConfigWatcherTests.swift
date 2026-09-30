@@ -315,6 +315,119 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(counter.writes, 0)
     }
 
+    // MARK: - Following the file
+
+    /// After an editor's atomic save replaces the file, the real watcher
+    /// listens to the new file: a later edit written into it in place, which
+    /// only a watcher on the new file can notice, is applied too.
+    func testWatcherFollowsAReplacedFileToLaterEdits() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        edit.sleepFadeOutDuration = 9
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        settle()
+
+        edit.punctuationPauseLevel = 3
+        try ConfigService.fileData(for: edit).write(to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 2 })
+        XCTAssertEqual(recorder.edits.last, edit)
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        XCTAssertEqual(settings.punctuationPauseLevel, 3)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
+    /// An editor may remove the file a moment before putting the new one in
+    /// place. The watcher keeps looking, and applies the file that appears,
+    /// although its appearance reports no event to anyone; it then listens
+    /// to that file.
+    func testWatcherFindsAFileThatReappearsAfterAGap() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: FileOperationCounter())
+        let recorder = EditRecorder(service)
+
+        try FileManager.default.removeItem(at: url)
+        // Longer than the watcher's delay, so its check of the empty path
+        // has come and gone before the file returns.
+        settle(for: 0.4)
+        edit.sleepFadeOutDuration = 9
+        try ConfigService.fileData(for: edit).write(to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+
+        edit.punctuationPauseLevel = 3
+        try ConfigService.fileData(for: edit).write(to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 2 })
+        XCTAssertEqual(settings.punctuationPauseLevel, 3)
+    }
+
+    /// A replacement event while the watched file is still at the path, as
+    /// when the event of a replacement already followed arrives late,
+    /// reopens nothing.
+    func testRearmingKeepsTheWatchedFileWithoutReopeningIt() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let counter = FileOperationCounter()
+        let service = makeWatchingService(url, counter: counter)
+
+        service.handleFileEvent([.rename, .delete])
+        settle()
+
+        XCTAssertEqual(counter.opens, 1)
+        XCTAssertEqual(counter.openDescriptors, 1)
+    }
+
+    /// Following the file across many replacements, TextMouth's own saves
+    /// and an editor's alike, opens exactly one descriptor per file and
+    /// closes each one's predecessor, so one stays open however long the app
+    /// runs; TextMouth's save follows its new file at once. Shutting down
+    /// closes the last descriptor, and later edits wake nothing.
+    func testReplacementsKeepOneDescriptorOpenAndShutdownClosesIt() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let service = makeWatchingService(url, counter: counter)
+        let replacements = 12
+
+        for index in 0..<replacements {
+            if index.isMultiple(of: 2) {
+                service.config.wordsPerMinute = 300 + Double(index)
+                service.saveToDisk()
+                XCTAssertEqual(counter.opens, index + 2, "a save follows its new file before returning")
+            } else {
+                edit.wordsPerMinute = 300 + Double(index)
+                try editorSave(ConfigService.fileData(for: edit), to: url)
+                service.handleFileEvent(.delete)
+            }
+        }
+
+        XCTAssertTrue(waitUntil(timeout: 5) { counter.openDescriptors == 1 })
+        settle()
+        XCTAssertEqual(counter.opens, replacements + 1)
+        XCTAssertEqual(counter.openDescriptors, 1)
+
+        service.shutdown()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { counter.openDescriptors == 0 })
+        edit.wordsPerMinute = 450
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        settle()
+        XCTAssertEqual(counter.opens, replacements + 1)
+        XCTAssertEqual(counter.openDescriptors, 0)
+        XCTAssertEqual(service.config.wordsPerMinute, 300 + Double(replacements - 1))
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the
@@ -359,6 +472,15 @@ final class ConfigWatcherTests: XCTestCase {
             configService: service
         )
         return (service, settings)
+    }
+
+    /// A service on `url`, counting through `counter`, that watches the file
+    /// without a settings model; it stops when the test ends.
+    private func makeWatchingService(_ url: URL, counter: FileOperationCounter) -> ConfigService {
+        let service = ConfigService(fileURL: url, fileOperations: counter.operations)
+        addTeardownBlock { service.shutdown() }
+        service.startWatching()
+        return service
     }
 
     /// `everyFieldCustomized` with the data directory in use, so the settings
@@ -410,14 +532,34 @@ final class ConfigWatcherTests: XCTestCase {
     private final class FileOperationCounter {
         /// Atomic writes of config.json.
         private(set) var writes = 0
+        /// Descriptors opened to watch the file.
+        private(set) var opens = 0
+        /// Watch descriptors closed.
+        private(set) var closes = 0
+
+        /// Watch descriptors open now.
+        var openDescriptors: Int { opens - closes }
 
         /// The system's operations, counted.
         var operations: ConfigService.FileOperations {
             let system = ConfigService.FileOperations.system
-            return ConfigService.FileOperations(write: { [self] data, url in
-                writes += 1
-                try system.write(data, url)
-            })
+            return ConfigService.FileOperations(
+                write: { [self] data, url in
+                    writes += 1
+                    try system.write(data, url)
+                },
+                openForEvents: { [self] path in
+                    let descriptor = system.openForEvents(path)
+                    if descriptor >= 0 {
+                        opens += 1
+                    }
+                    return descriptor
+                },
+                close: { [self] descriptor in
+                    closes += 1
+                    system.close(descriptor)
+                }
+            )
         }
     }
 
