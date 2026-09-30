@@ -137,19 +137,21 @@ extension LibraryViewModel {
             DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
             do {
                 if DAISYParser.isDAISYZip(url: url) {
-                    let book: Book
+                    let imported: ImportedBook
                     if let archive = try? Archive(url: url, accessMode: .read),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
-                        book = try FileImportService.importDAISYAudioZip(from: url, toFolder: folderPath)
+                        imported = ImportedBook(
+                            book: try FileImportService.importDAISYAudioZip(from: url, toFolder: folderPath)
+                        )
                     } else {
-                        book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                        imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
                     }
-                    DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
+                    DispatchQueue.main.sync { self.completeSingleImportedBook(imported, originalURL: url) }
                     return
                 }
                 if Self.isAudioZip(url: url) {
                     let book = try FileImportService.importAudioZip(from: url, toFolder: folderPath)
-                    DispatchQueue.main.sync { self.completeSingleImportedBook(book, originalURL: url) }
+                    DispatchQueue.main.sync { self.completeSingleImportedBook(ImportedBook(book: book), originalURL: url) }
                     return
                 }
 
@@ -185,16 +187,9 @@ extension LibraryViewModel {
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
             do {
-                let book = try FileImportService.importFile(from: url, toFolder: folderPath)
+                let imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
                 DispatchQueue.main.sync {
-                    if self.addBookCheckingDuplicate(book, toFolder: folderPath, originalURL: url) {
-                        self.save()
-                        self.handleOriginalFileDeletion(url: url)
-                        if openAfterImport {
-                            NotificationCenter.default.post(name: .openBookWindow, object: book.id)
-                        }
-                    }
-                    self.importProgressMessage = ""
+                    self.completeSingleImportedBook(imported, originalURL: url, openAfterImport: openAfterImport)
                 }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
@@ -208,15 +203,33 @@ extension LibraryViewModel {
         importProgressMessage = message
     }
 
-    /// Apply the same duplicate decision to a DAISY/audio ZIP as to a single
-    /// document. Original-file handling waits for the user's acceptance.
-    func completeSingleImportedBook(_ book: Book, originalURL: URL) {
+    /// Publish one imported book, a document or a DAISY or audio ZIP, through
+    /// the same duplicate decision. Original-file handling waits for the
+    /// user's acceptance, and `openAfterImport` opens the book once added.
+    ///
+    /// An import that left chapters out still adds its book, but announces
+    /// what is missing once through the library's alert, and its original
+    /// is never deleted or offered for deletion, whatever the preference.
+    /// Such a book is not opened automatically either: the reader window
+    /// would take focus from the warning in the library window.
+    func completeSingleImportedBook(_ imported: ImportedBook, originalURL: URL, openAfterImport: Bool = false) {
         importProgressMessage = ""
-        guard addBookCheckingDuplicate(book, toFolder: book.folderPath, originalURL: originalURL) else {
+        let book = imported.book
+        // Without an original to offer, a later duplicate choice cannot
+        // delete it either.
+        let deletableOriginal = imported.keepsOriginal ? nil : originalURL
+        guard addBookCheckingDuplicate(book, toFolder: book.folderPath, originalURL: deletableOriginal) else {
             return
         }
         save()
-        handleOriginalFileDeletion(url: originalURL)
+        if let deletableOriginal {
+            handleOriginalFileDeletion(url: deletableOriginal)
+        }
+        if let warning = imported.warning {
+            presentImportMessage(warning)
+        } else if openAfterImport {
+            NotificationCenter.default.post(name: .openBookWindow, object: book.id)
+        }
     }
 
     /// Publish a batch result while retaining an archive that still contains
@@ -245,8 +258,14 @@ extension LibraryViewModel {
     }
 
     private func presentImportError(_ error: Error) {
+        presentImportMessage(error.localizedDescription)
+    }
+
+    /// Tell the reader about an import through the library's alert: why it
+    /// failed, or what a completed import is missing.
+    private func presentImportMessage(_ message: String) {
         importProgressMessage = ""
-        errorMessage = error.localizedDescription
+        errorMessage = message
         showError = true
     }
 

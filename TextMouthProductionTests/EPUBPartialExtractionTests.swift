@@ -370,6 +370,136 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertEqual(try libraryEntries(), libraryBefore)
     }
 
+    // MARK: - Completing an Import in the Library
+
+    /// The acceptance case end to end: a three-chapter EPUB whose middle
+    /// chapter was deleted from the archive is added with its two readable
+    /// chapters, announced once with a warning naming chapter 2 and its
+    /// path, logged, and its original kept although the preference says to
+    /// delete it.
+    @MainActor
+    func testIncompleteImportWarnsOnceAddsTheBookAndKeepsTheOriginal() throws {
+        let title = Self.uniqueTitle()
+        let epub = try makeEPUB(title: title, chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        try withImportDeleteBehavior(.deleteAfterImport) {
+            let imported = try importWithReport(epub)
+            let library = Self.emptyLibrary()
+
+            library.completeSingleImportedBook(imported, originalURL: epub)
+
+            XCTAssertEqual(library.library.books.map(\.id), [imported.book.id])
+            XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 2)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path))
+            XCTAssertTrue(library.showError)
+            XCTAssertEqual(
+                library.errorMessage,
+                "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book. "
+                    + "The original file was kept."
+            )
+            XCTAssertFalse(library.showDeleteOriginalDialog)
+            XCTAssertNil(library.pendingOriginalURL)
+            XCTAssertEqual(debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): ").count, 1)
+        }
+    }
+
+    /// The same with a chapter that cannot be decoded, under every "After
+    /// Importing a Book" preference: the book is added with its two readable
+    /// chapters, the warning names chapter 2 and its path, the original is
+    /// neither deleted nor offered for deletion, and each import is logged.
+    @MainActor
+    func testUndecodableChapterImportKeepsTheOriginalUnderEveryPreference() throws {
+        let title = Self.uniqueTitle()
+        let epub = try makeEPUB(title: title, chapters: Self.threeChapters, compression: .deflate)
+        try damageData(of: "OEBPS/ch02.xhtml", in: epub)
+
+        for behavior in ImportDeleteBehavior.allCases {
+            try withImportDeleteBehavior(behavior) {
+                let imported = try importWithReport(epub)
+                let library = Self.emptyLibrary()
+
+                library.completeSingleImportedBook(imported, originalURL: epub)
+
+                XCTAssertEqual(library.library.books.map(\.id), [imported.book.id], "\(behavior)")
+                XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 2)
+                XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path), "\(behavior)")
+                XCTAssertFalse(library.showDeleteOriginalDialog, "\(behavior)")
+                XCTAssertTrue(library.showError, "\(behavior)")
+                XCTAssertEqual(
+                    library.errorMessage,
+                    "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is damaged or incomplete. "
+                        + "The original file was kept."
+                )
+            }
+        }
+        XCTAssertEqual(
+            debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): ").count,
+            ImportDeleteBehavior.allCases.count
+        )
+    }
+
+    /// A complete import is unchanged: no warning, and the preference still
+    /// decides what happens to the original.
+    @MainActor
+    func testCompleteImportStillFollowsTheDeletePreference() throws {
+        let asked = try makeEPUB(chapters: Self.threeChapters)
+        try withImportDeleteBehavior(.askEachTime) {
+            let library = Self.emptyLibrary()
+            library.completeSingleImportedBook(try importWithReport(asked), originalURL: asked)
+
+            XCTAssertFalse(library.showError)
+            XCTAssertTrue(library.showDeleteOriginalDialog)
+            XCTAssertEqual(library.pendingOriginalURL, asked)
+        }
+
+        let deleted = try makeEPUB(chapters: Self.threeChapters)
+        try withImportDeleteBehavior(.deleteAfterImport) {
+            let library = Self.emptyLibrary()
+            library.completeSingleImportedBook(try importWithReport(deleted), originalURL: deleted)
+
+            XCTAssertFalse(library.showError)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: deleted.path))
+        }
+    }
+
+    /// A blank cover page leaves the import complete: no warning, and the
+    /// original is offered for deletion as the preference asks.
+    @MainActor
+    func testImportWithABlankCoverIsComplete() throws {
+        let epub = try makeEPUB(chapters: [Self.blankPage("cover")] + Self.threeChapters)
+
+        try withImportDeleteBehavior(.askEachTime) {
+            let imported = try importWithReport(epub)
+            let library = Self.emptyLibrary()
+
+            library.completeSingleImportedBook(imported, originalURL: epub)
+
+            XCTAssertNil(imported.warning)
+            XCTAssertEqual(imported.report.blankChapterCount, 1)
+            XCTAssertFalse(library.showError)
+            XCTAssertTrue(library.showDeleteOriginalDialog)
+        }
+    }
+
+    /// Opening a book that is missing chapters would put its reader window
+    /// over the warning, so an incomplete import is not opened automatically.
+    @MainActor
+    func testIncompleteImportIsNotOpenedOverItsWarning() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+        let imported = try importWithReport(epub)
+        let library = Self.emptyLibrary()
+        let opened = XCTNSNotificationExpectation(name: .openBookWindow)
+        opened.isInverted = true
+
+        library.completeSingleImportedBook(imported, originalURL: epub, openAfterImport: true)
+
+        wait(for: [opened], timeout: 0.2)
+        XCTAssertTrue(library.showError)
+        XCTAssertEqual(library.library.books.map(\.id), [imported.book.id])
+    }
+
     // MARK: - Fixture Books
 
     /// One document in a fixture EPUB, which the package lists in its
@@ -485,6 +615,26 @@ final class EPUBPartialExtractionTests: XCTestCase {
     /// The book `source` imports as (see `importWithReport`).
     private func importForTest(_ source: URL) throws -> Book {
         try importWithReport(source).book
+    }
+
+    /// A library model with no books that starts no disk maintenance, so only
+    /// the import under test can raise an alert.
+    @MainActor
+    private static func emptyLibrary() -> LibraryViewModel {
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library()
+        return library
+    }
+
+    /// Run `body` with the "After Importing a Book" preference set to
+    /// `behavior`, restoring the previous preference afterwards.
+    @MainActor
+    private func withImportDeleteBehavior(_ behavior: ImportDeleteBehavior, _ body: () throws -> Void) rethrows {
+        let config = ConfigService.shared
+        let previous = config.config.importDeleteBehavior
+        config.config.importDeleteBehavior = behavior
+        defer { config.config.importDeleteBehavior = previous }
+        try body()
     }
 
     /// The names at the top of the isolated library, where packages imported

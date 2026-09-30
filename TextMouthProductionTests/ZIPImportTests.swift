@@ -30,7 +30,7 @@ final class ZIPImportTests: XCTestCase {
         let viewModel = LibraryViewModel()
         viewModel.library = Library(books: [existing])
 
-        viewModel.completeSingleImportedBook(imported, originalURL: URL(fileURLWithPath: "/tmp/source.zip"))
+        viewModel.completeSingleImportedBook(ImportedBook(book: imported), originalURL: URL(fileURLWithPath: "/tmp/source.zip"))
 
         XCTAssertEqual(viewModel.library.books.map(\.id), [existing.id])
         XCTAssertEqual(viewModel.pendingDuplicateBook?.id, imported.id)
