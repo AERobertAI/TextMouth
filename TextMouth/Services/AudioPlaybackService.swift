@@ -721,8 +721,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
             queue: .main
-        ) { [weak self] _ in
-            guard let self = self else { return }
+        ) { [weak self] notification in
+            // Removing the observer stops new deliveries, but one already
+            // queued for an item that `load(url:)` has since replaced must
+            // not finish the new item and advance past it.
+            guard let self, let item = self.playerItem,
+                  notification.object as AnyObject? === item else { return }
             self.isPlaying = false
             self.isPaused = false
             self.onPlaybackFinished?()
