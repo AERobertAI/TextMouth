@@ -407,7 +407,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         at url: URL,
         fileManager: FileManager = .default
     ) -> AudioPlaybackFailure.Reason? {
-        // Both checks follow symbolic links; a broken link is missing.
+        // Every check follows symbolic links, so a broken link is missing.
         guard fileManager.fileExists(atPath: url.path) else { return .fileMissing }
         let resourceValues = try? url.resolvingSymlinksInPath()
             .resourceValues(forKeys: [.isRegularFileKey])
