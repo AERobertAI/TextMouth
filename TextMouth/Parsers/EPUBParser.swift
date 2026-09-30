@@ -10,6 +10,11 @@ enum EPUBParserError: LocalizedError {
     case invalidOPF
     case missingSpine
     case writeFailed(String)
+    /// A file in the package is present but unusable: its data could not be
+    /// decompressed, or it does not match the checksum the archive stores
+    /// for it. `file` is the file's path inside the package; `reason`
+    /// completes the sentence "The file is damaged or incomplete: …".
+    case damagedFile(file: String, reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -20,11 +25,19 @@ enum EPUBParserError: LocalizedError {
         case .invalidOPF: return "The EPUB package document could not be parsed."
         case .missingSpine: return "The EPUB has no reading order (spine)."
         case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)"
+        case .damagedFile(let file, let reason):
+            return PackageDamage.message(
+                file: file, reason: reason, container: EPUBParser.bookNameInMessages, original: "the book"
+            )
         }
     }
 }
 
 enum EPUBParser {
+
+    /// How sentences about a damaged or incomplete EPUB name the book, as in
+    /// "The file “OEBPS/ch07.xhtml” in this EPUB book is damaged …".
+    static let bookNameInMessages = "this EPUB book"
 
     static func parse(url: URL) throws -> DocumentContent {
         // Verify the file exists before attempting to open as a ZIP archive,
@@ -332,6 +345,9 @@ enum EPUBParser {
 
     // MARK: - ZIP Helpers (shared with MarkdownCacheService)
 
+    /// The text of the archive member at `path`.
+    /// - Throws: `EPUBParserError.missingContainer` or `.invalidOPF` when no
+    ///   member is at `path`, and `.damagedFile` when it cannot be decoded.
     static func extractString(archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else {
             if path == "META-INF/container.xml" {
@@ -339,10 +355,35 @@ enum EPUBParser {
             }
             throw EPUBParserError.invalidOPF
         }
+        return try text(of: entry, in: archive)
+    }
 
+    /// The text of the archive member `entry`, decoded as UTF-8, or as ISO
+    /// Latin 1 when it is not valid UTF-8.
+    ///
+    /// ZIPFoundation's `extract` returns the checksum of the bytes it read
+    /// without comparing it to the one the archive stores, so a damaged
+    /// member would otherwise read as garbled text. The comparison is made
+    /// here, except when the stored checksum is 0: ZIPFoundation reports 0
+    /// for an entry whose data descriptor it could not read, so that value
+    /// cannot judge the data. (Empty data's real checksum is 0 as well, and
+    /// it has nothing to verify.)
+    /// - Throws: `EPUBParserError.damagedFile` naming the member when its
+    ///   data cannot be decompressed or does not match its checksum.
+    static func text(of entry: Entry, in archive: Archive) throws -> String {
         var data = Data()
-        _ = try archive.extract(entry) { chunk in
-            data.append(chunk)
+        let checksum: CRC32
+        do {
+            checksum = try archive.extract(entry) { chunk in
+                data.append(chunk)
+            }
+        } catch {
+            throw EPUBParserError.damagedFile(file: entry.path, reason: "its compressed data could not be decoded")
+        }
+        guard entry.checksum == 0 || checksum == entry.checksum else {
+            throw EPUBParserError.damagedFile(
+                file: entry.path, reason: "its contents do not match the checksum stored with them"
+            )
         }
 
         guard let string = String(data: data, encoding: .utf8) else {
