@@ -397,9 +397,10 @@ final class ParserContentFidelityTests: XCTestCase {
     }
 
     /// The Markdown cache's reading of `html`: the Markdown the cache writes
-    /// for an HTML book, parsed exactly as the cache loader parses it.
+    /// for an HTML book (duplicate navigation stripped, as in the direct
+    /// reading), parsed exactly as the cache loader parses it.
     private func cachedHTMLReading(_ html: String) throws -> Chapter {
-        let markdown = try HTMLToMarkdownConverter.convert(html)
+        let markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
         let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "HTML", bookAuthor: "Author")
         XCTAssertEqual(content.chapters.count, 1, markdown)
         return try XCTUnwrap(content.chapters.first)
@@ -954,6 +955,10 @@ enum HTMLFixture {
         // Lists holding content outside their items, and a hidden item.
         "<ul>Before<li>One</li>between<li>Two</li><ul><li>Nested</li></ul><p>After</p></ul>",
         "<ol><li>First</li><li hidden=\"\">Hidden</li><li>Second</li></ol>",
+        // Navigation repeating the headings outside it (read by neither
+        // reading), and navigation holding the only headings (read by both).
+        "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav><h1 id=\"c1\">Chapter one</h1><p>Body.</p>",
+        "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav><p>Body.</p>",
         // Edit elements, hidden text, and whitespace and Unicode of every kind.
         "<p>Fare<del>ten</del>eight<ins>pence</ins>, shown<span hidden=\"\">secret</span> words</p>",
         "<p>tab\there&nbsp;no-break\u{2028}line\u{3000}ideographic\u{200B}zero</p><p>🙂 Cafe\u{301} 日本 👩‍👩‍👧 \u{FEFF}mark</p>",
@@ -1042,6 +1047,7 @@ enum HTMLFixture {
         ("<h1>", "</h1>"), ("<h3>", "</h3>"), ("<h6>", "</h6>"),
         ("<del>", "</del>"), ("<ins>", "</ins>"), ("<s>", "</s>"), ("<sup>", "</sup>"),
         ("<span hidden=\"\">", "</span>"), ("<figure>", "</figure>"), ("<textarea>", "</textarea>"),
+        ("<nav>", "</nav>"),
     ]
 
     /// Elements and nodes without generated content.

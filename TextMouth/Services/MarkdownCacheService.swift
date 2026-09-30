@@ -162,7 +162,8 @@ enum MarkdownCacheService {
 
     /// Extract Markdown content from a book file based on its format.
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
-    /// HTML: converts the HTML to Markdown.
+    /// HTML: converts the HTML to Markdown, stripping duplicate navigation
+    /// exactly as the direct parser (HTMLParser) does.
     /// Markdown: uses the file as-is.
     /// Plain text: literal Markdown with the plain-text headings as ATX headings.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
@@ -172,7 +173,7 @@ enum MarkdownCacheService {
             return try extractFromEPUB(url: url)
         case .html:
             let html = try String(contentsOf: url, encoding: .utf8)
-            markdown = try HTMLToMarkdownConverter.convert(html)
+            markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
         case .markdown:
             // Already Markdown — use as-is
             markdown = try String(contentsOf: url, encoding: .utf8)

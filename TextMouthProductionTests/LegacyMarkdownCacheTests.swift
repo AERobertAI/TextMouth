@@ -334,6 +334,27 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertEqual(normalizedHTMLReading(chapter.text), HTMLFixture.combinedWords)
     }
 
+    /// An HTML book's cache strips duplicate navigation exactly as the direct
+    /// reader does: a nav whose headings repeat headings outside it is read
+    /// in neither reading, while a nav holding the only headings is read in
+    /// both.
+    func testHTMLCacheStripsDuplicateNavigationLikeTheDirectParser() throws {
+        let navigation = "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav>"
+        let readings = [
+            (navigation + "<h1 id=\"c1\">Chapter one</h1><p>Body.</p>", "Chapter one\n\nBody."),
+            (navigation + "<p>Body.</p>", "Contents\n\nChapter one\n\nBody."),
+        ]
+        for (source, text) in readings {
+            let book = try importHTMLBook(source)
+            let cached = try MarkdownCacheService.loadFromCache(for: book)
+            let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .html)
+            XCTAssertEqual(cached.chapters.map(\.text), [text], source)
+            assertSameHTMLReading(
+                cached: try XCTUnwrap(cached.chapters.first), direct: try XCTUnwrap(direct.chapters.first), context: source
+            )
+        }
+    }
+
     /// A reader opening an HTML package written at format 3.0.6 must replace
     /// its cache and persisted index, whose text fused table cells and read
     /// Markdown-looking text as markup, with a rebuild that reads like the
