@@ -20,9 +20,6 @@ enum HTMLToMarkdownConverter {
 
         var result = ""
         convertNode(body, into: &result, headingTargets: headingTargets)
-
-        // Clean up excessive blank lines (collapse 3+ newlines to 2)
-        result = collapseBlankLines(result)
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -102,27 +99,31 @@ enum HTMLToMarkdownConverter {
 
     /// Convert a single HTML element to its Markdown equivalent.
     private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+        let tag = element.tagName().lowercased()
+        // Non-content elements are ignored without running selector queries.
         // Content outside the rendered reading flow (the hidden attribute, page
         // lists, and landmarks) contributes no words, headings, or destinations.
-        guard !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
-        let tag = element.tagName().lowercased()
+        guard tag != "script", tag != "style",
+              !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
+
+        // Keep the element's words apart from its neighbors' exactly where the
+        // direct reader does (HTMLReadingBoundary): a block is a paragraph of
+        // its own, and a table cell, ins, del, or s is at least a word of its
+        // own. A line break is its own boundary, the hard break it writes.
+        let boundary: HTMLReadingBoundary = tag == "br" ? .none : .of(element, tag: tag)
+        separate(at: boundary, in: &result)
 
         // Preserve a TOC target in the Markdown stream at its actual DOM
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
         if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
-            emit(annotation, inline: !element.isBlock(), into: &result)
+            emit(annotation, inline: boundary != .paragraph, into: &result)
         }
 
         switch tag {
-        // Non-content elements are ignored without running selector queries.
-        case "script", "style":
-            return
-
         // Headings
         case "h1", "h2", "h3", "h4", "h5", "h6":
             let level = HTMLReadingText.headingLevel(of: tag) ?? 1
-            ensureBlankLine(&result)
             // A destination inside a heading (such as an anchor before its
             // words) names that heading. Emit it as its own block immediately
             // before the heading line, never inside the label: the Markdown
@@ -137,12 +138,6 @@ enum HTMLToMarkdownConverter {
             // markers the parser would otherwise have to keep out of the label.
             let label = HTMLReadingText.label(of: element)
             result += String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label) + "\n\n"
-
-        // Paragraphs
-        case "p":
-            ensureBlankLine(&result)
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "\n\n"
 
         // Line breaks
         case "br":
@@ -181,25 +176,12 @@ enum HTMLToMarkdownConverter {
             let src = (try? element.attr("src")) ?? ""
             result += "![\(MarkdownLiteral.escaped(alt))](\(src))"
 
-        // Unordered lists
-        case "ul":
-            ensureBlankLine(&result)
-            convertListItems(element, ordered: false, into: &result, headingTargets: headingTargets)
-            result += "\n"
-
-        // Ordered lists
-        case "ol":
-            ensureBlankLine(&result)
-            convertListItems(element, ordered: true, into: &result, headingTargets: headingTargets)
-            result += "\n"
-
-        // List items (handled by convertListItems, but just in case)
-        case "li":
-            convertNode(element, into: &result, headingTargets: headingTargets)
+        // Lists
+        case "ul", "ol":
+            convertListItems(element, ordered: tag == "ol", into: &result, headingTargets: headingTargets)
 
         // Blockquotes
         case "blockquote":
-            ensureBlankLine(&result)
             var inner = ""
             convertNode(element, into: &inner, headingTargets: headingTargets)
             // Prefix each line with >
@@ -208,17 +190,15 @@ enum HTMLToMarkdownConverter {
             for line in lines {
                 result += "> \(line)\n"
             }
-            result += "\n"
 
         // Preformatted / code blocks
         case "pre":
-            ensureBlankLine(&result)
             result += "```\n"
             // Get raw text content without further processing
             let text = (try? element.text()) ?? ""
             result += text
             if !text.hasSuffix("\n") { result += "\n" }
-            result += "```\n\n"
+            result += "```\n"
 
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
@@ -230,24 +210,17 @@ enum HTMLToMarkdownConverter {
 
         // Horizontal rules
         case "hr":
-            ensureBlankLine(&result)
             result += "---\n\n"
 
-        // Block-level containers — just recurse into children
-        case "div", "section", "article", "main", "header", "footer", "nav",
-             "aside", "figure", "figcaption", "details", "summary",
-             "body", "html", "span", "sup", "sub", "small", "mark",
-             "abbr", "cite", "dfn", "time", "var", "samp", "kbd",
-             "ruby", "rt", "rp", "bdi", "bdo", "wbr",
-             "table", "thead", "tbody", "tfoot", "tr", "td", "th",
-             "caption", "colgroup", "col",
-             "dl", "dt", "dd":
-            convertNode(element, into: &result, headingTargets: headingTargets)
-
-        // Unknown elements — just emit their text children
+        // Paragraphs, containers, and table and definition list parts, whose
+        // boundaries were written above, and phrasing or unknown elements:
+        // their children say what they hold. A table row is therefore one
+        // paragraph of its cells, each a word or more of its own.
         default:
             convertNode(element, into: &result, headingTargets: headingTargets)
         }
+
+        separate(at: boundary, in: &result)
     }
 
     // MARK: - Navigation Annotations
@@ -370,6 +343,23 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Whitespace Helpers
 
+    /// Keep the words on either side of a boundary apart: a blank line
+    /// around a paragraph, at least a space around a word. Both are written
+    /// only when missing, so nested and empty blocks never pile up blank
+    /// lines, and nothing is written at the start of the Markdown.
+    private static func separate(at boundary: HTMLReadingBoundary, in result: inout String) {
+        switch boundary {
+        case .none:
+            break
+        case .word:
+            if !isAtWordStart(result) {
+                result += " "
+            }
+        case .paragraph:
+            ensureBlankLine(&result)
+        }
+    }
+
     /// Ensure the result ends with a blank line (two newlines).
     private static func ensureBlankLine(_ result: inout String) {
         if result.isEmpty { return }
@@ -435,14 +425,5 @@ enum HTMLToMarkdownConverter {
             longest = max(longest, current)
         }
         return longest
-    }
-
-    /// Collapse three or more consecutive newlines into exactly two.
-    private static func collapseBlankLines(_ text: String) -> String {
-        text.replacingOccurrences(
-            of: "\\n{3,}",
-            with: "\n\n",
-            options: .regularExpression
-        )
     }
 }

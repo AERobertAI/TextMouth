@@ -435,6 +435,34 @@ final class ParserContentFidelityTests: XCTestCase {
         let chapter = try cachedHTMLReading("<p>Chart <img src=\"c.png\" alt=\"Figure [1]: tides\"/> here.</p>")
         XCTAssertEqual(chapter.text, "Chart Figure [1]: tides here.")
     }
+
+    /// The cache keeps words apart at every boundary the direct reading
+    /// has: blocks and definition entries are paragraphs, a table row is one
+    /// paragraph of its cells separated by spaces, and line breaks and edit
+    /// elements separate words within a paragraph.
+    func testCachedHTMLKeepsWordsApartAtEveryBoundary() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<div><div>One</div><div>Two</div></div>Three", "One\n\nTwo\n\nThree"),
+            ("<section>Tide</section>tables<aside>list</aside>soundings", "Tide\n\ntables\n\nlist\n\nsoundings"),
+            (HTMLFixture.table, "Soundings\n\nName Depth\n\nOdile 30\n\nBruno 41"),
+            (HTMLFixture.definitions, "Ebb\n\nThe falling tide.\n\nFlood\n\nThe rising tide."),
+            ("<p>High<br/>water</p>", "High\nwater"),
+            ("<p>Fare<del>ten</del>eight<ins>pence</ins></p>", "Fare ten eight pence"),
+            ("<table><tr><td>Top<br/>bottom</td><td>Side</td></tr></table>", "Top\nbottom Side"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try cachedHTMLReading(html).text, text, html)
+        }
+    }
+
+    /// Boundaries are written only where missing, so nested and empty blocks
+    /// never pile up blank lines around the words they hold.
+    func testCachedHTMLNestedAndEmptyBlocksWriteOneBlankLine() throws {
+        let markdown = try HTMLToMarkdownConverter.convert("""
+        <div><p></p><section><div><p>First</p></div></section><p></p><ul></ul><blockquote><div>Second</div></blockquote></div>
+        """)
+        XCTAssertEqual(markdown, "First\n\n> Second")
+    }
 }
 
 extension XCTestCase {
