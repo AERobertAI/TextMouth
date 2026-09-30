@@ -36,10 +36,6 @@ struct BookContentIndex: Codable, Hashable {
 
     var isCurrent: Bool { version == Self.currentVersion }
 
-    func isValid(for format: BookFormat) -> Bool {
-        isCurrent && self.format == format && kind == (format.isAudio ? .audio : .text)
-    }
-
     func replacingFormat(_ format: BookFormat) -> BookContentIndex {
         var copy = self
         copy.version = Self.currentVersion
@@ -203,6 +199,8 @@ struct BookContentIndex: Codable, Hashable {
 
     /// Reconstruct the lightweight placeholder document used by audio playback
     /// without re-reading AVAsset duration and chapter metadata on every open.
+    /// Each chapter's count decides how many placeholder characters are
+    /// allocated, so a persisted index must pass `validationFailure` first.
     func makeAudioDocumentContent(title: String, author: String) -> DocumentContent? {
         guard isCurrent, kind == .audio else { return nil }
         let restoredChapters = chapters.map { stored in
@@ -262,6 +260,221 @@ struct BookContentIndex: Codable, Hashable {
         let filePath = URL(fileURLWithPath: path).standardizedFileURL.path
         let prefix = basePath.hasSuffix("/") ? basePath : basePath + "/"
         return filePath.hasPrefix(prefix) ? String(filePath.dropFirst(prefix.count)) : URL(fileURLWithPath: path).lastPathComponent
+    }
+}
+
+// MARK: - Validation
+
+extension BookContentIndex {
+    /// Most UTF-16 code units one chapter, or a whole book, may claim.
+    ///
+    /// Opening an audiobook from its index allocates a placeholder string of
+    /// each chapter's length, so a damaged count in bookInfo.json could
+    /// otherwise allocate gigabytes. Real books stay far below the cap: a
+    /// 50 MB plain-text book holds at most 50 million code units (one per
+    /// byte of ASCII, fewer for any other script), and a 200-hour audiobook
+    /// at `ReaderViewModel.audioCharsPerSecond` (10) needs 7.2 million
+    /// placeholder characters. Twice the larger yardstick leaves room for
+    /// any real book while bounding a placeholder allocation near 100 MB.
+    static let maximumCharacterCount = 100_000_000
+
+    /// The heading levels HTML and Markdown define, the only ones parsers
+    /// produce.
+    static let headingLevels = 1...6
+
+    /// Largest difference tolerated between `totalAudioDuration` and the sum
+    /// of the chapter durations. The builder sums the durations in chapter
+    /// order, as validation does, and JSON stores each value exactly, so a
+    /// sound index matches to the bit; one millisecond allows for any other
+    /// rounding while staying far below anything a listener could notice.
+    static let audioDurationTolerance: TimeInterval = 0.001
+
+    /// Whether this index can be trusted for a book of `format`: true exactly
+    /// when `validationFailure(for:)` finds nothing wrong.
+    func isValid(for format: BookFormat) -> Bool {
+        validationFailure(for: format) == nil
+    }
+
+    /// Why this persisted index cannot be trusted for a book of `format`, or
+    /// nil when it can. The reason names the first offending field as
+    /// bookInfo.json spells it, for example
+    /// `chapters[2].startCharacterOffset is 40, expected 52`.
+    ///
+    /// Opening a book from its index skips parsing, so everything the reader
+    /// derives from the index must hold here: chapters numbered in order,
+    /// offsets that are the running sums of their lengths, matching totals,
+    /// headings inside their chapters, counts within
+    /// `maximumCharacterCount`, finite audio timing, and audio paths that
+    /// stay inside the book's folder. Each chapter and heading is read once,
+    /// so the cost is linear in the size of the index.
+    func validationFailure(for format: BookFormat) -> String? {
+        identityFailure(for: format)
+            ?? chapterFailure()
+            ?? (kind == .audio ? audioFailure() : textFailure())
+    }
+
+    /// Whether the current builder made this index for a book of `format`.
+    private func identityFailure(for format: BookFormat) -> String? {
+        if !isCurrent {
+            return "version \(String(reflecting: version)) is not the current \(String(reflecting: Self.currentVersion))"
+        }
+        if self.format != format {
+            return "format \(self.format.rawValue) does not match the book's format \(format.rawValue)"
+        }
+        if kind != (format.isAudio ? .audio : .text) {
+            return "kind \(kind.rawValue) does not match format \(format.rawValue)"
+        }
+        return nil
+    }
+
+    /// Chapter numbering, lengths, running offsets, headings, and totals: the
+    /// structure every position calculation relies on. Each count is checked
+    /// against the cap before it is added, and the running sum after, so the
+    /// sums stay far from overflow. Ranges are formed only from counts
+    /// already known to be non-negative, because a reversed range traps.
+    private func chapterFailure() -> String? {
+        guard !chapters.isEmpty else { return "chapters is empty" }
+        var characters = 0
+        var words = 0
+        for (position, chapter) in chapters.enumerated() {
+            let field = "chapters[\(position)]"
+            if chapter.chapterIndex != position {
+                return "\(field).chapterIndex is \(chapter.chapterIndex), expected \(position)"
+            }
+            if chapter.characterCount < 0 {
+                return "\(field).characterCount is \(chapter.characterCount), below 0"
+            }
+            if chapter.characterCount > Self.maximumCharacterCount {
+                return "\(field).characterCount is \(chapter.characterCount), above the limit of \(Self.maximumCharacterCount)"
+            }
+            // Every word holds at least one character, so the character
+            // count also bounds the word count (and the word total).
+            if !(0...chapter.characterCount).contains(chapter.wordCount) {
+                return "\(field).wordCount is \(chapter.wordCount), outside 0 through \(chapter.characterCount)"
+            }
+            if chapter.startCharacterOffset != characters {
+                return "\(field).startCharacterOffset is \(chapter.startCharacterOffset), expected \(characters)"
+            }
+            if let failure = headingFailure(in: chapter, field: field) {
+                return failure
+            }
+            characters += chapter.characterCount
+            words += chapter.wordCount
+            if characters > Self.maximumCharacterCount {
+                return "the chapters hold \(characters) characters, above the limit of \(Self.maximumCharacterCount)"
+            }
+        }
+        if totalCharacterCount != characters {
+            return "totalCharacterCount is \(totalCharacterCount), expected \(characters)"
+        }
+        // Audio chapters hold placeholder spaces, which count as no words.
+        if kind == .text, totalWordCount != words {
+            return "totalWordCount is \(totalWordCount), expected \(words)"
+        }
+        return nil
+    }
+
+    /// Each heading's level and identity, and its place within `chapter`:
+    /// inside the chapter's text, in reading order, and at the global offset
+    /// its chapter's start implies. `field` names the chapter in reasons.
+    private func headingFailure(in chapter: BookContentChapterIndex, field: String) -> String? {
+        var previousOffset = 0
+        for (position, heading) in chapter.headings.enumerated() {
+            let field = "\(field).headings[\(position)]"
+            if !Self.headingLevels.contains(heading.level) {
+                return "\(field).level is \(heading.level), outside \(Self.headingLevels.lowerBound) through \(Self.headingLevels.upperBound)"
+            }
+            if heading.id.isEmpty {
+                return "\(field).id is empty"
+            }
+            // A heading may sit at the very end of its chapter, but not past it.
+            if !(0...chapter.characterCount).contains(heading.characterOffset) {
+                return "\(field).characterOffset is \(heading.characterOffset), outside 0 through \(chapter.characterCount)"
+            }
+            if heading.characterOffset < previousOffset {
+                return "\(field).characterOffset is \(heading.characterOffset), before the previous heading's \(previousOffset)"
+            }
+            let expectedGlobalOffset = chapter.startCharacterOffset + heading.characterOffset
+            if heading.globalCharacterOffset != expectedGlobalOffset {
+                return "\(field).globalCharacterOffset is \(heading.globalCharacterOffset), expected \(expectedGlobalOffset)"
+            }
+            previousOffset = heading.characterOffset
+        }
+        return nil
+    }
+
+    /// A text index describes words alone. Audio timing or paths in one did
+    /// not come from the builder, which writes none for text.
+    private func textFailure() -> String? {
+        if audioLayout != nil {
+            return "audioLayout is present in a text index"
+        }
+        if totalAudioDuration != nil {
+            return "totalAudioDuration is present in a text index"
+        }
+        if let position = chapters.firstIndex(where: { $0.audio != nil }) {
+            return "chapters[\(position)].audio is present in a text index"
+        }
+        return nil
+    }
+
+    /// The audio layout, each chapter's placeholder length, timing, and (for
+    /// layouts that name a file per chapter) path, and the duration total.
+    private func audioFailure() -> String? {
+        guard let audioLayout else { return "audioLayout is missing" }
+        var duration: TimeInterval = 0
+        for (position, chapter) in chapters.enumerated() {
+            let field = "chapters[\(position)]"
+            // The parser gives every audio chapter at least one placeholder
+            // character, and playback restores exactly that many.
+            if chapter.characterCount == 0 {
+                return "\(field).characterCount is 0, but an audio chapter holds at least 1 placeholder character"
+            }
+            guard let audio = chapter.audio else {
+                return "\(field).audio is missing"
+            }
+            if let failure = Self.timeFailure(audio.startTime, field: "\(field).audio.startTime")
+                ?? Self.timeFailure(audio.duration, field: "\(field).audio.duration") {
+                return failure
+            }
+            if audioLayout.namesChapterFiles,
+               let failure = Self.audioPathFailure(chapter.audioFilePath, field: "\(field).audio.relativeFilePath") {
+                return failure
+            }
+            duration += audio.duration
+        }
+        guard let totalAudioDuration else {
+            return "totalAudioDuration is missing"
+        }
+        // A NaN total fails `isFinite`; comparing it would always pass.
+        if !totalAudioDuration.isFinite || abs(totalAudioDuration - duration) > Self.audioDurationTolerance {
+            return "totalAudioDuration is \(totalAudioDuration), expected \(duration)"
+        }
+        return nil
+    }
+
+    /// Why `seconds`, a start time or duration, is unusable: NaN, infinite,
+    /// or negative. Nil when it is a finite, non-negative number of seconds.
+    private static func timeFailure(_ seconds: TimeInterval, field: String) -> String? {
+        guard !seconds.isFinite || seconds < 0 else { return nil }
+        return "\(field) is \(seconds), expected a finite number of seconds, 0 or more"
+    }
+
+    /// Why `path`, a chapter's audio file relative to the book's audio
+    /// folder, is malformed on its face: missing, absolute, or stepping out
+    /// through a ".." component. `field` names the path in reasons.
+    private static func audioPathFailure(_ path: String?, field: String) -> String? {
+        guard let path else {
+            return "\(field) is missing"
+        }
+        let quotedPath = String(reflecting: path)
+        if path.hasPrefix("/") {
+            return "\(field) \(quotedPath) is absolute"
+        }
+        if path.split(separator: "/").contains("..") {
+            return "\(field) \(quotedPath) contains a \"..\" component"
+        }
+        return nil
     }
 }
 
