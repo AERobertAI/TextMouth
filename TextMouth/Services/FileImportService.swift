@@ -53,6 +53,28 @@ struct TMBPackageInspection {
     let contentURL: URL
 }
 
+/// A book an import produced, with the report of the chapters its source
+/// could not supply. The library decides from the report whether the
+/// original file may be deleted and whether the reader must be warned.
+struct ImportedBook {
+    var book: Book
+    /// The chapters the source names that could not be read. It is empty
+    /// for a complete book and for formats that do not report omissions yet.
+    var report = ExtractionReport()
+
+    /// Whether the original file must stay exactly where it is: an import
+    /// that left chapters out never deletes it or offers to, whatever the
+    /// "After Importing a Book" preference says.
+    var keepsOriginal: Bool { !report.isComplete }
+
+    /// The warning an import that left chapters out presents once: what is
+    /// missing, then that the original was kept. Nil for a complete import.
+    var warning: String? {
+        guard keepsOriginal else { return nil }
+        return "\(report.message) The original file was kept."
+    }
+}
+
 struct ZipImportFailure: Equatable {
     let fileName: String
     let message: String
@@ -369,8 +391,19 @@ enum FileImportService {
     }
 
     /// Import a single file into a .tmb package, returning a Book model.
-    /// Extracts EPUB metadata if available.
+    /// Extracts EPUB metadata if available. Callers that must know which
+    /// chapters could not be read use `importFileWithReport` instead.
     static func importFile(from sourceURL: URL, toFolder folderPath: String = "") throws -> Book {
+        try importFileWithReport(from: sourceURL, toFolder: folderPath).book
+    }
+
+    /// Import a single file into a .tmb package, returning the Book with the
+    /// report of the chapters its source could not supply.
+    /// - Throws: when the file cannot be imported. For an EPUB that includes
+    ///   a text cache that cannot be generated, for example because no
+    ///   chapter can be read; the staged package is then removed, so no
+    ///   unreadable book is ever published.
+    static func importFileWithReport(from sourceURL: URL, toFolder folderPath: String = "") throws -> ImportedBook {
         try TextMouthPaths.ensureDirectoryStructure()
         if !folderPath.isEmpty {
             try TextMouthPaths.ensureLibrarySubfolder(folderPath)
@@ -485,8 +518,27 @@ enum FileImportService {
 
         // Generate cached Markdown content (non-audio books only)
         var contentIndex: BookContentIndex?
+        var report = ExtractionReport()
         if !format.isAudio {
-            contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
+            do {
+                if let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) {
+                    contentIndex = generated.content.contentIndex
+                    report = generated.report
+                }
+            } catch let failure where format == .epub {
+                // An EPUB with no cache found no chapter to read, could not
+                // be opened at all, or could not be written into its package.
+                // The direct reader shares that extraction, so the book could
+                // only ever open as this error. Remove the package staged
+                // above (named by this import's new book ID, so it holds
+                // nothing else) and fail with the reason instead.
+                try? FileManager.default.removeItem(at: tmbDir)
+                throw failure
+            } catch {
+                // Other formats still import without a cache, and the reader
+                // parses the source directly (TODO S02).
+                MarkdownCacheService.logGenerationFailure(error, for: book)
+            }
         } else if let analysis = try? BookContentAnalysisService.load(book: book) {
             contentIndex = analysis.index
             book.applyContentIndexSummary(analysis.index)
@@ -495,7 +547,7 @@ enum FileImportService {
         // Write bookInfo.json (after cache generation so version is included)
         try? book.saveBookInfoThrowing(contentIndex: contentIndex)
 
-        return book
+        return ImportedBook(book: book, report: report)
     }
 
     /// Import a ZIP file containing supported book files.

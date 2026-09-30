@@ -302,6 +302,74 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertEqual(generated.content.chapters.count, 1)
     }
 
+    // MARK: - Importing
+
+    /// An import returns what its book is missing, and the warning to give:
+    /// the report's sentence, then that the original file was kept.
+    func testImportReportsWhatTheBookIsMissing() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        let imported = try importWithReport(epub)
+
+        XCTAssertTrue(imported.keepsOriginal)
+        XCTAssertEqual(imported.report.omissions.map(\.member), ["OEBPS/ch02.xhtml"])
+        XCTAssertEqual(
+            imported.warning,
+            "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book. "
+                + "The original file was kept."
+        )
+        XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 2)
+    }
+
+    /// A complete import has nothing to warn about and leaves the original
+    /// to the "After Importing a Book" preference.
+    func testCompleteImportHasNoWarning() throws {
+        let imported = try importWithReport(try makeEPUB(chapters: Self.threeChapters))
+
+        XCTAssertFalse(imported.keepsOriginal)
+        XCTAssertNil(imported.warning)
+        XCTAssertEqual(imported.report.chapterCount, 3)
+        XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 3)
+    }
+
+    /// An EPUB with no readable chapter is a failed import: the error names
+    /// every chapter, no package is left in the library, the source stays
+    /// where it was, and the omissions are logged.
+    func testImportOfBookWithNoReadableChapterFailsAndLeavesNothingBehind() throws {
+        let title = Self.uniqueTitle()
+        let epub = try makeEPUB(title: title, chapters: Self.threeChapters)
+        for chapter in Self.threeChapters {
+            try removeMember(chapter.member, from: epub)
+        }
+        let libraryBefore = try libraryEntries()
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.hasPrefix("None of the 3 chapters could be read: chapter 1 (“OEBPS/ch01.xhtml”)"), message)
+            XCTAssertTrue(message.hasSuffix("Get a fresh copy of the book, then import it again."), message)
+        }
+
+        XCTAssertEqual(try libraryEntries(), libraryBefore)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path))
+        XCTAssertEqual(debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): None of the 3 chapters").count, 1)
+    }
+
+    /// An EPUB that cannot be opened is not imported as an unreadable book:
+    /// the import fails naming the damaged file and leaves no package.
+    func testImportOfBookWithDamagedPackageDocumentFails() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try damageData(of: "OEBPS/content.opf", in: epub)
+        let libraryBefore = try libraryEntries()
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub)) { error in
+            XCTAssertTrue(error.localizedDescription.hasPrefix(
+                "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+            ), error.localizedDescription)
+        }
+        XCTAssertEqual(try libraryEntries(), libraryBefore)
+    }
+
     // MARK: - Fixture Books
 
     /// One document in a fixture EPUB, which the package lists in its
@@ -407,10 +475,23 @@ final class EPUBPartialExtractionTests: XCTestCase {
 
     /// Import `source` through the production path into the hosted tests'
     /// isolated library, removing its package when the test ends.
+    private func importWithReport(_ source: URL) throws -> ImportedBook {
+        let imported = try FileImportService.importFileWithReport(from: source)
+        let package = imported.book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        return imported
+    }
+
+    /// The book `source` imports as (see `importWithReport`).
     private func importForTest(_ source: URL) throws -> Book {
-        let book = try FileImportService.importFile(from: source)
-        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
-        return book
+        try importWithReport(source).book
+    }
+
+    /// The names at the top of the isolated library, where packages imported
+    /// without a folder are staged.
+    private func libraryEntries() throws -> Set<String> {
+        try TextMouthPaths.ensureDirectoryStructure()
+        return Set(try FileManager.default.contentsOfDirectory(atPath: TextMouthPaths.libraryDir.path))
     }
 
     /// Delete `member` from the ZIP at `url`, as a copy of a book can lack
