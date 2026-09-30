@@ -453,25 +453,29 @@ final class ContentIndexValidationTests: XCTestCase {
         }
     }
 
-    /// A track deleted after analysis must not reach playback.
-    func testMissingAudioFileIsRejected() throws {
+    /// A track deleted after analysis leaves the index valid. Playback then
+    /// names the missing file for its chapter and offers Retry, while every
+    /// other chapter keeps its own track; analyzing the folder again would
+    /// silently drop the chapter and shift every later one.
+    func testMissingAudioFileKeepsTheIndexValid() throws {
         let folder = try audioFolder()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
 
-        XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
-            "chapters[1].audio.relativeFilePath \"02.wav\" does not exist"
-        )
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
-    /// Without its folder, none of a book's files exist.
-    func testMissingAudioFolderIsRejected() throws {
+    /// So does a missing folder: with nothing of it on disk, only each
+    /// path's own form is checked.
+    func testMissingAudioFolderKeepsTheIndexValid() throws {
         let folder = try audioFolder()
         let missingFolder = folder.appendingPathComponent("moved away", isDirectory: true)
+        var climbing = multiFileIndex(in: folder)
+        climbing.chapters[0].audio?.relativeFilePath = "../01.wav"
 
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: missingFolder))
         XCTAssertEqual(
-            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: missingFolder),
-            "chapters[0].audio.relativeFilePath \"01.wav\" does not exist"
+            climbing.validationFailure(for: .audio, audioBaseURL: missingFolder),
+            "chapters[0].audio.relativeFilePath \"../01.wav\" contains a \"..\" component"
         )
     }
 
@@ -523,26 +527,30 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
-    /// Segments sharing one file fail at the first segment naming it.
-    func testMissingSharedSegmentFileIsRejected() throws {
+    /// Segments sharing a missing file keep the index valid too.
+    func testMissingSharedSegmentFileKeepsTheIndexValid() throws {
         let folder = try audioFolder()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("book.wav"))
 
-        XCTAssertEqual(
-            segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder),
-            "chapters[0].audio.relativeFilePath \"book.wav\" does not exist"
-        )
+        XCTAssertNil(segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder))
     }
 
-    /// Without a folder only the file system checks are skipped: a missing
-    /// file passes, while a path's own form is still checked.
+    /// Without a folder nothing is looked up on disk: a track linked to a
+    /// file outside the folder passes, though it fails once the folder is
+    /// known, while a path's own form is checked either way.
     func testWithoutAFolderOnlyThePathFormIsChecked() throws {
         let folder = try audioFolder()
-        try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
+        let outside = try scratchFolder("ContentIndexUnchecked").appendingPathComponent("elsewhere.wav")
+        XCTAssertTrue(FileManager.default.createFile(atPath: outside.path, contents: Data()))
+        try replaceWithLink("02.wav", in: folder, to: outside)
         var climbing = multiFileIndex(in: folder)
         climbing.chapters[0].audio?.relativeFilePath = "../01.wav"
 
         XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: nil))
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.relativeFilePath \"02.wav\" resolves outside the audio folder"
+        )
         XCTAssertEqual(
             climbing.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[0].audio.relativeFilePath \"../01.wav\" contains a \"..\" component"
@@ -701,21 +709,36 @@ final class ContentIndexValidationTests: XCTestCase {
         try assertRepairIsReused(result, for: book)
     }
 
-    /// A track deleted after analysis is noticed before playback: the new
-    /// index covers the remaining tracks, each on its own chapter.
-    func testAudioIndexNamingADeletedFileIsRebuilt() throws {
+    /// A track deleted after analysis keeps the saved index: every chapter
+    /// still names its own file, the deleted one included, so playback can
+    /// say which file is missing rather than the book silently losing a
+    /// chapter and shifting every later one.
+    func testAudioIndexNamingADeletedFileIsKept() throws {
         let book = try makeAudioBook()
-        try FileManager.default.removeItem(at: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"))
+        let folder = URL(fileURLWithPath: book.filePath)
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
 
         let result = try BookContentAnalysisService.load(book: book)
 
-        XCTAssertFalse(result.usedPersistedIndex)
-        assertAligned(result, for: book)
-        XCTAssertEqual(relativeAudioPaths(of: result, in: book), ["01.wav", "Disc 2/03.wav"])
-        XCTAssertEqual(
-            rejections(of: book),
-            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].audio.relativeFilePath \"02.wav\" does not exist"]
-        )
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(result.index, try savedIndex(of: book))
+        XCTAssertEqual(result.audioFilePaths, tracks.map { folder.appendingPathComponent($0).path })
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
+    /// So does a missing audio folder: the book opens from its index, and
+    /// playback reports each chapter's missing file.
+    func testAudioIndexOfAMissingFolderIsKept() throws {
+        let book = try makeAudioBook()
+        let folder = URL(fileURLWithPath: book.filePath)
+        try FileManager.default.removeItem(at: folder)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(result.content.chapters.count, tracks.count)
+        XCTAssertEqual(result.audioFilePaths, tracks.map { folder.appendingPathComponent($0).path })
+        XCTAssertTrue(rejections(of: book).isEmpty)
     }
 
     /// A track replaced by a link to a file elsewhere on disk is never
