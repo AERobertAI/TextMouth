@@ -335,6 +335,70 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(ConfigService.merging(ours: ours, theirs: theirs, base: ours), theirs)
     }
 
+    /// An edit with a value out of range is applied repaired, and the
+    /// repaired snapshot is written back once so the file shows the value in
+    /// use. The watcher recognizes that write as TextMouth's own: the edit is
+    /// applied once, and nothing writes again.
+    func testRepairedEditIsAppliedOnceAndWrittenBackOnce() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        var fields = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        fields["punctuationPauseLevel"] = 40
+        try editorSave(JSONSerialization.data(withJSONObject: fields), to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        settle()
+        XCTAssertEqual(recorder.edits.count, 1)
+        XCTAssertEqual(settings.punctuationPauseLevel, 3)
+        XCTAssertEqual(counter.writes, 1)
+        XCTAssertEqual(service.config.punctuationPauseLevel, 3)
+        XCTAssertEqual(try Data(contentsOf: url), try ConfigService.fileData(for: service.config))
+    }
+
+    /// An edit laid out its own way, with every value usable, is applied and
+    /// left exactly as its editor saved it: layout alone is never rewritten.
+    func testAnEditInItsOwnLayoutIsAppliedWithoutRewritingIt() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        var fields = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        fields["sleepFadeOutDuration"] = 9
+        let compact = try JSONSerialization.data(withJSONObject: fields)
+        try editorSave(compact, to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        settle()
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        XCTAssertEqual(counter.writes, 0)
+        XCTAssertEqual(try Data(contentsOf: url), compact)
+        XCTAssertEqual(service.config.sleepFadeOutDuration, 9)
+    }
+
+    /// Only a value that decoding had to change counts as repaired: layout,
+    /// missing and null fields, and keys TextMouth does not use do not.
+    func testOnlyValuesDecodingChangedCountAsRepaired() throws {
+        func repaired(_ json: String) throws -> Bool {
+            let contents = Data(json.utf8)
+            return ConfigService.decodingRepairedValues(in: contents, decoded: try ConfigService.decode(contents))
+        }
+        let saved = String(decoding: try ConfigService.fileData(for: .everyFieldCustomized), as: UTF8.self)
+
+        XCTAssertFalse(try repaired(saved))
+        XCTAssertFalse(try repaired(#"{"sleepFadeOutDuration":6,"wordsPerMinute":425.0}"#))
+        XCTAssertFalse(try repaired(#"{"confirmBeforeDelete": null, "someFutureSetting": true}"#))
+        XCTAssertFalse(try repaired(#"{"wordsPerMinute": 0}"#), "0 means not chosen yet")
+        XCTAssertTrue(try repaired(#"{"punctuationPauseLevel": 40}"#))
+        XCTAssertTrue(try repaired(#"{"rewindSmartMode": "yes"}"#))
+        XCTAssertTrue(try repaired(#"{"skipForwardUnit": "17 seconds"}"#))
+    }
+
     /// A file replaced with text that is not JSON changes no setting and is
     /// not overwritten, so the edit stays on disk to be corrected; the debug
     /// log names the file once, however many events follow. The corrected

@@ -432,6 +432,35 @@ final class ConfigService: ObservableObject {
         }
         lastSyncedConfig = edited
         adopt(edited)
+        // A value the file could not hold as written was repaired. Writing
+        // the repaired snapshot once makes the file show the value in use;
+        // the watcher recognizes that write as TextMouth's own. Otherwise the
+        // file stays exactly as its editor saved it.
+        if Self.decodingRepairedValues(in: contents, decoded: edited) {
+            saveToDisk()
+        }
+    }
+
+    /// Whether decoding `contents` into `decoded` changed a value the file
+    /// states: a number clamped into range, an unsupported choice dropped, or
+    /// a value of the wrong type replaced. Layout, missing and null fields,
+    /// and keys TextMouth does not use are not repairs, so a hand-edited
+    /// file is never rewritten for its form alone.
+    nonisolated static func decodingRepairedValues(in contents: Data, decoded: AppConfig) -> Bool {
+        // Contents that only the lenient decoder could read, such as a number
+        // too large to represent, had something replaced.
+        guard let stated = (try? JSONSerialization.jsonObject(with: contents)) as? [String: Any] else {
+            return true
+        }
+        guard let used = try? jsonFields(of: decoded) else {
+            return false
+        }
+        return stated.contains { key, value in
+            guard !(value is NSNull), let usedValue = used[key] else {
+                return false
+            }
+            return !sameJSONValue(value, usedValue)
+        }
     }
 
     /// Folds in an edit that reached config.json after this process last
