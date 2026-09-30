@@ -296,6 +296,22 @@ final class EPUBPartialExtractionTests: XCTestCase {
         ) == true, "\(lines)")
     }
 
+    /// A title set on two lines is logged on one, so the entry is still one
+    /// line that names the book.
+    func testLogEntryStaysOnOneLineWhenTheTitleBreaks() throws {
+        let secondLine = "Repairs \(UUID().uuidString.prefix(8))"
+        let epub = try makeEPUB(title: "Roadside\n\(secondLine)", chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        let imported = try importWithReport(epub)
+
+        XCTAssertTrue(imported.book.title.contains("\n"), imported.book.title)
+        let lines = debugLogLines(
+            containing: "EPUB_INCOMPLETE_CONTENT: Roadside \(secondLine): 1 of 3 chapters could not be read"
+        )
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+    }
+
     /// A cache rebuild still succeeds for a book with a chapter missing: the
     /// generated content carries the report, the rebuild path gets its index,
     /// and each generation logs the omission again rather than alerting.

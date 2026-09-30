@@ -200,7 +200,11 @@ enum MarkdownCacheService {
         var title: String
         var report: ExtractionReport
 
-        var errorDescription: String? { "\(title): \(report.message)" }
+        /// A line break in the title (or in a file name) becomes a space,
+        /// so the entry stays on the one line that readers of the log expect.
+        var errorDescription: String? {
+            "\(title): \(report.message)".components(separatedBy: .newlines).joined(separator: " ")
+        }
     }
 
     /// Check whether a cached content.md exists for a book.
