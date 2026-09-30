@@ -726,10 +726,21 @@ extension ReaderViewModel {
                 }
             }
         }
+
+        // A file that cannot be played reports here instead, on the main
+        // queue like the callbacks above, and never also as finished: the
+        // reader stops at the failed chapter rather than advancing.
+        audioPlaybackService.onPlaybackFailed = { [weak self] failure in
+            self?.handleAudioPlaybackFailure(failure)
+        }
     }
 
     /// Start playing the current audio chapter file from the current character offset.
     /// Handles multi-file audio books and DAISY segmented audio with clip boundaries.
+    ///
+    /// A file that cannot be played is reported by the audio service before
+    /// this returns, or later while it plays, and its failure handler stops
+    /// the reader; this method then claims no Playing state at all.
     func playAudioChapter() {
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
@@ -743,7 +754,9 @@ extension ReaderViewModel {
             audioURL = URL(fileURLWithPath: book.filePath)
         }
 
-        audioPlaybackService.load(url: audioURL)
+        // A missing or unreadable file is refused here, after its failure
+        // handler has already stopped the reader and told the listener.
+        guard audioPlaybackService.load(url: audioURL) else { return }
         audioPlaybackService.setSpeed(audioSpeed)
 
         // Translate chapter-relative offset to an absolute seek target.
@@ -783,14 +796,99 @@ extension ReaderViewModel {
             audioPlaybackService.setClipEndTime(nil)
         }
 
-        audioPlaybackService.play(fromTime: timeOffset)
+        // Play refuses an item it finds has already failed, and reports it
+        // through the same failure handler.
+        guard audioPlaybackService.play(fromTime: timeOffset) else { return }
 
         isCurrentlyPlaying = true
         isCurrentlyPaused = false
+        // Audio that plays again resolves a failure its alert still shows,
+        // however playback was started.
+        if audioPlaybackFailure != nil {
+            dismissErrorAlert()
+        }
 
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )
+    }
+
+    // MARK: - Audio Playback Failures
+
+    /// Stop the reader because its audio could not be played, and tell the
+    /// listener which chapter and file failed and what to do about it.
+    ///
+    /// The reader stops exactly as `stop()` stops it: the Play button shows
+    /// Play again, Now Playing is cleared, this book's listening session
+    /// closes, and the position is saved. The cursor stays where the audio
+    /// failed, so Retry plays from there, and neither the next chapter nor
+    /// the end-of-book behavior follows. A running sleep-timer countdown is
+    /// halted, as pausing halts it, so it is not spent on silence; playing
+    /// again resumes it.
+    private func handleAudioPlaybackFailure(_ failure: AudioPlaybackFailure) {
+        guard !hasClosed else { return }
+        let errorDescription = failure.underlyingError.map { "\($0.domain) \($0.code)" } ?? "none"
+        debugLog("audio playback failed: reason=\(failure.reason) file=\(failure.fileName) error=\(errorDescription)")
+
+        // The service has already halted and released its player. A
+        // failure only ever comes from a file the reader loaded to play,
+        // so playback was active and its stop is recorded.
+        finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
+        sleepTimerService.pauseCountdown(by: book.id)
+        // A Where Am I announcement that ends now has nothing to resume.
+        wasPlayingBeforeWhereAmI = false
+
+        let message = Self.audioPlaybackFailureMessage(
+            for: failure,
+            chapterNumber: currentChapterIndex + 1,
+            bookHasPackage: !book.tmbDirectoryName.isEmpty
+        )
+        audioPlaybackFailure = failure
+        errorMessage = message
+        announceToVoiceOver(message)
+    }
+
+    /// What the listener is told when a chapter's audio could not be
+    /// played: the chapter, the file, what went wrong, and what to do.
+    ///
+    /// - Parameters:
+    ///   - failure: What the audio service reported.
+    ///   - chapterNumber: The chapter's number, counted from one.
+    ///   - bookHasPackage: Whether the book keeps its files in a `.tmb`
+    ///     package, which a missing file is then said to be missing from.
+    nonisolated static func audioPlaybackFailureMessage(
+        for failure: AudioPlaybackFailure,
+        chapterNumber: Int,
+        bookHasPackage: Bool
+    ) -> String {
+        var problem = failure.problem
+        let remedy: String
+        switch failure.reason {
+        case .fileMissing:
+            if bookHasPackage {
+                problem += " from the book's package"
+            }
+            remedy = "Re-import the book to restore it."
+        case .fileUnreadable:
+            remedy = "Re-import the book to replace it."
+        case .failedDuringPlayback:
+            remedy = "Choose Retry to try again, or re-import the book if it keeps failing."
+        case .stalled:
+            remedy = "Check that the disk holding your library is connected, then choose Retry."
+        }
+        return "Chapter \(chapterNumber) could not be played: \(problem). \(remedy)"
+    }
+
+    /// The error alert's Retry: close the alert and play the failed chapter
+    /// again from the saved position, just as Play does. Play claims the
+    /// media controls and a listening session again, which the failure gave
+    /// up.
+    func retryAudioPlayback() {
+        dismissErrorAlert()
+        // Playback that started some other way since the failure needs no
+        // second start.
+        guard !isPlaybackActivelyAdvancing else { return }
+        play()
     }
 
     /// Apply a new audio speed to the reader and the player, save it as this

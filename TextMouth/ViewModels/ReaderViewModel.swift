@@ -80,6 +80,9 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var displayVisibleTextWindow = ""
     @Published var isLoading = true
     @Published var errorMessage: String?
+    /// The audio failure `errorMessage` reports, kept while the message is
+    /// shown so its alert can offer Retry. Nil for every other error.
+    @Published var audioPlaybackFailure: AudioPlaybackFailure?
     /// Every heading in the book, in reading order: the headings panel's rows
     /// and the list that heading numbers count. Kept in step with `content`.
     @Published var headings: [Heading] = []
@@ -1021,6 +1024,15 @@ final class ReaderViewModel: ObservableObject {
 
     var isPlaybackActivelyAdvancing: Bool {
         isCurrentlyPlaying && !isCurrentlyPaused
+    }
+
+    // MARK: - Error Alert
+
+    /// Close the error alert, forgetting the error it showed and, for an
+    /// audio failure, the failure behind it.
+    func dismissErrorAlert() {
+        errorMessage = nil
+        audioPlaybackFailure = nil
     }
 
     var canReleaseMediaControls: Bool {
