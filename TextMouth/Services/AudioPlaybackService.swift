@@ -193,6 +193,25 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
     /// "The file 03.mp3 is missing."
     var message: String { "The file \(fileName) \(predicate)." }
 
+    /// The reason for an error AVFoundation raised while opening or playing
+    /// a file.
+    ///
+    /// What is wrong with the file now comes first, so a track deleted or
+    /// made unreadable after it was checked is reported as exactly that.
+    /// Otherwise an item that never became ready to play could not be
+    /// opened as audio, and one that did failed partway through.
+    ///
+    /// - Parameters:
+    ///   - fileProblem: What `AudioPlaybackService.fileProblem(at:)` finds
+    ///     wrong with the file now, or nil when nothing is.
+    ///   - itemBecameReady: Whether the item ever reached `.readyToPlay`.
+    static func reasonForPlaybackError(
+        fileProblem: Reason?,
+        itemBecameReady: Bool
+    ) -> Reason {
+        fileProblem ?? (itemBecameReady ? .failedDuringPlayback : .fileUnreadable)
+    }
+
     /// What happened, following "the file 03.mp3".
     private var predicate: String {
         switch reason {
@@ -237,6 +256,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
+    /// Observes the current item failing to play to its end.
+    private var failedToPlayToEndObserver: NSObjectProtocol?
+    /// Key-value observations of the current item's and player's status,
+    /// either of which can become `.failed`.
+    private var itemStatusObservation: NSKeyValueObservation?
+    private var playerStatusObservation: NSKeyValueObservation?
+    /// Whether the current item has reached `.readyToPlay`. An error before
+    /// then means the file could not be opened as audio; one after it means
+    /// playback failed partway through.
+    private var itemBecameReady = false
     private var durationTask: Task<Void, Never>?
     private(set) var loadedURL: URL?
 
@@ -336,6 +365,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
         setupTimeObserver()
         setupEndObserver()
+        setupFailureObservers()
         return true
     }
 
@@ -366,11 +396,18 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Play the loaded file from `fromTime` seconds.
     ///
     /// - Returns: True when playback started; false when there was nothing
-    ///   to play, such as after a load that failed. `isPlaying` becomes true
+    ///   to play, such as after a load that failed, or when the loaded item
+    ///   has already failed, which is reported now. `isPlaying` becomes true
     ///   only when playback starts.
     @discardableResult
     func play(fromTime: TimeInterval = 0) -> Bool {
-        guard let player = player else { return false }
+        guard let player = player, let playerItem else { return false }
+        // The item can fail before its status observation reaches the main
+        // queue. Report it now rather than claim to play it meanwhile.
+        if playerItem.status == .failed {
+            reportPlaybackError(playerItem.error)
+            return false
+        }
         let clampedTime = max(0, duration > 0 ? min(fromTime, duration) : fromTime)
         let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
 
@@ -393,11 +430,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         isPaused = true
     }
 
-    /// Resumes only when a live AVPlayer item still exists. Returning false
-    /// lets the reader reload the chapter after route changes or player loss.
+    /// Resumes only when a live AVPlayer item still exists and has not
+    /// failed. Returning false lets the reader reload the chapter after
+    /// route changes, player loss, or a failure still on its way to the
+    /// main queue; reloading reports a file that cannot play.
     @discardableResult
     func resume() -> Bool {
-        guard isPaused, let player, player.currentItem != nil, player.error == nil else {
+        guard isPaused, let player, let item = player.currentItem,
+              player.error == nil, item.status != .failed else {
             return false
         }
         player.rate = Float(playbackSpeed)
@@ -426,6 +466,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         playerItem = nil
         loadedURL = nil
         clipEndTime = nil
+        itemBecameReady = false
         seekGate.cancelAll()
     }
 
@@ -492,6 +533,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// read-only values let hosted tests verify chapter-load fade persistence.
     var intendedVolume: Float { currentVolume }
     var outputVolume: Float { player?.volume ?? currentVolume }
+
+    /// The item being played, or nil when no player exists. Hosted tests
+    /// read its status and post the notifications AVFoundation posts for it.
+    var _playerItemForTesting: AVPlayerItem? { playerItem }
 
     // MARK: - Chapter/Marker Extraction
 
@@ -641,14 +686,88 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         }
     }
 
+    /// Observe each way AVFoundation reports that the current file cannot
+    /// be played: the item's status, the player's status, and the item
+    /// failing to play to its end.
+    ///
+    /// Every observation is acted on from the main queue, like the other
+    /// observers, and only while its item or player is still the current
+    /// one: an observation that arrives after `load(url:)` replaced them is
+    /// ignored, as the duration task ignores a replaced item.
+    private func setupFailureObservers() {
+        guard let player, let item = playerItem else { return }
+        // Key-value observation can call back on any thread. `.initial`
+        // also delivers a status the item or player already has.
+        itemStatusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            DispatchQueue.main.async { [weak self] in
+                self?.itemStatusDidChange(item)
+            }
+        }
+        playerStatusObservation = player.observe(\.status, options: [.initial, .new]) { [weak self] player, _ in
+            DispatchQueue.main.async { [weak self] in
+                self?.playerStatusDidChange(player)
+            }
+        }
+        failedToPlayToEndObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] notification in
+            let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+            self?.itemDidFailToPlayToEnd(notification.object as AnyObject?, error: error)
+        }
+    }
+
+    /// Record that the current item became ready, or report that it failed.
+    private func itemStatusDidChange(_ item: AVPlayerItem) {
+        guard item === playerItem else { return }
+        switch item.status {
+        case .readyToPlay:
+            itemBecameReady = true
+        case .failed:
+            reportPlaybackError(item.error)
+        default:
+            break
+        }
+    }
+
+    /// Report the current player failing. AVFoundation never plays with a
+    /// failed player again.
+    private func playerStatusDidChange(_ changedPlayer: AVPlayer) {
+        guard changedPlayer === player, changedPlayer.status == .failed else { return }
+        reportPlaybackError(changedPlayer.error)
+    }
+
+    /// Report the current item stopping short of its end because of `error`.
+    private func itemDidFailToPlayToEnd(_ object: AnyObject?, error: Error?) {
+        guard let item = playerItem, object === item else { return }
+        reportPlaybackError(error ?? item.error)
+    }
+
+    /// Report an error AVFoundation raised for the loaded file, with the
+    /// reason `AudioPlaybackFailure.reasonForPlaybackError` gives it.
+    private func reportPlaybackError(_ error: Error?) {
+        guard let url = loadedURL else { return }
+        let reason = AudioPlaybackFailure.reasonForPlaybackError(
+            fileProblem: Self.fileProblem(at: url),
+            itemBecameReady: itemBecameReady
+        )
+        reportFailure(AudioPlaybackFailure(reason: reason, url: url, underlyingError: error))
+    }
+
     private func removeObservers() {
         if let observer = timeObserver, let player = player {
             player.removeTimeObserver(observer)
             timeObserver = nil
         }
-        if let observer = endObserver {
+        for observer in [endObserver, failedToPlayToEndObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
-            endObserver = nil
         }
+        endObserver = nil
+        failedToPlayToEndObserver = nil
+        itemStatusObservation?.invalidate()
+        itemStatusObservation = nil
+        playerStatusObservation?.invalidate()
+        playerStatusObservation = nil
     }
 }
