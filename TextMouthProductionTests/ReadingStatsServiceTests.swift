@@ -304,6 +304,27 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertTrue(service.hasActiveSession)
     }
 
+    // MARK: - Flushing at quit
+
+    /// Flushing during a session saves its time so far and leaves it open,
+    /// and the file is complete when the flush returns. The end then adds
+    /// only the rest, and flushing after the end adds nothing.
+    @MainActor
+    func testFlushDuringASessionSavesItsTimeAndTheEndAddsOnlyTheRest() {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+
+        service.flushPendingSaves(at: noon + 90)
+
+        XCTAssertTrue(service.hasActiveSession)
+        // Loaded without waiting again: the flush itself waited for the write.
+        XCTAssertEqual(makeService().stats.totalListeningSeconds, 90)
+        service.endSession(at: noon + 100)
+        service.flushPendingSaves(at: noon + 200)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 100)
+        XCTAssertEqual(makeService().stats.totalListeningSeconds, 100)
+    }
+
     // MARK: - Displayed totals
 
     /// Today and This Week add only the open session's time since its last

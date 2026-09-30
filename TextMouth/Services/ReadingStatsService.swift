@@ -265,10 +265,12 @@ final class ReadingStatsService: ObservableObject {
         }
     }
 
-    /// Wait for previously queued writes to finish. Intended for application
-    /// termination, where returning before the asynchronous save completes can
-    /// lose the final reading session.
-    func flushPendingSaves() {
+    /// Checkpoints the open session at `time` without ending it, then waits
+    /// for every queued write to finish. Application termination calls this,
+    /// so the last stretch of listening is on disk before the app exits,
+    /// even when the reader is still playing and never ends its session.
+    func flushPendingSaves(at time: Date = Date()) {
+        checkpointActiveSession(at: time)
         Self.waitForQueuedSaves()
     }
 
