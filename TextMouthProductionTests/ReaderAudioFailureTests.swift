@@ -103,7 +103,46 @@ final class ReaderAudioFailureTests: XCTestCase {
         }
     }
 
+    /// Resuming after an audio route change reloads the chapter. A track
+    /// deleted while paused fails there, and the reader stops just as Play
+    /// stops it.
+    func testResumeThatReloadsAMissingTrackStopsTheReader() throws {
+        try withAudioBook(trackDuration: 5, damage: { _ in }) { reader, tracks in
+            recordingAnnouncements {
+                reader.play()
+                reader.pause()
+            }
+            XCTAssertTrue(reader.isCurrentlyPaused)
+            reader.invalidatePlaybackBackendForAudioRouteChange()
+            try FileManager.default.removeItem(at: tracks[1])
+
+            let recorder = recordingAnnouncements { reader.playOrResume() }
+
+            assertStoppedAfterFailure(reader, message: Self.missingTrackMessage, reason: .fileMissing)
+            XCTAssertEqual(recorder.announcements.map(\.message), [Self.missingTrackMessage])
+        }
+    }
+
     // MARK: - Failures while playing
+
+    /// A chapter that finishes into a missing next track stops at that
+    /// track, at its start, rather than skipping ahead to the one after.
+    func testFinishingIntoAMissingTrackStopsThereWithoutSkippingAhead() throws {
+        let start = ReadingPosition(chapterIndex: 0, characterOffset: 0)
+        try withAudioBook(trackDuration: 0.3, at: start, damage: Self.deleteSecondTrack) { reader, _ in
+            let failed = expectFailure(of: reader)
+
+            let recorder = recordingAnnouncements {
+                reader.play()
+                wait(for: [failed], timeout: 10)
+                spinMainRunLoop(for: 0.3)
+            }
+
+            assertStoppedAfterFailure(reader, message: Self.missingTrackMessage, reason: .fileMissing)
+            XCTAssertEqual(reader.currentCharacterOffset, 0)
+            XCTAssertEqual(recorder.announcements.map(\.message), [Self.missingTrackMessage])
+        }
+    }
 
     /// A damaged track fails only once AVFoundation tries to open it, after
     /// the reader started playing; it then stops just as for a missing one.
@@ -392,8 +431,8 @@ final class ReaderAudioFailureTests: XCTestCase {
         return failed
     }
 
-    /// Run `body` with a reader opened at `openingPosition` on an audio book
-    /// of `trackCount` silent tracks named "01.wav" onwards.
+    /// Run `body` with a reader opened at `position` on an audio book of
+    /// `trackCount` silent tracks named "01.wav" onwards.
     ///
     /// The book is indexed as an import indexes it before `damage` changes
     /// its tracks, so the reader loads an index that still lists every
@@ -405,12 +444,15 @@ final class ReaderAudioFailureTests: XCTestCase {
     /// - Parameters:
     ///   - trackCount: How many tracks, and so chapters, the book has.
     ///   - trackDuration: Each track's length in seconds.
+    ///   - position: Where the reader opens; `openingPosition` unless a
+    ///     test needs to start elsewhere.
     ///   - endOfBook: The book's own end-of-book behavior.
     ///   - damage: Changes made to the tracks after indexing.
     ///   - body: The test, given the loaded reader and the tracks' URLs.
     private func withAudioBook(
         trackCount: Int = 3,
         trackDuration: TimeInterval = 1,
+        at position: ReadingPosition? = nil,
         endOfBook: EndOfBookBehavior = .stop,
         damage: ([URL]) throws -> Void,
         _ body: (ReaderViewModel, [URL]) throws -> Void
@@ -430,7 +472,7 @@ final class ReaderAudioFailureTests: XCTestCase {
             format: .audio,
             filePath: tracksFolder.path,
             md5Hash: UUID().uuidString,
-            readingPosition: Self.openingPosition,
+            readingPosition: position ?? Self.openingPosition,
             tmbDirectoryName: packageName
         )
         book.localEndOfBookBehavior = endOfBook.rawValue
