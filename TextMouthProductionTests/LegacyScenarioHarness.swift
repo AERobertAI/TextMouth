@@ -161,7 +161,7 @@ final class LegacyDOCXParserScenarioTests: XCTestCase {
         runDOCXParserTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            24,
+            26,
             "Every inventoried DOCX fixture scenario should remain registered"
         )
     }
