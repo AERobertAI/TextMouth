@@ -458,6 +458,31 @@ final class ParserContentFidelityTests: XCTestCase {
         )
     }
 
+    /// Emphasis never reaches speech as asterisks: not with whitespace or
+    /// punctuation at its edges, nor when empty, nested, beside other
+    /// emphasis, or around blocks, links, code, or line breaks. Each reads
+    /// as its words alone. Plainly emphasized words keep their markers, with
+    /// edge punctuation outside them.
+    func testCachedHTMLEmphasisMarkersAreNeverRead() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<p>The<i> Titanic </i>sank</p>", "The Titanic sank"),
+            ("<p><b>Note:</b>Read <i>\"Stop!\"</i>, she said.</p>", "Note:Read \"Stop!\", she said."),
+            ("<p><i>Mr.</i><i>Smith</i> and <b>a</b><b>b</b></p>", "Mr.Smith and ab"),
+            ("<p><b>Warning: <i>hot</i> surface</b></p>", "Warning: hot surface"),
+            ("<p>a<em></em>b<strong> </strong>c</p>", "ab c"),
+            ("<em><div>A</div><div>B</div></em>", "A\n\nB"),
+            ("<p>Wait<i>...</i><i>*</i>x<i>*y</i></p>", "Wait...*x*y"),
+            ("<p><em>“Quoted”</em> 🙂<i>🙂 smile</i></p>", "“Quoted” 🙂🙂 smile"),
+            ("<p><em><a href=\"x\">see</a></em>here and x<em><code>y</code> z</em></p>", "seehere and xy z"),
+            ("<p><em>line<br/>break</em></p>", "line\nbreak"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try cachedHTMLReading(html).text, text, html)
+        }
+        let markdown = try HTMLToMarkdownConverter.convert("<p>The <i>Titanic</i>'s <b>last voyage</b>.</p>")
+        XCTAssertEqual(markdown, "The *Titanic*\\'s **last voyage**\\.")
+    }
+
     /// The cache keeps words apart at every boundary the direct reading
     /// has: blocks and definition entries are paragraphs, a table row is one
     /// paragraph of its cells separated by spaces, and line breaks and edit

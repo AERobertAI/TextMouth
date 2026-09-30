@@ -93,6 +93,8 @@ enum HTMLToMarkdownConverter {
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
+        /// Inside emphasis, whose words are marked once, by the outermost.
+        var insideEmphasis = false
     }
 
     /// Recursively walk the DOM tree and emit Markdown for each element.
@@ -153,17 +155,17 @@ enum HTMLToMarkdownConverter {
         case "br":
             result += "  \n"
 
-        // Emphasis
-        case "em", "i":
-            result += "*"
-            convertNode(element, into: &result, context: context)
-            result += "*"
-
-        // Strong
-        case "strong", "b":
-            result += "**"
-            convertNode(element, into: &result, context: context)
-            result += "**"
+        // Emphasis and strong emphasis. Only the outermost is marked: emphasis
+        // inside emphasis adds nothing a listener hears, and nested or
+        // touching delimiter runs are where CommonMark stops matching pairs.
+        case "em", "i", "strong", "b":
+            var inner = context
+            inner.insideEmphasis = true
+            let start = result.utf8.count
+            convertNode(element, into: &result, context: inner)
+            if !context.insideEmphasis {
+                emphasize(from: start, in: &result, delimiter: tag == "em" || tag == "i" ? "*" : "**")
+            }
 
         // Links
         case "a":
@@ -437,12 +439,14 @@ enum HTMLToMarkdownConverter {
     /// end), whose text the reader reads verbatim; nothing for empty code.
     /// The fence is one backtick longer than the longest run of backticks
     /// inside, so none of them can close it, and CommonMark's padding space
-    /// separates a backtick at either end from the fence.
+    /// separates a backtick at either end from the fence. Code ending in a
+    /// backslash is padded too, so a backslash never stands before a closing
+    /// backtick, where `emphasize` would take it for an escape.
     private static func codeSpan(_ code: String) -> String {
         guard !code.isEmpty else { return "" }
         let fence = String(repeating: "`", count: longestRun(of: "`", in: code) + 1)
         let scalars = code.unicodeScalars
-        let padding = scalars.first == "`" || scalars.last == "`" ? " " : ""
+        let padding = scalars.first == "`" || scalars.last == "`" || scalars.last == "\\" ? " " : ""
         return fence + padding + code + padding + fence
     }
 
@@ -484,6 +488,94 @@ enum HTMLToMarkdownConverter {
         }
         guard lower < upper else { return }
         insert(opener, at: lower, closer, at: upper, afterContentStart: contentStart, in: &result)
+    }
+
+    /// Mark the Markdown written since `start` as emphasis with `delimiter`,
+    /// but only where CommonMark will read the pair as emphasis. A pair it
+    /// does not match is read aloud as asterisks, while emphasis changes
+    /// nothing a listener hears, so otherwise the words are left unmarked.
+    ///
+    /// Whitespace, punctuation, and symbols at either end of the words stay
+    /// outside the pair ("*Titanic*." rather than "*Titanic.*"), so each
+    /// delimiter normally touches a letter, digit, or mark, which makes it
+    /// flanking whatever stands on its other side. Where the words begin
+    /// with syntax that cannot move (a link, image, code span, or
+    /// destination), the opener must follow whitespace, punctuation, or a
+    /// line start. Where they end with such syntax they stay unmarked, since
+    /// what will follow the closer is not yet written. Nor is an opener
+    /// written right after a delimiter, with which it would merge into one
+    /// run: this is what keeps emphasis beside emphasis apart.
+    private static func emphasize(from start: Int, in result: inout String, delimiter: String) {
+        let scalars = result.unicodeScalars
+        let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
+        guard !scalars[contentStart...].contains("\n") else { return }
+        var lower = contentStart
+        var upper = scalars.endIndex
+        // Leave whitespace, escapes (a backslash and the ASCII punctuation it
+        // makes literal), and other punctuation or symbols before the pair.
+        while lower < upper {
+            let scalar = scalars[lower]
+            if scalar == "\\" {
+                lower = scalars.index(lower, offsetBy: 2, limitedBy: upper) ?? upper
+            } else if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+                lower = scalars.index(after: lower)
+            } else {
+                break
+            }
+        }
+        // And the same after it.
+        while upper > lower {
+            let last = scalars.index(before: upper)
+            let scalar = scalars[last]
+            if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+                upper = last
+            } else if MarkdownLiteral.isASCIIPunctuation(scalar), isEscaped(last, in: scalars, notBefore: lower) {
+                upper = scalars.index(before: last)
+            } else {
+                break
+            }
+        }
+        guard lower < upper else { return }
+        let previous = lower > scalars.startIndex ? scalars[scalars.index(before: lower)] : nil
+        let followsBoundary = previous.map { $0 == " " || $0 == "\n" || MarkdownLiteral.isASCIIPunctuation($0) } ?? true
+        guard previous != "*",
+              isFlankingSafe(scalars[lower]) || followsBoundary,
+              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return }
+        insert(delimiter, at: lower, delimiter, at: upper, afterContentStart: contentStart, in: &result)
+    }
+
+    /// Letters, digits, and marks. CommonMark counts none of them as
+    /// whitespace or punctuation, so a delimiter beside one is flanking on
+    /// that side whatever stands on its other side.
+    private static func isFlankingSafe(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+             .decimalNumber, .letterNumber, .otherNumber,
+             .nonspacingMark, .spacingMark, .enclosingMark:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Whether the ASCII punctuation at `index` is escaped: an odd number of
+    /// backslashes, counted back no further than `lower`, stands before it.
+    /// Outside code spans every backslash the converter writes belongs to an
+    /// escape, and a code span never ends with one (see `codeSpan`), so a
+    /// closing backtick or bracket is never mistaken for escaped text.
+    private static func isEscaped(
+        _ index: String.Index,
+        in scalars: String.UnicodeScalarView,
+        notBefore lower: String.Index
+    ) -> Bool {
+        var backslashes = 0
+        var position = index
+        while position > lower {
+            position = scalars.index(before: position)
+            guard scalars[position] == "\\" else { break }
+            backslashes += 1
+        }
+        return backslashes % 2 == 1
     }
 
     /// Rewrite the Markdown from `contentStart` to the end of `result` with

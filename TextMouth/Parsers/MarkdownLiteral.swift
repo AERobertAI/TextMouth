@@ -40,7 +40,7 @@ enum MarkdownLiteral {
     /// CommonMark's escapable characters: U+0021–U+002F, U+003A–U+0040,
     /// U+005B–U+0060, and U+007B–U+007E. A backslash before any other
     /// character is itself literal text, so nothing else may be escaped.
-    private static func isASCIIPunctuation(_ scalar: Unicode.Scalar) -> Bool {
+    static func isASCIIPunctuation(_ scalar: Unicode.Scalar) -> Bool {
         switch scalar.value {
         case 0x21...0x2F, 0x3A...0x40, 0x5B...0x60, 0x7B...0x7E:
             return true
