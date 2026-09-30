@@ -1,5 +1,4 @@
 import Foundation
-import ZIPFoundation
 import SwiftSoup
 
 /// Manages cached Markdown content files (content.md) inside .tmb packages.
@@ -200,24 +199,11 @@ enum MarkdownCacheService {
     /// Chapter markers preserve boundaries; heading annotations preserve TOC
     /// labels and offsets without inserting any extra text into the book.
     private static func extractFromEPUB(url: URL) throws -> ExtractedCache {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw EPUBParserError.fileNotFound(url.path)
-        }
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
-        }
-        let containerXML = try EPUBParser.extractString(archive: archive, path: "META-INF/container.xml")
-        let opfPath = try EPUBParser.parseContainerForOPFPath(containerXML)
-        let opfXML = try EPUBParser.extractString(archive: archive, path: opfPath)
-        let opfData = try EPUBParser.parseOPF(opfXML)
-        let chapters = try EPUBParser.preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
-        let markdown = chapters.map { prepared in
+        let book = try EPUBParser.prepareBook(url: url)
+        let markdown = book.chapters.map { prepared in
             "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
-        return ExtractedCache(markdown: markdown, chapters: chapters.map(\.chapter))
+        return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter))
     }
 
     // MARK: - Multi-Chapter Markdown Parsing

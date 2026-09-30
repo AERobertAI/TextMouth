@@ -52,6 +52,177 @@ final class EPUBPartialExtractionTests: XCTestCase {
         XCTAssertEqual(checked, 22)
     }
 
+    // MARK: - Chapters Left Out
+
+    /// The acceptance case: a chapter deleted from the archive is named by
+    /// its number and path, and the chapters on either side are still read,
+    /// by the cache's preparation and by the direct reader alike.
+    func testMissingMiddleChapterIsReportedAndTheOthersAreRead() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Adjusting the Brakes"])
+        XCTAssertEqual(book.report.chapterCount, 3)
+        XCTAssertEqual(book.report.blankChapterCount, 0)
+        XCTAssertEqual(
+            book.report.omissions,
+            [ExtractionOmission(chapterNumber: 2, member: "OEBPS/ch02.xhtml", reason: .missingMember)]
+        )
+        XCTAssertEqual(
+            book.report.message,
+            "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book."
+        )
+        XCTAssertEqual(
+            try EPUBParser.parse(url: epub).chapters.map(\.title),
+            ["Patching a Tube", "Adjusting the Brakes"]
+        )
+    }
+
+    /// A chapter whose compressed data cannot be decoded is reported as
+    /// damaged, and the rest of the book is still read.
+    func testUndecodableChapterIsReportedAsDamaged() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters, compression: .deflate)
+        try damageData(of: "OEBPS/ch02.xhtml", in: epub)
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Adjusting the Brakes"])
+        XCTAssertEqual(
+            book.report.omissions,
+            [ExtractionOmission(chapterNumber: 2, member: "OEBPS/ch02.xhtml", reason: .unreadableMember)]
+        )
+        XCTAssertEqual(
+            book.report.message,
+            "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is damaged or incomplete."
+        )
+    }
+
+    /// A stored chapter whose bytes no longer match its checksum is left out
+    /// and reported, where it used to be read as garbled text.
+    func testChapterFailingItsChecksumIsReportedRatherThanGarbled() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        try damageData(of: "OEBPS/ch02.xhtml", in: epub)
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Adjusting the Brakes"])
+        XCTAssertEqual(book.report.omissions.map(\.reason), [.unreadableMember])
+    }
+
+    /// A cover page without text is blank, not damaged: it is counted apart
+    /// and never reported, and the book is complete.
+    func testBlankCoverPageIsNotAnOmission() throws {
+        let epub = try makeEPUB(chapters: [Self.blankPage("cover")] + Self.threeChapters)
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertTrue(book.report.isComplete, book.report.message)
+        XCTAssertEqual(book.report.chapterCount, 4)
+        XCTAssertEqual(book.report.blankChapterCount, 1)
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Truing a Wheel", "Adjusting the Brakes"])
+    }
+
+    /// A complete book has nothing to report and reads every chapter.
+    func testCompleteBookHasAnEmptyReport() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.report, ExtractionReport(container: "this EPUB book", chapterCount: 3))
+        XCTAssertEqual(book.chapters.count, 3)
+        XCTAssertTrue(book.chapters[1].chapter.text.contains("Tighten the spoke opposite the wobble"))
+    }
+
+    /// The bundled book, a real EPUB, is complete: its fifteen spine
+    /// documents are all counted and none is reported missing or damaged.
+    func testBundledEPUBReportsNothingLeftOut() throws {
+        let book = try EPUBParser.prepareBook(url: try requireFile("alice.epub"))
+
+        XCTAssertTrue(book.report.isComplete, book.report.message)
+        XCTAssertEqual(book.report.chapterCount, 15)
+    }
+
+    /// A spine entry naming an item the manifest does not list is reported
+    /// by the name the spine gives it.
+    func testSpineEntryWithoutAManifestItemIsReported() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters, spine: ["ch01", "ch02", "appendix", "ch03"])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.count, 3)
+        XCTAssertEqual(
+            book.report.message,
+            "1 of 4 chapters could not be read: chapter 3 (“appendix”) has no file listed in this EPUB book."
+        )
+    }
+
+    /// An image in the reading order is a resource, not a chapter: it is not
+    /// counted and not reported.
+    func testImageInTheSpineIsNotAChapter() throws {
+        let plate = FixtureChapter(id: "plate", href: "plate.jpg", markup: "JPEG bytes", mediaType: "image/jpeg")
+        let epub = try makeEPUB(chapters: Self.threeChapters + [plate], spine: ["ch01", "plate", "ch02", "ch03"])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertTrue(book.report.isComplete, book.report.message)
+        XCTAssertEqual(book.report.chapterCount, 3)
+        XCTAssertEqual(book.chapters.count, 3)
+    }
+
+    /// With no chapter readable there is no book to open: both readers
+    /// throw an error that names every chapter and says what to do.
+    func testBookWithNoReadableChapterNamesEveryChapter() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters)
+        for chapter in Self.threeChapters {
+            try removeMember(chapter.member, from: epub)
+        }
+        let expected = "None of the 3 chapters could be read: "
+            + "chapter 1 (“OEBPS/ch01.xhtml”) is missing from this EPUB book; "
+            + "chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book; "
+            + "chapter 3 (“OEBPS/ch03.xhtml”) is missing from this EPUB book. "
+            + "Get a fresh copy of the book, then import it again."
+
+        let readers: [() throws -> Void] = [
+            { _ = try EPUBParser.prepareBook(url: epub) },
+            { _ = try EPUBParser.parse(url: epub) }
+        ]
+        for read in readers {
+            XCTAssertThrowsError(try read()) { error in
+                XCTAssertEqual(error.localizedDescription, expected)
+                XCTAssertEqual(Self.unreadableReport(error)?.omissions.count, 3)
+            }
+        }
+    }
+
+    /// Missing and blank chapters together leave nothing to read, and the
+    /// error accounts for the blank ones as well.
+    func testMissingAndBlankChaptersTogetherLeaveNothingToRead() throws {
+        let chapters = [Self.blankPage("front"), Self.threeChapters[1], Self.blankPage("back")]
+        let epub = try makeEPUB(chapters: chapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        XCTAssertThrowsError(try EPUBParser.prepareBook(url: epub)) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book. "
+                    + "The other 2 chapters have no text. Get a fresh copy of the book, then import it again."
+            )
+        }
+    }
+
+    /// A book of blank pages has nothing damaged to replace; it simply has
+    /// no text, and says so.
+    func testBookOfBlankPagesHasNoTextToRead() throws {
+        let epub = try makeEPUB(chapters: [Self.blankPage("front"), Self.blankPage("back")])
+
+        XCTAssertThrowsError(try EPUBParser.parse(url: epub)) { error in
+            XCTAssertEqual(error.localizedDescription, "This EPUB book has no text to read.")
+            XCTAssertEqual(Self.unreadableReport(error)?.blankChapterCount, 2)
+        }
+    }
+
     // MARK: - Fixture Books
 
     /// One document in a fixture EPUB, which the package lists in its
@@ -78,6 +249,18 @@ final class EPUBPartialExtractionTests: XCTestCase {
     private static func chapter(_ number: Int, _ heading: String, _ text: String) -> FixtureChapter {
         let id = String(format: "ch%02d", number)
         return FixtureChapter(id: id, href: "\(id).xhtml", markup: page("<h1>\(heading)</h1><p>\(text)</p>"))
+    }
+
+    /// A page with no text, such as a cover whose image its stylesheet sets.
+    private static func blankPage(_ id: String) -> FixtureChapter {
+        FixtureChapter(id: id, href: "\(id).xhtml", markup: page("<div class=\"cover\"></div>"))
+    }
+
+    /// The report carried by a `noReadableChapters` error, or nil for any
+    /// other error.
+    private static func unreadableReport(_ error: Error) -> ExtractionReport? {
+        guard case .noReadableChapters(let report)? = error as? EPUBParserError else { return nil }
+        return report
     }
 
     /// An XHTML document whose body is `body`.
@@ -141,6 +324,14 @@ final class EPUBPartialExtractionTests: XCTestCase {
         let epub = directory.appendingPathComponent("book.epub")
         try FileManager.default.moveItem(at: zip, to: epub)
         return epub
+    }
+
+    /// Delete `member` from the ZIP at `url`, as a copy of a book can lack
+    /// one of its files.
+    private func removeMember(_ member: String, from url: URL) throws {
+        let archive = try Archive(url: url, accessMode: .update)
+        let entry = try XCTUnwrap(archive[member], "No member named \(member)")
+        try archive.remove(entry)
     }
 
     /// Overwrite the first bytes of `member`'s data in the ZIP at `url` with
