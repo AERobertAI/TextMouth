@@ -75,6 +75,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].chapterIndex is 2, expected 1")
     }
 
+    /// A chapter cannot hold fewer than no characters.
     func testNegativeCharacterCountIsRejected() {
         var index = textIndex()
         index.chapters[1].characterCount = -5
@@ -103,6 +104,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].startCharacterOffset is 9, expected 10")
     }
 
+    /// The character total must be the sum of the chapter lengths (25).
     func testCharacterTotalMismatchIsRejected() {
         var index = textIndex()
         index.totalCharacterCount = 24
@@ -110,6 +112,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "totalCharacterCount is 24, expected 25")
     }
 
+    /// The word total must be the sum of the chapter word counts (6).
     func testWordTotalMismatchIsRejected() {
         var index = textIndex()
         index.totalWordCount = 7
@@ -158,6 +161,7 @@ final class ContentIndexValidationTests: XCTestCase {
 
     // MARK: - Headings
 
+    /// Headings run from level 1 through 6; the navigator knows no level 0.
     func testHeadingLevelZeroIsRejected() {
         var index = textIndex()
         index.chapters[0].headings[0].level = 0
@@ -165,6 +169,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[0].headings[0].level is 0, outside 1 through 6")
     }
 
+    /// Nor any level past 6.
     func testHeadingLevelSevenIsRejected() {
         var index = textIndex()
         index.chapters[1].headings[1].level = 7
@@ -172,6 +177,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].headings[1].level is 7, outside 1 through 6")
     }
 
+    /// Every heading the builder writes has an ID.
     func testHeadingWithoutIDIsRejected() {
         var index = textIndex()
         index.chapters[1].headings[0].id = ""
@@ -250,6 +256,7 @@ final class ContentIndexValidationTests: XCTestCase {
 
     // MARK: - Audio
 
+    /// Without a layout, playback cannot tell how chapters map to files.
     func testAudioIndexWithoutLayoutIsRejected() {
         var index = multiFileIndex()
         index.audioLayout = nil
@@ -257,6 +264,7 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "audioLayout is missing")
     }
 
+    /// Every audio chapter carries its timing, even in a single-file book.
     func testAudioChapterWithoutTimingIsRejected() {
         var index = multiFileIndex()
         index.chapters[1].audio = nil
@@ -275,6 +283,7 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// A segment cannot start at a time that is not a number.
     func testNonFiniteStartTimeIsRejected() {
         var index = segmentedIndex()
         index.chapters[1].audio?.startTime = .nan
@@ -285,6 +294,7 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// Nor before the start of its file.
     func testNegativeStartTimeIsRejected() {
         var index = segmentedIndex()
         index.chapters[0].audio?.startTime = -1
@@ -309,6 +319,7 @@ final class ContentIndexValidationTests: XCTestCase {
         }
     }
 
+    /// A chapter cannot last less than no time.
     func testNegativeDurationIsRejected() {
         var index = multiFileIndex()
         index.chapters[2].audio?.duration = -10
@@ -357,6 +368,7 @@ final class ContentIndexValidationTests: XCTestCase {
         }
     }
 
+    /// An absolute path could name any file on disk.
     func testAbsoluteAudioPathIsRejected() {
         var index = multiFileIndex()
         index.chapters[1].audio?.relativeFilePath = "/etc/hosts"
@@ -408,6 +420,7 @@ final class ContentIndexValidationTests: XCTestCase {
         }
     }
 
+    /// A track deleted after analysis must not reach playback.
     func testMissingAudioFileIsRejected() throws {
         let folder = try audioFolder()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
