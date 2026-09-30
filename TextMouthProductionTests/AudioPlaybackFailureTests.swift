@@ -461,30 +461,6 @@ final class AudioPlaybackFailureTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         try body(directory)
     }
-
-    /// Let queued main-queue work, such as AVFoundation observations, run.
-    private func spinMainRunLoop(for interval: TimeInterval) {
-        RunLoop.main.run(until: Date().addingTimeInterval(interval))
-    }
-
-    /// Run the main run loop until `condition` holds or `timeout` passes.
-    ///
-    /// - Returns: Whether `condition` came to hold.
-    private func eventually(within timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while !condition(), Date() < deadline {
-            spinMainRunLoop(for: 0.01)
-        }
-        return condition()
-    }
-
-    /// Wait until `item` is ready to play and the service has seen it
-    /// become ready: its status observation reaches the main queue just
-    /// after the status itself changes.
-    private func waitUntilReady(_ item: AVPlayerItem) {
-        XCTAssertTrue(eventually { item.status == .readyToPlay }, "Item never became ready")
-        spinMainRunLoop(for: 0.1)
-    }
 }
 
 /// What pressing Play from a key-value observer found. Written and read on
