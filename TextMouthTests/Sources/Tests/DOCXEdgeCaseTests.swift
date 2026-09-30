@@ -383,7 +383,7 @@ test("DOCX readMetadata returns title even without author") {
     <dc:title>Only Title</dc:title>
     </cp:coreProperties>
     """
-    let metadata = parseMetadataXML(coreXML)
+    let metadata = try parseMetadataXML(coreXML)
     try assertEqual(metadata.title, "Only Title", "Should extract title")
     try assertTrue(metadata.author.isEmpty, "Author should be empty")
 }
@@ -657,7 +657,7 @@ private class TestMetadataParser: NSObject, XMLParserDelegate {
 }
 #else
 /// Parse core properties through the production metadata parser.
-func parseMetadataXML(_ xml: String) -> DOCXMetadata {
-    DOCXMetadataParser(xml: xml).parse()
+func parseMetadataXML(_ xml: String) throws -> DOCXMetadata {
+    try DOCXMetadataParser(data: Data(xml.utf8), file: DOCXParser.Part.coreProperties).parse()
 }
 #endif

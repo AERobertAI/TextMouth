@@ -118,18 +118,37 @@ enum DOCXParser {
         PackageDamage.log(diagnostic, tag: "DOCX_INCOMPLETE_CONTENT")
     }
 
-    /// Read basic metadata (title, author) from the DOCX core properties
-    static func readMetadata(from url: URL) throws -> DOCXMetadata? {
+    /// Read basic metadata (title, author) from the DOCX core properties.
+    /// - Parameter reportDamagedMetadata: receives the error when the core
+    ///   properties part is present but damaged. Its metadata is then not
+    ///   used at all, so the document keeps its file name as its title: a
+    ///   damaged part never fails an import. The default writes the error
+    ///   to the console and the debug log.
+    /// - Returns: nil when the file cannot be opened, has no core properties,
+    ///   or has damaged ones.
+    static func readMetadata(
+        from url: URL,
+        reportDamagedMetadata: (DOCXParserError) -> Void = DOCXParser.logDamagedMetadata
+    ) throws -> DOCXMetadata? {
         guard let archive = try? openArchive(at: url) else { return nil }
 
         // Core properties live in docProps/core.xml
-        guard let coreData = try? extractData(from: archive, path: Part.coreProperties),
-              let coreXML = String(data: coreData, encoding: .utf8) else {
+        guard let coreData = try? extractData(from: archive, path: Part.coreProperties) else {
             return nil
         }
 
-        let parser = DOCXMetadataParser(xml: coreXML)
-        return parser.parse()
+        do {
+            return try DOCXMetadataParser(data: coreData, file: Part.coreProperties).parse()
+        } catch let damage as DOCXParserError {
+            reportDamagedMetadata(damage)
+            return nil
+        }
+    }
+
+    /// Default report for damaged core properties: one line in the console
+    /// and in the debug log. The document is read under its file name.
+    static func logDamagedMetadata(_ damage: DOCXParserError) {
+        PackageDamage.log(damage, tag: "DOCX_DAMAGED_METADATA")
     }
 
     /// Read style semantics using the same archive path as full conversion.

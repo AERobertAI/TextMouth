@@ -7,7 +7,8 @@ import XCTest
 /// the part, while a part the package simply lacks is still no error. The
 /// text part keeps the text read before any damage, closes what the damage
 /// left open, and reports the damage beside that text; a text part damaged
-/// before any text throws like a structure part.
+/// before any text throws like a structure part. Damaged core properties
+/// never fail an import: the document is read under its file name.
 final class DOCXMalformedXMLTests: XCTestCase {
 
     // MARK: - Fixtures
@@ -470,6 +471,80 @@ final class DOCXMalformedXMLTests: XCTestCase {
         XCTAssertEqual(cached, try DOCXParser.extractMarkdown(from: docx) { _ in })
         XCTAssertTrue(cached.hasSuffix("\n1. Cut new cloth two centimetres"), cached)
         XCTAssertEqual(book.title, "Mending Cloth Spines")
+    }
+
+    // MARK: - Core Properties
+
+    /// Intact core properties give the document its title and author.
+    func testIntactCorePropertiesNameTheDocument() throws {
+        let docx = try makeDOCX()
+
+        let metadata = try XCTUnwrap(DOCXParser.readMetadata(from: docx) {
+            XCTFail("Unexpected damage report: \($0)")
+        })
+
+        XCTAssertEqual(metadata.title, "Mending Cloth Spines")
+        XCTAssertEqual(metadata.author, "Radka Oyelaran")
+        XCTAssertEqual(try DOCXParser.parse(url: docx).title, "Mending Cloth Spines")
+    }
+
+    /// Damaged core properties never fail the document. It is read under its
+    /// file name with an unknown author, even when a title was read before
+    /// the damage, all of its text still reads, and the damage is reported.
+    func testDamagedCorePropertiesFallBackToTheFileName() throws {
+        let damagedParts = [
+            "truncated": Data(Self.truncated(Self.coreXML, before: "<dc:creator>").utf8),
+            "misencoded": Self.misencoded(Self.coreXML, before: "Radka"),
+            "empty": Data()
+        ]
+        for (damage, part) in damagedParts {
+            let docx = try makeDOCX(replacing: [DOCXParser.Part.coreProperties: part])
+            var reports: [DOCXParserError] = []
+
+            XCTAssertNil(try DOCXParser.readMetadata(from: docx) { reports.append($0) }, damage)
+
+            guard reports.count == 1, case let .malformedXML(file, _)? = reports.first else {
+                XCTFail("Expected one malformed-XML report for the \(damage) part, got \(reports)")
+                continue
+            }
+            XCTAssertEqual(file, "docProps/core.xml", damage)
+            let content = try DOCXParser.parse(url: docx)
+            XCTAssertEqual(content.title, Self.fileTitle, damage)
+            XCTAssertEqual(content.author, "Unknown", damage)
+            XCTAssertEqual(content.chapters.map(\.text), [Self.spokenDocument], damage)
+        }
+    }
+
+    /// Importing a document with damaged core properties adds the book under
+    /// its file name, with all of its text.
+    func testImportWithDamagedCorePropertiesUsesTheFileName() throws {
+        let docx = try makeDOCX(truncating: DOCXParser.Part.coreProperties, before: "<dc:creator>")
+
+        let book = try FileImportService.importFile(from: docx)
+        let package = book.tmbDirectory
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+
+        XCTAssertEqual(book.title, "Spine Repair Notes")
+        XCTAssertEqual(book.author, "Unknown")
+        let cached = try String(contentsOf: TextMouthPaths.contentMarkdownPath(in: package), encoding: .utf8)
+        XCTAssertEqual(try Self.spokenText(of: cached), Self.spokenDocument)
+    }
+
+    /// With no reporter supplied, as on import, damaged core properties are
+    /// recorded in the debug log.
+    func testDamagedCorePropertiesAreWrittenToTheDebugLogByDefault() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let docx = try makeDOCX(truncating: DOCXParser.Part.coreProperties, before: "<dc:creator>")
+
+        var metadata: DOCXMetadata?
+        let lines = try debugLogLines { metadata = try DOCXParser.readMetadata(from: docx) }
+
+        XCTAssertNil(metadata)
+        let entries = lines.filter { $0.contains("DOCX_DAMAGED_METADATA:") }
+        XCTAssertEqual(entries.count, 1, "\(lines)")
+        XCTAssertTrue(entries.first?.contains(
+            "DOCX_DAMAGED_METADATA: The file “docProps/core.xml” in this document is damaged or incomplete: "
+        ) == true, "\(entries)")
     }
 
     // MARK: - Helpers
