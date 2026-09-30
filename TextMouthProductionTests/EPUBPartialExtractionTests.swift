@@ -223,6 +223,85 @@ final class EPUBPartialExtractionTests: XCTestCase {
         }
     }
 
+    // MARK: - Cache Generation
+
+    /// The cache holds the chapters that could be read, and one line in the
+    /// debug log names the book and what is missing from it.
+    func testCacheKeepsTheReadableChaptersAndLogsTheReportOnce() throws {
+        let title = Self.uniqueTitle()
+        let epub = try makeEPUB(title: title, chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+
+        let book = try importForTest(epub)
+
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(cached.chapters.map(\.title), ["Patching a Tube", "Adjusting the Brakes"])
+        let lines = debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): ")
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(lines.first?.hasSuffix(
+            "EPUB_INCOMPLETE_CONTENT: \(title): "
+                + "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book."
+        ) == true, "\(lines)")
+    }
+
+    /// A cache rebuild still succeeds for a book with a chapter missing: the
+    /// generated content carries the report, the rebuild path gets its index,
+    /// and each generation logs the omission again rather than alerting.
+    func testCacheRebuildCarriesTheReportAndStillSucceeds() throws {
+        let title = Self.uniqueTitle()
+        let epub = try makeEPUB(title: title, chapters: Self.threeChapters)
+        try removeMember("OEBPS/ch02.xhtml", from: epub)
+        var book = try importForTest(epub)
+
+        let generated = try XCTUnwrap(MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book))
+        let rebuiltIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
+
+        XCTAssertEqual(generated.content.chapters.count, 2)
+        XCTAssertEqual(generated.report.omissions.map(\.chapterNumber), [2])
+        // Indexes carry their generation time, so compare what they describe.
+        XCTAssertEqual(rebuiltIndex?.chapters, generated.content.contentIndex.chapters)
+        XCTAssertEqual(rebuiltIndex?.chapters.count, 2)
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): ").count, 3)
+    }
+
+    /// A rebuild that finds no readable chapter fails without touching the
+    /// cache an earlier generation wrote, so a book that was readable stays
+    /// readable, and its version stays unstamped for a later retry.
+    func testRebuildFindingNoReadableChapterKeepsTheEarlierCache() throws {
+        let title = Self.uniqueTitle()
+        var book = try importForTest(try makeEPUB(title: title, chapters: Self.threeChapters))
+        let cachePath = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
+        let earlierCache = try String(contentsOf: cachePath, encoding: .utf8)
+        book.cacheFormatVersion = "3.0.0"
+        // The package's own copy of the book then loses every chapter.
+        for chapter in Self.threeChapters {
+            try removeMember(chapter.member, from: URL(fileURLWithPath: book.filePath))
+        }
+
+        XCTAssertNil(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book))
+
+        XCTAssertEqual(try String(contentsOf: cachePath, encoding: .utf8), earlierCache)
+        XCTAssertEqual(book.cacheFormatVersion, "3.0.0")
+        let lines = debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): None of the 3 chapters could be read: ")
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+    }
+
+    /// Formats that do not report omissions yet generate an empty report.
+    func testFormatsThatDoNotReportGenerateAnEmptyReport() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Notes.md")
+        try Data("# Spokes\n\nCount them twice.".utf8).write(to: source)
+        let book = try importForTest(source)
+
+        let generated = try XCTUnwrap(MarkdownCacheService.generateReportedCacheContent(for: book))
+
+        XCTAssertEqual(generated.report, ExtractionReport())
+        XCTAssertEqual(generated.content.chapters.count, 1)
+    }
+
     // MARK: - Fixture Books
 
     /// One document in a fixture EPUB, which the package lists in its
@@ -324,6 +403,14 @@ final class EPUBPartialExtractionTests: XCTestCase {
         let epub = directory.appendingPathComponent("book.epub")
         try FileManager.default.moveItem(at: zip, to: epub)
         return epub
+    }
+
+    /// Import `source` through the production path into the hosted tests'
+    /// isolated library, removing its package when the test ends.
+    private func importForTest(_ source: URL) throws -> Book {
+        let book = try FileImportService.importFile(from: source)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        return book
     }
 
     /// Delete `member` from the ZIP at `url`, as a copy of a book can lack

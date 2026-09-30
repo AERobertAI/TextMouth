@@ -48,9 +48,21 @@ enum MarkdownCacheService {
     /// EPUB extraction already produces reading chapters to resolve heading
     /// coordinates. Keep those results until indexing instead of parsing the
     /// newly written Markdown a second time. Other formats supply Markdown only.
+    /// `report` names the chapters the source could not supply; formats that
+    /// do not report omissions leave it empty.
     private struct ExtractedCache {
         var markdown: String
         var chapters: [Chapter]? = nil
+        var report = ExtractionReport()
+    }
+
+    /// What one successful cache generation produced: the book's reading
+    /// content, indexed, and the report of chapters its source could not
+    /// supply, kept beside the content so a reader can later say what is
+    /// missing from it.
+    struct GeneratedCache {
+        var content: DocumentContent
+        var report: ExtractionReport
     }
 
     // MARK: - Cache Generation
@@ -62,43 +74,71 @@ enum MarkdownCacheService {
         generateCacheContent(for: book) != nil
     }
 
-    /// Generate the cache and its reading content together. Index construction
-    /// reuses EPUB's prepared chapters and performs only one Markdown pass for
-    /// other formats. No result escapes until the atomic cache write succeeds.
+    /// Generate the cache and its reading content together, treating any
+    /// failure as no cache. Chapters the source could not supply are still
+    /// recorded in the debug log (see `generateReportedCacheContent`).
     static func generateCacheContent(for book: Book) -> DocumentContent? {
+        do {
+            return try generateReportedCacheContent(for: book)?.content
+        } catch {
+            logGenerationFailure(error, for: book)
+            return nil
+        }
+    }
+
+    /// Generate the cache and its reading content together, with the report
+    /// of chapters the source could not supply. Index construction reuses
+    /// EPUB's prepared chapters and performs only one Markdown pass for other
+    /// formats. No result escapes until the atomic cache write succeeds.
+    ///
+    /// Every generation path (import, startup maintenance, Redo Text
+    /// Extraction, legacy migration, and the reader's regeneration) passes
+    /// through here, so each one writes a report with omissions to the debug
+    /// log as a single `<FORMAT>_INCOMPLETE_CONTENT: <title>: <message>` line.
+    /// Only an import presents it to the reader (see `FileImportService`).
+    /// - Returns: nil for a book with no text cache: an audio book, or one
+    ///   without a package.
+    /// - Throws: why no cache could be written. A cache written earlier is
+    ///   left as it was, so a failed rebuild never empties a readable book.
+    static func generateReportedCacheContent(for book: Book) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
 
         let tmbDir = book.tmbDirectory
         let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
         let fileURL = URL(fileURLWithPath: book.filePath)
 
+        let extracted: ExtractedCache
         do {
-            let extracted = try extractCache(from: fileURL, format: book.format)
-            let content: DocumentContent
-            if let chapters = extracted.chapters, !chapters.isEmpty {
-                content = DocumentContent(
-                    title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
-                    author: book.author,
-                    chapters: chapters,
-                    contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
-                )
-            } else {
-                // Preserve the cache reader's empty-document and chapter-marker
-                // behavior as well as its title fallback for non-EPUB formats.
-                let parsed = parseMultiChapterMarkdown(
-                    extracted.markdown, bookTitle: book.title, bookAuthor: book.author
-                )
-                content = DocumentContent(
-                    title: parsed.title, author: parsed.author, chapters: parsed.chapters,
-                    contentIndex: parsed.contentIndex.replacingFormat(book.format)
-                )
-            }
-            try extracted.markdown.write(to: cachePath, atomically: true, encoding: .utf8)
-            return content
-        } catch {
-            print("Failed to generate content cache for \(book.title): \(error)")
-            return nil
+            extracted = try extractCache(from: fileURL, format: book.format)
+        } catch EPUBParserError.noReadableChapters(let report) {
+            // Nothing can be cached, but which chapters could not be read is
+            // still worth recording before the failure is passed on.
+            logIncompleteContent(report, of: book)
+            throw EPUBParserError.noReadableChapters(report)
         }
+
+        let content: DocumentContent
+        if let chapters = extracted.chapters, !chapters.isEmpty {
+            content = DocumentContent(
+                title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
+                author: book.author,
+                chapters: chapters,
+                contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
+            )
+        } else {
+            // Preserve the cache reader's empty-document and chapter-marker
+            // behavior as well as its title fallback for non-EPUB formats.
+            let parsed = parseMultiChapterMarkdown(
+                extracted.markdown, bookTitle: book.title, bookAuthor: book.author
+            )
+            content = DocumentContent(
+                title: parsed.title, author: parsed.author, chapters: parsed.chapters,
+                contentIndex: parsed.contentIndex.replacingFormat(book.format)
+            )
+        }
+        try extracted.markdown.write(to: cachePath, atomically: true, encoding: .utf8)
+        logIncompleteContent(extracted.report, of: book)
+        return GeneratedCache(content: content, report: extracted.report)
     }
 
     /// Generate a cache and advance the stored format version only after the
@@ -110,14 +150,57 @@ enum MarkdownCacheService {
         return true
     }
 
-    /// Import-time variant that also computes the persisted navigation index
-    /// while already executing on the serial import queue.
+    /// Variant that also computes the persisted navigation index while
+    /// already executing on a background queue, treating any failure as no
+    /// cache. Cache rebuilds use it: they log omissions but never alert.
     static func generateCacheAnalyzeAndStamp(for book: inout Book) -> BookContentIndex? {
-        guard let content = generateCacheContent(for: book) else { return nil }
+        do {
+            return try generateReportedCacheAnalyzeAndStamp(for: &book)?.content.contentIndex
+        } catch {
+            logGenerationFailure(error, for: book)
+            return nil
+        }
+    }
+
+    /// Import-time variant: write the cache, stamp `book` with the cache
+    /// version and its index summary, and return the content with the report
+    /// of chapters the source could not supply.
+    /// - Returns: nil for a book with no text cache.
+    /// - Throws: why no cache could be written; `book` is then unchanged.
+    static func generateReportedCacheAnalyzeAndStamp(for book: inout Book) throws -> GeneratedCache? {
+        guard let generated = try generateReportedCacheContent(for: book) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
-        let index = content.contentIndex
-        book.applyContentIndexSummary(index)
-        return index
+        book.applyContentIndexSummary(generated.content.contentIndex)
+        return generated
+    }
+
+    // MARK: - Generation Diagnostics
+
+    /// Print why no cache could be generated for `book`, for the callers that
+    /// treat a failure as no cache.
+    static func logGenerationFailure(_ error: Error, for book: Book) {
+        print("Failed to generate content cache for \(book.title): \(error)")
+    }
+
+    /// Record a report that left chapters out as one line in the console and
+    /// the debug log, tagged by format ("EPUB_INCOMPLETE_CONTENT"), in the
+    /// form every format's damage reports take (see `PackageDamage.log`).
+    /// A complete report records nothing.
+    private static func logIncompleteContent(_ report: ExtractionReport, of book: Book) {
+        guard !report.isComplete else { return }
+        PackageDamage.log(
+            IncompleteContent(title: book.title, report: report),
+            tag: "\(book.format.rawValue.uppercased())_INCOMPLETE_CONTENT"
+        )
+    }
+
+    /// A book whose extraction left chapters out, described for the log line
+    /// that `PackageDamage.log` writes: the book's title, then the report.
+    private struct IncompleteContent: LocalizedError {
+        var title: String
+        var report: ExtractionReport
+
+        var errorDescription: String? { "\(title): \(report.message)" }
     }
 
     /// Check whether a cached content.md exists for a book.
@@ -203,7 +286,7 @@ enum MarkdownCacheService {
         let markdown = book.chapters.map { prepared in
             "\(chapterMarkerPrefix)\(prepared.chapter.title)\(chapterMarkerSuffix)\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
-        return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter))
+        return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter), report: book.report)
     }
 
     // MARK: - Multi-Chapter Markdown Parsing
