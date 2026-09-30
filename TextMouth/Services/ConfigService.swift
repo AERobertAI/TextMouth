@@ -18,7 +18,23 @@ final class ConfigService: ObservableObject {
 
     private var fileMonitorSource: DispatchSourceFileSystemObject?
     private var fileDescriptor: Int32 = -1
-    private var isSaving = false
+
+    /// config.json's bytes as this process last wrote, loaded, or examined
+    /// them. A file event that finds these bytes brings nothing new: it is
+    /// TextMouth's own save, or an edit already applied or rejected. This
+    /// replaces a half-second window after each save during which every
+    /// event, an editor's included, used to be ignored.
+    private var lastHandledContents: Data?
+
+    /// Whether the watcher is on: from `startWatching()` until `shutdown()`.
+    private var isWatching = false
+    /// How long a burst of file events must stay quiet before the file is
+    /// read.
+    private let coalescingDelay: Duration
+    /// The events received since the file was last checked, combined.
+    private var pendingEvents: DispatchSource.FileSystemEvent = []
+    /// The check that runs once the current burst of events settles.
+    private var pendingCheck: Task<Void, Never>?
 
     /// What config.json held when this service was created.
     enum LoadedFile: Equatable {
@@ -56,19 +72,40 @@ final class ConfigService: ObservableObject {
     /// The file-system calls in use.
     private let fileOperations: FileOperations
 
+    /// What the watcher does about a batch of file events.
     struct WatcherActions: Equatable {
-        let reload: Bool
+        /// Watch the file now at the path: the watched one was renamed or
+        /// deleted, as when an atomic save renames a new file over it.
         let rearm: Bool
+        /// Decode the file and apply it: it holds bytes this process has
+        /// neither written nor seen.
+        let reload: Bool
     }
 
-    /// Atomic writes replace the watched inode. Rename/delete events therefore
-    /// always require a new watcher, including writes initiated by this process.
-    static func watcherActions(
+    /// The watcher's decision for `event`, given config.json's bytes now (nil
+    /// when there is no readable file) and the bytes this process last wrote,
+    /// loaded, or examined.
+    ///
+    /// Comparing contents rather than the time since the last save is what
+    /// tells TextMouth's own writes from anyone else's: an edit saved moments
+    /// after TextMouth saved is still applied, and TextMouth's own save never
+    /// is, however late its events arrive. Atomic saves replace the watched
+    /// file, TextMouth's included, so the event alone decides whether to
+    /// follow the file.
+    nonisolated static func watcherActions(
         for event: DispatchSource.FileSystemEvent,
-        isSaving: Bool
+        fileContents: Data?,
+        lastHandledContents: Data?
     ) -> WatcherActions {
-        let replaced = event.contains(.rename) || event.contains(.delete)
-        return WatcherActions(reload: !isSaving, rearm: replaced)
+        WatcherActions(
+            rearm: replacesWatchedFile(event),
+            reload: fileContents.map { $0 != lastHandledContents } ?? false
+        )
+    }
+
+    /// Whether `event` means the watched file no longer sits at the path.
+    nonisolated static func replacesWatchedFile(_ event: DispatchSource.FileSystemEvent) -> Bool {
+        !event.isDisjoint(with: [.rename, .delete])
     }
 
     /// The contents of config.json. Numeric and enum-backed fields follow
@@ -209,19 +246,33 @@ final class ConfigService: ObservableObject {
     ///   - fileURL: The file to mirror. Nil, as `shared` uses, follows the
     ///     data directory in use; tests pass a file of their own.
     ///   - fileOperations: The file-system calls to make; tests count them.
-    init(fileURL: URL? = nil, fileOperations: FileOperations = .system) {
+    ///   - coalescingDelay: How long a burst of file events must stay quiet
+    ///     before the watcher reads the file.
+    init(
+        fileURL: URL? = nil,
+        fileOperations: FileOperations = .system,
+        coalescingDelay: Duration = .milliseconds(200)
+    ) {
         customFileURL = fileURL
         self.fileOperations = fileOperations
+        self.coalescingDelay = coalescingDelay
         loadFromDisk()
     }
 
-    /// Call after SettingsViewModel has initialized and populated config from AppStorage.
-    /// This ensures the file watcher only starts after we have correct values on disk.
+    /// Starts following config.json for edits made outside TextMouth. Launch
+    /// calls this once it has reconciled the file with the preferences.
     func startWatching() {
+        isWatching = true
         startFileWatcher()
     }
 
+    /// Stops following config.json: pending checks are dropped, and the
+    /// watched file's descriptor is closed once its source is cancelled.
     func shutdown() {
+        isWatching = false
+        pendingCheck?.cancel()
+        pendingCheck = nil
+        pendingEvents = []
         stopFileWatcher()
     }
 
@@ -232,6 +283,8 @@ final class ConfigService: ObservableObject {
     /// Nothing is written when the file already holds exactly these bytes:
     /// writing them again would change only the modification date and wake
     /// the watcher. A launch on a consistent file therefore writes nothing.
+    /// The bytes become `lastHandledContents`, which is how the watcher
+    /// recognizes the events of this save as TextMouth's own.
     func saveToDisk() {
         let data: Data
         do {
@@ -240,18 +293,14 @@ final class ConfigService: ObservableObject {
             log("could not encode the settings for \(fileURL.path): \(error)")
             return
         }
-        guard data != readFileContents() else { return }
-
-        isSaving = true
-        defer {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.isSaving = false
-            }
+        guard data != readFileContents() else {
+            lastHandledContents = data
+            return
         }
-
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             try fileOperations.write(data, fileURL)
+            lastHandledContents = data
         } catch {
             log("could not save \(fileURL.path): \(error)")
         }
@@ -283,7 +332,9 @@ final class ConfigService: ObservableObject {
             return
         }
         do {
-            let decoded = try Self.decode(Data(contentsOf: fileURL))
+            let contents = try Data(contentsOf: fileURL)
+            lastHandledContents = contents
+            let decoded = try Self.decode(contents)
             if decoded != config {
                 config = decoded
             }
@@ -308,17 +359,13 @@ final class ConfigService: ObservableObject {
 
     // MARK: - External Edits
 
-    /// Reads config.json after the watcher saw it change, and applies it.
-    private func reloadFromDisk() {
-        guard let contents = readFileContents() else { return }
-        applyExternalEdit(contents)
-    }
-
     /// Applies config.json's `contents` as an edit made outside TextMouth:
     /// `config` takes the whole snapshot, which is then published once. A
     /// file that cannot be decoded changes nothing and stays on disk as it
-    /// is, for whoever edited it to correct; the debug log says why.
+    /// is, for whoever edited it to correct; the debug log says why, once,
+    /// since the same bytes are not examined twice.
     private func applyExternalEdit(_ contents: Data) {
+        lastHandledContents = contents
         let edited: AppConfig
         do {
             edited = try Self.decode(contents)
@@ -332,6 +379,43 @@ final class ConfigService: ObservableObject {
 
     // MARK: - File Watching
 
+    /// Acts on a settled batch of file events: follows the file when it was
+    /// replaced, and applies its contents when they hold an edit this process
+    /// has neither written nor seen. The watcher calls this once a burst of
+    /// events settles; tests call it directly.
+    func handleFileEvent(_ event: DispatchSource.FileSystemEvent) {
+        let contents = readFileContents()
+        let actions = Self.watcherActions(
+            for: event,
+            fileContents: contents,
+            lastHandledContents: lastHandledContents
+        )
+        if actions.rearm, isWatching {
+            startFileWatcher()
+        }
+        if actions.reload, let contents {
+            applyExternalEdit(contents)
+        }
+    }
+
+    /// Collects an event from the watched file's source, on the main actor,
+    /// and hands the batch to `handleFileEvent(_:)` once no further event has
+    /// arrived for `coalescingDelay`: an editor's save arrives as several
+    /// events, and a file written in place may be incomplete until they end.
+    private func receiveFileEvent(_ event: DispatchSource.FileSystemEvent) {
+        guard isWatching else { return }
+        pendingEvents.formUnion(event)
+        pendingCheck?.cancel()
+        pendingCheck = Task { [weak self, coalescingDelay] in
+            try? await Task.sleep(for: coalescingDelay)
+            guard !Task.isCancelled, let self else { return }
+            let events = self.pendingEvents
+            self.pendingEvents = []
+            self.pendingCheck = nil
+            self.handleFileEvent(events)
+        }
+    }
+
     private func startFileWatcher() {
         stopFileWatcher()
         let path = fileURL.path
@@ -341,22 +425,18 @@ final class ConfigService: ObservableObject {
         guard fileDescriptor >= 0 else { return }
 
         let watchedDescriptor = fileDescriptor
+        // The source delivers on the main queue, where all of the watcher's
+        // state lives: the handler only passes the event mask on, so nothing
+        // is read from another thread.
         let source = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: watchedDescriptor,
             eventMask: [.write, .rename, .delete],
-            queue: DispatchQueue.global(qos: .utility)
+            queue: .main
         )
 
         source.setEventHandler { [weak self] in
-            guard let self = self else { return }
-            let actions = Self.watcherActions(for: source.data, isSaving: self.isSaving)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                if actions.reload {
-                    self.reloadFromDisk()
-                }
-                if actions.rearm {
-                    self.startFileWatcher()
-                }
+            MainActor.assumeIsolated {
+                self?.receiveFileEvent(source.data)
             }
         }
 

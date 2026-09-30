@@ -123,15 +123,24 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(viewModel.punctuationPauseLevel, 3)
     }
 
-    func testAtomicReplacementRearmsWatcherDuringInternalSave() {
-        let actions = ConfigService.watcherActions(for: .rename, isSaving: true)
+    /// TextMouth's own atomic save replaces the watched file, so the watcher
+    /// follows the new file, but the bytes are its own, so nothing reloads.
+    func testOwnAtomicSaveRearmsWatcherWithoutReloading() {
+        let saved = Data("saved by TextMouth".utf8)
+        let actions = ConfigService.watcherActions(for: .rename, fileContents: saved, lastHandledContents: saved)
 
         XCTAssertFalse(actions.reload)
         XCTAssertTrue(actions.rearm)
     }
 
+    /// An editor's atomic save replaces the file with bytes TextMouth did not
+    /// write: the watcher follows the new file and reloads it.
     func testExternalAtomicReplacementReloadsAndRearmsWatcher() {
-        let actions = ConfigService.watcherActions(for: [.write, .rename], isSaving: false)
+        let actions = ConfigService.watcherActions(
+            for: [.write, .rename],
+            fileContents: Data("saved by an editor".utf8),
+            lastHandledContents: Data("saved by TextMouth".utf8)
+        )
 
         XCTAssertTrue(actions.reload)
         XCTAssertTrue(actions.rearm)

@@ -125,6 +125,7 @@ final class ConfigWatcherTests: XCTestCase {
 
     /// A file that cannot be read at launch is left for correction: nothing
     /// is written, its bytes stay, and the preferences keep their values.
+    /// Once corrected, the watcher applies it, still without writing.
     func testLaunchLeavesAnUnreadableFileForCorrection() throws {
         let url = try makeConfigFileURL()
         let broken = Data(#"{"wordsPerMinute": 300,,}"#.utf8)
@@ -133,13 +134,22 @@ final class ConfigWatcherTests: XCTestCase {
         defaults.set(250.0, forKey: "wordsPerMinute")
         let counter = FileOperationCounter()
 
-        let (_, settings) = launch(url, defaults: defaults, counter: counter)
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let recorder = EditRecorder(service)
         settle()
 
         XCTAssertEqual(counter.writes, 0)
         XCTAssertEqual(try Data(contentsOf: url), broken)
         XCTAssertEqual(settings.wordsPerMinute, 250)
         XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
+
+        var corrected = launchConsistentConfig()
+        corrected.wordsPerMinute = 300
+        try editorSave(ConfigService.fileData(for: corrected), to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        XCTAssertEqual(settings.wordsPerMinute, 300)
+        XCTAssertEqual(counter.writes, 0)
     }
 
     // MARK: - Delivering external edits
@@ -189,6 +199,118 @@ final class ConfigWatcherTests: XCTestCase {
         settle()
 
         XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
+    // MARK: - Telling TextMouth's saves from external edits
+
+    /// The watcher's decision depends on the file's bytes, not on when
+    /// TextMouth last saved: its own bytes are never reloaded and anyone
+    /// else's always are, while the event alone says whether to follow the
+    /// file to a replacement.
+    func testWatcherDecisionComparesContentsNotTiming() {
+        let ours = Data("written by TextMouth".utf8)
+        let theirs = Data("written by an editor".utf8)
+        func actions(
+            _ event: DispatchSource.FileSystemEvent,
+            onDisk: Data?,
+            handled: Data?
+        ) -> ConfigService.WatcherActions {
+            ConfigService.watcherActions(for: event, fileContents: onDisk, lastHandledContents: handled)
+        }
+
+        // TextMouth's own atomic save replaced the watched file.
+        XCTAssertEqual(actions(.delete, onDisk: ours, handled: ours), .init(rearm: true, reload: false))
+        // An editor's atomic save replaced it, whichever event reports that.
+        XCTAssertEqual(actions(.delete, onDisk: theirs, handled: ours), .init(rearm: true, reload: true))
+        XCTAssertEqual(actions(.rename, onDisk: theirs, handled: ours), .init(rearm: true, reload: true))
+        // An edit written in place.
+        XCTAssertEqual(actions(.write, onDisk: theirs, handled: ours), .init(rearm: false, reload: true))
+        // A later event from a burst whose edit was already handled.
+        XCTAssertEqual(actions(.write, onDisk: theirs, handled: theirs), .init(rearm: false, reload: false))
+        // The file is gone: follow the path, with nothing to apply yet.
+        XCTAssertEqual(actions(.delete, onDisk: nil, handled: ours), .init(rearm: true, reload: false))
+        // A file that appeared where this process had seen none.
+        XCTAssertEqual(actions(.write, onDisk: theirs, handled: nil), .init(rearm: false, reload: true))
+    }
+
+    /// TextMouth's own saves are recognized by their bytes: the events they
+    /// cause apply nothing, however soon after one another they come.
+    func testOwnSavesAreNeverReloaded() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: FileOperationCounter())
+        let recorder = EditRecorder(service)
+
+        settings.wordsPerMinute = 300
+        // The event TextMouth's atomic save causes, handled at once rather
+        // than after the watcher's delay.
+        service.handleFileEvent(.delete)
+        settings.pitchMultiplier = 1.8
+        settle()
+
+        XCTAssertEqual(recorder.edits, [])
+        XCTAssertEqual(settings.wordsPerMinute, 300)
+        XCTAssertEqual(settings.pitchMultiplier, 1.8)
+    }
+
+    /// An editor's atomic save that lands right after TextMouth saved twice
+    /// in quick succession is applied exactly once, and applying it saves
+    /// nothing. The half-second window that used to follow every save
+    /// dropped such an edit.
+    func testEditorSaveRightAfterRepeatedAppSavesIsAppliedOnce() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        settings.wordsPerMinute = 300
+        settings.wordsPerMinute = 310
+        // The editor opened the file as it is now and changes one value.
+        var edit = service.config
+        edit.sleepFadeOutDuration = 9
+        let editBytes = try ConfigService.fileData(for: edit)
+        try editorSave(editBytes, to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        settle()
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        XCTAssertEqual(settings.wordsPerMinute, 310)
+        XCTAssertEqual(counter.writes, 2, "only the two settings changes wrote")
+        XCTAssertEqual(try Data(contentsOf: url), editBytes)
+    }
+
+    /// A file replaced with text that is not JSON changes no setting and is
+    /// not overwritten, so the edit stays on disk to be corrected; the debug
+    /// log names the file once, however many events follow. The corrected
+    /// file is then applied.
+    func testInvalidEditKeepsSettingsAndLeavesTheFileForCorrection() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        let broken = Data(#"{"sleepFadeOutDuration": 9,,}"#.utf8)
+        try editorSave(broken, to: url)
+        service.handleFileEvent(.rename)
+        // The watcher's own events for the same save find the same bytes.
+        settle()
+
+        XCTAssertEqual(recorder.edits, [])
+        XCTAssertEqual(settings.sleepFadeOutDuration, 6)
+        XCTAssertEqual(counter.writes, 0)
+        XCTAssertEqual(try Data(contentsOf: url), broken)
+        XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
+
+        edit.sleepFadeOutDuration = 9
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
         XCTAssertEqual(settings.sleepFadeOutDuration, 9)
         XCTAssertEqual(counter.writes, 0)
     }
