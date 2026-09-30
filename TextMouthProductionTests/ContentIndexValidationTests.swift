@@ -762,6 +762,35 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    // MARK: - Every fixture
+
+    /// Every book in TestData, imported the way a user imports it, saves an
+    /// index that passes validation and matches its cache, so opening the
+    /// book reuses it: the checks reject nothing the parsers produce.
+    func testEveryImportedFixtureKeepsTheFastPath() throws {
+        let testData = try requireFile("sample.md").deletingLastPathComponent()
+        let fixtures = try FileManager.default.contentsOfDirectory(at: testData, includingPropertiesForKeys: nil)
+            .filter { BookFormat.detect(from: $0) != nil }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        // Guard against a vacuous pass if the fixtures cannot be found.
+        XCTAssertGreaterThanOrEqual(fixtures.count, 12)
+
+        for fixture in fixtures {
+            let name = fixture.lastPathComponent
+            let book = try FileImportService.importFile(from: fixture)
+            addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+            let saved = try savedIndex(of: book)
+
+            XCTAssertNil(
+                saved.validationFailure(for: book.format, audioBaseURL: URL(fileURLWithPath: book.filePath)),
+                name
+            )
+            let result = try BookContentAnalysisService.load(book: book)
+            XCTAssertTrue(result.usedPersistedIndex, name)
+            XCTAssertEqual(result.index, saved, name)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Two chapters of reading text. The emoji makes the first chapter's
