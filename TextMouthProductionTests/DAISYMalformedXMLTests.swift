@@ -124,15 +124,6 @@ final class DAISYMalformedXMLTests: XCTestCase {
         return files.merging(changes) { _, change in change }
     }
 
-    /// `text` up to, not including, the first `marker`: a copy cut off
-    /// partway, as an interrupted download or extraction leaves it.
-    private static func truncated(_ text: String, before marker: String) -> String {
-        guard let range = text.range(of: marker) else {
-            preconditionFailure("Fixture marker \(marker) not found")
-        }
-        return String(text[..<range.lowerBound])
-    }
-
     /// Run `body`, which must throw `DAISYParserError.malformedXML` naming
     /// `expectedFile`, and return the error's reason ("" after a failure).
     @discardableResult

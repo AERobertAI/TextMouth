@@ -2,11 +2,22 @@ import Foundation
 
 // MARK: - DOCX to Markdown Converter
 
+/// Markdown converted from a document's text part.
+struct DOCXConversion {
+    /// The document text: everything read from the part, up to any damage.
+    let markdown: String
+    /// Set when the part broke off or stopped being well-formed after some
+    /// of its text had been read. That text is kept in `markdown`; this
+    /// describes the damage so callers can report the document as
+    /// incomplete. It never becomes part of the text.
+    let diagnostic: DOCXParserError?
+}
+
 /// Converts the XML content of word/document.xml into Markdown text.
 /// Uses XMLParser (SAX-style) to walk through the document structure,
 /// tracking paragraph styles, run formatting, and list context to emit
 /// properly formatted Markdown.
-class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
+class DOCXToMarkdownConverter: DOCXSAXParser {
     private let styles: DOCXStyles
     private let numbering: DOCXNumbering
     private let relationships: [String: String]
@@ -50,23 +61,44 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
     private var listCounters: [String: [Int: Int]] = [:] // numId -> [level: count]
     private var previousParagraphWasList = false
 
-    init(styles: DOCXStyles, numbering: DOCXNumbering, relationships: [String: String]) {
+    /// Whether any readable text has been read. Damage after this point
+    /// leaves text worth keeping; damage before it leaves none.
+    private var producedText = false
+
+    /// Prepare to convert the text part `data`, read from `file`, with the
+    /// package's paragraph styles, list numbering, and hyperlink targets.
+    init(
+        data: Data,
+        file: String = DOCXParser.Part.document,
+        styles: DOCXStyles,
+        numbering: DOCXNumbering,
+        relationships: [String: String]
+    ) {
         self.styles = styles
         self.numbering = numbering
         self.relationships = relationships
+        super.init(data: data, file: file)
     }
 
-    /// Convert the document.xml content to Markdown
-    func convert(xmlString: String) -> String {
-        guard let data = xmlString.data(using: .utf8) else { return "" }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.shouldProcessNamespaces = false
-        parser.shouldReportNamespacePrefixes = false
-        parser.parse()
-
-        // Clean up trailing whitespace and excessive blank lines
-        return normalizeWhitespace(markdown)
+    /// Convert the part to Markdown.
+    ///
+    /// When the part breaks off or becomes malformed after some of its text
+    /// was read, that text is kept: a document missing its last pages is
+    /// more use read than refused. Elements still open at the damage are
+    /// closed as though the part ended there, so the paragraph, link, or
+    /// table in progress is written out with its emphasis and link syntax
+    /// complete, none of it read aloud as symbols, and the damage is
+    /// returned as the diagnostic.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   damaged before any text.
+    func convert() throws -> DOCXConversion {
+        do {
+            try parseDocument()
+            return DOCXConversion(markdown: normalizeWhitespace(markdown), diagnostic: nil)
+        } catch let damage as DOCXParserError where producedText {
+            closeOpenElements()
+            return DOCXConversion(markdown: normalizeWhitespace(markdown), diagnostic: damage)
+        }
     }
 
     // MARK: - XMLParserDelegate
@@ -158,13 +190,39 @@ class DOCXToMarkdownConverter: NSObject, XMLParserDelegate {
         // Only capture text inside <w:t> elements (handled by element context)
         if let lastElement = elementStack.last, lastElement == "t" {
             runText += string
+            if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                producedText = true
+            }
         }
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?) {
-        let localName = ParserUtilities.stripNamespacePrefix(elementName)
+        endElement(ParserUtilities.stripNamespacePrefix(elementName))
+    }
 
+    /// Close every element the damage left open, innermost first, exactly as
+    /// their end tags would have: the run, any link, the paragraph, and any
+    /// table around it are finished and written out.
+    ///
+    /// The run in progress first loses the whitespace at its cut end. That
+    /// whitespace separated the last word read from one that never arrived,
+    /// and before a closing `**` it would stop the emphasis from closing, so
+    /// the asterisks would be read aloud.
+    private func closeOpenElements() {
+        if isInRun {
+            while runText.last?.isWhitespace == true {
+                runText.removeLast()
+            }
+        }
+        while let innermost = elementStack.last {
+            endElement(innermost)
+        }
+    }
+
+    /// Emit the Markdown that ends the element named `localName` (without
+    /// its namespace prefix) and pop it from the element stack.
+    private func endElement(_ localName: String) {
         switch localName {
         case "r":
             // End of a text run -- apply formatting and append to paragraph text

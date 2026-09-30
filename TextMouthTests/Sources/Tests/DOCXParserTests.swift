@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import ZIPFoundation
 
@@ -22,6 +23,23 @@ private func parseDOCXToMarkdown(from url: URL) throws -> String {
 
 private func parseMarkdown(markdown: String, title: String) throws -> DocumentContent {
     try MarkdownDocParser.parse(markdown: markdown, title: title)
+}
+
+/// Convert the fixture `name` and require exactly the Markdown pinned for
+/// it, compared by UTF-8 byte count and SHA-256 digest (lowercase hex), with
+/// no damage reported: damage found only after the last word would leave the
+/// Markdown unchanged but still write a false alarm to the debug log.
+private func assertPinnedMarkdown(_ name: String, bytes: Int, sha256: String) throws {
+    var damageReports: [DOCXParserError] = []
+    let markdown = try DOCXParser.extractMarkdown(from: try requireFile(name)) { damageReports.append($0) }
+    try assertTrue(damageReports.isEmpty, "\(name) was reported as damaged: \(damageReports)")
+    let actualBytes = markdown.utf8.count
+    let actualDigest = SHA256.hash(data: Data(markdown.utf8)).map { String(format: "%02x", $0) }.joined()
+    try assertTrue(
+        actualBytes == bytes && actualDigest == sha256,
+        "\(name) now converts to \(actualBytes) bytes with SHA-256 \(actualDigest); "
+            + "pinned: \(bytes) bytes with SHA-256 \(sha256)"
+    )
 }
 #endif
 
@@ -206,6 +224,26 @@ test("Alice DOCX produces DocumentContent with text") {
     let markdown = try parseDOCXToMarkdown(from: url)
     let content = try parseMarkdown(markdown: markdown, title: "Alice")
     try assertGreater(content.chapters[0].text.count, 1000, "Should have substantial text")
+}
+
+// Every byte of each fixture's Markdown, pinned on September 30, 2026, before
+// the DOCX parts were checked for damaged XML (TODO T04). An intact document
+// must convert exactly as before: a change here changes every DOCX book's
+// cached text, so it needs a cache format version bump.
+test("DOCX fixture test_book.docx converts to its pinned Markdown") {
+    try assertPinnedMarkdown(
+        "test_book.docx",
+        bytes: 3186,
+        sha256: "b86888c9b156958ec4d78c3fce2ab8c1702558c0112427ae4cc4172afacbe7f1"
+    )
+}
+
+test("DOCX fixture alice.docx converts to its pinned Markdown") {
+    try assertPinnedMarkdown(
+        "alice.docx",
+        bytes: 170285,
+        sha256: "bff54d05d660e10826e4763da6a33eebc061ad9505728355e544479fcd3a9a67"
+    )
 }
 
 }

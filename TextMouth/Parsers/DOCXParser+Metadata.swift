@@ -9,24 +9,18 @@ struct DOCXMetadata {
 }
 
 /// SAX parser for docProps/core.xml to extract title and author
-class DOCXMetadataParser: NSObject, XMLParserDelegate {
-    private let xml: String
+class DOCXMetadataParser: DOCXSAXParser {
     private var title = ""
     private var author = ""
     private var currentElement = ""
     private var currentText = ""
 
-    init(xml: String) {
-        self.xml = xml
-    }
-
-    func parse() -> DOCXMetadata {
-        guard let data = xml.data(using: .utf8) else {
-            return DOCXMetadata(title: "", author: "")
-        }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.parse()
+    /// Read the document's title and author.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   truncated or not well-formed, so no caller mistakes what was read
+    ///   before the damage for the document's whole metadata.
+    func parse() throws -> DOCXMetadata {
+        try parseDocument()
         return DOCXMetadata(
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             author: author.trimmingCharacters(in: .whitespacesAndNewlines)

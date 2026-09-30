@@ -3,19 +3,15 @@ import Foundation
 // MARK: - Relationships
 
 /// SAX parser for word/_rels/document.xml.rels to extract hyperlink targets
-class DOCXRelationshipsParser: NSObject, XMLParserDelegate {
-    private let xml: String
+class DOCXRelationshipsParser: DOCXSAXParser {
     private var relationships: [String: String] = [:]
 
-    init(xml: String) {
-        self.xml = xml
-    }
-
-    func parse() -> [String: String] {
-        guard let data = xml.data(using: .utf8) else { return relationships }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.parse()
+    /// Read every relationship's ID and target.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   truncated or not well-formed. Links whose targets came after the
+    ///   damage would silently read as bare text.
+    func parse() throws -> [String: String] {
+        try parseDocument()
         return relationships
     }
 
