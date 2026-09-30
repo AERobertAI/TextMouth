@@ -475,6 +475,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// A named anchor marks a destination, not a link. SwiftSoup closes the
     /// self-closing form immediately; neither form may leave brackets in
     /// speech or heading labels, while real links keep only their words.
+    /// (Link destinations are written in angle brackets.)
     func testNamedAnchorsAreReadWithoutLinkBrackets() throws {
         let html = """
         <h2><a id="page_12"/>Twelve</h2>
@@ -482,7 +483,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         """
         let markdown = try HTMLToMarkdownConverter.convert(html)
         XCTAssertFalse(markdown.contains("[]"))
-        XCTAssertTrue(markdown.contains("[linked](notes.xhtml#n1)"))
+        XCTAssertTrue(markdown.contains("[linked](<notes.xhtml#n1>)"))
         let chapter = try MarkdownDocParser.parseChapter(markdown: markdown)
         XCTAssertEqual(chapter.text, "Twelve\n\nBefore after, named and linked.")
         XCTAssertEqual(chapter.headings.map(\.text), ["Twelve"])
@@ -712,10 +713,11 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// no annotation markup; no chapter has two headings at one offset; and a
     /// page-list label is a heading no more often than the book's own headings
     /// or TOC entries use it. Against a previous cache, chapter text may only
-    /// lose characters (hidden navigation, "[]" from named anchors, link syntax
-    /// stranded by a split heading) and change whitespace layout, once the
-    /// words that older caches hid behind a line-leading annotation are
-    /// counted; unchanged chapters keep every heading that is not a page number.
+    /// lose words (hidden navigation, "[]" from named anchors, link syntax
+    /// stranded by a split heading) and change its punctuation and whitespace
+    /// layout (see `readingWords`), once the words that older caches hid behind
+    /// a line-leading annotation are counted; unchanged chapters keep every
+    /// heading that is not a page number.
     func testCopiedEPUBSatisfiesNavigationInvariants() throws {
         let fixture = try copiedEPUBFixture()
         let book = try FileImportService.importFile(from: fixture.epub)
@@ -766,10 +768,12 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
                     unchangedChapters.insert(index)
                     continue
                 }
-                // Layout may change (a heading rejoined across a line break
-                // replaces a paragraph break with a space); words may not.
+                // Layout and punctuation may change (a heading rejoined across
+                // a line break replaces a paragraph break with a space; 3.0.7
+                // keeps straight quotes and reads no leaked emphasis markers);
+                // words may only be lost, never gained or reordered.
                 XCTAssertTrue(
-                    isSubsequence(collapsedWhitespace(current.text), of: collapsedWhitespace(old.text)),
+                    isSubsequence(readingWords(current.text), of: readingWords(old.text)),
                     "Chapter \(index + 1) gained or reordered text"
                 )
                 changedChapters.append("\(index + 1): -\(old.text.utf16.count - current.text.utf16.count)")
@@ -852,8 +856,14 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(current.allHeadings.count, 127)
         XCTAssertEqual(Set(current.allHeadings.map(\.chapterIndex)), Set(0..<122))
         // Report chapter numbers on failure without dumping an entire novel.
+        // The previous cache predates format 3.0.7: its smart punctuation made
+        // the book's straight quotes curly, and it read leaked emphasis
+        // markers as asterisks. The words themselves are unchanged.
         for (index, pair) in zip(current.chapters, previous.chapters).enumerated() {
-            XCTAssertTrue(pair.0.text == pair.1.text, "Reading text changed in chapter \(index + 1)")
+            XCTAssertTrue(
+                readingWords(pair.0.text) == readingWords(pair.1.text),
+                "Reading words changed in chapter \(index + 1)"
+            )
         }
         XCTAssertTrue(Set(previous.allHeadings.map(\.id)).isSubset(of: Set(current.allHeadings.map(\.id))))
         XCTAssertTrue(current.chapters[17].title.contains("Death of a Grandfather"))
@@ -1036,10 +1046,37 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         }
     }
 
-    /// Reduce every run of whitespace to one space, so a comparison of reading
-    /// text sees words and punctuation rather than paragraph layout.
-    private func collapsedWhitespace(_ text: String) -> String {
-        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    /// The words of a reading: its characters in order, without whitespace,
+    /// punctuation, or ASCII symbols. Format 3.0.7 keeps punctuation earlier
+    /// caches changed or read: the straight quotes, dashes, and ellipses their
+    /// smart punctuation replaced, the asterisks and underscores they took for
+    /// emphasis or read aloud as leaked emphasis markers, and the spacing that
+    /// separates blocks and table cells. Comparing words sees what a cache
+    /// said rather than how it punctuated or laid it out.
+    private func readingWords(_ text: String) -> String {
+        var words = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars where Self.isWordScalar(scalar) {
+            words.append(scalar)
+        }
+        return String(words)
+    }
+
+    /// Letters, digits, marks, and non-ASCII symbols: anything but
+    /// whitespace, Unicode punctuation, and ASCII punctuation or symbols.
+    private static func isWordScalar(_ scalar: Unicode.Scalar) -> Bool {
+        if scalar.properties.isWhitespace {
+            return false
+        }
+        if scalar.isASCII {
+            return scalar.properties.isAlphabetic || scalar.properties.numericType != nil
+        }
+        switch scalar.properties.generalCategory {
+        case .connectorPunctuation, .dashPunctuation, .openPunctuation, .closePunctuation,
+             .initialPunctuation, .finalPunctuation, .otherPunctuation:
+            return false
+        default:
+            return true
+        }
     }
 
     /// Whether `text` can be formed only by deleting characters from `source`,

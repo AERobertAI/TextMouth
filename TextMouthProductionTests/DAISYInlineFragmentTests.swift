@@ -84,11 +84,16 @@ final class DAISYInlineFragmentTests: XCTestCase {
     }
 
     /// Block fragments still go through the Markdown converter, keeping
-    /// headings and emphasis.
+    /// headings and paragraphs. The converter writes text as Markdown
+    /// literals (the period is escaped) and a heading line as its label, so
+    /// emphasis inside a heading, which a listener never heard, is not kept.
     func testBlockFragmentsKeepTheirMarkdownStructure() throws {
         let html = #"<h2 id="h">Tidal <em>Streams</em></h2><p id="p">Ebb and flood.</p>"#
 
-        XCTAssertEqual(try extract(["h", "p"], from: html), "## Tidal *Streams*\n\nEbb and flood.")
+        let markdown = try extract(["h", "p"], from: html)
+
+        XCTAssertEqual(markdown, "## Tidal Streams\n\nEbb and flood\\.")
+        XCTAssertEqual(try spokenText(of: markdown), "Tidal Streams\n\nEbb and flood.")
     }
 
     // MARK: - Overlapping References

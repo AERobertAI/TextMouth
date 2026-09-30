@@ -22,7 +22,8 @@ enum MarkdownCacheService {
     /// looks like Markdown or HTML is read as written and matches the direct
     /// parser; and DAISY 2.02 inline fragments are read in full, where caches
     /// written earlier kept only a fragment's first child element's text.
-    static let currentCacheVersion: String = "3.0.6"
+    /// 3.0.7: HTML text (HTML, EPUB, DAISY 2.02) is literal Markdown keeping block, row, and cell boundaries and code lines.
+    static let currentCacheVersion: String = "3.0.7"
 
     /// Compare two semantic version strings (e.g. "2.0.0" > "1.0.0").
     /// Returns true if `stored` is older than `current`.
@@ -161,7 +162,8 @@ enum MarkdownCacheService {
 
     /// Extract Markdown content from a book file based on its format.
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
-    /// HTML: converts the HTML to Markdown.
+    /// HTML: converts the HTML to Markdown, stripping duplicate navigation
+    /// exactly as the direct parser (HTMLParser) does.
     /// Markdown: uses the file as-is.
     /// Plain text: literal Markdown with the plain-text headings as ATX headings.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
@@ -171,7 +173,7 @@ enum MarkdownCacheService {
             return try extractFromEPUB(url: url)
         case .html:
             let html = try String(contentsOf: url, encoding: .utf8)
-            markdown = try HTMLToMarkdownConverter.convert(html)
+            markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
         case .markdown:
             // Already Markdown — use as-is
             markdown = try String(contentsOf: url, encoding: .utf8)

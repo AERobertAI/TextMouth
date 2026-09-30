@@ -126,11 +126,13 @@ final class LegacyHTMLToMarkdownTests: XCTestCase {
         XCTAssertTrue(result.contains("**bold**"))
     }
 
+    /// Destinations are written in angle brackets, so one holding spaces or
+    /// parentheses cannot break the link and leave its syntax to be read.
     func testLinkConversion() throws {
         let result = try HTMLToMarkdownConverter.convert(
             "<p>Visit <a href=\"https://example.com\">Example</a> site.</p>"
         )
-        XCTAssertTrue(result.contains("[Example](https://example.com)"))
+        XCTAssertTrue(result.contains("[Example](<https://example.com>)"))
     }
 
     func testUnorderedListConversion() throws {

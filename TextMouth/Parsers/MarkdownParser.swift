@@ -136,11 +136,15 @@ private struct PlainTextExtractor: MarkupWalker {
     /// Heading-list labels contain only visible words. HTML comments, such as
     /// annotations inside headings of caches written before format 3.0.5, are
     /// never displayed. Every other label keeps swift-markdown's plain text
-    /// exactly, so existing labels and the heading IDs built from them hold.
+    /// exactly, so existing labels and the heading IDs built from them hold;
+    /// that includes a label whose literal text merely spells "<!--", which
+    /// is not trimmed of characters such as U+200B at its ends.
     private static func visibleLabel(of heading: Markdown.Heading) -> String {
         let label = heading.plainText
         guard label.contains("<!--") else { return label }
-        return textExcludingComments(heading).trimmingCharacters(in: .whitespacesAndNewlines)
+        let visible = textExcludingComments(heading)
+        guard visible != label else { return label }
+        return visible.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Mirror swift-markdown's inline plain text (containers join their

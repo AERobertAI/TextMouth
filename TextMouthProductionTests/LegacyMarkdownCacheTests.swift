@@ -216,19 +216,27 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertEqual(item.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
     }
 
-    // MARK: - Plain Text
+    // MARK: - Importing Sources
 
-    /// Import a plain-text source through the production path, which copies
-    /// it into a package, writes content.md, and stamps the cache version.
-    private func importPlainTextBook(_ source: String) throws -> Book {
+    /// Import a source file named `fileName` through the production path,
+    /// which copies it into a package, writes content.md, and stamps the
+    /// cache version.
+    private func importBook(_ source: String, fileName: String) throws -> Book {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
-        let file = directory.appendingPathComponent("Plain Fixture.txt")
+        let file = directory.appendingPathComponent(fileName)
         try source.write(to: file, atomically: true, encoding: .utf8)
         let book = try FileImportService.importFile(from: file)
         addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
         return book
+    }
+
+    // MARK: - Plain Text
+
+    /// Import a plain-text source through the production path.
+    private func importPlainTextBook(_ source: String) throws -> Book {
+        try importBook(source, fileName: "Plain Fixture.txt")
     }
 
     /// The content.md written for a .txt book reads exactly like the direct
@@ -300,5 +308,90 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         let reopened = try BookContentAnalysisService.load(book: book)
         XCTAssertTrue(reopened.usedPersistedIndex)
         assertSamePlainTextReading(cached: reopened.content, direct: direct)
+    }
+
+    // MARK: - HTML
+
+    /// Import an HTML source through the production path.
+    private func importHTMLBook(_ source: String) throws -> Book {
+        try importBook(source, fileName: "HTML Fixture.html")
+    }
+
+    /// The content.md written for an HTML book reads like the direct parser
+    /// (see assertSameHTMLReading): the same words in the same order, and the
+    /// same headings, each at the same word.
+    func testHTMLCacheFileReadsLikeTheDirectParser() throws {
+        let book = try importHTMLBook(HTMLFixture.combined)
+        XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .html)
+        XCTAssertEqual(cached.chapters.count, 1)
+        XCTAssertEqual(direct.chapters.count, 1)
+        let chapter = assertSameHTMLReading(
+            cached: try XCTUnwrap(cached.chapters.first), direct: try XCTUnwrap(direct.chapters.first)
+        )
+        XCTAssertEqual(normalizedHTMLReading(chapter.text), HTMLFixture.combinedWords)
+    }
+
+    /// An HTML book's cache strips duplicate navigation exactly as the direct
+    /// reader does: a nav whose headings repeat headings outside it is read
+    /// in neither reading, while a nav holding the only headings is read in
+    /// both.
+    func testHTMLCacheStripsDuplicateNavigationLikeTheDirectParser() throws {
+        let navigation = "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav>"
+        let readings = [
+            (navigation + "<h1 id=\"c1\">Chapter one</h1><p>Body.</p>", "Chapter one\n\nBody."),
+            (navigation + "<p>Body.</p>", "Contents\n\nChapter one\n\nBody."),
+        ]
+        for (source, text) in readings {
+            let book = try importHTMLBook(source)
+            let cached = try MarkdownCacheService.loadFromCache(for: book)
+            let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .html)
+            XCTAssertEqual(cached.chapters.map(\.text), [text], source)
+            assertSameHTMLReading(
+                cached: try XCTUnwrap(cached.chapters.first), direct: try XCTUnwrap(direct.chapters.first), context: source
+            )
+        }
+    }
+
+    /// A reader opening an HTML package written at format 3.0.6 must replace
+    /// its cache and persisted index, whose text fused table cells and read
+    /// Markdown-looking text as markup, with a rebuild that reads like the
+    /// direct parser, and afterwards reuse the rebuilt index.
+    func testHTMLCacheFromFormat306IsRebuiltWithLiteralTextAndBoundaries() throws {
+        let source = "<h1>Tides</h1><table><tr><td>Name</td><td>Depth</td></tr></table><p>*Starred* -- words</p>"
+        var book = try importHTMLBook(source)
+        let direct = try BookParser.parse(url: URL(fileURLWithPath: book.filePath), format: .html)
+        // Recreate what format 3.0.6 stored: the cells fused into one word
+        // and the paragraph copied verbatim for the Markdown reader.
+        try "# Tides\n\nNameDepth\n\n*Starred* -- words".write(
+            to: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory), atomically: true, encoding: .utf8
+        )
+        book.cacheFormatVersion = "3.0.6"
+        let legacy = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(legacy.chapters.map(\.text), ["Tides\n\nNameDepth\n\nStarred \u{2013} words"])
+        try book.saveBookInfoThrowing(contentIndex: legacy.contentIndex.replacingFormat(.html))
+
+        XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion))
+        let result = try BookContentAnalysisService.load(
+            book: book,
+            regenerateTextCache: MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+        )
+        XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertEqual(result.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertEqual(result.content.chapters.map(\.text), ["Tides\n\nName Depth\n\n*Starred* -- words"])
+        XCTAssertEqual(result.index.allHeadings.map(\.text), ["Tides"])
+        assertSameHTMLReading(
+            cached: try XCTUnwrap(result.content.chapters.first), direct: try XCTUnwrap(direct.chapters.first)
+        )
+
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        book.cacheFormatVersion = result.cacheFormatVersion
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex)
+        XCTAssertEqual(reopened.content.chapters.map(\.text), result.content.chapters.map(\.text))
     }
 }

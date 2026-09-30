@@ -19,11 +19,8 @@ enum HTMLToMarkdownConverter {
         }
 
         var result = ""
-        convertNode(body, into: &result, headingTargets: headingTargets)
-
-        // Clean up excessive blank lines (collapse 3+ newlines to 2)
-        result = collapseBlankLines(result)
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+        convertNode(body, into: &result, context: Context(headingTargets: headingTargets))
+        return result.trimmingCharacters(in: writtenWhitespace)
     }
 
     /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
@@ -89,44 +86,62 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Node Conversion
 
+    /// What conversion knows about the position of the node it converts.
+    private struct Context {
+        /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
+        var headingTargets: [String: MarkdownHeadingAnnotation]
+        /// Inside a link. Markdown cannot nest links, so a link here keeps
+        /// only its words.
+        var insideLink = false
+        /// Inside emphasis, whose words are marked once, by the outermost.
+        var insideEmphasis = false
+    }
+
     /// Recursively walk the DOM tree and emit Markdown for each element.
-    private static func convertNode(_ node: Node, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+    private static func convertNode(_ node: Node, into result: inout String, context: Context) {
         for child in node.getChildNodes() {
-            if let textNode = child as? TextNode {
-                // Emit text content, collapsing runs of whitespace
-                let text = textNode.getWholeText()
-                let collapsed = collapseWhitespace(text)
-                result += collapsed
-            } else if let element = child as? Element {
-                convertElement(element, into: &result, headingTargets: headingTargets)
-            }
+            convertChild(child, into: &result, context: context)
+        }
+    }
+
+    /// Convert one child node: text as Markdown literals, an element as its
+    /// Markdown. Comments and the data of scripts and styles write nothing.
+    private static func convertChild(_ child: Node, into result: inout String, context: Context) {
+        if let textNode = child as? TextNode {
+            appendText(textNode.getWholeText(), to: &result)
+        } else if let element = child as? Element {
+            convertElement(element, into: &result, context: context)
         }
     }
 
     /// Convert a single HTML element to its Markdown equivalent.
-    private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+    private static func convertElement(_ element: Element, into result: inout String, context: Context) {
+        let headingTargets = context.headingTargets
+        let tag = element.tagName().lowercased()
+        // Non-content elements are ignored without running selector queries.
         // Content outside the rendered reading flow (the hidden attribute, page
         // lists, and landmarks) contributes no words, headings, or destinations.
-        guard !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
-        let tag = element.tagName().lowercased()
+        guard tag != "script", tag != "style",
+              !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
+
+        // Keep the element's words apart from its neighbors' exactly where the
+        // direct reader does (HTMLReadingBoundary): a block is a paragraph of
+        // its own, and a table cell, ins, del, or s is at least a word of its
+        // own. A line break is its own boundary, the hard break it writes.
+        let boundary: HTMLReadingBoundary = tag == "br" ? .none : .of(element, tag: tag)
+        separate(at: boundary, in: &result)
 
         // Preserve a TOC target in the Markdown stream at its actual DOM
         // position. Inline targets stay inline; block targets precede their
         // block. The annotation never contributes words to speech.
         if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
-            emit(annotation, inline: !element.isBlock(), into: &result)
+            emit(annotation, inline: boundary != .paragraph, into: &result)
         }
 
         switch tag {
-        // Non-content elements are ignored without running selector queries.
-        case "script", "style":
-            return
-
         // Headings
         case "h1", "h2", "h3", "h4", "h5", "h6":
-            let level = Int(String(tag.last!)) ?? 1
-            let prefix = String(repeating: "#", count: level)
-            ensureBlankLine(&result)
+            let level = HTMLReadingText.headingLevel(of: tag) ?? 1
             // A destination inside a heading (such as an anchor before its
             // words) names that heading. Emit it as its own block immediately
             // before the heading line, never inside the label: the Markdown
@@ -135,123 +150,109 @@ enum HTMLToMarkdownConverter {
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
                 emit(annotation, inline: false, into: &result)
             }
-            var label = ""
-            convertNode(element, into: &label, headingTargets: [:])
-            result += "\(prefix) \(singleLine(label))\n\n"
-
-        // Paragraphs
-        case "p":
-            ensureBlankLine(&result)
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "\n\n"
+            // The heading line holds the label the direct reader gives it,
+            // as literal text: one line even when the heading contains a line
+            // break or a block, and no link, emphasis, or code syntax, whose
+            // markers the parser would otherwise have to keep out of the label.
+            let label = HTMLReadingText.label(of: element)
+            result += String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label) + "\n\n"
 
         // Line breaks
         case "br":
             result += "  \n"
 
-        // Emphasis
-        case "em", "i":
-            result += "*"
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "*"
-
-        // Strong
-        case "strong", "b":
-            result += "**"
-            convertNode(element, into: &result, headingTargets: headingTargets)
-            result += "**"
+        // Emphasis and strong emphasis. Only the outermost is marked: emphasis
+        // inside emphasis adds nothing a listener hears, and nested or
+        // touching delimiter runs are where CommonMark stops matching pairs.
+        case "em", "i", "strong", "b":
+            var inner = context
+            inner.insideEmphasis = true
+            let start = result.utf8.count
+            convertNode(element, into: &result, context: inner)
+            if !context.insideEmphasis {
+                emphasize(from: start, in: &result, delimiter: tag == "em" || tag == "i" ? "*" : "**")
+            }
 
         // Links
         case "a":
             let href = (try? element.attr("href")) ?? ""
-            if href.isEmpty {
+            if href.isEmpty || context.insideLink {
                 // A named anchor such as <a id="page_12"/> marks a destination;
                 // it is not a link. Markdown would keep bare brackets as literal
                 // text in speech and in heading labels ("[]2"), so emit only
-                // whatever the anchor encloses.
-                convertNode(element, into: &result, headingTargets: headingTargets)
+                // whatever the anchor encloses. A link inside a link, which
+                // Markdown cannot nest, likewise keeps only its words.
+                convertNode(element, into: &result, context: context)
             } else {
-                result += "["
-                convertNode(element, into: &result, headingTargets: headingTargets)
-                result += "](\(href))"
+                var inner = context
+                inner.insideLink = true
+                let start = result.utf8.count
+                convertNode(element, into: &result, context: inner)
+                wrap(from: start, in: &result, opener: "[", closer: "](" + destination(href) + ")")
             }
 
-        // Images — emit alt text for accessibility
+        // Images — emit alt text for accessibility, read like any other text.
+        // Whitespace at the ends of the alt text is read around the image, as
+        // the direct reader reads it, rather than inside the brackets.
         case "img":
-            let alt = (try? element.attr("alt")) ?? ""
+            let alt = HTMLReadingText.collapsingWhitespace((try? element.attr("alt")) ?? "")
             let src = (try? element.attr("src")) ?? ""
-            result += "![\(alt)](\(src))"
+            appendSpaced(alt, to: &result) { core, _ in
+                "![" + MarkdownLiteral.escaped(core) + "](" + destination(src) + ")"
+            }
 
-        // Unordered lists
-        case "ul":
-            ensureBlankLine(&result)
-            convertListItems(element, ordered: false, into: &result, headingTargets: headingTargets)
-            result += "\n"
-
-        // Ordered lists
-        case "ol":
-            ensureBlankLine(&result)
-            convertListItems(element, ordered: true, into: &result, headingTargets: headingTargets)
-            result += "\n"
-
-        // List items (handled by convertListItems, but just in case)
-        case "li":
-            convertNode(element, into: &result, headingTargets: headingTargets)
+        // Lists
+        case "ul", "ol":
+            convertListItems(element, ordered: tag == "ol", into: &result, context: context)
 
         // Blockquotes
         case "blockquote":
-            ensureBlankLine(&result)
             var inner = ""
-            convertNode(element, into: &inner, headingTargets: headingTargets)
+            convertNode(element, into: &inner, context: context)
             // Prefix each line with >
-            let lines = inner.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lines = inner.trimmingCharacters(in: writtenWhitespace)
                 .components(separatedBy: "\n")
             for line in lines {
                 result += "> \(line)\n"
             }
-            result += "\n"
 
-        // Preformatted / code blocks
+        // Preformatted text becomes a fenced code block holding its lines
+        // exactly, which the reader reads verbatim. The fence is longer than
+        // any run of backticks inside, so no line of the text can close it,
+        // and it always stands on a line of its own. Destinations inside the
+        // block precede it rather than becoming words of the code.
         case "pre":
-            ensureBlankLine(&result)
-            result += "```\n"
-            // Get raw text content without further processing
-            let text = (try? element.text()) ?? ""
-            result += text
-            if !text.hasSuffix("\n") { result += "\n" }
-            result += "```\n\n"
-
-        // Inline code
-        case "code":
-            // If parent is <pre>, skip the inline backticks
-            if element.parent()?.tagName().lowercased() == "pre" {
-                convertNode(element, into: &result, headingTargets: headingTargets)
-            } else {
-                result += "`"
-                convertNode(element, into: &result, headingTargets: headingTargets)
-                result += "`"
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                emit(annotation, inline: false, into: &result)
             }
+            let code = HTMLReadingText.preformattedText(of: element)
+            // Whitespace alone holds nothing to read.
+            guard code.unicodeScalars.contains(where: { !$0.properties.isWhitespace }) else { break }
+            let fence = String(repeating: "`", count: max(3, longestRun(of: "`", in: code) + 1))
+            let lineEnd = code.unicodeScalars.last == "\n" ? "" : "\n"
+            result += fence + "\n" + code + lineEnd + fence + "\n"
+
+        // Inline code. A code span is read verbatim, so destinations inside
+        // it precede it rather than becoming words of the code.
+        case "code":
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                emit(annotation, inline: true, into: &result)
+            }
+            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
 
         // Horizontal rules
         case "hr":
-            ensureBlankLine(&result)
             result += "---\n\n"
 
-        // Block-level containers — just recurse into children
-        case "div", "section", "article", "main", "header", "footer", "nav",
-             "aside", "figure", "figcaption", "details", "summary",
-             "body", "html", "span", "sup", "sub", "small", "mark",
-             "abbr", "cite", "dfn", "time", "var", "samp", "kbd",
-             "ruby", "rt", "rp", "bdi", "bdo", "wbr",
-             "table", "thead", "tbody", "tfoot", "tr", "td", "th",
-             "caption", "colgroup", "col",
-             "dl", "dt", "dd":
-            convertNode(element, into: &result, headingTargets: headingTargets)
-
-        // Unknown elements — just emit their text children
+        // Paragraphs, containers, and table and definition list parts, whose
+        // boundaries were written above, and phrasing or unknown elements:
+        // their children say what they hold. A table row is therefore one
+        // paragraph of its cells, each a word or more of its own.
         default:
-            convertNode(element, into: &result, headingTargets: headingTargets)
+            convertNode(element, into: &result, context: context)
         }
+
+        separate(at: boundary, in: &result)
     }
 
     // MARK: - Navigation Annotations
@@ -340,25 +341,33 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - List Conversion
 
-    /// Convert list item children of a <ul> or <ol> to Markdown.
-    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
-        // A hidden item is not rendered: it must neither leave an empty bullet
-        // nor take a number from the visible items that follow it.
-        let items = listElement.getChildNodes().compactMap { node -> Element? in
-            guard let element = node as? Element,
-                  element.tagName().lowercased() == "li",
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { return nil }
-            return element
-        }
-        for (index, item) in items.enumerated() {
-            let bullet = ordered ? "\(index + 1). " : "- "
+    /// Convert the children of a <ul> or <ol> to Markdown: each list item
+    /// after its bullet, and anything else the list holds (text, or a list
+    /// nested directly inside the list) where it stands between the items,
+    /// as the direct reader reads it, so none of its words are lost.
+    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, context: Context) {
+        var itemCount = 0
+        // Content between two items, collected until the next item begins.
+        var between = ""
+        for child in listElement.getChildNodes() {
+            guard let item = child as? Element, item.tagName().lowercased() == "li" else {
+                convertChild(child, into: &between, context: context)
+                continue
+            }
+            // A hidden item is not rendered: it must neither leave an empty
+            // bullet nor take a number from the visible items that follow it.
+            guard !PublicationSemantics.isExcludedFromReadingFlow(item) else { continue }
+            appendBlock(between, to: &result)
+            between = ""
+            itemCount += 1
+            let bullet = ordered ? "\(itemCount). " : "- "
             result += bullet
             var itemContent = ""
             // Go through the element entry point so an id on the li itself
             // receives its annotation as well as targets inside the item.
-            convertElement(item, into: &itemContent, headingTargets: headingTargets)
+            convertElement(item, into: &itemContent, context: context)
             // Trim the item content and indent continuation lines
-            let trimmed = itemContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmed = itemContent.trimmingCharacters(in: writtenWhitespace)
             let lines = trimmed.components(separatedBy: "\n")
             for (lineIndex, line) in lines.enumerated() {
                 if lineIndex == 0 {
@@ -370,9 +379,42 @@ enum HTMLToMarkdownConverter {
                 }
             }
         }
+        appendBlock(between, to: &result)
+    }
+
+    /// Write Markdown converted apart from its surroundings (the content a
+    /// list holds between its items) as blocks of its own, with a blank line
+    /// on either side, or nothing when it holds no words. Written straight
+    /// after an item it would run into that item's paragraph, and the next
+    /// item, if numbered other than 1, could not interrupt it: its number
+    /// would be read aloud. Converted from an empty buffer, the content
+    /// already begins as a block would.
+    private static func appendBlock(_ markdown: String, to result: inout String) {
+        let trimmed = markdown.trimmingCharacters(in: writtenWhitespace)
+        guard !trimmed.isEmpty else { return }
+        ensureBlankLine(&result)
+        result += trimmed
+        ensureBlankLine(&result)
     }
 
     // MARK: - Whitespace Helpers
+
+    /// Keep the words on either side of a boundary apart: a blank line
+    /// around a paragraph, at least a space around a word. Both are written
+    /// only when missing, so nested and empty blocks never pile up blank
+    /// lines, and nothing is written at the start of the Markdown.
+    private static func separate(at boundary: HTMLReadingBoundary, in result: inout String) {
+        switch boundary {
+        case .none:
+            break
+        case .word:
+            if !isAtWordStart(result) {
+                result += " "
+            }
+        case .paragraph:
+            ensureBlankLine(&result)
+        }
+    }
 
     /// Ensure the result ends with a blank line (two newlines).
     private static func ensureBlankLine(_ result: inout String) {
@@ -386,30 +428,237 @@ enum HTMLToMarkdownConverter {
         }
     }
 
-    /// Collapse runs of whitespace (spaces, tabs, newlines) into a single space.
-    private static func collapseWhitespace(_ text: String) -> String {
-        text.replacingOccurrences(
-            of: "\\s+",
-            with: " ",
-            options: .regularExpression
-        )
+    /// The whitespace conversion writes between words and blocks: spaces and
+    /// line feeds. Converted Markdown is trimmed of these alone, because
+    /// `CharacterSet.whitespacesAndNewlines` also holds characters such as
+    /// U+200B that are words of the reading.
+    private static let writtenWhitespace = CharacterSet(charactersIn: " \n")
+
+    /// Whether the next text begins a word: at the start of the Markdown, of
+    /// a line, or after a space.
+    private static func isAtWordStart(_ result: String) -> Bool {
+        guard let last = result.unicodeScalars.last else { return true }
+        return last == " " || last == "\n"
     }
 
-    /// A Markdown heading is a single line. Join a heading's converted lines
-    /// with spaces: a line break (<br/>) or stray block inside a heading would
-    /// otherwise end it early, cutting its label short and leaving the rest of
-    /// its words, with any enclosing link syntax, as literal prose to be read.
-    private static func singleLine(_ text: String) -> String {
-        guard text.contains("\n") else { return text }
-        return text.replacingOccurrences(of: "[ \\t]*\\n[ \\t\\n]*", with: " ", options: .regularExpression)
+    // MARK: - Literal Text
+
+    /// Write the words of a text node as Markdown literals, so every
+    /// character is read as written. Whitespace collapses exactly as the
+    /// direct reader collapses it (HTMLReadingText). A space is dropped at the
+    /// start of a word, where it would be two spaces or begin a line; four
+    /// spaces there would even begin a code block.
+    private static func appendText(_ raw: String, to result: inout String) {
+        var text = HTMLReadingText.collapsingWhitespace(raw)
+        // Scalars decide: a combining mark after a space joins it into one
+        // Character, which `hasPrefix(" ")` would not match.
+        if text.unicodeScalars.first == " ", isAtWordStart(result) {
+            text.unicodeScalars.removeFirst()
+        }
+        result += MarkdownLiteral.escaped(text)
     }
 
-    /// Collapse three or more consecutive newlines into exactly two.
-    private static func collapseBlankLines(_ text: String) -> String {
-        text.replacingOccurrences(
-            of: "\\n{3,}",
-            with: "\n\n",
-            options: .regularExpression
-        )
+    /// Write inline words (`text`, with whitespace collapsed) as `render`
+    /// writes them after the Markdown's last scalar. The space collapsing
+    /// leaves at either end is written outside, as an ordinary space, so the
+    /// rendered syntax never begins or ends with one (a code span would drop
+    /// it and run the words around it together). Any other character, a
+    /// no-break space included, is words.
+    private static func appendSpaced(
+        _ text: String,
+        to result: inout String,
+        _ render: (_ words: String, _ previous: Unicode.Scalar?) -> String
+    ) {
+        // Scalars decide where the words begin and end: a combining mark
+        // after a space joins it into one Character with the space.
+        let scalars = text.unicodeScalars
+        let start = scalars.firstIndex { $0 != " " } ?? scalars.endIndex
+        let end = scalars.lastIndex { $0 != " " }.map { scalars.index(after: $0) } ?? start
+        let core = String(String.UnicodeScalarView(scalars[start..<end]))
+        if start > scalars.startIndex {
+            appendText(" ", to: &result)
+        }
+        result += render(core, result.unicodeScalars.last)
+        if !core.isEmpty, end < scalars.endIndex {
+            appendText(" ", to: &result)
+        }
+    }
+
+    /// A code span holding `code` (one line with no whitespace at either
+    /// end), whose text the reader reads verbatim; nothing for empty code.
+    /// The fence is one backtick longer than the longest run of backticks
+    /// inside, so none of them can close it, and CommonMark's padding space
+    /// separates a backtick at either end from the fence. Code ending in a
+    /// backslash is padded too, so a backslash never stands before a closing
+    /// backtick, where `emphasize` would take it for an escape. Straight
+    /// after a backtick (another span's closing fence) an opening fence would
+    /// merge with it into one run, and neither span would close, so the code
+    /// is written as literal text, which reads the same.
+    private static func codeSpan(_ code: String, after previous: Unicode.Scalar?) -> String {
+        guard !code.isEmpty else { return "" }
+        guard previous != "`" else { return MarkdownLiteral.escaped(code) }
+        let fence = String(repeating: "`", count: longestRun(of: "`", in: code) + 1)
+        let scalars = code.unicodeScalars
+        let padding = scalars.first == "`" || scalars.last == "`" || scalars.last == "\\" ? " " : ""
+        return fence + padding + code + padding + fence
+    }
+
+    /// A link or image destination in angle brackets, which may hold spaces
+    /// and parentheses. Its whitespace is collapsed, because a destination
+    /// cannot span lines, and each `<`, `>`, and backslash is escaped, so
+    /// nothing in the URL can end it early. Nothing reads a destination
+    /// aloud; it is kept only so the link or image stays one.
+    private static func destination(_ url: String) -> String {
+        var escaped = String.UnicodeScalarView()
+        let collapsed = HTMLReadingText.collapsingWhitespace(url).trimmingCharacters(in: .whitespaces)
+        for scalar in collapsed.unicodeScalars {
+            if scalar == "<" || scalar == ">" || scalar == "\\" {
+                escaped.append("\\")
+            }
+            escaped.append(scalar)
+        }
+        return "<" + String(escaped) + ">"
+    }
+
+    // MARK: - Inline Wrappers
+
+    /// Wrap the Markdown written since `start` (a UTF-8 offset into `result`)
+    /// in `opener` and `closer`, leaving whitespace at either end outside.
+    /// Words spanning lines (a block or line break inside the element) cannot
+    /// form one inline span, and empty content needs no wrapper: both are
+    /// left unwrapped, so only the words remain.
+    private static func wrap(from start: Int, in result: inout String, opener: String, closer: String) {
+        let scalars = result.unicodeScalars
+        let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
+        guard !scalars[contentStart...].contains("\n") else { return }
+        var lower = contentStart
+        var upper = scalars.endIndex
+        while lower < upper, scalars[lower] == " " {
+            lower = scalars.index(after: lower)
+        }
+        while upper > lower, scalars[scalars.index(before: upper)] == " " {
+            upper = scalars.index(before: upper)
+        }
+        guard lower < upper else { return }
+        insert(opener, at: lower, closer, at: upper, afterContentStart: contentStart, in: &result)
+    }
+
+    /// Mark the Markdown written since `start` as emphasis with `delimiter`,
+    /// but only where CommonMark will read the pair as emphasis. A pair it
+    /// does not match is read aloud as asterisks, while emphasis changes
+    /// nothing a listener hears, so otherwise the words are left unmarked.
+    ///
+    /// Whitespace, punctuation, and symbols at either end of the words stay
+    /// outside the pair ("*Titanic*." rather than "*Titanic.*"), so each
+    /// delimiter normally touches a letter, digit, or mark, which makes it
+    /// flanking whatever stands on its other side. Where the words begin
+    /// with syntax that cannot move (a link, image, code span, or
+    /// destination), the opener must follow whitespace, punctuation, or a
+    /// line start. Where they end with such syntax they stay unmarked, since
+    /// what will follow the closer is not yet written. Nor is an opener
+    /// written right after a delimiter, with which it would merge into one
+    /// run: this is what keeps emphasis beside emphasis apart.
+    private static func emphasize(from start: Int, in result: inout String, delimiter: String) {
+        let scalars = result.unicodeScalars
+        let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
+        guard !scalars[contentStart...].contains("\n") else { return }
+        var lower = contentStart
+        var upper = scalars.endIndex
+        // Leave whitespace, escapes (a backslash and the ASCII punctuation it
+        // makes literal), and other punctuation or symbols before the pair.
+        while lower < upper {
+            let scalar = scalars[lower]
+            if scalar == "\\" {
+                lower = scalars.index(lower, offsetBy: 2, limitedBy: upper) ?? upper
+            } else if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+                lower = scalars.index(after: lower)
+            } else {
+                break
+            }
+        }
+        // And the same after it.
+        while upper > lower {
+            let last = scalars.index(before: upper)
+            let scalar = scalars[last]
+            if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+                upper = last
+            } else if MarkdownLiteral.isASCIIPunctuation(scalar), isEscaped(last, in: scalars, notBefore: lower) {
+                upper = scalars.index(before: last)
+            } else {
+                break
+            }
+        }
+        guard lower < upper else { return }
+        let previous = lower > scalars.startIndex ? scalars[scalars.index(before: lower)] : nil
+        let followsBoundary = previous.map { $0 == " " || $0 == "\n" || MarkdownLiteral.isASCIIPunctuation($0) } ?? true
+        guard previous != "*",
+              isFlankingSafe(scalars[lower]) || followsBoundary,
+              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return }
+        insert(delimiter, at: lower, delimiter, at: upper, afterContentStart: contentStart, in: &result)
+    }
+
+    /// Letters, digits, and marks. CommonMark counts none of them as
+    /// whitespace or punctuation, so a delimiter beside one is flanking on
+    /// that side whatever stands on its other side.
+    private static func isFlankingSafe(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+             .decimalNumber, .letterNumber, .otherNumber,
+             .nonspacingMark, .spacingMark, .enclosingMark:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Whether the ASCII punctuation at `index` is escaped: an odd number of
+    /// backslashes, counted back no further than `lower`, stands before it.
+    /// Outside code spans every backslash the converter writes belongs to an
+    /// escape, and a code span never ends with one (see `codeSpan`), so a
+    /// closing backtick or bracket is never mistaken for escaped text.
+    private static func isEscaped(
+        _ index: String.Index,
+        in scalars: String.UnicodeScalarView,
+        notBefore lower: String.Index
+    ) -> Bool {
+        var backslashes = 0
+        var position = index
+        while position > lower {
+            position = scalars.index(before: position)
+            guard scalars[position] == "\\" else { break }
+            backslashes += 1
+        }
+        return backslashes % 2 == 1
+    }
+
+    /// Rewrite the Markdown from `contentStart` to the end of `result` with
+    /// `opener` inserted at `lower` and `closer` at `upper`. All three
+    /// indexes lie in that final stretch, so the work is proportional to the
+    /// wrapped content rather than to the chapter.
+    private static func insert(
+        _ opener: String, at lower: String.Index,
+        _ closer: String, at upper: String.Index,
+        afterContentStart contentStart: String.Index,
+        in result: inout String
+    ) {
+        let scalars = result.unicodeScalars
+        var wrapped = String.UnicodeScalarView()
+        wrapped.append(contentsOf: scalars[contentStart..<lower])
+        wrapped.append(contentsOf: opener.unicodeScalars)
+        wrapped.append(contentsOf: scalars[lower..<upper])
+        wrapped.append(contentsOf: closer.unicodeScalars)
+        wrapped.append(contentsOf: scalars[upper...])
+        result.unicodeScalars.replaceSubrange(contentStart..., with: wrapped)
+    }
+
+    /// The length of the longest run of `scalar` in `text`.
+    private static func longestRun(of scalar: Unicode.Scalar, in text: String) -> Int {
+        var longest = 0
+        var current = 0
+        for candidate in text.unicodeScalars {
+            current = candidate == scalar ? current + 1 : 0
+            longest = max(longest, current)
+        }
+        return longest
     }
 }

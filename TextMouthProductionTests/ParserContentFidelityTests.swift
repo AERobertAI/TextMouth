@@ -1,3 +1,4 @@
+import SwiftSoup
 import XCTest
 @testable import TextMouth
 
@@ -69,6 +70,15 @@ final class ParserContentFidelityTests: XCTestCase {
         let first = text.range(of: "\n\nIntroduction\n\n").location + 2
         let second = text.range(of: "Introduction", options: .backwards).location
         XCTAssertEqual(chapter.headings.map(\.characterOffset), [first, second])
+    }
+
+    /// A heading whose literal text merely spells "<!--" holds no comment,
+    /// so its label is swift-markdown's plain text exactly: nothing, U+200B
+    /// included, is trimmed from its ends. (A real comment in a heading is
+    /// still left out of the label; see EPUBHeadingRecoveryTests.)
+    func testMarkdownHeadingSpellingACommentKeepsItsLabelExactly() throws {
+        let chapter = try MarkdownDocParser.parseChapter(markdown: "# \\<\\!\\-\\- note \\-\\-\\> x\u{200B}\n\nBody.")
+        XCTAssertEqual(chapter.headings.map(\.text), ["<!-- note --> x\u{200B}"])
     }
 
     /// Hyperlink formatting should survive while its words appear only once.
@@ -337,6 +347,335 @@ final class ParserContentFidelityTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - HTML
+
+    /// The one chapter HTMLParser reads directly from `html`, as when a book
+    /// is opened before its cache exists.
+    private func directHTMLReading(_ html: String) throws -> Chapter {
+        try XCTUnwrap(HTMLParser.parse(html: html, title: "HTML").chapters.first)
+    }
+
+    /// Every boundary keeps the words on either side apart in the direct
+    /// reading, after the element as well as before it: nested blocks, text
+    /// after a block, table rows and cells, definition entries, line breaks,
+    /// and the edit elements SwiftSoup counts as blocks.
+    func testDirectHTMLKeepsWordsApartAtEveryBoundary() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<div><div>One</div><div>Two</div></div>Three", "One Two Three"),
+            ("<section>Tide</section>tables<aside>list</aside>soundings", "Tide tables list soundings"),
+            (HTMLFixture.table, "Soundings Name Depth Odile 30 Bruno 41"),
+            (HTMLFixture.definitions, "Ebb The falling tide. Flood The rising tide."),
+            ("<p>High<br/>water</p>", "High water"),
+            ("<p>Fare<del>ten</del>eight<ins>pence</ins></p>", "Fare ten eight pence"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try directHTMLReading(html).text, text, html)
+        }
+    }
+
+    /// An image is read as its alt text, with the alt's whitespace collapsed
+    /// like any other text's.
+    func testDirectHTMLReadsImageAltText() throws {
+        let chapter = try directHTMLReading("<p>See the <img src=\"m.png\" alt=\" tide\n   map \"/> below.</p>")
+        XCTAssertEqual(chapter.text, "See the tide map below.")
+    }
+
+    /// A heading's label is the words the reading hears for it: alt text is
+    /// part of it and hidden content is not. A heading nested inside another
+    /// heading, or inside preformatted text or code, is part of that text
+    /// rather than a heading of its own.
+    func testDirectHTMLHeadingLabelsAreTheirReadWords() throws {
+        let chapter = try directHTMLReading("""
+        <h1>Part <span hidden="">secret</span><img src="n.png" alt="Two"/></h1>
+        <h2>Outer <span><h3>Inner</h3></span></h2>
+        <pre><h4>Preformatted</h4></pre><div><code><h5>Coded</h5></code></div>
+        """)
+        XCTAssertEqual(chapter.text, "Part Two Outer Inner Preformatted Coded")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Part Two", "Outer Inner"])
+        XCTAssertEqual(chapter.headings.map(\.level), [1, 2])
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [0, ("Part Two " as NSString).length])
+    }
+
+    /// The Markdown cache's reading of `html`: the Markdown the cache writes
+    /// for an HTML book (duplicate navigation stripped, as in the direct
+    /// reading), parsed exactly as the cache loader parses it.
+    private func cachedHTMLReading(_ html: String) throws -> Chapter {
+        let markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "HTML", bookAuthor: "Author")
+        XCTAssertEqual(content.chapters.count, 1, markdown)
+        return try XCTUnwrap(content.chapters.first)
+    }
+
+    /// Text that looks like Markdown or HTML is read from the cache exactly
+    /// as written: each paragraph keeps every character, in order, and none
+    /// becomes a heading, list, quotation, rule, link, tag, or smart quote.
+    func testCachedHTMLKeepsMarkdownLookalikesLiteral() throws {
+        let paragraphs = HTMLFixture.lookalikeParagraphs
+        let html = paragraphs.map { "<p>\(HTMLFixture.escaped($0))</p>" }.joined(separator: "\n")
+        let chapter = try cachedHTMLReading(html)
+        XCTAssertEqual(chapter.text.components(separatedBy: "\n\n"), paragraphs)
+        XCTAssertEqual(chapter.headings, [])
+    }
+
+    /// A heading line holds its label as literal text: markup characters stay
+    /// in the label and in the words read, and the link, emphasis, code, line
+    /// break, and image inside the heading leave only their words.
+    func testCachedHTMLHeadingLabelsKeepMarkupCharacters() throws {
+        let chapter = try cachedHTMLReading("""
+        <h2>Part *One* [draft] #1 &lt;b&gt; `v2` \\ -- ##</h2><p>Body.</p>
+        <h3><a href="toc.xhtml#c1">Chapter <em>One</em></a><br/><code>x*y</code> <img src="m.png" alt="[map]"/></h3>
+        """)
+        let labels = ["Part *One* [draft] #1 <b> `v2` \\ -- ##", "Chapter One x*y [map]"]
+        XCTAssertEqual(chapter.headings.map(\.text), labels)
+        XCTAssertEqual(chapter.headings.map(\.level), [2, 3])
+        XCTAssertEqual(chapter.text, [labels[0], "Body.", labels[1]].joined(separator: "\n\n"))
+    }
+
+    /// Inline code is read verbatim, backticks and all. Whitespace at its
+    /// edges is read as the spaces around it.
+    func testCachedHTMLCodeSpansKeepBackticksAndPunctuation() throws {
+        let chapter = try cachedHTMLReading("""
+        <p>Run <code>echo `date` *now* \\n</code>, type <code>`</code> or <code>``x``</code> then<code> spaced </code>.</p>
+        """)
+        XCTAssertEqual(chapter.text, "Run echo `date` *now* \\n, type ` or ``x`` then spaced .")
+    }
+
+    /// Code beside code is read as written. A second span's opening fence
+    /// would merge with the first span's closing fence into one run of
+    /// backticks; neither span would close, and the backticks would be read.
+    func testCachedHTMLAdjacentCodeSpansKeepTheirWords() throws {
+        let chapter = try cachedHTMLReading("<p>Type <code>``</code><code>|</code><code>x</code> now.</p>")
+        XCTAssertEqual(chapter.text, "Type ``|x now.")
+    }
+
+    /// Alt text is read as written, brackets included.
+    func testCachedHTMLImageAltTextKeepsBrackets() throws {
+        let chapter = try cachedHTMLReading("<p>Chart <img src=\"c.png\" alt=\"Figure [1]: tides\"/> here.</p>")
+        XCTAssertEqual(chapter.text, "Chart Figure [1]: tides here.")
+    }
+
+    /// Links and images keep their syntax whatever their destination holds
+    /// (spaces, parentheses, angle brackets, a backslash), so none of it is
+    /// read. Alt text is read with its outer whitespace around the image. A
+    /// link holding blocks, or nothing, is written as its words alone.
+    func testCachedHTMLLinksAndImagesKeepTheirSyntaxWhateverTheirDestination() throws {
+        let html = """
+        <p>See <a href="notes (draft).xhtml#n 1">the <em>notes</em></a> and <a href="a&lt;b&gt;\\c">odd</a>.</p>
+        <p><img src="tide (1).png" alt=" Chart [1] "/>after</p>
+        <div><a href="x.xhtml"><span>Block</span><div>link</div></a><a href="y.xhtml"> </a>end</div>
+        """
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertTrue(markdown.contains("[the *notes*](<notes (draft).xhtml#n 1>)"), markdown)
+        XCTAssertTrue(markdown.contains("[odd](<a\\<b\\>\\\\c>)"), markdown)
+        XCTAssertTrue(markdown.contains("![Chart \\[1\\]](<tide (1).png>) after"), markdown)
+        XCTAssertFalse(markdown.contains("[Block"), markdown)
+        XCTAssertFalse(markdown.contains("y.xhtml"), markdown)
+        XCTAssertEqual(
+            try cachedHTMLReading(html).text,
+            "See the notes and odd.\n\nChart [1] after\n\nBlock\n\nlink\n\nend"
+        )
+    }
+
+    /// Emphasis never reaches speech as asterisks: not with whitespace or
+    /// punctuation at its edges, nor when empty, nested, beside other
+    /// emphasis, or around blocks, links, code, or line breaks. Each reads
+    /// as its words alone. Plainly emphasized words keep their markers, with
+    /// edge punctuation outside them.
+    func testCachedHTMLEmphasisMarkersAreNeverRead() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<p>The<i> Titanic </i>sank</p>", "The Titanic sank"),
+            ("<p><b>Note:</b>Read <i>\"Stop!\"</i>, she said.</p>", "Note:Read \"Stop!\", she said."),
+            ("<p><i>Mr.</i><i>Smith</i> and <b>a</b><b>b</b></p>", "Mr.Smith and ab"),
+            ("<p><b>Warning: <i>hot</i> surface</b></p>", "Warning: hot surface"),
+            ("<p>a<em></em>b<strong> </strong>c</p>", "ab c"),
+            ("<em><div>A</div><div>B</div></em>", "A\n\nB"),
+            ("<p>Wait<i>...</i><i>*</i>x<i>*y</i></p>", "Wait...*x*y"),
+            ("<p><em>“Quoted”</em> 🙂<i>🙂 smile</i></p>", "“Quoted” 🙂🙂 smile"),
+            ("<p><em><a href=\"x\">see</a></em>here and x<em><code>y</code> z</em></p>", "seehere and xy z"),
+            ("<p><em>line<br/>break</em></p>", "line\nbreak"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try cachedHTMLReading(html).text, text, html)
+        }
+        let markdown = try HTMLToMarkdownConverter.convert("<p>The <i>Titanic</i>'s <b>last voyage</b>.</p>")
+        XCTAssertEqual(markdown, "The *Titanic*\\'s **last voyage**\\.")
+    }
+
+    /// The cache keeps words apart at every boundary the direct reading
+    /// has: blocks and definition entries are paragraphs, a table row is one
+    /// paragraph of its cells separated by spaces, and line breaks and edit
+    /// elements separate words within a paragraph.
+    func testCachedHTMLKeepsWordsApartAtEveryBoundary() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<div><div>One</div><div>Two</div></div>Three", "One\n\nTwo\n\nThree"),
+            ("<section>Tide</section>tables<aside>list</aside>soundings", "Tide\n\ntables\n\nlist\n\nsoundings"),
+            (HTMLFixture.table, "Soundings\n\nName Depth\n\nOdile 30\n\nBruno 41"),
+            (HTMLFixture.definitions, "Ebb\n\nThe falling tide.\n\nFlood\n\nThe rising tide."),
+            ("<p>High<br/>water</p>", "High\nwater"),
+            ("<p>Fare<del>ten</del>eight<ins>pence</ins></p>", "Fare ten eight pence"),
+            ("<table><tr><td>Top<br/>bottom</td><td>Side</td></tr></table>", "Top\nbottom Side"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try cachedHTMLReading(html).text, text, html)
+        }
+    }
+
+    /// Preformatted text keeps its lines, indentation, tabs, and blank lines
+    /// in the cache, markup-looking text included. A line of three backticks
+    /// inside cannot close the block early, and the paragraph after the
+    /// block is still read as prose.
+    func testCachedHTMLPreformattedTextKeepsItsLines() throws {
+        let code = "let x = 1\n    indented()\n```\nnot closed ``\n\n\ttabbed <b>*x*</b> \\"
+        let chapter = try cachedHTMLReading("<p>Before.</p><pre>\(HTMLFixture.escaped(code))</pre><p>After.</p>")
+        XCTAssertTrue(chapter.text.hasPrefix("Before.\n\n\(code)\n"), chapter.text)
+        XCTAssertTrue(chapter.text.hasSuffix("\nAfter."), chapter.text)
+    }
+
+    /// Markup inside preformatted text (the spans of highlighted code and
+    /// line breaks) keeps the text's layout, and a destination inside it
+    /// precedes the block instead of becoming words of the code.
+    func testCachedHTMLPreformattedMarkupKeepsLayoutAndDestinations() throws {
+        let html = """
+        <pre><code><span class="k">let</span> <span id="tide">tide</span> =
+          <b>ebb</b><br/>flood</code></pre>
+        """
+        let targets = ["tide": MarkdownHeadingAnnotation(level: 2, text: "Tide target")]
+        let markdown = try HTMLToMarkdownConverter.convert(html, headingTargets: targets)
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
+        XCTAssertEqual(chapter.text, "let tide =\n  ebb\nflood")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Tide target"])
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [0])
+    }
+
+    /// Anything a list holds outside its items (text, a list nested directly
+    /// inside the list, a paragraph) is read in place instead of dropped, and
+    /// a hidden item is still left out.
+    func testCachedHTMLListsKeepContentOutsideTheirItems() throws {
+        let html = """
+        <ul>Before<li>One</li>between<li>Two</li><ul><li>Nested</li></ul><p>After</p></ul>
+        <ol><li>First</li><li hidden="">Hidden</li><li>Second</li></ol>
+        """
+        let words = ["Before", "One", "between", "Two", "Nested", "After", "First", "Second"]
+        XCTAssertEqual(try cachedHTMLReading(html).text.split(whereSeparator: \.isWhitespace).map(String.init), words)
+        XCTAssertTrue(try HTMLToMarkdownConverter.convert(html).hasSuffix("1. First\n2. Second"))
+    }
+
+    /// Content between list items is a block of its own, so the ordered item
+    /// after it, whatever its number, is still an item: Markdown lets only
+    /// an item numbered 1 interrupt a paragraph, and the number of any other
+    /// item written straight after the content would be read aloud.
+    func testCachedHTMLListItemNumbersAreNeverReadAfterContentBetweenItems() throws {
+        let chapter = try cachedHTMLReading("""
+        <ol><li></li>stray<li>next</li><li>last</li></ol><ol><li>A</li>between<li>B</li></ol>
+        """)
+        let words = ["stray", "next", "last", "A", "between", "B"]
+        XCTAssertEqual(chapter.text.split(whereSeparator: \.isWhitespace).map(String.init), words)
+    }
+
+    /// Boundaries are written only where missing, so nested and empty blocks
+    /// never pile up blank lines around the words they hold.
+    func testCachedHTMLNestedAndEmptyBlocksWriteOneBlankLine() throws {
+        let markdown = try HTMLToMarkdownConverter.convert("""
+        <div><p></p><section><div><p>First</p></div></section><p></p><ul></ul><blockquote><div>Second</div></blockquote></div>
+        """)
+        XCTAssertEqual(markdown, "First\n\n> Second")
+    }
+
+    /// Characters that `CharacterSet.whitespaces` holds but Unicode does not
+    /// count as whitespace (U+200B) are words of both readings: nothing trims
+    /// them from a list item, a quotation, or a heading label. A combining
+    /// mark after a space joins it into one Character, yet the space still
+    /// keeps the words before inline code apart from the code's.
+    func testHTMLReadingsKeepCharactersThatCharacterSetTrims() throws {
+        let html = """
+        <p>Start</p><ul><li>\u{200B}</li></ul><blockquote>\u{200B}quoted\u{200B}</blockquote>\
+        <h2>Label\u{200B}</h2><p>a]<code> \u{301}x</code></p>
+        """
+        let direct = try directHTMLReading(html)
+        let cached = try cachedHTMLReading(html)
+        XCTAssertEqual(direct.text, "Start \u{200B} \u{200B}quoted\u{200B} Label\u{200B} a] \u{301}x")
+        XCTAssertEqual(cached.text, "Start\n\n\u{200B}\n\n\u{200B}quoted\u{200B}\n\nLabel\u{200B}\n\na] \u{301}x")
+        XCTAssertEqual(direct.headings.map(\.text), ["Label\u{200B}"])
+        XCTAssertEqual(cached.headings.map(\.text), ["Label\u{200B}"])
+    }
+
+    /// HTML text collapses exactly as SwiftSoup reads it: only ASCII
+    /// whitespace (tab, line feed, form feed, carriage return, and space)
+    /// collapses, every other character is kept, and CRLF is one run. The
+    /// byte-by-byte implementation is held to SwiftSoup's own for every scalar
+    /// through U+3000 and the rest of Unicode's whitespace.
+    func testCollapsingWhitespaceMatchesSwiftSoup() {
+        let furtherScalars: [UInt32] = [0x205F, 0x2028, 0x2029, 0x202F, 0x3000, 0xFEFF, 0x1F642]
+        for value in Array(UInt32(0)...0x3000) + furtherScalars {
+            guard let scalar = Unicode.Scalar(value) else { continue }
+            let piece = String(scalar)
+            for text in ["a" + piece + piece + "b", piece, " " + piece + " ", piece + "\r\n\t" + piece] {
+                XCTAssertEqual(
+                    HTMLReadingText.collapsingWhitespace(text), StringUtil.normaliseWhitespace(text),
+                    "U+\(String(value, radix: 16, uppercase: true))"
+                )
+            }
+            // One failing scalar explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 {
+                break
+            }
+        }
+    }
+
+    // MARK: - HTML Readings Agree
+
+    /// Read an HTML source both ways TextMouth can, directly (HTMLParser) and
+    /// from the Markdown its cache holds, and require one reading (see
+    /// `assertSameHTMLReading`). Returns the direct reading.
+    @discardableResult
+    private func assertHTMLReadingsAgree(
+        _ html: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> Chapter {
+        try assertSameHTMLReading(
+            cached: cachedHTMLReading(html),
+            direct: directHTMLReading(html),
+            context: "source \(html.debugDescription)",
+            file: file, line: line
+        )
+    }
+
+    /// The invariant on every HTML fixture: nested blocks, a table, a
+    /// definition list, preformatted text, code, Markdown lookalikes, awkward
+    /// links and images, line breaks in cells, quotations, headings holding
+    /// markup, emphasis edge cases, lists, and content outside the flow.
+    func testHTMLReadingsAgreeOnEveryFixture() throws {
+        for html in HTMLFixture.all {
+            try assertHTMLReadingsAgree(html)
+        }
+    }
+
+    /// The invariant on one book mixing the fixtures, with the words and
+    /// headings both readings must have written out in full.
+    func testHTMLReadingsAgreeOnCombinedFixture() throws {
+        let chapter = try assertHTMLReadingsAgree(HTMLFixture.combined)
+        XCTAssertEqual(normalizedHTMLReading(chapter.text), HTMLFixture.combinedWords)
+        XCTAssertEqual(chapter.headings.map(\.text), HTMLFixture.combinedHeadings.map(\.text))
+        XCTAssertEqual(chapter.headings.map(\.level), HTMLFixture.combinedHeadings.map(\.level))
+    }
+
+    /// The invariant for arbitrary HTML rather than chosen examples: sources
+    /// assembled at random from text holding every ASCII punctuation
+    /// character, Markdown and HTML lookalikes, Unicode, and every kind of
+    /// whitespace, nested inside every kind of element. The seed is fixed,
+    /// so a failure names a source that replays exactly.
+    func testHTMLReadingsAgreeOnGeneratedSources() throws {
+        var generator = SeededGenerator(state: 0x4854_4D4C)
+        for _ in 0..<1_000 {
+            try assertHTMLReadingsAgree(HTMLFixture.randomSource(using: &generator))
+            // One replayable failing source explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 {
+                break
+            }
+        }
+    }
 }
 
 extension XCTestCase {
@@ -362,6 +701,56 @@ extension XCTestCase {
         XCTAssertEqual(cachedChapter.headings, directChapter.headings, "chapter headings; \(context)", file: file, line: line)
         XCTAssertEqual(cached.allHeadings, direct.allHeadings, "indexed headings; \(context)", file: file, line: line)
         return directChapter
+    }
+
+    /// Assert that the direct and cached readings of one HTML chapter are one
+    /// reading under `normalizedHTMLReading`: the words are identical and in
+    /// the same order, none merged and none lost; heading labels and levels
+    /// are identical, in the same order; and each heading sits at the same
+    /// word, because the reading from its offset to the end normalizes
+    /// identically on both paths. The offsets themselves differ wherever the
+    /// direct reading separates two blocks with a space and the cache with a
+    /// blank line. `context` names the source in failure messages. Returns
+    /// the direct reading for further checks.
+    @discardableResult
+    func assertSameHTMLReading(
+        cached: Chapter,
+        direct: Chapter,
+        context: String = "",
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Chapter {
+        XCTAssertEqual(normalizedHTMLReading(cached.text), normalizedHTMLReading(direct.text), "words; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.text), direct.headings.map(\.text), "heading labels; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.level), direct.headings.map(\.level), "heading levels; \(context)", file: file, line: line)
+        for (cachedHeading, directHeading) in zip(cached.headings, direct.headings) {
+            XCTAssertEqual(
+                normalizedHTMLReading(readingText(cached.text, fromUTF16Offset: cachedHeading.characterOffset)),
+                normalizedHTMLReading(readingText(direct.text, fromUTF16Offset: directHeading.characterOffset)),
+                "position of heading \(directHeading.text.debugDescription); \(context)",
+                file: file, line: line
+            )
+        }
+        return direct
+    }
+
+    /// The one whitespace normalization under which the direct and cached
+    /// readings of an HTML book are equal: each run of whitespace scalars
+    /// (Unicode White_Space) is one space, with none at either end. A
+    /// paragraph break, a line break, and a space therefore read alike.
+    /// Scalars rather than Characters decide, because a combining mark joins
+    /// a preceding space into one Character but never a preceding newline.
+    func normalizedHTMLReading(_ text: String) -> String {
+        text.unicodeScalars
+            .split(whereSeparator: \.properties.isWhitespace)
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: " ")
+    }
+
+    /// The text from UTF-16 `offset` (a heading's coordinate) to the end.
+    private func readingText(_ text: String, fromUTF16Offset offset: Int) -> String {
+        let text = text as NSString
+        return text.substring(from: min(max(0, offset), text.length))
     }
 }
 
@@ -498,5 +887,220 @@ enum PlainTextFixture {
             }
         }
         return source
+    }
+}
+
+/// HTML sources shared by the parser and cache tests.
+enum HTMLFixture {
+    /// A captioned table with a header row and two body rows.
+    static let table = """
+        <table><caption>Soundings</caption>
+        <thead><tr><th>Name</th><th>Depth</th></tr></thead>
+        <tbody><tr><td>Odile</td><td>30</td></tr><tr><td>Bruno</td><td>41</td></tr></tbody>
+        </table>
+        """
+
+    /// A definition list of two terms, each with its description.
+    static let definitions = """
+        <dl><dt>Ebb</dt><dd>The falling tide.</dd><dt>Flood</dt><dd>The rising tide.</dd></dl>
+        """
+
+    /// Paragraph texts (as a listener must hear them) that Markdown would
+    /// read as markup if the cache wrote them verbatim: emphasis, headings,
+    /// list items, a quotation, a thematic break, links and images, tags and
+    /// comments decoded from entities, backslashes, comparisons, the dashes,
+    /// ellipsis, and straight quotes smart punctuation would replace, an
+    /// entity spelled out, strikethrough, table pipes, and code spans.
+    static let lookalikeParagraphs = [
+        "Stars *around* words and **doubled** ones",
+        "Underscores _around_ words and __doubled__ ones",
+        "# Not a heading",
+        "1. Not a list item",
+        "- Not a bullet + nor this",
+        "> Not a quotation",
+        "***",
+        "Brackets [x](y) and ![i](j) stay brackets",
+        "Tags <b>bold</b> and <!-- note --> stay text",
+        "A backslash \\ and C:\\path\\*name* \\",
+        "Comparisons a < b and b > a",
+        "Dashes -- and --- and an ellipsis...",
+        "Straight \"double\" and 'single' quotes in don't",
+        "Entities spelled &amp; out",
+        "Tildes ~~struck~~ and pipes | a | b |",
+        "`backticks` and a lone ` mark",
+    ]
+
+    /// `text` as HTML text content: the characters HTML would read as markup
+    /// become character references.
+    static func escaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    // MARK: Fixtures for the Direct and Cached Invariant
+
+    /// Every source the invariant is checked on by name: each shape the
+    /// cache used to misread, and the edge cases of each fix.
+    static let all: [String] = [
+        // Nested blocks, and text after a block.
+        "<div><div>One</div><div>Two</div></div>Three",
+        "<section>Tide</section>tables<aside>list</aside>soundings",
+        // A table with a header row and two body rows; a definition list.
+        table,
+        definitions,
+        // Preformatted text with indented lines and a line of three backticks.
+        "<pre>let x = 1\n    indented()\n```\nnot closed\n\n\ttabbed</pre><p>After.</p>",
+        "<pre><code><span>let</span> tide =\n  <b>ebb</b><br/>flood</code></pre>",
+        // Inline code holding backticks, and whitespace at its edges.
+        "<p>Run <code>echo `date` *now*</code>, type <code>`</code> or <code>``x``</code> then<code> spaced </code>.</p>",
+        "<p>a<code>&nbsp;x&nbsp;</code>b<code>c:\\</code><em>d</em></p>",
+        // Text that looks like Markdown or HTML.
+        lookalikeParagraphs.map { "<p>\(escaped($0))</p>" }.joined(separator: "\n"),
+        // An image whose alt holds brackets; links whose hrefs hold ) and spaces.
+        "<p>Chart <img src=\"c (1).png\" alt=\"Figure [1]: tides\"/> here.</p>",
+        "<p>See <a href=\"notes (draft).xhtml#n 1\">the <em>notes</em></a> and <a href=\"a&lt;b&gt;\\c\">odd</a>.</p>",
+        "<div><a href=\"x.xhtml\"><span>Block</span><div>link</div></a><a href=\"y.xhtml\"> </a>end</div>",
+        // A line break inside a table cell.
+        "<table><tr><td>Top<br/>bottom</td><td>Side</td></tr></table>",
+        // A quotation whose text starts with # (and with a list marker).
+        "<blockquote><p># Not a heading</p><p>1. Nor a list</p></blockquote>",
+        // Headings whose labels hold markup characters, links, code, and images.
+        "<h2>Part *One* [draft] #1 &lt;b&gt; `v2` \\ -- ##</h2><p>Body.</p>",
+        "<h3><a href=\"toc.xhtml#c1\">Chapter <em>One</em></a><br/><code>x*y</code> <img src=\"m.png\" alt=\"[map]\"/></h3>",
+        // Heading labels take alt text and skip hidden text; nested headings.
+        "<h1>Part <span hidden=\"\">secret</span><img src=\"n.png\" alt=\"Two\"/></h1><h2>Outer <span><h3>Inner</h3></span></h2>",
+        "<pre><h4>Preformatted</h4></pre><div><code><h5>Coded</h5></code></div>",
+        // Emphasis at its edges, empty, nested, adjacent, around blocks.
+        "<p>The<i> Titanic </i>sank, <b>Note:</b>Read <i>\"Stop!\"</i>, she said.</p>",
+        "<p><i>Mr.</i><i>Smith</i> and <b>a</b><b>b</b>, <b>Warning: <i>hot</i> surface</b>.</p>",
+        "<p>a<em></em>b<strong> </strong>c</p><em><div>A</div><div>B</div></em><p>Wait<i>...</i><i>*</i>x<i>*y</i></p>",
+        "<p><em>“Quoted”</em> 🙂<i>🙂 smile</i> <em><a href=\"x\">see</a></em>here and x<em><code>y</code> z</em></p>",
+        // Lists holding content outside their items, and a hidden item.
+        "<ul>Before<li>One</li>between<li>Two</li><ul><li>Nested</li></ul><p>After</p></ul>",
+        "<ol><li>First</li><li hidden=\"\">Hidden</li><li>Second</li></ol>",
+        // Navigation repeating the headings outside it (read by neither
+        // reading), and navigation holding the only headings (read by both).
+        "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav><h1 id=\"c1\">Chapter one</h1><p>Body.</p>",
+        "<nav><h2>Contents</h2><ol><li><a href=\"#c1\">Chapter one</a></li></ol></nav><p>Body.</p>",
+        // Edit elements, hidden text, and whitespace and Unicode of every kind.
+        "<p>Fare<del>ten</del>eight<ins>pence</ins>, shown<span hidden=\"\">secret</span> words</p>",
+        "<p>tab\there&nbsp;no-break\u{2028}line\u{3000}ideographic\u{200B}zero</p><p>🙂 Cafe\u{301} 日本 👩‍👩‍👧 \u{FEFF}mark</p>",
+    ]
+
+    /// One book mixing the fixtures: a heading holding emphasis, nested
+    /// blocks, a table with a line break in a cell, a definition list, a
+    /// heading holding markup characters, Markdown lookalikes, preformatted
+    /// text, code, a quotation, an image and a link with awkward sources,
+    /// emphasis edge cases, a list holding stray text, hidden text, and an
+    /// edit element inside a word.
+    static let combined = #"""
+        <html><head><title>Fixture</title></head><body>
+        <h1>The <em>HTML</em> Companion</h1>
+        <div><div>Nested one</div><div>Nested two</div></div>after the divs
+        <table><caption>Soundings</caption><tr><th>Name</th><th>Depth</th></tr>
+        <tr><td>Odile</td><td>30<br/>fathoms</td></tr><tr><td>Bruno</td><td>41</td></tr></table>
+        <dl><dt>Ebb</dt><dd>The falling tide.</dd></dl>
+        <h2>Part *One* [draft] &lt;b&gt;</h2>
+        <p># Not a heading, 1. not a list, *stars*, _under_, [x](y), \ and a &lt; b -- "quotes" ... 'too'</p>
+        <p>***</p>
+        <pre>let tide = 1
+            indented()
+        ```
+        done</pre>
+        <p>Run <code>echo `date`</code> now.</p>
+        <blockquote><p># Quoted hash</p></blockquote>
+        <p><img src="chart (1).png" alt="Figure [1]"/> and <a href="notes (draft).xhtml#n 1">the notes</a>.</p>
+        <p>The<i> Titanic </i>sank, <b>Note:</b>read <i>Mr.</i><i>Smith</i>.</p>
+        <ul>stray<li>One</li><li>Two</li></ul>
+        <p>Shown<span hidden="">secret</span> words, un<del>believ</del>able.</p>
+        </body></html>
+        """#
+
+    /// The words of `combined`, in order, under the invariant's whitespace
+    /// normalization.
+    static let combinedWords = [
+        "The HTML Companion",
+        "Nested one Nested two after the divs",
+        "Soundings Name Depth Odile 30 fathoms Bruno 41",
+        "Ebb The falling tide.",
+        "Part *One* [draft] <b>",
+        #"# Not a heading, 1. not a list, *stars*, _under_, [x](y), \ and a < b -- "quotes" ... 'too'"#,
+        "***",
+        "let tide = 1 indented() ``` done",
+        "Run echo `date` now.",
+        "# Quoted hash",
+        "Figure [1] and the notes.",
+        "The Titanic sank, Note:read Mr.Smith.",
+        "stray One Two",
+        "Shown words, un believ able.",
+    ].joined(separator: " ")
+
+    /// The headings of `combined`, in order.
+    static let combinedHeadings: [(level: Int, text: String)] = [
+        (1, "The HTML Companion"),
+        (2, "Part *One* [draft] <b>"),
+    ]
+
+    // MARK: Generated Sources
+
+    /// Text of generated sources: words, every ASCII punctuation character
+    /// (as a character reference where HTML needs one), Markdown and HTML
+    /// lookalikes, Unicode letters, marks, and emoji, and whitespace of every
+    /// kind, including a no-break space and invisible characters.
+    private static let textFragments = PlainTextFixture.asciiPunctuation.map { escaped(String($0)) } + [
+        "alpha", "Beta", "GAMMA", "1984", "e\u{301}", "\u{301}", "🙂", "👩‍👩‍👧", "日本", "ß",
+        "*", "**", "_", "#", "## ", "1.", "2)", "- ", "+ ", "&gt; ", "***", "---", "===", "--", "...",
+        "[x](y)", "![i](j)", "`code`", "``", "\\", "~~s~~", "|a|", "&lt;b&gt;", "&lt;!-- c --&gt;",
+        "&amp;amp;", "\"q\"", "'s", "^[x](y)", "&lt;http://x.y&gt;", "[ ]",
+        " ", "  ", "\t", "\n", "\n\n", "&nbsp;", "\u{2028}", "\u{3000}", "\u{200B}", "&#xFEFF;", "\u{00AD}",
+    ]
+
+    /// Elements wrapped around generated content: every boundary kind,
+    /// phrasing and emphasis, links with awkward destinations, code and
+    /// preformatted text, whole lists and tables and their stray parts,
+    /// headings, and content outside the reading flow.
+    private static let wrappers: [(open: String, close: String)] = [
+        ("<p>", "</p>"), ("<div>", "</div>"), ("<section>", "</section>"), ("<span>", "</span>"),
+        ("<em>", "</em>"), ("<i>", "</i>"), ("<strong>", "</strong>"), ("<b>", "</b>"),
+        ("<a href=\"n (1).xhtml#a b\">", "</a>"), ("<a href=\"x&lt;y&gt;\\z\">", "</a>"), ("<a id=\"anchor\">", "</a>"),
+        ("<code>", "</code>"), ("<pre>", "</pre>"), ("<blockquote>", "</blockquote>"),
+        ("<ul><li>", "</li></ul>"), ("<ol><li>", "</li><li>next</li></ol>"), ("<ul>", "</ul>"), ("<li>", "</li>"),
+        ("<table><tr><td>", "</td><td>cell</td></tr></table>"), ("<tr>", "</tr>"), ("<td>", "</td>"), ("<th>", "</th>"),
+        ("<dl><dt>", "</dt><dd>description</dd></dl>"), ("<dd>", "</dd>"), ("<caption>", "</caption>"),
+        ("<h1>", "</h1>"), ("<h3>", "</h3>"), ("<h6>", "</h6>"),
+        ("<del>", "</del>"), ("<ins>", "</ins>"), ("<s>", "</s>"), ("<sup>", "</sup>"),
+        ("<span hidden=\"\">", "</span>"), ("<figure>", "</figure>"), ("<textarea>", "</textarea>"),
+        ("<nav>", "</nav>"),
+    ]
+
+    /// Elements and nodes without generated content.
+    private static let emptyNodes = [
+        "<br/>", "<hr/>", "<wbr/>", "<!-- comment -->", "<img src=\"i (1).png\" alt=\" alt ] [x](y) *z* \"/>",
+        "<img src=\"j.png\" alt=\"\"/>", "<img src=\"k.png\"/>", "<script>var a = '<b>';</script>", "<style>b{}</style>",
+    ]
+
+    /// A random HTML body up to four elements deep.
+    static func randomSource<Generator: RandomNumberGenerator>(using generator: inout Generator) -> String {
+        randomContent(depth: 4, using: &generator)
+    }
+
+    /// Up to four random pieces: text, an empty node, or (above depth zero)
+    /// an element wrapped around more random content.
+    private static func randomContent<Generator: RandomNumberGenerator>(depth: Int, using generator: inout Generator) -> String {
+        var html = ""
+        for _ in 0..<Int.random(in: 0...4, using: &generator) {
+            switch Int.random(in: 0..<10, using: &generator) {
+            case 0..<5:
+                html += textFragments.randomElement(using: &generator)!
+            case 5:
+                html += emptyNodes.randomElement(using: &generator)!
+            default:
+                guard depth > 0 else { continue }
+                let wrapper = wrappers.randomElement(using: &generator)!
+                html += wrapper.open + randomContent(depth: depth - 1, using: &generator) + wrapper.close
+            }
+        }
+        return html
     }
 }
