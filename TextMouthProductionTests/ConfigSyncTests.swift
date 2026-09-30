@@ -399,7 +399,7 @@ final class ConfigSyncTests: XCTestCase {
         defaults.set("17 seconds", forKey: "skipForwardUnit")
         defaults.set("Shuffle", forKey: "endOfBookBehavior")
         let viewModel = makeIsolatedViewModel(defaults)
-        let original = customizedConfig()
+        let original = ConfigService.AppConfig.everyFieldCustomized
         var config = original
 
         viewModel.writePreferences(into: &config)
@@ -418,7 +418,7 @@ final class ConfigSyncTests: XCTestCase {
     /// the value is clamped on load and saved clamped, and every other
     /// preference is saved exactly as the file had it.
     func testLoadingThenSavingRewritesOnlyTheClampedPreference() throws {
-        var file = try jsonObject(customizedConfig())
+        var file = try jsonObject(.everyFieldCustomized)
         file["punctuationPauseLevel"] = 40
         let loaded = try JSONDecoder().decode(
             ConfigService.AppConfig.self,
@@ -505,7 +505,7 @@ final class ConfigSyncTests: XCTestCase {
     /// no field accepts leaves every other field exactly as saved, and gives
     /// the damaged field the value a missing field gets.
     func testOneUnreadableFieldNeverResetsAnyOtherField() throws {
-        let saved = try jsonObject(customizedConfig())
+        let saved = try jsonObject(.everyFieldCustomized)
         var missingFieldValues = try jsonObject(ConfigService.AppConfig())
         // An unreadable data directory keeps the one in use rather than the
         // default, because applying the default would move the library.
@@ -534,7 +534,7 @@ final class ConfigSyncTests: XCTestCase {
     /// Saving after a load that repaired one field writes the repaired value
     /// and every other field exactly as it was: nothing is reset to defaults.
     func testSavingAfterARepairedLoadRewritesOnlyTheRepairedField() throws {
-        var file = try jsonObject(customizedConfig())
+        var file = try jsonObject(.everyFieldCustomized)
         file["wordsPerMinute"] = 1e308
         let loaded = try JSONDecoder().decode(
             ConfigService.AppConfig.self,
@@ -560,18 +560,10 @@ final class ConfigSyncTests: XCTestCase {
         _ = try decodeConfig("""
         {"rewindSmartThreshold": \(marker), "shiftSkipForwardUnit": "\(unit)"}
         """)
-        TextMouthPaths.flushLogs()
 
-        // Include the rotated generation in case this write started a new file.
-        let logFile = TextMouthPaths.debugLogFile
-        let lines = [logFile, logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension)]
-            .compactMap { try? String(contentsOf: $0, encoding: .utf8) }
-            .joined(separator: "\n")
-            .split(separator: "\n")
-        let thresholdLines = lines.filter {
-            $0.contains("config.json rewindSmartThreshold") && $0.contains("\(marker)")
-        }
-        let unitLines = lines.filter { $0.contains(unit) }
+        let thresholdLines = debugLogLines(containing: "config.json rewindSmartThreshold")
+            .filter { $0.contains("\(marker)") }
+        let unitLines = debugLogLines(containing: unit)
         XCTAssertEqual(thresholdLines.count, 1)
         XCTAssertEqual(unitLines.count, 1)
         XCTAssertTrue(thresholdLines.first?.contains("with 600.0") ?? false)
@@ -587,15 +579,6 @@ final class ConfigSyncTests: XCTestCase {
         SettingsPolicy.punctuationPauseLevel, SettingsPolicy.bluetoothDisconnectDelay,
         SettingsPolicy.restartTimerGestureWindow,
     ]
-
-    /// A throwaway preferences suite, deleted when the test ends, so tests
-    /// never read or change the user's real settings.
-    private func isolatedDefaults() throws -> UserDefaults {
-        let suiteName = "com.textmouth.tests.config-sync.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
-        return defaults
-    }
 
     /// A settings model bound to `defaults` that starts no services and
     /// posts only to a private notification center.
@@ -620,38 +603,5 @@ final class ConfigSyncTests: XCTestCase {
     /// Parses saved config bytes into a dictionary for field-by-field checks.
     private func jsonObject(from data: Data) throws -> [String: Any] {
         try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-
-    /// A config in which every field holds a supported, non-default value,
-    /// so a field reset to its default is always detectable.
-    private func customizedConfig() -> ConfigService.AppConfig {
-        var config = ConfigService.AppConfig()
-        config.selectedVoiceID = "com.apple.voice.compact.fr-FR.Thomas"
-        config.wordsPerMinute = 425
-        config.pitchMultiplier = 1.4
-        config.selectedLanguage = "fr"
-        config.skipForwardUnit = SkipUnit.heading.rawValue
-        config.skipBackwardUnit = SkipUnit.sentence.rawValue
-        config.importDeleteBehavior = .askEachTime
-        config.dataDirectoryPath = "/Volumes/Archive/TextMouth Library"
-        config.confirmBeforeDelete = false
-        config.shiftSkipForwardUnit = SkipUnit.seconds60.rawValue
-        config.shiftSkipBackwardUnit = SkipUnit.paragraph.rawValue
-        config.rewindOnResumeUnit = RewindUnit.paragraph.rawValue
-        config.rewindSmartMode = true
-        config.rewindSmartThreshold = 125
-        config.sleepFadeOutDuration = 6
-        config.sleepTimerAutoClose = false
-        config.endOfBookBehavior = EndOfBookBehavior.continueNext.rawValue
-        config.punctuationPauseLevel = 2
-        config.lastOpenedBookID = "8E4C2D71-5B0A-4F6B-9C3E-2A7D1F9B6E05"
-        config.autoPlayOnNavigate = true
-        config.moveToTrashInsteadOfDeleting = false
-        config.bluetoothMonitoringEnabled = false
-        config.bluetoothDisconnectDelay = 7
-        config.restartTimerGestureEnabled = true
-        config.restartTimerGesturePattern = "togglePlayPause,nextTrack"
-        config.restartTimerGestureWindow = 3.5
-        return config
     }
 }
