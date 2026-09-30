@@ -455,6 +455,33 @@ final class ParserContentFidelityTests: XCTestCase {
         }
     }
 
+    /// Preformatted text keeps its lines, indentation, tabs, and blank lines
+    /// in the cache, markup-looking text included. A line of three backticks
+    /// inside cannot close the block early, and the paragraph after the
+    /// block is still read as prose.
+    func testCachedHTMLPreformattedTextKeepsItsLines() throws {
+        let code = "let x = 1\n    indented()\n```\nnot closed ``\n\n\ttabbed <b>*x*</b> \\"
+        let chapter = try cachedHTMLReading("<p>Before.</p><pre>\(HTMLFixture.escaped(code))</pre><p>After.</p>")
+        XCTAssertTrue(chapter.text.hasPrefix("Before.\n\n\(code)\n"), chapter.text)
+        XCTAssertTrue(chapter.text.hasSuffix("\nAfter."), chapter.text)
+    }
+
+    /// Markup inside preformatted text (the spans of highlighted code and
+    /// line breaks) keeps the text's layout, and a destination inside it
+    /// precedes the block instead of becoming words of the code.
+    func testCachedHTMLPreformattedMarkupKeepsLayoutAndDestinations() throws {
+        let html = """
+        <pre><code><span class="k">let</span> <span id="tide">tide</span> =
+          <b>ebb</b><br/>flood</code></pre>
+        """
+        let targets = ["tide": MarkdownHeadingAnnotation(level: 2, text: "Tide target")]
+        let markdown = try HTMLToMarkdownConverter.convert(html, headingTargets: targets)
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true)
+        XCTAssertEqual(chapter.text, "let tide =\n  ebb\nflood")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Tide target"])
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [0])
+    }
+
     /// Boundaries are written only where missing, so nested and empty blocks
     /// never pile up blank lines around the words they hold.
     func testCachedHTMLNestedAndEmptyBlocksWriteOneBlankLine() throws {

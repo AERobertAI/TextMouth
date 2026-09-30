@@ -191,14 +191,21 @@ enum HTMLToMarkdownConverter {
                 result += "> \(line)\n"
             }
 
-        // Preformatted / code blocks
+        // Preformatted text becomes a fenced code block holding its lines
+        // exactly, which the reader reads verbatim. The fence is longer than
+        // any run of backticks inside, so no line of the text can close it,
+        // and it always stands on a line of its own. Destinations inside the
+        // block precede it rather than becoming words of the code.
         case "pre":
-            result += "```\n"
-            // Get raw text content without further processing
-            let text = (try? element.text()) ?? ""
-            result += text
-            if !text.hasSuffix("\n") { result += "\n" }
-            result += "```\n"
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                emit(annotation, inline: false, into: &result)
+            }
+            let code = HTMLReadingText.preformattedText(of: element)
+            // Whitespace alone holds nothing to read.
+            guard code.unicodeScalars.contains(where: { !$0.properties.isWhitespace }) else { break }
+            let fence = String(repeating: "`", count: max(3, longestRun(of: "`", in: code) + 1))
+            let lineEnd = code.unicodeScalars.last == "\n" ? "" : "\n"
+            result += fence + "\n" + code + lineEnd + fence + "\n"
 
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
