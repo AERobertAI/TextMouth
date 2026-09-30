@@ -291,13 +291,15 @@ final class DAISYMalformedXMLTests: XCTestCase {
     }
 
     /// The package reads in full while intact; with a damaged SMIL file the
-    /// book fails, naming that file, rather than losing a paragraph.
+    /// book fails, naming that file, rather than losing a paragraph. (The
+    /// sentences are checked as read: the cache escapes their punctuation.)
     func testDAISY202BookWithTruncatedSMILReportsTheSynchronizationFile() throws {
         let intact = try makeTemporaryDAISYZip(entries: Self.daisy202Package())
         defer { try? FileManager.default.removeItem(at: intact) }
         let markdown = try DAISYParser.extractMarkdown(from: intact)
-        XCTAssertTrue(markdown.contains("The first sounding came up at nine fathoms."), markdown)
-        XCTAssertTrue(markdown.contains("The second sounding struck gravel near the breakwater."), markdown)
+        let spoken = try Self.spokenText(of: markdown)
+        XCTAssertTrue(spoken.contains("The first sounding came up at nine fathoms."), markdown)
+        XCTAssertTrue(spoken.contains("The second sounding struck gravel near the breakwater."), markdown)
 
         let damaged = try makeTemporaryDAISYZip(entries: Self.daisy202Package([
             "part1.smil": Self.truncated(Self.part1SMIL, before: "<par id=\"p2\"")
@@ -504,16 +506,18 @@ final class DAISYMalformedXMLTests: XCTestCase {
     }
 
     /// A DAISY 2.02 book whose NCC is ordinary HTML opens with its full text
-    /// and its title and author.
+    /// and its title and author. (The sentences are checked as read: the
+    /// cache escapes their punctuation.)
     func testDAISY202BookWithHTMLNCCReadsItsTextAndMetadata() throws {
         let zip = try makeTemporaryDAISYZip(entries: Self.daisy202Package(["ncc.html": Self.htmlNCC]))
         defer { try? FileManager.default.removeItem(at: zip) }
 
         let markdown = try DAISYParser.extractMarkdown(from: zip)
+        let spoken = try Self.spokenText(of: markdown)
         let metadata = try XCTUnwrap(DAISYParser.readMetadata(from: zip))
 
-        XCTAssertTrue(markdown.contains("The first sounding came up at nine fathoms."), markdown)
-        XCTAssertTrue(markdown.contains("The second sounding struck gravel near the breakwater."), markdown)
+        XCTAssertTrue(spoken.contains("The first sounding came up at nine fathoms."), markdown)
+        XCTAssertTrue(spoken.contains("The second sounding struck gravel near the breakwater."), markdown)
         XCTAssertEqual(metadata.title, "Harbor Soundings")
         XCTAssertEqual(metadata.author, "Odile Marchetti")
     }

@@ -386,6 +386,55 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.level), [1, 2])
         XCTAssertEqual(chapter.headings.map(\.characterOffset), [0, ("Part Two " as NSString).length])
     }
+
+    /// The Markdown cache's reading of `html`: the Markdown the cache writes
+    /// for an HTML book, parsed exactly as the cache loader parses it.
+    private func cachedHTMLReading(_ html: String) throws -> Chapter {
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "HTML", bookAuthor: "Author")
+        XCTAssertEqual(content.chapters.count, 1, markdown)
+        return try XCTUnwrap(content.chapters.first)
+    }
+
+    /// Text that looks like Markdown or HTML is read from the cache exactly
+    /// as written: each paragraph keeps every character, in order, and none
+    /// becomes a heading, list, quotation, rule, link, tag, or smart quote.
+    func testCachedHTMLKeepsMarkdownLookalikesLiteral() throws {
+        let paragraphs = HTMLFixture.lookalikeParagraphs
+        let html = paragraphs.map { "<p>\(HTMLFixture.escaped($0))</p>" }.joined(separator: "\n")
+        let chapter = try cachedHTMLReading(html)
+        XCTAssertEqual(chapter.text.components(separatedBy: "\n\n"), paragraphs)
+        XCTAssertEqual(chapter.headings, [])
+    }
+
+    /// A heading line holds its label as literal text: markup characters stay
+    /// in the label and in the words read, and the link, emphasis, code, line
+    /// break, and image inside the heading leave only their words.
+    func testCachedHTMLHeadingLabelsKeepMarkupCharacters() throws {
+        let chapter = try cachedHTMLReading("""
+        <h2>Part *One* [draft] #1 &lt;b&gt; `v2` \\ -- ##</h2><p>Body.</p>
+        <h3><a href="toc.xhtml#c1">Chapter <em>One</em></a><br/><code>x*y</code> <img src="m.png" alt="[map]"/></h3>
+        """)
+        let labels = ["Part *One* [draft] #1 <b> `v2` \\ -- ##", "Chapter One x*y [map]"]
+        XCTAssertEqual(chapter.headings.map(\.text), labels)
+        XCTAssertEqual(chapter.headings.map(\.level), [2, 3])
+        XCTAssertEqual(chapter.text, [labels[0], "Body.", labels[1]].joined(separator: "\n\n"))
+    }
+
+    /// Inline code is read verbatim, backticks and all. Whitespace at its
+    /// edges is read as the spaces around it.
+    func testCachedHTMLCodeSpansKeepBackticksAndPunctuation() throws {
+        let chapter = try cachedHTMLReading("""
+        <p>Run <code>echo `date` *now* \\n</code>, type <code>`</code> or <code>``x``</code> then<code> spaced </code>.</p>
+        """)
+        XCTAssertEqual(chapter.text, "Run echo `date` *now* \\n, type ` or ``x`` then spaced .")
+    }
+
+    /// Alt text is read as written, brackets included.
+    func testCachedHTMLImageAltTextKeepsBrackets() throws {
+        let chapter = try cachedHTMLReading("<p>Chart <img src=\"c.png\" alt=\"Figure [1]: tides\"/> here.</p>")
+        XCTAssertEqual(chapter.text, "Chart Figure [1]: tides here.")
+    }
 }
 
 extension XCTestCase {
@@ -564,4 +613,37 @@ enum HTMLFixture {
     static let definitions = """
         <dl><dt>Ebb</dt><dd>The falling tide.</dd><dt>Flood</dt><dd>The rising tide.</dd></dl>
         """
+
+    /// Paragraph texts (as a listener must hear them) that Markdown would
+    /// read as markup if the cache wrote them verbatim: emphasis, headings,
+    /// list items, a quotation, a thematic break, links and images, tags and
+    /// comments decoded from entities, backslashes, comparisons, the dashes,
+    /// ellipsis, and straight quotes smart punctuation would replace, an
+    /// entity spelled out, strikethrough, table pipes, and code spans.
+    static let lookalikeParagraphs = [
+        "Stars *around* words and **doubled** ones",
+        "Underscores _around_ words and __doubled__ ones",
+        "# Not a heading",
+        "1. Not a list item",
+        "- Not a bullet + nor this",
+        "> Not a quotation",
+        "***",
+        "Brackets [x](y) and ![i](j) stay brackets",
+        "Tags <b>bold</b> and <!-- note --> stay text",
+        "A backslash \\ and C:\\path\\*name* \\",
+        "Comparisons a < b and b > a",
+        "Dashes -- and --- and an ellipsis...",
+        "Straight \"double\" and 'single' quotes in don't",
+        "Entities spelled &amp; out",
+        "Tildes ~~struck~~ and pipes | a | b |",
+        "`backticks` and a lone ` mark",
+    ]
+
+    /// `text` as HTML text content: the characters HTML would read as markup
+    /// become character references.
+    static func escaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
 }

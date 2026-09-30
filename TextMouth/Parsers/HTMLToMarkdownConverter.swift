@@ -93,10 +93,7 @@ enum HTMLToMarkdownConverter {
     private static func convertNode(_ node: Node, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
         for child in node.getChildNodes() {
             if let textNode = child as? TextNode {
-                // Emit text content, collapsing runs of whitespace
-                let text = textNode.getWholeText()
-                let collapsed = collapseWhitespace(text)
-                result += collapsed
+                appendText(textNode.getWholeText(), to: &result)
             } else if let element = child as? Element {
                 convertElement(element, into: &result, headingTargets: headingTargets)
             }
@@ -124,8 +121,7 @@ enum HTMLToMarkdownConverter {
 
         // Headings
         case "h1", "h2", "h3", "h4", "h5", "h6":
-            let level = Int(String(tag.last!)) ?? 1
-            let prefix = String(repeating: "#", count: level)
+            let level = HTMLReadingText.headingLevel(of: tag) ?? 1
             ensureBlankLine(&result)
             // A destination inside a heading (such as an anchor before its
             // words) names that heading. Emit it as its own block immediately
@@ -135,9 +131,12 @@ enum HTMLToMarkdownConverter {
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
                 emit(annotation, inline: false, into: &result)
             }
-            var label = ""
-            convertNode(element, into: &label, headingTargets: [:])
-            result += "\(prefix) \(singleLine(label))\n\n"
+            // The heading line holds the label the direct reader gives it,
+            // as literal text: one line even when the heading contains a line
+            // break or a block, and no link, emphasis, or code syntax, whose
+            // markers the parser would otherwise have to keep out of the label.
+            let label = HTMLReadingText.label(of: element)
+            result += String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label) + "\n\n"
 
         // Paragraphs
         case "p":
@@ -176,11 +175,11 @@ enum HTMLToMarkdownConverter {
                 result += "](\(href))"
             }
 
-        // Images — emit alt text for accessibility
+        // Images — emit alt text for accessibility, read like any other text
         case "img":
-            let alt = (try? element.attr("alt")) ?? ""
+            let alt = HTMLReadingText.collapsingWhitespace((try? element.attr("alt")) ?? "")
             let src = (try? element.attr("src")) ?? ""
-            result += "![\(alt)](\(src))"
+            result += "![\(MarkdownLiteral.escaped(alt))](\(src))"
 
         // Unordered lists
         case "ul":
@@ -221,16 +220,13 @@ enum HTMLToMarkdownConverter {
             if !text.hasSuffix("\n") { result += "\n" }
             result += "```\n\n"
 
-        // Inline code
+        // Inline code. A code span is read verbatim, so destinations inside
+        // it precede it rather than becoming words of the code.
         case "code":
-            // If parent is <pre>, skip the inline backticks
-            if element.parent()?.tagName().lowercased() == "pre" {
-                convertNode(element, into: &result, headingTargets: headingTargets)
-            } else {
-                result += "`"
-                convertNode(element, into: &result, headingTargets: headingTargets)
-                result += "`"
+            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+                emit(annotation, inline: true, into: &result)
             }
+            appendCodeSpan(HTMLReadingText.inlineText(of: element), to: &result)
 
         // Horizontal rules
         case "hr":
@@ -386,22 +382,59 @@ enum HTMLToMarkdownConverter {
         }
     }
 
-    /// Collapse runs of whitespace (spaces, tabs, newlines) into a single space.
-    private static func collapseWhitespace(_ text: String) -> String {
-        text.replacingOccurrences(
-            of: "\\s+",
-            with: " ",
-            options: .regularExpression
-        )
+    /// Whether the next text begins a word: at the start of the Markdown, of
+    /// a line, or after a space.
+    private static func isAtWordStart(_ result: String) -> Bool {
+        guard let last = result.unicodeScalars.last else { return true }
+        return last == " " || last == "\n"
     }
 
-    /// A Markdown heading is a single line. Join a heading's converted lines
-    /// with spaces: a line break (<br/>) or stray block inside a heading would
-    /// otherwise end it early, cutting its label short and leaving the rest of
-    /// its words, with any enclosing link syntax, as literal prose to be read.
-    private static func singleLine(_ text: String) -> String {
-        guard text.contains("\n") else { return text }
-        return text.replacingOccurrences(of: "[ \\t]*\\n[ \\t\\n]*", with: " ", options: .regularExpression)
+    // MARK: - Literal Text
+
+    /// Write the words of a text node as Markdown literals, so every
+    /// character is read as written. Whitespace collapses exactly as the
+    /// direct reader collapses it (HTMLReadingText). A space is dropped at the
+    /// start of a word, where it would be two spaces or begin a line; four
+    /// spaces there would even begin a code block.
+    private static func appendText(_ raw: String, to result: inout String) {
+        var text = HTMLReadingText.collapsingWhitespace(raw)
+        if text.hasPrefix(" "), isAtWordStart(result) {
+            text.removeFirst()
+        }
+        result += MarkdownLiteral.escaped(text)
+    }
+
+    /// Write inline code (`code`, its words with whitespace collapsed) as a
+    /// code span, whose text the reader reads verbatim. The fence is one
+    /// backtick longer than the longest run of backticks inside, so none of
+    /// them can close it, and CommonMark's padding space separates a
+    /// backtick at either end from the fence. Whitespace at either end is
+    /// written outside the span as an ordinary space, so the span never
+    /// begins or ends with one.
+    private static func appendCodeSpan(_ code: String, to result: inout String) {
+        let core = code.trimmingCharacters(in: .whitespaces)
+        if code.hasPrefix(" ") {
+            appendText(" ", to: &result)
+        }
+        guard !core.isEmpty else { return }
+        let fence = String(repeating: "`", count: longestRun(of: "`", in: core) + 1)
+        let scalars = core.unicodeScalars
+        let padding = scalars.first == "`" || scalars.last == "`" ? " " : ""
+        result += fence + padding + core + padding + fence
+        if code.hasSuffix(" ") {
+            appendText(" ", to: &result)
+        }
+    }
+
+    /// The length of the longest run of `scalar` in `text`.
+    private static func longestRun(of scalar: Unicode.Scalar, in text: String) -> Int {
+        var longest = 0
+        var current = 0
+        for candidate in text.unicodeScalars {
+            current = candidate == scalar ? current + 1 : 0
+            longest = max(longest, current)
+        }
+        return longest
     }
 
     /// Collapse three or more consecutive newlines into exactly two.
