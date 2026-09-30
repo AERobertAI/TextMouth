@@ -211,6 +211,72 @@ final class ReaderAudioFailureTests: XCTestCase {
         }
     }
 
+    // MARK: - Presenting the failure
+
+    /// A playback failure is shown as an alert offering Retry over the
+    /// loaded reader, never in place of it as a book that failed to load
+    /// is. Closing the alert forgets the failure and leaves the reader
+    /// stopped.
+    func testFailureIsShownAsAnAlertOfferingRetry() throws {
+        try withAudioBook(damage: Self.deleteSecondTrack) { reader, _ in
+            recordingAnnouncements { reader.play() }
+
+            XCTAssertNil(reader.loadErrorMessage)
+            XCTAssertEqual(reader.errorAlert, ReaderViewModel.ErrorAlert(
+                title: "Playback Problem",
+                message: Self.missingTrackMessage,
+                offersRetry: true
+            ))
+
+            reader.dismissErrorAlert()
+
+            XCTAssertNil(reader.errorAlert)
+            XCTAssertNil(reader.errorMessage)
+            XCTAssertNil(reader.audioPlaybackFailure)
+            XCTAssertFalse(reader.isCurrentlyPlaying)
+        }
+    }
+
+    /// Any other error over a loaded reader, such as metadata that could
+    /// not be saved, is a plain alert without Retry.
+    func testOtherErrorsOverTheReaderAreShownWithoutRetry() throws {
+        try withAudioBook(damage: { _ in }) { reader, _ in
+            reader.errorMessage = "The metadata could not be saved."
+
+            XCTAssertNil(reader.loadErrorMessage)
+            XCTAssertEqual(reader.errorAlert, ReaderViewModel.ErrorAlert(
+                title: "Error",
+                message: "The metadata could not be saved.",
+                offersRetry: false
+            ))
+        }
+    }
+
+    /// A book that cannot be opened still shows its error in place of the
+    /// reader, with no alert over it.
+    func testBookThatFailsToLoadShowsItsErrorInPlaceOfTheReader() throws {
+        let book = Book(
+            title: "Vanished",
+            format: .txt,
+            filePath: "/tmp/\(UUID().uuidString)-vanished.txt",
+            md5Hash: UUID().uuidString
+        )
+        let library = LibraryViewModel()
+        library.library = Library(books: [book])
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        )
+        defer { reader.close() }
+
+        waitUntilLoaded(reader)
+
+        let message = try XCTUnwrap(reader.errorMessage)
+        XCTAssertEqual(reader.loadErrorMessage, message)
+        XCTAssertNil(reader.errorAlert)
+    }
+
     // MARK: - Wording
 
     /// Every message names the chapter by its number and the file by its
@@ -303,6 +369,18 @@ final class ReaderAudioFailureTests: XCTestCase {
     /// Subscriptions a test keeps until it ends; each test has its own.
     private var subscriptions = Set<AnyCancellable>()
 
+    /// Wait until `reader` has finished loading its book, successfully or
+    /// not.
+    private func waitUntilLoaded(_ reader: ReaderViewModel) {
+        let loaded = expectation(description: "Loading ended")
+        reader.$isLoading
+            .filter { !$0 }
+            .prefix(1)
+            .sink { _ in loaded.fulfill() }
+            .store(in: &subscriptions)
+        wait(for: [loaded], timeout: 10)
+    }
+
     /// An expectation fulfilled when `reader` first shows an error.
     private func expectFailure(of reader: ReaderViewModel) -> XCTestExpectation {
         let failed = expectation(description: "Failure shown")
@@ -383,10 +461,7 @@ final class ReaderAudioFailureTests: XCTestCase {
 
         let reader = ReaderViewModel(book: book, libraryViewModel: library, settingsViewModel: settings)
         defer { reader.close() }
-        let loaded = expectation(description: "Book loaded")
-        let loading = reader.$isLoading.filter { !$0 }.prefix(1).sink { _ in loaded.fulfill() }
-        defer { loading.cancel() }
-        wait(for: [loaded], timeout: 10)
+        waitUntilLoaded(reader)
         XCTAssertNil(reader.errorMessage, "The book did not load")
         XCTAssertEqual(reader.content?.chapters.count, trackCount)
         XCTAssertEqual(reader.audioChapterFiles.map { URL(fileURLWithPath: $0).lastPathComponent },

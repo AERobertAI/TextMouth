@@ -1028,6 +1028,34 @@ final class ReaderViewModel: ObservableObject {
 
     // MARK: - Error Alert
 
+    /// An error shown as an alert over a loaded reader.
+    struct ErrorAlert: Equatable {
+        /// The alert's title, naming the kind of problem.
+        let title: String
+        /// What went wrong and what to do: the reader's `errorMessage`.
+        let message: String
+        /// Whether the alert offers Retry, as it does for audio that could
+        /// not be played, which may play once its file is back.
+        let offersRetry: Bool
+    }
+
+    /// `errorMessage` while no content has loaded: the book itself could
+    /// not be opened, so the message is shown in place of the reader.
+    var loadErrorMessage: String? {
+        content == nil ? errorMessage : nil
+    }
+
+    /// `errorMessage` once content has loaded, as an alert over the reader,
+    /// which stays usable behind it. Nil when there is no such error.
+    var errorAlert: ErrorAlert? {
+        guard content != nil, let errorMessage else { return nil }
+        return ErrorAlert(
+            title: audioPlaybackFailure == nil ? "Error" : "Playback Problem",
+            message: errorMessage,
+            offersRetry: audioPlaybackFailure != nil
+        )
+    }
+
     /// Close the error alert, forgetting the error it showed and, for an
     /// audio failure, the failure behind it.
     func dismissErrorAlert() {
