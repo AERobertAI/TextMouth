@@ -157,6 +157,14 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
         )
     }
 
+    /// The footer names both ways to reorder, not only dragging.
+    func testFooterExplainsBothWaysToReorder() {
+        XCTAssertEqual(
+            SubstitutionsSettingsView.reorderInstructions,
+            "Use Move Up and Move Down, or drag, to reorder. Rules apply top to bottom."
+        )
+    }
+
     // MARK: - Moving from the list
 
     /// A Move command moves the rule one step and announces its new place,

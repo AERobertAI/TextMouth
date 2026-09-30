@@ -57,7 +57,7 @@ struct SubstitutionsSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("Drag to reorder. Rules apply top to bottom.")
+                Text(Self.reorderInstructions)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -190,6 +190,14 @@ extension SubstitutionsSettingsView {
     /// "Mr. moved to position 3 of 7" for index 2 in a list of 7.
     nonisolated static func movedAnnouncement(ruleName: String, index: Int, count: Int) -> String {
         "\(ruleName) moved to position \(index + 1) of \(count)"
+    }
+
+    /// The footer's help on reordering, naming both ways to do it and the
+    /// Move commands exactly as their buttons and VoiceOver actions do.
+    nonisolated static var reorderInstructions: String {
+        let moveUp = SubstitutionRuleCommand.moveUp.title
+        let moveDown = SubstitutionRuleCommand.moveDown.title
+        return "Use \(moveUp) and \(moveDown), or drag, to reorder. Rules apply top to bottom."
     }
 
     /// Announce that `rule` now sits at `index` in `service`'s list.
