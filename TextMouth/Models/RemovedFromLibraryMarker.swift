@@ -90,6 +90,32 @@ extension RemovedFromLibraryMarker {
     }
 }
 
+// MARK: - Startup Repair
+
+extension RemovedFromLibraryMarker {
+
+    /// Takes out of `library` every book whose own package holds a marker
+    /// retiring it, and returns those books. Their packages and content stay
+    /// on disk, untouched.
+    ///
+    /// An index lists such a book only when it was saved before the removal:
+    /// the app stopped before the removal's debounced save reached the disk,
+    /// the removal happened while the index could not be read and Try Again
+    /// then loaded it, or an older copy of the index was put back. The marker
+    /// is the later decision, and the metadata queue drops every write into
+    /// a retired package, so the book is taken out rather than left listed
+    /// with its package no longer saved.
+    @discardableResult
+    static func removeRetiredBooks(from library: inout Library) -> [Book] {
+        let retired = library.books.filter { retires($0) }
+        for book in retired {
+            library.removeBook(id: book.id)
+            log("kept out of the library: its package records that it was removed", for: book)
+        }
+        return retired
+    }
+}
+
 // MARK: - Logging
 
 extension RemovedFromLibraryMarker {

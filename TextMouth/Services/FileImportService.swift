@@ -901,14 +901,19 @@ enum FileImportService {
         return types
     }
 
-    /// Rebuild the .TextMouth directory structure, migrating any books from old storage,
-    /// moving misplaced .tmb packages to their correct folders, and adopting orphans.
+    /// Rebuild the .TextMouth directory structure, keeping books removed with Remove
+    /// from Library Only out, migrating any books from old storage, moving misplaced
+    /// .tmb packages to their correct folders, and adopting orphans.
     /// Returns what the legacy migration did: a book that could not move keeps
     /// its record and original and is listed with the reason, for the caller
     /// to show. This throws only when the data directory itself cannot be made.
     @discardableResult
     static func rebuildDirectoryStructure(library: inout Library) throws -> LegacyMigrationReport {
         try TextMouthPaths.ensureDirectoryStructure()
+
+        // Books taken out with Remove from Library Only stay out, as at
+        // startup, before any step below touches their packages.
+        RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
 
         // Migrate books that don't have .tmb packages yet. Each copy is
         // verified before its original is removed, and a failure for one

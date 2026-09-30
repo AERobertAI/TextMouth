@@ -477,6 +477,88 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         XCTAssertNil(recovering.bookByID(book.id))
     }
 
+    // MARK: - An Index Saved Before the Removal
+
+    /// The startup repair takes out exactly the listed books whose own
+    /// package retires them; a book whose package marker names another
+    /// record stays, and nothing is deleted from disk.
+    func testStartupRepairTakesOutOnlyBooksTheirPackagesRetire() throws {
+        let retired = try makePackage(title: "Retired")
+        let sharer = try makePackage(title: "Shares A Package Once")
+        let untouched = try makePackage(title: "Untouched")
+        try RemovedFromLibraryMarker(book: retired).write(into: retired.tmbDirectory)
+        try RemovedFromLibraryMarker(book: fixtureBook(title: "Removed Sharer")).write(into: sharer.tmbDirectory)
+        var library = Library(books: [retired, sharer, untouched])
+
+        let removed = RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
+
+        XCTAssertEqual(removed.map(\.id), [retired.id])
+        XCTAssertEqual(library.books.map(\.id), [sharer.id, untouched.id])
+        XCTAssertTrue(exists(URL(fileURLWithPath: retired.filePath)))
+        XCTAssertTrue(exists(record(of: retired)))
+    }
+
+    /// When the app stops before the removal's debounced save reaches the
+    /// disk, the next launch loads an index that still lists the book. The
+    /// marker is the later decision: the book stays out, and the repaired
+    /// index is saved without it. Its package and content stay.
+    @MainActor
+    func testIndexSavedBeforeTheRemovalCannotBringTheBookBack() throws {
+        let book = try makePackage(title: "Removed Just Before Quitting")
+        let kept = try makePackage(title: "Listed Throughout")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book, kept])
+        model.removeBooksFromLibraryOnly([book])
+        LibraryPersistenceService.flushPendingSave()
+        try sandbox.stageValid(Library(books: [book, kept]), at: sandbox.indexURL)
+
+        let restarted = LibraryViewModel(initializeServices: false)
+        restarted.loadLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNil(restarted.bookByID(book.id))
+        XCTAssertNotNil(restarted.bookByID(kept.id))
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertFalse(saved.books.contains { $0.id == book.id })
+        XCTAssertTrue(saved.books.contains { $0.id == kept.id })
+        XCTAssertTrue(exists(marker(of: book)))
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+    }
+
+    /// Rebuild Directory applies the same rule to the library it rebuilds.
+    func testRebuildTakesARemovedBookOutOfALibraryThatStillListsIt() throws {
+        let book = try makePackage(title: "Listed Again By Mistake")
+        _ = try LibraryPersistenceService.retirePackage(of: book)
+        var library = Library(books: [book])
+
+        try FileImportService.rebuildDirectoryStructure(library: &library)
+
+        XCTAssertFalse(library.books.contains { $0.id == book.id })
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+    }
+
+    /// A book removed while the index could not be read stays removed when
+    /// Try Again then loads the index, which still lists it.
+    @MainActor
+    func testRemovalDuringIndexRecoverySurvivesTryAgain() throws {
+        let book = try makePackage(title: "Removed While Recovering")
+        try sandbox.stage(.unreadable, of: Library(books: [book]), at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertNotNil(model.bookByID(book.id), "the provisional library adopted the package")
+
+        model.removeBooksFromLibraryOnly([book])
+        LibraryIndexSandbox.makeReadable(sandbox.indexURL)
+        let outcome = model.retryLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(outcome, .restored(bookCount: model.library.books.count))
+        XCTAssertNil(model.bookByID(book.id))
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertFalse(saved.books.contains { $0.id == book.id })
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+    }
+
     /// The alert says which books stayed and which records were left, one
     /// line per book, in singular or plural as fits.
     func testRemovalProblemMessagesNameEachBookAndWhatHappened() {
