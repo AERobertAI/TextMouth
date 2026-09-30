@@ -4,13 +4,17 @@ import Combine
 /// Tracks reading/listening statistics.
 ///
 /// Listening time is credited while a session runs, not only when it ends:
-/// each checkpoint adds the open session's time since the one before to the
-/// totals and saves them, so a crash or force quit loses only the time since
-/// the last checkpoint. `ActiveSession` states the rule that keeps any second
-/// from being counted twice.
+/// every `checkpointInterval` a timer adds the open session's time since the
+/// previous checkpoint to the totals and saves them, so a crash or force quit
+/// loses at most one interval. `ActiveSession` states the rule that keeps any
+/// second from being counted twice.
 @MainActor
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
+
+    /// How often the app checkpoints an open session: the most listening
+    /// time a crash can lose.
+    nonisolated static let defaultCheckpointInterval: TimeInterval = 60
 
     /// The longest session that counts for nothing, so a stray play and
     /// pause does not register as listening. A longer session counts in full.
@@ -24,6 +28,9 @@ final class ReadingStatsService: ObservableObject {
     /// reading_stats.json: the file this service was created for, or else the
     /// one in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.readingStatsFile }
+
+    /// Seconds between the timer's checkpoints of an open session.
+    let checkpointInterval: TimeInterval
 
     /// A listening session in progress, and how much of it the totals
     /// already include.
@@ -46,23 +53,33 @@ final class ReadingStatsService: ObservableObject {
 
     /// The session in progress, if any.
     private var activeSession: ActiveSession?
-    private var saveTimer: Timer?
 
-    /// Creates a service and loads its statistics file before returning.
+    /// Fires every `checkpointInterval` to checkpoint the open session.
+    private var checkpointTimer: Timer?
+
+    /// Creates a service, loads its statistics file, and starts its
+    /// checkpoint timer before returning.
     ///
-    /// - Parameter fileURL: The file to read and write. Nil, as `shared`
-    ///   uses, follows the data directory in use; tests pass a file of their
-    ///   own so they never touch the app's statistics.
-    init(fileURL: URL? = nil) {
+    /// - Parameters:
+    ///   - fileURL: The file to read and write. Nil, as `shared` uses,
+    ///     follows the data directory in use; tests pass a file of their own
+    ///     so they never touch the app's statistics.
+    ///   - checkpointInterval: Seconds between checkpoints; must be
+    ///     positive. Tests shorten it to watch the timer work.
+    init(fileURL: URL? = nil, checkpointInterval: TimeInterval = defaultCheckpointInterval) {
+        precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
+        self.checkpointInterval = checkpointInterval
         // `self.fileURL` is the resolved location, not the optional parameter.
         stats = Self.load(from: self.fileURL)
-        startAutoSave()
+        startCheckpointTimer()
     }
 
+    /// Stops the checkpoint timer. At termination this follows
+    /// `flushPendingSaves()`, which has already saved everything.
     func shutdown() {
-        saveTimer?.invalidate()
-        saveTimer = nil
+        checkpointTimer?.invalidate()
+        checkpointTimer = nil
     }
 
     // MARK: - Session Tracking
@@ -212,8 +229,8 @@ final class ReadingStatsService: ObservableObject {
     /// Background queue for stats file I/O. JSON encoding and atomic
     /// file writes are synchronous operations that block the calling
     /// thread. Without this queue, save() blocks the main thread on
-    /// every pause and every 60-second auto-save tick. A queue is safe to
-    /// use from any thread, so it needs no actor isolation.
+    /// every pause and every checkpoint. A queue is safe to use from
+    /// any thread, so it needs no actor isolation.
     nonisolated private static let saveQueue = DispatchQueue(
         label: "com.textmouth.readingStats",
         qos: .utility
@@ -279,16 +296,29 @@ final class ReadingStatsService: ObservableObject {
         }
     }
 
-    private func startAutoSave() {
+    /// Starts the timer that checkpoints the open session every
+    /// `checkpointInterval`. A tick with nothing to credit writes nothing:
+    /// every other change to the statistics saves itself, so rewriting them
+    /// unchanged, as this timer once did, would add nothing.
+    private func startCheckpointTimer() {
         // Defensive invalidate-before-assign: this is currently called once
-        // from init on the shared singleton, but the pattern protects
-        // against a future refactor that calls it twice (which would
-        // otherwise leak a Timer onto the run loop with both copies firing
-        // every 60s).
-        saveTimer?.invalidate()
-        saveTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.save() }
+        // from init, but the pattern protects against a future refactor that
+        // calls it twice (which would otherwise leak a Timer onto the run
+        // loop with both copies firing).
+        checkpointTimer?.invalidate()
+        let timer = Timer(timeInterval: checkpointInterval, repeats: true) { [weak self] timer in
+            // A service that no longer exists, such as one a test made and
+            // released, stops its own timer instead of ticking forever.
+            guard let self else {
+                timer.invalidate()
+                return
+            }
+            MainActor.assumeIsolated { self.checkpointActiveSession() }
         }
+        // The common modes keep checkpoints coming while a menu is open or a
+        // modal panel runs; a timer in the default mode would wait for them.
+        RunLoop.main.add(timer, forMode: .common)
+        checkpointTimer = timer
     }
 
     /// Prune daily entries older than 90 days to keep the file small

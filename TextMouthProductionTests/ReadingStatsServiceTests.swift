@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -9,8 +10,8 @@ import XCTest
 /// checkpoint timer's ticks. Set-up and tear-down hold only plain values;
 /// each test makes its services on the main actor.
 final class ReadingStatsServiceTests: XCTestCase {
-    /// The spacing of the simulated checkpoints: the timer's default.
-    private let interval: TimeInterval = 60
+    /// The spacing of the simulated checkpoints: the app's own interval.
+    private let interval = ReadingStatsService.defaultCheckpointInterval
     /// Directory holding this test's statistics file, removed afterwards.
     private var directory: URL!
     /// The statistics file this test's services read and write.
@@ -249,6 +250,60 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertFalse(service.hasActiveSession)
     }
 
+    // MARK: - Checkpoint timer
+
+    /// The app checkpoints every minute, so a crash loses at most a minute
+    /// of listening.
+    @MainActor
+    func testSharedServiceCheckpointsEveryMinute() {
+        XCTAssertEqual(ReadingStatsService.defaultCheckpointInterval, 60)
+        XCTAssertEqual(ReadingStatsService.shared.checkpointInterval, 60)
+    }
+
+    /// The timer checkpoints an open session by itself: a session that has
+    /// run for half a minute is credited and saved while it stays open, and
+    /// its end then adds only the rest, so it is counted exactly once.
+    @MainActor
+    func testTimerCheckpointsAnOpenSessionAndSavesIt() {
+        let service = makeService(checkpointInterval: 0.05)
+        let start = Date().addingTimeInterval(-30)
+        service.startSession(bookID: UUID(), at: start)
+
+        let checkpoint = expectation(description: "The timer credited the open session")
+        let subscription = service.$stats
+            .first { $0.totalListeningSeconds > 0 }
+            .sink { _ in checkpoint.fulfill() }
+        defer { subscription.cancel() }
+        wait(for: [checkpoint], timeout: 10)
+
+        XCTAssertTrue(service.hasActiveSession)
+        XCTAssertGreaterThanOrEqual(service.stats.totalListeningSeconds, 30)
+        XCTAssertEqual(relaunchedService().stats.totalListeningSeconds, service.stats.totalListeningSeconds)
+        let end = Date()
+        service.endSession(at: end)
+        XCTAssertEqual(service.stats.totalListeningSeconds, end.timeIntervalSince(start))
+    }
+
+    /// Shutting down stops the timer, so however many intervals pass, an
+    /// open session is no longer checkpointed.
+    @MainActor
+    func testShutdownStopsTheTimersCheckpoints() {
+        let service = makeService(checkpointInterval: 0.05)
+        service.shutdown()
+        service.startSession(bookID: UUID(), at: Date().addingTimeInterval(-30))
+
+        let checkpoint = expectation(description: "A checkpoint after shutdown")
+        checkpoint.isInverted = true
+        let subscription = service.$stats
+            .first { $0.totalListeningSeconds > 0 }
+            .sink { _ in checkpoint.fulfill() }
+        defer { subscription.cancel() }
+        wait(for: [checkpoint], timeout: 0.5)
+
+        XCTAssertEqual(service.stats.totalListeningSeconds, 0)
+        XCTAssertTrue(service.hasActiveSession)
+    }
+
     // MARK: - Displayed totals
 
     /// Today and This Week add only the open session's time since its last
@@ -278,10 +333,13 @@ final class ReadingStatsServiceTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// A service over this test's file. Its timer stops when the test ends.
+    /// A service over this test's file, checkpointing every
+    /// `checkpointInterval`. Its timer stops when the test ends.
     @MainActor
-    private func makeService() -> ReadingStatsService {
-        let service = ReadingStatsService(fileURL: fileURL)
+    private func makeService(
+        checkpointInterval: TimeInterval = ReadingStatsService.defaultCheckpointInterval
+    ) -> ReadingStatsService {
+        let service = ReadingStatsService(fileURL: fileURL, checkpointInterval: checkpointInterval)
         addTeardownBlock { @MainActor in service.shutdown() }
         return service
     }
