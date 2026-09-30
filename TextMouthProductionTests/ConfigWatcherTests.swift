@@ -61,7 +61,61 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
     }
 
+    // MARK: - Saving
+
+    /// A save writes only when the file's bytes would change: saving the
+    /// same settings again leaves the file and its modification date alone.
+    func testSavingUnchangedSettingsWritesNothing() throws {
+        let url = try makeConfigFileURL()
+        let counter = FileOperationCounter()
+        let service = ConfigService(fileURL: url, fileOperations: counter.operations)
+        service.config = .everyFieldCustomized
+
+        service.saveToDisk()
+        let stamp = try fileStamp(url)
+        service.saveToDisk()
+
+        XCTAssertEqual(counter.writes, 1)
+        XCTAssertEqual(try fileStamp(url), stamp)
+        XCTAssertEqual(try Data(contentsOf: url), try ConfigService.fileData(for: .everyFieldCustomized))
+
+        service.config.wordsPerMinute = 300
+        service.saveToDisk()
+
+        XCTAssertEqual(counter.writes, 2)
+    }
+
     // MARK: - Helpers
+
+    /// Counts the file-system calls a service makes, passing each on to the
+    /// system.
+    @MainActor
+    private final class FileOperationCounter {
+        /// Atomic writes of config.json.
+        private(set) var writes = 0
+
+        /// The system's operations, counted.
+        var operations: ConfigService.FileOperations {
+            let system = ConfigService.FileOperations.system
+            return ConfigService.FileOperations(write: { [self] data, url in
+                writes += 1
+                try system.write(data, url)
+            })
+        }
+    }
+
+    /// One version of a file on disk: its identity, which an atomic write
+    /// replaces, and its modification date.
+    private struct FileStamp: Equatable {
+        let identity: FileIdentity?
+        let modified: Date?
+    }
+
+    /// The version of the file at `url` now.
+    private func fileStamp(_ url: URL) throws -> FileStamp {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        return FileStamp(identity: FileIdentity(of: url), modified: attributes[.modificationDate] as? Date)
+    }
 
     /// A config.json location in a directory of this test's own inside the
     /// isolated test root. The directory is removed when the test ends.

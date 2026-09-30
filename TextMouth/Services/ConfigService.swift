@@ -34,6 +34,21 @@ final class ConfigService: ObservableObject {
     /// in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.configFile }
 
+    /// The file-system calls this service makes, replaceable so tests can
+    /// count them.
+    struct FileOperations {
+        /// Replaces the file at a URL with new contents in one atomic step.
+        var write: @MainActor (_ data: Data, _ url: URL) throws -> Void
+
+        /// The calls the app makes.
+        static var system: FileOperations {
+            FileOperations(write: { data, url in try data.write(to: url, options: .atomic) })
+        }
+    }
+
+    /// The file-system calls in use.
+    private let fileOperations: FileOperations
+
     struct WatcherActions: Equatable {
         let reload: Bool
         let rearm: Bool
@@ -183,10 +198,13 @@ final class ConfigService: ObservableObject {
 
     /// Creates a service and loads its file before returning.
     ///
-    /// - Parameter fileURL: The file to mirror. Nil, as `shared` uses,
-    ///   follows the data directory in use; tests pass a file of their own.
-    init(fileURL: URL? = nil) {
+    /// - Parameters:
+    ///   - fileURL: The file to mirror. Nil, as `shared` uses, follows the
+    ///     data directory in use; tests pass a file of their own.
+    ///   - fileOperations: The file-system calls to make; tests count them.
+    init(fileURL: URL? = nil, fileOperations: FileOperations = .system) {
         customFileURL = fileURL
+        self.fileOperations = fileOperations
         loadFromDisk()
     }
 
@@ -202,7 +220,21 @@ final class ConfigService: ObservableObject {
 
     // MARK: - Persistence
 
+    /// Makes config.json hold `config`.
+    ///
+    /// Nothing is written when the file already holds exactly these bytes:
+    /// writing them again would change only the modification date and wake
+    /// the watcher. A launch on a consistent file therefore writes nothing.
     func saveToDisk() {
+        let data: Data
+        do {
+            data = try Self.fileData(for: config)
+        } catch {
+            log("could not encode the settings for \(fileURL.path): \(error)")
+            return
+        }
+        guard data != readFileContents() else { return }
+
         isSaving = true
         defer {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -212,11 +244,16 @@ final class ConfigService: ObservableObject {
 
         do {
             try TextMouthPaths.ensureDirectoryStructure()
-            let data = try Self.fileData(for: config)
-            try data.write(to: fileURL, options: .atomic)
+            try fileOperations.write(data, fileURL)
         } catch {
             log("could not save \(fileURL.path): \(error)")
         }
+    }
+
+    /// config.json's current bytes, or nil when there is no file or it
+    /// cannot be read.
+    private func readFileContents() -> Data? {
+        try? Data(contentsOf: fileURL)
     }
 
     /// The exact bytes `saveToDisk()` writes for `config`: sorted, indented
