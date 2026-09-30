@@ -503,6 +503,31 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// Parsing reports the files of a library reached through a symbolic
+    /// link by the link's destination. The builder still records each file
+    /// relative to the folder as the book names it, subfolder included, so
+    /// the index validates instead of naming "03.wav" for "Disc 2/03.wav".
+    func testIndexBuiltThroughALinkedLibraryKeepsSubfolders() throws {
+        let library = try scratchFolder("ContentIndexLinkedLibrary")
+        try createAudioFiles(in: library.appendingPathComponent("real/audio", isDirectory: true))
+        try FileManager.default.createSymbolicLink(
+            at: library.appendingPathComponent("linked"),
+            withDestinationURL: library.appendingPathComponent("real")
+        )
+        let folder = library.appendingPathComponent("linked/audio", isDirectory: true)
+        let reported = try AudioBookParser.audioFiles(in: folder).map(\.path)
+
+        let index = BookContentIndex.build(
+            fromChapters: reported.map { Chapter(title: $0, text: placeholder(10)) },
+            format: .audio,
+            audioFilePaths: reported,
+            audioBaseURL: folder
+        )
+
+        XCTAssertEqual(index.chapters.compactMap(\.audioFilePath).sorted(), (tracks + ["book.wav"]).sorted())
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: folder))
+    }
+
     /// A single-file book's chapters name no file, so validation looks none
     /// up, just as opening the book from its index never opens its file.
     func testSingleFileIndexLooksUpNoFiles() throws {
@@ -816,12 +841,18 @@ final class ContentIndexValidationTests: XCTestCase {
     /// /private/var, so every folder check also crosses a link.
     private func audioFolder() throws -> URL {
         let folder = try scratchFolder("ContentIndexAudio")
+        try createAudioFiles(in: folder)
+        return folder
+    }
+
+    /// Create the (empty) files of `audioFolder()` inside `folder`, creating
+    /// the folder and its subfolders as needed.
+    private func createAudioFiles(in folder: URL) throws {
         for file in tracks + ["book.wav"] {
             let url = folder.appendingPathComponent(file)
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: Data()))
         }
-        return folder
     }
 
     /// A new, empty folder under the temporary directory, removed when the

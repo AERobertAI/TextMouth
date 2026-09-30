@@ -254,12 +254,30 @@ struct BookContentIndex: Codable, Hashable {
         return restored.count == chapters.count ? restored : nil
     }
 
+    /// `path` relative to `baseURL`, as persisted for a multi-file book, or
+    /// only the file's name when it lies outside that folder. Canonical
+    /// locations are compared first, as validation compares them: the
+    /// directory enumerator reports files through the folder's resolved
+    /// location (/private/var for /var, or a linked folder's destination),
+    /// while `baseURL` keeps the book's own spelling. Comparing spellings
+    /// alone recorded a linked folder's "Disc 2/03.wav" as "03.wav". Paths
+    /// that do not exist, as in some tests, are compared as spelled.
     private static func relativeAudioPath(_ path: String, baseURL: URL?) -> String {
-        guard let baseURL else { return URL(fileURLWithPath: path).lastPathComponent }
-        let basePath = baseURL.standardizedFileURL.path
-        let filePath = URL(fileURLWithPath: path).standardizedFileURL.path
-        let prefix = basePath.hasSuffix("/") ? basePath : basePath + "/"
-        return filePath.hasPrefix(prefix) ? String(filePath.dropFirst(prefix.count)) : URL(fileURLWithPath: path).lastPathComponent
+        let fileURL = URL(fileURLWithPath: path)
+        guard let baseURL else { return fileURL.lastPathComponent }
+        if let folder = canonicalPath(of: baseURL.path),
+           let file = canonicalPath(of: path),
+           let relative = relativePath(of: file, inside: folder) {
+            return relative
+        }
+        return relativePath(of: fileURL.standardizedFileURL.path, inside: baseURL.standardizedFileURL.path)
+            ?? fileURL.lastPathComponent
+    }
+
+    /// `path` without its leading `folder`, or nil when it is not inside it.
+    private static func relativePath(of path: String, inside folder: String) -> String? {
+        let prefix = folder.hasSuffix("/") ? folder : folder + "/"
+        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : nil
     }
 }
 
@@ -507,7 +525,7 @@ extension BookContentIndex {
         init(folder: URL?) {
             self.folder = folder
             canonicalFolderPrefix = folder
-                .flatMap { Self.canonicalPath(of: $0.path) }
+                .flatMap { BookContentIndex.canonicalPath(of: $0.path) }
                 .map { $0.hasSuffix("/") ? $0 : $0 + "/" }
         }
 
@@ -528,7 +546,7 @@ extension BookContentIndex {
             // Resolution fails for a missing file, and for every file of a
             // missing folder.
             guard let canonicalFolderPrefix,
-                  let canonicalFile = Self.canonicalPath(of: folder.appendingPathComponent(path).path) else {
+                  let canonicalFile = BookContentIndex.canonicalPath(of: folder.appendingPathComponent(path).path) else {
                 return "\(field) \(quotedPath) does not exist"
             }
             // A symbolic link inside the folder can point anywhere on disk.
@@ -542,22 +560,23 @@ extension BookContentIndex {
             return nil
         }
 
-        /// The absolute path of an existing file or folder with every
-        /// symbolic link, ".", and ".." resolved, as realpath(3) gives it, or
-        /// nil when nothing exists there. The folder and its files both go
-        /// through this, so spellings such as /var and /private/var agree.
-        private static func canonicalPath(of path: String) -> String? {
-            guard let resolved = realpath(path, nil) else { return nil }
-            defer { free(resolved) }
-            return String(cString: resolved)
-        }
-
         /// Whether `path`, already canonical, names a regular file rather
         /// than a folder or a device.
         private static func isRegularFile(atPath path: String) -> Bool {
             let attributes = try? FileManager.default.attributesOfItem(atPath: path)
             return attributes?[.type] as? FileAttributeType == .typeRegular
         }
+    }
+
+    /// The absolute path of an existing file or folder with every symbolic
+    /// link, ".", and ".." resolved, as realpath(3) gives it, or nil when
+    /// nothing exists there. Validation and the builder both compare folders
+    /// and files through this, so spellings such as /var and /private/var,
+    /// or a linked folder and its destination, agree.
+    fileprivate static func canonicalPath(of path: String) -> String? {
+        guard let resolved = realpath(path, nil) else { return nil }
+        defer { free(resolved) }
+        return String(cString: resolved)
     }
 }
 
