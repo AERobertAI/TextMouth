@@ -43,10 +43,10 @@ enum HTMLReadingBoundary: Equatable {
 /// - `script` and `style`, and content outside the rendered reading flow
 ///   (`PublicationSemantics.isExcludedFromReadingFlow`), contribute nothing.
 /// - An image contributes its alt text, read like any other text.
-/// - In the flowing layout each run of whitespace in text is read as one
-///   space (`collapsingWhitespace`), and a space never follows whitespace
-///   already read. Text inside an element that preserves whitespace (`pre`,
-///   `textarea`) is read exactly.
+/// - In the flowing layout each run of ASCII whitespace in text is read as
+///   one space (`collapsingWhitespace`), and a space never follows
+///   whitespace already read. Text inside an element that preserves
+///   whitespace (`pre`, `textarea`) is read exactly.
 /// - At every boundary (`HTMLReadingBoundary`), before the element and again
 ///   after it, a space keeps the words on either side apart unless
 ///   whitespace already does.
@@ -88,18 +88,24 @@ struct HTMLReadingText {
 
     // MARK: - Shared Readings
 
-    /// Each run of whitespace as a single space. This is SwiftSoup's reading
-    /// of HTML text: a character is whitespace when `Character.isWhitespace`
-    /// says so, which includes no-break spaces and every line separator.
+    /// Each run of HTML's ASCII whitespace (tab, line feed, form feed,
+    /// carriage return, and space) as a single space. This is SwiftSoup's
+    /// reading of HTML text. Every other character, including a no-break
+    /// space, the Unicode space separators, and U+2028, is text and is kept.
     static func collapsingWhitespace(_ text: String) -> String {
         StringUtil.normaliseWhitespace(text)
     }
 
     /// A heading's label: the words of its subtree on one line, with no
-    /// whitespace at either end. The Markdown converter writes exactly this
-    /// label, so both readings list the same heading.
+    /// whitespace (Unicode White_Space) at either end. Only whitespace is
+    /// trimmed; `CharacterSet.whitespaces` also holds characters such as
+    /// U+200B that are words of the reading. The Markdown converter writes
+    /// exactly this label, so both readings list the same heading.
     static func label(of element: Element) -> String {
-        inlineText(of: element).trimmingCharacters(in: .whitespacesAndNewlines)
+        let scalars = inlineText(of: element).unicodeScalars
+        guard let first = scalars.firstIndex(where: { !$0.properties.isWhitespace }),
+              let last = scalars.lastIndex(where: { !$0.properties.isWhitespace }) else { return "" }
+        return String(String.UnicodeScalarView(scalars[first...last]))
     }
 
     /// The words of an element read inline, with whitespace collapsed. One
@@ -163,10 +169,11 @@ struct HTMLReadingText {
         separate(at: boundary)
         let headingLevel = Self.headingLevel(of: tag)
         // The separator is already written, so the offset is where the
-        // label's first word will begin.
+        // label's first word will begin. A heading is recorded exactly when
+        // the cache's reader keeps one: its label is not blank.
         if recordsHeadings, flattenedDepth == 0, let headingLevel {
             let label = Self.label(of: element)
-            if !label.isEmpty {
+            if !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 headings.append(Heading(level: headingLevel, text: label, characterOffset: utf16Length))
             }
         }
@@ -193,11 +200,13 @@ struct HTMLReadingText {
     }
 
     /// Append collapsed text. A leading space is dropped after whitespace, so
-    /// neighboring text nodes never read as two spaces.
+    /// neighboring text nodes never read as two spaces. Scalars decide, since
+    /// a combining mark after a space joins it into one Character that
+    /// `hasPrefix(" ")` would not match; only the space itself is dropped.
     private mutating func appendFlowing(_ collapsed: String) {
         var value = collapsed
-        if value.hasPrefix(" "), endsWithWhitespace {
-            value.removeFirst()
+        if value.unicodeScalars.first == " ", endsWithWhitespace {
+            value.unicodeScalars.removeFirst()
         }
         write(value)
     }
@@ -209,7 +218,7 @@ struct HTMLReadingText {
             return
         case (.paragraph, .preformatted):
             // A block inside preformatted text sits on lines of its own.
-            if !text.isEmpty, !text.hasSuffix("\n") {
+            if !text.isEmpty, text.unicodeScalars.last != "\n" {
                 write("\n")
             }
         default:

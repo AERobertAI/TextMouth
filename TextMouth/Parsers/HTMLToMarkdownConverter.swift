@@ -20,7 +20,7 @@ enum HTMLToMarkdownConverter {
 
         var result = ""
         convertNode(body, into: &result, context: Context(headingTargets: headingTargets))
-        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.trimmingCharacters(in: writtenWhitespace)
     }
 
     /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
@@ -210,7 +210,7 @@ enum HTMLToMarkdownConverter {
             var inner = ""
             convertNode(element, into: &inner, context: context)
             // Prefix each line with >
-            let lines = inner.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lines = inner.trimmingCharacters(in: writtenWhitespace)
                 .components(separatedBy: "\n")
             for line in lines {
                 result += "> \(line)\n"
@@ -367,7 +367,7 @@ enum HTMLToMarkdownConverter {
             // receives its annotation as well as targets inside the item.
             convertElement(item, into: &itemContent, context: context)
             // Trim the item content and indent continuation lines
-            let trimmed = itemContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmed = itemContent.trimmingCharacters(in: writtenWhitespace)
             let lines = trimmed.components(separatedBy: "\n")
             for (lineIndex, line) in lines.enumerated() {
                 if lineIndex == 0 {
@@ -412,6 +412,12 @@ enum HTMLToMarkdownConverter {
         }
     }
 
+    /// The whitespace conversion writes between words and blocks: spaces and
+    /// line feeds. Converted Markdown is trimmed of these alone, because
+    /// `CharacterSet.whitespacesAndNewlines` also holds characters such as
+    /// U+200B that are words of the reading.
+    private static let writtenWhitespace = CharacterSet(charactersIn: " \n")
+
     /// Whether the next text begins a word: at the start of the Markdown, of
     /// a line, or after a space.
     private static func isAtWordStart(_ result: String) -> Bool {
@@ -428,23 +434,31 @@ enum HTMLToMarkdownConverter {
     /// spaces there would even begin a code block.
     private static func appendText(_ raw: String, to result: inout String) {
         var text = HTMLReadingText.collapsingWhitespace(raw)
-        if text.hasPrefix(" "), isAtWordStart(result) {
-            text.removeFirst()
+        // Scalars decide: a combining mark after a space joins it into one
+        // Character, which `hasPrefix(" ")` would not match.
+        if text.unicodeScalars.first == " ", isAtWordStart(result) {
+            text.unicodeScalars.removeFirst()
         }
         result += MarkdownLiteral.escaped(text)
     }
 
     /// Write inline words (`text`, with whitespace collapsed) as `render`
-    /// writes them. Whitespace at either end is written outside, as an
-    /// ordinary space, so the rendered syntax never begins or ends with one
-    /// (a code span would drop it and run the words around it together).
+    /// writes them. The space collapsing leaves at either end is written
+    /// outside, as an ordinary space, so the rendered syntax never begins or
+    /// ends with one (a code span would drop it and run the words around it
+    /// together). Any other character, a no-break space included, is words.
     private static func appendSpaced(_ text: String, to result: inout String, _ render: (String) -> String) {
-        let core = text.trimmingCharacters(in: .whitespaces)
-        if text.hasPrefix(" ") {
+        // Scalars decide where the words begin and end: a combining mark
+        // after a space joins it into one Character with the space.
+        let scalars = text.unicodeScalars
+        let start = scalars.firstIndex { $0 != " " } ?? scalars.endIndex
+        let end = scalars.lastIndex { $0 != " " }.map { scalars.index(after: $0) } ?? start
+        let core = String(String.UnicodeScalarView(scalars[start..<end]))
+        if start > scalars.startIndex {
             appendText(" ", to: &result)
         }
         result += render(core)
-        if !core.isEmpty, text.hasSuffix(" ") {
+        if !core.isEmpty, end < scalars.endIndex {
             appendText(" ", to: &result)
         }
     }

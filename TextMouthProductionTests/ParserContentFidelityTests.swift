@@ -550,6 +550,24 @@ final class ParserContentFidelityTests: XCTestCase {
         """)
         XCTAssertEqual(markdown, "First\n\n> Second")
     }
+
+    /// Characters that `CharacterSet.whitespaces` holds but Unicode does not
+    /// count as whitespace (U+200B) are words of both readings: nothing trims
+    /// them from a list item, a quotation, or a heading label. A combining
+    /// mark after a space joins it into one Character, yet the space still
+    /// keeps the words before inline code apart from the code's.
+    func testHTMLReadingsKeepCharactersThatCharacterSetTrims() throws {
+        let html = """
+        <p>Start</p><ul><li>\u{200B}</li></ul><blockquote>\u{200B}quoted\u{200B}</blockquote>\
+        <h2>Label\u{200B}</h2><p>a]<code> \u{301}x</code></p>
+        """
+        let direct = try directHTMLReading(html)
+        let cached = try cachedHTMLReading(html)
+        XCTAssertEqual(direct.text, "Start \u{200B} \u{200B}quoted\u{200B} Label\u{200B} a] \u{301}x")
+        XCTAssertEqual(cached.text, "Start\n\n\u{200B}\n\n\u{200B}quoted\u{200B}\n\nLabel\u{200B}\n\na] \u{301}x")
+        XCTAssertEqual(direct.headings.map(\.text), ["Label\u{200B}"])
+        XCTAssertEqual(cached.headings.map(\.text), ["Label\u{200B}"])
+    }
 }
 
 extension XCTestCase {
