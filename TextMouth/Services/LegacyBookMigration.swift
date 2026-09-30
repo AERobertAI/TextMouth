@@ -154,6 +154,9 @@ extension FileImportService {
     /// 6. The text cache is built last. A failure there is a warning; the
     ///    library's cache pass builds the cache later.
     ///
+    /// A missing original is reported unless an earlier, interrupted run
+    /// provably finished the move (see `finishedMigration(of:)`).
+    ///
     /// Whatever this throws, the original and the library record are as
     /// they were; the reasons are `LegacyMigrationError`s, apart from a
     /// failure to create the library's own folders. `copyItem` lets tests
@@ -170,6 +173,9 @@ extension FileImportService {
 
         let original = URL(fileURLWithPath: book.filePath)
         guard FileManager.default.fileExists(atPath: original.path) else {
+            // The original's removal may have been the last thing a run did
+            // before it was interrupted, ahead of the library index save.
+            if let finished = finishedMigration(of: book) { return finished }
             throw LegacyMigrationError.originalMissing(path: original.path)
         }
         let fingerprint = try originalFingerprint(of: original)
@@ -230,6 +236,30 @@ extension FileImportService {
         try MainActor.assumeIsolated {
             try removeItemRespectingTrashSetting(at: url)
         }
+    }
+
+    // MARK: Finishing an Interrupted Migration
+
+    /// The move of `book` that an earlier run completed, when that run was
+    /// interrupted after removing the original but before the library index
+    /// recorded the package. Only the usual package can hold such a move,
+    /// because a move into a new package keeps its original. The package is
+    /// accepted only on proof: its bookInfo.json names this book, and its
+    /// copy has the hash the library recorded for the original. Nil
+    /// otherwise.
+    private static func finishedMigration(of book: Book) -> LegacyBookMigration? {
+        let name = packageName(for: book, identifier: book.id)
+        let package = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: name)
+        let content = package.appendingPathComponent(book.bookFileURL.lastPathComponent)
+        guard !book.md5Hash.isEmpty,
+              (try? BookInfo.load(from: package))?.metadata.bookID == book.id,
+              (try? ContentFingerprint(of: content))?.md5Hash == book.md5Hash else {
+            return nil
+        }
+        var migrated = book
+        migrated.filePath = content.path
+        migrated.tmbDirectoryName = name
+        return LegacyBookMigration(book: migrated, removedOriginal: false, warnings: [])
     }
 
     // MARK: Verifying the Original

@@ -362,6 +362,60 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertEqual(migration.warnings.count, 1)
     }
 
+    // MARK: - Finishing an Interrupted Move
+
+    /// A run interrupted after removing the original, but before the library
+    /// index was saved, leaves a record that still names the original. The
+    /// package it finished proves it holds this book (its bookInfo.json
+    /// names the book and its copy has the recorded hash), so the record is
+    /// repaired instead of the book being reported missing.
+    func testMoveInterruptedAfterRemovingTheOriginalIsFinished() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Moved before the crash.")
+        let book = try sandbox.legacyBook("Interrupted Move", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Moved before the crash.")
+        try sandbox.saveBookInfo(for: book, in: package)
+        try FileManager.default.removeItem(at: original)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
+        XCTAssertEqual(migration.book.filePath, package.appendingPathComponent("book.txt").path)
+        XCTAssertEqual(migration.warnings, [])
+    }
+
+    /// Without proof a missing original stays missing: a package that names
+    /// the book but holds other content is not taken for the book.
+    func testMissingOriginalIsNotResolvedByAPackageWithOtherContent() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "The recorded text.")
+        let book = try sandbox.legacyBook("Unproven Package", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Some other text.")
+        try sandbox.saveBookInfo(for: book, in: package)
+        try FileManager.default.removeItem(at: original)
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            XCTAssertEqual(error as? LegacyMigrationError, .originalMissing(path: original.path))
+        }
+    }
+
+    /// Matching content is not proof on its own either: a package whose
+    /// bookInfo.json names another book belongs to that book.
+    func testMissingOriginalIsNotResolvedByAnotherBooksPackage() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Identical words.")
+        let book = try sandbox.legacyBook("Borrowed Package", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Identical words.")
+        let otherBook = try sandbox.legacyBook("Someone Else", original: original)
+        try sandbox.saveBookInfo(for: otherBook, in: package)
+        try FileManager.default.removeItem(at: original)
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            XCTAssertEqual(error as? LegacyMigrationError, .originalMissing(path: original.path))
+        }
+        XCTAssertEqual(try BookInfo.load(from: package).metadata.bookID, otherBook.id)
+    }
+
     // MARK: - Assertions
 
     /// Asserts that `name` comes from the usual naming scheme for `book`
@@ -462,6 +516,15 @@ final class LegacyBookMigrationTests: XCTestCase {
             try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
             try Data(contents.utf8).write(to: package.appendingPathComponent(book.bookFileURL.lastPathComponent))
             return package
+        }
+
+        /// Writes into `package` the bookInfo.json that a migration of
+        /// `book` into that package saves.
+        func saveBookInfo(for book: Book, in package: URL) throws {
+            var packaged = book
+            packaged.filePath = package.appendingPathComponent(book.bookFileURL.lastPathComponent).path
+            packaged.tmbDirectoryName = package.lastPathComponent
+            try packaged.saveBookInfoThrowing()
         }
 
         /// The hidden names in `directory`. A copy passes through one, and
