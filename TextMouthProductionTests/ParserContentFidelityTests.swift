@@ -600,55 +600,21 @@ final class ParserContentFidelityTests: XCTestCase {
 
     // MARK: - HTML Readings Agree
 
-    /// The one whitespace normalization under which the direct and cached
-    /// readings of an HTML book are equal: each run of whitespace scalars
-    /// (Unicode White_Space) is one space, with none at either end. A
-    /// paragraph break, a line break, and a space therefore read alike.
-    /// Scalars rather than Characters decide, because a combining mark joins
-    /// a preceding space into one Character but never a preceding newline.
-    private func normalizedReading(_ text: String) -> String {
-        text.unicodeScalars
-            .split(whereSeparator: \.properties.isWhitespace)
-            .map { String(String.UnicodeScalarView($0)) }
-            .joined(separator: " ")
-    }
-
-    /// The text from UTF-16 `offset` (a heading's coordinate) to the end.
-    private func reading(_ text: String, from offset: Int) -> String {
-        let text = text as NSString
-        return text.substring(from: min(max(0, offset), text.length))
-    }
-
     /// Read an HTML source both ways TextMouth can, directly (HTMLParser) and
-    /// from the Markdown its cache holds, and require one reading. Under
-    /// `normalizedReading` the words are identical and in the same order,
-    /// none merged and none lost. Heading labels and levels are identical, in
-    /// the same order. Each heading sits at the same word: the reading from
-    /// its offset to the end normalizes identically on both paths. The
-    /// offsets themselves differ wherever the direct reading separates two
-    /// blocks with a space and the cache with a blank line. Returns the
-    /// direct reading for further checks.
+    /// from the Markdown its cache holds, and require one reading (see
+    /// `assertSameHTMLReading`). Returns the direct reading.
     @discardableResult
     private func assertHTMLReadingsAgree(
         _ html: String,
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws -> Chapter {
-        let direct = try directHTMLReading(html)
-        let cached = try cachedHTMLReading(html)
-        let context = "source \(html.debugDescription)"
-        XCTAssertEqual(normalizedReading(cached.text), normalizedReading(direct.text), "words; \(context)", file: file, line: line)
-        XCTAssertEqual(cached.headings.map(\.text), direct.headings.map(\.text), "heading labels; \(context)", file: file, line: line)
-        XCTAssertEqual(cached.headings.map(\.level), direct.headings.map(\.level), "heading levels; \(context)", file: file, line: line)
-        for (cachedHeading, directHeading) in zip(cached.headings, direct.headings) {
-            XCTAssertEqual(
-                normalizedReading(reading(cached.text, from: cachedHeading.characterOffset)),
-                normalizedReading(reading(direct.text, from: directHeading.characterOffset)),
-                "position of heading \(directHeading.text.debugDescription); \(context)",
-                file: file, line: line
-            )
-        }
-        return direct
+        try assertSameHTMLReading(
+            cached: cachedHTMLReading(html),
+            direct: directHTMLReading(html),
+            context: "source \(html.debugDescription)",
+            file: file, line: line
+        )
     }
 
     /// The invariant on every HTML fixture: nested blocks, a table, a
@@ -665,7 +631,7 @@ final class ParserContentFidelityTests: XCTestCase {
     /// headings both readings must have written out in full.
     func testHTMLReadingsAgreeOnCombinedFixture() throws {
         let chapter = try assertHTMLReadingsAgree(HTMLFixture.combined)
-        XCTAssertEqual(normalizedReading(chapter.text), HTMLFixture.combinedWords)
+        XCTAssertEqual(normalizedHTMLReading(chapter.text), HTMLFixture.combinedWords)
         XCTAssertEqual(chapter.headings.map(\.text), HTMLFixture.combinedHeadings.map(\.text))
         XCTAssertEqual(chapter.headings.map(\.level), HTMLFixture.combinedHeadings.map(\.level))
     }
@@ -710,6 +676,56 @@ extension XCTestCase {
         XCTAssertEqual(cachedChapter.headings, directChapter.headings, "chapter headings; \(context)", file: file, line: line)
         XCTAssertEqual(cached.allHeadings, direct.allHeadings, "indexed headings; \(context)", file: file, line: line)
         return directChapter
+    }
+
+    /// Assert that the direct and cached readings of one HTML chapter are one
+    /// reading under `normalizedHTMLReading`: the words are identical and in
+    /// the same order, none merged and none lost; heading labels and levels
+    /// are identical, in the same order; and each heading sits at the same
+    /// word, because the reading from its offset to the end normalizes
+    /// identically on both paths. The offsets themselves differ wherever the
+    /// direct reading separates two blocks with a space and the cache with a
+    /// blank line. `context` names the source in failure messages. Returns
+    /// the direct reading for further checks.
+    @discardableResult
+    func assertSameHTMLReading(
+        cached: Chapter,
+        direct: Chapter,
+        context: String = "",
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Chapter {
+        XCTAssertEqual(normalizedHTMLReading(cached.text), normalizedHTMLReading(direct.text), "words; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.text), direct.headings.map(\.text), "heading labels; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.level), direct.headings.map(\.level), "heading levels; \(context)", file: file, line: line)
+        for (cachedHeading, directHeading) in zip(cached.headings, direct.headings) {
+            XCTAssertEqual(
+                normalizedHTMLReading(readingText(cached.text, fromUTF16Offset: cachedHeading.characterOffset)),
+                normalizedHTMLReading(readingText(direct.text, fromUTF16Offset: directHeading.characterOffset)),
+                "position of heading \(directHeading.text.debugDescription); \(context)",
+                file: file, line: line
+            )
+        }
+        return direct
+    }
+
+    /// The one whitespace normalization under which the direct and cached
+    /// readings of an HTML book are equal: each run of whitespace scalars
+    /// (Unicode White_Space) is one space, with none at either end. A
+    /// paragraph break, a line break, and a space therefore read alike.
+    /// Scalars rather than Characters decide, because a combining mark joins
+    /// a preceding space into one Character but never a preceding newline.
+    func normalizedHTMLReading(_ text: String) -> String {
+        text.unicodeScalars
+            .split(whereSeparator: \.properties.isWhitespace)
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: " ")
+    }
+
+    /// The text from UTF-16 `offset` (a heading's coordinate) to the end.
+    private func readingText(_ text: String, fromUTF16Offset offset: Int) -> String {
+        let text = text as NSString
+        return text.substring(from: min(max(0, offset), text.length))
     }
 }
 
