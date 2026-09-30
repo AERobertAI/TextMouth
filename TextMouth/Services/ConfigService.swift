@@ -1,13 +1,25 @@
 import Foundation
 import Combine
 
-/// Manages ~/.TextMouth/config.json, mirroring app settings.
-/// AppStorage is the primary source of truth. Config.json mirrors it and
-/// allows external editing — external changes are detected and synced back.
+/// Mirrors the app's settings in config.json, in the data directory, where
+/// they can be read and edited by hand.
+///
+/// The preferences store is the source of truth while TextMouth runs, and
+/// config.json follows it: each settings change saves the file. At launch
+/// the file's values are applied first, because the file is where settings
+/// can change while TextMouth is closed. While TextMouth runs, a watcher
+/// notices edits saved from outside, tells them from TextMouth's own saves
+/// by their bytes rather than by timing, and publishes each once through
+/// `externalEdits`. Everything here runs on the main actor, which owns all
+/// of the watcher's state.
 @MainActor
 final class ConfigService: ObservableObject {
+    /// The service for the data directory's config.json.
     static let shared = ConfigService()
 
+    /// The settings as config.json holds them. Screens that manage a field of
+    /// their own change it here and call `saveToDisk()`; the settings model
+    /// keeps the fields it mirrors in step with the preferences.
     @Published var config: AppConfig = AppConfig()
 
     /// Publishes each edit of config.json made outside TextMouth, once, after
@@ -15,6 +27,61 @@ final class ConfigService: ObservableObject {
     /// subscriber applies edits in order and never receives TextMouth's own
     /// saves. The settings model applies these to the preferences.
     let externalEdits = PassthroughSubject<AppConfig, Never>()
+
+    // MARK: - The File
+
+    /// What config.json held when this service was created.
+    enum LoadedFile: Equatable {
+        /// There was no file: the first launch, or the file was deleted.
+        case missing
+        /// The file decoded, and `config` holds its values.
+        case decoded
+        /// The file exists but could not be read or decoded. It stays as it
+        /// is, so whoever edited it can correct it.
+        case unreadable
+    }
+
+    /// What config.json held when this service was created.
+    private(set) var loadedFile: LoadedFile = .missing
+
+    /// Whether config.json held a decodable file when this service was
+    /// created; `config` then holds that file's values, which launch applies
+    /// to the preferences. A file that leaves speed unset still counts, since
+    /// it can hold every other setting.
+    var hasExistingConfig: Bool { loadedFile == .decoded }
+
+    /// The file to mirror in place of the data directory's, for tests.
+    private let customFileURL: URL?
+
+    /// config.json: the file this service was created for, or else the one
+    /// in the data directory in use, which moves when the library does.
+    var fileURL: URL { customFileURL ?? TextMouthPaths.configFile }
+
+    /// The file-system calls this service makes, replaceable so tests can
+    /// count them.
+    struct FileOperations {
+        /// Replaces the file at a URL with new contents in one atomic step.
+        var write: @MainActor (_ data: Data, _ url: URL) throws -> Void
+        /// Opens a path for event notification only, returning a descriptor,
+        /// or -1 when it cannot be opened.
+        var openForEvents: @MainActor (_ path: String) -> Int32
+        /// Closes a descriptor that `openForEvents` returned.
+        var close: @MainActor (_ descriptor: Int32) -> Void
+
+        /// The calls the app makes.
+        static var system: FileOperations {
+            FileOperations(
+                write: { data, url in try data.write(to: url, options: .atomic) },
+                openForEvents: { path in Darwin.open(path, O_EVTONLY) },
+                close: { descriptor in _ = Darwin.close(descriptor) }
+            )
+        }
+    }
+
+    /// The file-system calls in use.
+    private let fileOperations: FileOperations
+
+    // MARK: - Agreement With the File
 
     /// config.json's bytes as this process last wrote, loaded, or examined
     /// them. A file event that finds these bytes brings nothing new: it is
@@ -28,6 +95,8 @@ final class ConfigService: ObservableObject {
     /// against this, to tell the fields TextMouth changed since from the
     /// fields the edit changed. Nil until a file was decoded or written.
     private var lastSyncedConfig: AppConfig?
+
+    // MARK: - Watcher State
 
     /// Whether the watcher is on: from `startWatching()` until `shutdown()`.
     private var isWatching = false
@@ -62,50 +131,7 @@ final class ConfigService: ObservableObject {
     /// one, and longer at the end, for a slow volume. About 1.5 seconds in all.
     private static let rearmRetryDelays: [Duration] = [50, 100, 200, 400, 800].map { .milliseconds($0) }
 
-    /// What config.json held when this service was created.
-    enum LoadedFile: Equatable {
-        /// There was no file: the first launch, or the file was deleted.
-        case missing
-        /// The file decoded, and `config` holds its values.
-        case decoded
-        /// The file exists but could not be read or decoded. It stays as it
-        /// is, so whoever edited it can correct it.
-        case unreadable
-    }
-
-    /// What config.json held when this service was created.
-    private(set) var loadedFile: LoadedFile = .missing
-
-    /// The file to mirror in place of the data directory's, for tests.
-    private let customFileURL: URL?
-
-    /// config.json: the file this service was created for, or else the one
-    /// in the data directory in use, which moves when the library does.
-    var fileURL: URL { customFileURL ?? TextMouthPaths.configFile }
-
-    /// The file-system calls this service makes, replaceable so tests can
-    /// count them.
-    struct FileOperations {
-        /// Replaces the file at a URL with new contents in one atomic step.
-        var write: @MainActor (_ data: Data, _ url: URL) throws -> Void
-        /// Opens a path for event notification only, returning a descriptor,
-        /// or -1 when it cannot be opened.
-        var openForEvents: @MainActor (_ path: String) -> Int32
-        /// Closes a descriptor that `openForEvents` returned.
-        var close: @MainActor (_ descriptor: Int32) -> Void
-
-        /// The calls the app makes.
-        static var system: FileOperations {
-            FileOperations(
-                write: { data, url in try data.write(to: url, options: .atomic) },
-                openForEvents: { path in Darwin.open(path, O_EVTONLY) },
-                close: { descriptor in _ = Darwin.close(descriptor) }
-            )
-        }
-    }
-
-    /// The file-system calls in use.
-    private let fileOperations: FileOperations
+    // MARK: - Watcher Decision
 
     /// What the watcher does about a batch of file events.
     struct WatcherActions: Equatable {
@@ -140,9 +166,11 @@ final class ConfigService: ObservableObject {
     }
 
     /// Whether `event` means the watched file no longer sits at the path.
-    nonisolated static func replacesWatchedFile(_ event: DispatchSource.FileSystemEvent) -> Bool {
+    private nonisolated static func replacesWatchedFile(_ event: DispatchSource.FileSystemEvent) -> Bool {
         !event.isDisjoint(with: [.rename, .delete, .revoke])
     }
+
+    // MARK: - Settings
 
     /// The contents of config.json. Numeric and enum-backed fields follow
     /// `SettingsPolicy`, which supplies their defaults and validates them
@@ -276,6 +304,8 @@ final class ConfigService: ObservableObject {
         static let defaultRestartTimerGesturePattern = "previousTrack,previousTrack,previousTrack"
     }
 
+    // MARK: - Lifecycle
+
     /// Creates a service and loads its file before returning.
     ///
     /// - Parameters:
@@ -401,12 +431,6 @@ final class ConfigService: ObservableObject {
             logUnreadableFile(error)
         }
     }
-
-    /// Whether config.json held a decodable file when this service was
-    /// created; `config` then holds that file's values, which launch applies
-    /// to the preferences. A file that leaves speed unset still counts, since
-    /// it can hold every other setting.
-    var hasExistingConfig: Bool { loadedFile == .decoded }
 
     /// Decodes config.json's bytes. The decoder is lenient: a single bad
     /// value is repaired and logged rather than failing the whole file.
