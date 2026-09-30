@@ -231,17 +231,40 @@ extension ReaderViewModel {
             wasActive = speechService.isSpeaking || speechService.isPaused
         }
 
-        let wasSleepTimerFading = sleepTimerService.ownerID == book.id && sleepTimerService.isFadingOut
+        let wasSleepTimerFading = isOwnSleepTimerFading
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
             audioPlaybackService.stop()
+        } else {
+            speechService.stop()
+        }
+        finishStopping(wasActive: wasActive, wasSleepTimerFading: wasSleepTimerFading)
+    }
+
+    /// Whether this book's sleep timer is fading playback out right now.
+    private var isOwnSleepTimerFading: Bool {
+        sleepTimerService.ownerID == book.id && sleepTimerService.isFadingOut
+    }
+
+    /// Everything stopping does once the playback backend is silent:
+    /// restore full volume, show the stopped state, end a sleep-timer fade,
+    /// close this book's listening session, clear Now Playing, and, when
+    /// something was playing or paused, record the stop and save the
+    /// position.
+    ///
+    /// - Parameters:
+    ///   - wasActive: Whether playback was playing or paused before it was
+    ///     silenced.
+    ///   - wasSleepTimerFading: Whether this book's sleep timer was fading
+    ///     out before playback was silenced.
+    private func finishStopping(wasActive: Bool, wasSleepTimerFading: Bool) {
+        if isAudioBook {
             audioPlaybackService.restoreVolume()
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
         } else {
-            speechService.stop()
             speechService.audioEngine.restoreVolume()
         }
         // Cancel the timer after playback is stopped. Its fade-cancellation
