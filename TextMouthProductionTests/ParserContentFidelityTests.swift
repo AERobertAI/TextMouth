@@ -529,6 +529,19 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.characterOffset), [0])
     }
 
+    /// Anything a list holds outside its items (text, a list nested directly
+    /// inside the list, a paragraph) is read in place instead of dropped, and
+    /// a hidden item is still left out.
+    func testCachedHTMLListsKeepContentOutsideTheirItems() throws {
+        let html = """
+        <ul>Before<li>One</li>between<li>Two</li><ul><li>Nested</li></ul><p>After</p></ul>
+        <ol><li>First</li><li hidden="">Hidden</li><li>Second</li></ol>
+        """
+        let words = ["Before", "One", "between", "Two", "Nested", "After", "First", "Second"]
+        XCTAssertEqual(try cachedHTMLReading(html).text.split(whereSeparator: \.isWhitespace).map(String.init), words)
+        XCTAssertTrue(try HTMLToMarkdownConverter.convert(html).hasSuffix("1. First\n2. Second"))
+    }
+
     /// Boundaries are written only where missing, so nested and empty blocks
     /// never pile up blank lines around the words they hold.
     func testCachedHTMLNestedAndEmptyBlocksWriteOneBlankLine() throws {

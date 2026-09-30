@@ -100,11 +100,17 @@ enum HTMLToMarkdownConverter {
     /// Recursively walk the DOM tree and emit Markdown for each element.
     private static func convertNode(_ node: Node, into result: inout String, context: Context) {
         for child in node.getChildNodes() {
-            if let textNode = child as? TextNode {
-                appendText(textNode.getWholeText(), to: &result)
-            } else if let element = child as? Element {
-                convertElement(element, into: &result, context: context)
-            }
+            convertChild(child, into: &result, context: context)
+        }
+    }
+
+    /// Convert one child node: text as Markdown literals, an element as its
+    /// Markdown. Comments and the data of scripts and styles write nothing.
+    private static func convertChild(_ child: Node, into result: inout String, context: Context) {
+        if let textNode = child as? TextNode {
+            appendText(textNode.getWholeText(), to: &result)
+        } else if let element = child as? Element {
+            convertElement(element, into: &result, context: context)
         }
     }
 
@@ -335,18 +341,26 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - List Conversion
 
-    /// Convert list item children of a <ul> or <ol> to Markdown.
+    /// Convert the children of a <ul> or <ol> to Markdown: each list item
+    /// after its bullet, and anything else the list holds (text, or a list
+    /// nested directly inside the list) in place between the items, as the
+    /// direct reader reads it, so none of its words are lost.
     private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, context: Context) {
-        // A hidden item is not rendered: it must neither leave an empty bullet
-        // nor take a number from the visible items that follow it.
-        let items = listElement.getChildNodes().compactMap { node -> Element? in
-            guard let element = node as? Element,
-                  element.tagName().lowercased() == "li",
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { return nil }
-            return element
-        }
-        for (index, item) in items.enumerated() {
-            let bullet = ordered ? "\(index + 1). " : "- "
+        var itemCount = 0
+        for child in listElement.getChildNodes() {
+            guard let item = child as? Element, item.tagName().lowercased() == "li" else {
+                convertChild(child, into: &result, context: context)
+                continue
+            }
+            // A hidden item is not rendered: it must neither leave an empty
+            // bullet nor take a number from the visible items that follow it.
+            guard !PublicationSemantics.isExcludedFromReadingFlow(item) else { continue }
+            itemCount += 1
+            // Each bullet begins a line, even after words written between items.
+            if !result.isEmpty, !result.hasSuffix("\n") {
+                result += "\n"
+            }
+            let bullet = ordered ? "\(itemCount). " : "- "
             result += bullet
             var itemContent = ""
             // Go through the element entry point so an id on the li itself
