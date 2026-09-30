@@ -115,10 +115,11 @@ final class LibraryOnlyRemovalTests: XCTestCase {
 
     // MARK: - The Metadata Queue
 
-    /// Retiring a package writes its marker, cancels a write still waiting
-    /// in the debounce, deletes bookInfo.json, and drops every later write,
-    /// debounced or flushed at quit. The content file stays.
-    func testRetiringCancelsAQueuedWriteAndDropsLaterOnes() throws {
+    /// Retiring a package writes its marker and deletes bookInfo.json, and
+    /// no write recreates that record: neither one still waiting in the
+    /// debounce nor a later one, whether the debounce fires or the quit
+    /// flush runs. The content file stays.
+    func testNoQueuedOrLaterWriteRecreatesARetiredPackagesRecord() throws {
         let book = try makePackage(title: "Queued Write")
         var edited = book
         edited.manualSortOrder = 4
