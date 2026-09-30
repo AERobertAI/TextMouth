@@ -265,6 +265,239 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         XCTAssertTrue(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
     }
 
+    // MARK: - Removing from the Library
+
+    /// Remove from Library Only takes the row out, marks the package, and
+    /// keeps its content file; the other books and their records stay.
+    @MainActor
+    func testRemovalMarksThePackageAndKeepsItsContent() throws {
+        let book = try makePackage(title: "Removed Quietly")
+        let kept = try makePackage(title: "Still Listed")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book, kept])
+
+        model.removeBooksFromLibraryOnly([book])
+
+        XCTAssertEqual(model.library.books.map(\.id), [kept.id])
+        XCTAssertFalse(model.showError)
+        XCTAssertNil(model.errorMessage)
+        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: book.tmbDirectory).title, "Removed Quietly")
+        XCTAssertFalse(exists(record(of: book)))
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+        XCTAssertTrue(exists(record(of: kept)))
+    }
+
+    /// A package write still waiting in the debounce when the book is removed
+    /// never lands, whether the debounce fires or the quit flush runs: no
+    /// bookInfo.json returns, adoption finds nothing, and the index is saved
+    /// without the book.
+    @MainActor
+    func testQueuedWriteCannotBringARemovedBookBack() throws {
+        let book = try makePackage(title: "Pending Save")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: 210)
+
+        model.removeBooksFromLibraryOnly([book])
+        LibraryPersistenceService.flushPendingSave()
+        waitPastLibrarySaveDebounce()
+
+        XCTAssertFalse(exists(record(of: book)))
+        XCTAssertFalse(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertFalse(saved.books.contains { $0.id == book.id })
+    }
+
+    /// A reader window left open on the removed book keeps saving through
+    /// the library model. Its position, bookmarks, settings, and analysis
+    /// neither recreate the record nor bring the row back.
+    @MainActor
+    func testOpenReaderSavesCannotBringARemovedBookBack() throws {
+        let book = try makePackage(title: "Open In A Reader")
+        var parsed = book
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &parsed))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+
+        model.removeBooksFromLibraryOnly([book])
+        model.persistReadingPosition(bookID: book.id, position: ReadingPosition(characterOffset: 40))
+        model.addBookmark(bookID: book.id, chapterIndex: 0, characterOffset: 40, label: "Late")
+        model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: nil, wpm: 190)
+        model.markBookOpened(book.id)
+        model.updateWordCounts(bookID: book.id, wordCount: 9, charCount: 60)
+        model.updateContentIndex(bookID: book.id, index: index, cacheFormatVersion: parsed.cacheFormatVersion)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNil(model.bookByID(book.id))
+        XCTAssertFalse(exists(record(of: book)))
+        XCTAssertFalse(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
+    }
+
+    /// A package that cannot take the marker keeps its book in the library,
+    /// and the alert names the book and the package. Nothing is changed.
+    @MainActor
+    func testUnwritablePackageKeepsTheBookAndNamesThePackage() throws {
+        let book = try makePackage(title: "Cannot Be Marked")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        setWritable(book.tmbDirectory, false)
+
+        model.removeBooksFromLibraryOnly([book])
+        setWritable(book.tmbDirectory, true)
+
+        XCTAssertEqual(model.library.books.map(\.id), [book.id])
+        XCTAssertTrue(model.showError)
+        let message = try XCTUnwrap(model.errorMessage)
+        XCTAssertTrue(message.hasPrefix("This book could not be removed from the library and remains in it:\n"), message)
+        XCTAssertTrue(message.contains("Cannot Be Marked: "), message)
+        XCTAssertTrue(message.contains(book.tmbDirectoryName), message)
+        XCTAssertFalse(exists(marker(of: book)))
+        XCTAssertTrue(exists(record(of: book)))
+    }
+
+    /// Of several books, those whose package can be marked are removed; only
+    /// the one kept is named in the alert.
+    @MainActor
+    func testPartialRemovalReportsOnlyTheBookKept() throws {
+        let removable = try makePackage(title: "Removable")
+        let stuck = try makePackage(title: "Stuck In Place")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [removable, stuck])
+        setWritable(stuck.tmbDirectory, false)
+
+        model.removeBooksFromLibraryOnly([removable, stuck])
+        setWritable(stuck.tmbDirectory, true)
+
+        XCTAssertEqual(model.library.books.map(\.id), [stuck.id])
+        let message = try XCTUnwrap(model.errorMessage)
+        XCTAssertTrue(message.contains("Stuck In Place: "), message)
+        XCTAssertFalse(message.contains("Removable"), message)
+        XCTAssertTrue(exists(marker(of: removable)))
+    }
+
+    /// A bookInfo.json that cannot be deleted is reported, yet the book stays
+    /// out: after a restart (a fresh model loading the same root) and after
+    /// Rebuild Directory, though adoption could read that record. The
+    /// content file stays on disk throughout.
+    @MainActor
+    func testLockedRecordIsReportedAndTheBookStaysOutAfterRestartAndRebuild() throws {
+        let book = try makePackage(title: "Locked Record")
+        let kept = try makePackage(title: "Kept Beside It")
+        try lock(record(of: book))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book, kept])
+
+        model.removeBooksFromLibraryOnly([book])
+
+        XCTAssertEqual(model.library.books.map(\.id), [kept.id])
+        XCTAssertTrue(model.showError)
+        let message = try XCTUnwrap(model.errorMessage)
+        XCTAssertTrue(message.hasPrefix("This book was removed from the library, but its bookInfo.json file"), message)
+        XCTAssertTrue(message.contains("Locked Record: "), message)
+
+        LibraryPersistenceService.flushPendingSave()
+        let restarted = LibraryViewModel(initializeServices: false)
+        restarted.loadLibraryIndex()
+        XCTAssertNil(restarted.bookByID(book.id))
+        XCTAssertNotNil(restarted.bookByID(kept.id))
+
+        try FileImportService.rebuildDirectoryStructure(library: &restarted.library)
+        XCTAssertNil(restarted.bookByID(book.id))
+        XCTAssertNotNil(restarted.bookByID(kept.id))
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+        XCTAssertTrue(exists(marker(of: book)))
+    }
+
+    /// The confirmation captures its books when it opens. A book moved to
+    /// another folder before the user confirms is marked where its package
+    /// is now, not where the stale copy says.
+    @MainActor
+    func testRemovalMarksTheCurrentPackageOfABookMovedMeanwhile() throws {
+        let book = try makePackage(title: "Moved Before Confirming")
+        let destination = uniqueFolderName("Moved Shelf")
+        try makeFolder(destination)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        model.moveBooks([book], toFolder: destination)
+        let moved = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(moved.folderPath, destination)
+
+        model.removeBooksFromLibraryOnly([book])
+
+        XCTAssertTrue(model.library.books.isEmpty)
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: moved.tmbDirectory).bookID, book.id)
+        XCTAssertFalse(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
+    }
+
+    /// Importing the same file again lists the book once, in a new package,
+    /// and still once after a restart: the retained package stays retired
+    /// instead of returning as a second copy. The import path does not yet
+    /// look for a retained package to take back, so its marker stays.
+    @MainActor
+    func testReimportingTheSameFileListsTheBookOnce() throws {
+        let book = try makePackage(title: "Imported Again")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        model.removeBooksFromLibraryOnly([book])
+        let source = try makeScratchDirectory().appendingPathComponent("Imported Again.txt")
+        try FileManager.default.copyItem(at: URL(fileURLWithPath: book.filePath), to: source)
+
+        let reimported = try FileImportService.importFile(from: source, toFolder: book.folderPath)
+        XCTAssertTrue(model.addBookCheckingDuplicate(reimported, toFolder: book.folderPath))
+        model.save()
+        LibraryPersistenceService.flushPendingSave()
+        let restarted = LibraryViewModel(initializeServices: false)
+        restarted.loadLibraryIndex()
+
+        let listed = restarted.library.books.filter { $0.md5Hash == book.md5Hash }
+        XCTAssertEqual(listed.map(\.id), [reimported.id])
+        XCTAssertFalse(exists(marker(of: reimported)))
+        XCTAssertTrue(exists(marker(of: book)))
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+    }
+
+    /// While the index cannot be read, the library shown is rebuilt from the
+    /// packages on disk. A removed book is not part of it, even with a
+    /// readable bookInfo.json left in its package.
+    @MainActor
+    func testProvisionalLibraryDuringIndexRecoveryLeavesARemovedBookOut() throws {
+        let book = try makePackage(title: "Removed Before The Damage")
+        try lock(record(of: book))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        model.removeBooksFromLibraryOnly([book])
+        LibraryPersistenceService.flushPendingSave()
+        try sandbox.stage(.truncated, of: Library(books: [book]), at: sandbox.indexURL)
+
+        let recovering = LibraryViewModel(initializeServices: false)
+        recovering.loadLibraryIndex()
+
+        XCTAssertNotNil(recovering.indexRecovery)
+        XCTAssertNil(recovering.bookByID(book.id))
+    }
+
+    /// The alert says which books stayed and which records were left, one
+    /// line per book, in singular or plural as fits.
+    func testRemovalProblemMessagesNameEachBookAndWhatHappened() {
+        XCTAssertNil(LibraryViewModel.libraryOnlyRemovalProblems(refused: [], recordsLeft: []))
+        XCTAssertEqual(
+            LibraryViewModel.libraryOnlyRemovalProblems(
+                refused: ["Atlas: no permission", "Bestiary: read-only volume"],
+                recordsLeft: ["Chronicle: locked"]
+            ),
+            "These books could not be removed from the library and remain in it:\n"
+                + "Atlas: no permission\nBestiary: read-only volume\n\n"
+                + "This book was removed from the library, but its bookInfo.json file could not be deleted. "
+                + "It will still stay out of the library:\nChronicle: locked"
+        )
+        XCTAssertEqual(
+            LibraryViewModel.libraryOnlyRemovalProblems(refused: [], recordsLeft: ["Atlas: locked", "Bestiary: locked"]),
+            "These books were removed from the library, but their bookInfo.json files could not be deleted. "
+                + "They will still stay out of the library:\nAtlas: locked\nBestiary: locked"
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test
@@ -356,14 +589,20 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         XCTAssertEqual(chmod(directory.path, writable ? 0o755 : 0o555), 0)
     }
 
+    /// A new directory outside the library, removed after the test.
+    private func makeScratchDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LibraryOnlyRemoval-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        createdDirectories.append(directory)
+        return directory
+    }
+
     /// A package directory outside the library, for checks of the marker
     /// on its own.
     private func makeScratchPackage() throws -> URL {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("LibraryOnlyRemoval-\(UUID().uuidString)", isDirectory: true)
-        let package = directory.appendingPathComponent("Scratch.tmb", isDirectory: true)
+        let package = try makeScratchDirectory().appendingPathComponent("Scratch.tmb", isDirectory: true)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        createdDirectories.append(directory)
         return package
     }
 
