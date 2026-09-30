@@ -944,17 +944,10 @@ struct LibraryView: View {
         }
     }
 
-    /// Post a VoiceOver announcement for the library window.
+    /// Post a high-priority VoiceOver announcement from the library window,
+    /// or from the key (or main) window before the library knows its window.
     private func announceToVoiceOver(_ message: String) {
-        guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
-        NSAccessibility.post(
-            element: window,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.high.rawValue
-            ]
-        )
+        VoiceOverAnnouncer.announce(message, from: hostWindow)
     }
 
     private var filteredBooks: [Book] {
