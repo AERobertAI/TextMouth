@@ -597,6 +597,94 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(direct.headings.map(\.text), ["Label\u{200B}"])
         XCTAssertEqual(cached.headings.map(\.text), ["Label\u{200B}"])
     }
+
+    // MARK: - HTML Readings Agree
+
+    /// The one whitespace normalization under which the direct and cached
+    /// readings of an HTML book are equal: each run of whitespace scalars
+    /// (Unicode White_Space) is one space, with none at either end. A
+    /// paragraph break, a line break, and a space therefore read alike.
+    /// Scalars rather than Characters decide, because a combining mark joins
+    /// a preceding space into one Character but never a preceding newline.
+    private func normalizedReading(_ text: String) -> String {
+        text.unicodeScalars
+            .split(whereSeparator: \.properties.isWhitespace)
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: " ")
+    }
+
+    /// The text from UTF-16 `offset` (a heading's coordinate) to the end.
+    private func reading(_ text: String, from offset: Int) -> String {
+        let text = text as NSString
+        return text.substring(from: min(max(0, offset), text.length))
+    }
+
+    /// Read an HTML source both ways TextMouth can, directly (HTMLParser) and
+    /// from the Markdown its cache holds, and require one reading. Under
+    /// `normalizedReading` the words are identical and in the same order,
+    /// none merged and none lost. Heading labels and levels are identical, in
+    /// the same order. Each heading sits at the same word: the reading from
+    /// its offset to the end normalizes identically on both paths. The
+    /// offsets themselves differ wherever the direct reading separates two
+    /// blocks with a space and the cache with a blank line. Returns the
+    /// direct reading for further checks.
+    @discardableResult
+    private func assertHTMLReadingsAgree(
+        _ html: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> Chapter {
+        let direct = try directHTMLReading(html)
+        let cached = try cachedHTMLReading(html)
+        let context = "source \(html.debugDescription)"
+        XCTAssertEqual(normalizedReading(cached.text), normalizedReading(direct.text), "words; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.text), direct.headings.map(\.text), "heading labels; \(context)", file: file, line: line)
+        XCTAssertEqual(cached.headings.map(\.level), direct.headings.map(\.level), "heading levels; \(context)", file: file, line: line)
+        for (cachedHeading, directHeading) in zip(cached.headings, direct.headings) {
+            XCTAssertEqual(
+                normalizedReading(reading(cached.text, from: cachedHeading.characterOffset)),
+                normalizedReading(reading(direct.text, from: directHeading.characterOffset)),
+                "position of heading \(directHeading.text.debugDescription); \(context)",
+                file: file, line: line
+            )
+        }
+        return direct
+    }
+
+    /// The invariant on every HTML fixture: nested blocks, a table, a
+    /// definition list, preformatted text, code, Markdown lookalikes, awkward
+    /// links and images, line breaks in cells, quotations, headings holding
+    /// markup, emphasis edge cases, lists, and content outside the flow.
+    func testHTMLReadingsAgreeOnEveryFixture() throws {
+        for html in HTMLFixture.all {
+            try assertHTMLReadingsAgree(html)
+        }
+    }
+
+    /// The invariant on one book mixing the fixtures, with the words and
+    /// headings both readings must have written out in full.
+    func testHTMLReadingsAgreeOnCombinedFixture() throws {
+        let chapter = try assertHTMLReadingsAgree(HTMLFixture.combined)
+        XCTAssertEqual(normalizedReading(chapter.text), HTMLFixture.combinedWords)
+        XCTAssertEqual(chapter.headings.map(\.text), HTMLFixture.combinedHeadings.map(\.text))
+        XCTAssertEqual(chapter.headings.map(\.level), HTMLFixture.combinedHeadings.map(\.level))
+    }
+
+    /// The invariant for arbitrary HTML rather than chosen examples: sources
+    /// assembled at random from text holding every ASCII punctuation
+    /// character, Markdown and HTML lookalikes, Unicode, and every kind of
+    /// whitespace, nested inside every kind of element. The seed is fixed,
+    /// so a failure names a source that replays exactly.
+    func testHTMLReadingsAgreeOnGeneratedSources() throws {
+        var generator = SeededGenerator(state: 0x4854_4D4C)
+        for _ in 0..<1_000 {
+            try assertHTMLReadingsAgree(HTMLFixture.randomSource(using: &generator))
+            // One replayable failing source explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 {
+                break
+            }
+        }
+    }
 }
 
 extension XCTestCase {
@@ -807,5 +895,166 @@ enum HTMLFixture {
         text.replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    // MARK: Fixtures for the Direct and Cached Invariant
+
+    /// Every source the invariant is checked on by name: each shape the
+    /// cache used to misread, and the edge cases of each fix.
+    static let all: [String] = [
+        // Nested blocks, and text after a block.
+        "<div><div>One</div><div>Two</div></div>Three",
+        "<section>Tide</section>tables<aside>list</aside>soundings",
+        // A table with a header row and two body rows; a definition list.
+        table,
+        definitions,
+        // Preformatted text with indented lines and a line of three backticks.
+        "<pre>let x = 1\n    indented()\n```\nnot closed\n\n\ttabbed</pre><p>After.</p>",
+        "<pre><code><span>let</span> tide =\n  <b>ebb</b><br/>flood</code></pre>",
+        // Inline code holding backticks, and whitespace at its edges.
+        "<p>Run <code>echo `date` *now*</code>, type <code>`</code> or <code>``x``</code> then<code> spaced </code>.</p>",
+        "<p>a<code>&nbsp;x&nbsp;</code>b<code>c:\\</code><em>d</em></p>",
+        // Text that looks like Markdown or HTML.
+        lookalikeParagraphs.map { "<p>\(escaped($0))</p>" }.joined(separator: "\n"),
+        // An image whose alt holds brackets; links whose hrefs hold ) and spaces.
+        "<p>Chart <img src=\"c (1).png\" alt=\"Figure [1]: tides\"/> here.</p>",
+        "<p>See <a href=\"notes (draft).xhtml#n 1\">the <em>notes</em></a> and <a href=\"a&lt;b&gt;\\c\">odd</a>.</p>",
+        "<div><a href=\"x.xhtml\"><span>Block</span><div>link</div></a><a href=\"y.xhtml\"> </a>end</div>",
+        // A line break inside a table cell.
+        "<table><tr><td>Top<br/>bottom</td><td>Side</td></tr></table>",
+        // A quotation whose text starts with # (and with a list marker).
+        "<blockquote><p># Not a heading</p><p>1. Nor a list</p></blockquote>",
+        // Headings whose labels hold markup characters, links, code, and images.
+        "<h2>Part *One* [draft] #1 &lt;b&gt; `v2` \\ -- ##</h2><p>Body.</p>",
+        "<h3><a href=\"toc.xhtml#c1\">Chapter <em>One</em></a><br/><code>x*y</code> <img src=\"m.png\" alt=\"[map]\"/></h3>",
+        // Heading labels take alt text and skip hidden text; nested headings.
+        "<h1>Part <span hidden=\"\">secret</span><img src=\"n.png\" alt=\"Two\"/></h1><h2>Outer <span><h3>Inner</h3></span></h2>",
+        "<pre><h4>Preformatted</h4></pre><div><code><h5>Coded</h5></code></div>",
+        // Emphasis at its edges, empty, nested, adjacent, around blocks.
+        "<p>The<i> Titanic </i>sank, <b>Note:</b>Read <i>\"Stop!\"</i>, she said.</p>",
+        "<p><i>Mr.</i><i>Smith</i> and <b>a</b><b>b</b>, <b>Warning: <i>hot</i> surface</b>.</p>",
+        "<p>a<em></em>b<strong> </strong>c</p><em><div>A</div><div>B</div></em><p>Wait<i>...</i><i>*</i>x<i>*y</i></p>",
+        "<p><em>“Quoted”</em> 🙂<i>🙂 smile</i> <em><a href=\"x\">see</a></em>here and x<em><code>y</code> z</em></p>",
+        // Lists holding content outside their items, and a hidden item.
+        "<ul>Before<li>One</li>between<li>Two</li><ul><li>Nested</li></ul><p>After</p></ul>",
+        "<ol><li>First</li><li hidden=\"\">Hidden</li><li>Second</li></ol>",
+        // Edit elements, hidden text, and whitespace and Unicode of every kind.
+        "<p>Fare<del>ten</del>eight<ins>pence</ins>, shown<span hidden=\"\">secret</span> words</p>",
+        "<p>tab\there&nbsp;no-break\u{2028}line\u{3000}ideographic\u{200B}zero</p><p>🙂 Cafe\u{301} 日本 👩‍👩‍👧 \u{FEFF}mark</p>",
+    ]
+
+    /// One book mixing the fixtures: a heading holding emphasis, nested
+    /// blocks, a table with a line break in a cell, a definition list, a
+    /// heading holding markup characters, Markdown lookalikes, preformatted
+    /// text, code, a quotation, an image and a link with awkward sources,
+    /// emphasis edge cases, a list holding stray text, hidden text, and an
+    /// edit element inside a word.
+    static let combined = #"""
+        <html><head><title>Fixture</title></head><body>
+        <h1>The <em>HTML</em> Companion</h1>
+        <div><div>Nested one</div><div>Nested two</div></div>after the divs
+        <table><caption>Soundings</caption><tr><th>Name</th><th>Depth</th></tr>
+        <tr><td>Odile</td><td>30<br/>fathoms</td></tr><tr><td>Bruno</td><td>41</td></tr></table>
+        <dl><dt>Ebb</dt><dd>The falling tide.</dd></dl>
+        <h2>Part *One* [draft] &lt;b&gt;</h2>
+        <p># Not a heading, 1. not a list, *stars*, _under_, [x](y), \ and a &lt; b -- "quotes" ... 'too'</p>
+        <p>***</p>
+        <pre>let tide = 1
+            indented()
+        ```
+        done</pre>
+        <p>Run <code>echo `date`</code> now.</p>
+        <blockquote><p># Quoted hash</p></blockquote>
+        <p><img src="chart (1).png" alt="Figure [1]"/> and <a href="notes (draft).xhtml#n 1">the notes</a>.</p>
+        <p>The<i> Titanic </i>sank, <b>Note:</b>read <i>Mr.</i><i>Smith</i>.</p>
+        <ul>stray<li>One</li><li>Two</li></ul>
+        <p>Shown<span hidden="">secret</span> words, un<del>believ</del>able.</p>
+        </body></html>
+        """#
+
+    /// The words of `combined`, in order, under the invariant's whitespace
+    /// normalization.
+    static let combinedWords = [
+        "The HTML Companion",
+        "Nested one Nested two after the divs",
+        "Soundings Name Depth Odile 30 fathoms Bruno 41",
+        "Ebb The falling tide.",
+        "Part *One* [draft] <b>",
+        #"# Not a heading, 1. not a list, *stars*, _under_, [x](y), \ and a < b -- "quotes" ... 'too'"#,
+        "***",
+        "let tide = 1 indented() ``` done",
+        "Run echo `date` now.",
+        "# Quoted hash",
+        "Figure [1] and the notes.",
+        "The Titanic sank, Note:read Mr.Smith.",
+        "stray One Two",
+        "Shown words, un believ able.",
+    ].joined(separator: " ")
+
+    /// The headings of `combined`, in order.
+    static let combinedHeadings: [(level: Int, text: String)] = [
+        (1, "The HTML Companion"),
+        (2, "Part *One* [draft] <b>"),
+    ]
+
+    // MARK: Generated Sources
+
+    /// Text of generated sources: words, every ASCII punctuation character
+    /// (as a character reference where HTML needs one), Markdown and HTML
+    /// lookalikes, Unicode letters, marks, and emoji, and whitespace of every
+    /// kind, including a no-break space and invisible characters.
+    private static let textFragments = PlainTextFixture.asciiPunctuation.map { escaped(String($0)) } + [
+        "alpha", "Beta", "GAMMA", "1984", "e\u{301}", "\u{301}", "🙂", "👩‍👩‍👧", "日本", "ß",
+        "*", "**", "_", "#", "## ", "1.", "2)", "- ", "+ ", "&gt; ", "***", "---", "===", "--", "...",
+        "[x](y)", "![i](j)", "`code`", "``", "\\", "~~s~~", "|a|", "&lt;b&gt;", "&lt;!-- c --&gt;",
+        "&amp;amp;", "\"q\"", "'s", "^[x](y)", "&lt;http://x.y&gt;", "[ ]",
+        " ", "  ", "\t", "\n", "\n\n", "&nbsp;", "\u{2028}", "\u{3000}", "\u{200B}", "&#xFEFF;", "\u{00AD}",
+    ]
+
+    /// Elements wrapped around generated content: every boundary kind,
+    /// phrasing and emphasis, links with awkward destinations, code and
+    /// preformatted text, whole lists and tables and their stray parts,
+    /// headings, and content outside the reading flow.
+    private static let wrappers: [(open: String, close: String)] = [
+        ("<p>", "</p>"), ("<div>", "</div>"), ("<section>", "</section>"), ("<span>", "</span>"),
+        ("<em>", "</em>"), ("<i>", "</i>"), ("<strong>", "</strong>"), ("<b>", "</b>"),
+        ("<a href=\"n (1).xhtml#a b\">", "</a>"), ("<a href=\"x&lt;y&gt;\\z\">", "</a>"), ("<a id=\"anchor\">", "</a>"),
+        ("<code>", "</code>"), ("<pre>", "</pre>"), ("<blockquote>", "</blockquote>"),
+        ("<ul><li>", "</li></ul>"), ("<ol><li>", "</li><li>next</li></ol>"), ("<ul>", "</ul>"), ("<li>", "</li>"),
+        ("<table><tr><td>", "</td><td>cell</td></tr></table>"), ("<tr>", "</tr>"), ("<td>", "</td>"), ("<th>", "</th>"),
+        ("<dl><dt>", "</dt><dd>description</dd></dl>"), ("<dd>", "</dd>"), ("<caption>", "</caption>"),
+        ("<h1>", "</h1>"), ("<h3>", "</h3>"), ("<h6>", "</h6>"),
+        ("<del>", "</del>"), ("<ins>", "</ins>"), ("<s>", "</s>"), ("<sup>", "</sup>"),
+        ("<span hidden=\"\">", "</span>"), ("<figure>", "</figure>"), ("<textarea>", "</textarea>"),
+    ]
+
+    /// Elements and nodes without generated content.
+    private static let emptyNodes = [
+        "<br/>", "<hr/>", "<wbr/>", "<!-- comment -->", "<img src=\"i (1).png\" alt=\" alt ] [x](y) *z* \"/>",
+        "<img src=\"j.png\" alt=\"\"/>", "<img src=\"k.png\"/>", "<script>var a = '<b>';</script>", "<style>b{}</style>",
+    ]
+
+    /// A random HTML body up to four elements deep.
+    static func randomSource<Generator: RandomNumberGenerator>(using generator: inout Generator) -> String {
+        randomContent(depth: 4, using: &generator)
+    }
+
+    /// Up to four random pieces: text, an empty node, or (above depth zero)
+    /// an element wrapped around more random content.
+    private static func randomContent<Generator: RandomNumberGenerator>(depth: Int, using generator: inout Generator) -> String {
+        var html = ""
+        for _ in 0..<Int.random(in: 0...4, using: &generator) {
+            switch Int.random(in: 0..<10, using: &generator) {
+            case 0..<5:
+                html += textFragments.randomElement(using: &generator)!
+            case 5:
+                html += emptyNodes.randomElement(using: &generator)!
+            default:
+                guard depth > 0 else { continue }
+                let wrapper = wrappers.randomElement(using: &generator)!
+                html += wrapper.open + randomContent(depth: depth - 1, using: &generator) + wrapper.close
+            }
+        }
+        return html
     }
 }
