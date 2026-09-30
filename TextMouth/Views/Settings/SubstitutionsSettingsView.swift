@@ -1,9 +1,23 @@
 import SwiftUI
 
+/// The Text settings tab: the substitution rules that rewrite text before it
+/// is spoken, listed in the order they apply.
+///
+/// Every rule can be enabled, edited, moved, and deleted from the keyboard,
+/// with VoiceOver, or from a braille display. Each row has its own enable
+/// checkbox and command buttons, the commands are also VoiceOver actions on
+/// the row, and the context menu repeats them. Pointer users can still click
+/// a rule to edit it and drag rules into a new order.
 struct SubstitutionsSettingsView: View {
-    @ObservedObject var service = TextSubstitutionService.shared
+    @ObservedObject private var service: TextSubstitutionService
     @State private var editingRule: SubstitutionRule?
     @State private var showAddRule = false
+
+    /// - Parameter service: The rules to show and change: the app's shared
+    ///   rules, unless a test supplies its own.
+    init(service: TextSubstitutionService = .shared) {
+        _service = ObservedObject(wrappedValue: service)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,30 +49,7 @@ struct SubstitutionsSettingsView: View {
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    ForEach(service.rules) { rule in
-                        SubstitutionRuleRow(rule: rule, onToggle: {
-                            service.toggleRule(id: rule.id)
-                        })
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editingRule = rule
-                        }
-                        .contextMenu {
-                            Button("Edit") { editingRule = rule }
-                            Button(rule.isEnabled ? "Disable" : "Enable") {
-                                service.toggleRule(id: rule.id)
-                            }
-                            Divider()
-                            Button("Delete", role: .destructive) {
-                                service.removeRule(id: rule.id)
-                            }
-                        }
-                    }
-                    .onMove { source, destination in
-                        service.moveRule(from: source, to: destination)
-                    }
-                }
+                ruleList
             }
 
             HStack {
@@ -96,106 +87,102 @@ struct SubstitutionsSettingsView: View {
             )
         }
     }
-}
 
-struct SubstitutionRuleRow: View {
-    let rule: SubstitutionRule
-    let onToggle: () -> Void
-
-    var body: some View {
-        HStack {
-            Toggle("", isOn: Binding(
-                get: { rule.isEnabled },
-                set: { _ in onToggle() }
-            ))
-            .labelsHidden()
-            .accessibilityLabel(rule.isEnabled ? "Enabled" : "Disabled")
-
-            VStack(alignment: .leading, spacing: 2) {
-                if !rule.name.isEmpty {
-                    Text(rule.name)
-                        .font(.headline)
-                }
-                HStack(spacing: 4) {
-                    Text(rule.pattern)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-
-                    Image(systemName: "arrow.right")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-
-                    Text(rule.replacement.isEmpty ? "(skip)" : rule.replacement)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(rule.replacement.isEmpty ? .orange : .primary)
-                        .lineLimit(1)
-                }
+    /// The rules in the order they apply. Each row carries its own controls
+    /// and context menu, and dragging rows reorders the rules as well.
+    private var ruleList: some View {
+        List {
+            // Enumerated for each rule's position, but identified by the
+            // rule's ID, so SwiftUI moves a row along with its rule.
+            ForEach(Array(service.rules.enumerated()), id: \.element.id) { index, rule in
+                SubstitutionRuleRow(
+                    rule: rule,
+                    index: index,
+                    count: service.rules.count,
+                    onToggle: { service.toggleRule(id: rule.id) },
+                    onCommand: { perform($0, on: rule) }
+                )
+                .contextMenu { ruleMenu(for: rule, at: index) }
             }
-
-            Spacer()
-
-            HStack(spacing: 4) {
-                if rule.isRegex {
-                    Text("regex")
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.purple.opacity(0.2))
-                        .cornerRadius(3)
-                }
-                if rule.caseSensitive {
-                    Text("Aa")
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(3)
-                }
-                // Show the "word" badge only when wholeWord is actually
-                // taking effect — same predicate as the editor toggle
-                // visibility, so the displayed state stays consistent
-                // with behaviour.
-                if rule.isWholeWordEffective {
-                    Text("word")
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.green.opacity(0.2))
-                        .cornerRadius(3)
-                }
+            .onMove { source, destination in
+                service.moveRule(from: source, to: destination)
             }
         }
-        .opacity(rule.isEnabled ? 1.0 : 0.5)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(ruleAccessibilityLabel)
-        .accessibilityHint("Double-tap to edit, use context menu for more options")
     }
 
-    private var ruleAccessibilityLabel: String {
-        var parts: [String] = []
-        if !rule.name.isEmpty { parts.append(rule.name) }
-        parts.append(rule.isEnabled ? "Enabled" : "Disabled")
-        parts.append("Pattern: \(rule.pattern)")
-        if rule.replacement.isEmpty {
-            parts.append("Action: skip")
-        } else {
-            parts.append("Replace with: \(rule.replacement)")
+    /// The pointer menu for one rule: the row's commands under the same
+    /// names, plus Enable or Disable. Moves that cannot happen are dimmed.
+    @ViewBuilder
+    private func ruleMenu(for rule: SubstitutionRule, at index: Int) -> some View {
+        ruleMenuItem(.edit, for: rule, at: index)
+        Button(rule.isEnabled ? "Disable" : "Enable") {
+            service.toggleRule(id: rule.id)
         }
-        if rule.isRegex { parts.append("Regular expression") }
-        if rule.caseSensitive { parts.append("Case sensitive") }
-        if rule.isWholeWordEffective { parts.append("Whole word only") }
-        return parts.joined(separator: ", ")
+        Divider()
+        ruleMenuItem(.moveUp, for: rule, at: index)
+        ruleMenuItem(.moveDown, for: rule, at: index)
+        Divider()
+        ruleMenuItem(.delete, for: rule, at: index)
+    }
+
+    /// The context menu item that runs `command` on `rule`.
+    private func ruleMenuItem(
+        _ command: SubstitutionRuleCommand,
+        for rule: SubstitutionRule,
+        at index: Int
+    ) -> some View {
+        SubstitutionRuleCommandButton(
+            command: command,
+            isAvailable: command.isAvailable(at: index, of: service.rules.count)
+        ) {
+            perform(command, on: rule)
+        }
+    }
+
+    /// Carry out `command` on `rule`, whichever control asked for it: a row
+    /// button, a VoiceOver action, or the context menu.
+    private func perform(_ command: SubstitutionRuleCommand, on rule: SubstitutionRule) {
+        switch command {
+        case .edit:
+            editingRule = rule
+        case .moveUp, .moveDown:
+            guard let direction = command.moveDirection else { return }
+            Self.move(rule, direction, in: service)
+        case .delete:
+            service.removeRule(id: rule.id)
+        }
     }
 }
 
-// MARK: - Announcements
+// MARK: - Moving and announcing
 
 extension SubstitutionsSettingsView {
+    /// Move `rule` one step and tell VoiceOver where it landed. At an end of
+    /// the list nothing moves and nothing is announced.
+    static func move(
+        _ rule: SubstitutionRule,
+        _ direction: SubstitutionRuleMoveDirection,
+        in service: TextSubstitutionService
+    ) {
+        guard let index = service.moveRule(id: rule.id, direction: direction) else { return }
+        announcePosition(of: rule, at: index, in: service)
+    }
+
     /// What VoiceOver says after a rule moves, counting positions from one:
     /// "Mr. moved to position 3 of 7" for index 2 in a list of 7.
     nonisolated static func movedAnnouncement(ruleName: String, index: Int, count: Int) -> String {
         "\(ruleName) moved to position \(index + 1) of \(count)"
+    }
+
+    /// Announce that `rule` now sits at `index` in `service`'s list.
+    private static func announcePosition(
+        of rule: SubstitutionRule,
+        at index: Int,
+        in service: TextSubstitutionService
+    ) {
+        VoiceOverAnnouncer.announce(
+            movedAnnouncement(ruleName: rule.displayName, index: index, count: service.rules.count)
+        )
     }
 }
 
@@ -231,6 +218,12 @@ enum SubstitutionRuleCommand: CaseIterable {
         }
     }
 
+    /// Delete removes the rule for good, so its button and menu item are
+    /// marked destructive.
+    var role: ButtonRole? {
+        self == .delete ? .destructive : nil
+    }
+
     /// The step this command moves a rule, or nil when it moves nothing.
     var moveDirection: SubstitutionRuleMoveDirection? {
         switch self {
@@ -252,6 +245,132 @@ enum SubstitutionRuleCommand: CaseIterable {
     /// VoiceOver actions have no dimmed state, so a row offers only these.
     static func available(at index: Int, of count: Int) -> [SubstitutionRuleCommand] {
         allCases.filter { $0.isAvailable(at: index, of: count) }
+    }
+}
+
+/// A button that runs one rule command, named and pictured as that command
+/// and dimmed when the command cannot act.
+struct SubstitutionRuleCommandButton: View {
+    let command: SubstitutionRuleCommand
+    let isAvailable: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(role: command.role, action: action) {
+            Label(command.title, systemImage: command.systemImage)
+        }
+        .disabled(!isAvailable)
+    }
+}
+
+// MARK: - Rule rows
+
+/// One rule in the list: its enable checkbox, a summary that opens the
+/// editor when clicked, and a button for every rule command.
+///
+/// For VoiceOver the row is a container labelled with the rule's summary.
+/// It holds the checkbox ("Enable Mr.") and the four command buttons as
+/// separate controls, so the checkbox is never mistaken for the rule, and it
+/// offers the commands that can act as VoiceOver actions.
+struct SubstitutionRuleRow: View {
+    let rule: SubstitutionRule
+    /// The rule's zero-based position in the list.
+    let index: Int
+    /// How many rules the list holds.
+    let count: Int
+    let onToggle: () -> Void
+    let onCommand: (SubstitutionRuleCommand) -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // The hidden title is still the checkbox's accessibility label.
+            Toggle(rule.enableLabel, isOn: Binding(
+                get: { rule.isEnabled },
+                set: { _ in onToggle() }
+            ))
+            .labelsHidden()
+
+            summary
+
+            ForEach(SubstitutionRuleCommand.allCases, id: \.self) { command in
+                SubstitutionRuleCommandButton(
+                    command: command,
+                    isAvailable: command.isAvailable(at: index, of: count)
+                ) {
+                    onCommand(command)
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help(command.title)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(rule.accessibilitySummary)
+        .accessibilityActions {
+            ForEach(SubstitutionRuleCommand.available(at: index, of: count), id: \.self) { command in
+                Button(command.title) { onCommand(command) }
+            }
+        }
+    }
+
+    /// The rule's name, pattern, replacement, and option tags, dimmed while
+    /// the rule is disabled. Clicking it opens the editor, as clicking a rule
+    /// always has. VoiceOver hears the same facts in the row's label, so the
+    /// drawing itself is hidden from it.
+    private var summary: some View {
+        HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
+                if !rule.trimmedName.isEmpty {
+                    Text(rule.trimmedName)
+                        .font(.headline)
+                }
+                HStack(spacing: 4) {
+                    Text(rule.pattern)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    Image(systemName: "arrow.right")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    Text(rule.replacement.isEmpty ? "(skip)" : rule.replacement)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(rule.replacement.isEmpty ? .orange : .primary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            optionTags
+        }
+        .opacity(rule.isEnabled ? 1.0 : 0.5)
+        .contentShape(Rectangle())
+        .onTapGesture { onCommand(.edit) }
+        .accessibilityHidden(true)
+    }
+
+    /// Tags for the rule's matching options.
+    private var optionTags: some View {
+        HStack(spacing: 4) {
+            if rule.isRegex { optionTag("regex", color: .purple) }
+            if rule.caseSensitive { optionTag("Aa", color: .blue) }
+            // Show "word" only while whole-word matching takes effect: the
+            // same predicate as the editor toggle, so the tag matches
+            // behaviour.
+            if rule.isWholeWordEffective { optionTag("word", color: .green) }
+        }
+    }
+
+    /// One small tag naming a matching option.
+    private func optionTag(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.caption2)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background(color.opacity(0.2))
+            .cornerRadius(3)
     }
 }
 

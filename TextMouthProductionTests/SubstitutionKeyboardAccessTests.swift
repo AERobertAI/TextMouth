@@ -3,8 +3,14 @@ import XCTest
 @testable import TextMouth
 
 /// Keyboard- and VoiceOver-operable substitution editing and reordering
-/// (TODO A03): one-step moves in the rule service, and the words and
-/// commands every rule row is built from.
+/// (TODO A03): one-step moves in the rule service, the words and commands
+/// every rule row is built from, the moves the settings list makes and
+/// announces, and the rows as AppKit renders them.
+///
+/// SwiftUI builds accessibility elements, and with them the labels, only
+/// for a connected assistive app, so no hosted test can read a row's labels.
+/// The wording tests pin those words; the rendered tests prove the controls
+/// they belong to are drawn, dimmed correctly, and wired to their commands.
 @MainActor
 final class SubstitutionKeyboardAccessTests: XCTestCase {
     // MARK: - One-step moves
@@ -151,6 +157,87 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
         )
     }
 
+    // MARK: - Moving from the list
+
+    /// A Move command moves the rule one step and announces its new place,
+    /// at high priority so VoiceOver speaks it straight away.
+    func testMoveCommandMovesTheRuleAndAnnouncesItsNewPosition() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let rules = makeRules(count: 4)
+        let service = TextSubstitutionService(rules: rules)
+
+        let recorder = recordingAnnouncements {
+            SubstitutionsSettingsView.move(rules[3], .up, in: service)
+            SubstitutionsSettingsView.move(rules[0], .down, in: service)
+        }
+
+        XCTAssertEqual(service.rules.map(\.name), ["B", "A", "D", "C"])
+        XCTAssertEqual(recorder.announcements, [
+            VoiceOverAnnouncement(message: "D moved to position 3 of 4", priority: .high),
+            VoiceOverAnnouncement(message: "A moved to position 2 of 4", priority: .high),
+        ])
+    }
+
+    /// At an end of the list a Move command changes and announces nothing.
+    func testMoveCommandAtAnEndStaysSilent() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let rules = makeRules(count: 2)
+        let service = TextSubstitutionService(rules: rules)
+
+        let recorder = recordingAnnouncements {
+            SubstitutionsSettingsView.move(rules[0], .up, in: service)
+            SubstitutionsSettingsView.move(rules[1], .down, in: service)
+        }
+
+        XCTAssertEqual(service.rules, rules)
+        XCTAssertEqual(recorder.announcements, [])
+    }
+
+    // MARK: - Rendered rows
+
+    /// Each rendered row draws its enable checkbox, showing whether the rule
+    /// is on, and all four command buttons, with Move Up dimmed on the first
+    /// rule and Move Down on the last.
+    func testRenderedRowsShowEveryControlAndDimImpossibleMoves() throws {
+        var rules = makeRules(count: 3)
+        rules[1].isEnabled = false
+        let service = TextSubstitutionService(rules: rules)
+
+        try withRenderedRows(of: service) { rows in
+            XCTAssertEqual(rows.map { $0.checkbox.state == .on }, [true, false, true])
+            XCTAssertEqual(rows.map(\.availableCommands), [
+                [.edit, .moveDown, .delete],
+                [.edit, .moveUp, .moveDown, .delete],
+                [.edit, .moveUp, .delete],
+            ])
+        }
+    }
+
+    /// Pressing the first rule's rendered Move Down button moves that rule
+    /// below the second and announces where it went.
+    func testPressingRenderedMoveDownMovesTheRuleAndAnnouncesIt() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let service = TextSubstitutionService(rules: makeRules(count: 3))
+
+        try withRenderedRows(of: service) { rows in
+            let moveDown = try XCTUnwrap(rows.first?.buttons[.moveDown])
+            let recorder = recordingAnnouncements {
+                moveDown.performClick(nil)
+                // SwiftUI may deliver the button's action on a later turn
+                // of the run loop.
+                _ = waitUntil { service.rules.first?.name == "B" }
+            }
+
+            XCTAssertEqual(service.rules.map(\.name), ["B", "A", "C"])
+            XCTAssertEqual(recorder.announcements, [
+                VoiceOverAnnouncement(message: "A moved to position 2 of 3", priority: .high)
+            ])
+        }
+    }
+
     // MARK: - Helpers
 
     /// `count` distinct plain rules named "A", "B", "C", and so on.
@@ -158,6 +245,84 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
         ["A", "B", "C", "D", "E", "F"].prefix(count).map { name in
             SubstitutionRule(name: name, pattern: name.lowercased(), replacement: name)
         }
+    }
+
+    /// One rule row as AppKit drew it: its checkbox and its command buttons.
+    /// Main-actor isolated, like the AppKit controls it reads.
+    @MainActor
+    private struct RenderedRow {
+        let checkbox: NSButton
+        let buttons: [SubstitutionRuleCommand: NSButton]
+
+        /// The commands whose buttons are not dimmed, in button order.
+        var availableCommands: [SubstitutionRuleCommand] {
+            SubstitutionRuleCommand.allCases.filter { buttons[$0]?.isEnabled == true }
+        }
+    }
+
+    /// Render the Text settings tab for `service` offscreen and pass its
+    /// rule rows, as AppKit drew them, to `body`.
+    ///
+    /// SwiftUI draws each row's checkbox and borderless buttons with AppKit
+    /// buttons, in row order: the checkbox, then one button per command.
+    /// The test is skipped should a later macOS stop drawing them that way.
+    private func withRenderedRows(
+        of service: TextSubstitutionService,
+        _ body: ([RenderedRow]) throws -> Void
+    ) throws {
+        let buttonsPerRow = 1 + SubstitutionRuleCommand.allCases.count
+        let expectedCounts = Array(repeating: buttonsPerRow, count: service.rules.count)
+
+        try withHostedView(
+            SubstitutionsSettingsView(service: service),
+            size: NSSize(width: 600, height: 540),
+            until: { renderedRowButtons(in: $0).map(\.count) == expectedCounts }
+        ) { hostingView in
+            let rowButtons = renderedRowButtons(in: hostingView)
+            XCTAssertEqual(rowButtons.count, service.rules.count, "One rendered row per rule")
+            if !rowButtons.isEmpty, rowButtons.allSatisfy(\.isEmpty) {
+                throw XCTSkip("This macOS does not draw rule rows with AppKit buttons")
+            }
+            XCTAssertEqual(
+                rowButtons.map(\.count), expectedCounts,
+                "Each row draws a checkbox and one button per command"
+            )
+            guard rowButtons.map(\.count) == expectedCounts else { return }
+
+            try body(rowButtons.map { buttons in
+                RenderedRow(
+                    checkbox: buttons[0],
+                    buttons: Dictionary(uniqueKeysWithValues: zip(
+                        SubstitutionRuleCommand.allCases,
+                        buttons.dropFirst()
+                    ))
+                )
+            })
+        }
+    }
+
+    /// The AppKit buttons in each row of the list inside `hostingView`, row
+    /// by row and in drawing order; empty until the list has rows.
+    private func renderedRowButtons(in hostingView: NSView) -> [[NSButton]] {
+        guard let outline = descendants(of: hostingView, as: NSOutlineView.self).first else {
+            return []
+        }
+        return (0..<outline.numberOfRows).map { row in
+            outline.view(atColumn: 0, row: row, makeIfNecessary: true)
+                .map { descendants(of: $0, as: NSButton.self) } ?? []
+        }
+    }
+
+    /// Every view of type `T` inside `view`, depth first in subview order.
+    private func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
+        var found: [T] = []
+        for subview in view.subviews {
+            if let match = subview as? T {
+                found.append(match)
+            }
+            found += descendants(of: subview, as: type)
+        }
+        return found
     }
 }
 
