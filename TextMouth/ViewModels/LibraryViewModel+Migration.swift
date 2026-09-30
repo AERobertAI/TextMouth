@@ -127,6 +127,18 @@ extension LibraryViewModel {
         if needsSave {
             save()
         }
+
+        // Once, after the whole repair, so one alert covers every book.
+        showLegacyMigrationIssues(migration)
+    }
+
+    /// Tells the user, through the library's error alert, which legacy books
+    /// could not move into packages and which moved with a problem, each
+    /// with the reason. A migration with nothing to report shows nothing.
+    private func showLegacyMigrationIssues(_ report: LegacyMigrationReport) {
+        guard let summary = report.userSummary else { return }
+        errorMessage = summary
+        showError = true
     }
 
     /// Merges folder rows that older versions let share one directory
@@ -364,11 +376,12 @@ extension LibraryViewModel {
     func rebuildDirectory() {
         do {
             try ensureLibraryIndexIsReadable()
-            try FileImportService.rebuildDirectoryStructure(library: &library)
+            let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
             // Extract content caches for any newly adopted books, then recalculate stats
             updateContentCachesAndStatistics()
+            showLegacyMigrationIssues(migration)
         } catch {
             errorMessage = "Failed to rebuild directory: \(error.localizedDescription)"
             showError = true
@@ -384,10 +397,11 @@ extension LibraryViewModel {
                 try TextMouthPaths.moveDataDirectory(to: defaultRoot, library: &library)
             }
             try TextMouthPaths.ensureDirectoryStructure()
-            try FileImportService.rebuildDirectoryStructure(library: &library)
+            let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
             configService.config.dataDirectoryPath = ""
             configService.saveToDisk()
             save()
+            showLegacyMigrationIssues(migration)
         } catch {
             errorMessage = "Failed to rebuild to default: \(error.localizedDescription)"
             showError = true

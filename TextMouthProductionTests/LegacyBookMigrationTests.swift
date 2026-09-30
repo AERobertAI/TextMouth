@@ -503,6 +503,57 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertTrue(summary.contains("Fourth: \(LegacyMigrationError.noUnusedPackageName.localizedDescription)"))
     }
 
+    // MARK: - Telling the User
+
+    /// The startup repair moves every book it can and then tells the user,
+    /// in one alert, about each book that could not move, with the reason.
+    /// The library index is sandboxed because the repair saves it.
+    func testStartupRepairShowsEveryMigrationFailureInOneAlert() throws {
+        let sandbox = makeSandbox()
+        let indexSandbox = try LibraryIndexSandbox.capture()
+        defer { indexSandbox.restore() }
+        let firstOriginal = sandbox.scratchDirectory.appendingPathComponent("first.txt")
+        let first = try sandbox.legacyBook("First Missing", original: firstOriginal, md5Hash: "first-hash")
+        let movable = try sandbox.legacyBook("Movable", original: try sandbox.makeFile("movable.txt", contents: "Moves."))
+        let second = try sandbox.legacyBook(
+            "Second Missing",
+            original: sandbox.scratchDirectory.appendingPathComponent("second.txt"),
+            md5Hash: "second-hash"
+        )
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [first, movable, second])
+
+        model.migrateOldBooksIfNeeded()
+
+        XCTAssertTrue(model.showError)
+        let message = try XCTUnwrap(model.errorMessage)
+        XCTAssertTrue(message.hasPrefix("TextMouth could not move 2 books to the current library format."))
+        XCTAssertTrue(message.contains(
+            "First Missing: \(LegacyMigrationError.originalMissing(path: firstOriginal.path).localizedDescription)"
+        ))
+        XCTAssertTrue(message.contains("Second Missing: "))
+        let moved = try XCTUnwrap(model.library.books.first { $0.id == movable.id })
+        XCTAssertEqual(moved.tmbDirectoryName, sandbox.usualPackage(for: movable).lastPathComponent)
+        XCTAssertEqual(model.library.books.first { $0.id == first.id }, first)
+    }
+
+    /// A repair whose migration went cleanly shows no alert.
+    func testStartupRepairWithoutMigrationProblemsShowsNoAlert() throws {
+        let sandbox = makeSandbox()
+        let indexSandbox = try LibraryIndexSandbox.capture()
+        defer { indexSandbox.restore() }
+        let movable = try sandbox.legacyBook("Clean Move", original: try sandbox.makeFile("clean.txt", contents: "Clean."))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [movable])
+
+        model.migrateOldBooksIfNeeded()
+
+        XCTAssertFalse(model.showError)
+        XCTAssertNil(model.errorMessage)
+        let moved = try XCTUnwrap(model.library.books.first { $0.id == movable.id })
+        XCTAssertEqual(moved.tmbDirectoryName, sandbox.usualPackage(for: movable).lastPathComponent)
+    }
+
     // MARK: - Assertions
 
     /// Asserts that `name` comes from the usual naming scheme for `book`
