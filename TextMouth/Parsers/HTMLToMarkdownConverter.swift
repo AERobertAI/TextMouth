@@ -19,7 +19,7 @@ enum HTMLToMarkdownConverter {
         }
 
         var result = ""
-        convertNode(body, into: &result, headingTargets: headingTargets)
+        convertNode(body, into: &result, context: Context(headingTargets: headingTargets))
         return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -86,19 +86,29 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Node Conversion
 
+    /// What conversion knows about the position of the node it converts.
+    private struct Context {
+        /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
+        var headingTargets: [String: MarkdownHeadingAnnotation]
+        /// Inside a link. Markdown cannot nest links, so a link here keeps
+        /// only its words.
+        var insideLink = false
+    }
+
     /// Recursively walk the DOM tree and emit Markdown for each element.
-    private static func convertNode(_ node: Node, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+    private static func convertNode(_ node: Node, into result: inout String, context: Context) {
         for child in node.getChildNodes() {
             if let textNode = child as? TextNode {
                 appendText(textNode.getWholeText(), to: &result)
             } else if let element = child as? Element {
-                convertElement(element, into: &result, headingTargets: headingTargets)
+                convertElement(element, into: &result, context: context)
             }
         }
     }
 
     /// Convert a single HTML element to its Markdown equivalent.
-    private static func convertElement(_ element: Element, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+    private static func convertElement(_ element: Element, into result: inout String, context: Context) {
+        let headingTargets = context.headingTargets
         let tag = element.tagName().lowercased()
         // Non-content elements are ignored without running selector queries.
         // Content outside the rendered reading flow (the hidden attribute, page
@@ -146,44 +156,51 @@ enum HTMLToMarkdownConverter {
         // Emphasis
         case "em", "i":
             result += "*"
-            convertNode(element, into: &result, headingTargets: headingTargets)
+            convertNode(element, into: &result, context: context)
             result += "*"
 
         // Strong
         case "strong", "b":
             result += "**"
-            convertNode(element, into: &result, headingTargets: headingTargets)
+            convertNode(element, into: &result, context: context)
             result += "**"
 
         // Links
         case "a":
             let href = (try? element.attr("href")) ?? ""
-            if href.isEmpty {
+            if href.isEmpty || context.insideLink {
                 // A named anchor such as <a id="page_12"/> marks a destination;
                 // it is not a link. Markdown would keep bare brackets as literal
                 // text in speech and in heading labels ("[]2"), so emit only
-                // whatever the anchor encloses.
-                convertNode(element, into: &result, headingTargets: headingTargets)
+                // whatever the anchor encloses. A link inside a link, which
+                // Markdown cannot nest, likewise keeps only its words.
+                convertNode(element, into: &result, context: context)
             } else {
-                result += "["
-                convertNode(element, into: &result, headingTargets: headingTargets)
-                result += "](\(href))"
+                var inner = context
+                inner.insideLink = true
+                let start = result.utf8.count
+                convertNode(element, into: &result, context: inner)
+                wrap(from: start, in: &result, opener: "[", closer: "](" + destination(href) + ")")
             }
 
-        // Images — emit alt text for accessibility, read like any other text
+        // Images — emit alt text for accessibility, read like any other text.
+        // Whitespace at the ends of the alt text is read around the image, as
+        // the direct reader reads it, rather than inside the brackets.
         case "img":
             let alt = HTMLReadingText.collapsingWhitespace((try? element.attr("alt")) ?? "")
             let src = (try? element.attr("src")) ?? ""
-            result += "![\(MarkdownLiteral.escaped(alt))](\(src))"
+            appendSpaced(alt, to: &result) { core in
+                "![" + MarkdownLiteral.escaped(core) + "](" + destination(src) + ")"
+            }
 
         // Lists
         case "ul", "ol":
-            convertListItems(element, ordered: tag == "ol", into: &result, headingTargets: headingTargets)
+            convertListItems(element, ordered: tag == "ol", into: &result, context: context)
 
         // Blockquotes
         case "blockquote":
             var inner = ""
-            convertNode(element, into: &inner, headingTargets: headingTargets)
+            convertNode(element, into: &inner, context: context)
             // Prefix each line with >
             let lines = inner.trimmingCharacters(in: .whitespacesAndNewlines)
                 .components(separatedBy: "\n")
@@ -213,7 +230,7 @@ enum HTMLToMarkdownConverter {
             for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
                 emit(annotation, inline: true, into: &result)
             }
-            appendCodeSpan(HTMLReadingText.inlineText(of: element), to: &result)
+            appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan)
 
         // Horizontal rules
         case "hr":
@@ -224,7 +241,7 @@ enum HTMLToMarkdownConverter {
         // their children say what they hold. A table row is therefore one
         // paragraph of its cells, each a word or more of its own.
         default:
-            convertNode(element, into: &result, headingTargets: headingTargets)
+            convertNode(element, into: &result, context: context)
         }
 
         separate(at: boundary, in: &result)
@@ -317,7 +334,7 @@ enum HTMLToMarkdownConverter {
     // MARK: - List Conversion
 
     /// Convert list item children of a <ul> or <ol> to Markdown.
-    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, headingTargets: [String: MarkdownHeadingAnnotation]) {
+    private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, context: Context) {
         // A hidden item is not rendered: it must neither leave an empty bullet
         // nor take a number from the visible items that follow it.
         let items = listElement.getChildNodes().compactMap { node -> Element? in
@@ -332,7 +349,7 @@ enum HTMLToMarkdownConverter {
             var itemContent = ""
             // Go through the element entry point so an id on the li itself
             // receives its annotation as well as targets inside the item.
-            convertElement(item, into: &itemContent, headingTargets: headingTargets)
+            convertElement(item, into: &itemContent, context: context)
             // Trim the item content and indent continuation lines
             let trimmed = itemContent.trimmingCharacters(in: .whitespacesAndNewlines)
             let lines = trimmed.components(separatedBy: "\n")
@@ -401,26 +418,92 @@ enum HTMLToMarkdownConverter {
         result += MarkdownLiteral.escaped(text)
     }
 
-    /// Write inline code (`code`, its words with whitespace collapsed) as a
-    /// code span, whose text the reader reads verbatim. The fence is one
-    /// backtick longer than the longest run of backticks inside, so none of
-    /// them can close it, and CommonMark's padding space separates a
-    /// backtick at either end from the fence. Whitespace at either end is
-    /// written outside the span as an ordinary space, so the span never
-    /// begins or ends with one.
-    private static func appendCodeSpan(_ code: String, to result: inout String) {
-        let core = code.trimmingCharacters(in: .whitespaces)
-        if code.hasPrefix(" ") {
+    /// Write inline words (`text`, with whitespace collapsed) as `render`
+    /// writes them. Whitespace at either end is written outside, as an
+    /// ordinary space, so the rendered syntax never begins or ends with one
+    /// (a code span would drop it and run the words around it together).
+    private static func appendSpaced(_ text: String, to result: inout String, _ render: (String) -> String) {
+        let core = text.trimmingCharacters(in: .whitespaces)
+        if text.hasPrefix(" ") {
             appendText(" ", to: &result)
         }
-        guard !core.isEmpty else { return }
-        let fence = String(repeating: "`", count: longestRun(of: "`", in: core) + 1)
-        let scalars = core.unicodeScalars
+        result += render(core)
+        if !core.isEmpty, text.hasSuffix(" ") {
+            appendText(" ", to: &result)
+        }
+    }
+
+    /// A code span holding `code` (one line with no whitespace at either
+    /// end), whose text the reader reads verbatim; nothing for empty code.
+    /// The fence is one backtick longer than the longest run of backticks
+    /// inside, so none of them can close it, and CommonMark's padding space
+    /// separates a backtick at either end from the fence.
+    private static func codeSpan(_ code: String) -> String {
+        guard !code.isEmpty else { return "" }
+        let fence = String(repeating: "`", count: longestRun(of: "`", in: code) + 1)
+        let scalars = code.unicodeScalars
         let padding = scalars.first == "`" || scalars.last == "`" ? " " : ""
-        result += fence + padding + core + padding + fence
-        if code.hasSuffix(" ") {
-            appendText(" ", to: &result)
+        return fence + padding + code + padding + fence
+    }
+
+    /// A link or image destination in angle brackets, which may hold spaces
+    /// and parentheses. Its whitespace is collapsed, because a destination
+    /// cannot span lines, and each `<`, `>`, and backslash is escaped, so
+    /// nothing in the URL can end it early. Nothing reads a destination
+    /// aloud; it is kept only so the link or image stays one.
+    private static func destination(_ url: String) -> String {
+        var escaped = String.UnicodeScalarView()
+        let collapsed = HTMLReadingText.collapsingWhitespace(url).trimmingCharacters(in: .whitespaces)
+        for scalar in collapsed.unicodeScalars {
+            if scalar == "<" || scalar == ">" || scalar == "\\" {
+                escaped.append("\\")
+            }
+            escaped.append(scalar)
         }
+        return "<" + String(escaped) + ">"
+    }
+
+    // MARK: - Inline Wrappers
+
+    /// Wrap the Markdown written since `start` (a UTF-8 offset into `result`)
+    /// in `opener` and `closer`, leaving whitespace at either end outside.
+    /// Words spanning lines (a block or line break inside the element) cannot
+    /// form one inline span, and empty content needs no wrapper: both are
+    /// left unwrapped, so only the words remain.
+    private static func wrap(from start: Int, in result: inout String, opener: String, closer: String) {
+        let scalars = result.unicodeScalars
+        let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
+        guard !scalars[contentStart...].contains("\n") else { return }
+        var lower = contentStart
+        var upper = scalars.endIndex
+        while lower < upper, scalars[lower] == " " {
+            lower = scalars.index(after: lower)
+        }
+        while upper > lower, scalars[scalars.index(before: upper)] == " " {
+            upper = scalars.index(before: upper)
+        }
+        guard lower < upper else { return }
+        insert(opener, at: lower, closer, at: upper, afterContentStart: contentStart, in: &result)
+    }
+
+    /// Rewrite the Markdown from `contentStart` to the end of `result` with
+    /// `opener` inserted at `lower` and `closer` at `upper`. All three
+    /// indexes lie in that final stretch, so the work is proportional to the
+    /// wrapped content rather than to the chapter.
+    private static func insert(
+        _ opener: String, at lower: String.Index,
+        _ closer: String, at upper: String.Index,
+        afterContentStart contentStart: String.Index,
+        in result: inout String
+    ) {
+        let scalars = result.unicodeScalars
+        var wrapped = String.UnicodeScalarView()
+        wrapped.append(contentsOf: scalars[contentStart..<lower])
+        wrapped.append(contentsOf: opener.unicodeScalars)
+        wrapped.append(contentsOf: scalars[lower..<upper])
+        wrapped.append(contentsOf: closer.unicodeScalars)
+        wrapped.append(contentsOf: scalars[upper...])
+        result.unicodeScalars.replaceSubrange(contentStart..., with: wrapped)
     }
 
     /// The length of the longest run of `scalar` in `text`.

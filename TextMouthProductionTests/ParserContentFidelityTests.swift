@@ -436,6 +436,28 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.text, "Chart Figure [1]: tides here.")
     }
 
+    /// Links and images keep their syntax whatever their destination holds
+    /// (spaces, parentheses, angle brackets, a backslash), so none of it is
+    /// read. Alt text is read with its outer whitespace around the image. A
+    /// link holding blocks, or nothing, is written as its words alone.
+    func testCachedHTMLLinksAndImagesKeepTheirSyntaxWhateverTheirDestination() throws {
+        let html = """
+        <p>See <a href="notes (draft).xhtml#n 1">the <em>notes</em></a> and <a href="a&lt;b&gt;\\c">odd</a>.</p>
+        <p><img src="tide (1).png" alt=" Chart [1] "/>after</p>
+        <div><a href="x.xhtml"><span>Block</span><div>link</div></a><a href="y.xhtml"> </a>end</div>
+        """
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertTrue(markdown.contains("[the *notes*](<notes (draft).xhtml#n 1>)"), markdown)
+        XCTAssertTrue(markdown.contains("[odd](<a\\<b\\>\\\\c>)"), markdown)
+        XCTAssertTrue(markdown.contains("![Chart \\[1\\]](<tide (1).png>) after"), markdown)
+        XCTAssertFalse(markdown.contains("[Block"), markdown)
+        XCTAssertFalse(markdown.contains("y.xhtml"), markdown)
+        XCTAssertEqual(
+            try cachedHTMLReading(html).text,
+            "See the notes and odd.\n\nChart [1] after\n\nBlock\n\nlink\n\nend"
+        )
+    }
+
     /// The cache keeps words apart at every boundary the direct reading
     /// has: blocks and definition entries are paragraphs, a table row is one
     /// paragraph of its cells separated by spaces, and line breaks and edit

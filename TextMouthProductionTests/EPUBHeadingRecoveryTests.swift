@@ -475,6 +475,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
     /// A named anchor marks a destination, not a link. SwiftSoup closes the
     /// self-closing form immediately; neither form may leave brackets in
     /// speech or heading labels, while real links keep only their words.
+    /// (Link destinations are written in angle brackets.)
     func testNamedAnchorsAreReadWithoutLinkBrackets() throws {
         let html = """
         <h2><a id="page_12"/>Twelve</h2>
@@ -482,7 +483,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         """
         let markdown = try HTMLToMarkdownConverter.convert(html)
         XCTAssertFalse(markdown.contains("[]"))
-        XCTAssertTrue(markdown.contains("[linked](notes.xhtml#n1)"))
+        XCTAssertTrue(markdown.contains("[linked](<notes.xhtml#n1>)"))
         let chapter = try MarkdownDocParser.parseChapter(markdown: markdown)
         XCTAssertEqual(chapter.text, "Twelve\n\nBefore after, named and linked.")
         XCTAssertEqual(chapter.headings.map(\.text), ["Twelve"])
