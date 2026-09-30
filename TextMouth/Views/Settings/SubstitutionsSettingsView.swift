@@ -9,8 +9,11 @@ import SwiftUI
 /// the row, and the context menu repeats them. Pointer users can still click
 /// a rule to edit it and drag rules into a new order.
 struct SubstitutionsSettingsView: View {
+    /// The rules this tab shows and changes.
     @ObservedObject private var service: TextSubstitutionService
+    /// The rule whose editor sheet is open, if any.
     @State private var editingRule: SubstitutionRule?
+    /// Whether the sheet for adding a new rule is open.
     @State private var showAddRule = false
 
     /// - Parameter service: The rules to show and change: the app's shared
@@ -290,8 +293,11 @@ enum SubstitutionRuleCommand: CaseIterable {
 /// A button that runs one rule command, named and pictured as that command
 /// and dimmed when the command cannot act.
 struct SubstitutionRuleCommandButton: View {
+    /// The command this button runs.
     let command: SubstitutionRuleCommand
+    /// Whether the command can act on its rule; the button is dimmed if not.
     let isAvailable: Bool
+    /// Runs the command.
     let action: () -> Void
 
     var body: some View {
@@ -312,12 +318,15 @@ struct SubstitutionRuleCommandButton: View {
 /// separate controls, so the checkbox is never mistaken for the rule, and it
 /// offers the commands that can act as VoiceOver actions.
 struct SubstitutionRuleRow: View {
+    /// The rule this row shows.
     let rule: SubstitutionRule
     /// The rule's zero-based position in the list.
     let index: Int
     /// How many rules the list holds.
     let count: Int
+    /// Turns the rule on or off.
     let onToggle: () -> Void
+    /// Runs a command on the rule.
     let onCommand: (SubstitutionRuleCommand) -> Void
 
     var body: some View {
