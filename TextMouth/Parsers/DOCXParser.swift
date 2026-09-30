@@ -9,6 +9,11 @@ enum DOCXParserError: LocalizedError {
     case invalidArchive
     case missingEntry(String)
     case parseError(String)
+    /// A part of the package is damaged: its markup breaks off or is not
+    /// well-formed, so reading on would silently yield a partial document.
+    /// `file` is the part's path inside the package; `reason` completes the
+    /// sentence "The file is damaged or incomplete: …".
+    case malformedXML(file: String, reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -16,6 +21,10 @@ enum DOCXParserError: LocalizedError {
         case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive."
         case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)"
         case .parseError(let msg): return "DOCX parse error: \(msg)"
+        case .malformedXML(let file, let reason):
+            return PackageDamage.message(
+                file: file, reason: reason, container: "this document", original: "the document"
+            )
         }
     }
 }
@@ -62,14 +71,18 @@ enum DOCXParser {
 
     /// Extract Markdown text from a DOCX file. This is the main conversion entry point
     /// used by MarkdownCacheService for generating the content.md cache.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when the
+    ///   styles, numbering, or relationships part is present but damaged.
+    ///   Reading on would silently turn headings into plain paragraphs,
+    ///   numbered steps into bullets, or links into bare text.
     static func extractMarkdown(from url: URL) throws -> String {
         let archive = try openArchive(at: url)
 
         // Parse styles first so we can identify heading paragraph styles
-        let styles = parseStyles(from: archive)
+        let styles = try parseStyles(from: archive)
 
         // Parse numbering definitions for bullet and numbered lists
-        let numbering = parseNumbering(from: archive)
+        let numbering = try parseNumbering(from: archive)
 
         // Parse the main document content
         let documentXML = try extractData(from: archive, path: Part.document)
@@ -78,7 +91,7 @@ enum DOCXParser {
         }
 
         // Parse relationships for hyperlink targets
-        let relationships = parseRelationships(from: archive)
+        let relationships = try parseRelationships(from: archive)
 
         let converter = DOCXToMarkdownConverter(
             styles: styles,
@@ -104,8 +117,9 @@ enum DOCXParser {
 
     /// Read style semantics using the same archive path as full conversion.
     /// Exposed internally so regression tests validate the production style parser.
+    /// - Throws: `DOCXParserError.malformedXML` when the styles part is damaged.
     static func readStyles(from url: URL) throws -> DOCXStyles {
-        parseStyles(from: try openArchive(at: url))
+        try parseStyles(from: try openArchive(at: url))
     }
 
     // MARK: - ZIP Extraction Helpers
@@ -126,41 +140,57 @@ enum DOCXParser {
 
     /// Extract raw data from a ZIP archive entry
     private static func extractData(from archive: Archive, path: String) throws -> Data {
-        guard let entry = archive[path] else {
+        guard let data = try extractOptionalData(from: archive, path: path) else {
             throw DOCXParserError.missingEntry(path)
         }
+        return data
+    }
+
+    /// Extract the raw data of the entry at `path`, or nil when the archive
+    /// has no such entry.
+    /// - Throws: the archive's error when the entry exists but cannot be unpacked.
+    private static func extractOptionalData(from archive: Archive, path: String) throws -> Data? {
+        guard let entry = archive[path] else { return nil }
         var data = Data()
         _ = try archive.extract(entry) { chunk in data.append(chunk) }
         return data
     }
 
+    // MARK: - Structure Parts
+
+    /// Parse the optional part at `path` with `parse`, which receives the
+    /// part's bytes and its path, or return `absent` when the package has no
+    /// such part: a document without lists, say, simply has no numbering.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   present but damaged, or the archive's error when it cannot be unpacked.
+    private static func parseOptionalPart<Content>(
+        _ path: String,
+        in archive: Archive,
+        absent: Content,
+        parse: (_ data: Data, _ path: String) throws -> Content
+    ) throws -> Content {
+        guard let data = try extractOptionalData(from: archive, path: path) else { return absent }
+        return try parse(data, path)
+    }
+
     /// Extract and parse the styles.xml to build a map of style IDs to heading levels
-    private static func parseStyles(from archive: Archive) -> DOCXStyles {
-        guard let data = try? extractData(from: archive, path: Part.styles),
-              let xml = String(data: data, encoding: .utf8) else {
-            return DOCXStyles()
+    private static func parseStyles(from archive: Archive) throws -> DOCXStyles {
+        try parseOptionalPart(Part.styles, in: archive, absent: DOCXStyles()) { data, path in
+            try DOCXStylesParser(data: data, file: path).parse()
         }
-        let parser = DOCXStylesParser(xml: xml)
-        return parser.parse()
     }
 
     /// Extract and parse numbering.xml for list definitions
-    private static func parseNumbering(from archive: Archive) -> DOCXNumbering {
-        guard let data = try? extractData(from: archive, path: Part.numbering),
-              let xml = String(data: data, encoding: .utf8) else {
-            return DOCXNumbering()
+    private static func parseNumbering(from archive: Archive) throws -> DOCXNumbering {
+        try parseOptionalPart(Part.numbering, in: archive, absent: DOCXNumbering()) { data, path in
+            try DOCXNumberingParser(data: data, file: path).parse()
         }
-        let parser = DOCXNumberingParser(xml: xml)
-        return parser.parse()
     }
 
     /// Extract and parse document relationships for hyperlink targets
-    private static func parseRelationships(from archive: Archive) -> [String: String] {
-        guard let data = try? extractData(from: archive, path: Part.documentRelationships),
-              let xml = String(data: data, encoding: .utf8) else {
-            return [:]
+    private static func parseRelationships(from archive: Archive) throws -> [String: String] {
+        try parseOptionalPart(Part.documentRelationships, in: archive, absent: [:]) { data, path in
+            try DOCXRelationshipsParser(data: data, file: path).parse()
         }
-        let parser = DOCXRelationshipsParser(xml: xml)
-        return parser.parse()
     }
 }

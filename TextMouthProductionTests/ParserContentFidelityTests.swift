@@ -6,13 +6,13 @@ import XCTest
 final class ParserContentFidelityTests: XCTestCase {
     /// Explicit body-text outline levels override a misleading style name;
     /// invalid numeric values must neither overflow nor invent a heading.
-    func testDOCXBodyAndInvalidOutlineLevelsDoNotBecomeHeadings() {
+    func testDOCXBodyAndInvalidOutlineLevelsDoNotBecomeHeadings() throws {
         for level in [9, -1, Int.max] {
-            let styles = DOCXStylesParser(xml: """
+            let styles = try DOCXStylesParser(data: Data("""
             <w:styles xmlns:w="urn:word"><w:style w:styleId="Heading1">
             <w:name w:val="heading 1"/><w:pPr><w:outlineLvl w:val="\(level)"/></w:pPr>
             </w:style></w:styles>
-            """).parse()
+            """.utf8), file: DOCXParser.Part.styles).parse()
             XCTAssertNil(styles.headingLevels["Heading1"], "outline level \(level)")
         }
     }

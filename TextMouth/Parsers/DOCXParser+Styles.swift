@@ -15,8 +15,7 @@ struct DOCXStyles {
 }
 
 /// SAX parser for word/styles.xml to identify which style IDs correspond to headings
-class DOCXStylesParser: NSObject, XMLParserDelegate {
-    private let xml: String
+class DOCXStylesParser: DOCXSAXParser {
     private var styles = DOCXStyles()
 
     // Tracking state during parsing
@@ -25,15 +24,12 @@ class DOCXStylesParser: NSObject, XMLParserDelegate {
     private var inStyle = false
     private var currentOutlineLevel: Int?
 
-    init(xml: String) {
-        self.xml = xml
-    }
-
-    func parse() -> DOCXStyles {
-        guard let data = xml.data(using: .utf8) else { return styles }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.parse()
+    /// Read every style definition in the part.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   truncated or not well-formed. The styles after the damage would be
+    ///   missing, silently reading their headings and lists as paragraphs.
+    func parse() throws -> DOCXStyles {
+        try parseDocument()
         return styles
     }
 

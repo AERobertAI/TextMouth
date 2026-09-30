@@ -38,8 +38,7 @@ enum ListType {
 }
 
 /// SAX parser for word/numbering.xml
-class DOCXNumberingParser: NSObject, XMLParserDelegate {
-    private let xml: String
+class DOCXNumberingParser: DOCXSAXParser {
     private var numbering = DOCXNumbering()
 
     // Parsing state
@@ -50,15 +49,12 @@ class DOCXNumberingParser: NSObject, XMLParserDelegate {
     private var currentNumId: String?
     private var inNum = false
 
-    init(xml: String) {
-        self.xml = xml
-    }
-
-    func parse() -> DOCXNumbering {
-        guard let data = xml.data(using: .utf8) else { return numbering }
-        let parser = XMLParser(data: data)
-        parser.delegate = self
-        parser.parse()
+    /// Read every list definition in the part.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
+    ///   truncated or not well-formed. The lists defined after the damage
+    ///   would be missing, silently reading numbered steps as bullets.
+    func parse() throws -> DOCXNumbering {
+        try parseDocument()
         return numbering
     }
 
