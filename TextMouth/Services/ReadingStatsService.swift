@@ -6,14 +6,28 @@ import Combine
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
 
-    @Published var stats: ReadingStats
+    @Published var stats = ReadingStats()
+
+    /// The statistics file to use in place of the data directory's, for tests.
+    private let customFileURL: URL?
+
+    /// reading_stats.json: the file this service was created for, or else the
+    /// one in the data directory in use, which moves when the library does.
+    var fileURL: URL { customFileURL ?? TextMouthPaths.readingStatsFile }
 
     private var sessionStartTime: Date?
     private var sessionBookID: UUID?
     private var saveTimer: Timer?
 
-    private init() {
-        stats = Self.load()
+    /// Creates a service and loads its statistics file before returning.
+    ///
+    /// - Parameter fileURL: The file to read and write. Nil, as `shared`
+    ///   uses, follows the data directory in use; tests pass a file of their
+    ///   own so they never touch the app's statistics.
+    init(fileURL: URL? = nil) {
+        customFileURL = fileURL
+        // `self.fileURL` is the resolved location, not the optional parameter.
+        stats = Self.load(from: self.fileURL)
         startAutoSave()
     }
 
@@ -147,8 +161,9 @@ final class ReadingStatsService: ObservableObject {
     /// Background queue for stats file I/O. JSON encoding and atomic
     /// file writes are synchronous operations that block the calling
     /// thread. Without this queue, save() blocks the main thread on
-    /// every pause and every 60-second auto-save tick.
-    private static let saveQueue = DispatchQueue(
+    /// every pause and every 60-second auto-save tick. A queue is safe to
+    /// use from any thread, so it needs no actor isolation.
+    nonisolated private static let saveQueue = DispatchQueue(
         label: "com.textmouth.readingStats",
         qos: .utility
     )
@@ -164,8 +179,10 @@ final class ReadingStatsService: ObservableObject {
     /// are dispatched asynchronously.
     func save() {
         // Snapshot the stats value type on the calling thread so
-        // the background write captures a consistent copy
+        // the background write captures a consistent copy, and resolve
+        // the destination here too, where the main actor owns it
         let snapshot = stats
+        let url = fileURL
         Self.saveQueue.async {
             do {
                 try TextMouthPaths.ensureDirectoryStructure()
@@ -173,7 +190,7 @@ final class ReadingStatsService: ObservableObject {
                 encoder.dateEncodingStrategy = .iso8601
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                 let data = try encoder.encode(snapshot)
-                try data.write(to: TextMouthPaths.readingStatsFile, options: .atomic)
+                try data.write(to: url, options: .atomic)
             } catch {
                 print("Failed to save reading stats: \(error)")
             }
@@ -184,11 +201,19 @@ final class ReadingStatsService: ObservableObject {
     /// termination, where returning before the asynchronous save completes can
     /// lose the final reading session.
     func flushPendingSaves() {
-        Self.saveQueue.sync {}
+        Self.waitForQueuedSaves()
     }
 
-    private static func load() -> ReadingStats {
-        let url = TextMouthPaths.readingStatsFile
+    /// Blocks until every save queued so far, by any service, has been
+    /// written. All services share one queue, so this covers them all. It
+    /// touches only that queue, so any thread may wait, test tear-down too.
+    nonisolated static func waitForQueuedSaves() {
+        saveQueue.sync {}
+    }
+
+    /// Reads the statistics saved at `url`, starting empty when there is no
+    /// file yet or it cannot be decoded.
+    private static func load(from url: URL) -> ReadingStats {
         guard FileManager.default.fileExists(atPath: url.path) else {
             return ReadingStats()
         }
