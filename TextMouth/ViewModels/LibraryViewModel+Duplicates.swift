@@ -8,30 +8,31 @@ extension LibraryViewModel {
 
     /// Add a book, checking for duplicates by hash or source path.
     /// Returns true if added immediately, false if a duplicate dialog is shown.
+    /// `originalURL` is the file the dialog's choice may then delete, as the
+    /// preference says; `warning` says what the new book is missing, and is
+    /// shown with the choice when one is needed.
     @discardableResult
     func addBookCheckingDuplicate(
         _ book: Book,
         toFolder folderPath: String,
-        originalURL: URL? = nil
+        originalURL: URL? = nil,
+        warning: String? = nil
     ) -> Bool {
-        // Check for existing book with same hash
-        if let existing = library.books.first(where: { $0.md5Hash == book.md5Hash }) {
-            // Same file content — show replace/duplicate dialog
-            pendingDuplicateBook = book
-            pendingDuplicateExisting = existing
-            pendingDuplicateFolder = folderPath
-            pendingDuplicateOriginalURL = originalURL
-            showDuplicateDialog = true
-            return false
+        /// Whether `existing` was imported from the same source path as `book`.
+        func isFromSameSource(_ existing: Book) -> Bool {
+            guard let sourcePath = book.sourceFilePath, !sourcePath.isEmpty else { return false }
+            return existing.sourceFilePath == sourcePath
         }
 
-        // Check for existing book imported from the same source path
-        if let sourcePath = book.sourceFilePath, !sourcePath.isEmpty,
-           let existing = library.books.first(where: { $0.sourceFilePath == sourcePath }) {
+        // A book with the same file content, or failing that one imported
+        // from the same source path, is a duplicate: ask to replace or keep.
+        if let existing = library.books.first(where: { $0.md5Hash == book.md5Hash })
+            ?? library.books.first(where: isFromSameSource) {
             pendingDuplicateBook = book
             pendingDuplicateExisting = existing
             pendingDuplicateFolder = folderPath
             pendingDuplicateOriginalURL = originalURL
+            pendingDuplicateWarning = warning
             showDuplicateDialog = true
             return false
         }
@@ -101,6 +102,7 @@ extension LibraryViewModel {
         pendingDuplicateExisting = nil
         pendingDuplicateFolder = ""
         pendingDuplicateOriginalURL = nil
+        pendingDuplicateWarning = nil
         showDuplicateDialog = false
     }
 

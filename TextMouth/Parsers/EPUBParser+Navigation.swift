@@ -26,33 +26,74 @@ extension EPUBParser {
         var number: Int
     }
 
+    /// What reading one spine document produced: the document with the
+    /// destinations of any contents section inside it, or why it was left out.
+    private enum SpineRead {
+        case document(SpineDocument, contentsTargets: [NavigationTarget])
+        case omitted(ExtractionOmission.Reason)
+    }
+
+    /// What a spine item is to a reader, judged by its declared media type.
+    private enum SpineItemRole {
+        /// An HTML or XML document, read as a chapter.
+        case document
+        /// A resource the book uses, such as an image or a stylesheet, which
+        /// is not a chapter: it is neither counted nor reported.
+        case resource
+        /// A document of a type that cannot be read as text, such as plain
+        /// text or PDF: a chapter that is left out and reported.
+        case unsupportedDocument
+    }
+
     /// Recover semantic and TOC headings, then give every retained spine
     /// document a start destination without inserting words into its speech.
+    ///
+    /// Reading is tolerant, but nothing is left out silently. A spine entry
+    /// with no manifest file, a document of a type that cannot be read as
+    /// text, a document missing from the archive or unable to be decoded,
+    /// and markup that cannot be read are each recorded in the report while
+    /// the other chapters are still read. A document that converts to no
+    /// text at all, such as a cover page whose image comes from its
+    /// stylesheet, is counted as blank and is not a problem. Resources in
+    /// the spine, such as images, are not chapters.
+    /// - Throws: `EPUBParserError.noReadableChapters` with the report when
+    ///   no chapter holds text, since an empty book is not a reading.
     static func preparedChapters(
         archive: Archive,
         opfPath: String,
         opfData: OPFData
-    ) throws -> [PreparedChapter] {
+    ) throws -> (chapters: [PreparedChapter], report: ExtractionReport) {
         var navigation = readNavigation(archive: archive, opfPath: opfPath, opfData: opfData)
         var documents: [SpineDocument] = []
+        var report = ExtractionReport(container: bookNameInMessages)
 
         for (index, itemRef) in opfData.spineItemRefs.enumerated() {
-            guard let item = opfData.manifest[itemRef],
-                  item.mediaType.contains("html") || item.mediaType.contains("xml") else { continue }
-            let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
-            guard let html = try? extractString(archive: archive, path: path) else { continue }
-            let doc = try SwiftSoup.parse(html)
-            documents.append(SpineDocument(path: path, html: html, title: try doc.title(), number: index + 1))
+            let number = index + 1
+            guard let item = opfData.manifest[itemRef] else {
+                // The reading order names an item the manifest does not list
+                // with a file: a chapter that exists only as a name.
+                report.chapterCount += 1
+                report.omissions.append(ExtractionOmission(chapterNumber: number, member: itemRef, reason: .unlistedItem))
+                continue
+            }
+            let role = spineRole(ofMediaType: item.mediaType)
+            guard role != .resource else { continue }
+            report.chapterCount += 1
 
-            // Some converted EPUBs have an incomplete machine TOC but a full
-            // linked contents section in the reading order (including Helliconia).
-            // Only explicitly identified TOCs contribute labels, never prose links.
-            // A contents section must also be rendered: page lists, landmarks,
-            // and hidden subtrees are never searched for one.
-            let body = doc.body() ?? doc
-            for element in elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
-            where isContentsContainer(element) {
-                navigation += tocTargets(in: element, relativeTo: path)
+            let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+            guard role == .document else {
+                let type = item.mediaType.trimmingCharacters(in: .whitespaces)
+                report.omissions.append(
+                    ExtractionOmission(chapterNumber: number, member: path, reason: .unsupportedMediaType(type))
+                )
+                continue
+            }
+            switch readSpineDocument(archive: archive, path: path, number: number) {
+            case .document(let document, let contentsTargets):
+                documents.append(document)
+                navigation += contentsTargets
+            case .omitted(let reason):
+                report.omissions.append(ExtractionOmission(chapterNumber: number, member: path, reason: reason))
             }
         }
 
@@ -65,37 +106,116 @@ extension EPUBParser {
             targetsByPath[target.path, default: []].append(target)
         }
 
-        return try documents.compactMap { document in
-            let targets = targetsByPath[document.path] ?? []
-            let headingTargets = Dictionary(uniqueKeysWithValues: targets.filter { !$0.fragment.isEmpty }.map {
-                ($0.fragment, $0.heading)
-            })
-            var markdown = try HTMLToMarkdownConverter.convert(
-                document.html, stripDuplicateNavigation: true, headingTargets: headingTargets
-            )
-            guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-
-            let documentTitle = normalizedLabel(document.title)
-            let fallbackTitle = targets.first(where: { $0.fragment.isEmpty })?.heading.text
-                ?? (!documentTitle.isEmpty && documentTitle != normalizedLabel(opfData.title)
-                    ? documentTitle : "Chapter \(document.number)")
-            var chapter = try MarkdownDocParser.parseChapter(
-                markdown: markdown, title: fallbackTitle, includeNavigationHeadings: true
-            )
-            if chapter.headings.first?.characterOffset != 0 {
-                // An untitled chapter (or one with only a later subheading)
-                // still needs a start entry. Persist it as metadata, never # text.
-                // A broken fragment can still supply a title when no heading
-                // survived. A real later section must not be relabeled as the
-                // start of the chapter as well as keeping its actual target.
-                let title = chapter.headings.isEmpty ? (targets.first?.heading.text ?? fallbackTitle) : fallbackTitle
-                let heading = MarkdownHeadingAnnotation(level: 1, text: title)
-                markdown = heading.markdown + "\n\n" + markdown
-                chapter.headings.insert(Heading(level: heading.level, text: heading.text), at: 0)
+        var chapters: [PreparedChapter] = []
+        for document in documents {
+            do {
+                let targets = targetsByPath[document.path] ?? []
+                guard let chapter = try preparedChapter(from: document, targets: targets, bookTitle: opfData.title) else {
+                    report.blankChapterCount += 1
+                    continue
+                }
+                chapters.append(chapter)
+            } catch {
+                report.omissions.append(
+                    ExtractionOmission(chapterNumber: document.number, member: document.path, reason: .malformedMarkup)
+                )
             }
-            chapter.title = chapter.headings.first?.text ?? fallbackTitle
-            return PreparedChapter(markdown: markdown, chapter: chapter)
         }
+
+        // Conversion failures are found after every reading failure, so put
+        // the omissions back into reading order.
+        report.omissions.sort { $0.chapterNumber < $1.chapterNumber }
+        guard !chapters.isEmpty else { throw EPUBParserError.noReadableChapters(report) }
+        return (chapters, report)
+    }
+
+    /// The role of a spine item whose declared media type is `mediaType`.
+    /// Media types ignore case, and parameters after ";" (such as a charset)
+    /// do not change the role. HTML and XML types are documents, as they
+    /// always were; images, sound, video, fonts, stylesheets, and scripts
+    /// are resources; anything else is a document that cannot be read.
+    private static func spineRole(ofMediaType mediaType: String) -> SpineItemRole {
+        let essence = (mediaType.split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+            .trimmingCharacters(in: .whitespaces)
+            .lowercased()
+        if essence.contains("html") || essence.contains("xml") { return .document }
+
+        let resourceFamilies = ["image/", "audio/", "video/", "font/", "application/font-", "application/x-font"]
+        let resourceTypes: Set<String> = [
+            "text/css", "text/javascript", "application/javascript", "application/ecmascript",
+            "application/vnd.ms-opentype"
+        ]
+        if resourceFamilies.contains(where: essence.hasPrefix) || resourceTypes.contains(essence) {
+            return .resource
+        }
+        return .unsupportedDocument
+    }
+
+    /// Read the spine document at `path`, the `number`th in reading order,
+    /// with the destinations of any contents section inside it, or say why
+    /// it cannot be read: it is missing from the archive, its data cannot be
+    /// decoded, or its markup cannot be parsed.
+    private static func readSpineDocument(archive: Archive, path: String, number: Int) -> SpineRead {
+        guard let entry = archive[path] else { return .omitted(.missingMember) }
+        guard let html = try? text(of: entry, in: archive) else { return .omitted(.unreadableMember) }
+        do {
+            let doc = try SwiftSoup.parse(html)
+            let title = try doc.title()
+
+            // Some converted EPUBs have an incomplete machine TOC but a full
+            // linked contents section in the reading order (including Helliconia).
+            // Only explicitly identified TOCs contribute labels, never prose links.
+            // A contents section must also be rendered: page lists, landmarks,
+            // and hidden subtrees are never searched for one.
+            let body = doc.body() ?? doc
+            let contentsTargets = elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
+                .filter(isContentsContainer)
+                .flatMap { tocTargets(in: $0, relativeTo: path) }
+            return .document(
+                SpineDocument(path: path, html: html, title: title, number: number),
+                contentsTargets: contentsTargets
+            )
+        } catch {
+            return .omitted(.malformedMarkup)
+        }
+    }
+
+    /// Convert one spine document into a chapter whose headings keep their
+    /// navigation labels and targets, or nil when it holds no text at all.
+    /// `bookTitle` is the package title, which never names a chapter.
+    private static func preparedChapter(
+        from document: SpineDocument,
+        targets: [NavigationTarget],
+        bookTitle: String
+    ) throws -> PreparedChapter? {
+        let headingTargets = Dictionary(uniqueKeysWithValues: targets.filter { !$0.fragment.isEmpty }.map {
+            ($0.fragment, $0.heading)
+        })
+        var markdown = try HTMLToMarkdownConverter.convert(
+            document.html, stripDuplicateNavigation: true, headingTargets: headingTargets
+        )
+        guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+
+        let documentTitle = normalizedLabel(document.title)
+        let fallbackTitle = targets.first(where: { $0.fragment.isEmpty })?.heading.text
+            ?? (!documentTitle.isEmpty && documentTitle != normalizedLabel(bookTitle)
+                ? documentTitle : "Chapter \(document.number)")
+        var chapter = try MarkdownDocParser.parseChapter(
+            markdown: markdown, title: fallbackTitle, includeNavigationHeadings: true
+        )
+        if chapter.headings.first?.characterOffset != 0 {
+            // An untitled chapter (or one with only a later subheading)
+            // still needs a start entry. Persist it as metadata, never # text.
+            // A broken fragment can still supply a title when no heading
+            // survived. A real later section must not be relabeled as the
+            // start of the chapter as well as keeping its actual target.
+            let title = chapter.headings.isEmpty ? (targets.first?.heading.text ?? fallbackTitle) : fallbackTitle
+            let heading = MarkdownHeadingAnnotation(level: 1, text: title)
+            markdown = heading.markdown + "\n\n" + markdown
+            chapter.headings.insert(Heading(level: heading.level, text: heading.text), at: 0)
+        }
+        chapter.title = chapter.headings.first?.text ?? fallbackTitle
+        return PreparedChapter(markdown: markdown, chapter: chapter)
     }
 
     /// Discover the EPUB 3 navigation document via its manifest properties and

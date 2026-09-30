@@ -10,6 +10,15 @@ enum EPUBParserError: LocalizedError {
     case invalidOPF
     case missingSpine
     case writeFailed(String)
+    /// A file in the package is present but unusable: its data could not be
+    /// decompressed, or it does not match the checksum the archive stores
+    /// for it. `file` is the file's path inside the package; `reason`
+    /// completes the sentence "The file is damaged or incomplete: …".
+    case damagedFile(file: String, reason: String)
+    /// No chapter in the reading order holds text that could be read.
+    /// `report` names each chapter that could not be read and why; when it
+    /// names none, every chapter was blank or the spine held no documents.
+    case noReadableChapters(ExtractionReport)
 
     var errorDescription: String? {
         switch self {
@@ -20,24 +29,57 @@ enum EPUBParserError: LocalizedError {
         case .invalidOPF: return "The EPUB package document could not be parsed."
         case .missingSpine: return "The EPUB has no reading order (spine)."
         case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)"
+        case .damagedFile(let file, let reason):
+            return PackageDamage.message(
+                file: file, reason: reason, container: EPUBParser.bookNameInMessages, original: "the book"
+            )
+        case .noReadableChapters(let report):
+            // Blank pages alone are not damage, so there is nothing to replace.
+            guard !report.isComplete else { return "This EPUB book has no text to read." }
+            let blank = report.blankChapterCount
+            let others = blank == 0 ? ""
+                : blank == 1 ? " The other chapter has no text."
+                : " The other \(blank) chapters have no text."
+            return "\(report.message)\(others) Get a fresh copy of the book, then import it again."
         }
     }
 }
 
 enum EPUBParser {
 
+    /// How sentences about a damaged or incomplete EPUB name the book, as in
+    /// "The file “OEBPS/ch07.xhtml” in this EPUB book is damaged …".
+    static let bookNameInMessages = "this EPUB book"
+
+    /// An EPUB read in reading order: its package metadata, the chapters that
+    /// could be read, and a report of the chapters that could not.
+    struct PreparedBook {
+        var title: String
+        var author: String
+        var chapters: [PreparedChapter]
+        var report: ExtractionReport
+    }
+
+    /// Parse the EPUB at `url` for direct reading. Chapters that cannot be
+    /// read are left out (see `prepareBook(url:)`).
     static func parse(url: URL) throws -> DocumentContent {
-        // Verify the file exists before attempting to open as a ZIP archive,
-        // so the error message distinguishes "missing file" from "corrupt archive"
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw EPUBParserError.fileNotFound(url.path)
-        }
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
-        }
+        let book = try prepareBook(url: url)
+        return DocumentContent(
+            title: book.title,
+            author: book.author,
+            chapters: book.chapters.map(\.chapter)
+        )
+    }
+
+    /// Open the EPUB at `url` and prepare every chapter its reading order
+    /// names. The direct reader and the Markdown cache both read EPUBs here,
+    /// so they share navigation recovery, exact text coordinates, and the
+    /// report of chapters left out.
+    /// - Throws: `EPUBParserError` when the file is missing, is not a ZIP
+    ///   archive, or lacks a readable container or package document, and
+    ///   `.noReadableChapters` when no chapter holds text.
+    static func prepareBook(url: URL) throws -> PreparedBook {
+        let archive = try openArchive(at: url)
 
         // Step 1: Read container.xml to find OPF path
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
@@ -47,28 +89,35 @@ enum EPUBParser {
         let opfXML = try extractString(archive: archive, path: opfPath)
         let opfData = try parseOPF(opfXML)
 
-        // Share navigation recovery and exact text coordinates with the cache.
-        let chapters = try preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
-
-        return DocumentContent(
+        // Step 3: Read the chapters in spine order, recording any left out.
+        let prepared = try preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
+        return PreparedBook(
             title: opfData.title,
             author: opfData.author,
-            chapters: chapters.map(\.chapter)
+            chapters: prepared.chapters,
+            report: prepared.report
         )
+    }
+
+    /// Open the EPUB at `url` for reading.
+    /// - Throws: `EPUBParserError.fileNotFound` when no file is there, checked
+    ///   first so a missing file is not reported as `.invalidArchive`, which
+    ///   is thrown when the file cannot be opened as a ZIP archive.
+    private static func openArchive(at url: URL) throws -> Archive {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw EPUBParserError.fileNotFound(url.path)
+        }
+        do {
+            return try Archive(url: url, accessMode: .read)
+        } catch {
+            throw EPUBParserError.invalidArchive
+        }
     }
 
     // MARK: - Metadata
 
     static func readMetadata(url: URL) throws -> EPUBMetadata {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw EPUBParserError.fileNotFound(url.path)
-        }
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
-        }
+        let archive = try openArchive(at: url)
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
         let opfPath = try parseContainerForOPFPath(containerXML)
         let opfXML = try extractString(archive: archive, path: opfPath)
@@ -332,6 +381,9 @@ enum EPUBParser {
 
     // MARK: - ZIP Helpers (shared with MarkdownCacheService)
 
+    /// The text of the archive member at `path`.
+    /// - Throws: `EPUBParserError.missingContainer` or `.invalidOPF` when no
+    ///   member is at `path`, and `.damagedFile` when it cannot be decoded.
     static func extractString(archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else {
             if path == "META-INF/container.xml" {
@@ -339,10 +391,36 @@ enum EPUBParser {
             }
             throw EPUBParserError.invalidOPF
         }
+        return try text(of: entry, in: archive)
+    }
 
+    /// The text of the archive member `entry`, decoded as UTF-8, or as ISO
+    /// Latin 1 when it is not valid UTF-8.
+    ///
+    /// ZIPFoundation's `extract` returns the checksum of the bytes it read
+    /// without comparing it to the one the archive stores, so a damaged
+    /// member would otherwise read as garbled text. The comparison is made
+    /// here, except when the stored checksum is 0: ZIPFoundation reports 0
+    /// for an entry whose data descriptor it could not read, so that value
+    /// cannot judge the data. (Empty data's real checksum is 0 as well, and
+    /// it has nothing to verify.)
+    /// - Throws: `EPUBParserError.damagedFile` naming the member when its
+    ///   data cannot be decompressed or does not match its checksum.
+    static func text(of entry: Entry, in archive: Archive) throws -> String {
         var data = Data()
-        _ = try archive.extract(entry) { chunk in
-            data.append(chunk)
+        let checksum: CRC32
+        do {
+            checksum = try archive.extract(entry) { chunk in
+                data.append(chunk)
+            }
+        } catch {
+            let reason = entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+            throw EPUBParserError.damagedFile(file: entry.path, reason: reason)
+        }
+        guard entry.checksum == 0 || checksum == entry.checksum else {
+            throw EPUBParserError.damagedFile(
+                file: entry.path, reason: "its contents do not match the checksum stored with them"
+            )
         }
 
         guard let string = String(data: data, encoding: .utf8) else {

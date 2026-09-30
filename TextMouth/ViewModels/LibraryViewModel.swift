@@ -80,6 +80,9 @@ final class LibraryViewModel: ObservableObject {
     @Published var pendingDuplicateExisting: Book?
     @Published var pendingDuplicateFolder: String = ""
     @Published var pendingDuplicateOriginalURL: URL?
+    /// What the pending duplicate's own import could not read, told with the
+    /// duplicate choice so the warning never needs a second alert at once.
+    @Published var pendingDuplicateWarning: String?
 
     /// Import progress tracking
     @Published var isImporting = false

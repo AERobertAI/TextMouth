@@ -53,6 +53,30 @@ struct TMBPackageInspection {
     let contentURL: URL
 }
 
+/// A book an import produced, with the report of the chapters its source
+/// could not supply. The library decides from the report whether the
+/// original file may be deleted and whether the reader must be warned.
+struct ImportedBook {
+    var book: Book
+    /// The chapters the source names that could not be read. It is empty
+    /// for a complete book and for formats that do not report omissions yet.
+    var report = ExtractionReport()
+
+    /// Whether the original file must stay exactly where it is: an import
+    /// that left chapters out never deletes it or offers to, whatever the
+    /// "After Importing a Book" preference says.
+    var keepsOriginal: Bool { !report.isComplete }
+
+    /// The warning an import that left chapters out presents once: what is
+    /// missing, then that the original was kept. Nil for a complete import.
+    var warning: String? {
+        guard keepsOriginal else { return nil }
+        return "\(report.message) The original file was kept."
+    }
+}
+
+/// A file from a ZIP import that did not import in full, with what went
+/// wrong: why it failed, or what its book is missing.
 struct ZipImportFailure: Equatable {
     let fileName: String
     let message: String
@@ -61,13 +85,30 @@ struct ZipImportFailure: Equatable {
 struct ZipImportResult {
     let books: [Book]
     let failures: [ZipImportFailure]
+    /// Books that were imported without some of their chapters, by file,
+    /// each with its extraction report's sentence. They keep the ZIP.
+    var incompleteBooks: [ZipImportFailure] = []
 
+    /// What the library's alert says about the batch: the files that failed,
+    /// then the books missing chapters, which also means the original ZIP
+    /// was kept. Nil when every file imported in full.
     var failureSummary: String? {
-        guard !failures.isEmpty else { return nil }
-        let details = failures
-            .map { "\($0.fileName): \($0.message)" }
-            .joined(separator: "\n")
-        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(details)"
+        var sections: [String] = []
+        if !failures.isEmpty {
+            sections.append("\(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(Self.lines(failures))")
+        }
+        if !incompleteBooks.isEmpty {
+            let count = incompleteBooks.count
+            sections.append("\(count) book\(count == 1 ? " is" : "s are") missing chapters:\n\(Self.lines(incompleteBooks))")
+        }
+        guard !sections.isEmpty else { return nil }
+        let kept = incompleteBooks.isEmpty ? "" : "\nThe original file was kept."
+        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(sections.joined(separator: "\n"))\(kept)"
+    }
+
+    /// One "file: message" line per entry.
+    private static func lines(_ entries: [ZipImportFailure]) -> String {
+        entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
     }
 }
 
@@ -369,8 +410,19 @@ enum FileImportService {
     }
 
     /// Import a single file into a .tmb package, returning a Book model.
-    /// Extracts EPUB metadata if available.
+    /// Extracts EPUB metadata if available. Callers that must know which
+    /// chapters could not be read use `importFileWithReport` instead.
     static func importFile(from sourceURL: URL, toFolder folderPath: String = "") throws -> Book {
+        try importFileWithReport(from: sourceURL, toFolder: folderPath).book
+    }
+
+    /// Import a single file into a .tmb package, returning the Book with the
+    /// report of the chapters its source could not supply.
+    /// - Throws: when the file cannot be imported. For an EPUB that includes
+    ///   a text cache that cannot be generated, for example because no
+    ///   chapter can be read; the staged package is then removed, so no
+    ///   unreadable book is ever published.
+    static func importFileWithReport(from sourceURL: URL, toFolder folderPath: String = "") throws -> ImportedBook {
         try TextMouthPaths.ensureDirectoryStructure()
         if !folderPath.isEmpty {
             try TextMouthPaths.ensureLibrarySubfolder(folderPath)
@@ -485,8 +537,27 @@ enum FileImportService {
 
         // Generate cached Markdown content (non-audio books only)
         var contentIndex: BookContentIndex?
+        var report = ExtractionReport()
         if !format.isAudio {
-            contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
+            do {
+                if let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) {
+                    contentIndex = generated.content.contentIndex
+                    report = generated.report
+                }
+            } catch let failure where format == .epub {
+                // An EPUB with no cache found no chapter to read, could not
+                // be opened at all, or could not be written into its package.
+                // The direct reader shares that extraction, so the book could
+                // only ever open as this error. Remove the package staged
+                // above (named by this import's new book ID, so it holds
+                // nothing else) and fail with the reason instead.
+                try? FileManager.default.removeItem(at: tmbDir)
+                throw failure
+            } catch {
+                // Other formats still import without a cache, and the reader
+                // parses the source directly (TODO S02).
+                MarkdownCacheService.logGenerationFailure(error, for: book)
+            }
         } else if let analysis = try? BookContentAnalysisService.load(book: book) {
             contentIndex = analysis.index
             book.applyContentIndexSummary(analysis.index)
@@ -495,7 +566,7 @@ enum FileImportService {
         // Write bookInfo.json (after cache generation so version is included)
         try? book.saveBookInfoThrowing(contentIndex: contentIndex)
 
-        return book
+        return ImportedBook(book: book, report: report)
     }
 
     /// Import a ZIP file containing supported book files.
@@ -569,7 +640,8 @@ enum FileImportService {
         )
     }
 
-    /// Import files discovered inside a ZIP while retaining individual errors.
+    /// Import files discovered inside a ZIP while retaining individual errors
+    /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
     static func importSupportedFiles(
@@ -577,13 +649,14 @@ enum FileImportService {
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil,
-        importer: (URL, String) throws -> Book = { url, folder in
-            try importFile(from: url, toFolder: folder)
+        importer: (URL, String) throws -> ImportedBook = { url, folder in
+            try importFileWithReport(from: url, toFolder: folder)
         }
     ) -> ZipImportResult {
         let total = supportedFiles.count
         var books: [Book] = []
         var failures: [ZipImportFailure] = []
+        var incompleteBooks: [ZipImportFailure] = []
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
@@ -597,9 +670,14 @@ enum FileImportService {
             }
 
             do {
-                let book = try importer(fileURL, folderPath)
-                seenHashes.insert(book.md5Hash)
-                books.append(book)
+                let imported = try importer(fileURL, folderPath)
+                seenHashes.insert(imported.book.md5Hash)
+                books.append(imported.book)
+                if !imported.report.isComplete {
+                    incompleteBooks.append(
+                        ZipImportFailure(fileName: fileURL.lastPathComponent, message: imported.report.message)
+                    )
+                }
             } catch {
                 failures.append(
                     ZipImportFailure(
@@ -611,7 +689,7 @@ enum FileImportService {
             progress?(index + 1, total)
         }
 
-        return ZipImportResult(books: books, failures: failures)
+        return ZipImportResult(books: books, failures: failures, incompleteBooks: incompleteBooks)
     }
 
     /// Delete a book's entire .tmb package.
