@@ -89,11 +89,31 @@ struct HTMLReadingText {
     // MARK: - Shared Readings
 
     /// Each run of HTML's ASCII whitespace (tab, line feed, form feed,
-    /// carriage return, and space) as a single space. This is SwiftSoup's
-    /// reading of HTML text. Every other character, including a no-break
-    /// space, the Unicode space separators, and U+2028, is text and is kept.
+    /// carriage return, and space) as a single space. Every other character,
+    /// including a no-break space, the Unicode space separators, and U+2028,
+    /// is text and is kept. This is SwiftSoup's reading of HTML text
+    /// (`StringUtil.normaliseWhitespace`, which the tests hold it to), done
+    /// byte by byte: every character it collapses is a single ASCII byte in
+    /// UTF-8, where no byte of a longer character can be mistaken for one.
+    /// It runs several times faster, and it runs for every text node of every
+    /// book a cache rebuild converts.
     static func collapsingWhitespace(_ text: String) -> String {
-        StringUtil.normaliseWhitespace(text)
+        var bytes: [UInt8] = []
+        bytes.reserveCapacity(text.utf8.count)
+        var inWhitespace = false
+        for byte in text.utf8 {
+            switch byte {
+            case 0x20, 0x09, 0x0A, 0x0C, 0x0D:
+                if !inWhitespace {
+                    bytes.append(0x20)
+                }
+                inWhitespace = true
+            default:
+                bytes.append(byte)
+                inWhitespace = false
+            }
+        }
+        return String(decoding: bytes, as: UTF8.self)
     }
 
     /// A heading's label: the words of its subtree on one line, with no

@@ -1,3 +1,4 @@
+import SwiftSoup
 import XCTest
 @testable import TextMouth
 
@@ -597,6 +598,29 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(cached.text, "Start\n\n\u{200B}\n\n\u{200B}quoted\u{200B}\n\nLabel\u{200B}\n\na] \u{301}x")
         XCTAssertEqual(direct.headings.map(\.text), ["Label\u{200B}"])
         XCTAssertEqual(cached.headings.map(\.text), ["Label\u{200B}"])
+    }
+
+    /// HTML text collapses exactly as SwiftSoup reads it: only ASCII
+    /// whitespace (tab, line feed, form feed, carriage return, and space)
+    /// collapses, every other character is kept, and CRLF is one run. The
+    /// byte-by-byte implementation is held to SwiftSoup's own for every scalar
+    /// through U+3000 and the rest of Unicode's whitespace.
+    func testCollapsingWhitespaceMatchesSwiftSoup() {
+        let furtherScalars: [UInt32] = [0x205F, 0x2028, 0x2029, 0x202F, 0x3000, 0xFEFF, 0x1F642]
+        for value in Array(UInt32(0)...0x3000) + furtherScalars {
+            guard let scalar = Unicode.Scalar(value) else { continue }
+            let piece = String(scalar)
+            for text in ["a" + piece + piece + "b", piece, " " + piece + " ", piece + "\r\n\t" + piece] {
+                XCTAssertEqual(
+                    HTMLReadingText.collapsingWhitespace(text), StringUtil.normaliseWhitespace(text),
+                    "U+\(String(value, radix: 16, uppercase: true))"
+                )
+            }
+            // One failing scalar explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 {
+                break
+            }
+        }
     }
 
     // MARK: - HTML Readings Agree
