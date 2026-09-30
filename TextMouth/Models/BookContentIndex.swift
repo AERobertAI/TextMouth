@@ -290,9 +290,9 @@ extension BookContentIndex {
     static let audioDurationTolerance: TimeInterval = 0.001
 
     /// Whether this index can be trusted for a book of `format`: true exactly
-    /// when `validationFailure(for:)` finds nothing wrong.
-    func isValid(for format: BookFormat) -> Bool {
-        validationFailure(for: format) == nil
+    /// when `validationFailure(for:audioBaseURL:)` finds nothing wrong.
+    func isValid(for format: BookFormat, audioBaseURL: URL?) -> Bool {
+        validationFailure(for: format, audioBaseURL: audioBaseURL) == nil
     }
 
     /// Why this persisted index cannot be trusted for a book of `format`, or
@@ -304,13 +304,21 @@ extension BookContentIndex {
     /// derives from the index must hold here: chapters numbered in order,
     /// offsets that are the running sums of their lengths, matching totals,
     /// headings inside their chapters, counts within
-    /// `maximumCharacterCount`, finite audio timing, and audio paths that
-    /// stay inside the book's folder. Each chapter and heading is read once,
-    /// so the cost is linear in the size of the index.
-    func validationFailure(for format: BookFormat) -> String? {
+    /// `maximumCharacterCount`, finite audio timing, and audio files that
+    /// exist inside the book's folder. Each chapter and heading is read once
+    /// and each distinct audio file looked up once, so the cost is linear in
+    /// the size of the index.
+    ///
+    /// - Parameter audioBaseURL: The folder the chapters' relative audio
+    ///   paths resolve against: the book's file path, which for a multi-file
+    ///   or segmented audiobook is its audio folder. With nil, the checks
+    ///   that need the file system (that each file exists, and stays inside
+    ///   the folder once symbolic links are resolved) are skipped, while each
+    ///   path's own form is still checked.
+    func validationFailure(for format: BookFormat, audioBaseURL: URL?) -> String? {
         identityFailure(for: format)
             ?? chapterFailure()
-            ?? (kind == .audio ? audioFailure() : textFailure())
+            ?? (kind == .audio ? audioFailure(audioBaseURL: audioBaseURL) : textFailure())
     }
 
     /// Whether the current builder made this index for a book of `format`.
@@ -419,9 +427,12 @@ extension BookContentIndex {
     }
 
     /// The audio layout, each chapter's placeholder length, timing, and (for
-    /// layouts that name a file per chapter) path, and the duration total.
-    private func audioFailure() -> String? {
+    /// layouts that name a file per chapter) file, and the duration total.
+    /// `audioBaseURL` is the folder those files must exist in, as for
+    /// `validationFailure(for:audioBaseURL:)`.
+    private func audioFailure(audioBaseURL: URL?) -> String? {
         guard let audioLayout else { return "audioLayout is missing" }
+        var files = audioLayout.namesChapterFiles ? AudioFileCheck(folder: audioBaseURL) : nil
         var duration: TimeInterval = 0
         for (position, chapter) in chapters.enumerated() {
             let field = "chapters[\(position)]"
@@ -437,8 +448,7 @@ extension BookContentIndex {
                 ?? Self.timeFailure(audio.duration, field: "\(field).audio.duration") {
                 return failure
             }
-            if audioLayout.namesChapterFiles,
-               let failure = Self.audioPathFailure(chapter.audioFilePath, field: "\(field).audio.relativeFilePath") {
+            if let failure = files?.failure(for: chapter.audioFilePath, field: "\(field).audio.relativeFilePath") {
                 return failure
             }
             duration += audio.duration
@@ -460,21 +470,74 @@ extension BookContentIndex {
         return "\(field) is \(seconds), expected a finite number of seconds, 0 or more"
     }
 
-    /// Why `path`, a chapter's audio file relative to the book's audio
-    /// folder, is malformed on its face: missing, absolute, or stepping out
-    /// through a ".." component. `field` names the path in reasons.
-    private static func audioPathFailure(_ path: String?, field: String) -> String? {
-        guard let path else {
-            return "\(field) is missing"
+    /// Checks the audio file each chapter names: first the path's own form,
+    /// then, given the folder the paths resolve against, that it names an
+    /// existing regular file that is still inside that folder once every
+    /// symbolic link is resolved. Paths already found sound are remembered,
+    /// so a file that many segments share is looked up only once.
+    private struct AudioFileCheck {
+        /// The folder the paths resolve against; nil checks only their form.
+        private let folder: URL?
+        /// The folder's canonical path ending in "/", or nil when the folder
+        /// cannot be resolved because it does not exist.
+        private let canonicalFolderPrefix: String?
+        /// Relative paths already found to name a file inside the folder.
+        private var soundPaths: Set<String> = []
+
+        init(folder: URL?) {
+            self.folder = folder
+            canonicalFolderPrefix = folder
+                .flatMap { Self.canonicalPath(of: $0.path) }
+                .map { $0.hasSuffix("/") ? $0 : $0 + "/" }
         }
-        let quotedPath = String(reflecting: path)
-        if path.hasPrefix("/") {
-            return "\(field) \(quotedPath) is absolute"
+
+        /// Why `path`, a chapter's audio file relative to the folder, cannot
+        /// be trusted, or nil when it can. `field` names the path in reasons.
+        mutating func failure(for path: String?, field: String) -> String? {
+            guard let path else {
+                return "\(field) is missing"
+            }
+            let quotedPath = String(reflecting: path)
+            if path.hasPrefix("/") {
+                return "\(field) \(quotedPath) is absolute"
+            }
+            if path.split(separator: "/").contains("..") {
+                return "\(field) \(quotedPath) contains a \"..\" component"
+            }
+            guard let folder, !soundPaths.contains(path) else { return nil }
+            // Resolution fails for a missing file, and for every file of a
+            // missing folder.
+            guard let canonicalFolderPrefix,
+                  let canonicalFile = Self.canonicalPath(of: folder.appendingPathComponent(path).path) else {
+                return "\(field) \(quotedPath) does not exist"
+            }
+            // A symbolic link inside the folder can point anywhere on disk.
+            guard canonicalFile.hasPrefix(canonicalFolderPrefix) else {
+                return "\(field) \(quotedPath) resolves outside the audio folder"
+            }
+            guard Self.isRegularFile(atPath: canonicalFile) else {
+                return "\(field) \(quotedPath) is not a regular file"
+            }
+            soundPaths.insert(path)
+            return nil
         }
-        if path.split(separator: "/").contains("..") {
-            return "\(field) \(quotedPath) contains a \"..\" component"
+
+        /// The absolute path of an existing file or folder with every
+        /// symbolic link, ".", and ".." resolved, as realpath(3) gives it, or
+        /// nil when nothing exists there. The folder and its files both go
+        /// through this, so spellings such as /var and /private/var agree.
+        private static func canonicalPath(of path: String) -> String? {
+            guard let resolved = realpath(path, nil) else { return nil }
+            defer { free(resolved) }
+            return String(cString: resolved)
         }
-        return nil
+
+        /// Whether `path`, already canonical, names a regular file rather
+        /// than a folder or a device.
+        private static func isRegularFile(atPath path: String) -> Bool {
+            let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+            return attributes?[.type] as? FileAttributeType == .typeRegular
+        }
     }
 }
 

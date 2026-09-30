@@ -34,8 +34,9 @@ enum BookContentAnalysisService {
         regenerateTextCache: Bool = false
     ) throws -> Result {
         let url = URL(fileURLWithPath: book.filePath)
+        // An audio index's file paths are relative to the book's own path.
         let savedIndex = (try? BookInfo.load(from: book.tmbDirectory).contentIndex)
-            .flatMap { $0?.isValid(for: book.format) == true ? $0 : nil }
+            .flatMap { $0?.isValid(for: book.format, audioBaseURL: url) == true ? $0 : nil }
 
         if book.format.isAudio {
             if let savedIndex,
@@ -128,7 +129,7 @@ enum BookContentAnalysisService {
               MarkdownCacheService.cacheExists(for: book),
               let info = try? BookInfo.load(from: book.tmbDirectory),
               info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
-              let index = info.contentIndex, index.isValid(for: book.format) else { return nil }
+              let index = info.contentIndex, index.isValid(for: book.format, audioBaseURL: nil) else { return nil }
         return index
     }
 

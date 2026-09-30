@@ -14,16 +14,16 @@ final class ContentIndexValidationTests: XCTestCase {
     func testBuiltTextIndexIsValid() {
         let index = textIndex()
 
-        XCTAssertNil(index.validationFailure(for: .epub))
-        XCTAssertTrue(index.isValid(for: .epub))
+        XCTAssertNil(index.validationFailure(for: .epub, audioBaseURL: nil))
+        XCTAssertTrue(index.isValid(for: .epub, audioBaseURL: nil))
     }
 
     /// Every audio layout the builder makes passes: a single file whose
     /// chapters name no file, one file per chapter, and segments of a file.
     func testBuiltAudioIndexesAreValid() {
         for index in [singleFileIndex(), multiFileIndex(), segmentedIndex()] {
-            XCTAssertNil(index.validationFailure(for: .audio), "\(String(describing: index.audioLayout))")
-            XCTAssertTrue(index.isValid(for: .audio))
+            XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil), "\(String(describing: index.audioLayout))")
+            XCTAssertTrue(index.isValid(for: .audio, audioBaseURL: nil))
         }
     }
 
@@ -35,16 +35,16 @@ final class ContentIndexValidationTests: XCTestCase {
         index.version = "0.9.0"
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "version \"0.9.0\" is not the current \"\(BookContentIndex.currentVersion)\""
         )
-        XCTAssertFalse(index.isValid(for: .epub))
+        XCTAssertFalse(index.isValid(for: .epub, audioBaseURL: nil))
     }
 
     /// An index made for another format describes a different reading.
     func testIndexForAnotherFormatIsRejected() {
         XCTAssertEqual(
-            textIndex().validationFailure(for: .txt),
+            textIndex().validationFailure(for: .txt, audioBaseURL: nil),
             "format epub does not match the book's format txt"
         )
     }
@@ -54,7 +54,7 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = textIndex()
         index.kind = .audio
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "kind audio does not match format epub")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "kind audio does not match format epub")
     }
 
     // MARK: - Chapters
@@ -64,7 +64,7 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = textIndex()
         index.chapters = []
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters is empty")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters is empty")
     }
 
     /// Headings name their chapter by number, so numbers must match places.
@@ -72,14 +72,14 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = textIndex()
         index.chapters[1].chapterIndex = 2
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[1].chapterIndex is 2, expected 1")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].chapterIndex is 2, expected 1")
     }
 
     func testNegativeCharacterCountIsRejected() {
         var index = textIndex()
         index.chapters[1].characterCount = -5
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[1].characterCount is -5, below 0")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].characterCount is -5, below 0")
     }
 
     /// Word counts can be neither negative nor larger than the character
@@ -90,8 +90,8 @@ final class ContentIndexValidationTests: XCTestCase {
         var excessive = textIndex()
         excessive.chapters[0].wordCount = 11
 
-        XCTAssertEqual(negative.validationFailure(for: .epub), "chapters[1].wordCount is -1, outside 0 through 15")
-        XCTAssertEqual(excessive.validationFailure(for: .epub), "chapters[0].wordCount is 11, outside 0 through 10")
+        XCTAssertEqual(negative.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].wordCount is -1, outside 0 through 15")
+        XCTAssertEqual(excessive.validationFailure(for: .epub, audioBaseURL: nil), "chapters[0].wordCount is 11, outside 0 through 10")
     }
 
     /// Chapter start offsets are the running sums of the lengths before
@@ -100,21 +100,21 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = textIndex()
         index.chapters[1].startCharacterOffset = 9
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[1].startCharacterOffset is 9, expected 10")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].startCharacterOffset is 9, expected 10")
     }
 
     func testCharacterTotalMismatchIsRejected() {
         var index = textIndex()
         index.totalCharacterCount = 24
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "totalCharacterCount is 24, expected 25")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "totalCharacterCount is 24, expected 25")
     }
 
     func testWordTotalMismatchIsRejected() {
         var index = textIndex()
         index.totalWordCount = 7
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "totalWordCount is 7, expected 6")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "totalWordCount is 7, expected 6")
     }
 
     /// One chapter longer than any real book is rejected before playback
@@ -123,7 +123,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let index = resized(textIndex(), to: [10, limit + 1])
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[1].characterCount is \(limit + 1), above the limit of \(limit)"
         )
     }
@@ -133,14 +133,14 @@ final class ContentIndexValidationTests: XCTestCase {
         let index = resized(textIndex(), to: [limit / 2 + 1, limit / 2 + 1])
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "the chapters hold \(limit + 2) characters, above the limit of \(limit)"
         )
     }
 
     /// The limit itself is allowed, for one chapter and for the book.
     func testBookAtTheLimitIsValid() {
-        XCTAssertNil(resized(textIndex(), to: [limit - 15, 15]).validationFailure(for: .epub))
+        XCTAssertNil(resized(textIndex(), to: [limit - 15, 15]).validationFailure(for: .epub, audioBaseURL: nil))
     }
 
     /// Counts near `Int.max` fail cleanly instead of overflowing a sum.
@@ -151,7 +151,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.totalCharacterCount = .max
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[0].characterCount is \(Int.max), above the limit of \(limit)"
         )
     }
@@ -162,21 +162,21 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = textIndex()
         index.chapters[0].headings[0].level = 0
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[0].headings[0].level is 0, outside 1 through 6")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[0].headings[0].level is 0, outside 1 through 6")
     }
 
     func testHeadingLevelSevenIsRejected() {
         var index = textIndex()
         index.chapters[1].headings[1].level = 7
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[1].headings[1].level is 7, outside 1 through 6")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].headings[1].level is 7, outside 1 through 6")
     }
 
     func testHeadingWithoutIDIsRejected() {
         var index = textIndex()
         index.chapters[1].headings[0].id = ""
 
-        XCTAssertEqual(index.validationFailure(for: .epub), "chapters[1].headings[0].id is empty")
+        XCTAssertEqual(index.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].headings[0].id is empty")
     }
 
     /// A heading past the end of its chapter, or before its start, would
@@ -190,11 +190,11 @@ final class ContentIndexValidationTests: XCTestCase {
         beforeStart.chapters[1].headings[0].globalCharacterOffset = 9
 
         XCTAssertEqual(
-            pastEnd.validationFailure(for: .epub),
+            pastEnd.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[1].headings[1].characterOffset is 16, outside 0 through 15"
         )
         XCTAssertEqual(
-            beforeStart.validationFailure(for: .epub),
+            beforeStart.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[1].headings[0].characterOffset is -1, outside 0 through 15"
         )
     }
@@ -205,7 +205,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[1].headings[1].characterOffset = 15
         index.chapters[1].headings[1].globalCharacterOffset = 25
 
-        XCTAssertNil(index.validationFailure(for: .epub))
+        XCTAssertNil(index.validationFailure(for: .epub, audioBaseURL: nil))
     }
 
     /// The global offset must be the chapter's start plus the local offset;
@@ -215,7 +215,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[1].headings[1].globalCharacterOffset = 11
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[1].headings[1].globalCharacterOffset is 11, expected 21"
         )
     }
@@ -226,7 +226,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[1].headings.reverse()
 
         XCTAssertEqual(
-            index.validationFailure(for: .epub),
+            index.validationFailure(for: .epub, audioBaseURL: nil),
             "chapters[1].headings[1].characterOffset is 0, before the previous heading's 11"
         )
     }
@@ -243,9 +243,9 @@ final class ContentIndexValidationTests: XCTestCase {
         var chapterAudio = textIndex()
         chapterAudio.chapters[1].audio = BookContentAudioChapterIndex(relativeFilePath: nil, startTime: 0, duration: 1)
 
-        XCTAssertEqual(layout.validationFailure(for: .epub), "audioLayout is present in a text index")
-        XCTAssertEqual(duration.validationFailure(for: .epub), "totalAudioDuration is present in a text index")
-        XCTAssertEqual(chapterAudio.validationFailure(for: .epub), "chapters[1].audio is present in a text index")
+        XCTAssertEqual(layout.validationFailure(for: .epub, audioBaseURL: nil), "audioLayout is present in a text index")
+        XCTAssertEqual(duration.validationFailure(for: .epub, audioBaseURL: nil), "totalAudioDuration is present in a text index")
+        XCTAssertEqual(chapterAudio.validationFailure(for: .epub, audioBaseURL: nil), "chapters[1].audio is present in a text index")
     }
 
     // MARK: - Audio
@@ -254,14 +254,14 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = multiFileIndex()
         index.audioLayout = nil
 
-        XCTAssertEqual(index.validationFailure(for: .audio), "audioLayout is missing")
+        XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "audioLayout is missing")
     }
 
     func testAudioChapterWithoutTimingIsRejected() {
         var index = multiFileIndex()
         index.chapters[1].audio = nil
 
-        XCTAssertEqual(index.validationFailure(for: .audio), "chapters[1].audio is missing")
+        XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "chapters[1].audio is missing")
     }
 
     /// Playback restores at least one placeholder character per chapter, so
@@ -270,7 +270,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let index = resized(multiFileIndex(), to: [100, 0, 300])
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[1].characterCount is 0, but an audio chapter holds at least 1 placeholder character"
         )
     }
@@ -280,7 +280,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[1].audio?.startTime = .nan
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[1].audio.startTime is nan, expected a finite number of seconds, 0 or more"
         )
     }
@@ -290,7 +290,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[0].audio?.startTime = -1
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[0].audio.startTime is -1.0, expected a finite number of seconds, 0 or more"
         )
     }
@@ -303,7 +303,7 @@ final class ContentIndexValidationTests: XCTestCase {
             index.chapters[2].audio?.duration = duration
 
             XCTAssertEqual(
-                index.validationFailure(for: .audio),
+                index.validationFailure(for: .audio, audioBaseURL: nil),
                 "chapters[2].audio.duration is \(duration), expected a finite number of seconds, 0 or more"
             )
         }
@@ -314,7 +314,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[2].audio?.duration = -10
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[2].audio.duration is -10.0, expected a finite number of seconds, 0 or more"
         )
     }
@@ -329,9 +329,9 @@ final class ContentIndexValidationTests: XCTestCase {
         var notANumber = multiFileIndex()
         notANumber.totalAudioDuration = .nan
 
-        XCTAssertEqual(larger.validationFailure(for: .audio), "totalAudioDuration is 61.0, expected 60.0")
-        XCTAssertEqual(missing.validationFailure(for: .audio), "totalAudioDuration is missing")
-        XCTAssertEqual(notANumber.validationFailure(for: .audio), "totalAudioDuration is nan, expected 60.0")
+        XCTAssertEqual(larger.validationFailure(for: .audio, audioBaseURL: nil), "totalAudioDuration is 61.0, expected 60.0")
+        XCTAssertEqual(missing.validationFailure(for: .audio, audioBaseURL: nil), "totalAudioDuration is missing")
+        XCTAssertEqual(notANumber.validationFailure(for: .audio, audioBaseURL: nil), "totalAudioDuration is nan, expected 60.0")
     }
 
     /// Rounding far below a millisecond is not damage.
@@ -339,7 +339,7 @@ final class ContentIndexValidationTests: XCTestCase {
         var index = multiFileIndex()
         index.totalAudioDuration = 60.0005
 
-        XCTAssertNil(index.validationFailure(for: .audio))
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
     }
 
     /// Every chapter of a multi-file book must name its file; a missing or
@@ -350,7 +350,7 @@ final class ContentIndexValidationTests: XCTestCase {
             index.chapters[1].audio?.relativeFilePath = path
 
             XCTAssertEqual(
-                index.validationFailure(for: .audio),
+                index.validationFailure(for: .audio, audioBaseURL: nil),
                 "chapters[1].audio.relativeFilePath is missing",
                 String(describing: path)
             )
@@ -362,7 +362,7 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[1].audio?.relativeFilePath = "/etc/hosts"
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[1].audio.relativeFilePath \"/etc/hosts\" is absolute"
         )
     }
@@ -375,7 +375,7 @@ final class ContentIndexValidationTests: XCTestCase {
             index.chapters[1].audio?.relativeFilePath = path
 
             XCTAssertEqual(
-                index.validationFailure(for: .audio),
+                index.validationFailure(for: .audio, audioBaseURL: nil),
                 "chapters[1].audio.relativeFilePath \(String(reflecting: path)) contains a \"..\" component"
             )
         }
@@ -387,9 +387,128 @@ final class ContentIndexValidationTests: XCTestCase {
         index.chapters[0].audio?.relativeFilePath = "../book.wav"
 
         XCTAssertEqual(
-            index.validationFailure(for: .audio),
+            index.validationFailure(for: .audio, audioBaseURL: nil),
             "chapters[0].audio.relativeFilePath \"../book.wav\" contains a \"..\" component"
         )
+    }
+
+    // MARK: - Audio files on disk
+
+    /// Files present in the folder pass, including one in a subfolder and a
+    /// file shared by segments, whether the folder is named directly or
+    /// through a symbolic link to it.
+    func testAudioFilesInsideTheFolderAreValid() throws {
+        let folder = try audioFolder()
+        let link = try scratchFolder("ContentIndexLink").appendingPathComponent("audio")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
+
+        for base in [folder, link] {
+            XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: base), base.path)
+            XCTAssertNil(segmentedIndex().validationFailure(for: .audio, audioBaseURL: base), base.path)
+        }
+    }
+
+    func testMissingAudioFileIsRejected() throws {
+        let folder = try audioFolder()
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
+
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.relativeFilePath \"02.wav\" does not exist"
+        )
+    }
+
+    /// Without its folder, none of a book's files exist.
+    func testMissingAudioFolderIsRejected() throws {
+        let folder = try audioFolder()
+        let missingFolder = folder.appendingPathComponent("moved away", isDirectory: true)
+
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: missingFolder),
+            "chapters[0].audio.relativeFilePath \"01.wav\" does not exist"
+        )
+    }
+
+    /// A path that stays inside the folder by its spelling can still leave
+    /// it through a symbolic link; the link's destination decides.
+    func testLinkToAFileOutsideTheFolderIsRejected() throws {
+        let folder = try audioFolder()
+        let outside = try scratchFolder("ContentIndexOutside").appendingPathComponent("elsewhere.wav")
+        XCTAssertTrue(FileManager.default.createFile(atPath: outside.path, contents: Data()))
+        try replaceWithLink("02.wav", in: folder, to: outside)
+
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.relativeFilePath \"02.wav\" resolves outside the audio folder"
+        )
+    }
+
+    /// The same holds for a linked subfolder the path passes through.
+    func testLinkedSubfolderOutsideTheFolderIsRejected() throws {
+        let folder = try audioFolder()
+        let outside = try scratchFolder("ContentIndexOutsideDisc")
+        XCTAssertTrue(FileManager.default.createFile(atPath: outside.appendingPathComponent("03.wav").path, contents: Data()))
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("Disc 2"))
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("Disc 2"), withDestinationURL: outside)
+
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[2].audio.relativeFilePath \"Disc 2/03.wav\" resolves outside the audio folder"
+        )
+    }
+
+    /// A link whose destination is inside the folder is harmless.
+    func testLinkToAFileInsideTheFolderIsValid() throws {
+        let folder = try audioFolder()
+        try replaceWithLink("02.wav", in: folder, to: folder.appendingPathComponent("01.wav"))
+
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+    }
+
+    /// A folder, even one inside the book's folder, is not a playable file.
+    func testAudioPathNamingAFolderIsRejected() throws {
+        let folder = try audioFolder()
+        var index = multiFileIndex(in: folder)
+        index.chapters[2].audio?.relativeFilePath = "Disc 2"
+
+        XCTAssertEqual(
+            index.validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[2].audio.relativeFilePath \"Disc 2\" is not a regular file"
+        )
+    }
+
+    /// Segments sharing one file fail at the first segment naming it.
+    func testMissingSharedSegmentFileIsRejected() throws {
+        let folder = try audioFolder()
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("book.wav"))
+
+        XCTAssertEqual(
+            segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[0].audio.relativeFilePath \"book.wav\" does not exist"
+        )
+    }
+
+    /// Without a folder only the file system checks are skipped: a missing
+    /// file passes, while a path's own form is still checked.
+    func testWithoutAFolderOnlyThePathFormIsChecked() throws {
+        let folder = try audioFolder()
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("02.wav"))
+        var climbing = multiFileIndex(in: folder)
+        climbing.chapters[0].audio?.relativeFilePath = "../01.wav"
+
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: nil))
+        XCTAssertEqual(
+            climbing.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[0].audio.relativeFilePath \"../01.wav\" contains a \"..\" component"
+        )
+    }
+
+    /// A single-file book's chapters name no file, so validation looks none
+    /// up, just as opening the book from its index never opens its file.
+    func testSingleFileIndexLooksUpNoFiles() throws {
+        let emptyFolder = try scratchFolder("ContentIndexSingle")
+
+        XCTAssertNil(singleFileIndex().validationFailure(for: .audio, audioBaseURL: emptyFolder))
     }
 
     // MARK: - Fixtures
@@ -418,13 +537,17 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
-    /// Three tracks of 10, 20, and 30 seconds, one in a disc subfolder,
-    /// as `analyzeAudio` indexes a folder of files. The files need not exist:
-    /// these checks look at the index alone.
-    private func multiFileIndex() -> BookContentIndex {
-        let folder = URL(fileURLWithPath: "/tmp/audio", isDirectory: true)
-        let tracks = ["01.wav", "02.wav", "Disc 2/03.wav"]
-        return BookContentIndex.build(
+    /// The tracks of `multiFileIndex`, relative to its folder.
+    private let tracks = ["01.wav", "02.wav", "Disc 2/03.wav"]
+
+    /// Three tracks of 10, 20, and 30 seconds, one in a disc subfolder, as
+    /// `analyzeAudio` indexes a folder of files. Unless `folder` comes from
+    /// `audioFolder()`, the files need not exist, for checks that look at the
+    /// index alone.
+    private func multiFileIndex(
+        in folder: URL = URL(fileURLWithPath: "/tmp/audio", isDirectory: true)
+    ) -> BookContentIndex {
+        BookContentIndex.build(
             fromChapters: tracks.enumerated().map { number, track in
                 Chapter(
                     title: track,
@@ -456,6 +579,39 @@ final class ContentIndexValidationTests: XCTestCase {
     /// Placeholder text of `length` spaces, as the audio parser writes.
     private func placeholder(_ length: Int) -> String {
         String(repeating: " ", count: length)
+    }
+
+    /// A new folder under the temporary directory holding every track of
+    /// `multiFileIndex` and the shared file of `segmentedIndex`, removed when
+    /// the test ends. Validation never reads the files, so they are empty.
+    /// The temporary directory lies under /var, a symbolic link to
+    /// /private/var, so every folder check also crosses a link.
+    private func audioFolder() throws -> URL {
+        let folder = try scratchFolder("ContentIndexAudio")
+        for file in tracks + ["book.wav"] {
+            let url = folder.appendingPathComponent(file)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: Data()))
+        }
+        return folder
+    }
+
+    /// A new, empty folder under the temporary directory, removed when the
+    /// test ends.
+    private func scratchFolder(_ name: String) throws -> URL {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(name)-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        return folder
+    }
+
+    /// Replace the file at `relativePath` inside `folder` with a symbolic
+    /// link to `destination`.
+    private func replaceWithLink(_ relativePath: String, in folder: URL, to destination: URL) throws {
+        let link = folder.appendingPathComponent(relativePath)
+        try FileManager.default.removeItem(at: link)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: destination)
     }
 
     /// `index` with new chapter lengths and everything derived from them
