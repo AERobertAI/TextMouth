@@ -22,6 +22,13 @@ final class ZIPImportTests: XCTestCase {
         try verifyOriginalHandling(hasFailure: false, hasBook: true, shouldDelete: true)
     }
 
+    /// Every file imported, but a book that is missing chapters has only
+    /// the archive as a complete source: keep it, and say what is missing.
+    @MainActor
+    func testImportWithBookMissingChaptersKeepsOriginalArchive() throws {
+        try verifyOriginalHandling(hasFailure: false, hasBook: true, hasIncompleteBook: true, shouldDelete: false)
+    }
+
     /// ZIP books use the same Replace/Keep Both/Cancel flow as documents.
     @MainActor
     func testSingleZIPBookRequestsDuplicateResolution() {
@@ -40,7 +47,12 @@ final class ZIPImportTests: XCTestCase {
     /// Use a disposable file and restore the config preference after each
     /// scenario; no test deletes or overwrites a developer-owned archive.
     @MainActor
-    private func verifyOriginalHandling(hasFailure: Bool, hasBook: Bool, shouldDelete: Bool) throws {
+    private func verifyOriginalHandling(
+        hasFailure: Bool,
+        hasBook: Bool,
+        hasIncompleteBook: Bool = false,
+        shouldDelete: Bool
+    ) throws {
         let original = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).zip")
         try Data("archive source".utf8).write(to: original)
         let config = ConfigService.shared
@@ -58,14 +70,15 @@ final class ZIPImportTests: XCTestCase {
         let book = Book(title: "Accepted", format: .txt, filePath: "/tmp/accepted", md5Hash: UUID().uuidString)
         let result = ZipImportResult(
             books: hasBook ? [book] : [],
-            failures: hasFailure ? [ZipImportFailure(fileName: "failed.epub", message: "unreadable")] : []
+            failures: hasFailure ? [ZipImportFailure(fileName: "failed.epub", message: "unreadable")] : [],
+            incompleteBooks: hasIncompleteBook ? [ZipImportFailure(fileName: "accepted.epub", message: "missing")] : []
         )
 
         viewModel.completeZIPImport(result, originalURL: original, folderPath: "")
 
         XCTAssertEqual(FileManager.default.fileExists(atPath: original.path), !shouldDelete)
         XCTAssertEqual(viewModel.library.books.count, hasBook ? 1 : 0)
-        XCTAssertEqual(viewModel.showError, hasFailure)
+        XCTAssertEqual(viewModel.showError, hasFailure || hasIncompleteBook)
     }
 
     func testSupportedFileLoopReturnsBooksAndPerFileFailures() throws {
@@ -85,12 +98,12 @@ final class ZIPImportTests: XCTestCase {
                 if url.lastPathComponent == "bad.txt" {
                     throw FileImportError.importFailed("simulated parse failure")
                 }
-                return Book(
+                return ImportedBook(book: Book(
                     title: "Imported",
                     format: .txt,
                     filePath: url.path,
                     md5Hash: try FileImportService.md5Hash(of: url)
-                )
+                ))
             }
         )
 
@@ -113,6 +126,46 @@ final class ZIPImportTests: XCTestCase {
         XCTAssertTrue(summary.contains("2 files failed"))
         XCTAssertTrue(summary.contains("first.epub: invalid archive"))
         XCTAssertTrue(summary.contains("second.pdf: unreadable"))
+    }
+
+    /// Books imported without some of their chapters are listed after the
+    /// failed files, each with what it is missing, and the summary says the
+    /// original ZIP was kept.
+    func testFailureSummaryListsBooksMissingChapters() throws {
+        let result = ZipImportResult(
+            books: [
+                Book(title: "Complete", format: .epub, filePath: "/tmp/complete.epub", md5Hash: "a"),
+                Book(title: "Partial", format: .epub, filePath: "/tmp/partial.epub", md5Hash: "b")
+            ],
+            failures: [ZipImportFailure(fileName: "bad.epub", message: "unreadable")],
+            incompleteBooks: [ZipImportFailure(fileName: "partial.epub", message: "1 of 3 chapters could not be read.")]
+        )
+
+        XCTAssertEqual(
+            result.failureSummary,
+            "Imported 2 books, but 1 file failed:\nbad.epub: unreadable\n"
+                + "1 book is missing chapters:\npartial.epub: 1 of 3 chapters could not be read.\n"
+                + "The original file was kept."
+        )
+    }
+
+    /// A batch whose only problem is books missing chapters still gets a
+    /// summary, since the reader must hear what is missing.
+    func testIncompleteBooksAloneProduceASummary() {
+        let result = ZipImportResult(
+            books: [Book(title: "Partial", format: .epub, filePath: "/tmp/partial.epub", md5Hash: "b")],
+            failures: [],
+            incompleteBooks: [
+                ZipImportFailure(fileName: "one.epub", message: "Missing one."),
+                ZipImportFailure(fileName: "two.epub", message: "Missing two.")
+            ]
+        )
+
+        XCTAssertEqual(
+            result.failureSummary,
+            "Imported 1 book, but 2 books are missing chapters:\none.epub: Missing one.\ntwo.epub: Missing two.\n"
+                + "The original file was kept."
+        )
     }
 
     func testDuplicateFilesAreSkippedWithoutBeingReportedAsFailures() throws {

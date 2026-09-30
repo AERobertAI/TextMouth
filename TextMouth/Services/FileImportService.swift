@@ -75,6 +75,8 @@ struct ImportedBook {
     }
 }
 
+/// A file from a ZIP import that did not import in full, with what went
+/// wrong: why it failed, or what its book is missing.
 struct ZipImportFailure: Equatable {
     let fileName: String
     let message: String
@@ -83,13 +85,30 @@ struct ZipImportFailure: Equatable {
 struct ZipImportResult {
     let books: [Book]
     let failures: [ZipImportFailure]
+    /// Books that were imported without some of their chapters, by file,
+    /// each with its extraction report's sentence. They keep the ZIP.
+    var incompleteBooks: [ZipImportFailure] = []
 
+    /// What the library's alert says about the batch: the files that failed,
+    /// then the books missing chapters, which also means the original ZIP
+    /// was kept. Nil when every file imported in full.
     var failureSummary: String? {
-        guard !failures.isEmpty else { return nil }
-        let details = failures
-            .map { "\($0.fileName): \($0.message)" }
-            .joined(separator: "\n")
-        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(details)"
+        var sections: [String] = []
+        if !failures.isEmpty {
+            sections.append("\(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(Self.lines(failures))")
+        }
+        if !incompleteBooks.isEmpty {
+            let count = incompleteBooks.count
+            sections.append("\(count) book\(count == 1 ? " is" : "s are") missing chapters:\n\(Self.lines(incompleteBooks))")
+        }
+        guard !sections.isEmpty else { return nil }
+        let kept = incompleteBooks.isEmpty ? "" : "\nThe original file was kept."
+        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(sections.joined(separator: "\n"))\(kept)"
+    }
+
+    /// One "file: message" line per entry.
+    private static func lines(_ entries: [ZipImportFailure]) -> String {
+        entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
     }
 }
 
@@ -621,7 +640,8 @@ enum FileImportService {
         )
     }
 
-    /// Import files discovered inside a ZIP while retaining individual errors.
+    /// Import files discovered inside a ZIP while retaining individual errors
+    /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
     static func importSupportedFiles(
@@ -629,13 +649,14 @@ enum FileImportService {
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil,
-        importer: (URL, String) throws -> Book = { url, folder in
-            try importFile(from: url, toFolder: folder)
+        importer: (URL, String) throws -> ImportedBook = { url, folder in
+            try importFileWithReport(from: url, toFolder: folder)
         }
     ) -> ZipImportResult {
         let total = supportedFiles.count
         var books: [Book] = []
         var failures: [ZipImportFailure] = []
+        var incompleteBooks: [ZipImportFailure] = []
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
@@ -649,9 +670,14 @@ enum FileImportService {
             }
 
             do {
-                let book = try importer(fileURL, folderPath)
-                seenHashes.insert(book.md5Hash)
-                books.append(book)
+                let imported = try importer(fileURL, folderPath)
+                seenHashes.insert(imported.book.md5Hash)
+                books.append(imported.book)
+                if !imported.report.isComplete {
+                    incompleteBooks.append(
+                        ZipImportFailure(fileName: fileURL.lastPathComponent, message: imported.report.message)
+                    )
+                }
             } catch {
                 failures.append(
                     ZipImportFailure(
@@ -663,7 +689,7 @@ enum FileImportService {
             progress?(index + 1, total)
         }
 
-        return ZipImportResult(books: books, failures: failures)
+        return ZipImportResult(books: books, failures: failures, incompleteBooks: incompleteBooks)
     }
 
     /// Delete a book's entire .tmb package.

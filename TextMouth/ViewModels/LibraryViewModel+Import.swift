@@ -236,7 +236,8 @@ extension LibraryViewModel {
     }
 
     /// Publish a batch result while retaining an archive that still contains
-    /// failed or unimported content. This also covers empty/duplicate-only ZIPs.
+    /// failed or unimported content, or a book imported without some of its
+    /// chapters. This also covers empty/duplicate-only ZIPs.
     func completeZIPImport(_ result: ZipImportResult, originalURL: URL, folderPath: String) {
         let priorIDs = Set(library.books.map(\.id))
         for book in result.books { library.addBook(book) }
@@ -246,10 +247,9 @@ extension LibraryViewModel {
         save()
         importProgressMessage = ""
         if let failureSummary = result.failureSummary {
-            errorMessage = failureSummary
-            showError = true
+            presentImportMessage(failureSummary)
         }
-        if result.failures.isEmpty, !acceptedBooks.isEmpty,
+        if result.failures.isEmpty, result.incompleteBooks.isEmpty, !acceptedBooks.isEmpty,
            acceptedBooks.count == result.books.count {
             handleOriginalFileDeletion(url: originalURL)
         }

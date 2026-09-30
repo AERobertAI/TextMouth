@@ -514,6 +514,41 @@ final class EPUBPartialExtractionTests: XCTestCase {
         }
     }
 
+    /// A ZIP batch with one book missing a chapter: every book is added, the
+    /// alert names the incomplete book's file and what it lacks, and the ZIP
+    /// stays although the preference says to delete it.
+    @MainActor
+    func testZIPBatchListsTheBookMissingAChapterAndKeepsTheArchive() throws {
+        let complete = try makeEPUB(chapters: Self.threeChapters, fileName: "complete.epub")
+        let partial = try makeEPUB(chapters: Self.threeChapters, fileName: "partial.epub")
+        try removeMember("OEBPS/ch02.xhtml", from: partial)
+        let archive = partial.deletingLastPathComponent().appendingPathComponent("batch.zip")
+        try Data("stands in for the ZIP the books came from".utf8).write(to: archive)
+        let missing = "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book."
+
+        let result = FileImportService.importSupportedFiles([complete, partial], toFolder: "")
+        for package in result.books.map(\.tmbDirectory) {
+            addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        }
+
+        XCTAssertEqual(result.books.count, 2)
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(result.incompleteBooks, [ZipImportFailure(fileName: "partial.epub", message: missing)])
+        withImportDeleteBehavior(.deleteAfterImport) {
+            let library = Self.emptyLibrary()
+
+            library.completeZIPImport(result, originalURL: archive, folderPath: "")
+
+            XCTAssertEqual(library.library.books.count, 2)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path))
+            XCTAssertTrue(library.showError)
+            XCTAssertEqual(
+                library.errorMessage,
+                "Imported 2 books, but 1 book is missing chapters:\npartial.epub: \(missing)\nThe original file was kept."
+            )
+        }
+    }
+
     /// Opening a book that is missing chapters would put its reader window
     /// over the warning, so an incomplete import is not opened automatically.
     @MainActor
@@ -588,14 +623,15 @@ final class EPUBPartialExtractionTests: XCTestCase {
 
     /// Write an EPUB titled `title` (by default a unique title) that lists
     /// `chapters` in its manifest and reads `spine` (manifest ids, by default
-    /// every chapter in order), to "book.epub" in a new temporary directory
+    /// every chapter in order), to `fileName` in a new temporary directory
     /// that is removed when the test ends. `compression` says how the archive
     /// stores its files.
     private func makeEPUB(
         title: String? = nil,
         chapters: [FixtureChapter],
         spine: [String]? = nil,
-        compression: CompressionMethod = .none
+        compression: CompressionMethod = .none,
+        fileName: String = "book.epub"
     ) throws -> URL {
         let title = title ?? Self.uniqueTitle()
         let manifest = chapters.map {
@@ -630,7 +666,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
-        let epub = directory.appendingPathComponent("book.epub")
+        let epub = directory.appendingPathComponent(fileName)
         try FileManager.default.moveItem(at: zip, to: epub)
         return epub
     }
