@@ -71,6 +71,15 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.characterOffset), [first, second])
     }
 
+    /// A heading whose literal text merely spells "<!--" holds no comment,
+    /// so its label is swift-markdown's plain text exactly: nothing, U+200B
+    /// included, is trimmed from its ends. (A real comment in a heading is
+    /// still left out of the label; see EPUBHeadingRecoveryTests.)
+    func testMarkdownHeadingSpellingACommentKeepsItsLabelExactly() throws {
+        let chapter = try MarkdownDocParser.parseChapter(markdown: "# \\<\\!\\-\\- note \\-\\-\\> x\u{200B}\n\nBody.")
+        XCTAssertEqual(chapter.headings.map(\.text), ["<!-- note --> x\u{200B}"])
+    }
+
     /// Hyperlink formatting should survive while its words appear only once.
     func testDOCXHyperlinkIsEmittedOnceInReadingOrder() throws {
         let converter = DOCXToMarkdownConverter(
