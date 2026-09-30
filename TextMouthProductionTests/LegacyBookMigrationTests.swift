@@ -416,6 +416,93 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: package).metadata.bookID, otherBook.id)
     }
 
+    // MARK: - Migrating the Library
+
+    /// One book's failure does not stop the pass. Every legacy book is
+    /// tried; the ones that fail keep their records exactly, the report
+    /// names each with its reason, in library order, and the summary reaches
+    /// the debug log. Books already in packages are not touched.
+    func testLibraryPassMovesWhatItCanAndListsEveryFailure() throws {
+        let sandbox = makeSandbox()
+        let missingOriginal = sandbox.scratchDirectory.appendingPathComponent("gone.txt")
+        let missing = try sandbox.legacyBook(
+            "Missing \(UUID().uuidString.prefix(8))",
+            original: missingOriginal,
+            md5Hash: "recorded-hash"
+        )
+        let movable = try sandbox.legacyBook("Movable", original: try sandbox.makeFile("movable.txt", contents: "Moves."))
+        let lockedOriginal = try sandbox.makeFile("locked.txt", contents: "Cannot be read.")
+        let unreadable = try sandbox.legacyBook("Unreadable", original: lockedOriginal)
+        setPermissions(of: lockedOriginal, to: 0o000, restoringTo: 0o644)
+        let packaged = Book(
+            title: "Already Packaged",
+            format: .txt,
+            filePath: "/nonexistent/Already.tmb/book.txt",
+            md5Hash: "packaged-hash",
+            tmbDirectoryName: "Already.tmb"
+        )
+        var library = Library(books: [missing, movable, unreadable, packaged])
+
+        let report = FileImportService.migrateLegacyBooks(in: &library)
+
+        XCTAssertEqual(report.migratedCount, 1)
+        XCTAssertEqual(report.failures.map(\.title), [missing.title, unreadable.title])
+        XCTAssertEqual(
+            report.failures.first?.reason,
+            LegacyMigrationError.originalMissing(path: missingOriginal.path).localizedDescription
+        )
+        XCTAssertEqual(report.warnings, [])
+        XCTAssertEqual(library.books[0], missing)
+        XCTAssertEqual(library.books[1].tmbDirectoryName, sandbox.usualPackage(for: movable).lastPathComponent)
+        XCTAssertEqual(library.books[2], unreadable)
+        XCTAssertEqual(library.books[3], packaged)
+
+        TextMouthPaths.flushLogs()
+        let logLines = try text(of: TextMouthPaths.debugLogFile).components(separatedBy: "\n")
+        XCTAssertTrue(logLines.contains { $0.contains("LEGACY_MIGRATION:") && $0.contains(missing.title) })
+    }
+
+    /// The alert text lists failures first, since those books did not move,
+    /// then books that moved with a problem, one line per book with its
+    /// title and what happened; the log gets the same on one line. Counts
+    /// read naturally in the singular and the plural, and a pass with
+    /// nothing to report says nothing.
+    func testReportSummariesNameEachBookWithWhatHappened() {
+        var report = LegacyMigrationReport()
+        XCTAssertNil(report.userSummary)
+        XCTAssertNil(report.logSummary)
+
+        report.recordFailure(of: summaryBook("First"), error: LegacyMigrationError.copyDiffers)
+        report.record(LegacyBookMigration(book: summaryBook("Second"), removedOriginal: true, warnings: []))
+        report.record(LegacyBookMigration(
+            book: summaryBook("Third"),
+            removedOriginal: false,
+            warnings: ["Its original was kept.", "Its cache waits."]
+        ))
+
+        let copyDiffers = LegacyMigrationError.copyDiffers.localizedDescription
+        XCTAssertEqual(report.migratedCount, 2)
+        XCTAssertEqual(
+            report.userSummary,
+            "TextMouth could not move 1 book to the current library format. Its original file was not changed.\n"
+                + "First: \(copyDiffers)\n\n"
+                + "TextMouth moved 1 book to the current library format, but with a problem:\n"
+                + "Third: Its original was kept. Its cache waits."
+        )
+        XCTAssertEqual(
+            report.logSummary,
+            "LEGACY_MIGRATION: moved 2 books into packages; could not move 1 book: \"First\" (\(copyDiffers)); "
+                + "1 book moved with problems: \"Third\" (Its original was kept. Its cache waits.)"
+        )
+
+        report.recordFailure(of: summaryBook("Fourth"), error: LegacyMigrationError.noUnusedPackageName)
+        let summary = report.userSummary ?? ""
+        XCTAssertTrue(summary.hasPrefix(
+            "TextMouth could not move 2 books to the current library format. Their original files were not changed.\n"
+        ))
+        XCTAssertTrue(summary.contains("Fourth: \(LegacyMigrationError.noUnusedPackageName.localizedDescription)"))
+    }
+
     // MARK: - Assertions
 
     /// Asserts that `name` comes from the usual naming scheme for `book`
@@ -444,6 +531,11 @@ final class LegacyBookMigrationTests: XCTestCase {
     /// The UTF-8 text of the file at `url`.
     private func text(of url: URL) throws -> String {
         try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// A record used only for its title, in report tests that touch no files.
+    private func summaryBook(_ title: String) -> Book {
+        Book(title: title, format: .txt, filePath: "/nonexistent/\(title).txt", md5Hash: title)
     }
 
     /// Sets `url`'s permissions to `mode` for the rest of the test. They go

@@ -123,9 +123,127 @@ struct LegacyBookMigration {
     let warnings: [String]
 }
 
-// MARK: - Migrating One Book
+/// What one pass over the library's legacy books did, for the log and for
+/// the user.
+struct LegacyMigrationReport: Equatable {
+    /// One book that needs the user's attention: its title, and plain
+    /// sentences saying what happened to it.
+    struct Issue: Equatable {
+        let title: String
+        let reason: String
+    }
+
+    /// How many books moved into packages, with or without warnings.
+    var migratedCount = 0
+    /// Books that could not move; their records and originals are unchanged.
+    var failures: [Issue] = []
+    /// Books that moved with something to look at, such as a kept original.
+    var warnings: [Issue] = []
+
+    /// Counts a book that moved, and lists it when it has warnings.
+    mutating func record(_ migration: LegacyBookMigration) {
+        migratedCount += 1
+        if !migration.warnings.isEmpty {
+            warnings.append(Issue(
+                title: migration.book.title,
+                reason: migration.warnings.joined(separator: " ")
+            ))
+        }
+    }
+
+    /// Lists a book that could not move, with the reason.
+    mutating func recordFailure(of book: Book, error: Error) {
+        failures.append(Issue(title: book.title, reason: error.localizedDescription))
+    }
+
+    /// The message for the library's error alert, or nil when no book needs
+    /// attention. Failures come first, since those books did not move, and
+    /// each book has a line of its own: its title, then what happened.
+    var userSummary: String? {
+        var sections: [String] = []
+        if !failures.isEmpty {
+            sections.append(
+                "TextMouth could not move \(Self.describe(failures.count)) to the current library format. "
+                    + (failures.count == 1
+                        ? "Its original file was not changed."
+                        : "Their original files were not changed.")
+                    + "\n" + Self.lines(failures)
+            )
+        }
+        if !warnings.isEmpty {
+            sections.append(
+                "TextMouth moved \(Self.describe(warnings.count)) to the current library format, "
+                    + (warnings.count == 1 ? "but with a problem:" : "but with problems:")
+                    + "\n" + Self.lines(warnings)
+            )
+        }
+        return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
+    }
+
+    /// One line for the debug log, or nil when the pass found nothing to move.
+    var logSummary: String? {
+        guard migratedCount > 0 || !failures.isEmpty else { return nil }
+        var parts = ["moved \(Self.describe(migratedCount)) into packages"]
+        if !failures.isEmpty {
+            parts.append("could not move \(Self.describe(failures.count)): \(Self.inline(failures))")
+        }
+        if !warnings.isEmpty {
+            parts.append("\(Self.describe(warnings.count)) moved with problems: \(Self.inline(warnings))")
+        }
+        return "LEGACY_MIGRATION: " + parts.joined(separator: "; ")
+    }
+
+    /// "1 book" or "3 books".
+    private static func describe(_ count: Int) -> String {
+        count == 1 ? "1 book" : "\(count) books"
+    }
+
+    /// One "Title: what happened" line per book.
+    private static func lines(_ issues: [Issue]) -> String {
+        issues.map { "\($0.title): \($0.reason)" }.joined(separator: "\n")
+    }
+
+    /// Every issue on a single line: each title quoted, its reason in
+    /// parentheses, and any line break in either flattened to a space.
+    private static func inline(_ issues: [Issue]) -> String {
+        issues.map { "\"\($0.title)\" (\($0.reason))" }
+            .joined(separator: ", ")
+            .replacingOccurrences(of: "\n", with: " ")
+    }
+}
+
+// MARK: - Migration
 
 extension FileImportService {
+
+    // MARK: Migrating the Library
+
+    /// Moves every book the library still records in the layout that
+    /// predates packages into a package of its own. A book that cannot move
+    /// keeps its record and original, and the pass carries on with the next
+    /// book. The summary goes to the debug log; a caller with a window shows
+    /// the report's `userSummary` once its whole repair is done.
+    @discardableResult
+    static func migrateLegacyBooks(in library: inout Library) -> LegacyMigrationReport {
+        var report = LegacyMigrationReport()
+        for index in library.books.indices where library.books[index].tmbDirectoryName.isEmpty {
+            let book = library.books[index]
+            do {
+                let migration = try migrateBookToTMB(book)
+                library.books[index] = migration.book
+                report.record(migration)
+            } catch {
+                report.recordFailure(of: book, error: error)
+            }
+        }
+        if let line = report.logSummary {
+            print(line)
+            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        }
+        return report
+    }
+
+    // MARK: Migrating One Book
 
     /// Moves a book recorded in the layout that predates packages (its
     /// `tmbDirectoryName` is empty) into its own `.tmb` package. Nothing

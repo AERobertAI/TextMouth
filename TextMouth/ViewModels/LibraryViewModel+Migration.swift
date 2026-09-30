@@ -102,15 +102,11 @@ extension LibraryViewModel {
             }
         }
 
-        // Migrate books with no .tmb package
-        for i in library.books.indices {
-            if library.books[i].tmbDirectoryName.isEmpty {
-                if let migration = try? FileImportService.migrateBookToTMB(library.books[i]) {
-                    library.books[i] = migration.book
-                    needsSave = true
-                }
-            }
-        }
+        // Move books that have no .tmb package yet into packages. Each copy
+        // is verified before its original is removed; a book that cannot
+        // move keeps its record and original, and the pass logs why.
+        let migration = FileImportService.migrateLegacyBooks(in: &library)
+        if migration.migratedCount > 0 { needsSave = true }
 
         // Repair legacy package-name collisions before background parsing can
         // write two different books' caches and indexes into the same directory.
