@@ -145,17 +145,93 @@ enum AudioSpeed {
     }
 }
 
+// MARK: - Playback Failures
+
+/// Why the audio player could not play a file, or stopped playing it.
+///
+/// Every failure names its file, so a listener can be told which track to
+/// restore, and keeps AVFoundation's own error, when it gave one, for the
+/// debug log.
+struct AudioPlaybackFailure: Error, Equatable, Sendable {
+    /// What went wrong, in the terms a listener is told.
+    enum Reason: Equatable, Sendable {
+        /// Nothing exists at the file's path.
+        case fileMissing
+        /// The file cannot be read, or what it holds is not audio that
+        /// AVFoundation can play: a damaged track, a folder, or some other
+        /// kind of file under an audio name.
+        case fileUnreadable
+        /// The file started playing and then failed partway through.
+        case failedDuringPlayback
+        /// Audio stopped arriving, or never started, and playback did not
+        /// recover in time.
+        case stalled
+    }
+
+    /// What went wrong.
+    let reason: Reason
+    /// The file that failed, as the player was asked to load it.
+    let url: URL
+    /// AVFoundation's description of the failure, when it gave one.
+    let underlyingError: NSError?
+
+    init(reason: Reason, url: URL, underlyingError: Error? = nil) {
+        self.reason = reason
+        self.url = url
+        self.underlyingError = underlyingError.map { $0 as NSError }
+    }
+
+    /// The file's name, such as "03.mp3". A listener knows a track by its
+    /// name, never by the package path around it.
+    var fileName: String { url.lastPathComponent }
+
+    /// What happened to the file, as a clause that can end a longer
+    /// sentence: "the file 03.mp3 is missing".
+    var problem: String { "the file \(fileName) \(predicate)" }
+
+    /// The problem as a sentence of its own, to show or speak:
+    /// "The file 03.mp3 is missing."
+    var message: String { "The file \(fileName) \(predicate)." }
+
+    /// What happened, following "the file 03.mp3".
+    private var predicate: String {
+        switch reason {
+        case .fileMissing:
+            return "is missing"
+        case .fileUnreadable:
+            return "is damaged, unreadable, or not an audio file"
+        case .failedDuringPlayback:
+            return "failed partway through"
+        case .stalled:
+            return "could not be read quickly enough"
+        }
+    }
+}
+
 /// Plays audio files (mp3, m4a, m4b, wav, etc.) with variable speed and seeking.
 /// Used for audio book playback as an alternative to the TTS SpeechService.
+///
+/// A file that cannot be played is reported through one channel: `failure`
+/// is set and `onPlaybackFailed` is called. Playback halts, the player is
+/// released, and `currentTime` stays where it was, so the same position can
+/// be played again once the file is restored.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var isPlaying = false
     @Published var isPaused = false
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
     @Published var playbackSpeed: Double = 1.0
+    /// Why the file most recently loaded could not be played, or stopped
+    /// playing. Nil until a failure, and cleared again when a file loads
+    /// successfully.
+    @Published private(set) var failure: AudioPlaybackFailure?
 
     var onPlaybackFinished: (() -> Void)?
     var onPositionUpdate: ((TimeInterval) -> Void)?
+    /// Called on the main queue once for each failure, after `failure` is
+    /// set and playback has halted. A file that fails never also reports
+    /// `onPlaybackFinished`.
+    var onPlaybackFailed: ((AudioPlaybackFailure) -> Void)?
 
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
@@ -198,11 +274,22 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     // MARK: - Loading
 
     /// Load an audio file for playback. Call this before play().
-    func load(url: URL) {
+    ///
+    /// The file is checked before a player is built. A missing file, or one
+    /// that cannot be read, is reported through `failure` and
+    /// `onPlaybackFailed` before this returns, and no player is created, so
+    /// nothing can claim to play it.
+    ///
+    /// - Returns: True when a player holds the file, ready to be asked to
+    ///   play it; false when the file failed its check.
+    @discardableResult
+    func load(url: URL) -> Bool {
         let normalizedURL = url.standardizedFileURL
+        // A failure releases its player, so a live player for this URL has
+        // not failed and can keep playing the file.
         if let loadedURL, loadedURL == normalizedURL, player != nil {
             clipEndTime = nil
-            return
+            return true
         }
 
         // A chapter transition replaces the player but is not a user-visible
@@ -212,6 +299,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         stop()
         currentVolume = volumeBeforeLoad
         clipEndTime = nil
+
+        if let reason = Self.fileProblem(at: normalizedURL) {
+            reportFailure(AudioPlaybackFailure(reason: reason, url: normalizedURL))
+            return false
+        }
+        failure = nil
 
         let asset = AVURLAsset(url: normalizedURL)
         let item = AVPlayerItem(asset: asset)
@@ -243,12 +336,41 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
         setupTimeObserver()
         setupEndObserver()
+        return true
+    }
+
+    /// What keeps the file at `url` from being played, found without
+    /// opening it, or nil when it is a regular file that can be read.
+    ///
+    /// A symbolic link is judged by the item it leads to. A folder, a named
+    /// pipe, or any other item that is not a regular file cannot hold a
+    /// track, and handing a pipe to AVFoundation could block its loading
+    /// forever, so each is reported unreadable at once.
+    static func fileProblem(
+        at url: URL,
+        fileManager: FileManager = .default
+    ) -> AudioPlaybackFailure.Reason? {
+        // Both checks follow symbolic links; a broken link is missing.
+        guard fileManager.fileExists(atPath: url.path) else { return .fileMissing }
+        let resourceValues = try? url.resolvingSymlinksInPath()
+            .resourceValues(forKeys: [.isRegularFileKey])
+        guard resourceValues?.isRegularFile == true,
+              fileManager.isReadableFile(atPath: url.path) else {
+            return .fileUnreadable
+        }
+        return nil
     }
 
     // MARK: - Playback
 
-    func play(fromTime: TimeInterval = 0) {
-        guard let player = player else { return }
+    /// Play the loaded file from `fromTime` seconds.
+    ///
+    /// - Returns: True when playback started; false when there was nothing
+    ///   to play, such as after a load that failed. `isPlaying` becomes true
+    ///   only when playback starts.
+    @discardableResult
+    func play(fromTime: TimeInterval = 0) -> Bool {
+        guard let player = player else { return false }
         let clampedTime = max(0, duration > 0 ? min(fromTime, duration) : fromTime)
         let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
 
@@ -262,6 +384,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
+        return true
     }
 
     func pause() {
@@ -284,6 +407,17 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     func stop() {
+        releasePlayer()
+        isPlaying = false
+        isPaused = false
+        currentTime = 0
+        duration = 0
+        currentVolume = 1.0
+    }
+
+    /// Silence and release the player, its item, and everything observing
+    /// them. Published playback state is left for the caller to settle.
+    private func releasePlayer() {
         durationTask?.cancel()
         durationTask = nil
         removeObservers()
@@ -293,11 +427,21 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         loadedURL = nil
         clipEndTime = nil
         seekGate.cancelAll()
+    }
+
+    /// Halt playback because of `failure`, then publish it and tell
+    /// `onPlaybackFailed`.
+    ///
+    /// The player is released: AVFoundation never plays a failed item
+    /// again, and without a player the next `load(url:)` of the same file
+    /// builds a fresh one. `currentTime` and `duration` keep their values,
+    /// so playing the file again can start where this attempt stopped.
+    private func reportFailure(_ failure: AudioPlaybackFailure) {
+        releasePlayer()
         isPlaying = false
         isPaused = false
-        currentTime = 0
-        duration = 0
-        currentVolume = 1.0
+        self.failure = failure
+        onPlaybackFailed?(failure)
     }
 
     func seek(to time: TimeInterval) {

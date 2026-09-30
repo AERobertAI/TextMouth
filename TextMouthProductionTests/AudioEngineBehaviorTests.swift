@@ -252,34 +252,40 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(playback.outputVolume, 1)
     }
 
-    func testAudioPlaybackNewPlayerInheritsTrackedVolume() {
+    func testAudioPlaybackNewPlayerInheritsTrackedVolume() throws {
+        let tracks = try makeSilentTracks(count: 1)
+        defer { tracks.remove() }
         let playback = AudioPlaybackService()
         playback.setVolume(0.4)
 
-        playback.load(url: URL(fileURLWithPath: "/tmp/TextMouth-volume-test-a.wav"))
+        XCTAssertTrue(playback.load(url: tracks.urls[0]))
 
         XCTAssertEqual(playback.outputVolume, 0.4)
         playback.stop()
     }
 
-    func testAudioPlaybackChapterLoadPreservesFadeVolume() {
+    func testAudioPlaybackChapterLoadPreservesFadeVolume() throws {
+        let tracks = try makeSilentTracks(count: 2)
+        defer { tracks.remove() }
         let playback = AudioPlaybackService()
         playback.setVolume(0.6)
-        playback.load(url: URL(fileURLWithPath: "/tmp/TextMouth-volume-test-a.wav"))
+        XCTAssertTrue(playback.load(url: tracks.urls[0]))
 
-        playback.load(url: URL(fileURLWithPath: "/tmp/TextMouth-volume-test-b.wav"))
+        XCTAssertTrue(playback.load(url: tracks.urls[1]))
 
         XCTAssertEqual(playback.intendedVolume, 0.6)
         XCTAssertEqual(playback.outputVolume, 0.6)
         playback.stop()
     }
 
-    func testAudioPlaybackMultipleLoadsPreserveProgressiveFade() {
+    func testAudioPlaybackMultipleLoadsPreserveProgressiveFade() throws {
+        let tracks = try makeSilentTracks(count: 3)
+        defer { tracks.remove() }
         let playback = AudioPlaybackService()
 
-        for (index, volume) in [Float(0.8), 0.5, 0.1].enumerated() {
+        for (url, volume) in zip(tracks.urls, [Float(0.8), 0.5, 0.1]) {
             playback.setVolume(volume)
-            playback.load(url: URL(fileURLWithPath: "/tmp/TextMouth-volume-test-\(index).wav"))
+            XCTAssertTrue(playback.load(url: url))
             XCTAssertEqual(playback.outputVolume, volume)
         }
         playback.stop()
@@ -305,15 +311,39 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(playback.intendedVolume, 0.75)
     }
 
-    func testAudioPlaybackSameURLLoadRetainsVolume() {
+    func testAudioPlaybackSameURLLoadRetainsVolume() throws {
+        let tracks = try makeSilentTracks(count: 1)
+        defer { tracks.remove() }
         let playback = AudioPlaybackService()
-        let url = URL(fileURLWithPath: "/tmp/TextMouth-volume-test.wav")
+        let url = tracks.urls[0]
         playback.setVolume(0.2)
-        playback.load(url: url)
+        XCTAssertTrue(playback.load(url: url))
 
-        playback.load(url: url)
+        XCTAssertTrue(playback.load(url: url))
 
         XCTAssertEqual(playback.outputVolume, 0.2)
         playback.stop()
+    }
+
+    /// Silent tracks in a folder of their own, and a way to remove them.
+    private struct SilentTracks {
+        let directory: URL
+        let urls: [URL]
+
+        func remove() {
+            try? FileManager.default.removeItem(at: directory)
+        }
+    }
+
+    /// Write `count` one-second silent tracks. Loading a real file builds a
+    /// real player, whose volume is what these tests check; a missing path
+    /// is refused before any player exists.
+    private func makeSilentTracks(count: Int) throws -> SilentTracks {
+        let directory = try AudioTestFixtures.makeTemporaryDirectory()
+        let urls = (1...count).map { directory.appendingPathComponent("\($0).wav") }
+        for url in urls {
+            try AudioTestFixtures.writeSilence(to: url)
+        }
+        return SilentTracks(directory: directory, urls: urls)
     }
 }
