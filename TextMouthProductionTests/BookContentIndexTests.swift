@@ -239,6 +239,46 @@ final class BookContentIndexTests: XCTestCase {
         )
     }
 
+    /// A chapter that names no file must void the whole file list. Dropping
+    /// just that chapter's entry used to shift every later chapter onto the
+    /// file of the chapter before it.
+    func testChapterWithoutAudioFileVoidsTheFileList() {
+        let base = URL(fileURLWithPath: "/tmp/audio", isDirectory: true)
+        let tracks = ["01.mp3", "02.mp3", "03.mp3"]
+        let index = BookContentIndex.build(
+            fromChapters: tracks.map { Chapter(title: $0, text: String(repeating: " ", count: 20)) },
+            format: .audio,
+            audioFilePaths: tracks.map { base.appendingPathComponent($0).path },
+            audioBaseURL: base
+        )
+        XCTAssertEqual(index.resolvedAudioFilePaths(relativeTo: base), tracks.map { "/tmp/audio/\($0)" })
+
+        for missingPath in [nil, ""] {
+            var damaged = index
+            damaged.chapters[1].audio?.relativeFilePath = missingPath
+            XCTAssertNil(damaged.resolvedAudioFilePaths(relativeTo: base), String(describing: missingPath))
+        }
+    }
+
+    /// Segments follow the same rule: one without a file voids them all.
+    func testSegmentWithoutAudioFileVoidsTheSegments() {
+        let chapters = [Chapter(title: "First"), Chapter(title: "Second")]
+        let index = BookContentIndex.build(
+            fromChapters: chapters,
+            format: .audio,
+            audioSegments: [
+                AudioSegment(title: "First", file: "shared.mp3", startTime: 0, endTime: 5),
+                AudioSegment(title: "Second", file: "shared.mp3", startTime: 5, endTime: 9),
+            ]
+        )
+        XCTAssertEqual(index.restoredAudioSegments()?.map(\.file), ["shared.mp3", "shared.mp3"])
+
+        var damaged = index
+        damaged.chapters[0].audio?.relativeFilePath = ""
+        XCTAssertNil(damaged.restoredAudioSegments())
+        XCTAssertNil(damaged.resolvedAudioFilePaths(relativeTo: URL(fileURLWithPath: "/tmp/audio")))
+    }
+
     func testAudioAnalysisUsesPersistedIndexWithoutOpeningAsset() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let packageName = "SavedAudioIndex-\(UUID().uuidString).tmb"

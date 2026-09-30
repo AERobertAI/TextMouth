@@ -18,6 +18,10 @@ struct BookContentIndex: Codable, Hashable {
         case singleFile
         case multiFile
         case segmented
+
+        /// Whether every chapter names its own audio file. A single-file book
+        /// plays the book's file itself, so its chapters name none.
+        var namesChapterFiles: Bool { self != .singleFile }
     }
 
     var version: String
@@ -223,19 +227,25 @@ struct BookContentIndex: Codable, Hashable {
         )
     }
 
+    /// One absolute audio file path per chapter, resolved against `bookURL`,
+    /// for layouts whose chapters name their own files; nil for a single-file
+    /// book. All or nothing: if any chapter names no file the result is nil,
+    /// because a shorter list would shift every later chapter onto the file
+    /// of the chapter before it.
     func resolvedAudioFilePaths(relativeTo bookURL: URL) -> [String]? {
-        guard audioLayout == .multiFile || audioLayout == .segmented else { return nil }
-        return chapters.compactMap { chapter in
-            chapter.audio?.relativeFilePath.map {
-                bookURL.appendingPathComponent($0).path
-            }
-        }
+        guard audioLayout?.namesChapterFiles == true else { return nil }
+        let relativePaths = chapters.compactMap(\.audioFilePath)
+        guard relativePaths.count == chapters.count else { return nil }
+        return relativePaths.map { bookURL.appendingPathComponent($0).path }
     }
 
+    /// The segments a segmented book plays, one per chapter, or nil for any
+    /// other layout or when a chapter lacks its timing or file (again all or
+    /// nothing, so segments never shift onto the wrong chapter).
     func restoredAudioSegments() -> [AudioSegment]? {
         guard audioLayout == .segmented else { return nil }
         let restored = chapters.compactMap { chapter -> AudioSegment? in
-            guard let audio = chapter.audio, let file = audio.relativeFilePath else { return nil }
+            guard let audio = chapter.audio, let file = chapter.audioFilePath else { return nil }
             return AudioSegment(
                 title: chapter.title,
                 file: file,
@@ -263,6 +273,13 @@ struct BookContentChapterIndex: Codable, Hashable {
     var wordCount: Int
     var headings: [BookContentHeadingIndex]
     var audio: BookContentAudioChapterIndex?
+
+    /// The audio file this chapter plays, relative to the book's audio
+    /// folder, or nil when it names none. An empty path names no file either.
+    var audioFilePath: String? {
+        guard let path = audio?.relativeFilePath, !path.isEmpty else { return nil }
+        return path
+    }
 }
 
 struct BookContentHeadingIndex: Codable, Hashable {
