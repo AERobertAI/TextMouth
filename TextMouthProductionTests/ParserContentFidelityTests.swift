@@ -337,6 +337,55 @@ final class ParserContentFidelityTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - HTML
+
+    /// The one chapter HTMLParser reads directly from `html`, as when a book
+    /// is opened before its cache exists.
+    private func directHTMLReading(_ html: String) throws -> Chapter {
+        try XCTUnwrap(HTMLParser.parse(html: html, title: "HTML").chapters.first)
+    }
+
+    /// Every boundary keeps the words on either side apart in the direct
+    /// reading, after the element as well as before it: nested blocks, text
+    /// after a block, table rows and cells, definition entries, line breaks,
+    /// and the edit elements SwiftSoup counts as blocks.
+    func testDirectHTMLKeepsWordsApartAtEveryBoundary() throws {
+        let readings: [(html: String, text: String)] = [
+            ("<div><div>One</div><div>Two</div></div>Three", "One Two Three"),
+            ("<section>Tide</section>tables<aside>list</aside>soundings", "Tide tables list soundings"),
+            (HTMLFixture.table, "Soundings Name Depth Odile 30 Bruno 41"),
+            (HTMLFixture.definitions, "Ebb The falling tide. Flood The rising tide."),
+            ("<p>High<br/>water</p>", "High water"),
+            ("<p>Fare<del>ten</del>eight<ins>pence</ins></p>", "Fare ten eight pence"),
+        ]
+        for (html, text) in readings {
+            XCTAssertEqual(try directHTMLReading(html).text, text, html)
+        }
+    }
+
+    /// An image is read as its alt text, with the alt's whitespace collapsed
+    /// like any other text's.
+    func testDirectHTMLReadsImageAltText() throws {
+        let chapter = try directHTMLReading("<p>See the <img src=\"m.png\" alt=\" tide\n   map \"/> below.</p>")
+        XCTAssertEqual(chapter.text, "See the tide map below.")
+    }
+
+    /// A heading's label is the words the reading hears for it: alt text is
+    /// part of it and hidden content is not. A heading nested inside another
+    /// heading, or inside preformatted text or code, is part of that text
+    /// rather than a heading of its own.
+    func testDirectHTMLHeadingLabelsAreTheirReadWords() throws {
+        let chapter = try directHTMLReading("""
+        <h1>Part <span hidden="">secret</span><img src="n.png" alt="Two"/></h1>
+        <h2>Outer <span><h3>Inner</h3></span></h2>
+        <pre><h4>Preformatted</h4></pre><div><code><h5>Coded</h5></code></div>
+        """)
+        XCTAssertEqual(chapter.text, "Part Two Outer Inner Preformatted Coded")
+        XCTAssertEqual(chapter.headings.map(\.text), ["Part Two", "Outer Inner"])
+        XCTAssertEqual(chapter.headings.map(\.level), [1, 2])
+        XCTAssertEqual(chapter.headings.map(\.characterOffset), [0, ("Part Two " as NSString).length])
+    }
 }
 
 extension XCTestCase {
@@ -499,4 +548,20 @@ enum PlainTextFixture {
         }
         return source
     }
+}
+
+/// HTML sources shared by the parser and cache tests.
+enum HTMLFixture {
+    /// A captioned table with a header row and two body rows.
+    static let table = """
+        <table><caption>Soundings</caption>
+        <thead><tr><th>Name</th><th>Depth</th></tr></thead>
+        <tbody><tr><td>Odile</td><td>30</td></tr><tr><td>Bruno</td><td>41</td></tr></tbody>
+        </table>
+        """
+
+    /// A definition list of two terms, each with its description.
+    static let definitions = """
+        <dl><dt>Ebb</dt><dd>The falling tide.</dd><dt>Flood</dt><dd>The rising tide.</dd></dl>
+        """
 }
