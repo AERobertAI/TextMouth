@@ -511,6 +511,181 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertNil(singleFileIndex().validationFailure(for: .audio, audioBaseURL: emptyFolder))
     }
 
+    // MARK: - Opening a book
+
+    /// A sound saved text index keeps the fast path.
+    func testSoundTextIndexIsReused() throws {
+        let book = try makeTextBook()
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(result.index, try savedIndex(of: book))
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
+    /// A damaged text index is reported and set aside: the book re-indexes
+    /// its cache, the new index matches the chapters it is paired with, and
+    /// once the caller saves it as usual the next load reuses it.
+    func testMalformedTextIndexIsRebuiltAndReplaced() throws {
+        let book = try makeTextBook()
+        var damaged = try savedIndex(of: book)
+        let start = damaged.chapters[1].startCharacterOffset
+        damaged.chapters[1].startCharacterOffset += 7
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        XCTAssertEqual(result.index.chapters[1].startCharacterOffset, start)
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].startCharacterOffset is \(start + 7), expected \(start)"]
+        )
+        try assertRepairIsReused(result, for: book)
+    }
+
+    /// A sound saved audio index keeps the fast path, with every chapter's
+    /// file in order.
+    func testSoundAudioIndexIsReused() throws {
+        let book = try makeAudioBook()
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(relativeAudioPaths(of: result, in: book), tracks)
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
+    /// A chapter without its file used to shift every later chapter onto
+    /// the wrong track. Now the index is set aside and the folder analyzed
+    /// again, so each chapter plays its own file.
+    func testAudioIndexMissingAPathIsRebuiltAndReplaced() throws {
+        let book = try makeAudioBook()
+        var damaged = try savedIndex(of: book)
+        damaged.chapters[1].audio?.relativeFilePath = nil
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        XCTAssertEqual(relativeAudioPaths(of: result, in: book), tracks)
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].audio.relativeFilePath is missing"]
+        )
+        try assertRepairIsReused(result, for: book)
+    }
+
+    /// A track deleted after analysis is noticed before playback: the new
+    /// index covers the remaining tracks, each on its own chapter.
+    func testAudioIndexNamingADeletedFileIsRebuilt() throws {
+        let book = try makeAudioBook()
+        try FileManager.default.removeItem(at: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"))
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        XCTAssertEqual(relativeAudioPaths(of: result, in: book), ["01.wav", "Disc 2/03.wav"])
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].audio.relativeFilePath \"02.wav\" does not exist"]
+        )
+    }
+
+    /// A track replaced by a link to a file elsewhere on disk is never
+    /// handed to playback.
+    func testAudioIndexLinkingOutsideTheFolderIsRebuilt() throws {
+        let book = try makeAudioBook()
+        let folder = URL(fileURLWithPath: book.filePath)
+        let outside = try scratchFolder("ContentIndexOutsideTrack").appendingPathComponent("elsewhere.wav")
+        try writeSilence(to: outside)
+        try replaceWithLink("02.wav", in: folder, to: outside)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        // Every file handed to playback resolves inside the folder. (Which
+        // tracks remain is the parser's business: it skips links.)
+        let played = try XCTUnwrap(relativeAudioPaths(of: result, in: book))
+        XCTAssertFalse(played.isEmpty)
+        XCTAssertTrue(played.allSatisfy { !$0.hasPrefix("/") && $0 != "02.wav" }, "\(played)")
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].audio.relativeFilePath \"02.wav\" resolves outside the audio folder"]
+        )
+    }
+
+    /// An absurd chapter length is rejected before the placeholder text is
+    /// allocated; without validation this load would request a terabyte.
+    func testOversizedAudioIndexIsRebuiltWithoutAllocating() throws {
+        let book = try makeAudioBook()
+        var damaged = try savedIndex(of: book)
+        damaged.chapters[0].characterCount = 1_000_000_000_000
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[0].characterCount is 1000000000000, above the limit of \(limit)"]
+        )
+    }
+
+    /// A library batch resuming after a crash reuses only a sound index; a
+    /// damaged one is reported, so the book's cache and index are rebuilt.
+    func testCompletedCheckpointWithMalformedIndexIsNotReused() throws {
+        let book = try makeTextBook()
+        XCTAssertEqual(BookContentAnalysisService.completedTextCacheIndex(for: book), try savedIndex(of: book))
+        var damaged = try savedIndex(of: book)
+        damaged.chapters[0].headings[0].level = 9
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        XCTAssertNil(BookContentAnalysisService.completedTextCacheIndex(for: book))
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[0].headings[0].level is 9, outside 1 through 6"]
+        )
+    }
+
+    /// An index that would not be used anyway, because the outdated cache is
+    /// being regenerated with it, is not reported.
+    func testIndexReplacedByRegenerationIsNotReported() throws {
+        var book = try makeTextBook()
+        var damaged = try savedIndex(of: book)
+        damaged.totalWordCount += 1
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+        book.cacheFormatVersion = "3.0.3"
+
+        let result = try BookContentAnalysisService.load(book: book, regenerateTextCache: true)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
+    /// The report stays one line even when the book's title has two.
+    func testReportKeepsAMultilineTitleOnOneLine() throws {
+        var book = try makeTextBook()
+        book.title = "First line\nSecond line \(UUID().uuidString)"
+        var damaged = try savedIndex(of: book)
+        damaged.totalCharacterCount += 1
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        _ = try BookContentAnalysisService.load(book: book)
+
+        let flattenedTitle = book.title.replacingOccurrences(of: "\n", with: " ")
+        XCTAssertEqual(
+            debugLogLines(containing: "CONTENT_INDEX_REJECTED: \(flattenedTitle): totalCharacterCount is").count,
+            1
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A two-chapter text index. The emoji makes the first chapter's UTF-16
@@ -612,6 +787,137 @@ final class ContentIndexValidationTests: XCTestCase {
         let link = folder.appendingPathComponent(relativePath)
         try FileManager.default.removeItem(at: link)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: destination)
+    }
+
+    // MARK: - Book fixtures
+
+    /// A Markdown book as a completed import leaves it: source, current
+    /// content.md, and the index built from them saved in bookInfo.json. Its
+    /// two chapters make offsets between chapters observable. The title is
+    /// unique, so each test finds only its own debug log reports.
+    private func makeTextBook() throws -> Book {
+        let package = try makePackage("ContentIndexText")
+        let source = package.url.appendingPathComponent("book.md")
+        try """
+        <!-- chapter: First -->
+        # First
+
+        One two three.
+
+        <!-- chapter: Second -->
+        # Second
+
+        Four five.
+
+        ## Later
+
+        Six seven eight.
+        """.write(to: source, atomically: true, encoding: .utf8)
+        var book = Book(
+            title: "Index Fixture \(UUID().uuidString)", format: .markdown, filePath: source.path,
+            md5Hash: UUID().uuidString, tmbDirectoryName: package.name
+        )
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book))
+        XCTAssertEqual(index.chapters.count, 2)
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: index, cacheFormatVersion: book.cacheFormatVersion
+        )
+        return book
+    }
+
+    /// A multi-file audiobook whose audio folder holds `tracks` as real
+    /// one-second WAVs, analyzed once and saved, as an audio import leaves it.
+    private func makeAudioBook() throws -> Book {
+        let package = try makePackage("ContentIndexAudio")
+        let folder = package.url.appendingPathComponent("audio", isDirectory: true)
+        for track in tracks {
+            try writeSilence(to: folder.appendingPathComponent(track))
+        }
+        let book = Book(
+            title: "Index Fixture \(UUID().uuidString)", format: .audio, filePath: folder.path,
+            md5Hash: UUID().uuidString, tmbDirectoryName: package.name
+        )
+        let analysis = try BookContentAnalysisService.load(book: book)
+        XCTAssertFalse(analysis.usedPersistedIndex)
+        try LibraryPersistenceService.saveContentAnalysis(for: book, index: analysis.index, cacheFormatVersion: nil)
+        return book
+    }
+
+    /// A new package folder in the hosted test library, removed when the
+    /// test ends.
+    private func makePackage(_ prefix: String) throws -> (name: String, url: URL) {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let name = "\(prefix)-\(UUID().uuidString).tmb"
+        let url = TextMouthPaths.tmbPath(folderPath: "", tmbName: name)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return (name, url)
+    }
+
+    /// The index saved in `book`'s package.
+    private func savedIndex(of book: Book) throws -> BookContentIndex {
+        try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
+    }
+
+    /// The debug log's reports of an index rejected for `book`, each from
+    /// its prefix onwards (without the timestamp).
+    private func rejections(of book: Book) -> [String] {
+        debugLogLines(containing: "CONTENT_INDEX_REJECTED: \(book.title):").compactMap { line in
+            line.range(of: "CONTENT_INDEX_REJECTED:").map { String(line[$0.lowerBound...]) }
+        }
+    }
+
+    /// `result`'s audio files relative to `book`'s audio folder. Both sides
+    /// are compared through their resolved locations, because parsing
+    /// reports files by the folder's canonical path (/private/var for /var);
+    /// a file outside the folder keeps its full resolved path.
+    private func relativeAudioPaths(of result: BookContentAnalysisService.Result, in book: Book) -> [String]? {
+        let prefix = URL(fileURLWithPath: book.filePath).resolvingSymlinksInPath().path + "/"
+        return result.audioFilePaths?.map { path in
+            let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+            return resolved.hasPrefix(prefix) ? String(resolved.dropFirst(prefix.count)) : resolved
+        }
+    }
+
+    /// Assert that `result` pairs its content with an index describing
+    /// exactly that content: the same index, one entry per chapter with the
+    /// length the reader sees, valid for the book, and for audio one file
+    /// per chapter.
+    private func assertAligned(
+        _ result: BookContentAnalysisService.Result,
+        for book: Book,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(result.content.contentIndex, result.index, file: file, line: line)
+        XCTAssertEqual(
+            result.index.chapters.map(\.characterCount),
+            result.content.chapters.map(\.text.utf16Length),
+            file: file, line: line
+        )
+        XCTAssertNil(
+            result.index.validationFailure(for: book.format, audioBaseURL: URL(fileURLWithPath: book.filePath)),
+            file: file, line: line
+        )
+        if book.format.isAudio {
+            XCTAssertEqual(result.audioFilePaths?.count, result.content.chapters.count, file: file, line: line)
+        }
+    }
+
+    /// Save `result` as callers do after a fresh analysis and assert that
+    /// the next load reuses exactly that index.
+    private func assertRepairIsReused(
+        _ result: BookContentAnalysisService.Result,
+        for book: Book,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex, file: file, line: line)
+        XCTAssertEqual(reopened.index, result.index, file: file, line: line)
     }
 
     /// `index` with new chapter lengths and everything derived from them

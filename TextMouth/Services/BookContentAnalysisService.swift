@@ -29,17 +29,20 @@ enum BookContentAnalysisService {
         var cacheFormatVersion: String?
     }
 
+    /// Load `book`'s content with its index. The index saved in the book's
+    /// package is reused, skipping audio analysis or re-indexing the text
+    /// cache, only when it passes validation; one that fails is reported in
+    /// the debug log and the book is analyzed afresh, returning
+    /// `usedPersistedIndex == false` so the caller's usual save replaces it.
     static func load(
         book: Book,
         regenerateTextCache: Bool = false
     ) throws -> Result {
         let url = URL(fileURLWithPath: book.filePath)
-        // An audio index's file paths are relative to the book's own path.
-        let savedIndex = (try? BookInfo.load(from: book.tmbDirectory).contentIndex)
-            .flatMap { $0?.isValid(for: book.format, audioBaseURL: url) == true ? $0 : nil }
 
         if book.format.isAudio {
-            if let savedIndex,
+            // An audio index's file paths are relative to the book's own path.
+            if let savedIndex = trustedSavedIndex(for: book, audioBaseURL: url),
                let content = savedIndex.makeAudioDocumentContent(
                    title: book.title,
                    author: book.author
@@ -94,7 +97,9 @@ enum BookContentAnalysisService {
 
         let mayUseSavedIndex = !regenerateTextCache
             && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
-        let precomputed = mayUseSavedIndex ? savedIndex : nil
+        // Validate only an index that would be used, so a rebuild that
+        // replaces the saved index anyway reports nothing about it.
+        let precomputed = mayUseSavedIndex ? trustedSavedIndex(for: book, audioBaseURL: nil) : nil
         let content = try MarkdownCacheService.loadFromCache(
             for: book,
             contentIndex: precomputed
@@ -123,14 +128,45 @@ enum BookContentAnalysisService {
 
     /// Recover a fully committed cache/index after an interrupted library batch.
     /// Package metadata is written per book, so it can be newer than library.json.
-    /// A missing cache, old index, or old extraction version must still rebuild.
+    /// A missing cache, old index, or old extraction version must still rebuild,
+    /// as must an index that fails validation (which is also reported).
     static func completedTextCacheIndex(for book: Book) -> BookContentIndex? {
         guard !book.format.isAudio,
               MarkdownCacheService.cacheExists(for: book),
               let info = try? BookInfo.load(from: book.tmbDirectory),
               info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
-              let index = info.contentIndex, index.isValid(for: book.format, audioBaseURL: nil) else { return nil }
-        return index
+              let index = info.contentIndex else { return nil }
+        return trusted(index, for: book, audioBaseURL: nil)
+    }
+
+    /// The index saved in `book`'s package, when it passes validation. A
+    /// saved index that fails is reported and ignored, so the caller
+    /// analyzes the book afresh and its usual save replaces the bad index.
+    /// `audioBaseURL` is as for `BookContentIndex.validationFailure`.
+    private static func trustedSavedIndex(for book: Book, audioBaseURL: URL?) -> BookContentIndex? {
+        guard let saved = (try? BookInfo.load(from: book.tmbDirectory))?.contentIndex else { return nil }
+        return trusted(saved, for: book, audioBaseURL: audioBaseURL)
+    }
+
+    /// `index` when it passes validation for `book`; otherwise nil, after
+    /// reporting why it was set aside.
+    private static func trusted(_ index: BookContentIndex, for book: Book, audioBaseURL: URL?) -> BookContentIndex? {
+        guard let reason = index.validationFailure(for: book.format, audioBaseURL: audioBaseURL) else {
+            return index
+        }
+        reportRejectedIndex(of: book, reason: reason)
+        return nil
+    }
+
+    /// Record in the console and the debug log that `book`'s saved index was
+    /// set aside, and why, as the single line
+    /// `CONTENT_INDEX_REJECTED: <title>: <reason>`. A line break in the title
+    /// becomes a space so the entry stays on one line.
+    private static func reportRejectedIndex(of book: Book, reason: String) {
+        let title = book.title.components(separatedBy: .newlines).joined(separator: " ")
+        let line = "CONTENT_INDEX_REJECTED: \(title): \(reason)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
     }
 
     private static func analyzeAudio(book: Book, url: URL) throws -> Result {
