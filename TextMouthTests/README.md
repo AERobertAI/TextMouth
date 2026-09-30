@@ -40,7 +40,7 @@ during ordinary suites because the library-root build setting is otherwise empty
 
 ## Persisted content indexes
 
-Cache format `3.0.6` (September 29: literal plain text and full DAISY 2.02 fragments; `3.0.5` fixed page-list, hidden-content, and dropped-paragraph extraction; `3.0.4` added heading recovery) rebuilds every older text-format cache once. During that background
+Cache format `3.0.7` (September 30: literal HTML text and block boundaries; `3.0.6` added literal plain text and full DAISY 2.02 fragments; `3.0.5` fixed page-list, hidden-content, and dropped-paragraph extraction; `3.0.4` added heading recovery) rebuilds every older text-format cache once. During that background
 rebuild, TextMouth writes a versioned `contentIndex` into each package's
 `bookInfo.json`. The index stores chapter starts and lengths, per-chapter word
 counts, normalized heading IDs and local/global offsets, total counts, and—for
