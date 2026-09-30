@@ -220,14 +220,29 @@ struct LegacyMigrationReport: Equatable {
         return "LEGACY_MIGRATION: " + parts.joined(separator: "; ")
     }
 
+    /// The most books either part of the alert names. A book that could not
+    /// move is reported again at every launch until it is dealt with, and
+    /// the alert is heard or read line by line, so a long list is cut short;
+    /// the debug log names every book.
+    static let booksNamedInAlert = 10
+
     /// "1 book" or "3 books".
     private static func describe(_ count: Int) -> String {
         count == 1 ? "1 book" : "\(count) books"
     }
 
-    /// One "Title: what happened" line per book.
+    /// One "Title: what happened" line per book, up to `booksNamedInAlert`,
+    /// then a line that counts the rest and says where they are listed.
     private static func lines(_ issues: [Issue]) -> String {
-        issues.map { "\($0.title): \($0.reason)" }.joined(separator: "\n")
+        var lines = issues.prefix(booksNamedInAlert).map { "\($0.title): \($0.reason)" }
+        let unnamed = issues.count - booksNamedInAlert
+        if unnamed > 0 {
+            lines.append(
+                "Plus \(unnamed) more \(unnamed == 1 ? "book" : "books"), "
+                    + "all named in the debug log at \(TextMouthPaths.debugLogFile.path)."
+            )
+        }
+        return lines.joined(separator: "\n")
     }
 
     /// Every issue on a single line: each title quoted, its reason in

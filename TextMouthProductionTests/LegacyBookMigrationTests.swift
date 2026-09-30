@@ -577,6 +577,26 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertTrue(summary.contains("Fourth: \(LegacyMigrationError.noUnusedPackageName.localizedDescription)"))
     }
 
+    /// A long list is cut short in the alert, which is heard or read line by
+    /// line at every launch, while the debug log still names every book.
+    func testAlertCutsALongListShortWhileTheLogNamesEveryBook() {
+        var report = LegacyMigrationReport()
+        let limit = LegacyMigrationReport.booksNamedInAlert
+        for number in 1...(limit + 2) {
+            report.recordFailure(of: summaryBook("Book \(number)"), error: LegacyMigrationError.copyDiffers)
+        }
+
+        let lines = (report.userSummary ?? "").components(separatedBy: "\n")
+
+        XCTAssertEqual(lines.count, 1 + limit + 1)
+        XCTAssertTrue(lines[limit].hasPrefix("Book \(limit): "))
+        XCTAssertEqual(
+            lines.last,
+            "Plus 2 more books, all named in the debug log at \(TextMouthPaths.debugLogFile.path)."
+        )
+        XCTAssertTrue(report.logSummary?.contains("\"Book \(limit + 2)\"") == true)
+    }
+
     // MARK: - Telling the User
 
     /// The startup repair moves every book it can and then tells the user,
