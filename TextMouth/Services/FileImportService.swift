@@ -691,49 +691,6 @@ enum FileImportService {
         }
     }
 
-    /// Migrate a book from the old storage format to a .tmb package
-    static func migrateBookToTMB(_ book: Book) throws -> Book {
-        try TextMouthPaths.ensureDirectoryStructure()
-        if !book.folderPath.isEmpty {
-            try TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
-        }
-
-        let sourceURL = URL(fileURLWithPath: book.filePath)
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            throw FileImportError.importFailed("Original file not found at \(book.filePath)")
-        }
-
-        let tmbName = TextMouthPaths.tmbName(
-            title: book.title,
-            author: book.author,
-            dateAdded: book.dateAdded,
-            bookID: book.id
-        )
-        let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: tmbName)
-        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
-
-        let destFile = tmbDir.appendingPathComponent(sourceURL.lastPathComponent)
-        if !FileManager.default.fileExists(atPath: destFile.path) {
-            try FileManager.default.copyItem(at: sourceURL, to: destFile)
-        }
-
-        try? FileManager.default.removeItem(at: sourceURL)
-
-        var migrated = book
-        migrated.filePath = destFile.path
-        migrated.tmbDirectoryName = tmbName
-
-        migrated.saveBookInfo()
-
-        // Generate cached Markdown content for the migrated book
-        if !migrated.format.isAudio {
-            let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &migrated)
-            try? migrated.saveBookInfoThrowing(contentIndex: contentIndex)
-        }
-
-        return migrated
-    }
-
     /// Delete the original source file after import (if the user chose that option)
     static func deleteOriginalFile(at url: URL) {
         try? FileManager.default.removeItem(at: url)
@@ -946,18 +903,17 @@ enum FileImportService {
 
     /// Rebuild the .TextMouth directory structure, migrating any books from old storage,
     /// moving misplaced .tmb packages to their correct folders, and adopting orphans.
-    static func rebuildDirectoryStructure(library: inout Library) throws {
+    /// Returns what the legacy migration did: a book that could not move keeps
+    /// its record and original and is listed with the reason, for the caller
+    /// to show. This throws only when the data directory itself cannot be made.
+    @discardableResult
+    static func rebuildDirectoryStructure(library: inout Library) throws -> LegacyMigrationReport {
         try TextMouthPaths.ensureDirectoryStructure()
 
-        // Migrate books that don't have .tmb packages yet
-        for i in library.books.indices {
-            let book = library.books[i]
-            if book.tmbDirectoryName.isEmpty {
-                if let migrated = try? migrateBookToTMB(book) {
-                    library.books[i] = migrated
-                }
-            }
-        }
+        // Migrate books that don't have .tmb packages yet. Each copy is
+        // verified before its original is removed, and a failure for one
+        // book does not stop the others.
+        let migration = migrateLegacyBooks(in: &library)
 
         // Older package names only used title/author/timestamp and could collide
         // when several books were imported together. Split those references
@@ -981,6 +937,7 @@ enum FileImportService {
                 try? FileManager.default.removeItem(at: oldDir)
             }
         }
+        return migration
     }
 
     /// Give every library book its own package when legacy records point at the

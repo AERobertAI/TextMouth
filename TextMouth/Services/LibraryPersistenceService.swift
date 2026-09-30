@@ -217,6 +217,9 @@ enum LibraryPersistenceService {
             guard case .loaded(var library) = result else { return result }
             do {
                 try TextMouthPaths.ensureDirectoryStructure()
+                // A legacy book that cannot move into a package does not
+                // throw: it keeps its record and original, the migration logs
+                // why, and the startup repair tries it again and tells the user.
                 try FileImportService.rebuildDirectoryStructure(library: &library)
                 saveAllBookInfos(library)
                 // Retire the legacy file only once the migrated index is on

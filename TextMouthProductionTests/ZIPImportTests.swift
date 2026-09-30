@@ -50,7 +50,10 @@ final class ZIPImportTests: XCTestCase {
             try? FileManager.default.removeItem(at: original)
         }
         config.config.importDeleteBehavior = .deleteAfterImport
-        let viewModel = LibraryViewModel()
+        // An inert model, so that only this import can raise the alert under
+        // test: a full startup would also run the startup repair over
+        // whatever records earlier tests left in the shared test index.
+        let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library()
         let book = Book(title: "Accepted", format: .txt, filePath: "/tmp/accepted", md5Hash: UUID().uuidString)
         let result = ZipImportResult(
