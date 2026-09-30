@@ -51,6 +51,354 @@ final class LegacyBookMigrationTests: XCTestCase {
         }
     }
 
+    // MARK: - Moving a Book
+
+    /// With nothing in the way, the book moves into its usual package: a
+    /// verified copy, its bookInfo.json, and its text cache, and only then
+    /// is the original removed. No hidden in-progress copy is left behind.
+    func testBookMovesIntoItsUsualPackageAndTheOriginalIsRemoved() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Chapter one.\n\nIt begins.")
+        let book = try sandbox.legacyBook("Fresh Move", original: original)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        let package = sandbox.usualPackage(for: book)
+        XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
+        XCTAssertEqual(migration.book.filePath, package.appendingPathComponent("book.txt").path)
+        XCTAssertEqual(try text(of: migration.book.bookFileURL), "Chapter one.\n\nIt begins.")
+        let info = try BookInfo.load(from: package)
+        XCTAssertEqual(info.metadata.bookID, book.id)
+        XCTAssertNotNil(info.contentIndex)
+        XCTAssertEqual(migration.book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        XCTAssertTrue(migration.removedOriginal)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: original.path))
+        XCTAssertEqual(migration.warnings, [])
+        XCTAssertEqual(sandbox.hiddenNames(in: package), [])
+    }
+
+    /// An identical copy already in the book's own usual package, as an
+    /// interrupted run leaves it, is used as it is rather than copied again,
+    /// and the original is removed.
+    func testIdenticalCopyInTheUsualPackageIsReusedAndTheOriginalRemoved() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Already copied.")
+        let book = try sandbox.legacyBook("Reused Copy", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Already copied.")
+        let copy = package.appendingPathComponent("book.txt")
+        let copyInode = try LibraryIndexSandbox.inode(of: copy)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
+        XCTAssertEqual(migration.book.filePath, copy.path)
+        XCTAssertEqual(try LibraryIndexSandbox.inode(of: copy), copyInode, "the copy is used as it is")
+        XCTAssertEqual(try BookInfo.load(from: package).metadata.bookID, book.id)
+        XCTAssertTrue(migration.removedOriginal)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: original.path))
+        XCTAssertEqual(migration.warnings, [])
+    }
+
+    /// A different file of the same size under the book's usual package
+    /// name is neither overwritten nor trusted (the hash tells them apart).
+    /// The book moves into a new package named by the same scheme, and its
+    /// original is kept as a recovery copy, with a warning that says where.
+    func testDifferentFileUnderTheUsualNameIsKeptAndTheBookMovesToANewPackage() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "The real book.")
+        let book = try sandbox.legacyBook("Occupied Name", original: original)
+        let occupied = try sandbox.stageUsualPackage(for: book, holding: "A fake volume.")
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        try assertNewPackageName(migration.book.tmbDirectoryName, for: book)
+        XCTAssertEqual(try text(of: migration.book.bookFileURL), "The real book.")
+        XCTAssertEqual(try BookInfo.load(from: migration.book.tmbDirectory).metadata.bookID, book.id)
+        XCTAssertEqual(try text(of: occupied.appendingPathComponent("book.txt")), "A fake volume.")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: occupied).path))
+        XCTAssertFalse(migration.removedOriginal)
+        XCTAssertEqual(try text(of: original), "The real book.")
+        XCTAssertEqual(migration.warnings.count, 1)
+        XCTAssertTrue(migration.warnings.first?.contains(original.path) == true)
+    }
+
+    /// A partial copy that an interrupted run left in the book's own package
+    /// is detected rather than trusted: the book moves into a new package
+    /// with a complete copy, the partial file is left as it was, and the
+    /// original is kept.
+    func testPartialCopyFromAnInterruptedRunIsNotTrusted() throws {
+        let sandbox = makeSandbox()
+        let fullText = String(repeating: "A long book. ", count: 400)
+        let original = try sandbox.makeFile("book.txt", contents: fullText)
+        let book = try sandbox.legacyBook("Interrupted Copy", original: original)
+        let partialText = String(fullText.prefix(1000))
+        let package = try sandbox.stageUsualPackage(for: book, holding: partialText)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        try assertNewPackageName(migration.book.tmbDirectoryName, for: book)
+        XCTAssertEqual(try text(of: migration.book.bookFileURL), fullText)
+        XCTAssertEqual(try text(of: package.appendingPathComponent("book.txt")), partialText)
+        XCTAssertFalse(migration.removedOriginal)
+        XCTAssertEqual(try text(of: original), fullText)
+    }
+
+    /// A package under the usual name whose bookInfo.json names another book
+    /// belongs to that book, even when it holds an identical file. Its
+    /// metadata is never overwritten: the book moves into a new package.
+    func testAnotherBooksPackageUnderTheUsualNameIsLeftAlone() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Same words, other owner.")
+        let book = try sandbox.legacyBook("Shared Name", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Same words, other owner.")
+        let owner = Book(
+            title: "Someone Else",
+            format: .txt,
+            filePath: package.appendingPathComponent("book.txt").path,
+            md5Hash: book.md5Hash,
+            folderPath: book.folderPath,
+            tmbDirectoryName: package.lastPathComponent
+        )
+        try owner.makeBookInfo().save(to: package)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        try assertNewPackageName(migration.book.tmbDirectoryName, for: book)
+        XCTAssertEqual(try BookInfo.load(from: package).metadata.bookID, owner.id)
+        XCTAssertEqual(try BookInfo.load(from: migration.book.tmbDirectory).metadata.bookID, book.id)
+        XCTAssertFalse(migration.removedOriginal)
+    }
+
+    // MARK: - Refusing to Move
+
+    /// When bookInfo.json cannot be saved (here the package is read-only),
+    /// the original stays, nothing that was already in the package is
+    /// removed, and the error says what failed.
+    func testMetadataWriteFailureKeepsTheOriginalAndThrows() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Keep me.")
+        let book = try sandbox.legacyBook("Locked Package", original: original)
+        let package = try sandbox.stageUsualPackage(for: book, holding: "Keep me.")
+        setPermissions(of: package, to: 0o555, restoringTo: 0o755)
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            guard case LegacyMigrationError.metadataNotSaved = error else {
+                return XCTFail("Expected a metadata failure, received \(error)")
+            }
+        }
+        XCTAssertEqual(try text(of: original), "Keep me.")
+        XCTAssertEqual(try text(of: package.appendingPathComponent("book.txt")), "Keep me.")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: package).path))
+    }
+
+    /// A package this migration created is removed again when its
+    /// bookInfo.json cannot be saved, so nothing half-made is left behind.
+    func testMetadataFailureInANewPackageRemovesThatPackage() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Nothing half-made.")
+        let book = try sandbox.legacyBook("Blocked Metadata", original: original)
+
+        XCTAssertThrowsError(
+            try FileImportService.migrateBookToTMB(book, copyingWith: { source, destination in
+                try FileManager.default.copyItem(at: source, to: destination)
+                // A folder where bookInfo.json belongs makes saving it fail.
+                try FileManager.default.createDirectory(
+                    at: TextMouthPaths.bookInfoPath(in: destination.deletingLastPathComponent()),
+                    withIntermediateDirectories: false
+                )
+            })
+        ) { error in
+            guard case LegacyMigrationError.metadataNotSaved = error else {
+                return XCTFail("Expected a metadata failure, received \(error)")
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+        XCTAssertEqual(try text(of: original), "Nothing half-made.")
+    }
+
+    /// A copy that does not match its original is discarded before anything
+    /// uses it: the original stays, and no package is left behind.
+    func testCopyThatDoesNotMatchTheOriginalIsDiscarded() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Every byte matters.")
+        let book = try sandbox.legacyBook("Bad Copy", original: original)
+
+        XCTAssertThrowsError(
+            try FileImportService.migrateBookToTMB(book, copyingWith: { _, destination in
+                try Data("Every byte".utf8).write(to: destination)
+            })
+        ) { error in
+            XCTAssertEqual(error as? LegacyMigrationError, .copyDiffers)
+        }
+        XCTAssertEqual(try text(of: original), "Every byte matters.")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+    }
+
+    /// A copy that fails outright (a full disk, say) also leaves the
+    /// original alone and no package behind, and the reason is kept.
+    func testCopyFailureKeepsTheOriginal() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Too big for the disk.")
+        let book = try sandbox.legacyBook("Failed Copy", original: original)
+
+        XCTAssertThrowsError(
+            try FileImportService.migrateBookToTMB(book, copyingWith: { _, _ in
+                throw CocoaError(.fileWriteOutOfSpace)
+            })
+        ) { error in
+            guard case LegacyMigrationError.copyFailed(let reason) = error else {
+                return XCTFail("Expected a copy failure, received \(error)")
+            }
+            XCTAssertEqual(reason, CocoaError(.fileWriteOutOfSpace).localizedDescription)
+        }
+        XCTAssertEqual(try text(of: original), "Too big for the disk.")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+    }
+
+    /// An original that cannot be read cannot have its copy verified, so it
+    /// is kept, nothing is created, and the failure names the file.
+    func testUnreadableOriginalIsKeptAndReported() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Unreadable for now.")
+        let book = try sandbox.legacyBook("Unreadable Original", original: original)
+        setPermissions(of: original, to: 0o000, restoringTo: 0o644)
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            guard case LegacyMigrationError.originalUnreadable(let path, _) = error else {
+                return XCTFail("Expected an unreadable original, received \(error)")
+            }
+            XCTAssertEqual(path, original.path)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+        XCTAssertEqual(chmod(original.path, 0o644), 0)
+        XCTAssertEqual(try text(of: original), "Unreadable for now.")
+    }
+
+    /// A folder where the original should be is not a file whose copy can be
+    /// checked, so the book is not moved and the folder is left alone.
+    func testFolderInPlaceOfTheOriginalIsNotMoved() throws {
+        let sandbox = makeSandbox()
+        let folder = sandbox.scratchDirectory.appendingPathComponent("Audio Chapters", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let book = try sandbox.legacyBook("Folder Original", original: folder, format: .audio, md5Hash: "recorded-hash")
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            XCTAssertEqual(error as? LegacyMigrationError, .originalNotAFile(path: folder.path))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+    }
+
+    /// A missing original is reported with its path, and nothing is created.
+    func testMissingOriginalIsReported() throws {
+        let sandbox = makeSandbox()
+        let missing = sandbox.scratchDirectory.appendingPathComponent("gone.txt")
+        let book = try sandbox.legacyBook("Missing Original", original: missing, md5Hash: "recorded-hash")
+
+        XCTAssertThrowsError(try FileImportService.migrateBookToTMB(book)) { error in
+            XCTAssertEqual(error as? LegacyMigrationError, .originalMissing(path: missing.path))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.usualPackage(for: book).path))
+    }
+
+    // MARK: - Keeping the Original
+
+    /// When the original cannot be removed (a Trash failure, say), the book
+    /// has still moved: the original is kept and the warning says where.
+    func testOriginalThatCannotBeRemovedIsKeptWithAWarning() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "Stays put.")
+        let book = try sandbox.legacyBook("Trash Refused", original: original)
+
+        let migration = try FileImportService.migrateBookToTMB(book, removingOriginalWith: { _ in
+            throw CocoaError(.fileWriteNoPermission)
+        })
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, sandbox.usualPackage(for: book).lastPathComponent)
+        XCTAssertFalse(migration.removedOriginal)
+        XCTAssertEqual(try text(of: original), "Stays put.")
+        XCTAssertEqual(migration.warnings.count, 1)
+        XCTAssertTrue(migration.warnings.first?.contains(original.path) == true)
+    }
+
+    /// The Trash preference belongs to the main actor. Off the main thread,
+    /// the default removal keeps the original and says why, rather than
+    /// removing it without knowing what the user wants.
+    func testOriginalIsKeptWhenTheTrashPreferenceCannotBeRead() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.txt", contents: "No preference, no removal.")
+        let outcome = ErrorBox()
+        let attempted = expectation(description: "Removal attempted off the main thread")
+
+        DispatchQueue.global().async {
+            do {
+                try FileImportService.removeMigratedOriginal(at: original)
+            } catch {
+                outcome.error = error
+            }
+            attempted.fulfill()
+        }
+        wait(for: [attempted], timeout: 10)
+
+        XCTAssertEqual(outcome.error as? LegacyMigrationError, .trashPreferenceUnavailable)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: original.path))
+    }
+
+    /// A text cache that cannot be built does not undo the move. It is
+    /// reported, and the record claims no cache, so the library's cache
+    /// pass builds one later.
+    func testTextCacheFailureIsReportedAndLeftForTheCachePass() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("book.epub", contents: "Not really an EPUB archive.")
+        let book = try sandbox.legacyBook("Unparsable Book", original: original, format: .epub)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, sandbox.usualPackage(for: book).lastPathComponent)
+        XCTAssertEqual(try BookInfo.load(from: migration.book.tmbDirectory).metadata.bookID, book.id)
+        XCTAssertTrue(migration.removedOriginal)
+        XCTAssertNil(migration.book.cacheFormatVersion)
+        XCTAssertFalse(MarkdownCacheService.cacheExists(for: migration.book))
+        XCTAssertEqual(migration.warnings.count, 1)
+    }
+
+    // MARK: - Assertions
+
+    /// Asserts that `name` comes from the usual naming scheme for `book`
+    /// with a fresh identifier in place of the book's own.
+    private func assertNewPackageName(
+        _ name: String,
+        for book: Book,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let usualName = packageName(for: book, identifier: book.id)
+        let schemePrefix = String(usualName.dropLast("\(book.id.uuidString.lowercased()).tmb".count))
+        XCTAssertTrue(name.hasPrefix(schemePrefix), "\(name) does not follow the naming scheme", file: file, line: line)
+        let identifierText = String(name.dropFirst(schemePrefix.count).dropLast(".tmb".count))
+        let identifier = try XCTUnwrap(UUID(uuidString: identifierText), file: file, line: line)
+        XCTAssertNotEqual(identifier, book.id, file: file, line: line)
+        XCTAssertEqual(name, packageName(for: book, identifier: identifier), file: file, line: line)
+    }
+
+    /// The usual scheme's package name for `book` with `identifier` as its
+    /// unique part.
+    private func packageName(for book: Book, identifier: UUID) -> String {
+        TextMouthPaths.tmbName(title: book.title, author: book.author, dateAdded: book.dateAdded, bookID: identifier)
+    }
+
+    /// The UTF-8 text of the file at `url`.
+    private func text(of url: URL) throws -> String {
+        try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// Sets `url`'s permissions to `mode` for the rest of the test. They go
+    /// back to `restoredMode` when it ends, before the sandbox is removed.
+    private func setPermissions(of url: URL, to mode: mode_t, restoringTo restoredMode: mode_t) {
+        XCTAssertEqual(chmod(url.path, mode), 0)
+        addTeardownBlock { _ = chmod(url.path, restoredMode) }
+    }
+
     // MARK: - Sandbox
 
     /// One test's loose files and library folder.
@@ -72,6 +420,56 @@ final class LegacyBookMigrationTests: XCTestCase {
             try Data(contents.utf8).write(to: url)
             return url
         }
+
+        /// A record from before packages: no package name, and a file path
+        /// naming `original` outside the library. The recorded hash is the
+        /// original's own unless `md5Hash` is given, for an original that
+        /// cannot be hashed.
+        func legacyBook(
+            _ title: String,
+            original: URL,
+            format: BookFormat = .txt,
+            md5Hash: String? = nil
+        ) throws -> Book {
+            Book(
+                title: title,
+                author: "Fixture Author",
+                format: format,
+                filePath: original.path,
+                md5Hash: try md5Hash ?? FileImportService.md5Hash(of: original),
+                folderPath: folderPath,
+                dateAdded: Date(timeIntervalSince1970: 1_600_000_000)
+            )
+        }
+
+        /// The package `book` normally gets: the usual name, with its own ID.
+        func usualPackage(for book: Book) -> URL {
+            TextMouthPaths.tmbPath(
+                folderPath: book.folderPath,
+                tmbName: TextMouthPaths.tmbName(
+                    title: book.title,
+                    author: book.author,
+                    dateAdded: book.dateAdded,
+                    bookID: book.id
+                )
+            )
+        }
+
+        /// Creates `book`'s usual package as an earlier run or another record
+        /// could have left it: holding `contents` under the original's name.
+        func stageUsualPackage(for book: Book, holding contents: String) throws -> URL {
+            let package = usualPackage(for: book)
+            try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+            try Data(contents.utf8).write(to: package.appendingPathComponent(book.bookFileURL.lastPathComponent))
+            return package
+        }
+
+        /// The hidden names in `directory`. A copy passes through one, and
+        /// none may remain once a migration has returned.
+        func hiddenNames(in directory: URL) -> [String] {
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+            return names.filter { $0.hasPrefix(".") }
+        }
     }
 
     /// Creates this test's sandbox and removes it when the test ends. Until
@@ -92,4 +490,10 @@ final class LegacyBookMigrationTests: XCTestCase {
         }
         return sandbox
     }
+}
+
+/// Carries an error out of a background closure. The test reads it only
+/// after waiting for the closure's expectation, which orders the write first.
+private final class ErrorBox: @unchecked Sendable {
+    var error: Error?
 }

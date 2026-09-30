@@ -691,49 +691,6 @@ enum FileImportService {
         }
     }
 
-    /// Migrate a book from the old storage format to a .tmb package
-    static func migrateBookToTMB(_ book: Book) throws -> Book {
-        try TextMouthPaths.ensureDirectoryStructure()
-        if !book.folderPath.isEmpty {
-            try TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
-        }
-
-        let sourceURL = URL(fileURLWithPath: book.filePath)
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            throw FileImportError.importFailed("Original file not found at \(book.filePath)")
-        }
-
-        let tmbName = TextMouthPaths.tmbName(
-            title: book.title,
-            author: book.author,
-            dateAdded: book.dateAdded,
-            bookID: book.id
-        )
-        let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: tmbName)
-        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
-
-        let destFile = tmbDir.appendingPathComponent(sourceURL.lastPathComponent)
-        if !FileManager.default.fileExists(atPath: destFile.path) {
-            try FileManager.default.copyItem(at: sourceURL, to: destFile)
-        }
-
-        try? FileManager.default.removeItem(at: sourceURL)
-
-        var migrated = book
-        migrated.filePath = destFile.path
-        migrated.tmbDirectoryName = tmbName
-
-        migrated.saveBookInfo()
-
-        // Generate cached Markdown content for the migrated book
-        if !migrated.format.isAudio {
-            let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &migrated)
-            try? migrated.saveBookInfoThrowing(contentIndex: contentIndex)
-        }
-
-        return migrated
-    }
-
     /// Delete the original source file after import (if the user chose that option)
     static func deleteOriginalFile(at url: URL) {
         try? FileManager.default.removeItem(at: url)
@@ -953,8 +910,8 @@ enum FileImportService {
         for i in library.books.indices {
             let book = library.books[i]
             if book.tmbDirectoryName.isEmpty {
-                if let migrated = try? migrateBookToTMB(book) {
-                    library.books[i] = migrated
+                if let migration = try? migrateBookToTMB(book) {
+                    library.books[i] = migration.book
                 }
             }
         }

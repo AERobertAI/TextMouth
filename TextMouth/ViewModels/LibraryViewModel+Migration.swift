@@ -105,8 +105,8 @@ extension LibraryViewModel {
         // Migrate books with no .tmb package
         for i in library.books.indices {
             if library.books[i].tmbDirectoryName.isEmpty {
-                if let migrated = try? FileImportService.migrateBookToTMB(library.books[i]) {
-                    library.books[i] = migrated
+                if let migration = try? FileImportService.migrateBookToTMB(library.books[i]) {
+                    library.books[i] = migration.book
                     needsSave = true
                 }
             }
