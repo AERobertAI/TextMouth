@@ -28,6 +28,20 @@ enum DOCXParserError: LocalizedError {
 /// numbering in word/numbering.xml.
 enum DOCXParser {
 
+    /// Paths of the package parts TextMouth reads, as a DOCX package names them.
+    enum Part {
+        /// The document's text: paragraphs, runs, tables, and hyperlinks.
+        static let document = "word/document.xml"
+        /// Paragraph style definitions, which mark headings and list styles.
+        static let styles = "word/styles.xml"
+        /// List definitions, which say whether each list is bulleted or numbered.
+        static let numbering = "word/numbering.xml"
+        /// The document's relationships, which hold its hyperlink targets.
+        static let documentRelationships = "word/_rels/document.xml.rels"
+        /// Core properties: the document's title and author.
+        static let coreProperties = "docProps/core.xml"
+    }
+
     /// Parse a DOCX file into DocumentContent for reading/playback
     static func parse(url: URL) throws -> DocumentContent {
         let markdown = try extractMarkdown(from: url)
@@ -49,16 +63,7 @@ enum DOCXParser {
     /// Extract Markdown text from a DOCX file. This is the main conversion entry point
     /// used by MarkdownCacheService for generating the content.md cache.
     static func extractMarkdown(from url: URL) throws -> String {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw DOCXParserError.fileNotFound(url.path)
-        }
-
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw DOCXParserError.invalidArchive
-        }
+        let archive = try openArchive(at: url)
 
         // Parse styles first so we can identify heading paragraph styles
         let styles = parseStyles(from: archive)
@@ -67,9 +72,9 @@ enum DOCXParser {
         let numbering = parseNumbering(from: archive)
 
         // Parse the main document content
-        let documentXML = try extractData(from: archive, path: "word/document.xml")
+        let documentXML = try extractData(from: archive, path: Part.document)
         guard let xmlString = String(data: documentXML, encoding: .utf8) else {
-            throw DOCXParserError.parseError("Could not decode word/document.xml as UTF-8")
+            throw DOCXParserError.parseError("Could not decode \(Part.document) as UTF-8")
         }
 
         // Parse relationships for hyperlink targets
@@ -85,11 +90,10 @@ enum DOCXParser {
 
     /// Read basic metadata (title, author) from the DOCX core properties
     static func readMetadata(from url: URL) throws -> DOCXMetadata? {
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        guard let archive = try? Archive(url: url, accessMode: .read) else { return nil }
+        guard let archive = try? openArchive(at: url) else { return nil }
 
         // Core properties live in docProps/core.xml
-        guard let coreData = try? extractData(from: archive, path: "docProps/core.xml"),
+        guard let coreData = try? extractData(from: archive, path: Part.coreProperties),
               let coreXML = String(data: coreData, encoding: .utf8) else {
             return nil
         }
@@ -101,19 +105,24 @@ enum DOCXParser {
     /// Read style semantics using the same archive path as full conversion.
     /// Exposed internally so regression tests validate the production style parser.
     static func readStyles(from url: URL) throws -> DOCXStyles {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw DOCXParserError.fileNotFound(url.path)
-        }
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw DOCXParserError.invalidArchive
-        }
-        return parseStyles(from: archive)
+        parseStyles(from: try openArchive(at: url))
     }
 
     // MARK: - ZIP Extraction Helpers
+
+    /// Open the DOCX package at `url` for reading.
+    /// - Throws: `DOCXParserError.fileNotFound` when no file is there, or
+    ///   `.invalidArchive` when it cannot be opened as a ZIP archive.
+    private static func openArchive(at url: URL) throws -> Archive {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw DOCXParserError.fileNotFound(url.path)
+        }
+        do {
+            return try Archive(url: url, accessMode: .read)
+        } catch {
+            throw DOCXParserError.invalidArchive
+        }
+    }
 
     /// Extract raw data from a ZIP archive entry
     private static func extractData(from archive: Archive, path: String) throws -> Data {
@@ -127,7 +136,7 @@ enum DOCXParser {
 
     /// Extract and parse the styles.xml to build a map of style IDs to heading levels
     private static func parseStyles(from archive: Archive) -> DOCXStyles {
-        guard let data = try? extractData(from: archive, path: "word/styles.xml"),
+        guard let data = try? extractData(from: archive, path: Part.styles),
               let xml = String(data: data, encoding: .utf8) else {
             return DOCXStyles()
         }
@@ -137,7 +146,7 @@ enum DOCXParser {
 
     /// Extract and parse numbering.xml for list definitions
     private static func parseNumbering(from archive: Archive) -> DOCXNumbering {
-        guard let data = try? extractData(from: archive, path: "word/numbering.xml"),
+        guard let data = try? extractData(from: archive, path: Part.numbering),
               let xml = String(data: data, encoding: .utf8) else {
             return DOCXNumbering()
         }
@@ -147,7 +156,7 @@ enum DOCXParser {
 
     /// Extract and parse document relationships for hyperlink targets
     private static func parseRelationships(from archive: Archive) -> [String: String] {
-        guard let data = try? extractData(from: archive, path: "word/_rels/document.xml.rels"),
+        guard let data = try? extractData(from: archive, path: Part.documentRelationships),
               let xml = String(data: data, encoding: .utf8) else {
             return [:]
         }
