@@ -18,6 +18,10 @@ struct BookContentIndex: Codable, Hashable {
         case singleFile
         case multiFile
         case segmented
+
+        /// Whether every chapter names its own audio file. A single-file book
+        /// plays the book's file itself, so its chapters name none.
+        var namesChapterFiles: Bool { self != .singleFile }
     }
 
     var version: String
@@ -31,10 +35,6 @@ struct BookContentIndex: Codable, Hashable {
     var chapters: [BookContentChapterIndex]
 
     var isCurrent: Bool { version == Self.currentVersion }
-
-    func isValid(for format: BookFormat) -> Bool {
-        isCurrent && self.format == format && kind == (format.isAudio ? .audio : .text)
-    }
 
     func replacingFormat(_ format: BookFormat) -> BookContentIndex {
         var copy = self
@@ -136,12 +136,18 @@ struct BookContentIndex: Codable, Hashable {
             totalWords += wordCount
 
             let headings = chapter.headings.map { heading in
-                BookContentHeadingIndex(
-                    id: "\(chapterIndex)-\(heading.characterOffset)-\(heading.level)-\(heading.text)",
+                // A heading whose label adds no reading text (one made only of
+                // inline HTML, such as "# <br>") can be recorded past the end
+                // of its chapter's trimmed text. Keep it at the chapter's end,
+                // where validation expects every heading to lie. The ID is the
+                // one `Heading` derives, so it matches `allHeadings`.
+                let offset = min(max(0, heading.characterOffset), characterCount)
+                return BookContentHeadingIndex(
+                    id: Heading(level: heading.level, text: heading.text, chapterIndex: chapterIndex, characterOffset: offset).id,
                     level: heading.level,
                     text: heading.text,
-                    characterOffset: heading.characterOffset,
-                    globalCharacterOffset: cumulativeCharacters + heading.characterOffset
+                    characterOffset: offset,
+                    globalCharacterOffset: cumulativeCharacters + offset
                 )
             }
 
@@ -199,6 +205,8 @@ struct BookContentIndex: Codable, Hashable {
 
     /// Reconstruct the lightweight placeholder document used by audio playback
     /// without re-reading AVAsset duration and chapter metadata on every open.
+    /// Each chapter's count decides how many placeholder characters are
+    /// allocated, so a persisted index must pass `validationFailure` first.
     func makeAudioDocumentContent(title: String, author: String) -> DocumentContent? {
         guard isCurrent, kind == .audio else { return nil }
         let restoredChapters = chapters.map { stored in
@@ -223,19 +231,25 @@ struct BookContentIndex: Codable, Hashable {
         )
     }
 
+    /// One absolute audio file path per chapter, resolved against `bookURL`,
+    /// for layouts whose chapters name their own files; nil for a single-file
+    /// book. All or nothing: if any chapter names no file the result is nil,
+    /// because a shorter list would shift every later chapter onto the file
+    /// of the chapter before it.
     func resolvedAudioFilePaths(relativeTo bookURL: URL) -> [String]? {
-        guard audioLayout == .multiFile || audioLayout == .segmented else { return nil }
-        return chapters.compactMap { chapter in
-            chapter.audio?.relativeFilePath.map {
-                bookURL.appendingPathComponent($0).path
-            }
-        }
+        guard audioLayout?.namesChapterFiles == true else { return nil }
+        let relativePaths = chapters.compactMap(\.audioFilePath)
+        guard relativePaths.count == chapters.count else { return nil }
+        return relativePaths.map { bookURL.appendingPathComponent($0).path }
     }
 
+    /// The segments a segmented book plays, one per chapter, or nil for any
+    /// other layout or when a chapter lacks its timing or file (again all or
+    /// nothing, so segments never shift onto the wrong chapter).
     func restoredAudioSegments() -> [AudioSegment]? {
         guard audioLayout == .segmented else { return nil }
         let restored = chapters.compactMap { chapter -> AudioSegment? in
-            guard let audio = chapter.audio, let file = audio.relativeFilePath else { return nil }
+            guard let audio = chapter.audio, let file = chapter.audioFilePath else { return nil }
             return AudioSegment(
                 title: chapter.title,
                 file: file,
@@ -246,12 +260,331 @@ struct BookContentIndex: Codable, Hashable {
         return restored.count == chapters.count ? restored : nil
     }
 
+    /// `path` relative to `baseURL`, as persisted for a multi-file book, or
+    /// only the file's name when it lies outside that folder. Canonical
+    /// locations are compared first, as validation compares them: the
+    /// directory enumerator reports files through the folder's resolved
+    /// location (/private/var for /var, or a linked folder's destination),
+    /// while `baseURL` keeps the book's own spelling. Comparing spellings
+    /// alone recorded a linked folder's "Disc 2/03.wav" as "03.wav". Paths
+    /// that do not exist, as in some tests, are compared as spelled.
     private static func relativeAudioPath(_ path: String, baseURL: URL?) -> String {
-        guard let baseURL else { return URL(fileURLWithPath: path).lastPathComponent }
-        let basePath = baseURL.standardizedFileURL.path
-        let filePath = URL(fileURLWithPath: path).standardizedFileURL.path
-        let prefix = basePath.hasSuffix("/") ? basePath : basePath + "/"
-        return filePath.hasPrefix(prefix) ? String(filePath.dropFirst(prefix.count)) : URL(fileURLWithPath: path).lastPathComponent
+        let fileURL = URL(fileURLWithPath: path)
+        guard let baseURL else { return fileURL.lastPathComponent }
+        if let folder = canonicalPath(of: baseURL.path),
+           let file = canonicalPath(of: path),
+           let relative = relativePath(of: file, inside: folder) {
+            return relative
+        }
+        return relativePath(of: fileURL.standardizedFileURL.path, inside: baseURL.standardizedFileURL.path)
+            ?? fileURL.lastPathComponent
+    }
+
+    /// `path` without its leading `folder`, or nil when it is not inside it.
+    /// The builder records paths with it and validation's containment check
+    /// tests them with it, so both draw the folder's boundary identically.
+    private static func relativePath(of path: String, inside folder: String) -> String? {
+        let prefix = folder.hasSuffix("/") ? folder : folder + "/"
+        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : nil
+    }
+}
+
+// MARK: - Validation
+
+extension BookContentIndex {
+    /// Most UTF-16 code units one chapter, or a whole book, may claim.
+    ///
+    /// Opening an audiobook from its index allocates a placeholder string of
+    /// each chapter's length, so a damaged count in bookInfo.json could
+    /// otherwise allocate gigabytes. Real books stay far below the cap: a
+    /// 50 MB plain-text book holds at most 50 million code units (one per
+    /// byte of ASCII, fewer for any other script), and a 200-hour audiobook
+    /// at `ReaderViewModel.audioCharsPerSecond` (10) needs 7.2 million
+    /// placeholder characters. Twice the larger yardstick leaves room for
+    /// any real book while bounding a placeholder allocation near 100 MB.
+    static let maximumCharacterCount = 100_000_000
+
+    /// The heading levels HTML and Markdown define, the only ones parsers
+    /// produce.
+    static let headingLevels = 1...6
+
+    /// Largest difference tolerated between `totalAudioDuration` and the sum
+    /// of the chapter durations. The builder sums the durations in chapter
+    /// order, as validation does, and JSON stores each value exactly, so a
+    /// sound index matches to the bit; one millisecond allows for any other
+    /// rounding while staying far below anything a listener could notice.
+    static let audioDurationTolerance: TimeInterval = 0.001
+
+    /// Whether this index can be trusted for a book of `format`: true exactly
+    /// when `validationFailure(for:audioBaseURL:)` finds nothing wrong.
+    func isValid(for format: BookFormat, audioBaseURL: URL?) -> Bool {
+        validationFailure(for: format, audioBaseURL: audioBaseURL) == nil
+    }
+
+    /// Why this persisted index cannot be trusted for a book of `format`, or
+    /// nil when it can. The reason names the first offending field as
+    /// bookInfo.json spells it, for example
+    /// `chapters[2].startCharacterOffset is 40, expected 52`.
+    ///
+    /// Opening a book from its index skips parsing, so everything the reader
+    /// derives from the index must hold here: chapters numbered in order,
+    /// offsets that are the running sums of their lengths, matching totals,
+    /// headings inside their chapters, counts within
+    /// `maximumCharacterCount`, finite audio timing, and audio files that
+    /// exist inside the book's folder. Each chapter and heading is read once
+    /// and each distinct audio file looked up once, so the cost is linear in
+    /// the size of the index.
+    ///
+    /// - Parameter audioBaseURL: The folder the chapters' relative audio
+    ///   paths resolve against: the book's file path, which for a multi-file
+    ///   or segmented audiobook is its audio folder. With nil, the checks
+    ///   that need the file system (that each file exists, and stays inside
+    ///   the folder once symbolic links are resolved) are skipped, while each
+    ///   path's own form is still checked.
+    func validationFailure(for format: BookFormat, audioBaseURL: URL?) -> String? {
+        identityFailure(for: format)
+            ?? chapterFailure()
+            ?? (kind == .audio ? audioFailure(audioBaseURL: audioBaseURL) : textFailure())
+    }
+
+    /// Why this index cannot describe `chapters`, the reading text it is
+    /// about to be paired with, or nil when it can: both must hold the same
+    /// number of chapters, each as long as the index records. A text book's
+    /// index and its content.md are written separately, so a sound index can
+    /// still describe other text. Once `validationFailure` passes, matching
+    /// lengths are all it takes for every offset in the index to point into
+    /// the same words as the chapters.
+    func alignmentFailure(with chapters: [Chapter]) -> String? {
+        guard self.chapters.count == chapters.count else {
+            return "chapters has \(self.chapters.count) entries, but the reading text has \(chapters.count)"
+        }
+        for (position, (stored, chapter)) in zip(self.chapters, chapters).enumerated() {
+            let length = chapter.text.utf16Length
+            if stored.characterCount != length {
+                return "chapters[\(position)].characterCount is \(stored.characterCount), but the reading text holds \(length)"
+            }
+        }
+        return nil
+    }
+
+    /// Whether the current builder made this index for a book of `format`.
+    private func identityFailure(for format: BookFormat) -> String? {
+        if !isCurrent {
+            return "version \(String(reflecting: version)) is not the current \(String(reflecting: Self.currentVersion))"
+        }
+        if self.format != format {
+            return "format \(self.format.rawValue) does not match the book's format \(format.rawValue)"
+        }
+        if kind != (format.isAudio ? .audio : .text) {
+            return "kind \(kind.rawValue) does not match format \(format.rawValue)"
+        }
+        return nil
+    }
+
+    /// Chapter numbering, lengths, running offsets, headings, and totals: the
+    /// structure every position calculation relies on. Each count is checked
+    /// against the cap before it is added, and the running sum after, so the
+    /// sums stay far from overflow. Ranges are formed only from counts
+    /// already known to be non-negative, because a reversed range traps.
+    private func chapterFailure() -> String? {
+        guard !chapters.isEmpty else { return "chapters is empty" }
+        var characters = 0
+        var words = 0
+        for (position, chapter) in chapters.enumerated() {
+            let field = "chapters[\(position)]"
+            if chapter.chapterIndex != position {
+                return "\(field).chapterIndex is \(chapter.chapterIndex), expected \(position)"
+            }
+            if chapter.characterCount < 0 {
+                return "\(field).characterCount is \(chapter.characterCount), below 0"
+            }
+            if chapter.characterCount > Self.maximumCharacterCount {
+                return "\(field).characterCount is \(chapter.characterCount), above the limit of \(Self.maximumCharacterCount)"
+            }
+            // Every word holds at least one character, so the character
+            // count also bounds the word count (and the word total).
+            if !(0...chapter.characterCount).contains(chapter.wordCount) {
+                return "\(field).wordCount is \(chapter.wordCount), outside 0 through \(chapter.characterCount)"
+            }
+            if chapter.startCharacterOffset != characters {
+                return "\(field).startCharacterOffset is \(chapter.startCharacterOffset), expected \(characters)"
+            }
+            if let failure = headingFailure(in: chapter, field: field) {
+                return failure
+            }
+            characters += chapter.characterCount
+            words += chapter.wordCount
+            if characters > Self.maximumCharacterCount {
+                return "the chapters hold \(characters) characters, above the limit of \(Self.maximumCharacterCount)"
+            }
+        }
+        if totalCharacterCount != characters {
+            return "totalCharacterCount is \(totalCharacterCount), expected \(characters)"
+        }
+        // Audio chapters hold placeholder spaces, which count as no words.
+        if kind == .text, totalWordCount != words {
+            return "totalWordCount is \(totalWordCount), expected \(words)"
+        }
+        return nil
+    }
+
+    /// Each heading's level and identity, and its place within `chapter`:
+    /// inside the chapter's text, in reading order, and at the global offset
+    /// its chapter's start implies. `field` names the chapter in reasons.
+    private func headingFailure(in chapter: BookContentChapterIndex, field: String) -> String? {
+        var previousOffset = 0
+        for (position, heading) in chapter.headings.enumerated() {
+            let field = "\(field).headings[\(position)]"
+            if !Self.headingLevels.contains(heading.level) {
+                return "\(field).level is \(heading.level), outside \(Self.headingLevels.lowerBound) through \(Self.headingLevels.upperBound)"
+            }
+            if heading.id.isEmpty {
+                return "\(field).id is empty"
+            }
+            // A heading may sit at the very end of its chapter, but not past it.
+            if !(0...chapter.characterCount).contains(heading.characterOffset) {
+                return "\(field).characterOffset is \(heading.characterOffset), outside 0 through \(chapter.characterCount)"
+            }
+            if heading.characterOffset < previousOffset {
+                return "\(field).characterOffset is \(heading.characterOffset), before the previous heading's \(previousOffset)"
+            }
+            let expectedGlobalOffset = chapter.startCharacterOffset + heading.characterOffset
+            if heading.globalCharacterOffset != expectedGlobalOffset {
+                return "\(field).globalCharacterOffset is \(heading.globalCharacterOffset), expected \(expectedGlobalOffset)"
+            }
+            previousOffset = heading.characterOffset
+        }
+        return nil
+    }
+
+    /// A text index describes words alone. Audio timing or paths in one did
+    /// not come from the builder, which writes none for text.
+    private func textFailure() -> String? {
+        if audioLayout != nil {
+            return "audioLayout is present in a text index"
+        }
+        if totalAudioDuration != nil {
+            return "totalAudioDuration is present in a text index"
+        }
+        if let position = chapters.firstIndex(where: { $0.audio != nil }) {
+            return "chapters[\(position)].audio is present in a text index"
+        }
+        return nil
+    }
+
+    /// The audio layout, each chapter's placeholder length, timing, and (for
+    /// layouts that name a file per chapter) file, and the duration total.
+    /// `audioBaseURL` is the folder those files must exist in, as for
+    /// `validationFailure(for:audioBaseURL:)`.
+    private func audioFailure(audioBaseURL: URL?) -> String? {
+        guard let audioLayout else { return "audioLayout is missing" }
+        var files = audioLayout.namesChapterFiles ? AudioFileCheck(folder: audioBaseURL) : nil
+        var duration: TimeInterval = 0
+        for (position, chapter) in chapters.enumerated() {
+            let field = "chapters[\(position)]"
+            // The parser gives every audio chapter at least one placeholder
+            // character, and playback restores exactly that many.
+            if chapter.characterCount == 0 {
+                return "\(field).characterCount is 0, but an audio chapter holds at least 1 placeholder character"
+            }
+            guard let audio = chapter.audio else {
+                return "\(field).audio is missing"
+            }
+            if let failure = Self.timeFailure(audio.startTime, field: "\(field).audio.startTime")
+                ?? Self.timeFailure(audio.duration, field: "\(field).audio.duration") {
+                return failure
+            }
+            if let failure = files?.failure(for: chapter.audioFilePath, field: "\(field).audio.relativeFilePath") {
+                return failure
+            }
+            duration += audio.duration
+        }
+        guard let totalAudioDuration else {
+            return "totalAudioDuration is missing"
+        }
+        // A NaN total fails `isFinite`; comparing it would always pass.
+        if !totalAudioDuration.isFinite || abs(totalAudioDuration - duration) > Self.audioDurationTolerance {
+            return "totalAudioDuration is \(totalAudioDuration), expected \(duration)"
+        }
+        return nil
+    }
+
+    /// Why `seconds`, a start time or duration, is unusable: NaN, infinite,
+    /// or negative. Nil when it is a finite, non-negative number of seconds.
+    private static func timeFailure(_ seconds: TimeInterval, field: String) -> String? {
+        if seconds.isFinite && seconds >= 0 {
+            return nil
+        }
+        return "\(field) is \(seconds), expected a finite number of seconds, 0 or more"
+    }
+
+    /// Checks the audio file each chapter names: first the path's own form,
+    /// then, given the folder the paths resolve against, that it names an
+    /// existing regular file that is still inside that folder once every
+    /// symbolic link is resolved. Paths already found sound are remembered,
+    /// so a file that many segments share is looked up only once.
+    private struct AudioFileCheck {
+        /// The folder the paths resolve against; nil checks only their form.
+        private let folder: URL?
+        /// The folder's canonical path, or nil when the folder cannot be
+        /// resolved because it does not exist.
+        private let canonicalFolder: String?
+        /// Relative paths already found to name a file inside the folder.
+        private var soundPaths: Set<String> = []
+
+        init(folder: URL?) {
+            self.folder = folder
+            canonicalFolder = folder.flatMap { BookContentIndex.canonicalPath(of: $0.path) }
+        }
+
+        /// Why `path`, a chapter's audio file relative to the folder, cannot
+        /// be trusted, or nil when it can. `field` names the path in reasons.
+        mutating func failure(for path: String?, field: String) -> String? {
+            guard let path else {
+                return "\(field) is missing"
+            }
+            let quotedPath = String(reflecting: path)
+            if path.hasPrefix("/") {
+                return "\(field) \(quotedPath) is absolute"
+            }
+            if path.split(separator: "/").contains("..") {
+                return "\(field) \(quotedPath) contains a \"..\" component"
+            }
+            guard let folder, !soundPaths.contains(path) else { return nil }
+            // Resolution fails for a missing file, and for every file of a
+            // missing folder.
+            guard let canonicalFolder,
+                  let canonicalFile = BookContentIndex.canonicalPath(of: folder.appendingPathComponent(path).path) else {
+                return "\(field) \(quotedPath) does not exist"
+            }
+            // A symbolic link inside the folder can point anywhere on disk.
+            guard BookContentIndex.relativePath(of: canonicalFile, inside: canonicalFolder) != nil else {
+                return "\(field) \(quotedPath) resolves outside the audio folder"
+            }
+            guard Self.isRegularFile(atPath: canonicalFile) else {
+                return "\(field) \(quotedPath) is not a regular file"
+            }
+            soundPaths.insert(path)
+            return nil
+        }
+
+        /// Whether `path`, already canonical, names a regular file rather
+        /// than a folder or a device.
+        private static func isRegularFile(atPath path: String) -> Bool {
+            let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+            return attributes?[.type] as? FileAttributeType == .typeRegular
+        }
+    }
+
+    /// The absolute path of an existing file or folder with every symbolic
+    /// link, ".", and ".." resolved, as realpath(3) gives it, or nil when
+    /// nothing exists there. Validation and the builder both compare folders
+    /// and files through this, so spellings such as /var and /private/var,
+    /// or a linked folder and its destination, agree.
+    fileprivate static func canonicalPath(of path: String) -> String? {
+        guard let resolved = realpath(path, nil) else { return nil }
+        defer { free(resolved) }
+        return String(cString: resolved)
     }
 }
 
@@ -263,6 +596,13 @@ struct BookContentChapterIndex: Codable, Hashable {
     var wordCount: Int
     var headings: [BookContentHeadingIndex]
     var audio: BookContentAudioChapterIndex?
+
+    /// The audio file this chapter plays, relative to the book's audio
+    /// folder, or nil when it names none. An empty path names no file either.
+    var audioFilePath: String? {
+        guard let path = audio?.relativeFilePath, !path.isEmpty else { return nil }
+        return path
+    }
 }
 
 struct BookContentHeadingIndex: Codable, Hashable {
