@@ -25,8 +25,7 @@ enum DAISYParserError: LocalizedError {
         case .missingContent(let msg): return "Missing DAISY content: \(msg)"
         case .parseError(let msg): return "DAISY parse error: \(msg)"
         case .malformedXML(let file, let reason):
-            return "The file “\(file)” in this DAISY book is damaged or incomplete: \(reason). "
-                + "Get a fresh copy of the book, then import it again."
+            return PackageDamage.message(file: file, reason: reason, container: "this DAISY book", original: "the book")
         }
     }
 }
@@ -204,9 +203,7 @@ enum DAISYParser {
     /// import layer has no warning channel yet, so the reader is not told;
     /// the recovered words stay readable either way.
     static func logIncompleteContent(_ diagnostic: DAISYParserError) {
-        let line = "DAISY_INCOMPLETE_CONTENT: \(diagnostic.localizedDescription)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        PackageDamage.log(diagnostic, tag: "DAISY_INCOMPLETE_CONTENT")
     }
 
     /// Read metadata (title, author) from a DAISY book

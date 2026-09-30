@@ -107,3 +107,28 @@ class PackageSAXParser: NSObject, XMLParserDelegate {
         byte == 0x20 || byte == 0x09 || byte == 0x0A || byte == 0x0D
     }
 }
+
+// MARK: - Reporting Damage
+
+/// How a damaged file in a book package is described and recorded. Every
+/// format reports damage through these, so a reader hears the same sentence,
+/// and the debug log holds the same kind of line, whatever the book's format.
+enum PackageDamage {
+    /// The sentence that tells a reader a file is damaged: it names the file,
+    /// gives `reason`, which completes "is damaged or incomplete: …", and
+    /// says what to do. `container` names what holds the file ("this DAISY
+    /// book"), and `original` names what to get again ("the book").
+    static func message(file: String, reason: String, container: String, original: String) -> String {
+        "The file “\(file)” in \(container) is damaged or incomplete: \(reason). "
+            + "Get a fresh copy of \(original), then import it again."
+    }
+
+    /// Record damage the import worked around, as one line starting with
+    /// `tag` in the console and in the debug log. The import layer has no
+    /// warning channel yet, so this line is the only record of the damage.
+    static func log(_ damage: Error, tag: String) {
+        let line = "\(tag): \(damage.localizedDescription)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+    }
+}
