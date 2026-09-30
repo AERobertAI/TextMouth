@@ -23,6 +23,12 @@ final class ConfigService: ObservableObject {
     /// event, an editor's included, used to be ignored.
     private var lastHandledContents: Data?
 
+    /// The settings this process and config.json last agreed on: the ones it
+    /// last loaded, wrote, or applied. Saving merges an edit it finds on disk
+    /// against this, to tell the fields TextMouth changed since from the
+    /// fields the edit changed. Nil until a file was decoded or written.
+    private var lastSyncedConfig: AppConfig?
+
     /// Whether the watcher is on: from `startWatching()` until `shutdown()`.
     private var isWatching = false
     /// How long a burst of file events must stay quiet before the file is
@@ -313,12 +319,18 @@ final class ConfigService: ObservableObject {
 
     /// Makes config.json hold `config`.
     ///
-    /// Nothing is written when the file already holds exactly these bytes:
-    /// writing them again would change only the modification date and wake
-    /// the watcher. A launch on a consistent file therefore writes nothing.
-    /// The bytes become `lastHandledContents`, which is how the watcher
-    /// recognizes the events of this save as TextMouth's own.
+    /// An edit that reached the file since this process last wrote or read
+    /// it, still waiting for the watcher's delay, is merged in first rather
+    /// than saved over. Nothing is written when the file already holds
+    /// exactly the resulting bytes: writing them again would change only the
+    /// modification date and wake the watcher, so a launch on a consistent
+    /// file writes nothing. The bytes become `lastHandledContents`, which is
+    /// how the watcher recognizes the events of this save as TextMouth's own.
     func saveToDisk() {
+        let onDisk = readFileContents()
+        if let onDisk, onDisk != lastHandledContents {
+            mergeUnhandledEdit(onDisk)
+        }
         let data: Data
         do {
             data = try Self.fileData(for: config)
@@ -326,21 +338,28 @@ final class ConfigService: ObservableObject {
             log("could not encode the settings for \(fileURL.path): \(error)")
             return
         }
-        guard data != readFileContents() else {
-            lastHandledContents = data
+        guard data != onDisk else {
+            recordAgreement(data)
             return
         }
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             try fileOperations.write(data, fileURL)
-            lastHandledContents = data
         } catch {
             log("could not save \(fileURL.path): \(error)")
             return
         }
+        recordAgreement(data)
         // The atomic write replaced the watched file. Follow the new one now
         // rather than when its event arrives, leaving no moment unwatched.
         rearmWatcher()
+    }
+
+    /// Records that config.json holds `data`, the bytes of `config`: the
+    /// watcher ignores these bytes, and the next merge starts from `config`.
+    private func recordAgreement(_ data: Data) {
+        lastHandledContents = data
+        lastSyncedConfig = config
     }
 
     /// config.json's current bytes, or nil when there is no file or it
@@ -375,6 +394,7 @@ final class ConfigService: ObservableObject {
             if decoded != config {
                 config = decoded
             }
+            lastSyncedConfig = decoded
             loadedFile = .decoded
         } catch {
             loadedFile = .unreadable
@@ -410,8 +430,78 @@ final class ConfigService: ObservableObject {
             logUnreadableFile(error)
             return
         }
-        config = edited
-        externalEdits.send(edited)
+        lastSyncedConfig = edited
+        adopt(edited)
+    }
+
+    /// Folds in an edit that reached config.json after this process last
+    /// wrote or read it, which the watcher has not handled yet because its
+    /// events are still settling. The save about to happen would otherwise
+    /// replace it unseen.
+    ///
+    /// The merged snapshot is published like any external edit, so the
+    /// preferences take the edit's values too. Contents that cannot be
+    /// decoded are logged; the save then replaces them.
+    private func mergeUnhandledEdit(_ contents: Data) {
+        lastHandledContents = contents
+        let edited: AppConfig
+        do {
+            edited = try Self.decode(contents)
+        } catch {
+            log("saving over \(fileURL.path), which could not be read. \(Self.failureReason(error))")
+            return
+        }
+        // Without a known base, the edit on disk is taken whole.
+        adopt(Self.merging(ours: config, theirs: edited, base: lastSyncedConfig ?? config))
+    }
+
+    /// Makes `snapshot`, which came from the file, the configuration in use,
+    /// and publishes it once.
+    private func adopt(_ snapshot: AppConfig) {
+        config = snapshot
+        externalEdits.send(snapshot)
+    }
+
+    /// Combines an edit found on disk (`theirs`) with the changes this
+    /// process made since it last agreed with the file (`base`): a field this
+    /// process changed keeps its value, and every other field takes the
+    /// edit's. When both changed a field, this process's value wins, being
+    /// the later change: the edit was already on disk when this process saved.
+    ///
+    /// Fields are compared as config.json holds them, so the merge follows
+    /// `AppConfig`'s coding keys and needs no list of fields of its own.
+    nonisolated static func merging(ours: AppConfig, theirs: AppConfig, base: AppConfig) -> AppConfig {
+        guard let oursFields = try? jsonFields(of: ours),
+              let baseFields = try? jsonFields(of: base),
+              var mergedFields = try? jsonFields(of: theirs) else {
+            return ours
+        }
+        for (key, value) in oursFields where !sameJSONValue(value, baseFields[key]) {
+            mergedFields[key] = value
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: mergedFields),
+              let merged = try? decode(data) else {
+            return ours
+        }
+        return merged
+    }
+
+    /// `config` as the JSON object config.json holds, keyed by field name.
+    private nonisolated static func jsonFields(of config: AppConfig) throws -> [String: Any] {
+        let object = try JSONSerialization.jsonObject(with: fileData(for: config))
+        guard let fields = object as? [String: Any] else {
+            throw CocoaError(.coderReadCorrupt)
+        }
+        return fields
+    }
+
+    /// Whether two values that JSONSerialization produced are equal. They are
+    /// all NSObjects, which compare by value; two missing values are equal.
+    private nonisolated static func sameJSONValue(_ lhs: Any?, _ rhs: Any?) -> Bool {
+        guard let lhs = lhs as? NSObject, let rhs = rhs as? NSObject else {
+            return lhs == nil && rhs == nil
+        }
+        return lhs.isEqual(rhs)
     }
 
     // MARK: - File Watching

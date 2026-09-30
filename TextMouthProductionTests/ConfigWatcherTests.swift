@@ -283,6 +283,58 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), editBytes)
     }
 
+    /// An editor's save that lands between two of TextMouth's saves, before
+    /// the watcher has handled it, is not lost to the second save: that save
+    /// merges it in, applies it exactly once, and writes both changes.
+    func testEditorSaveBetweenTwoAppSavesIsMergedAndAppliedOnce() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        settings.wordsPerMinute = 300
+        var edit = service.config
+        edit.sleepFadeOutDuration = 9
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        settings.wordsPerMinute = 310
+
+        XCTAssertEqual(recorder.edits.count, 1, "the second save applied the edit at once")
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        settle()
+        XCTAssertEqual(recorder.edits.count, 1)
+        XCTAssertEqual(settings.wordsPerMinute, 310)
+        XCTAssertEqual(counter.writes, 2)
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.wordsPerMinute, 310)
+        XCTAssertEqual(saved.sleepFadeOutDuration, 9)
+    }
+
+    /// A merge keeps each field TextMouth changed since it last agreed with
+    /// the file, takes the edit's value for every other field, and lets
+    /// TextMouth's later change win when both changed the same field.
+    func testMergeKeepsTextMouthsChangesAndTakesTheEditsOthers() {
+        let base = ConfigService.AppConfig.everyFieldCustomized
+        var ours = base
+        ours.wordsPerMinute = 500
+        ours.pitchMultiplier = 1.8
+        var theirs = base
+        theirs.pitchMultiplier = 0.7
+        theirs.sleepFadeOutDuration = 9
+        theirs.confirmBeforeDelete = true
+
+        let merged = ConfigService.merging(ours: ours, theirs: theirs, base: base)
+
+        var expected = base
+        expected.wordsPerMinute = 500
+        expected.pitchMultiplier = 1.8
+        expected.sleepFadeOutDuration = 9
+        expected.confirmBeforeDelete = true
+        XCTAssertEqual(merged, expected)
+        // With no base to compare against, the edit on disk is taken whole.
+        XCTAssertEqual(ConfigService.merging(ours: ours, theirs: theirs, base: ours), theirs)
+    }
+
     /// A file replaced with text that is not JSON changes no setting and is
     /// not overwritten, so the edit stays on disk to be corrected; the debug
     /// log names the file once, however many events follow. The corrected

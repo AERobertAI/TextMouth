@@ -455,6 +455,9 @@ final class SettingsViewModel: ObservableObject {
     /// preferences are saved once at the end, which writes only when the
     /// file's bytes change, so a launch on a consistent file writes nothing.
     private func startConfigSync() {
+        // Subscribe first: the save below merges in any edit that reached the
+        // file since it was loaded, and publishes it for this model to apply.
+        observeExternalEdits()
         withoutSyncingToConfig {
             if configService.hasExistingConfig {
                 applyConfigChanges(configService.config)
@@ -468,7 +471,6 @@ final class SettingsViewModel: ObservableObject {
             configService.saveToDisk()
         }
         configService.startWatching()
-        observeExternalEdits()
     }
 
     func refreshVoices() {
