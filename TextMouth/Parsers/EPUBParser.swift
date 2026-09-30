@@ -100,9 +100,9 @@ enum EPUBParser {
     }
 
     /// Open the EPUB at `url` for reading.
-    /// - Throws: `EPUBParserError.fileNotFound` when nothing is there, which
-    ///   the check first keeps distinct from `.invalidArchive`, thrown when
-    ///   the file cannot be opened as a ZIP archive.
+    /// - Throws: `EPUBParserError.fileNotFound` when no file is there, checked
+    ///   first so a missing file is not reported as `.invalidArchive`, which
+    ///   is thrown when the file cannot be opened as a ZIP archive.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
@@ -414,7 +414,8 @@ enum EPUBParser {
                 data.append(chunk)
             }
         } catch {
-            throw EPUBParserError.damagedFile(file: entry.path, reason: "its compressed data could not be decoded")
+            let reason = entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+            throw EPUBParserError.damagedFile(file: entry.path, reason: reason)
         }
         guard entry.checksum == 0 || checksum == entry.checksum else {
             throw EPUBParserError.damagedFile(
