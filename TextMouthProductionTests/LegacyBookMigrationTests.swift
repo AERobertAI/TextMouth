@@ -416,6 +416,80 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: package).metadata.bookID, otherBook.id)
     }
 
+    // MARK: - Originals That Must Stay
+
+    /// A record whose package name was lost looks unmigrated while it still
+    /// names the file inside its usual package. The copy found there is the
+    /// original itself, so the record is repaired and the file never removed.
+    func testFileAlreadyInTheUsualPackageIsNeverRemoved() throws {
+        let sandbox = makeSandbox()
+        let draft = try sandbox.legacyBook(
+            "Lost Package Name",
+            original: sandbox.scratchDirectory.appendingPathComponent("book.txt"),
+            md5Hash: "draft-hash"
+        )
+        let package = try sandbox.stageUsualPackage(for: draft, holding: "The only copy.")
+        var book = draft
+        book.filePath = package.appendingPathComponent("book.txt").path
+        book.md5Hash = try FileImportService.md5Hash(of: book.bookFileURL)
+
+        let migration = try FileImportService.migrateBookToTMB(book)
+
+        XCTAssertEqual(migration.book.tmbDirectoryName, package.lastPathComponent)
+        XCTAssertEqual(migration.book.filePath, book.filePath)
+        XCTAssertFalse(migration.removedOriginal)
+        XCTAssertEqual(try text(of: migration.book.bookFileURL), "The only copy.")
+        XCTAssertEqual(migration.warnings, [])
+    }
+
+    /// Two records reading one stored file each get a verified copy of their
+    /// own, and the file is removed only after the second has moved.
+    func testSharedOriginalIsRemovedOnlyAfterEveryReaderHasMoved() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("shared.txt", contents: "Read by two records.")
+        let first = try sandbox.legacyBook("First Reader", original: original)
+        let second = try sandbox.legacyBook("Second Reader", original: original)
+        var library = Library(books: [first, second])
+
+        let report = FileImportService.migrateLegacyBooks(in: &library)
+
+        XCTAssertEqual(report.migratedCount, 2)
+        XCTAssertEqual(report.failures, [])
+        XCTAssertEqual(report.warnings, [])
+        XCTAssertNotEqual(library.books[0].tmbDirectory, library.books[1].tmbDirectory)
+        for book in library.books {
+            XCTAssertEqual(try text(of: book.bookFileURL), "Read by two records.", book.title)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: original.path))
+    }
+
+    /// While a record that could not move still reads the stored file, the
+    /// file stays, even after another record reading it has moved.
+    func testSharedOriginalStaysWhileARecordThatCouldNotMoveReadsIt() throws {
+        let sandbox = makeSandbox()
+        let original = try sandbox.makeFile("shared.txt", contents: "Still needed.")
+        // A read-only folder makes the first record's move fail.
+        let lockedFolderPath = sandbox.folderPath + "/Locked"
+        try TextMouthPaths.ensureLibrarySubfolder(lockedFolderPath)
+        setPermissions(
+            of: TextMouthPaths.libraryDir.appendingPathComponent(lockedFolderPath, isDirectory: true),
+            to: 0o555,
+            restoringTo: 0o755
+        )
+        var stuck = try sandbox.legacyBook("Stuck Reader", original: original)
+        stuck.folderPath = lockedFolderPath
+        let mover = try sandbox.legacyBook("Moving Reader", original: original)
+        var library = Library(books: [stuck, mover])
+
+        let report = FileImportService.migrateLegacyBooks(in: &library)
+
+        XCTAssertEqual(report.failures.map(\.title), [stuck.title])
+        XCTAssertEqual(report.migratedCount, 1)
+        XCTAssertEqual(library.books[0], stuck)
+        XCTAssertEqual(try text(of: library.books[1].bookFileURL), "Still needed.")
+        XCTAssertEqual(try text(of: original), "Still needed.")
+    }
+
     // MARK: - Migrating the Library
 
     /// One book's failure does not stop the pass. Every legacy book is

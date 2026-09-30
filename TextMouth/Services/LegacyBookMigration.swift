@@ -61,6 +61,33 @@ enum ContentFingerprintError: LocalizedError, Equatable {
     }
 }
 
+// MARK: - File Identity
+
+/// The device and inode of the file a URL leads to once symbolic links are
+/// followed. Two URLs with the same identity name one file, however they
+/// spell it: through a link, a hard link, or a difference in case on a
+/// case-insensitive volume. A file must not be removed while another
+/// record still reads it, or when it is the copy that replaces it.
+struct FileIdentity: Hashable {
+    /// The device holding the file.
+    let device: UInt64
+    /// The file's inode number on that device.
+    let inode: UInt64
+
+    /// The identity of the file at `url`, or nil when nothing is there.
+    init?(of url: URL) {
+        guard let attributes = try? FileManager.default.attributesOfItem(
+                  atPath: url.resolvingSymlinksInPath().path
+              ),
+              let device = attributes[.systemNumber] as? NSNumber,
+              let inode = attributes[.systemFileNumber] as? NSNumber else {
+            return nil
+        }
+        self.device = device.uint64Value
+        self.inode = inode.uint64Value
+    }
+}
+
 // MARK: - Migration Outcomes
 
 /// Why a book recorded in the layout that predates packages could not be
@@ -223,14 +250,39 @@ extension FileImportService {
     /// keeps its record and original, and the pass carries on with the next
     /// book. The summary goes to the debug log; a caller with a window shows
     /// the report's `userSummary` once its whole repair is done.
+    ///
+    /// Nothing guarantees that each stored file belongs to one record, so an
+    /// original is removed only once no other record reads it: each record
+    /// that moves gets its own verified copy first, and a record that could
+    /// not move keeps reading the original.
     @discardableResult
     static func migrateLegacyBooks(in library: inout Library) -> LegacyMigrationReport {
         var report = LegacyMigrationReport()
-        for index in library.books.indices where library.books[index].tmbDirectoryName.isEmpty {
+        let legacyIndices = library.books.indices.filter { library.books[$0].tmbDirectoryName.isEmpty }
+        guard !legacyIndices.isEmpty else { return report }
+
+        // How many records, moved or not, read each file.
+        var readers: [FileIdentity: Int] = [:]
+        for book in library.books {
+            if let identity = FileIdentity(of: book.bookFileURL) {
+                readers[identity, default: 0] += 1
+            }
+        }
+
+        for index in legacyIndices {
             let book = library.books[index]
+            let original = FileIdentity(of: book.bookFileURL)
+            let otherReaders = original.map { (readers[$0] ?? 1) - 1 } ?? 0
             do {
-                let migration = try migrateBookToTMB(book)
+                let migration = try migrateBookToTMB(
+                    book,
+                    removingOriginalWith: otherReaders > 0 ? nil : removeMigratedOriginal(at:)
+                )
                 library.books[index] = migration.book
+                // A moved record reads its package copy from now on.
+                if let original, FileIdentity(of: migration.book.bookFileURL) != original {
+                    readers[original] = otherReaders
+                }
                 report.record(migration)
             } catch {
                 report.recordFailure(of: book, error: error)
@@ -265,10 +317,13 @@ extension FileImportService {
     /// 4. bookInfo.json is saved. When that fails, whatever this call
     ///    created is removed again and the error is thrown.
     /// 5. The original is removed with `removeOriginal`, which by default
-    ///    honors the user's Trash preference. It is kept, with a warning,
-    ///    when the removal fails, and when the usual package held other
-    ///    content: that is unexpected, so the original stays as a recovery
-    ///    copy.
+    ///    honors the user's Trash preference. It is kept without comment
+    ///    when `removeOriginal` is nil, because other records still read
+    ///    it, and when the record already named the file in its usual
+    ///    package, so that the copy is the original itself. It is kept, with
+    ///    a warning, when the removal fails, and when the usual package held
+    ///    other content: that is unexpected, so the original stays as a
+    ///    recovery copy.
     /// 6. The text cache is built last. A failure there is a warning; the
     ///    library's cache pass builds the cache later.
     ///
@@ -281,7 +336,7 @@ extension FileImportService {
     /// simulate a copy that goes wrong.
     static func migrateBookToTMB(
         _ book: Book,
-        removingOriginalWith removeOriginal: (URL) throws -> Void = FileImportService.removeMigratedOriginal(at:),
+        removingOriginalWith removeOriginal: ((URL) throws -> Void)? = FileImportService.removeMigratedOriginal(at:),
         copyingWith copyItem: (URL, URL) throws -> Void = { try FileManager.default.copyItem(at: $0, to: $1) }
     ) throws -> LegacyBookMigration {
         try TextMouthPaths.ensureDirectoryStructure()
@@ -313,13 +368,16 @@ extension FileImportService {
 
         var warnings: [String] = []
         var removedOriginal = false
-        if let occupiedPackage = copy.occupiedPackage {
+        if copy.isOriginal {
+            // The record already named the file in its package, so there is
+            // no separate original: removing it would remove the only copy.
+        } else if let occupiedPackage = copy.occupiedPackage {
             warnings.append(
                 "The library already had different content under its package name, "
                     + "\(occupiedPackage.lastPathComponent), so it was stored in a new package, "
                     + "\(copy.packageName), and its original file was kept at \(original.path)."
             )
-        } else {
+        } else if let removeOriginal {
             do {
                 try removeOriginal(original)
                 removedOriginal = true
@@ -408,6 +466,9 @@ extension FileImportService {
         /// Whether this migration created the copy, in a package that may
         /// already have existed.
         let createdContent: Bool
+        /// Whether the copy found in the usual package is the original file
+        /// itself, because the record already named a file in that package.
+        let isOriginal: Bool
         /// The book's usual package, when it held other content and the
         /// copy went into a new package instead.
         let occupiedPackage: URL?
@@ -460,13 +521,15 @@ extension FileImportService {
             try copyVerified(original, matching: fingerprint, to: content, copyItem: copyItem)
             return PlacedCopy(
                 packageName: usualName, package: usualPackage, content: content,
-                createdPackage: false, createdContent: true, occupiedPackage: nil
+                createdPackage: false, createdContent: true, isOriginal: false, occupiedPackage: nil
             )
         case .ownWithIdenticalCopy:
+            let content = usualPackage.appendingPathComponent(contentName)
             return PlacedCopy(
-                packageName: usualName, package: usualPackage,
-                content: usualPackage.appendingPathComponent(contentName),
-                createdPackage: false, createdContent: false, occupiedPackage: nil
+                packageName: usualName, package: usualPackage, content: content,
+                createdPackage: false, createdContent: false,
+                isOriginal: FileIdentity(of: content) == FileIdentity(of: original),
+                occupiedPackage: nil
             )
         case .occupied:
             // A fresh identifier keeps the naming scheme and makes the name
@@ -535,7 +598,7 @@ extension FileImportService {
         }
         return PlacedCopy(
             packageName: name, package: package, content: content,
-            createdPackage: true, createdContent: true, occupiedPackage: occupiedPackage
+            createdPackage: true, createdContent: true, isOriginal: false, occupiedPackage: occupiedPackage
         )
     }
 
