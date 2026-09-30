@@ -74,10 +74,10 @@ enum DOCXParser {
     ///   That text stays in the result; the diagnostic never enters it. The
     ///   default writes the diagnostic to the console and the debug log.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when the
-    ///   styles, numbering, or relationships part is present but damaged, or
-    ///   the text part is damaged before any text. Reading on would silently
-    ///   turn headings into plain paragraphs, numbered steps into bullets, or
-    ///   links into bare text.
+    ///   styles, numbering, or relationships part is present but damaged,
+    ///   since reading on would silently turn headings into plain paragraphs,
+    ///   numbered steps into bullets, or links into bare text; or when the
+    ///   text part is damaged before any of its text.
     static func extractMarkdown(
         from url: URL,
         reportIncompleteContent: (DOCXParserError) -> Void = DOCXParser.logIncompleteContent
