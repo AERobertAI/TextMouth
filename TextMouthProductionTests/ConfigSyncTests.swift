@@ -152,18 +152,21 @@ final class ConfigSyncTests: XCTestCase {
             notificationCenter: notificationCenter,
             initializeServices: false
         )
-        var config = ConfigService.AppConfig()
-        config.dataDirectoryPath = FileManager.default.temporaryDirectory
+        let requestedPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouth-External-Request-\(UUID().uuidString)")
             .path
+        var config = ConfigService.AppConfig()
+        config.dataDirectoryPath = requestedPath
         let originalRoot = TextMouthPaths.root
         let expectation = XCTNSNotificationExpectation(
             name: .dataDirectoryChangeRequested,
             object: nil,
             notificationCenter: notificationCenter
         )
+        // The handler may run on another thread, so it holds the path by
+        // value rather than reading the test's variable.
         expectation.handler = { note in
-            note.userInfo?["path"] as? String == config.dataDirectoryPath
+            note.userInfo?["path"] as? String == requestedPath
         }
 
         viewModel.applyConfigChanges(config)
