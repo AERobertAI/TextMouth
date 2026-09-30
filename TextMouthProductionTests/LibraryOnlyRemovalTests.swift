@@ -113,6 +113,158 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         )
     }
 
+    // MARK: - The Metadata Queue
+
+    /// Retiring a package writes its marker, cancels a write still waiting
+    /// in the debounce, deletes bookInfo.json, and drops every later write,
+    /// debounced or flushed at quit. The content file stays.
+    func testRetiringCancelsAQueuedWriteAndDropsLaterOnes() throws {
+        let book = try makePackage(title: "Queued Write")
+        var edited = book
+        edited.manualSortOrder = 4
+        LibraryPersistenceService.saveBookInfo(for: edited)
+
+        let retirement = try LibraryPersistenceService.retirePackage(of: book)
+        LibraryPersistenceService.saveBookInfo(for: edited)
+        LibraryPersistenceService.flushPendingSave()
+        waitPastLibrarySaveDebounce()
+
+        XCTAssertTrue(retirement.isPackageMarked)
+        XCTAssertNil(retirement.recordDeletionError)
+        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: book.tmbDirectory).bookID, book.id)
+        XCTAssertFalse(exists(record(of: book)), "no write may recreate the record")
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+    }
+
+    /// Background analysis committing while the book is removed leaves no
+    /// record behind, whichever runs first: a commit before the removal is
+    /// deleted with bookInfo.json, and one after it is dropped. The content
+    /// file and its text cache stay.
+    func testAnalysisCommittedAroundTheRemovalLeavesNoRecord() throws {
+        let book = try makePackage(title: "Analyzed During Removal")
+        var parsed = book
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &parsed))
+        let analyzed = parsed
+        let committed = expectation(description: "The analysis worker committed its result")
+
+        DispatchQueue.global(qos: .utility).async {
+            do {
+                try LibraryPersistenceService.saveContentAnalysis(
+                    for: analyzed, index: index, cacheFormatVersion: analyzed.cacheFormatVersion
+                )
+            } catch {
+                XCTFail("Committing the analysis threw \(error)")
+            }
+            committed.fulfill()
+        }
+        XCTAssertNoThrow(try LibraryPersistenceService.retirePackage(of: book))
+        wait(for: [committed], timeout: 10)
+        XCTAssertNoThrow(try LibraryPersistenceService.saveContentAnalysis(
+            for: analyzed, index: index, cacheFormatVersion: analyzed.cacheFormatVersion
+        ))
+
+        XCTAssertFalse(exists(record(of: book)))
+        XCTAssertTrue(exists(marker(of: book)))
+        XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)))
+        XCTAssertTrue(exists(TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)))
+    }
+
+    /// A package that cannot take the marker refuses the retirement with an
+    /// error naming the package, and nothing changes: the record is intact
+    /// and the book's metadata is still saved.
+    func testUnwritablePackageRefusesRetirementAndChangesNothing() throws {
+        let book = try makePackage(title: "Read-Only Package")
+        let recordBefore = try Data(contentsOf: record(of: book))
+        setWritable(book.tmbDirectory, false)
+
+        XCTAssertThrowsError(try LibraryPersistenceService.retirePackage(of: book)) { error in
+            guard case LibraryRemovalError.couldNotMarkPackage(let packageName, _) = error else {
+                return XCTFail("Expected couldNotMarkPackage, got \(error)")
+            }
+            XCTAssertEqual(packageName, book.tmbDirectoryName)
+            XCTAssertTrue(error.localizedDescription.contains(book.tmbDirectoryName), error.localizedDescription)
+        }
+        setWritable(book.tmbDirectory, true)
+
+        XCTAssertFalse(exists(marker(of: book)))
+        XCTAssertEqual(try Data(contentsOf: record(of: book)), recordBefore)
+        var edited = book
+        edited.manualSortOrder = 6
+        LibraryPersistenceService.saveBookInfo(for: edited)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.manualSortOrder, 6)
+    }
+
+    /// A record that cannot be deleted is reported, but the marker still
+    /// retires the package, so adoption leaves it out even though its
+    /// bookInfo.json can be read.
+    func testLockedRecordIsReportedButThePackageStaysRetired() throws {
+        let book = try makePackage(title: "Locked Record")
+        try lock(record(of: book))
+
+        let retirement = try LibraryPersistenceService.retirePackage(of: book)
+
+        XCTAssertTrue(retirement.isPackageMarked)
+        XCTAssertNotNil(retirement.recordDeletionError)
+        XCTAssertTrue(exists(record(of: book)))
+        XCTAssertTrue(exists(marker(of: book)))
+        XCTAssertFalse(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
+    }
+
+    /// A record with nothing on disk, because its package is already gone or
+    /// it never had one, is retired without writing anything anywhere.
+    func testRetiringARecordWithoutAPackageOnDiskWritesNothing() throws {
+        let folder = uniqueFolderName("Missing Package Shelf")
+        let folderDirectory = try makeFolder(folder)
+        var gone = fixtureBook(title: "Package Already Gone")
+        gone.folderPath = folder
+        var legacy = fixtureBook(title: "Legacy Record")
+        legacy.folderPath = folder
+        legacy.tmbDirectoryName = ""
+
+        for book in [gone, legacy] {
+            let retirement = try LibraryPersistenceService.retirePackage(of: book)
+            XCTAssertFalse(retirement.isPackageMarked, book.title)
+            XCTAssertNil(retirement.recordDeletionError, book.title)
+        }
+
+        XCTAssertFalse(exists(gone.tmbDirectory), "no package is created")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folderDirectory.path), [])
+    }
+
+    /// A .tmb import of an earlier copy keeps the book's ID in a package of
+    /// its own. Retiring the original package must not drop that copy's writes.
+    func testAnotherPackageOfTheSameBookIsStillSaved() throws {
+        let book = try makePackage(title: "Imported Twice")
+        _ = try LibraryPersistenceService.retirePackage(of: book)
+        var copy = book
+        copy.folderPath = uniqueFolderName("Import Shelf")
+        try makeFolder(copy.folderPath)
+        try FileManager.default.createDirectory(at: copy.tmbDirectory, withIntermediateDirectories: true)
+        copy.filePath = copy.tmbDirectory.appendingPathComponent("book.txt").path
+
+        LibraryPersistenceService.saveBookInfo(for: copy)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try BookInfo.load(from: copy.tmbDirectory).metadata.bookID, book.id)
+        XCTAssertFalse(exists(record(of: book)))
+    }
+
+    /// A deliberate return deletes the marker and forgets the retirement:
+    /// the book's metadata is saved again, and adoption finds the package.
+    func testReinstatingAPackageLetsItsWritesAndAdoptionReturn() throws {
+        let book = try makePackage(title: "Deliberate Return")
+        _ = try LibraryPersistenceService.retirePackage(of: book)
+
+        try LibraryPersistenceService.reinstatePackage(of: book)
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(exists(marker(of: book)))
+        XCTAssertTrue(exists(record(of: book)))
+        XCTAssertTrue(adoptedFromLibraryDirectory().books.contains { $0.id == book.id })
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test
@@ -173,6 +325,35 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         var adopted = Library()
         FileImportService.adoptOrphanedTMBPackages(library: &adopted)
         return adopted
+    }
+
+    /// bookInfo.json in `book`'s package.
+    private func record(of book: Book) -> URL {
+        TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+    }
+
+    /// The removal marker in `book`'s package.
+    private func marker(of book: Book) -> URL {
+        TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory)
+    }
+
+    /// Whether anything exists at `url`.
+    private func exists(_ url: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url.path)
+    }
+
+    /// Locks `file` as Finder's Locked checkbox does, so it cannot be deleted
+    /// although its folder is writable. A read-only mode would not do: the
+    /// folder's permission, not the file's, decides whether it can be deleted.
+    /// Tear-down unlocks it.
+    private func lock(_ file: URL) throws {
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: file.path)
+    }
+
+    /// Gives `directory` or takes away its write permission, so nothing can
+    /// be created in it. Tear-down gives it back in any case.
+    private func setWritable(_ directory: URL, _ writable: Bool) {
+        XCTAssertEqual(chmod(directory.path, writable ? 0o755 : 0o555), 0)
     }
 
     /// A package directory outside the library, for checks of the marker

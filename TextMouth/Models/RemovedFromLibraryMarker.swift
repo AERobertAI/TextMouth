@@ -80,4 +80,54 @@ extension RemovedFromLibraryMarker {
         let data = try Data(contentsOf: TextMouthPaths.removedFromLibraryMarkerPath(in: package))
         return try decoder.decode(RemovedFromLibraryMarker.self, from: data)
     }
+
+    /// Deletes the marker from `package` for a deliberate return of its
+    /// book. A package without a marker is left as it is.
+    static func remove(from package: URL) throws {
+        let url = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
+}
+
+// MARK: - Logging
+
+extension RemovedFromLibraryMarker {
+
+    /// Records a Remove from Library Only event for `book` in the console and
+    /// the debug log, naming the book by the start of its ID.
+    static func log(_ message: String, for book: Book) {
+        let line = "LIBRARY_REMOVAL: book \(book.id.uuidString.prefix(8)): \(message)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+    }
+}
+
+// MARK: - Retiring a Package
+
+/// What Remove from Library Only did to a book's package on disk
+/// (`LibraryPersistenceService.retirePackage(of:)`).
+struct PackageRetirement {
+    /// Whether the package now holds a removal marker. False only for a
+    /// record with no package on disk, which adoption could never find.
+    let isPackageMarked: Bool
+    /// Why the package's bookInfo.json could not be deleted, when it could
+    /// not. The book stays out of the library regardless: the marker, not
+    /// the missing record, is what keeps it out.
+    let recordDeletionError: (any Error)?
+}
+
+/// Why Remove from Library Only kept a book in the library.
+enum LibraryRemovalError: LocalizedError {
+    /// The removal marker could not be written into the named package, so
+    /// nothing would keep orphan adoption from bringing the book back.
+    case couldNotMarkPackage(packageName: String, underlying: any Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .couldNotMarkPackage(let packageName, let underlying):
+            return "TextMouth could not record the removal in its package, \(packageName). "
+                + underlying.localizedDescription
+        }
+    }
 }
