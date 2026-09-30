@@ -4,8 +4,8 @@ import XCTest
 
 /// Keyboard- and VoiceOver-operable substitution editing and reordering
 /// (TODO A03): one-step moves in the rule service, the words and commands
-/// every rule row is built from, the moves the settings list makes and
-/// announces, and the rows as AppKit renders them.
+/// every rule row is built from, the moves and deletions the settings list
+/// makes and announces, and the rows as AppKit renders them.
 ///
 /// SwiftUI builds accessibility elements, and with them the labels, only
 /// for a connected assistive app, so no hosted test can read a row's labels.
@@ -236,6 +236,28 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
 
         XCTAssertEqual(service.rules.map(\.name), ["C", "D", "A", "B"])
         XCTAssertEqual(recorder.announcements, [])
+    }
+
+    // MARK: - Deleting from the list
+
+    /// Deleting a rule removes and saves it, then says which rule went;
+    /// deleting it again changes and announces nothing.
+    func testDeleteRemovesTheRuleAndSaysWhichRuleWent() throws {
+        let sandbox = try SubstitutionFileSandbox.capture()
+        defer { sandbox.restore() }
+        let rules = makeRules(count: 3)
+        let service = TextSubstitutionService(rules: rules)
+
+        let recorder = recordingAnnouncements {
+            SubstitutionsSettingsView.delete(rules[1], from: service)
+            SubstitutionsSettingsView.delete(rules[1], from: service)
+        }
+
+        XCTAssertEqual(service.rules.map(\.name), ["A", "C"])
+        XCTAssertEqual(try sandbox.savedRules(), service.rules)
+        XCTAssertEqual(recorder.announcements, [
+            VoiceOverAnnouncement(message: "B deleted", priority: .high)
+        ])
     }
 
     // MARK: - Rendered rows

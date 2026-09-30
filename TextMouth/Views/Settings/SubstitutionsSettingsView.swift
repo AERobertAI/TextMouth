@@ -149,12 +149,12 @@ struct SubstitutionsSettingsView: View {
             guard let direction = command.moveDirection else { return }
             Self.move(rule, direction, in: service)
         case .delete:
-            service.removeRule(id: rule.id)
+            Self.delete(rule, from: service)
         }
     }
 }
 
-// MARK: - Moving and announcing
+// MARK: - Moving, deleting, and announcing
 
 extension SubstitutionsSettingsView {
     /// Move `rule` one step and tell VoiceOver where it landed. At an end of
@@ -190,6 +190,19 @@ extension SubstitutionsSettingsView {
     /// "Mr. moved to position 3 of 7" for index 2 in a list of 7.
     nonisolated static func movedAnnouncement(ruleName: String, index: Int, count: Int) -> String {
         "\(ruleName) moved to position \(index + 1) of \(count)"
+    }
+
+    /// Remove `rule` and tell VoiceOver which rule went, since the row that
+    /// had focus disappears with it. A rule already gone is left alone.
+    static func delete(_ rule: SubstitutionRule, from service: TextSubstitutionService) {
+        guard service.rules.contains(where: { $0.id == rule.id }) else { return }
+        service.removeRule(id: rule.id)
+        VoiceOverAnnouncer.announce(deletedAnnouncement(ruleName: rule.displayName))
+    }
+
+    /// What VoiceOver says after a delete, such as "Mr. deleted".
+    nonisolated static func deletedAnnouncement(ruleName: String) -> String {
+        "\(ruleName) deleted"
     }
 
     /// The footer's help on reordering, naming both ways to do it and the
