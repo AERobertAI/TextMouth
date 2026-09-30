@@ -468,7 +468,7 @@ final class SettingsViewModel: ObservableObject {
             configService.saveToDisk()
         }
         configService.startWatching()
-        observeConfigChanges()
+        observeExternalEdits()
     }
 
     func refreshVoices() {
@@ -545,14 +545,14 @@ final class SettingsViewModel: ObservableObject {
         body()
     }
 
-    /// Watch for external config.json changes
-    private func observeConfigChanges() {
-        configCancellable = configService.$config
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] newConfig in
-                self?.applyConfigChanges(newConfig)
-            }
+    /// Applies each edit of config.json made outside TextMouth, once, as
+    /// `ConfigService` publishes it. TextMouth's own saves are never sent
+    /// back, and delivery is synchronous, so no stale snapshot can arrive
+    /// after a newer change and roll a preference back.
+    private func observeExternalEdits() {
+        configCancellable = configService.externalEdits.sink { [weak self] config in
+            self?.applyConfigChanges(config)
+        }
     }
 
     /// Sync local @AppStorage properties from a config snapshot.

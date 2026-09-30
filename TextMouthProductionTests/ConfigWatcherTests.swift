@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -141,6 +142,57 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
     }
 
+    // MARK: - Delivering external edits
+
+    /// Settings changed in quick succession are announced once each and keep
+    /// their last value. TextMouth's own saves are never replayed into the
+    /// preferences; they used to be, a moment later, which rolled each change
+    /// back to an older value and announced it again.
+    func testRapidSettingChangesAreNeverReplayedBack() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let notificationCenter = NotificationCenter()
+        let (service, settings) = launch(
+            url,
+            defaults: try isolatedDefaults(),
+            counter: FileOperationCounter(),
+            notificationCenter: notificationCenter
+        )
+        var speechChanges = 0
+        let subscription = notificationCenter.publisher(for: .speechSettingsChanged)
+            .sink { _ in speechChanges += 1 }
+
+        settings.wordsPerMinute = 300
+        settings.wordsPerMinute = 320
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(speechChanges, 2)
+        XCTAssertEqual(settings.wordsPerMinute, 320)
+        XCTAssertEqual(service.config.wordsPerMinute, 320)
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).wordsPerMinute, 320)
+    }
+
+    /// An edit saved from outside TextMouth, noticed by the real file
+    /// watcher, reaches the preferences exactly once and is not saved back.
+    func testAnExternalEditReachesThePreferencesOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+
+        edit.sleepFadeOutDuration = 9
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.edits.count == 1 })
+        settle()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(settings.sleepFadeOutDuration, 9)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the
@@ -201,6 +253,33 @@ final class ConfigWatcherTests: XCTestCase {
         let quiet = expectation(description: "nothing is expected while settling")
         quiet.isInverted = true
         wait(for: [quiet], timeout: seconds)
+    }
+
+    /// Saves `data` over `url` the way editors do: into a temporary file
+    /// beside it, which is then renamed over it, replacing the file in one
+    /// step.
+    private func editorSave(_ data: Data, to url: URL) throws {
+        let temporary = url.deletingLastPathComponent()
+            .appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString).tmp")
+        try data.write(to: temporary)
+        guard rename(temporary.path, url.path) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+    }
+
+    /// Records the external edits a service publishes, in order.
+    @MainActor
+    private final class EditRecorder {
+        /// Every edit published so far.
+        private(set) var edits: [ConfigService.AppConfig] = []
+        /// Keeps the subscription for the recorder's lifetime.
+        private var subscription: AnyCancellable?
+
+        init(_ service: ConfigService) {
+            subscription = service.externalEdits.sink { [weak self] edit in
+                self?.edits.append(edit)
+            }
+        }
     }
 
     /// Counts the file-system calls a service makes, passing each on to the

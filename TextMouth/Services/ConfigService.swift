@@ -9,11 +9,18 @@ final class ConfigService: ObservableObject {
     static let shared = ConfigService()
 
     @Published var config: AppConfig = AppConfig()
+
+    /// Publishes each edit of config.json made outside TextMouth, once, after
+    /// `config` holds it. Delivery is synchronous on the main actor, so a
+    /// subscriber applies edits in order and never receives TextMouth's own
+    /// saves. The settings model applies these to the preferences.
+    let externalEdits = PassthroughSubject<AppConfig, Never>()
+
     private var fileMonitorSource: DispatchSourceFileSystemObject?
     private var fileDescriptor: Int32 = -1
     private var isSaving = false
 
-    /// What config.json held when this service last read it.
+    /// What config.json held when this service was created.
     enum LoadedFile: Equatable {
         /// There was no file: the first launch, or the file was deleted.
         case missing
@@ -24,7 +31,7 @@ final class ConfigService: ObservableObject {
         case unreadable
     }
 
-    /// What config.json held when this service last read it.
+    /// What config.json held when this service was created.
     private(set) var loadedFile: LoadedFile = .missing
 
     /// The file to mirror in place of the data directory's, for tests.
@@ -270,29 +277,58 @@ final class ConfigService: ObservableObject {
     /// assignment used to wait for the next main-queue turn, so launch found
     /// only defaults, skipped applying the file, and saved the preferences
     /// over it before the file's own values arrived.
-    func loadFromDisk() {
-        let url = fileURL
-        guard FileManager.default.fileExists(atPath: url.path) else {
+    private func loadFromDisk() {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             loadedFile = .missing
             return
         }
         do {
-            let decoded = try JSONDecoder().decode(AppConfig.self, from: Data(contentsOf: url))
+            let decoded = try Self.decode(Data(contentsOf: fileURL))
             if decoded != config {
                 config = decoded
             }
             loadedFile = .decoded
         } catch {
             loadedFile = .unreadable
-            log("could not read \(url.path); keeping the settings in use. \(Self.failureReason(error))")
+            logUnreadableFile(error)
         }
     }
 
-    /// Whether config.json held a decodable file when this service last read
-    /// it; `config` then holds that file's values, which launch applies to
-    /// the preferences. A file that leaves speed unset still counts, since
+    /// Whether config.json held a decodable file when this service was
+    /// created; `config` then holds that file's values, which launch applies
+    /// to the preferences. A file that leaves speed unset still counts, since
     /// it can hold every other setting.
     var hasExistingConfig: Bool { loadedFile == .decoded }
+
+    /// Decodes config.json's bytes. The decoder is lenient: a single bad
+    /// value is repaired and logged rather than failing the whole file.
+    nonisolated static func decode(_ contents: Data) throws -> AppConfig {
+        try JSONDecoder().decode(AppConfig.self, from: contents)
+    }
+
+    // MARK: - External Edits
+
+    /// Reads config.json after the watcher saw it change, and applies it.
+    private func reloadFromDisk() {
+        guard let contents = readFileContents() else { return }
+        applyExternalEdit(contents)
+    }
+
+    /// Applies config.json's `contents` as an edit made outside TextMouth:
+    /// `config` takes the whole snapshot, which is then published once. A
+    /// file that cannot be decoded changes nothing and stays on disk as it
+    /// is, for whoever edited it to correct; the debug log says why.
+    private func applyExternalEdit(_ contents: Data) {
+        let edited: AppConfig
+        do {
+            edited = try Self.decode(contents)
+        } catch {
+            logUnreadableFile(error)
+            return
+        }
+        config = edited
+        externalEdits.send(edited)
+    }
 
     // MARK: - File Watching
 
@@ -316,7 +352,7 @@ final class ConfigService: ObservableObject {
             let actions = Self.watcherActions(for: source.data, isSaving: self.isSaving)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 if actions.reload {
-                    self.loadFromDisk()
+                    self.reloadFromDisk()
                 }
                 if actions.rearm {
                     self.startFileWatcher()
@@ -345,6 +381,12 @@ final class ConfigService: ObservableObject {
         let line = "CONFIG_FILE: \(message)"
         print(line)
         TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+    }
+
+    /// Records that config.json could not be used, and that the settings in
+    /// use were kept.
+    private func logUnreadableFile(_ error: Error) {
+        log("could not read \(fileURL.path); keeping the settings in use. \(Self.failureReason(error))")
     }
 
     /// Why decoding failed, in one line: the decoder's summary, then the
