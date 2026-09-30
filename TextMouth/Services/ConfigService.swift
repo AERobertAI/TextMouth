@@ -13,6 +13,27 @@ final class ConfigService: ObservableObject {
     private var fileDescriptor: Int32 = -1
     private var isSaving = false
 
+    /// What config.json held when this service last read it.
+    enum LoadedFile: Equatable {
+        /// There was no file: the first launch, or the file was deleted.
+        case missing
+        /// The file decoded, and `config` holds its values.
+        case decoded
+        /// The file exists but could not be read or decoded. It stays as it
+        /// is, so whoever edited it can correct it.
+        case unreadable
+    }
+
+    /// What config.json held when this service last read it.
+    private(set) var loadedFile: LoadedFile = .missing
+
+    /// The file to mirror in place of the data directory's, for tests.
+    private let customFileURL: URL?
+
+    /// config.json: the file this service was created for, or else the one
+    /// in the data directory in use, which moves when the library does.
+    var fileURL: URL { customFileURL ?? TextMouthPaths.configFile }
+
     struct WatcherActions: Equatable {
         let reload: Bool
         let rearm: Bool
@@ -160,7 +181,12 @@ final class ConfigService: ObservableObject {
         static let defaultRestartTimerGesturePattern = "previousTrack,previousTrack,previousTrack"
     }
 
-    private init() {
+    /// Creates a service and loads its file before returning.
+    ///
+    /// - Parameter fileURL: The file to mirror. Nil, as `shared` uses,
+    ///   follows the data directory in use; tests pass a file of their own.
+    init(fileURL: URL? = nil) {
+        customFileURL = fileURL
         loadFromDisk()
     }
 
@@ -187,9 +213,9 @@ final class ConfigService: ObservableObject {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             let data = try Self.fileData(for: config)
-            try data.write(to: TextMouthPaths.configFile, options: .atomic)
+            try data.write(to: fileURL, options: .atomic)
         } catch {
-            print("Failed to save config: \(error)")
+            log("could not save \(fileURL.path): \(error)")
         }
     }
 
@@ -201,32 +227,41 @@ final class ConfigService: ObservableObject {
         return try encoder.encode(config)
     }
 
+    /// Reads config.json into `config` before returning.
+    ///
+    /// Consumers created afterwards therefore read the file's values. The
+    /// assignment used to wait for the next main-queue turn, so launch found
+    /// only defaults, skipped applying the file, and saved the preferences
+    /// over it before the file's own values arrived.
     func loadFromDisk() {
-        let url = TextMouthPaths.configFile
-        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        let url = fileURL
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            loadedFile = .missing
+            return
+        }
         do {
-            let data = try Data(contentsOf: url)
-            let decoded = try JSONDecoder().decode(AppConfig.self, from: data)
+            let decoded = try JSONDecoder().decode(AppConfig.self, from: Data(contentsOf: url))
             if decoded != config {
-                DispatchQueue.main.async {
-                    self.config = decoded
-                }
+                config = decoded
             }
+            loadedFile = .decoded
         } catch {
-            print("Failed to load config: \(error)")
+            loadedFile = .unreadable
+            log("could not read \(url.path); keeping the settings in use. \(Self.failureReason(error))")
         }
     }
 
-    /// Whether the config file has meaningful values (vs fresh defaults)
-    var hasExistingConfig: Bool {
-        FileManager.default.fileExists(atPath: TextMouthPaths.configFile.path) && config.wordsPerMinute > 0
-    }
+    /// Whether config.json held a decodable file when this service last read
+    /// it; `config` then holds that file's values, which launch applies to
+    /// the preferences. A file that leaves speed unset still counts, since
+    /// it can hold every other setting.
+    var hasExistingConfig: Bool { loadedFile == .decoded }
 
     // MARK: - File Watching
 
     private func startFileWatcher() {
         stopFileWatcher()
-        let path = TextMouthPaths.configFile.path
+        let path = fileURL.path
         guard FileManager.default.fileExists(atPath: path) else { return }
 
         fileDescriptor = open(path, O_EVTONLY)
@@ -264,6 +299,26 @@ final class ConfigService: ObservableObject {
         fileMonitorSource?.cancel()
         fileMonitorSource = nil
         fileDescriptor = -1
+    }
+
+    // MARK: - Diagnostics
+
+    /// Records a config.json event in the console and the debug log.
+    private func log(_ message: String) {
+        let line = "CONFIG_FILE: \(message)"
+        print(line)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+    }
+
+    /// Why decoding failed, in one line: the decoder's summary, then the
+    /// parser's account of where the text went wrong when it gives one, such
+    /// as "Unexpected character ',' around line 1, column 24."
+    private nonisolated static func failureReason(_ error: Error) -> String {
+        guard case DecodingError.dataCorrupted(let context) = error else {
+            return String(describing: error)
+        }
+        let detail = (context.underlyingError as NSError?)?.userInfo[NSDebugDescriptionErrorKey] as? String
+        return [context.debugDescription, detail].compactMap { $0 }.joined(separator: " ")
     }
 }
 
