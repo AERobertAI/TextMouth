@@ -559,6 +559,18 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertTrue(try HTMLToMarkdownConverter.convert(html).hasSuffix("1. First\n2. Second"))
     }
 
+    /// Content between list items is a block of its own, so the ordered item
+    /// after it, whatever its number, is still an item: Markdown lets only
+    /// an item numbered 1 interrupt a paragraph, and the number of any other
+    /// item written straight after the content would be read aloud.
+    func testCachedHTMLListItemNumbersAreNeverReadAfterContentBetweenItems() throws {
+        let chapter = try cachedHTMLReading("""
+        <ol><li></li>stray<li>next</li><li>last</li></ol><ol><li>A</li>between<li>B</li></ol>
+        """)
+        let words = ["stray", "next", "last", "A", "between", "B"]
+        XCTAssertEqual(chapter.text.split(whereSeparator: \.isWhitespace).map(String.init), words)
+    }
+
     /// Boundaries are written only where missing, so nested and empty blocks
     /// never pile up blank lines around the words they hold.
     func testCachedHTMLNestedAndEmptyBlocksWriteOneBlankLine() throws {

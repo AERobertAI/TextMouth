@@ -343,23 +343,23 @@ enum HTMLToMarkdownConverter {
 
     /// Convert the children of a <ul> or <ol> to Markdown: each list item
     /// after its bullet, and anything else the list holds (text, or a list
-    /// nested directly inside the list) in place between the items, as the
-    /// direct reader reads it, so none of its words are lost.
+    /// nested directly inside the list) where it stands between the items,
+    /// as the direct reader reads it, so none of its words are lost.
     private static func convertListItems(_ listElement: Element, ordered: Bool, into result: inout String, context: Context) {
         var itemCount = 0
+        // Content between two items, collected until the next item begins.
+        var between = ""
         for child in listElement.getChildNodes() {
             guard let item = child as? Element, item.tagName().lowercased() == "li" else {
-                convertChild(child, into: &result, context: context)
+                convertChild(child, into: &between, context: context)
                 continue
             }
             // A hidden item is not rendered: it must neither leave an empty
             // bullet nor take a number from the visible items that follow it.
             guard !PublicationSemantics.isExcludedFromReadingFlow(item) else { continue }
+            appendBlock(between, to: &result)
+            between = ""
             itemCount += 1
-            // Each bullet begins a line, even after words written between items.
-            if !result.isEmpty, !result.hasSuffix("\n") {
-                result += "\n"
-            }
             let bullet = ordered ? "\(itemCount). " : "- "
             result += bullet
             var itemContent = ""
@@ -379,6 +379,22 @@ enum HTMLToMarkdownConverter {
                 }
             }
         }
+        appendBlock(between, to: &result)
+    }
+
+    /// Write Markdown converted apart from its surroundings (the content a
+    /// list holds between its items) as blocks of its own, with a blank line
+    /// on either side, or nothing when it holds no words. Written straight
+    /// after an item it would run into that item's paragraph, and the next
+    /// item, if numbered other than 1, could not interrupt it: its number
+    /// would be read aloud. Converted from an empty buffer, the content
+    /// already begins as a block would.
+    private static func appendBlock(_ markdown: String, to result: inout String) {
+        let trimmed = markdown.trimmingCharacters(in: writtenWhitespace)
+        guard !trimmed.isEmpty else { return }
+        ensureBlankLine(&result)
+        result += trimmed
+        ensureBlankLine(&result)
     }
 
     // MARK: - Whitespace Helpers
