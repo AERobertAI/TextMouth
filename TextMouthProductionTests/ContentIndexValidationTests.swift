@@ -479,6 +479,50 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// A missing file is not a rejection, but something at a track's path
+    /// that exists and is not a regular file still is. Here it is a named
+    /// pipe, which could block playback's loading forever.
+    func testMissingFileIsAcceptedWhileANonRegularFileIsNot() throws {
+        let folder = try audioFolder()
+        let track = folder.appendingPathComponent("02.wav")
+        try FileManager.default.removeItem(at: track)
+
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+
+        XCTAssertEqual(mkfifo(track.path, 0o644), 0, "Could not create the named pipe")
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.relativeFilePath \"02.wav\" is not a regular file"
+        )
+    }
+
+    /// The part of a path that exists must stay inside the folder even when
+    /// the file itself is missing: here a linked subfolder leads out of it.
+    func testMissingFileBehindALinkLeavingTheFolderIsRejected() throws {
+        let folder = try audioFolder()
+        let emptyOutside = try scratchFolder("ContentIndexOutsideEmptyDisc")
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("Disc 2"))
+        try FileManager.default.createSymbolicLink(
+            at: folder.appendingPathComponent("Disc 2"),
+            withDestinationURL: emptyOutside
+        )
+
+        XCTAssertEqual(
+            multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[2].audio.relativeFilePath \"Disc 2/03.wav\" resolves outside the audio folder"
+        )
+    }
+
+    /// A broken link is a missing file, as playback judges it, so it keeps
+    /// the index valid; nothing it names exists to be read.
+    func testBrokenLinkCountsAsAMissingFile() throws {
+        let folder = try audioFolder()
+        let vanished = try scratchFolder("ContentIndexVanished").appendingPathComponent("vanished.wav")
+        try replaceWithLink("02.wav", in: folder, to: vanished)
+
+        XCTAssertNil(multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
+    }
+
     /// A path that stays inside the folder by its spelling can still leave
     /// it through a symbolic link; the link's destination decides.
     func testLinkToAFileOutsideTheFolderIsRejected() throws {
