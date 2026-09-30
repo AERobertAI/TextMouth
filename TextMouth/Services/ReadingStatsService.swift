@@ -2,9 +2,19 @@ import Foundation
 import Combine
 
 /// Tracks reading/listening statistics.
+///
+/// Listening time is credited while a session runs, not only when it ends:
+/// each checkpoint adds the open session's time since the one before to the
+/// totals and saves them, so a crash or force quit loses only the time since
+/// the last checkpoint. `ActiveSession` states the rule that keeps any second
+/// from being counted twice.
 @MainActor
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
+
+    /// The longest session that counts for nothing, so a stray play and
+    /// pause does not register as listening. A longer session counts in full.
+    private static let longestIgnoredSession: TimeInterval = 1
 
     @Published var stats = ReadingStats()
 
@@ -15,8 +25,27 @@ final class ReadingStatsService: ObservableObject {
     /// one in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.readingStatsFile }
 
-    private var sessionStartTime: Date?
-    private var sessionBookID: UUID?
+    /// A listening session in progress, and how much of it the totals
+    /// already include.
+    ///
+    /// The rule that keeps any second from being counted twice: the totals
+    /// include `start..<creditedThrough` exactly once, in the grand total, in
+    /// `bookID`'s total, and in one day's total, and include nothing after
+    /// `creditedThrough`. Crediting, which each checkpoint and the final
+    /// `endSession` do, adds only `creditedThrough..<time` and then moves
+    /// `creditedThrough` up to `time`. It never moves backwards, so a clock
+    /// set back cannot credit the same time again either.
+    private struct ActiveSession {
+        /// The book being listened to.
+        let bookID: UUID
+        /// When the session started.
+        let start: Date
+        /// The end of the span the totals already include.
+        var creditedThrough: Date
+    }
+
+    /// The session in progress, if any.
+    private var activeSession: ActiveSession?
     private var saveTimer: Timer?
 
     /// Creates a service and loads its statistics file before returning.
@@ -38,39 +67,55 @@ final class ReadingStatsService: ObservableObject {
 
     // MARK: - Session Tracking
 
+    /// Starts crediting listening time to `bookID` from `startTime`, first
+    /// ending any open session at that same moment.
     func startSession(bookID: UUID, at startTime: Date = Date()) {
         endSession(at: startTime) // End any existing session first
-        sessionStartTime = startTime
-        sessionBookID = bookID
+        activeSession = ActiveSession(bookID: bookID, start: startTime, creditedThrough: startTime)
     }
 
+    /// Closes the open session after a final checkpoint at `endTime`, which
+    /// adds only the time no earlier checkpoint credited.
     func endSession(at endTime: Date = Date()) {
-        guard let start = sessionStartTime, let bookID = sessionBookID else { return }
-        let duration = endTime.timeIntervalSince(start)
-        sessionStartTime = nil
-        sessionBookID = nil
-        guard duration > 1 else { return } // Ignore sub-second sessions
-
-        let today = Self.dateKey(endTime)
-        stats.dailyListeningSeconds[today, default: 0] += duration
-        stats.totalListeningSeconds += duration
-
-        // Per-book tracking
-        stats.bookListeningSeconds[bookID.uuidString, default: 0] += duration
-
-        save()
+        checkpointActiveSession(at: endTime)
+        activeSession = nil
     }
 
     /// Reader windows may stop or close while a different book is playing.
     /// Only the session's owner can finalize it; app shutdown and starting a
     /// different session retain the explicit unscoped operation above.
     func endSession(bookID: UUID, at endTime: Date = Date()) {
-        guard sessionBookID == bookID else { return }
+        guard activeSession?.bookID == bookID else { return }
         endSession(at: endTime)
     }
 
+    /// Credits the open session's time since its last checkpoint and saves,
+    /// leaving the session open, so a crash afterwards loses only what
+    /// follows. The slice goes to the day containing `time`. Does nothing
+    /// without an open session or while it is too short to count.
+    func checkpointActiveSession(at time: Date = Date()) {
+        guard let session = activeSession else { return }
+        let seconds = uncreditedSessionTime(at: time)
+        guard seconds > 0 else { return }
+        stats.addListening(seconds, bookID: session.bookID, dayKey: Self.dateKey(time))
+        activeSession?.creditedThrough = time
+        save()
+    }
+
+    /// The open session's time that the totals do not include yet: what
+    /// ending it at `time` would add. Zero without an open session, while the
+    /// session is too short to count, and when `time` is not after its last
+    /// checkpoint because the clock was set back.
+    func uncreditedSessionTime(at time: Date) -> TimeInterval {
+        guard let session = activeSession,
+              time.timeIntervalSince(session.start) > Self.longestIgnoredSession
+        else { return 0 }
+        return max(0, time.timeIntervalSince(session.creditedThrough))
+    }
+
+    /// Whether a listening session is open.
     var hasActiveSession: Bool {
-        sessionStartTime != nil && sessionBookID != nil
+        activeSession != nil
     }
 
     func markBookFinished(bookID: UUID, title: String) {
@@ -85,19 +130,28 @@ final class ReadingStatsService: ObservableObject {
 
     // MARK: - Computed Stats
 
+    /// Listening time today, the open session included.
     var todayListeningTime: TimeInterval {
-        let today = Self.dateKey(Date())
-        let saved = stats.dailyListeningSeconds[today] ?? 0
-        // Add current session time if active
-        if let start = sessionStartTime {
-            return saved + Date().timeIntervalSince(start)
-        }
-        return saved
+        todayListeningTime(at: Date())
     }
 
+    /// Listening time on the day containing `now`: that day's total plus the
+    /// open session's time since its last checkpoint. Its checkpointed time
+    /// is already in the day's total, so adding the whole session would
+    /// count that part twice.
+    func todayListeningTime(at now: Date) -> TimeInterval {
+        (stats.dailyListeningSeconds[Self.dateKey(now)] ?? 0) + uncreditedSessionTime(at: now)
+    }
+
+    /// Listening time over the last seven days, the open session included.
     var thisWeekListeningTime: TimeInterval {
+        thisWeekListeningTime(at: Date())
+    }
+
+    /// Listening time over the seven days ending with the one containing
+    /// `now`, plus the open session's time since its last checkpoint.
+    func thisWeekListeningTime(at now: Date) -> TimeInterval {
         let calendar = Calendar.current
-        let now = Date()
         var total: TimeInterval = 0
         for dayOffset in 0..<7 {
             if let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) {
@@ -105,10 +159,7 @@ final class ReadingStatsService: ObservableObject {
                 total += stats.dailyListeningSeconds[key] ?? 0
             }
         }
-        if let start = sessionStartTime {
-            total += Date().timeIntervalSince(start)
-        }
-        return total
+        return total + uncreditedSessionTime(at: now)
     }
 
     var booksFinishedThisYear: Int {
@@ -261,6 +312,14 @@ struct ReadingStats: Codable {
     var bookListeningSeconds: [String: TimeInterval] = [:]
     /// Books that have been finished
     var finishedBooks: [FinishedBookEntry] = []
+
+    /// Adds `seconds` of listening to `bookID` on the day `dayKey` names,
+    /// keeping the grand, per-book, and daily totals in step.
+    mutating func addListening(_ seconds: TimeInterval, bookID: UUID, dayKey: String) {
+        dailyListeningSeconds[dayKey, default: 0] += seconds
+        totalListeningSeconds += seconds
+        bookListeningSeconds[bookID.uuidString, default: 0] += seconds
+    }
 }
 
 struct FinishedBookEntry: Codable {

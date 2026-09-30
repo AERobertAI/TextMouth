@@ -1,19 +1,24 @@
 import XCTest
 @testable import TextMouth
 
-/// Listening statistics are read from and written to one file. Each test
-/// drives its own services over a disposable statistics file under the
-/// isolated test data root, so neither the shared service nor another test's
-/// numbers are touched. Set-up and tear-down hold only plain values; each
-/// test makes its services on the main actor.
+/// Listening time is credited while a session runs, so a crash loses at most
+/// one checkpoint interval and no second is ever counted twice (TODO C05).
+/// Each test drives its own services over a disposable statistics file under
+/// the isolated test data root, so neither the shared service nor another
+/// test's numbers are touched, and explicit times stand in for the
+/// checkpoint timer's ticks. Set-up and tear-down hold only plain values;
+/// each test makes its services on the main actor.
 final class ReadingStatsServiceTests: XCTestCase {
+    /// The spacing of the simulated checkpoints: the timer's default.
+    private let interval: TimeInterval = 60
     /// Directory holding this test's statistics file, removed afterwards.
     private var directory: URL!
     /// The statistics file this test's services read and write.
     private var fileURL: URL!
     /// Local noon on an ordinary summer day (15 July 2026), far from
     /// midnight and from any daylight-saving change, so a session starting
-    /// here stays on one day. Whole-second times keep every sum exact.
+    /// here stays on one day. Times in whole and quarter seconds keep every
+    /// sum exact.
     private var noon: Date!
 
     override func setUpWithError() throws {
@@ -60,6 +65,217 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(ReadingStatsService.shared.fileURL, TextMouthPaths.readingStatsFile)
     }
 
+    // MARK: - Checkpoints
+
+    /// Checkpoints credit a session as it runs and its end adds only the
+    /// rest, so five intervals and a remainder add up to the session's
+    /// length, counted once, in every total and on disk.
+    @MainActor
+    func testFiveCheckpointsAndARemainderCreditTheWholeSessionOnce() {
+        let service = makeService()
+        let book = UUID()
+        let length = 5 * interval + 17.5
+        service.startSession(bookID: book, at: noon)
+
+        for checkpoint in 1...5 {
+            service.checkpointActiveSession(at: noon + Double(checkpoint) * interval)
+            XCTAssertEqual(service.stats.totalListeningSeconds, Double(checkpoint) * interval)
+            XCTAssertTrue(service.hasActiveSession)
+        }
+        service.endSession(at: noon + length)
+
+        XCTAssertFalse(service.hasActiveSession)
+        XCTAssertEqual(service.stats.totalListeningSeconds, length)
+        XCTAssertEqual(service.stats.bookListeningSeconds, [book.uuidString: length])
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [ReadingStatsService.dateKey(noon): length])
+        XCTAssertEqual(relaunchedService().stats.totalListeningSeconds, length)
+
+        // Nothing is left to credit: ending again or checkpointing adds nothing.
+        service.endSession(at: noon + 2 * length)
+        service.checkpointActiveSession(at: noon + 2 * length)
+        XCTAssertEqual(service.stats.totalListeningSeconds, length)
+    }
+
+    /// A crash loses at most one checkpoint interval. Each checkpoint saves
+    /// the session so far, so a crash 59 seconds after the third finds three
+    /// intervals on disk and loses only those 59 seconds. The next launch
+    /// starts from exactly that, with no open session: nothing about the
+    /// lost session is resumed, so ending one there adds nothing.
+    @MainActor
+    func testCrashAfterCheckpointsLosesOnlyTheTimeSinceTheLastOne() {
+        let service = makeService()
+        let book = UUID()
+        service.startSession(bookID: book, at: noon)
+        for checkpoint in 1...3 {
+            let credited = Double(checkpoint) * interval
+            service.checkpointActiveSession(at: noon + credited)
+            XCTAssertEqual(
+                relaunchedService().stats.totalListeningSeconds, credited, "Saved by checkpoint \(checkpoint)"
+            )
+        }
+
+        // The app dies 59 seconds later. Nothing ends the session, flushes,
+        // or saves again, so only what the checkpoints wrote survives.
+        let crash = noon + 3 * interval + 59
+        let relaunched = relaunchedService()
+
+        XCTAssertEqual(relaunched.stats.totalListeningSeconds, 3 * interval)
+        XCTAssertEqual(relaunched.stats.bookListeningSeconds, [book.uuidString: 3 * interval])
+        XCTAssertEqual(relaunched.stats.dailyListeningSeconds, [ReadingStatsService.dateKey(noon): 3 * interval])
+        XCTAssertLessThan(crash.timeIntervalSince(noon) - relaunched.stats.totalListeningSeconds, interval)
+        XCTAssertFalse(relaunched.hasActiveSession)
+        relaunched.endSession(at: crash + interval)
+        XCTAssertEqual(relaunched.stats.totalListeningSeconds, 3 * interval)
+    }
+
+    /// Starting a session for another book ends the open one at that moment:
+    /// the first book gets exactly its time up to the switch, its
+    /// checkpointed part counted once, and the second is credited from there.
+    @MainActor
+    func testStartingAnotherBookCreditsTheFirstUpToTheSwitch() {
+        let service = makeService()
+        let first = UUID()
+        let second = UUID()
+        service.startSession(bookID: first, at: noon)
+        service.checkpointActiveSession(at: noon + interval)
+
+        service.startSession(bookID: second, at: noon + 100)
+        service.checkpointActiveSession(at: noon + 100 + interval)
+        service.endSession(at: noon + 175)
+
+        let expected = [first.uuidString: 100.0, second.uuidString: 75.0]
+        XCTAssertEqual(service.stats.bookListeningSeconds, expected)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 175)
+        XCTAssertEqual(relaunchedService().stats.bookListeningSeconds, expected)
+    }
+
+    /// A session of one second or less counts for nothing, as before
+    /// checkpoints: checkpoints within it credit nothing, its end adds
+    /// nothing, and nothing is written.
+    @MainActor
+    func testSessionOfOneSecondOrLessCreditsNothing() {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+
+        service.checkpointActiveSession(at: noon + 0.5)
+        service.checkpointActiveSession(at: noon + 1)
+        XCTAssertEqual(service.uncreditedSessionTime(at: noon + 1), 0)
+        service.endSession(at: noon + 1)
+
+        XCTAssertFalse(service.hasActiveSession)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 0)
+        XCTAssertEqual(service.stats.bookListeningSeconds, [:])
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [:])
+        ReadingStatsService.waitForQueuedSaves()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+    }
+
+    /// A checkpoint made while a session is too short to count does not
+    /// move its start: past one second, the session counts in full.
+    @MainActor
+    func testSessionLongerThanOneSecondCountsFromItsStart() {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+
+        service.checkpointActiveSession(at: noon + 0.5)
+        service.endSession(at: noon + 1.25)
+
+        XCTAssertEqual(service.stats.totalListeningSeconds, 1.25)
+    }
+
+    /// Each credit reaches the grand total, one book's total, and one day's
+    /// total together, so the daily and per-book totals always add up to
+    /// the grand total: across books, checkpoints, a switch, and midnight.
+    @MainActor
+    func testDailyAndPerBookTotalsAlwaysAddUpToTheGrandTotal() {
+        let service = makeService()
+        let midnight = Calendar.current.startOfDay(for: noon)
+        service.startSession(bookID: UUID(), at: midnight - 90)
+        service.checkpointActiveSession(at: midnight - 30)
+        assertTotalsAgree(service.stats)
+
+        service.startSession(bookID: UUID(), at: midnight + 10.25)
+        assertTotalsAgree(service.stats)
+        service.checkpointActiveSession(at: midnight + 70.25)
+        service.endSession(at: midnight + 95.5)
+
+        assertTotalsAgree(service.stats)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 185.5)
+        XCTAssertEqual(service.stats.dailyListeningSeconds.count, 2)
+        XCTAssertEqual(service.stats.bookListeningSeconds.count, 2)
+        assertTotalsAgree(relaunchedService().stats)
+    }
+
+    /// A checkpoint credits its whole slice to the day it is made on, and
+    /// the end credits the rest to the day the session ends. A session
+    /// across midnight is therefore split at the first checkpoint after
+    /// midnight, whose slice (at most one interval) goes wholly to the new
+    /// day. Before checkpoints the whole session went to the day it ended;
+    /// splitting exactly at midnight is left to TODO C06.
+    @MainActor
+    func testCheckpointCreditsItsSliceToTheDayItIsMadeOn() {
+        let service = makeService()
+        let midnight = Calendar.current.startOfDay(for: noon)
+        let dayBefore = ReadingStatsService.dateKey(midnight - 1)
+        let dayAfter = ReadingStatsService.dateKey(midnight)
+        XCTAssertNotEqual(dayBefore, dayAfter)
+        service.startSession(bookID: UUID(), at: midnight - 90)
+
+        service.checkpointActiveSession(at: midnight - 30)
+        service.checkpointActiveSession(at: midnight + 30)
+        service.endSession(at: midnight + 45)
+
+        // 60 s before midnight, then a 60 s slice straddling it and 15 s after.
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [dayBefore: 60, dayAfter: 75])
+        XCTAssertEqual(service.stats.totalListeningSeconds, 135)
+    }
+
+    /// Credited time is never credited again, even when the clock is set
+    /// back: a checkpoint or an end before the last checkpoint adds nothing,
+    /// and crediting resumes only after it.
+    @MainActor
+    func testClockSetBackNeverCreditsTheSameTimeTwice() {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+        service.checkpointActiveSession(at: noon + 2 * interval)
+
+        service.checkpointActiveSession(at: noon + interval)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 2 * interval)
+        service.checkpointActiveSession(at: noon + 2 * interval + 5)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 2 * interval + 5)
+        service.endSession(at: noon + interval)
+
+        XCTAssertEqual(service.stats.totalListeningSeconds, 2 * interval + 5)
+        XCTAssertFalse(service.hasActiveSession)
+    }
+
+    // MARK: - Displayed totals
+
+    /// Today and This Week add only the open session's time since its last
+    /// checkpoint, since the checkpointed part is already in the day's
+    /// total; adding the whole session would count that part twice. Once
+    /// the session ends, both show the same values as just before.
+    @MainActor
+    func testTodayAndThisWeekAddOnlyTheOpenSessionsUncreditedTime() throws {
+        let service = makeService()
+        let twoDaysEarlier = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: -2, to: noon))
+        service.startSession(bookID: UUID(), at: twoDaysEarlier)
+        service.endSession(at: twoDaysEarlier + 1_000)
+        service.startSession(bookID: UUID(), at: noon)
+        service.checkpointActiveSession(at: noon + 2 * interval)
+        let now = noon + 2 * interval + 30
+
+        XCTAssertEqual(service.uncreditedSessionTime(at: now), 30)
+        XCTAssertEqual(service.todayListeningTime(at: now), 2 * interval + 30)
+        XCTAssertEqual(service.thisWeekListeningTime(at: now), 1_000 + 2 * interval + 30)
+
+        service.endSession(at: now)
+
+        XCTAssertEqual(service.uncreditedSessionTime(at: now), 0)
+        XCTAssertEqual(service.todayListeningTime(at: now), 2 * interval + 30)
+        XCTAssertEqual(service.thisWeekListeningTime(at: now), 1_000 + 2 * interval + 30)
+    }
+
     // MARK: - Helpers
 
     /// A service over this test's file. Its timer stops when the test ends.
@@ -76,5 +292,19 @@ final class ReadingStatsServiceTests: XCTestCase {
     private func relaunchedService() -> ReadingStatsService {
         ReadingStatsService.waitForQueuedSaves()
         return makeService()
+    }
+
+    /// Checks that the daily and the per-book totals each add up to the
+    /// grand total.
+    private func assertTotalsAgree(
+        _ stats: ReadingStats, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let total = stats.totalListeningSeconds
+        XCTAssertEqual(
+            stats.dailyListeningSeconds.values.reduce(0, +), total, "Daily totals", file: file, line: line
+        )
+        XCTAssertEqual(
+            stats.bookListeningSeconds.values.reduce(0, +), total, "Per-book totals", file: file, line: line
+        )
     }
 }
