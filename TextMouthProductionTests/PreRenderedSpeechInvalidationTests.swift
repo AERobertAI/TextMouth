@@ -9,7 +9,10 @@ import XCTest
 /// rendered ahead can never make it play audio that disagrees with the text,
 /// offsets, and settings in effect.
 ///
-/// Renders go through stand-ins, never the system speech synthesizer.
+/// Look-ahead renders go through a stand-in, never the system synthesizer.
+/// Speech that a test starts is stopped before the main run loop turns, and
+/// the speech service's own background renders are then refused before they
+/// begin, so nothing is heard.
 @MainActor
 final class PreRenderedSpeechInvalidationTests: XCTestCase {
 
@@ -80,6 +83,21 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         XCTAssertEqual(
             SpeechRenderSignature(text: text, voiceIdentifier: nil),
             SpeechRenderSignature(text: text, voiceIdentifier: nil)
+        )
+    }
+
+    /// Turning substitutions off as a whole changes the spoken text, and so
+    /// the signature, as switching off each rule does. The switch is saved in
+    /// the user's preferences when flipped, so two services are compared here
+    /// instead.
+    func testTurningSubstitutionsOffChangesTheSignature() {
+        let text = "Gulls circled the harbour wall."
+        let substituting = TextSubstitutionService(rules: [Self.harbourSpelling], isEnabled: true)
+        let notSubstituting = TextSubstitutionService(rules: [Self.harbourSpelling], isEnabled: false)
+
+        XCTAssertNotEqual(
+            SpeechRenderSignature(text: substituting.transform(text).modifiedText, voiceIdentifier: nil),
+            SpeechRenderSignature(text: notSubstituting.transform(text).modifiedText, voiceIdentifier: nil)
         )
     }
 
