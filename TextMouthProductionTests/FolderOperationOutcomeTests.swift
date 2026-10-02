@@ -235,6 +235,111 @@ final class FolderOperationOutcomeTests: XCTestCase {
         XCTAssertEqual(viewModel.lastMovedFolderPath, destination)
     }
 
+    // MARK: - Sheets and Navigation
+
+    /// A rename refused by a folder conflict leaves every window where it
+    /// was, even one showing the folder or a folder inside it, and keeps the
+    /// sheet open: the outcome is a failure, which the sheet shows labelled
+    /// as an error and announces exactly once.
+    func testRefusedRenameLeavesTheWindowAndKeepsTheSheetOpen() throws {
+        let reports = uniqueFolder("Reports")
+        let archive = uniqueFolder("Archive")
+        let viewModel = try modelWithFolders([reports, archive, "\(archive)/Inner"])
+        let folder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
+        var shown: String?
+
+        let recorder = recordingAnnouncements {
+            let outcome = viewModel.renameFolderReturningOutcome(folder, to: reports)
+            XCTAssertFalse(outcome.succeeded, "a sheet closes only after a success")
+            let pathAfter = viewModel.library.folders.first { $0.id == folder.id }?.fullPath
+            for windowPath in [archive, "\(archive)/Inner", reports, ""] {
+                XCTAssertEqual(
+                    FolderSheetNavigation.folderPath(
+                        showing: windowPath,
+                        after: outcome,
+                        folderMovedFrom: archive,
+                        to: pathAfter
+                    ),
+                    windowPath
+                )
+            }
+            shown = OperationFailureNotice.message(after: outcome)
+        }
+
+        let expected = "Could not rename \"\(archive)\": A folder named \"\(reports)\" already exists in Library Root."
+        XCTAssertEqual(shown, expected)
+        XCTAssertEqual(recorder.announcements.map(\.message), [expected])
+        XCTAssertEqual(OperationFailureNotice.accessibilityLabel(for: expected), "Error: " + expected)
+        XCTAssertFalse(viewModel.showError, "no second report through the library alert")
+    }
+
+    /// After a rename that works, a window showing the folder, or a folder
+    /// inside it, follows it to its new path; every other window stays.
+    func testWindowsInsideARenamedFolderFollowIt() {
+        func path(_ current: String) -> String {
+            FolderSheetNavigation.folderPath(
+                showing: current,
+                after: .success(nil),
+                folderMovedFrom: "Work/Old",
+                to: "Work/New"
+            )
+        }
+
+        XCTAssertEqual(path("Work/Old"), "Work/New")
+        XCTAssertEqual(path("Work/Old/Q1/Notes"), "Work/New/Q1/Notes")
+        XCTAssertEqual(path("Work"), "Work")
+        XCTAssertEqual(path("Work/Older"), "Work/Older", "a sibling that shares the prefix stays")
+        XCTAssertEqual(path(""), "")
+    }
+
+    /// A folder moved under a new parent carries a window inside it along.
+    func testWindowsInsideAMovedFolderFollowIt() {
+        XCTAssertEqual(
+            FolderSheetNavigation.folderPath(
+                showing: "Inbox/Trip/Day 1",
+                after: .success(nil),
+                folderMovedFrom: "Inbox/Trip",
+                to: "Archive/Trip"
+            ),
+            "Archive/Trip/Day 1"
+        )
+    }
+
+    /// With nothing to follow, the window stays: the folder is gone, the
+    /// edit failed, or the "folder" was the library root.
+    func testWindowStaysWhenThereIsNothingToFollow() {
+        XCTAssertEqual(
+            FolderSheetNavigation.folderPath(showing: "Old", after: .success(nil), folderMovedFrom: "Old", to: nil),
+            "Old"
+        )
+        XCTAssertEqual(
+            FolderSheetNavigation.folderPath(
+                showing: "Old/Sub",
+                after: .failure("Could not rename \"Old\": The disk is full."),
+                folderMovedFrom: "Old",
+                to: "New"
+            ),
+            "Old/Sub"
+        )
+        XCTAssertEqual(
+            FolderSheetNavigation.folderPath(showing: "Books", after: .success(nil), folderMovedFrom: "", to: "Other"),
+            "Books"
+        )
+    }
+
+    /// A sheet whose operation worked shows nothing and announces nothing
+    /// as it closes.
+    func testSuccessShowsAndAnnouncesNothing() {
+        var shown: String? = "stale"
+
+        let recorder = recordingAnnouncements {
+            shown = OperationFailureNotice.message(after: .success(nil))
+        }
+
+        XCTAssertNil(shown)
+        XCTAssertTrue(recorder.announcements.isEmpty)
+    }
+
     // MARK: - Fixtures
 
     /// A top-level folder name unique to this test. Whatever ends up at that
