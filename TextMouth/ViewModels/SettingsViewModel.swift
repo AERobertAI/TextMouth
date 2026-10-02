@@ -388,14 +388,16 @@ final class SettingsViewModel: ObservableObject {
     ///   - notificationCenter: Receives settings-change broadcasts.
     ///   - initializeServices: False skips voice discovery and config.json
     ///     synchronization, for tests.
-    ///   - userDefaults: The store holding every preference. Tests pass an
-    ///     isolated suite so they never read or change the user's settings.
+    ///   - userDefaults: The store holding every preference: this process's
+    ///     preferences, which are the standard store in the app and the
+    ///     sandboxed one under hosted tests. Tests may pass a suite of their
+    ///     own to start from known values.
     ///   - configService: The config.json mirror to keep in step with the
     ///     preferences. Tests pass one bound to a file of their own.
     init(
         notificationCenter: NotificationCenter = .default,
         initializeServices: Bool = true,
-        userDefaults: UserDefaults = .standard,
+        userDefaults: UserDefaults = TextMouthRuntime.current.preferences,
         configService: ConfigService = .shared
     ) {
         self.notificationCenter = notificationCenter

@@ -5,7 +5,7 @@ import XCTest
 @MainActor
 final class ConfigSyncTests: XCTestCase {
     func testPlaybackControlSettingsPublishRefreshesForOpenReaders() {
-        let defaults = UserDefaults.standard
+        let defaults = TextMouthRuntime.current.preferences
         let keys = [
             "showBookmarkInPlaybackControls",
             "showSpeedInPlaybackControls",
@@ -49,7 +49,7 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     func testSettingsPushAllPreviouslyOmittedFieldsToConfig() {
-        let defaults = UserDefaults.standard
+        let defaults = TextMouthRuntime.current.preferences
         let keys = [
             "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
             "endOfBookBehavior", "punctuationPauseLevel",
@@ -88,7 +88,7 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     func testExternalConfigAppliesAllPreviouslyOmittedFields() {
-        let defaults = UserDefaults.standard
+        let defaults = TextMouthRuntime.current.preferences
         let keys = [
             "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
             "endOfBookBehavior", "punctuationPauseLevel",

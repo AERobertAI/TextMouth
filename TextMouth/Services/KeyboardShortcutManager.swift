@@ -10,9 +10,15 @@ final class KeyboardShortcutManager: ObservableObject {
 
     private var eventMonitor: Any?
     private let storageKey = "customKeyboardBindings"
+    /// The store holding the custom bindings.
     private let userDefaults: UserDefaults
 
-    init(userDefaults: UserDefaults = .standard, installsEventMonitor: Bool = true) {
+    /// Loads the bindings and, unless told not to, starts watching key presses.
+    /// - Parameters:
+    ///   - userDefaults: The store holding the custom bindings: this
+    ///     process's preferences unless a test passes its own.
+    ///   - installsEventMonitor: False leaves key presses alone, for tests.
+    init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences, installsEventMonitor: Bool = true) {
         self.userDefaults = userDefaults
         loadBindings()
         if installsEventMonitor {

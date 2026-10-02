@@ -393,4 +393,33 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertEqual(TextMouthRuntime.current.preferences.object(forKey: key) as? Bool, false)
         XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
     }
+
+    // MARK: - Services Built Without a Store
+
+    /// The settings model, the shortcut manager, and the sleep timer built
+    /// without a store of their own, as the app builds them, save to this
+    /// process's preferences and never to the user's.
+    func testSettingsShortcutsAndSleepTimerDefaultToThisProcessPreferences() {
+        let preferences = TextMouthRuntime.current.preferences
+        let keys = ["autoPlayOnNavigate", "customKeyboardBindings", "sleepTimer.lastUsedDuration"]
+        preservePreferences(keys)
+        let usersPreferences = UserPreferenceFingerprint(UserPreferenceFingerprint.textMouthKeys + keys)
+        for key in keys {
+            preferences.removeObject(forKey: key)
+        }
+
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        settings.autoPlayOnNavigate.toggle()
+        XCTAssertEqual(preferences.object(forKey: "autoPlayOnNavigate") as? Bool, settings.autoPlayOnNavigate)
+
+        KeyboardShortcutManager(installsEventMonitor: false).resetToDefaults()
+        XCTAssertNotNil(preferences.data(forKey: "customKeyboardBindings"))
+
+        let timer = SleepTimerService()
+        defer { timer._resetForTesting() }
+        timer.start(duration: .minutes(45), ownerID: UUID(), onExpire: {})
+        XCTAssertNotNil(preferences.data(forKey: "sleepTimer.lastUsedDuration"))
+
+        XCTAssertEqual(UserPreferenceFingerprint(UserPreferenceFingerprint.textMouthKeys + keys), usersPreferences)
+    }
 }

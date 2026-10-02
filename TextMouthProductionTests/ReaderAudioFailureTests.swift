@@ -219,7 +219,7 @@ final class ReaderAudioFailureTests: XCTestCase {
     func testFailureHaltsTheSleepTimerCountdownUntilPlayingAgain() throws {
         let timer = SleepTimerService.shared
         let savedDuration = timer.lastUsedDuration
-        let savedPreference = UserDefaults.standard.object(forKey: "sleepTimer.lastUsedDuration")
+        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: "sleepTimer.lastUsedDuration")
         defer {
             // Put back the shared timer's remembered duration and the
             // preference it was saved in.
@@ -228,7 +228,7 @@ final class ReaderAudioFailureTests: XCTestCase {
                 timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
                 timer.stop()
             }
-            UserDefaults.standard.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
+            TextMouthRuntime.current.preferences.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
         }
         try withAudioBook(damage: Self.deleteSecondTrack) { reader, tracks in
             reader.startSleepTimer(duration: .minutes(1))

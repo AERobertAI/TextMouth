@@ -638,14 +638,14 @@ final class ContinueToNextBookTests: XCTestCase {
         let timer = SleepTimerService.shared
         let preferenceKey = "sleepTimer.lastUsedDuration"
         let savedDuration = timer.lastUsedDuration
-        let savedPreference = UserDefaults.standard.object(forKey: preferenceKey)
+        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: preferenceKey)
         addTeardownBlock {
             timer._resetForTesting()
             if let savedDuration {
                 timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
                 timer.stop()
             }
-            UserDefaults.standard.set(savedPreference, forKey: preferenceKey)
+            TextMouthRuntime.current.preferences.set(savedPreference, forKey: preferenceKey)
         }
         timer.start(duration: duration, ownerID: owner, onExpire: {})
         return timer
