@@ -174,6 +174,57 @@ final class LibraryWindowRouterTests: XCTestCase {
         }
     }
 
+    /// In every window arrangement exactly one receiver opens the next
+    /// book's reader: one Library window or, when no Library window is
+    /// open, the app delegate's fallback, through a reader window.
+    func testExactlyOneReceiverOpensTheContinuedBookInEveryArrangement() {
+        let firstLibrary = makeWindow()
+        let secondLibrary = makeWindow()
+        let reader = makeWindow()
+        let book = UUID()
+        let arrangements: [(name: String, libraries: [NSWindow], keyWindow: NSWindow?)] = [
+            ("Library window key", [firstLibrary, secondLibrary], secondLibrary),
+            ("Library windows open, none key", [firstLibrary, secondLibrary], nil),
+            ("reader window key", [firstLibrary, secondLibrary], reader),
+            ("no Library window, reader key", [], reader),
+            ("no Library window, none key", [], nil),
+        ]
+
+        for arrangement in arrangements {
+            let router = LibraryWindowRouter()
+            for library in arrangement.libraries {
+                router.register(library)
+            }
+            var openedThroughReader: [UUID] = []
+            router.registerReaderWindow(reader) { openedThroughReader.append($0) }
+
+            let libraryOpeners = arrangement.libraries.filter {
+                router.shouldOpenContinuedBook(in: $0, keyWindow: arrangement.keyWindow)
+            }
+            let fallbackOpened = AppDelegate.openContinuedBookIfNoLibraryWindow(
+                book,
+                router: router,
+                keyWindow: arrangement.keyWindow
+            )
+
+            XCTAssertEqual(libraryOpeners.count + (fallbackOpened ? 1 : 0), 1, arrangement.name)
+            XCTAssertEqual(fallbackOpened, arrangement.libraries.isEmpty, arrangement.name)
+            XCTAssertEqual(openedThroughReader, fallbackOpened ? [book] : [], arrangement.name)
+        }
+    }
+
+    /// With no window open at all, the fallback has nothing to open the
+    /// next book's reader through.
+    func testFallbackOpensNothingWithoutAnyWindow() {
+        XCTAssertFalse(
+            AppDelegate.openContinuedBookIfNoLibraryWindow(
+                UUID(),
+                router: LibraryWindowRouter(),
+                keyWindow: nil
+            )
+        )
+    }
+
     // MARK: - Reader windows
 
     /// A reader opens through the key window when it is a reader window,

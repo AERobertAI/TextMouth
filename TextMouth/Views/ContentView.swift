@@ -226,9 +226,12 @@ struct LibraryWindowView: View {
             saveSortSettings()
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
-            if shouldHandleGlobalLibraryAction,
-               let bookID = notification.userInfo?["bookID"] as? UUID {
-                openWindow(id: "book-reader", value: bookID)
+            // Exactly one Library window opens the next book's reader, or
+            // brings it forward when it is already open. While no Library
+            // window is registered, the app delegate opens it instead.
+            if libraryWindowRouter.shouldOpenContinuedBook(in: hostWindow, keyWindow: NSApp.keyWindow),
+               let bookID = notification.nextBookID {
+                openWindow(id: BookReaderWindowView.windowID, value: bookID)
             }
         }
     }
