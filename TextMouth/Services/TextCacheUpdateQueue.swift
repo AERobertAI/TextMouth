@@ -8,6 +8,11 @@ enum TextCacheUpdateQueue {
 
     /// Enqueue independent packages, then finish only after every update callback
     /// has returned. OperationQueue retains itself until its work is complete.
+    ///
+    /// Each update receives a book as it was when the batch was queued, which
+    /// can be minutes old by its turn. That copy names the content to analyze;
+    /// the result is committed through `LibraryPersistenceService.saveContentAnalysis`,
+    /// which merges it into the book's latest state instead of saving the copy.
     static func run(
         books: [Book],
         concurrentEPUBs: Int = 2,

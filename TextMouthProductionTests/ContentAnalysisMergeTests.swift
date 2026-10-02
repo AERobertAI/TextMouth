@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -45,10 +46,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
         changed.contentAnalysisFields = analysis.contentAnalysisFields
 
         XCTAssertEqual(changed.contentAnalysisFields, analysis.contentAnalysisFields)
-        XCTAssertEqual(
-            Set(Self.fieldsThatDiffer(user, changed)),
-            ["totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion"]
-        )
+        XCTAssertEqual(Set(Self.fieldsThatDiffer(user, changed)), Self.analysisFieldNames)
     }
 
     /// Applying an analysis records the statistics and version of its index
@@ -273,6 +271,73 @@ final class ContentAnalysisMergeTests: XCTestCase {
             XCTAssertEqual(record.state.contentAnalysisFields, later.book.contentAnalysisFields, order)
             XCTAssertEqual(droppedLines(for: original).count, 1, order)
         }
+    }
+
+    // MARK: - The Library Row
+
+    /// The library row equals its package after a cache batch merges an
+    /// analysis, even in the hardest order: the batch commits the analysis,
+    /// and before the row hears of it the user changes the book, so the
+    /// row's own saves still carry the old analysis fields. The row then
+    /// takes only the committed analysis fields and keeps the user's
+    /// changes, and the package keeps the analysis and takes the changes.
+    @MainActor
+    func testLibraryRowEqualsItsPackageAfterACacheBatch() async throws {
+        let original = try makePackage(title: "Row After A Batch")
+        let model = makeModel(with: [original])
+        let finished = expectation(description: "The batch finished")
+
+        model.extractMissingContentCaches { finished.fulfill() }
+        waitForCommittedAnalysis(of: original)
+        makeNewerWrites(to: original, through: model)
+        await fulfillment(of: [finished], timeout: 10)
+        LibraryPersistenceService.flushPendingSave()
+
+        try assertRowEqualsItsPackage(original, in: model)
+    }
+
+    /// The statistics pass hands its result to the row the same way.
+    @MainActor
+    func testLibraryRowEqualsItsPackageAfterTheStatisticsPass() async throws {
+        let original = try makePackage(title: "Row After Statistics")
+        let model = makeModel(with: [original])
+        XCTAssertTrue(LibraryViewModel.needsContentAnalysis(original))
+        let counted = expectation(description: "The row received its statistics")
+        let subscription = model.$library
+            .first { $0.books.first?.totalWordCount != nil }
+            .sink { _ in counted.fulfill() }
+        defer { subscription.cancel() }
+
+        model.calculateMissingBookStats()
+        waitForCommittedAnalysis(of: original)
+        makeNewerWrites(to: original, through: model)
+        await fulfillment(of: [counted], timeout: 10)
+        LibraryPersistenceService.flushPendingSave()
+
+        try assertRowEqualsItsPackage(original, in: model)
+    }
+
+    /// An analysis the reader hands to the library changes the row's
+    /// analysis fields and nothing else, and the package records the index
+    /// with those same fields.
+    @MainActor
+    func testReaderAnalysisChangesOnlyTheRowsAnalysisFields() throws {
+        let original = try makePackage(title: "Opened In The Reader")
+        let model = makeModel(with: [original])
+        makeNewerWrites(to: original, through: model)
+        let before = try XCTUnwrap(model.bookByID(original.id))
+        let analysis = try analyze(original)
+
+        model.updateContentIndex(
+            bookID: original.id, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+        LibraryPersistenceService.flushPendingSave()
+
+        let row = try XCTUnwrap(model.bookByID(original.id))
+        XCTAssertTrue(Set(Self.fieldsThatDiffer(before, row)).isSubset(of: Self.analysisFieldNames))
+        XCTAssertEqual(row.contentAnalysisFields, analysis.book.contentAnalysisFields)
+        XCTAssertEqual(try BookInfo.load(from: original.tmbDirectory).contentIndex, analysis.index)
+        try assertRowEqualsItsPackage(original, in: model)
     }
 
     // MARK: - Invariants Kept
@@ -661,6 +726,62 @@ final class ContentAnalysisMergeTests: XCTestCase {
             cacheFormatVersion: "cache-\(seed)",
             contentIndexVersion: "index-\(seed)"
         )
+    }
+
+    /// The names of the `Book` properties an analysis owns.
+    private static let analysisFieldNames: Set<String> = [
+        "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion"
+    ]
+
+    /// Blocks the main thread, without running its queue, until `book`'s
+    /// record holds a committed analysis, so the batch's update of the
+    /// library row waits behind whatever the test does next. Fails after
+    /// ten seconds.
+    @MainActor
+    private func waitForCommittedAnalysis(of book: Book, file: StaticString = #filePath, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(10)
+        while book.storedBookInfo()?.contentIndex == nil {
+            guard Date() < deadline else {
+                return XCTFail("the analysis was never committed", file: file, line: line)
+            }
+            usleep(10_000)
+        }
+    }
+
+    /// Asserts that `book`'s row in `model` and its package record the same
+    /// value for every field a record keeps, and that both hold the newer
+    /// writes and a current analysis.
+    @MainActor
+    private func assertRowEqualsItsPackage(
+        _ book: Book,
+        in model: LibraryViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let row = try XCTUnwrap(model.bookByID(book.id), file: file, line: line)
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        assertNewerWritesSurvived(in: record, file: file, line: line)
+        XCTAssertNotNil(record.contentIndex, file: file, line: line)
+        XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion, file: file, line: line)
+        XCTAssertNotNil(row.totalWordCount, file: file, line: line)
+        XCTAssertEqual(
+            try Self.recordedFields(of: row.makeBookInfo()),
+            try Self.recordedFields(of: record),
+            file: file,
+            line: line
+        )
+    }
+
+    /// Every field of `record` a library row also has, as JSON written the
+    /// way bookInfo.json is: without the content index and the revision,
+    /// which only a package keeps.
+    private static func recordedFields(of record: BookInfo) throws -> NSDictionary {
+        var comparable = record
+        comparable.contentIndex = nil
+        comparable.state.revision = nil
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(comparable)) as? NSDictionary)
     }
 
     /// The names of `Book`'s stored properties whose values differ between
