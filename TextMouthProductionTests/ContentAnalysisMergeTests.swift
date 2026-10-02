@@ -6,6 +6,19 @@ import XCTest
 /// must land on the latest state of the book, never on that old copy
 /// (TODO S05).
 final class ContentAnalysisMergeTests: XCTestCase {
+    /// Folders this test created in the test root's library, removed after
+    /// it with every package inside.
+    private var createdDirectories: [URL] = []
+
+    override func setUpWithError() throws {
+        createdDirectories = []
+    }
+
+    override func tearDownWithError() throws {
+        for directory in createdDirectories {
+            try? FileManager.default.removeItem(at: directory)
+        }
+    }
 
     // MARK: - The Fields an Analysis Owns
 
@@ -61,7 +74,112 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(summarized.contentAnalysisFields, silent.contentAnalysisFields)
     }
 
+    // MARK: - Revisions
+
+    /// Every write of a package record stores one more than the record it
+    /// replaces, with an index or without one. A record without a revision,
+    /// as earlier versions wrote, counts as 0.
+    func testEveryRecordWriteStoresTheNextRevision() throws {
+        let book = try makePackage(title: "Counted Writes", writingRecord: false)
+        try book.makeBookInfo().save(to: book.tmbDirectory)
+        XCTAssertNil(try revision(of: book), "a record from an earlier version has no revision")
+
+        try book.saveBookInfoThrowing()
+        XCTAssertEqual(try revision(of: book), 1)
+        try book.saveBookInfoThrowing(contentIndex: Self.index(of: "one two"))
+        XCTAssertEqual(try revision(of: book), 2)
+        try book.saveBookInfoThrowing()
+        XCTAssertEqual(try revision(of: book), 3)
+        XCTAssertEqual(
+            try BookInfo.load(from: book.tmbDirectory).contentIndex,
+            Self.index(of: "one two"),
+            "a save without an index keeps the stored one"
+        )
+    }
+
+    /// A write numbers from the higher of the stored revision and the
+    /// floor, so a record that lost its revision (or was never written)
+    /// still gets one above every revision written before it.
+    func testRevisionFollowsTheHigherOfTheStoredRevisionAndTheFloor() {
+        let book = Self.bookWithEveryFieldSet(seed: 4)
+        var stored = book.makeBookInfo()
+        stored.state.revision = 9
+
+        XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil).state.revision, 1)
+        XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil, revisionFloor: 7).state.revision, 8)
+        XCTAssertEqual(book.bookInfo(replacing: stored, contentIndex: nil, revisionFloor: 7).state.revision, 10)
+        XCTAssertEqual(book.bookInfo(replacing: stored, contentIndex: nil, revisionFloor: 12).state.revision, 13)
+    }
+
+    /// A revision no record can have (negative, fractional, too large, or
+    /// text) is dropped instead of failing the record, whose other fields
+    /// still load. A valid one loads unchanged.
+    func testUnusableRevisionsDecodeAsNone() throws {
+        for value in ["-3", "1.5", "1e30", #""many""#] {
+            let state = try Self.decodeState(#""manualSortOrder": 4, "revision": \#(value)"#)
+            XCTAssertNil(state.revision, value)
+            XCTAssertEqual(state.manualSortOrder, 4, value)
+        }
+        XCTAssertEqual(try Self.decodeState(#""revision": 41"#).revision, 41)
+    }
+
+    /// The revision after the largest integer is that integer, so a
+    /// hand-edited record cannot make the next write overflow.
+    func testRevisionStopsAtTheLargestInteger() {
+        XCTAssertEqual(BookState.revision(after: 0), 1)
+        XCTAssertEqual(BookState.revision(after: 41), 42)
+        XCTAssertEqual(BookState.revision(after: .max), .max)
+    }
+
     // MARK: - Fixtures
+
+    /// Creates a real package in a folder of its own, as an import leaves
+    /// it: a Markdown source whose unique words give it a unique hash and,
+    /// unless `writingRecord` is false, its bookInfo.json. The folder and
+    /// everything in it are removed after the test.
+    private func makePackage(title: String, writingRecord: Bool = true) throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let folder = "Analysis Merge \(UUID().uuidString.prefix(8))"
+        createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(folder, isDirectory: true))
+        let packageName = "AnalysisMerge-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Opening\n\nThe words of \(title), \(UUID().uuidString).".write(
+            to: source, atomically: true, encoding: .utf8
+        )
+        let book = Book(
+            title: title,
+            author: "Merge Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: try FileImportService.md5Hash(of: source),
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: "3.0.3"
+        )
+        if writingRecord {
+            try book.saveBookInfoThrowing()
+        }
+        return book
+    }
+
+    /// The revision of the bookInfo.json in `book`'s package.
+    private func revision(of book: Book) throws -> Int? {
+        try BookInfo.load(from: book.tmbDirectory).state.revision
+    }
+
+    /// An index of one chapter holding `text`.
+    private static func index(of text: String) -> BookContentIndex {
+        BookContentIndex.build(fromChapters: [Chapter(title: "Chapter", text: text)], format: .markdown)
+    }
+
+    /// Decodes a saved book state made of `fields` added to a minimal one,
+    /// as someone editing bookInfo.json by hand could leave it.
+    private static func decodeState(_ fields: String) throws -> BookState {
+        let json = #"{"isNew": false, "tmbDirectoryName": "saved.tmb", \#(fields)}"#
+        return try JSONDecoder().decode(BookState.self, from: Data(json.utf8))
+    }
 
     /// A book with every field set, each to a value derived from `seed`, so
     /// books made from two different seeds differ in every field.

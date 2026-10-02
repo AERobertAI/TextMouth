@@ -451,19 +451,40 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// Throwing variant used by filesystem transactions that must roll back if
-    /// metadata cannot be committed alongside a package move.
+    /// metadata cannot be committed alongside a package move. Writes over the
+    /// record now in the package as `bookInfo(replacing:contentIndex:revisionFloor:)`
+    /// describes.
     func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil) throws {
-        var info = makeBookInfo()
-        if let contentIndex {
-            info.contentIndex = contentIndex
-        } else if let existing = try? BookInfo.load(from: tmbDirectory) {
-            // Metadata/position saves must not erase an analysis produced by a
-            // background migration or import.
-            info.contentIndex = existing.contentIndex
-        }
-        try info.save(to: tmbDirectory)
+        try bookInfo(replacing: storedBookInfo(), contentIndex: contentIndex).save(to: tmbDirectory)
     }
 
+    /// The bookInfo.json now in this book's package, or nil when there is
+    /// none or it cannot be read.
+    func storedBookInfo() -> BookInfo? {
+        try? BookInfo.load(from: tmbDirectory)
+    }
+
+    /// The bookInfo.json this book writes over `stored`, the record now in
+    /// its package (nil when there is none or it cannot be read).
+    ///
+    /// `contentIndex` replaces the stored index. Without one the stored
+    /// index is kept: a position or metadata save must not erase an analysis
+    /// produced by a background migration or import.
+    ///
+    /// The revision is one more than the stored record's, or one more than
+    /// `revisionFloor` when that is higher. The metadata queue passes the
+    /// highest revision it has written for this book, so its revisions keep
+    /// rising even when the stored record has lost its own.
+    func bookInfo(replacing stored: BookInfo?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
+        var info = makeBookInfo()
+        info.contentIndex = contentIndex ?? stored?.contentIndex
+        info.state.revision = BookState.revision(after: max(stored?.state.revision ?? 0, revisionFloor))
+        return info
+    }
+
+    /// This book's metadata, state, and bookmarks as bookInfo.json records
+    /// them, without a content index or revision: those depend on the record
+    /// being replaced (`bookInfo(replacing:contentIndex:revisionFloor:)`).
     func makeBookInfo() -> BookInfo {
         BookInfo(
             metadata: BookMetadata(
