@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 @testable import TextMouth
 
@@ -10,6 +11,58 @@ enum RealUserAccount {
     static var homeDirectory: URL {
         let path = NSHomeDirectoryForUser(NSUserName()) ?? NSHomeDirectory()
         return URL(fileURLWithPath: path, isDirectory: true)
+    }
+}
+
+/// Fingerprints of the user's real TextMouth preferences, read without
+/// writing anything.
+///
+/// The test host shares its bundle identifier with the developer's own copy
+/// of TextMouth, so its persistent preferences domain is the developer's
+/// real settings. Each value is fingerprinted by the SHA-256 digest of its
+/// binary property list, so two readings are equal exactly when every value
+/// is byte-for-byte the same, absent values included.
+struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
+    /// The keys TextMouth itself saves outside its settings window: the ones
+    /// a test exercising the data directory, sounds, substitutions, window
+    /// restoration, the sleep timer, or shortcuts would change if it reached
+    /// the user's preferences.
+    static let textMouthKeys = [
+        "textMouthDataDirectory",
+        "soundEffectsEnabled",
+        "soundEffectsVolume",
+        "soundEffectAssignments",
+        "substitutionsEnabled",
+        "NSQuitAlwaysKeepsWindows",
+        "sleepTimer.lastUsedDuration",
+        "customKeyboardBindings"
+    ]
+
+    /// Each key's digest, or "absent" when the user has no value for it.
+    let digests: [String: String]
+
+    /// Reads `keys` from the persistent domain the developer's app uses.
+    init(_ keys: [String] = textMouthKeys) {
+        let domain = Bundle.main.bundleIdentifier
+            .flatMap { UserDefaults.standard.persistentDomain(forName: $0) } ?? [:]
+        var digests: [String: String] = [:]
+        for key in keys {
+            digests[key] = domain[key].map(Self.digest) ?? "absent"
+        }
+        self.digests = digests
+    }
+
+    /// One line per key, for assertion messages.
+    var description: String {
+        digests.keys.sorted().map { "\($0): \(digests[$0] ?? "")" }.joined(separator: "\n")
+    }
+
+    /// The SHA-256 digest of `value`'s binary property list, in hexadecimal.
+    private static func digest(_ value: Any) -> String {
+        guard let bytes = try? PropertyListSerialization.data(fromPropertyList: value, format: .binary, options: 0) else {
+            return "not a property list"
+        }
+        return SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
     }
 }
 

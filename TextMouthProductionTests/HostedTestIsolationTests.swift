@@ -275,4 +275,59 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertNil(TextMouthRuntime.current.preferences.object(forKey: key))
         XCTAssertEqual(UserDefaults.standard.string(forKey: key), usersValue)
     }
+
+    // MARK: - Sound Effects
+
+    /// The keys of the sound effect preferences, unchanged since the first release.
+    private static let soundKeys = ["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"]
+
+    /// The sound preferences load from the store the service is given and
+    /// save back to it under their original keys; the user's preferences
+    /// stay as they were.
+    func testSoundEffectsReadAndWriteTheirStore() throws {
+        let store = makeSandboxedPreferences("sound-effects")
+        let usersPreferences = UserPreferenceFingerprint()
+        store.set(false, forKey: "soundEffectsEnabled")
+        store.set(Float(0.25), forKey: "soundEffectsVolume")
+        store.set(try JSONEncoder().encode(["Play": "Glass"]), forKey: "soundEffectAssignments")
+
+        let sounds = SoundEffectService(preferences: store)
+
+        XCTAssertFalse(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.25)
+        XCTAssertEqual(sounds.assignments, [.play: "Glass"])
+
+        sounds.soundsEnabled = true
+        sounds.volume = 0.75
+        sounds.assignments[.pause] = "None"
+
+        XCTAssertEqual(store.object(forKey: "soundEffectsEnabled") as? Bool, true)
+        XCTAssertEqual(store.float(forKey: "soundEffectsVolume"), 0.75)
+        let savedAssignments = try XCTUnwrap(store.data(forKey: "soundEffectAssignments"))
+        XCTAssertEqual(
+            try JSONDecoder().decode([String: String].self, from: savedAssignments),
+            ["Play": "Glass", "Pause": "None"]
+        )
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
+
+    /// Without a store of its own, the service uses this process's
+    /// preferences, as the app's shared one does.
+    func testSoundEffectsDefaultToThisProcessPreferences() {
+        preservePreferences(Self.soundKeys)
+        let usersPreferences = UserPreferenceFingerprint()
+        let preferences = TextMouthRuntime.current.preferences
+
+        let sounds = SoundEffectService()
+        sounds.soundsEnabled = false
+        sounds.volume = 0.3
+        XCTAssertEqual(preferences.object(forKey: "soundEffectsEnabled") as? Bool, false)
+        XCTAssertEqual(preferences.float(forKey: "soundEffectsVolume"), 0.3)
+
+        sounds.resetToDefaults()
+        XCTAssertEqual(preferences.object(forKey: "soundEffectsEnabled") as? Bool, true)
+        XCTAssertEqual(preferences.float(forKey: "soundEffectsVolume"), 0.5)
+        XCTAssertNotNil(preferences.data(forKey: "soundEffectAssignments"))
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
 }
