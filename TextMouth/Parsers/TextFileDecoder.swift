@@ -238,27 +238,29 @@ enum TextFileDecoder {
     /// why a byte-order mark is the dependable way to write UTF-16.
     static func unmarkedUTF16Encoding(of data: Data) -> String.Encoding? {
         guard data.count >= 2, data.count.isMultiple(of: 2) else { return nil }
-        // How many code units have a zero first byte, and a zero second byte.
-        var zeroFirstBytes = 0
-        var zeroSecondBytes = 0
-        var index = data.startIndex
-        while index < data.endIndex {
-            if data[index] == 0 { zeroFirstBytes += 1 }
-            if data[index + 1] == 0 { zeroSecondBytes += 1 }
-            // Zero bytes on both sides of the units rule out both orders.
-            if zeroFirstBytes > 0 && zeroSecondBytes > 0 { return nil }
-            index += 2
+        // Every file without a mark is scanned, so the raw bytes are read
+        // directly rather than through Data's slower subscript.
+        return data.withUnsafeBytes { bytes -> String.Encoding? in
+            // How many code units have a zero first byte, and a zero second byte.
+            var zeroFirstBytes = 0
+            var zeroSecondBytes = 0
+            for index in stride(from: 0, to: bytes.count, by: 2) {
+                if bytes[index] == 0 { zeroFirstBytes += 1 }
+                if bytes[index + 1] == 0 { zeroSecondBytes += 1 }
+                // Zero bytes on both sides of the units rule out both orders.
+                if zeroFirstBytes > 0 && zeroSecondBytes > 0 { return nil }
+            }
+            let codeUnits = bytes.count / 2
+            // Little-endian code units keep their high byte second.
+            if zeroFirstBytes == 0 && zeroSecondBytes * 2 > codeUnits {
+                return .utf16LittleEndian
+            }
+            // Big-endian code units keep their high byte first.
+            if zeroSecondBytes == 0 && zeroFirstBytes * 2 > codeUnits {
+                return .utf16BigEndian
+            }
+            return nil
         }
-        let codeUnits = data.count / 2
-        // Little-endian code units keep their high byte second.
-        if zeroFirstBytes == 0 && zeroSecondBytes * 2 > codeUnits {
-            return .utf16LittleEndian
-        }
-        // Big-endian code units keep their high byte first.
-        if zeroSecondBytes == 0 && zeroFirstBytes * 2 > codeUnits {
-            return .utf16BigEndian
-        }
-        return nil
     }
 
     // MARK: Declared Encodings
