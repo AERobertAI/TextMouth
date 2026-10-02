@@ -172,8 +172,9 @@ final class ParserContentFidelityTests: XCTestCase {
     /// The reading text differs from the source only by the documented
     /// whitespace normalization: lines are trimmed, a paragraph's lines are
     /// joined by single spaces, and any run of empty lines is one paragraph
-    /// break. Inner tabs survive. Every newline character ends a line, so a
-    /// CRLF pair also leaves an empty line, which separates paragraphs.
+    /// break. Inner tabs survive. A CRLF pair ends one line, as LF, a lone
+    /// CR, and every other newline character do, so a Windows line joins
+    /// its paragraph instead of starting one of its own.
     func testPlainTextReadingTextNormalizesOnlyWhitespace() {
         let source = "  Indented first line\t\nwraps here  \n\n\n\tSecond paragraph\twith a tab\r"
             + "old Mac line\u{2028}separator line\r\nWindows line"
@@ -181,7 +182,7 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(
             chapter.text,
             "Indented first line wraps here\n\n"
-                + "Second paragraph\twith a tab old Mac line separator line\n\nWindows line"
+                + "Second paragraph\twith a tab old Mac line separator line Windows line"
         )
         XCTAssertEqual(chapter.headings, [])
     }
@@ -797,8 +798,9 @@ enum PlainTextFixture {
 
     /// The reading both paths must produce: heading lines as their labels,
     /// the consumed setext underlines gone, the unconsumed one kept, and each
-    /// paragraph's trimmed lines joined by spaces. Each CRLF also ends a
-    /// paragraph, because it counts as a line break plus an empty line.
+    /// paragraph's trimmed lines joined by spaces. CRLF and a lone CR each
+    /// end one line, so the lines they end join the paragraph before them;
+    /// only the empty line before "FINAL WORDS" separates paragraphs.
     static let combinedReading = [
         "THE PLAIN TEXT COMPANION",
         "A guide to *literal* reading, with _underscores_ and `code`.",
@@ -815,8 +817,7 @@ enum PlainTextFixture {
         "Minor Setext 🙂 Cafe\u{301}",
         "-----",
         "Emoji 🙂 and combining e\u{301}",
-        "Last line.",
-        "Windows ending old Mac ending",
+        "Last line. Windows ending old Mac ending",
         "FINAL WORDS",
     ].joined(separator: "\n\n")
 

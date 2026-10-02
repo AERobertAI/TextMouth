@@ -12,9 +12,12 @@ import Foundation
 /// The reading text keeps every character of the source, in order, except for
 /// this whitespace normalization (the one the Markdown cache applies to
 /// ordinary lines):
-/// - A line ends at each character of `CharacterSet.newlines` (LF, VT, FF,
-///   CR, NEL, LS, PS). Each character ends one line, so a CRLF pair also
-///   leaves an empty line between the two lines it separates.
+/// - A line ends at each line ending: a CR LF pair, or any one character of
+///   `CharacterSet.newlines` (LF, VT, FF, CR, NEL, LS, PS). CR LF and a lone
+///   CR first become LF exactly as `TextFileDecoder.normalizingLineEndings(_:)`
+///   makes them in a file, so a Windows (CR LF) or classic Mac OS (CR) text
+///   reads like its LF copy: one line per source line, a setext underline
+///   directly below its heading line.
 /// - Each line is trimmed of `CharacterSet.whitespaces` (Unicode space
 ///   separators, tab, and zero-width space) at both ends. Whitespace inside a
 ///   line, tabs included, is kept exactly.
@@ -89,7 +92,10 @@ enum PlainTextParser {
     /// underline directly below a setext heading is dropped as heading syntax;
     /// any other one, like every other line, is read as written.
     static func blocks(in text: String) -> [Block] {
-        let lines = text.components(separatedBy: .newlines)
+        // A file's text arrives normalized already; text from anywhere else
+        // is normalized the same way, so CR LF never ends two lines.
+        let lines = TextFileDecoder.normalizingLineEndings(text)
+            .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
         let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
 
