@@ -1,5 +1,58 @@
 import SwiftUI
 
+/// A data-directory operation started from Storage settings.
+enum StorageOperation: Equatable {
+    /// Rebuild Directory.
+    case rebuild
+    /// Reset to Default: move the data back to ~/.TextMouth.
+    case resetToDefault
+    /// Change Location: move the data into the given directory.
+    case move(to: URL)
+
+    /// What the status line says while the operation runs.
+    var runningMessage: String {
+        switch self {
+        case .rebuild:
+            return "Rebuilding the data directory..."
+        case .resetToDefault:
+            return "Moving data to the default location..."
+        case .move(let destination):
+            return "Moving data to \(destination.path)..."
+        }
+    }
+}
+
+/// The line under the storage buttons: what an operation is doing, what it
+/// did, or why it failed (TODO A07). "Done" appears only after a success.
+struct StorageStatus: Equatable {
+    /// The words shown, which are also what VoiceOver reads and announces.
+    let message: String
+    /// Whether the line reports a refusal or failure, which is shown in red.
+    /// The words say so too, so color is never the only signal.
+    let isFailure: Bool
+
+    /// The status while `operation` runs.
+    static func running(_ operation: StorageOperation) -> StorageStatus {
+        StorageStatus(message: operation.runningMessage, isFailure: false)
+    }
+
+    /// The status once an operation has finished with `outcome`: its own
+    /// words, which after a failure are those of the library's error alert.
+    static func finished(_ outcome: OperationOutcome) -> StorageStatus {
+        StorageStatus(message: outcome.message ?? "Done.", isFailure: !outcome.succeeded)
+    }
+
+    /// The finished status, announced once. VoiceOver does not read a
+    /// status line that changes by itself, so each operation's result is
+    /// spoken when it is shown.
+    @MainActor
+    static func announced(after outcome: OperationOutcome) -> StorageStatus {
+        let status = finished(outcome)
+        VoiceOverAnnouncer.announce(status.message)
+        return status
+    }
+}
+
 struct StorageSettingsView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @State private var showRebuildConfirmation = false
@@ -7,7 +60,10 @@ struct StorageSettingsView: View {
     @State private var showMoveConfirmation = false
     @State private var pendingMoveURL: URL?
     @State private var showFolderPicker = false
-    @State private var statusMessage: String?
+    /// What the last data-directory operation is doing or did.
+    @State private var status: StorageStatus?
+    /// The data-directory operation in progress, if any.
+    @State private var runningOperation: StorageOperation?
     @State private var importDeleteBehavior: ImportDeleteBehavior
     @State private var confirmBeforeDelete: Bool
     @State private var moveToTrash: Bool
@@ -60,7 +116,8 @@ struct StorageSettingsView: View {
                 }
 
                 // Moving or rebuilding the directory would act on the
-                // temporary library while the index cannot be read.
+                // temporary library while the index cannot be read, and
+                // must not start twice while one operation runs.
                 HStack {
                     Button("Change Location...") {
                         showFolderPicker = true
@@ -76,19 +133,20 @@ struct StorageSettingsView: View {
                         .accessibilityHint("Moves data back to the default location at ~/.TextMouth")
                     }
                 }
-                .disabled(isRecoveringIndex)
+                .disabled(maintenanceUnavailable)
 
                 Button("Rebuild Directory") {
                     showRebuildConfirmation = true
                 }
-                .disabled(isRecoveringIndex)
+                .disabled(maintenanceUnavailable)
                 .accessibilityLabel("Rebuild TextMouth directory")
                 .accessibilityHint("Recreates the directory structure and migrates any books using old storage")
 
-                if let status = statusMessage {
-                    Text(status)
+                if let status {
+                    Text(status.message)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(status.isFailure ? .red : .secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } header: {
                 Text("Storage Directory")
@@ -217,12 +275,12 @@ struct StorageSettingsView: View {
                     showMoveConfirmation = true
                 }
             case .failure(let error):
-                statusMessage = "Error: \(error.localizedDescription)"
+                status = .announced(after: .failure("Could not choose a new location", error))
             }
         }
         .alert("Rebuild Directory", isPresented: $showRebuildConfirmation) {
             Button("Rebuild") {
-                performRebuild()
+                start(.rebuild)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -230,7 +288,7 @@ struct StorageSettingsView: View {
         }
         .alert("Reset to Default Location?", isPresented: $showResetToDefaultConfirmation) {
             Button("Reset & Move") {
-                performResetToDefault()
+                start(.resetToDefault)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -239,7 +297,8 @@ struct StorageSettingsView: View {
         .alert("Move Data Directory?", isPresented: $showMoveConfirmation) {
             Button("Move") {
                 if let url = pendingMoveURL {
-                    performMove(to: url)
+                    pendingMoveURL = nil
+                    start(.move(to: url))
                 }
             }
             Button("Cancel", role: .cancel) {
@@ -268,6 +327,20 @@ struct StorageSettingsView: View {
         libraryViewModel.indexRecovery != nil
     }
 
+    /// Whether the location and rebuild buttons are unavailable right now.
+    private var maintenanceUnavailable: Bool {
+        Self.maintenanceUnavailable(isRecoveringIndex: isRecoveringIndex, isRunning: runningOperation != nil)
+    }
+
+    /// Whether the location and rebuild buttons are unavailable: while the
+    /// library index cannot be read, since they would act on the temporary
+    /// library, and while one of them runs. Once an operation ends, whether
+    /// it worked or failed, they are available again, so a failure can be
+    /// retried.
+    nonisolated static func maintenanceUnavailable(isRecoveringIndex: Bool, isRunning: Bool) -> Bool {
+        isRecoveringIndex || isRunning
+    }
+
     /// The data directory status, as shown and as VoiceOver reads it. An
     /// unreadable library index outranks "Active": the directory exists, but
     /// its library index is not being saved.
@@ -278,23 +351,37 @@ struct StorageSettingsView: View {
         return directoryExists ? "Active" : "Not Created"
     }
 
-    private func performRebuild() {
-        statusMessage = "Rebuilding..."
-        libraryViewModel.rebuildDirectory()
-        let bookCount = libraryViewModel.library.books.count
-        statusMessage = "Done. \(bookCount) book\(bookCount == 1 ? "" : "s") in library."
+    // MARK: - Running Operations
+
+    /// Runs `operation`. While it works the status line says so and the
+    /// buttons are unavailable; afterwards the status line says what really
+    /// happened, "Done" only after a success, VoiceOver announces it once,
+    /// and the buttons are available again for a retry (TODO A07).
+    private func start(_ operation: StorageOperation) {
+        guard runningOperation == nil else { return }
+        runningOperation = operation
+        status = .running(operation)
+        Task { @MainActor in
+            // The work runs on the main actor and holds the interface while
+            // it does. A short pause first lets the run loop draw the running
+            // status and the unavailable buttons before the work begins.
+            try? await Task.sleep(for: .milliseconds(50))
+            let outcome = perform(operation)
+            status = .announced(after: outcome)
+            runningOperation = nil
+        }
     }
 
-    private func performResetToDefault() {
-        statusMessage = "Moving to default location..."
-        libraryViewModel.rebuildToDefault()
-        statusMessage = "Done. Data is now at \(TextMouthPaths.rootPath)"
-    }
-
-    private func performMove(to url: URL) {
-        statusMessage = "Moving data..."
-        libraryViewModel.moveDataDirectory(to: url)
-        pendingMoveURL = nil
-        statusMessage = "Done. Data is now at \(TextMouthPaths.rootPath)"
+    /// Does the work of `operation` through the library model, which
+    /// returns its outcome instead of raising an alert in the Library window.
+    private func perform(_ operation: StorageOperation) -> OperationOutcome {
+        switch operation {
+        case .rebuild:
+            return libraryViewModel.rebuildDirectoryReturningOutcome()
+        case .resetToDefault:
+            return libraryViewModel.rebuildToDefaultReturningOutcome()
+        case .move(let destination):
+            return libraryViewModel.moveDataDirectoryReturningOutcome(to: destination)
+        }
     }
 }

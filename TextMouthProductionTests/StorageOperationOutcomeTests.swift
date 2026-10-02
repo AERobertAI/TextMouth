@@ -91,6 +91,76 @@ final class StorageOperationOutcomeTests: XCTestCase {
         XCTAssertEqual(model.errorMessage, expected)
     }
 
+    // MARK: - Status Line
+
+    /// After a rebuild refused while the library index is being recovered,
+    /// the status line shows the refusal, word for word as the outcome
+    /// carries it, as a failure; it never says "Done", and VoiceOver hears
+    /// it exactly once.
+    func testStatusAfterARefusedRebuild() throws {
+        let sandbox = try captureIndexSandbox()
+        try sandbox.stage(.truncated, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        var status: StorageStatus?
+
+        let recorder = recordingAnnouncements {
+            status = .announced(after: model.rebuildDirectoryReturningOutcome())
+        }
+
+        let expected = "Failed to rebuild directory: \(LibraryIndexRecoveryError.indexUnreadable.localizedDescription)"
+        XCTAssertEqual(status, StorageStatus(message: expected, isFailure: true))
+        XCTAssertEqual(recorder.announcements, [VoiceOverAnnouncement(message: expected, priority: .high)])
+    }
+
+    /// After a move blocked by a folder that is not empty, the status line
+    /// shows why as a failure, and Change Location is available again to
+    /// try another folder.
+    func testStatusAfterABlockedMoveAllowsARetry() throws {
+        protectDataDirectoryPreferences()
+        _ = try captureIndexSandbox()
+        let model = LibraryViewModel(initializeServices: false)
+        let destination = try makeNonEmptyDestination()
+        var status: StorageStatus?
+
+        let recorder = recordingAnnouncements {
+            status = .announced(after: model.moveDataDirectoryReturningOutcome(to: destination.directory))
+        }
+
+        let expected = "Failed to move directory: \(DataDirectoryMigrationError.destinationNotEmpty.localizedDescription)"
+        XCTAssertEqual(status, StorageStatus(message: expected, isFailure: true))
+        XCTAssertEqual(recorder.announcements.map(\.message), [expected])
+        XCTAssertFalse(
+            StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: model.indexRecovery != nil, isRunning: false),
+            "the buttons are available for a retry"
+        )
+    }
+
+    /// While an operation runs the status line names it and every location
+    /// and rebuild button is unavailable; they stay unavailable while the
+    /// library index cannot be read, and are available otherwise.
+    func testStatusAndButtonsWhileAnOperationRuns() {
+        XCTAssertEqual(StorageStatus.running(.rebuild), StorageStatus(message: "Rebuilding the data directory...", isFailure: false))
+        XCTAssertEqual(StorageStatus.running(.resetToDefault).message, "Moving data to the default location...")
+        XCTAssertEqual(
+            StorageStatus.running(.move(to: URL(fileURLWithPath: "/Volumes/Archive/.TextMouth"))).message,
+            "Moving data to /Volumes/Archive/.TextMouth..."
+        )
+        XCTAssertTrue(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: false, isRunning: true))
+        XCTAssertTrue(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: true, isRunning: false))
+        XCTAssertFalse(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: false, isRunning: false))
+    }
+
+    /// A success shows its own "Done" sentence, which is never shown as a
+    /// failure; a success with nothing to say still reads "Done."
+    func testStatusAfterSuccess() {
+        XCTAssertEqual(
+            StorageStatus.finished(.success("Done. 3 books in library.")),
+            StorageStatus(message: "Done. 3 books in library.", isFailure: false)
+        )
+        XCTAssertEqual(StorageStatus.finished(.success(nil)), StorageStatus(message: "Done.", isFailure: false))
+    }
+
     // MARK: - Outcome Wording
 
     /// "Done" carries the books the legacy migration could not move after a
