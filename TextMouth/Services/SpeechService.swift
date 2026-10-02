@@ -516,46 +516,6 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         )
     }
 
-    /// Speak text using the audio engine directly (no direct mode fallback).
-    /// Used when the engine already has rendered audio ready (e.g. after a seek or for next chapter).
-    func speakWithEngine(_ text: String, fromCharOffset charOffset: Int = 0) {
-        stop()
-        currentText = text
-
-        renderGeneration += 1
-        let myGeneration = renderGeneration
-
-        isSpeaking = true
-        isPaused = false
-
-        if audioEngine.hasRenderedAudio {
-            // Engine already has audio for this text — play immediately
-            usingDirectMode = false
-            audioEngine.setSpeed(wpm: wordsPerMinute)
-            audioEngine.setPitch(multiplier: pitchMultiplier)
-            audioEngine.play(fromCharOffset: charOffset)
-            startPositionTracking()
-        } else {
-            // Need to render first — start direct mode while waiting
-            speakDirect(text, fromCharOffset: charOffset)
-
-            SpeechRenderCoordinator.shared.render(
-                text: text,
-                engine: audioEngine,
-                voice: currentVoice,
-                wpm: wordsPerMinute,
-                shouldStart: { [weak self] in self?.renderGeneration == myGeneration },
-                completion: { [weak self] success in
-                guard let self = self else { return }
-                guard self.renderGeneration == myGeneration else { return }
-                if success {
-                    self.transitionLog("RENDER_READY (speakWithEngine): rendered, direct still active=\(self.usingDirectMode)")
-                }
-                }
-            )
-        }
-    }
-
     private func speakDirect(_ text: String, fromCharOffset charOffset: Int) {
         usingDirectMode = true
         let startOffset = max(0, min(charOffset, text.utf16Length))
