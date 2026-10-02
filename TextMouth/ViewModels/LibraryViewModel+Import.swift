@@ -49,72 +49,82 @@ extension LibraryViewModel {
 
     // MARK: - TMB Package Opening
 
-    /// Open a .tmb package — find the matching book in library or import it, then open the reader
+    /// Open a .tmb package — find the matching book in library or import it, then open the reader.
+    /// A package the library does not list is imported: a package Remove
+    /// from Library Only retained is taken back where it is, and any other
+    /// is copied into the library (`FileImportService.importTMBPackage`).
     func openTMBPackage(from url: URL) {
         importOperationQueue.enqueue { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             do {
-                let inspection = try FileImportService.inspectTMBPackage(at: url)
-                let info = inspection.info
-                let managedPackageBook = FileImportService.bookFromManagedPackage(
-                    inspection: inspection,
-                    packageURL: url
-                )
-                var shouldCopy = true
+                let source = try FileImportService.identifyTMBPackage(at: url)
+                var isListed = false
+                // On the main thread: the library is read there, and the
+                // window opens there.
                 DispatchQueue.main.sync {
-                    if let existingIndex = self.library.books.firstIndex(where: {
-                        $0.id == info.metadata.bookID
-                    }) {
-                        let existing = self.library.books[existingIndex]
-                        if let managedPackageBook {
-                            let repaired = FileImportService.reconciledLibraryBook(
-                                existing,
-                                with: managedPackageBook
-                            )
-                            self.library.books[existingIndex] = repaired
-                            if repaired != existing {
-                                self.save()
-                                let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
-                                TextMouthPaths.appendLog(
-                                    to: TextMouthPaths.logsDir.appendingPathComponent("textmouth_debug.log"),
-                                    message: message
-                                )
-                            }
-                        }
-                        shouldCopy = false
-                        NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
-                    } else if let existing = self.library.books.first(where: {
-                        $0.md5Hash == info.metadata.md5Hash
-                    }) {
-                        // A hash-only match can represent a deliberate second
-                        // package with a different ID. Open the known book
-                        // without relocating its Library record.
-                        shouldCopy = false
-                        NotificationCenter.default.post(name: .openBookWindow, object: existing.id)
+                    if let listedBookID = self.listedBookID(for: source) {
+                        isListed = true
+                        NotificationCenter.default.post(name: .openBookWindow, object: listedBookID)
                     }
                 }
-                guard shouldCopy else { return }
-                let imported = try FileImportService.importTMBPackageWithReport(from: url)
-                DispatchQueue.main.sync { self.completePackageImport(imported) }
+                guard !isListed else { return }
+                let imported = try FileImportService.importTMBPackage(source)
+                DispatchQueue.main.sync { self.completePackageImport(imported, openAfterImport: true) }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
         }
     }
 
-    /// Publish the book a package import produced and open it. A book that
-    /// is missing chapters is announced through the library's alert instead
-    /// of opened, so its reader window does not take focus from the warning.
-    /// The package the user chose is never deleted.
-    func completePackageImport(_ imported: ImportedBook) {
+    /// The library's own listing of the book `source` holds, found by book
+    /// ID or, failing that, by content, for the caller to open; nil when the
+    /// library does not list the book, which must then be imported.
+    ///
+    /// When the package is the listed book's own managed package, the
+    /// listing's storage fields are first repaired from it. A package that
+    /// Remove from Library Only retired never counts as the listed book's
+    /// own: that book lives in another package now, and repairing its
+    /// listing toward the retired one would point it at a package the next
+    /// launch takes out of the library.
+    func listedBookID(for source: TMBImportSource) -> UUID? {
+        if let existingIndex = library.books.firstIndex(where: { $0.id == source.bookID }) {
+            let existing = library.books[existingIndex]
+            if let inspection = source.inspection,
+               !RemovedFromLibraryMarker.retires(source.bookID, in: source.packageURL),
+               let managedPackageBook = FileImportService.bookFromManagedPackage(
+                   inspection: inspection,
+                   packageURL: source.packageURL
+               ) {
+                let repaired = FileImportService.reconciledLibraryBook(existing, with: managedPackageBook)
+                library.books[existingIndex] = repaired
+                if repaired != existing {
+                    save()
+                    let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
+                    TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: message)
+                }
+            }
+            return existing.id
+        }
+        // A hash-only match can represent a deliberate second package with
+        // a different ID. Open the known book without relocating its
+        // Library record.
+        return library.books.first(where: { $0.md5Hash == source.md5Hash })?.id
+    }
+
+    /// Publish the book a package import produced, and with
+    /// `openAfterImport` open it. A book that is missing chapters is
+    /// announced through the library's alert instead of opened, so its
+    /// reader window does not take focus from the warning. The package the
+    /// user chose is never deleted.
+    func completePackageImport(_ imported: ImportedBook, openAfterImport: Bool) {
         importProgressMessage = ""
         library.addBook(imported.book)
         save()
         if let warning = imported.warning {
             presentImportMessage(warning)
-        } else {
+        } else if openAfterImport {
             NotificationCenter.default.post(name: .openBookWindow, object: imported.book.id)
         }
     }

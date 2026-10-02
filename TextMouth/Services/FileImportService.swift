@@ -214,7 +214,7 @@ enum FileImportService {
     /// Checks that `packageURL` is a .tmb directory that neither is nor
     /// holds a symbolic link, so nothing copied from it can depend on files
     /// outside the package.
-    private static func checkPackageStructure(at packageURL: URL) throws {
+    static func checkPackageStructure(at packageURL: URL) throws {
         var isDirectory: ObjCBool = false
         guard packageURL.pathExtension.lowercased() == "tmb",
               FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory),
@@ -241,7 +241,7 @@ enum FileImportService {
     /// Checks the content `info` names inside `packageURL`: a safe file name
     /// that exists, in the format `info` records, and, for a file, with the
     /// checksum it records. Only an audio book's content may be a folder.
-    private static func inspectContent(
+    static func inspectContent(
         of packageURL: URL,
         describedBy info: BookInfo
     ) throws -> TMBPackageInspection {
@@ -281,59 +281,31 @@ enum FileImportService {
         try importTMBPackageWithReport(from: sourceURL).book
     }
 
-    /// Copies the validated package at `sourceURL` into the library's top
-    /// level, staged like every import, with its reading position,
-    /// bookmarks, and settings. The staged copy is validated again, so every
-    /// later path and value comes from the exact package being published,
-    /// and loses any removal marker it carried, which would otherwise retire
-    /// the book again at the next launch. Its content is then read as the
-    /// reader will, and it is published only once its bookInfo.json reads
-    /// back.
-    /// - Parameter observer: told as each step on the staged package begins.
+    /// Imports the .tmb package at `sourceURL`, staged like every import.
+    ///
+    /// When the managed library holds the package Remove from Library Only
+    /// retained for the same book (the chosen package itself, or another
+    /// with the same book ID or the same content), that package is taken
+    /// back where it is instead of copied a second time. Otherwise the
+    /// package is copied into the library's top level with its reading
+    /// position, bookmarks, and settings, and loses any removal marker it
+    /// carried. Either way the book's content is read as the reader will,
+    /// and the book is published only once its bookInfo.json reads back.
+    /// See `importTMBPackage(_:observer:)`.
+    /// - Parameter observer: told as each step on the package begins.
     /// - Throws: an `ImportFailure` naming the package and the step that
-    ///   failed. Whatever was staged is removed, and the source package is
-    ///   never changed.
+    ///   failed. Whatever was staged is removed, and the chosen package is
+    ///   never changed unless it is the retained package being taken back.
     static func importTMBPackageWithReport(
         from sourceURL: URL,
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
-        try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
-            try run.begin(.checkingPackage)
-            let metadata = try inspectTMBPackage(at: sourceURL).info.metadata
-
-            try run.begin(.preparingPackage)
-            let destination = try destinationPackageURL(
-                title: metadata.title,
-                author: metadata.author,
-                dateAdded: metadata.dateAdded,
-                bookID: metadata.bookID,
-                folderPath: ""
-            )
-            guard !FileManager.default.fileExists(atPath: destination.path) else {
-                throw TMBPackageImportError.destinationExists(destination.lastPathComponent)
-            }
-
-            try run.begin(.copying)
-            let staging = try ImportStaging.copy(of: sourceURL, publishingTo: destination)
-            defer { staging.discard() }
-
-            try run.begin(.checkingPackage, in: staging.directory)
-            let copied = try inspectTMBPackage(at: staging.directory)
-            try RemovedFromLibraryMarker.remove(from: staging.directory)
-
-            let staged = bookFromPackageInfo(
-                copied.info,
-                packageURL: staging.directory,
-                folderPath: "",
-                tmbName: staging.name
-            )
-            return try publishReadableBook(staged, from: staging, run: &run)
-        }
+        try importTMBPackage(try identifyTMBPackage(at: sourceURL), observer: observer)
     }
 
     /// Builds a Book from validated package metadata and a trusted package
     /// location. Callers must validate the package before using this helper.
-    private static func bookFromPackageInfo(
+    static func bookFromPackageInfo(
         _ info: BookInfo,
         packageURL: URL,
         folderPath: String,
@@ -389,6 +361,26 @@ enum FileImportService {
         packageURL: URL,
         libraryDirectory: URL = TextMouthPaths.libraryDir
     ) -> Book? {
+        guard let folderPath = managedFolderPath(of: packageURL, libraryDirectory: libraryDirectory) else {
+            return nil
+        }
+        return bookFromPackageInfo(
+            inspection.info,
+            packageURL: packageURL,
+            folderPath: folderPath,
+            tmbName: packageURL.lastPathComponent
+        )
+    }
+
+    /// The library folder a package lies in, taken from where it actually is
+    /// rather than from any metadata: "" at the library's top level, or the
+    /// folder's path inside the library. Nil for a package outside the
+    /// managed library, or for something not named as a package. Symbolic
+    /// links are resolved first, so /tmp and /private/tmp spellings agree.
+    static func managedFolderPath(
+        of packageURL: URL,
+        libraryDirectory: URL = TextMouthPaths.libraryDir
+    ) -> String? {
         let resolvedLibrary = libraryDirectory
             .standardizedFileURL
             .resolvingSymlinksInPath()
@@ -403,24 +395,11 @@ enum FileImportService {
         }
 
         let resolvedParentPath = resolvedPackage.deletingLastPathComponent().path
-        guard resolvedParentPath == resolvedLibrary.path ||
-              resolvedParentPath.hasPrefix(libraryPrefix) else {
-            return nil
-        }
-
-        let folderPath: String
         if resolvedParentPath == resolvedLibrary.path {
-            folderPath = ""
-        } else {
-            folderPath = String(resolvedParentPath.dropFirst(libraryPrefix.count))
+            return ""
         }
-
-        return bookFromPackageInfo(
-            inspection.info,
-            packageURL: packageURL,
-            folderPath: folderPath,
-            tmbName: packageURL.lastPathComponent
-        )
+        guard resolvedParentPath.hasPrefix(libraryPrefix) else { return nil }
+        return String(resolvedParentPath.dropFirst(libraryPrefix.count))
     }
 
     /// Repairs storage fields from a validated managed package. Package state
@@ -608,7 +587,7 @@ enum FileImportService {
     /// `folderPath`, whose directory is created first if needed, under the
     /// name the book's title, author, date added, and ID give it, which no
     /// other book's package shares.
-    private static func destinationPackageURL(
+    static func destinationPackageURL(
         title: String,
         author: String,
         dateAdded: Date,
@@ -628,7 +607,7 @@ enum FileImportService {
     /// publishes the package under its final name. `staged` describes the
     /// book inside the staged package; the book returned describes it where
     /// it was published.
-    private static func publishReadableBook(
+    static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
         run: inout ImportRun

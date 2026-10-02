@@ -318,7 +318,8 @@ final class TMBPackageImportTests: XCTestCase {
 
     /// A package book that is missing chapters is added and its warning
     /// told, instead of its reader window opening over the warning; a
-    /// complete one is added and opened.
+    /// complete one is added without any alert. (Nothing here asks for a
+    /// reader window, which the hosted app would really open.)
     @MainActor
     func testPackageBookMissingChaptersIsAnnouncedInsteadOfOpened() throws {
         let sandbox = try LibraryIndexSandbox.capture()
@@ -334,18 +335,19 @@ final class TMBPackageImportTests: XCTestCase {
         let notOpened = XCTNSNotificationExpectation(name: .openBookWindow)
         notOpened.isInverted = true
 
-        model.completePackageImport(ImportedBook(book: partial, report: report))
+        model.completePackageImport(ImportedBook(book: partial, report: report), openAfterImport: true)
 
         wait(for: [notOpened], timeout: 0.2)
         XCTAssertEqual(model.library.books.map(\.id), [partial.id])
         XCTAssertTrue(model.showError)
         XCTAssertEqual(model.errorMessage, ImportedBook(book: partial, report: report).warning)
 
+        model.showError = false
+        model.errorMessage = nil
         let complete = Book(title: "Complete", format: .txt, filePath: "/tmp/complete.txt", md5Hash: UUID().uuidString)
-        let opened = XCTNSNotificationExpectation(name: .openBookWindow)
-        model.completePackageImport(ImportedBook(book: complete))
-        wait(for: [opened], timeout: 1)
+        model.completePackageImport(ImportedBook(book: complete), openAfterImport: false)
         XCTAssertEqual(model.library.books.map(\.id), [partial.id, complete.id])
+        XCTAssertFalse(model.showError)
     }
 
     // MARK: - Fixtures
