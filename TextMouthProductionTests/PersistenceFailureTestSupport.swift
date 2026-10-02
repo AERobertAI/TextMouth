@@ -60,14 +60,21 @@ struct WriteObstruction {
     }
 
     /// Removes the folder and puts back the file's bytes, or leaves no file
-    /// when there was none. Clearing twice does no harm.
+    /// when there was none. Clearing twice does no harm, and a file written
+    /// since the folder was cleared stays.
     func clear() {
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
-            try? FileManager.default.removeItem(at: url)
-            if let originalBytes {
-                try? originalBytes.write(to: url, options: .atomic)
-            }
+            restoreOriginal()
+        }
+    }
+
+    /// Puts the file back exactly as it was before the obstruction, whatever
+    /// stands there now: for the end of a test that wrote the file itself.
+    func restoreOriginal() {
+        try? FileManager.default.removeItem(at: url)
+        if let originalBytes {
+            try? originalBytes.write(to: url, options: .atomic)
         }
     }
 }

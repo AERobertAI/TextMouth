@@ -1,11 +1,11 @@
 import XCTest
 @testable import TextMouth
 
-/// A save of the listening statistics or the settings that fails is
-/// reported to the failure center with the file's path and a retry, instead
-/// of only being logged, and the next save that succeeds settles it (TODO
-/// S09). Each test writes a file of its own, made to fail by a read-only
-/// folder or an injected write.
+/// A save of the listening statistics, the settings, or the substitution
+/// rules that fails is reported to the failure center with the file's path
+/// and a retry, instead of only being logged, and the next save that
+/// succeeds settles it (TODO S09). Writes are made to fail by a read-only
+/// folder, an injected write, or a folder standing where the file goes.
 @MainActor
 final class DataFileFailureReportingTests: XCTestCase {
     // MARK: - Statistics
@@ -100,6 +100,34 @@ final class DataFileFailureReportingTests: XCTestCase {
         service.saveToDisk()
 
         XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    // MARK: - Substitution Rules
+
+    /// A save of the substitution rules that cannot be written is reported
+    /// with the file's path; Retry saves the same rules once the file can be
+    /// written, and settles the failure. The rules file is the hosted app's,
+    /// so it is put back as it was afterwards.
+    func testAFailedSubstitutionSaveIsReportedAndRetrySavesTheRules() throws {
+        let center = cleanSharedFailureCenter()
+        let url = TextMouthPaths.substitutionsFile
+        let obstruction = try WriteObstruction.place(at: url)
+        addTeardownBlock { obstruction.restoreOriginal() }
+        let rule = SubstitutionRule(name: "Failure fixture", pattern: "colour", replacement: "color")
+        let service = TextSubstitutionService(rules: [])
+
+        service.addRule(rule)
+
+        let failure = try XCTUnwrap(center.outstandingFailures().first)
+        XCTAssertEqual(failure.subject, .substitutions)
+        XCTAssertEqual(failure.path, url.path)
+        XCTAssertTrue(failure.sentence.hasPrefix("Text substitution rules could not be saved: "), failure.sentence)
+
+        obstruction.clear()
+        recordingAnnouncements { center.retry(.substitutions) }
+
+        XCTAssertFalse(center.hasUnsavedChanges)
+        XCTAssertEqual(try JSONDecoder().decode([SubstitutionRule].self, from: Data(contentsOf: url)), [rule])
     }
 
     // MARK: - Helpers

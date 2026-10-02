@@ -381,6 +381,9 @@ final class TextSubstitutionService: ObservableObject {
 
     // MARK: - Persistence
 
+    /// Writes the rules to the substitutions file. A failure is reported to
+    /// the failure center with a retry that saves the rules as they are
+    /// then, and the next save that succeeds settles it (TODO S09).
     func saveRules() {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
@@ -388,8 +391,16 @@ final class TextSubstitutionService: ObservableObject {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(rules)
             try data.write(to: TextMouthPaths.substitutionsFile, options: .atomic)
+            PersistenceFailureCenter.shared.recordSuccess(.substitutions)
         } catch {
             print("Failed to save substitutions: \(error)")
+            PersistenceFailureCenter.shared.recordFailure(
+                .substitutions,
+                path: TextMouthPaths.substitutionsFile.path,
+                error: error
+            ) { [weak self] _ in
+                self?.saveRules()
+            }
         }
     }
 
