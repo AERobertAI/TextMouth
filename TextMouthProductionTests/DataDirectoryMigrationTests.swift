@@ -105,8 +105,14 @@ final class DataDirectoryMigrationTests: XCTestCase {
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
+}
 
-    private func makeLibrary(at root: URL) throws -> Library {
+extension XCTestCase {
+    /// Lays out a data directory at `root` holding one packaged plain-text
+    /// book with its analysis, and returns the library naming that book.
+    /// The library is not written as `root`'s library.json. Shared by the
+    /// data-directory and sandbox-container migration tests.
+    func makeLibrary(at root: URL) throws -> Library {
         let packageName = "\(UUID().uuidString).tmb"
         let package = root.appendingPathComponent("Library/\(packageName)", isDirectory: true)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)

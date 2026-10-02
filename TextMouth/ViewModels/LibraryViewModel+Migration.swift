@@ -174,41 +174,40 @@ extension LibraryViewModel {
         TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
     }
 
-    /// Migrate data from the old sandbox container to the real ~/.TextMouth
-    /// and clean up old container directories.
-    func migrateFromSandboxContainer() {
+    /// Copies the data directory a sandboxed release of TextMouth left in its
+    /// container to the default location in `home`, the first time the app
+    /// starts without one there.
+    ///
+    /// - Parameter home: The home directory both locations are in. The app
+    ///   passes nothing and gets the runtime's home: the user's real home,
+    ///   or the sandbox under hosted tests, so a test host never reads a real
+    ///   container or creates a real ~/.TextMouth. Tests pass a home of their
+    ///   own to exercise the copy.
+    func migrateFromSandboxContainer(home: URL = TextMouthRuntime.current.homeDirectory) {
         let fm = FileManager.default
-        let realDefault = TextMouthPaths.defaultRoot
+        let defaultRoot = TextMouthPaths.defaultRoot(in: home)
+        let containerRoot = TextMouthPaths.sandboxContainerRoot(in: home)
 
-        let home: String
-        if let pw = getpwuid(getuid()) {
-            home = String(cString: pw.pointee.pw_dir)
-        } else {
-            home = NSHomeDirectory()
-        }
-
-        let containerBase = URL(fileURLWithPath: home)
-            .appendingPathComponent("Library/Containers/com.textmouth.TextMouth/Data", isDirectory: true)
-        let containerTextMouth = containerBase.appendingPathComponent(".TextMouth", isDirectory: true)
+        // Only a first launch after the move out of the sandbox migrates: a
+        // default location that exists is the current library.
+        guard fm.fileExists(atPath: containerRoot.path), !fm.fileExists(atPath: defaultRoot.path) else { return }
 
         // Copy and validate the old sandbox directory. Keep the source as a
         // recovery copy; startup migration must never be the operation that
         // destroys the user's only known-good library.
-        if fm.fileExists(atPath: containerTextMouth.path) && !fm.fileExists(atPath: realDefault.path) {
-            do {
-                let data = try Data(contentsOf: containerTextMouth.appendingPathComponent("library.json"))
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
-                let oldLibrary = try decoder.decode(Library.self, from: data)
-                _ = try DataDirectoryMigrator.prepareMigration(
-                    from: containerTextMouth,
-                    to: realDefault,
-                    library: oldLibrary
-                )
-                print("Copied and validated .TextMouth from sandbox container to \(realDefault.path); source retained")
-            } catch {
-                print("Failed to migrate from sandbox container: \(error)")
-            }
+        do {
+            let data = try Data(contentsOf: containerRoot.appendingPathComponent("library.json"))
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let oldLibrary = try decoder.decode(Library.self, from: data)
+            _ = try DataDirectoryMigrator.prepareMigration(
+                from: containerRoot,
+                to: defaultRoot,
+                library: oldLibrary
+            )
+            print("Copied and validated .TextMouth from sandbox container to \(defaultRoot.path); source retained")
+        } catch {
+            print("Failed to migrate from sandbox container: \(error)")
         }
     }
 

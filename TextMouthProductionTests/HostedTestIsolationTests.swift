@@ -170,6 +170,54 @@ final class HostedTestIsolationTests: XCTestCase {
         )
     }
 
+    // MARK: - Sandbox Container Migration
+
+    /// A library an old sandboxed release left in its container moves into
+    /// the default location of the same home, with its book's path rewritten,
+    /// and the container keeps its copy. The home is a folder in the
+    /// sandbox, so the copy never leaves it.
+    func testContainerLibraryMigratesIntoItsHomesDefaultLocation() throws {
+        let home = try makeSandboxDirectory("container-home")
+        let container = TextMouthPaths.sandboxContainerRoot(in: home)
+        let library = try makeLibrary(at: container)
+        try LibraryIndexSandbox.encoded(library).write(to: container.appendingPathComponent("library.json"))
+        let defaultRoot = TextMouthPaths.defaultRoot(in: home)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: defaultRoot.path))
+
+        LibraryViewModel(initializeServices: false).migrateFromSandboxContainer(home: home)
+
+        let migrated = try readIndex(in: defaultRoot)
+        let book = try XCTUnwrap(migrated.books.first)
+        XCTAssertEqual(migrated.books.map(\.id), library.books.map(\.id))
+        XCTAssertTrue(book.filePath.hasPrefix(defaultRoot.path + "/"), book.filePath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: library.books[0].filePath), "the container keeps its copy")
+    }
+
+    /// A default location that exists is the current library, so nothing is
+    /// copied over it.
+    func testContainerMigrationLeavesAnExistingDefaultLocationAlone() throws {
+        let home = try makeSandboxDirectory("container-home-existing")
+        let container = TextMouthPaths.sandboxContainerRoot(in: home)
+        try LibraryIndexSandbox.encoded(try makeLibrary(at: container))
+            .write(to: container.appendingPathComponent("library.json"))
+        let defaultRoot = TextMouthPaths.defaultRoot(in: home)
+        try FileManager.default.createDirectory(at: defaultRoot, withIntermediateDirectories: true)
+        try Data("current library".utf8).write(to: defaultRoot.appendingPathComponent("keep.txt"))
+
+        LibraryViewModel(initializeServices: false).migrateFromSandboxContainer(home: home)
+
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: defaultRoot.path), ["keep.txt"])
+    }
+
+    /// The library index in the data directory at `root`, decoded as the app
+    /// writes it.
+    private func readIndex(in root: URL) throws -> Library {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Library.self, from: Data(contentsOf: root.appendingPathComponent("library.json")))
+    }
+
     // MARK: - The Custom Data Directory
 
     /// In the app the root follows the custom location its preferences hold,
