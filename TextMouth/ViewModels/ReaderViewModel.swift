@@ -297,6 +297,7 @@ final class ReaderViewModel: ObservableObject {
 
         setupCallbacks()
         setupNotifications()
+        observeSpokenAudioSettings()
         forwardSpeechState()
 
         if isAudioBook {
@@ -309,6 +310,30 @@ final class ReaderViewModel: ObservableObject {
         }
 
         loadContent()
+    }
+
+    /// Bring the look-ahead up to date when a setting that shapes spoken audio
+    /// changes outside this reader: the substitution rules or whether they
+    /// apply, edited in Settings, and the global punctuation pause level,
+    /// which Settings or an edit to config.json can change. Both models
+    /// announce a change before making it, so the refresh waits for the main
+    /// queue's next turn, when the change is in place.
+    private func observeSpokenAudioSettings() {
+        substitutionService.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.refreshLookAhead() }
+            .store(in: &cancellables)
+
+        // The settings model announces every change it makes, once or more;
+        // only a new punctuation pause level shapes spoken audio.
+        settingsViewModel.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .map { [weak self] _ in self?.settingsViewModel.punctuationPauseLevel }
+            .prepend(settingsViewModel.punctuationPauseLevel)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in self?.refreshLookAhead() }
+            .store(in: &cancellables)
     }
 
     /// Forward speechService @Published state to our own @Published properties

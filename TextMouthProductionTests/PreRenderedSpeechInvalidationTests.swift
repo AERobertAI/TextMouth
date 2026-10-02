@@ -334,6 +334,152 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    // MARK: - Re-arming the look-ahead
+
+    // A change to a setting that shapes the next chapter's audio, made while
+    // speech plays, abandons the look-ahead render at once and queues one
+    // render of the chapter's current speech, so the next chapter keeps its
+    // instant start.
+
+    /// A voice chosen for this book.
+    func testChoosingAVoiceForTheBookReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.setLocalVoice(try self.anotherVoice(than: reader))
+        }
+    }
+
+    /// A voice chosen in Settings: the speech service adopts it, then the
+    /// reader is told that speech settings changed.
+    func testAVoiceChosenInSettingsReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.speechService.currentVoice = try self.anotherVoice(than: reader)
+            reader.notificationCenter.post(name: .speechSettingsChanged, object: nil)
+        }
+    }
+
+    /// A substitution rule added in Settings.
+    func testAddingASubstitutionRuleReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.substitutionService.rules.append(Self.seabirdsForGulls)
+        }
+    }
+
+    /// A substitution rule switched off in Settings.
+    func testDisablingASubstitutionRuleReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.substitutionService.rules[0].isEnabled = false
+        }
+    }
+
+    /// A new punctuation pause level. The settings model reports each change
+    /// more than once, and the look-ahead is still re-armed only once.
+    func testChangingThePunctuationPausesReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.settingsViewModel.punctuationPauseLevel = 3
+        }
+    }
+
+    /// A section of the next chapter skipped.
+    func testSkippingASectionOfTheNextChapterReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce { reader in
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+        }
+    }
+
+    /// A skipped section of the next chapter included again.
+    func testIncludingASectionAgainReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce(skipping: ["Market"]) { reader in
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+        }
+    }
+
+    /// Skipping every section of the next chapter silences it, so the
+    /// look-ahead moves on to the chapter after it.
+    func testSilencingTheNextChapterReArmsForTheChapterAfterIt() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+
+            for heading in ["Harbour", "Market"] {
+                reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == heading }))
+            }
+
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 2)
+            XCTAssertTrue(reader.lookAhead?.engine === renders.requested.last?.engine)
+            XCTAssertEqual(renders.requested.last?.request.signature, reader.currentRenderSignature(forChapterAt: 2))
+        }
+    }
+
+    /// Once the re-armed render finishes, the next chapter starts at once
+    /// from audio of its current speech.
+    func testAReArmedLookAheadStartsTheNextChapterAtOnceWithTheNewSettings() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            renders.startNext()
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+            // The abandoned render finishes first, then the re-armed one.
+            renders.finishRunning()
+            renders.renderNext()
+            let current = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 1))
+
+            let start = finishChapter(reader)
+
+            XCTAssertEqual(renders.requested.count, 3)
+            XCTAssertEqual(start.adoptedSignature, renders.requested[1].request.signature)
+            XCTAssertEqual(start.spokenText, current.text)
+            XCTAssertEqual(start.offsetMap, current.offsetMap)
+        }
+    }
+
+    /// Changes that leave the next chapter's audio as it was keep its render
+    /// running: a section skipped in the chapter being spoken, a substitution
+    /// rule that matches only that chapter, and new speed and pitch, chosen
+    /// for the book or in Settings.
+    func testChangesThatLeaveTheNextChaptersAudioAloneKeepTheLookAhead() throws {
+        try withReader(substitutions: [Self.harbourSpelling]) { reader, renders in
+            startSpeakingSilently(reader)
+            let render = try XCTUnwrap(renders.startNext())
+
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Crossing" }))
+            reader.substitutionService.rules.append(Self.pierForQuay)
+            reader.adjustSpeed(delta: reader.speechService.wordsPerMinute < 600 ? 25 : -25)
+            reader.adjustPitch(to: reader.speechService.pitchMultiplier < 1.5 ? 1.8 : 0.8)
+            reader.settingsViewModel.wordsPerMinute = 250
+            drainMainQueue()
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertTrue(reader.lookAhead?.engine === render.engine)
+            XCTAssertTrue(render.engine.isRendering)
+        }
+    }
+
+    /// Stopped speech keeps no look-ahead current: a change then queues no
+    /// render, and the next Play chooses the next chapter afresh.
+    func testChangesWhileStoppedQueueNoRender() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            reader.speechService.isSpeaking = false
+
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+            reader.settingsViewModel.punctuationPauseLevel = 3
+            drainMainQueue()
+
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
+    /// Paused speech is still under way, so a change re-arms its look-ahead.
+    func testChangesWhilePausedReArmTheLookAhead() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            reader.speechService.isPaused = true
+
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+
+            XCTAssertEqual(renders.requested.count, 2)
+            XCTAssertEqual(renders.requested.last?.request.signature, reader.currentRenderSignature(forChapterAt: 1))
+        }
+    }
+
     // MARK: - Fixtures
 
     /// When a setting changes relative to the look-ahead render.
@@ -357,6 +503,55 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         pattern: "Gulls",
         replacement: "Seabirds"
     )
+
+    /// Replaces a word only the first chapter, the one being spoken, contains.
+    private static let pierForQuay = SubstitutionRule(
+        name: "Pier",
+        pattern: "quay",
+        replacement: "pier"
+    )
+
+    /// Let the main queue run what is queued on it, and what that queues in
+    /// turn: the reader hears of changes made in other models there.
+    private func drainMainQueue() {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+    }
+
+    /// Check that `change`, made while the next chapter renders ahead,
+    /// abandons that render and queues exactly one render of the chapter's
+    /// current speech, however many notices of the change arrive.
+    ///
+    /// Substitution rule `harbourSpelling` applies throughout.
+    ///
+    /// - Parameters:
+    ///   - skippedHeadings: Sections skipped before playback begins.
+    ///   - change: Changes one setting, as the listener would.
+    private func assertChangeReArmsTheLookAheadOnce(
+        skipping skippedHeadings: Set<String> = [],
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        _ change: (ReaderViewModel) throws -> Void
+    ) throws {
+        try withReader(skipping: skippedHeadings, substitutions: [Self.harbourSpelling]) { reader, renders in
+            startSpeakingSilently(reader)
+            let staleRender = try XCTUnwrap(renders.startNext(), file: file, line: line)
+
+            try change(reader)
+            drainMainQueue()
+
+            XCTAssertEqual(renders.requested.count, 2, "renders queued in all", file: file, line: line)
+            XCTAssertFalse(staleRender.engine.isRendering, "the stale render is abandoned", file: file, line: line)
+            let rearmed = try XCTUnwrap(renders.requested.last, file: file, line: line)
+            XCTAssertTrue(reader.lookAhead?.engine === rearmed.engine, file: file, line: line)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1, file: file, line: line)
+            XCTAssertEqual(
+                rearmed.request.signature,
+                reader.currentRenderSignature(forChapterAt: 1),
+                file: file,
+                line: line
+            )
+        }
+    }
 
     /// An installed voice other than the one `reader` speaks with now; the
     /// test is skipped on a Mac with a single voice.

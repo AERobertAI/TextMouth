@@ -523,6 +523,40 @@ extension ReaderViewModel {
         return nil
     }
 
+    /// Whether a text book's speech is playing or paused: the only time the
+    /// reader keeps a look-ahead.
+    var isSpeechSessionActive: Bool {
+        !isAudioBook && speechService.isActive
+    }
+
+    /// Bring the look-ahead up to date after a setting that shapes spoken
+    /// audio changed: the voice, the substitution rules or whether they
+    /// apply, the punctuation pause level, or the skipped sections.
+    ///
+    /// Every such change comes through here, however it was made, so every
+    /// input is handled alike. The look-ahead is kept while the next
+    /// speakable chapter's speech, prepared from the current settings in the
+    /// current voice, still has the signature it renders, as after a section
+    /// is skipped in the chapter being spoken; a repeated notice of one change
+    /// therefore does nothing more. Otherwise its render is abandoned and the
+    /// next speakable chapter, which may now be another one, is queued to
+    /// render from the current settings, so the next chapter keeps its
+    /// instant start. Speed and pitch are not such settings: they are applied
+    /// as the audio plays.
+    ///
+    /// Nothing happens unless a text book's speech is playing or paused.
+    func refreshLookAhead() {
+        guard isSpeechSessionActive else { return }
+        if let lookAhead,
+           let next = nextSpeakableChapterSpeech(from: currentChapterIndex + 1),
+           next.chapterIndex == lookAhead.chapterIndex,
+           renderRequest(for: next).signature == lookAhead.signature {
+            return
+        }
+        debugLog("preRender: speech settings changed; choosing the chapter to render ahead again")
+        preRenderNextChapter()
+    }
+
     /// The chapter of the reader's look-ahead when that look-ahead renders
     /// with `engine`, or nil when the look-ahead is another render or there is
     /// none. A look-ahead chosen later is another render even when it is for
