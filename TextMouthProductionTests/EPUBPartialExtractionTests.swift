@@ -405,8 +405,8 @@ final class EPUBPartialExtractionTests: XCTestCase {
     }
 
     /// An EPUB with no readable chapter is a failed import: the error names
-    /// every chapter, no package is left in the library, the source stays
-    /// where it was, and the omissions are logged.
+    /// the file, the step, and every chapter, no package is left in the
+    /// library, the source stays where it was, and the omissions are logged.
     func testImportOfBookWithNoReadableChapterFailsAndLeavesNothingBehind() throws {
         let title = Self.uniqueTitle()
         let epub = try makeEPUB(title: title, chapters: Self.threeChapters)
@@ -417,7 +417,10 @@ final class EPUBPartialExtractionTests: XCTestCase {
 
         XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub)) { error in
             let message = error.localizedDescription
-            XCTAssertTrue(message.hasPrefix("None of the 3 chapters could be read: chapter 1 (“OEBPS/ch01.xhtml”)"), message)
+            XCTAssertTrue(message.hasPrefix(
+                "Could not import “book.epub”. Reading its text failed: "
+                    + "None of the 3 chapters could be read: chapter 1 (“OEBPS/ch01.xhtml”)"
+            ), message)
             XCTAssertTrue(message.hasSuffix("Get a fresh copy of the book, then import it again."), message)
         }
 
@@ -427,7 +430,8 @@ final class EPUBPartialExtractionTests: XCTestCase {
     }
 
     /// An EPUB that cannot be opened is not imported as an unreadable book:
-    /// the import fails naming the damaged file and leaves no package.
+    /// the import fails naming the book, the step, and the damaged file
+    /// inside it, and leaves no package.
     func testImportOfBookWithDamagedPackageDocumentFails() throws {
         let epub = try makeEPUB(chapters: Self.threeChapters)
         try damageData(of: "OEBPS/content.opf", in: epub)
@@ -435,7 +439,8 @@ final class EPUBPartialExtractionTests: XCTestCase {
 
         XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub)) { error in
             XCTAssertTrue(error.localizedDescription.hasPrefix(
-                "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                "Could not import “book.epub”. Reading its text failed: "
+                    + "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
             ), error.localizedDescription)
         }
         XCTAssertEqual(try libraryEntries(), libraryBefore)

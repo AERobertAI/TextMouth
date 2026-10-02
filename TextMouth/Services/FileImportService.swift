@@ -24,12 +24,21 @@ enum FileImportError: LocalizedError {
     case unsupportedFormat(String)
     case hashingFailed
     case importFailed(String)
+    /// The bookInfo.json an import wrote did not read back as the record it
+    /// wrote, so the package cannot be trusted to describe its book.
+    case recordNotReadBack
+    /// AVFoundation could not open an audio file, which it reports in terms
+    /// ("Operation Stopped") that do not tell a listener what is wrong. The
+    /// file is described as playback describes such a file.
+    case unplayableAudio(AudioPlaybackFailure)
 
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat(let ext): return "Unsupported file format: .\(ext)"
         case .hashingFailed: return "Failed to compute file hash."
         case .importFailed(let msg): return "Import failed: \(msg)"
+        case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written."
+        case .unplayableAudio(let failure): return failure.message
         }
     }
 }
@@ -72,6 +81,80 @@ struct ImportedBook {
     var warning: String? {
         guard keepsOriginal else { return nil }
         return "\(report.message) The original file was kept."
+    }
+}
+
+/// What an import reads about a book from its file before copying it: the
+/// title and author the book is listed under, and the format's extra
+/// fields. Reading it never fails an import: a file that names no title or
+/// author, or whose metadata is damaged, is listed under its file name and
+/// an unknown author.
+struct ImportedFileMetadata {
+    var title: String
+    var author = "Unknown"
+    /// Everything an EPUB's package document says about the book.
+    var epub: EPUBMetadata?
+    /// Audio tags, for an audio file.
+    var audioAlbum: String?
+    var audioGenre: String?
+    var audioYear: String?
+
+    /// Reads the metadata `format` keeps inside the file at `url`, starting
+    /// from the file's name and an unknown author.
+    static func read(from url: URL, format: BookFormat) -> ImportedFileMetadata {
+        var metadata = ImportedFileMetadata(title: url.deletingPathExtension().lastPathComponent)
+        /// Adopts the title and author a format's metadata names, keeping
+        /// the defaults for any it leaves empty.
+        func adopt(title: String, author: String) {
+            if !title.isEmpty { metadata.title = title }
+            if !author.isEmpty { metadata.author = author }
+        }
+
+        switch format {
+        case .epub:
+            if let epub = try? EPUBParser.readMetadata(url: url) {
+                metadata.epub = epub
+                adopt(title: epub.title, author: epub.author)
+            }
+        case .docx:
+            // Title and author from the document's core properties.
+            if let core = try? DOCXParser.readMetadata(from: url) {
+                adopt(title: core.title, author: core.author)
+            }
+        case .pdf:
+            // Title and author from the document's attributes.
+            if let attributes = PDFTextParser.readMetadata(from: url) {
+                adopt(title: attributes.title, author: attributes.author)
+            }
+        case .daisy:
+            // Title and author from the OPF or ncc.html.
+            if let daisy = try? DAISYParser.readMetadata(from: url) {
+                adopt(title: daisy.title, author: daisy.author)
+            }
+        case .audio:
+            let tags = audioTags(of: url)
+            adopt(title: tags.title, author: tags.artist)
+            if !tags.album.isEmpty { metadata.audioAlbum = tags.album }
+            if !tags.genre.isEmpty { metadata.audioGenre = tags.genre }
+            if !tags.year.isEmpty { metadata.audioYear = tags.year }
+        case .txt, .markdown, .html:
+            break
+        }
+        return metadata
+    }
+
+    /// The common metadata tags of the audio file at `url`, read through
+    /// AVFoundation's asynchronous loading while this thread waits, as an
+    /// import runs off the main thread.
+    private static func audioTags(of url: URL) -> AudioMetadata {
+        let semaphore = DispatchSemaphore(value: 0)
+        let tagsBox = SynchronousResultBox<AudioMetadata>()
+        Task.detached {
+            tagsBox.store(await AudioPlaybackService.extractFullMetadata(from: url))
+            semaphore.signal()
+        }
+        semaphore.wait()
+        return tagsBox.value ?? AudioMetadata()
     }
 }
 
@@ -418,155 +501,184 @@ enum FileImportService {
 
     /// Import a single file into a .tmb package, returning the Book with the
     /// report of the chapters its source could not supply.
-    /// - Throws: when the file cannot be imported. For an EPUB that includes
-    ///   a text cache that cannot be generated, for example because no
-    ///   chapter can be read; the staged package is then removed, so no
-    ///   unreadable book is ever published.
-    static func importFileWithReport(from sourceURL: URL, toFolder folderPath: String = "") throws -> ImportedBook {
+    ///
+    /// The package is built under a hidden name (`ImportStaging`) and is
+    /// published only once every step that can fail has succeeded: copying
+    /// the file, reading its text or audio as the reader will, and writing
+    /// its bookInfo.json and reading it back. A book that could not be read,
+    /// or whose record could not be saved, is never published.
+    /// - Parameter observer: told as each step on the staged package begins;
+    ///   tests use it to make a step fail.
+    /// - Throws: an `ImportFailure` naming the file and the step that failed,
+    ///   for example an EPUB with no readable chapter or a document whose
+    ///   text cannot be extracted. Whatever was staged is removed first, and
+    ///   the source file is never touched.
+    static func importFileWithReport(
+        from sourceURL: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
+            guard let format = BookFormat.detect(from: sourceURL) else {
+                throw FileImportError.unsupportedFormat(sourceURL.pathExtension.lowercased())
+            }
+
+            try run.begin(.readingSource)
+            let hash = try md5Hash(of: sourceURL)
+            let metadata = ImportedFileMetadata.read(from: sourceURL, format: format)
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+                title: metadata.title,
+                author: metadata.author,
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.copying, in: staging.directory)
+            let stagedFile = staging.directory.appendingPathComponent(sourceURL.lastPathComponent)
+            try FileManager.default.copyItem(at: sourceURL, to: stagedFile)
+
+            let staged = Book(
+                id: bookID,
+                title: metadata.title,
+                author: metadata.author,
+                format: format,
+                filePath: stagedFile.path,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                tmbDirectoryName: staging.name,
+                sourceFilePath: sourceURL.path,
+                audioAlbum: metadata.audioAlbum,
+                audioGenre: metadata.audioGenre,
+                audioYear: metadata.audioYear,
+                epubPublisher: metadata.epub?.publisher,
+                epubPublicationDate: metadata.epub?.publicationDate,
+                epubISBN: metadata.epub?.isbn,
+                epubLanguage: metadata.epub?.language,
+                epubIdentifier: metadata.epub?.identifier,
+                epubVersion: metadata.epub?.epubVersion
+            )
+            return try publishReadableBook(staged, from: staging, run: &run)
+        }
+    }
+
+    // MARK: - Staged Imports
+
+    /// The location a newly imported book's package will be published at, in
+    /// the library folder `folderPath`, whose directory is created first if
+    /// needed. Its name is unique to `bookID`.
+    private static func newPackageURL(
+        title: String,
+        author: String,
+        dateAdded: Date,
+        bookID: UUID,
+        folderPath: String
+    ) throws -> URL {
         try TextMouthPaths.ensureDirectoryStructure()
         if !folderPath.isEmpty {
             try TextMouthPaths.ensureLibrarySubfolder(folderPath)
         }
+        let name = TextMouthPaths.tmbName(title: title, author: author, dateAdded: dateAdded, bookID: bookID)
+        return TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: name)
+    }
 
-        let ext = sourceURL.pathExtension.lowercased()
-        guard let format = BookFormat.detect(from: sourceURL) else {
-            throw FileImportError.unsupportedFormat(ext)
-        }
+    /// Finishes an import whose book is complete inside `staging`: reads its
+    /// content as the reader will, saves its record and reads it back, and
+    /// publishes the package under its final name. `staged` describes the
+    /// book inside the staged package; the book returned describes it where
+    /// it was published.
+    private static func publishReadableBook(
+        _ staged: Book,
+        from staging: ImportStaging,
+        run: inout ImportRun
+    ) throws -> ImportedBook {
+        var staged = staged
+        let content = try readableContent(of: &staged, run: &run)
+        let book = staging.published(staged)
 
-        let hash = try md5Hash(of: sourceURL)
-        var title = sourceURL.deletingPathExtension().lastPathComponent
-        var author = "Unknown"
-        let dateAdded = Date()
-        let bookID = UUID()
-        var epubMetadata: EPUBMetadata?
+        try run.begin(.savingRecord, in: staging.directory)
+        try writeVerifiedRecord(of: book, contentIndex: content.index, into: staging.directory)
 
-        // Extract metadata from EPUB files before creating the .tmb
-        if format == .epub {
-            if let metadata = try? EPUBParser.readMetadata(url: sourceURL) {
-                epubMetadata = metadata
-                if !metadata.title.isEmpty { title = metadata.title }
-                if !metadata.author.isEmpty { author = metadata.author }
-            }
-        }
+        try run.begin(.publishing, in: staging.directory)
+        try staging.publish()
+        return ImportedBook(book: book, report: content.report)
+    }
 
-        // Extract metadata from DOCX files (title and author from core properties)
-        if format == .docx {
-            if let metadata = try? DOCXParser.readMetadata(from: sourceURL) {
-                if !metadata.title.isEmpty { title = metadata.title }
-                if !metadata.author.isEmpty { author = metadata.author }
-            }
-        }
-
-        // Extract metadata from PDF files (title and author from document attributes)
-        if format == .pdf {
-            if let metadata = PDFTextParser.readMetadata(from: sourceURL) {
-                if !metadata.title.isEmpty { title = metadata.title }
-                if !metadata.author.isEmpty { author = metadata.author }
-            }
-        }
-
-        // Extract metadata from DAISY books (title and author from OPF or ncc.html)
-        if format == .daisy {
-            if let metadata = try? DAISYParser.readMetadata(from: sourceURL) {
-                if !metadata.title.isEmpty { title = metadata.title }
-                if !metadata.author.isEmpty { author = metadata.author }
-            }
-        }
-
-        // Extract metadata from audio files using AVAsset common metadata tags
-        var audioAlbum: String?
-        var audioGenre: String?
-        var audioYear: String?
-        if format.isAudio {
-            let semaphore = DispatchSemaphore(value: 0)
-            let metadataBox = SynchronousResultBox<AudioMetadata>()
-            Task.detached {
-                let metadata = await AudioPlaybackService.extractFullMetadata(from: sourceURL)
-                metadataBox.store(metadata)
-                semaphore.signal()
-            }
-            semaphore.wait()
-            if let meta = metadataBox.value {
-                if !meta.title.isEmpty { title = meta.title }
-                if !meta.artist.isEmpty { author = meta.artist }
-                if !meta.album.isEmpty { audioAlbum = meta.album }
-                if !meta.genre.isEmpty { audioGenre = meta.genre }
-                if !meta.year.isEmpty { audioYear = meta.year }
-            }
-        }
-
-        // Create .tmb directory name
-        let tmbName = TextMouthPaths.tmbName(
-            title: title,
-            author: author,
-            dateAdded: dateAdded,
-            bookID: bookID
-        )
-
-        // Create the .tmb package directory
-        let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
-        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
-
-        // Copy book file into the .tmb package
-        let destFile = tmbDir.appendingPathComponent(sourceURL.lastPathComponent)
-        if !FileManager.default.fileExists(atPath: destFile.path) {
-            try FileManager.default.copyItem(at: sourceURL, to: destFile)
-        }
-
-        var book = Book(
-            id: bookID,
-            title: title,
-            author: author,
-            format: format,
-            filePath: destFile.path,
-            md5Hash: hash,
-            folderPath: folderPath,
-            dateAdded: dateAdded,
-            tmbDirectoryName: tmbName,
-            sourceFilePath: sourceURL.path,
-            audioAlbum: audioAlbum,
-            audioGenre: audioGenre,
-            audioYear: audioYear,
-            epubPublisher: epubMetadata?.publisher,
-            epubPublicationDate: epubMetadata?.publicationDate,
-            epubISBN: epubMetadata?.isbn,
-            epubLanguage: epubMetadata?.language,
-            epubIdentifier: epubMetadata?.identifier,
-            epubVersion: epubMetadata?.epubVersion
-        )
-
-        // Generate cached Markdown content (non-audio books only)
-        var contentIndex: BookContentIndex?
+    /// What reading a book's content as the reader will produced: the index
+    /// to save with the book, and the report of the chapters its source could
+    /// not supply (always complete for audio and for formats that do not
+    /// report omissions).
+    struct ReadableContent {
+        var index: BookContentIndex
         var report = ExtractionReport()
-        if !format.isAudio {
+    }
+
+    /// Reads `book`'s content as the reader will, so that no import publishes
+    /// a book that cannot be opened. A text book's content.md is written into
+    /// its package, and an extraction that fails, in any format, fails with
+    /// the extraction's error. An audio book is analyzed, and one without a
+    /// playable chapter fails. `book` receives the cache version and the
+    /// index's counts.
+    static func readableContent(of book: inout Book, run: inout ImportRun) throws -> ReadableContent {
+        if book.format.isAudio {
+            try run.begin(.readingAudio, in: book.tmbDirectory)
+            let analysis: BookContentAnalysisService.Result
             do {
-                if let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) {
-                    contentIndex = generated.content.contentIndex
-                    report = generated.report
-                }
-            } catch let failure where format == .epub {
-                // An EPUB with no cache found no chapter to read, could not
-                // be opened at all, or could not be written into its package.
-                // The direct reader shares that extraction, so the book could
-                // only ever open as this error. Remove the package staged
-                // above (named by this import's new book ID, so it holds
-                // nothing else) and fail with the reason instead.
-                try? FileManager.default.removeItem(at: tmbDir)
-                throw failure
+                analysis = try BookContentAnalysisService.load(book: book)
             } catch {
-                // Other formats still import without a cache, and the reader
-                // parses the source directly (TODO S02).
-                MarkdownCacheService.logGenerationFailure(error, for: book)
+                throw describedAudioFailure(error, of: book)
             }
-        } else if let analysis = try? BookContentAnalysisService.load(book: book) {
-            contentIndex = analysis.index
+            guard !analysis.content.chapters.isEmpty else { throw AudioParseError.noAudioFiles }
             book.applyContentIndexSummary(analysis.index)
+            return ReadableContent(index: analysis.index)
         }
 
-        // Write bookInfo.json (after cache generation so version is included)
-        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
+        try run.begin(.readingText, in: book.tmbDirectory)
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) else {
+            // Only a book without a package gets no cache, and every
+            // import gives its book one before reading it.
+            throw FileImportError.importFailed("The book has no package to hold its text.")
+        }
+        return ReadableContent(index: generated.content.contentIndex, report: generated.report)
+    }
 
-        return ImportedBook(book: book, report: report)
+    /// `error`, from analyzing `book`'s audio, in terms a listener
+    /// understands. A single file that cannot be analyzed is described as
+    /// playback describes it ("is damaged, unreadable, or not an audio
+    /// file"), because AVFoundation's own words ("Operation Stopped") do not
+    /// say what is wrong. A folder's errors already name its problem.
+    private static func describedAudioFailure(_ error: any Error, of book: Book) -> any Error {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: book.filePath, isDirectory: &isDirectory),
+              !isDirectory.boolValue else { return error }
+        return FileImportError.unplayableAudio(
+            AudioPlaybackFailure(reason: .fileUnreadable, url: book.bookFileURL, underlyingError: error)
+        )
+    }
+
+    /// Writes `book`'s bookInfo.json, holding `contentIndex`, into `package`
+    /// and reads it back, so that a package is published only with a record
+    /// that is on disk and names its book. `package` is where the record goes
+    /// now, which for a staged package is not yet the book's own location.
+    static func writeVerifiedRecord(of book: Book, contentIndex: BookContentIndex, into package: URL) throws {
+        var info = book.makeBookInfo()
+        info.contentIndex = contentIndex
+        try info.save(to: package)
+
+        let saved = try BookInfo.load(from: package)
+        guard saved.metadata.bookID == book.id,
+              saved.metadata.md5Hash == book.md5Hash,
+              saved.metadata.format == book.format,
+              saved.metadata.originalFileName == info.metadata.originalFileName,
+              saved.contentIndex != nil else {
+            throw FileImportError.recordNotReadBack
+        }
     }
 
     /// Import a ZIP file containing supported book files.
@@ -679,10 +791,12 @@ enum FileImportService {
                     )
                 }
             } catch {
+                // The summary names the file, so the message is the reason
+                // alone: the step that failed and why.
                 failures.append(
                     ZipImportFailure(
                         fileName: fileURL.lastPathComponent,
-                        message: error.localizedDescription
+                        message: ImportFailure.reason(for: error)
                     )
                 )
             }
