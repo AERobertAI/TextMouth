@@ -111,8 +111,9 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    either encoding read correctly. The fallback is logged, because it is
 ///    a guess (see `readText(at:format:)`).
 ///
-/// No byte is ever dropped or replaced: an encoding either reads every byte
-/// or is not used.
+/// No byte is dropped or replaced to make the bytes fit an encoding: an
+/// encoding either reads every byte or is not used. Only the finishing
+/// described next changes the decoded text.
 ///
 /// Whatever the encoding, the text is then finished the same way: any U+FEFF
 /// at its start is removed, because a byte-order mark is a signature rather
