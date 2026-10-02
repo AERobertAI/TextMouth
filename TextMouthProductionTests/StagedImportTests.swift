@@ -267,6 +267,53 @@ final class StagedImportTests: XCTestCase {
         )
     }
 
+    // MARK: - Entered Text
+
+    /// Text typed or pasted into the library becomes exactly one published
+    /// package, holding the text under a safe file name, its cache, and a
+    /// record with its index.
+    @MainActor
+    func testEnteredTextBecomesOnePublishedBook() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        model.createBookFromText(
+            title: "Trail Log: Week 1",
+            author: "",
+            text: "Day one\n\nThe ridge path was washed out below the second cairn.",
+            toFolder: folderPath
+        )
+
+        XCTAssertTrue(eventually(within: 20) { model.library.books.count == 1 }, "the book was never added")
+        let book = try XCTUnwrap(model.library.books.first)
+        XCTAssertEqual(book.title, "Trail Log: Week 1")
+        XCTAssertEqual(book.author, "Unknown")
+        XCTAssertEqual(try folderEntries(), [book.tmbDirectoryName])
+        XCTAssertEqual(URL(fileURLWithPath: book.filePath).lastPathComponent, "Trail Log- Week 1.txt")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath))
+        XCTAssertNotNil(try BookInfo.load(from: book.tmbDirectory).contentIndex)
+        XCTAssertFalse(model.showError)
+    }
+
+    /// Entered text whose record cannot be saved fails, naming the text's
+    /// file and the step, and leaves nothing in the library folder.
+    func testEnteredTextWhoseRecordCannotBeSavedLeavesNothing() throws {
+        XCTAssertThrowsError(try FileImportService.importText(
+            "A short note.",
+            title: "Note",
+            author: "",
+            fileName: "Note.txt",
+            toFolder: folderPath,
+            observer: { step, _ in
+                if step == .savingRecord { throw CocoaError(.fileWriteOutOfSpace) }
+            }
+        )) { error in
+            XCTAssertEqual((error as? ImportFailure)?.fileName, "Note.txt")
+            XCTAssertEqual((error as? ImportFailure)?.step, .savingRecord)
+        }
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
     // MARK: - ZIP Batches
 
     /// A ZIP of three files, two of which cannot be read, imports the third,

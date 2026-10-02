@@ -272,49 +272,29 @@ extension LibraryViewModel {
 
     // MARK: - Import
 
-    /// Create a new book from user-entered text (paste/type).
+    /// Create a new book from user-entered text (paste/type). The package is
+    /// staged and published like every import's, so a failure leaves nothing
+    /// in the library and is told through the same alert.
     func createBookFromText(title: String, author: String, text: String, toFolder folderPath: String = "") {
+        let bookTitle = TextImportPolicy.resolvedTitle(title)
+        let fileName = TextImportPolicy.textFilename(for: bookTitle)
         importOperationQueue.enqueue { [weak self] in
+            guard let self else { return }
             do {
-                try TextMouthPaths.ensureDirectoryStructure()
-                let sanitizedTitle = TextImportPolicy.resolvedTitle(title)
-                let bookID = UUID()
-                let dateAdded = Date()
-                let tmbName = TextMouthPaths.tmbName(
-                    title: sanitizedTitle,
+                let imported = try FileImportService.importText(
+                    text,
+                    title: bookTitle,
                     author: author,
-                    dateAdded: dateAdded,
-                    bookID: bookID
+                    fileName: fileName,
+                    toFolder: folderPath
                 )
-                let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
-                try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
-
-                let fileName = TextImportPolicy.textFilename(for: sanitizedTitle)
-                let filePath = tmbDir.appendingPathComponent(fileName)
-                try text.write(to: filePath, atomically: true, encoding: .utf8)
-                let hash = (try? FileImportService.md5Hash(of: filePath)) ?? "text-\(text.count)"
-
-                var book = Book(
-                    id: bookID,
-                    title: sanitizedTitle,
-                    author: author.isEmpty ? "Unknown" : author,
-                    format: .txt,
-                    filePath: filePath.path,
-                    md5Hash: hash,
-                    folderPath: folderPath,
-                    dateAdded: dateAdded,
-                    tmbDirectoryName: tmbName
-                )
-                let index = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &book)
-                try book.saveBookInfoThrowing(contentIndex: index)
                 DispatchQueue.main.async {
-                    guard let self else { return }
-                    if self.addBookCheckingDuplicate(book, toFolder: folderPath) {
+                    if self.addBookCheckingDuplicate(imported.book, toFolder: folderPath) {
                         self.save()
                     }
                 }
             } catch {
-                DispatchQueue.main.async { self?.presentImportError(error) }
+                DispatchQueue.main.async { self.presentImportError(error) }
             }
         }
     }

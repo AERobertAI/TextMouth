@@ -568,6 +568,59 @@ enum FileImportService {
         }
     }
 
+    /// Imports text the reader typed or pasted as a plain-text book, staged
+    /// like every import: the text is written into a hidden package as
+    /// `fileName`, read as the reader will, and the package is published
+    /// only once its bookInfo.json reads back.
+    /// - Parameters:
+    ///   - title: The book's title, already resolved for display.
+    ///   - author: The author as entered; an empty one is listed as unknown.
+    ///   - fileName: The name of the text file inside the package.
+    ///   - observer: told as each step on the staged package begins.
+    /// - Throws: an `ImportFailure` naming `fileName` and the step that
+    ///   failed; whatever was staged is removed first.
+    static func importText(
+        _ text: String,
+        title: String,
+        author: String,
+        fileName: String,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: fileName, observer: observer) { run in
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+                title: title,
+                author: author,
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.copying, in: staging.directory)
+            let file = staging.directory.appendingPathComponent(fileName)
+            try text.write(to: file, atomically: true, encoding: .utf8)
+            let hash = try md5Hash(of: file)
+
+            let staged = Book(
+                id: bookID,
+                title: title,
+                author: author.isEmpty ? "Unknown" : author,
+                format: .txt,
+                filePath: file.path,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                tmbDirectoryName: staging.name
+            )
+            return try publishReadableBook(staged, from: staging, run: &run)
+        }
+    }
+
     // MARK: - Staged Imports
 
     /// The location a newly imported book's package will be published at, in
