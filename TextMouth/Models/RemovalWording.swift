@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// What removing books does with their files (TODO A08). Every removal
@@ -402,6 +403,35 @@ struct RemovalPreferences: Equatable {
     static var trashPreferenceExplanation: String {
         "When on, \(RemovalMode.moveToTrash.filesClause(of: "a deleted book's")). "
             + "When off, \(RemovalMode.deletePermanently.filesClause(of: "its"))."
+    }
+}
+
+/// The removal preferences as config.json holds them, published only when
+/// one of the two changes. The library's views, its Remove Book dialog, and
+/// the menu bar all word removal from this one model, so none of them is
+/// left promising the old behavior after a preference changes in Settings,
+/// and other settings changes redraw none of them.
+@MainActor
+final class RemovalPreferencesModel: ObservableObject {
+    /// The model the app's windows and menus share.
+    static let shared = RemovalPreferencesModel()
+
+    /// The removal preferences now in force.
+    @Published private(set) var preferences: RemovalPreferences
+
+    /// Keeps `preferences` in step with config.json.
+    private var subscription: AnyCancellable?
+
+    private init(configService: ConfigService = .shared) {
+        preferences = RemovalPreferences(configService.config)
+        subscription = configService.$config
+            .map { RemovalPreferences($0) }
+            .removeDuplicates()
+            .sink { [weak self] current in
+                // The first value is the current one; publish only changes.
+                guard let self, self.preferences != current else { return }
+                self.preferences = current
+            }
     }
 }
 

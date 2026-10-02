@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -18,6 +19,30 @@ final class RemovalOutcomeTests: XCTestCase {
                 RemovalPreferences(confirmsFirst: false, movesToTrash: true)
             )
         }
+    }
+
+    /// The shared preferences model, which the library's views, its Remove
+    /// Book dialog, and the menu bar word removal from, publishes when a
+    /// removal preference changes and stays quiet when another setting does.
+    func testSharedModelPublishesOnlyRemovalPreferenceChanges() {
+        let service = ConfigService.shared
+        let model = RemovalPreferencesModel.shared
+        let savedBookID = service.config.lastOpenedBookID
+        let savedTrash = service.config.moveToTrashInsteadOfDeleting
+        defer {
+            service.config.lastOpenedBookID = savedBookID
+            service.config.moveToTrashInsteadOfDeleting = savedTrash
+        }
+        var published: [RemovalPreferences] = []
+        let subscription = model.$preferences.dropFirst().sink { published.append($0) }
+        defer { subscription.cancel() }
+
+        service.config.lastOpenedBookID = UUID().uuidString
+        XCTAssertTrue(published.isEmpty, "another setting publishes nothing")
+
+        service.config.moveToTrashInsteadOfDeleting.toggle()
+        XCTAssertEqual(published, [RemovalPreferences(service.config)])
+        XCTAssertEqual(model.preferences, RemovalPreferences(service.config))
     }
 
     // MARK: - Delete Everything
