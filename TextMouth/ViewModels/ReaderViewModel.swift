@@ -119,8 +119,9 @@ final class ReaderViewModel: ObservableObject {
     /// the shared store, unless the reader was created with its own.
     let autoplayRequests: ReaderAutoplayRequests
     /// The center this reader listens on for commands and for Continue to
-    /// Next Book: the default center, unless the reader was created with its
-    /// own, as tests do to keep their notifications from the running app.
+    /// Next Book, and posts its own Continue to Next Book to: the default
+    /// center, unless the reader was created with its own, as tests do to
+    /// keep their notifications from the running app.
     let notificationCenter: NotificationCenter
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
@@ -254,8 +255,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - autoplayRequests: Where finished books ask this one to start
     ///     playing. Nil uses the shared store; tests pass their own.
     ///   - notificationCenter: Where the reader listens for commands and for
-    ///     Continue to Next Book. Tests pass their own, so their
-    ///     notifications never reach the running app's windows.
+    ///     Continue to Next Book, and posts its own Continue to Next Book.
+    ///     Tests pass their own, so their notifications never reach the
+    ///     running app's windows.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,

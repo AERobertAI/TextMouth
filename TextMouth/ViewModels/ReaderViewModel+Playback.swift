@@ -966,13 +966,12 @@ extension ReaderViewModel {
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
                 announceToVoiceOver("Starting: \(nextBook.title)")
-                // Post notification to open next book (the app handles window management)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    NotificationCenter.default.post(
-                        name: .continueToNextBook,
-                        object: nil,
-                        userInfo: ["bookID": nextBook.id, "previousBookID": self.book.id]
-                    )
+                // Ask for the next book once VoiceOver has begun the
+                // announcement. This reader is kept until then, so
+                // closing its window meanwhile still continues, as
+                // announced.
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                    self.continueToNextBook(nextBook.id)
                 }
             } else {
                 nowPlayingService.updateNowPlayingInfo(
@@ -999,6 +998,30 @@ extension ReaderViewModel {
     }
 
     // MARK: - Continue to Next Book
+
+    /// How long a finished book waits after announcing the next one before
+    /// asking for it, so VoiceOver can begin "Starting: <title>" before the
+    /// next book's window takes focus.
+    static let continueToNextBookDelay: TimeInterval = 0.5
+
+    /// Ask the next book to start playing, then ask for its reader window.
+    ///
+    /// The request comes first, so it is already waiting when anything
+    /// acts on the notification: a reader open for that book claims it and
+    /// plays at once, and a reader the notification opens claims it as
+    /// soon as it has loaded. The notification goes out on this reader's
+    /// own center, where the app opens the book's reader window, or
+    /// brings it forward when it is already open.
+    ///
+    /// - Parameter nextBookID: The book after this one in its folder.
+    func continueToNextBook(_ nextBookID: UUID) {
+        let request = autoplayRequests.request(for: nextBookID, from: book.id)
+        notificationCenter.post(
+            name: .continueToNextBook,
+            object: nil,
+            userInfo: request.notificationUserInfo
+        )
+    }
 
     /// Start playing because a finished book continued to this one, when
     /// its request is waiting and this book has finished loading.

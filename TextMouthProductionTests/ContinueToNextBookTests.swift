@@ -4,11 +4,13 @@ import XCTest
 
 /// Continue to Next Book, from the finished book to the next book's reader.
 ///
-/// The next book's reader starts playing for a finished book's request
-/// exactly once, through the normal Play path and without announcing
-/// anything: when it finishes loading, or at once when it was already open.
-/// Only that book's reader responds, a reader still loading waits until it
-/// has loaded, and a book that cannot be loaded drops the request.
+/// The finished book says "Starting" once, then leaves the next book a
+/// request and asks for its window. The next book's reader starts playing
+/// for that request exactly once, through the normal Play path and without
+/// announcing anything: when it finishes loading, or at once when it was
+/// already open. Only that book's reader responds, a reader still loading
+/// waits until it has loaded, and a book that cannot be loaded drops the
+/// request.
 ///
 /// Every book is a package of silent audio tracks, so a reader that starts
 /// playing is never heard. Each test's readers listen on a private
@@ -249,6 +251,128 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertTrue(world.requests.hasRequest(for: book.id))
     }
 
+    // MARK: - Finishing a book
+
+    /// A book that finishes with Continue to Next Book says "Starting" once,
+    /// then, after a moment, leaves the next book a request and asks for its
+    /// window exactly once, naming both books. The finished reader itself
+    /// stays finished.
+    func testFinishedBookAnnouncesTheNextOnceThenAsksForIt() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+
+            XCTAssertTrue(asked().isEmpty, "Asked before the announcement had a moment")
+            XCTAssertFalse(world.requests.hasRequest(for: next.id), "Requested before asking")
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            // Long enough for any second request to arrive.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
+        XCTAssertEqual(finishedReader.lastAnnouncement, "Starting: Second Volume")
+        XCTAssertEqual(asked().count, 1)
+        XCTAssertEqual(asked().first?.nextBookID, next.id)
+        XCTAssertEqual(
+            asked().first?.userInfo?[Notification.ContinueToNextBookKey.previousBookID] as? UUID,
+            finished.id
+        )
+        XCTAssertTrue(world.requests.hasRequest(for: next.id))
+        XCTAssertFalse(world.requests.hasRequest(for: finished.id))
+        XCTAssertFalse(finishedReader.isCurrentlyPlaying)
+        XCTAssertFalse(finishedReader.audioPlaybackService.isPlaying)
+        XCTAssertEqual(
+            ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
+            [finished.id.uuidString]
+        )
+    }
+
+    /// Finishing a book starts the next one in the reader opened for it,
+    /// once that reader has loaded; only the finished book says anything.
+    func testFinishingABookStartsTheNextInTheReaderOpenedForIt() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        let asked = recordContinueRequests(in: world)
+
+        var nextReader: ReaderViewModel?
+        var starts: () -> Int = { 0 }
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            // The window opened for the request creates the next book's reader.
+            let reader = makeReader(for: next, in: world)
+            starts = countPlaybackStarts(of: reader)
+            nextReader = reader
+            waitUntilLoaded(reader)
+        }
+
+        let reader = try XCTUnwrap(nextReader)
+        XCTAssertEqual(starts(), 1)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying)
+        XCTAssertNil(reader.lastAnnouncement)
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
+        XCTAssertFalse(finishedReader.isCurrentlyPlaying)
+        XCTAssertFalse(world.requests.hasRequest(for: next.id))
+    }
+
+    /// Finishing a book starts its next book in a reader already open and
+    /// loaded, exactly once, and that reader announces nothing.
+    func testFinishingABookStartsItsAlreadyOpenNextBookOnce() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(finishedReader)
+        waitUntilLoaded(nextReader)
+        let starts = countPlaybackStarts(of: nextReader)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            XCTAssertTrue(eventually { nextReader.isCurrentlyPlaying }, "The next book never started")
+            // Long enough for any second start to happen.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(starts(), 1)
+        XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
+        XCTAssertNil(nextReader.lastAnnouncement)
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
+        XCTAssertFalse(finishedReader.isCurrentlyPlaying)
+        XCTAssertFalse(finishedReader.audioPlaybackService.isPlaying)
+        XCTAssertFalse(world.requests.hasRequest(for: next.id))
+    }
+
+    /// The last book in its folder says so and asks for nothing.
+    func testLastBookInItsFolderAsksForNothing() throws {
+        let finished = try makeAudioBook(title: "Only Volume", endOfBook: .continueNext)
+        let world = try makeWorld(books: [finished])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Finished: Only Volume. No more books in folder."]
+        )
+        XCTAssertTrue(asked().isEmpty)
+    }
+
     // MARK: - Fixtures
 
     /// A test's private surroundings: the library holding its books,
@@ -383,5 +507,17 @@ final class ContinueToNextBookTests: XCTestCase {
             .sink { _ in starts += 1 }
             .store(in: &subscriptions)
         return { starts }
+    }
+
+    /// Record every `.continueToNextBook` posted on `world`'s notification
+    /// center from now on.
+    ///
+    /// - Returns: A function reading the notifications posted so far.
+    private func recordContinueRequests(in world: World) -> () -> [Notification] {
+        var posted: [Notification] = []
+        world.notifications.publisher(for: .continueToNextBook)
+            .sink { posted.append($0) }
+            .store(in: &subscriptions)
+        return { posted }
     }
 }
