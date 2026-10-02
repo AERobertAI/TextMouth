@@ -182,3 +182,126 @@ extension XCTestCase {
         addTeardownBlock { snapshot.restore() }
     }
 }
+
+// MARK: - Sentinels at the Real Locations
+
+/// Proof that the hosted tests leave the user's real data alone (TODO Q01).
+///
+/// Before TODO Q01 the hosted app computed real locations outside its data
+/// root whatever it was doing: the user's ~/.TextMouth, the data directory an
+/// old sandboxed release left in its container, and the oldest releases'
+/// Application Support folder. `plant()` puts a sentinel file in each of
+/// those that exists (named after this process, and created only where no
+/// file of that name is), notes each that does not exist, and fingerprints
+/// the user's real TextMouth preferences. After the work under test,
+/// `verify()` checks that every sentinel is byte-for-byte unchanged, every
+/// location exists exactly when it did, and the preferences are the same;
+/// `remove()` deletes the sentinels.
+///
+/// Whole directories are never compared, and nothing in them but the
+/// sentinel is read: the developer's own copy of TextMouth may be running and
+/// writing to ~/.TextMouth at any moment.
+///
+/// `@unchecked Sendable` so a teardown block can remove the sentinels: it is
+/// never mutated after `plant()` makes it.
+struct RealLocationSentinels: @unchecked Sendable {
+    /// One real location as `plant()` found it.
+    struct Location {
+        /// The directory.
+        let directory: URL
+        /// Whether anything was at `directory`.
+        let existed: Bool
+        /// The sentinel planted in it, when it was a directory.
+        let sentinel: URL?
+    }
+
+    /// The real locations, spelled out from the account's home exactly as
+    /// the code before TODO Q01 computed them, with none of the code under
+    /// test: the default data directory, the old sandbox container and the
+    /// data directory in it, and the oldest releases' folder.
+    static var realLocations: [URL] {
+        let home = RealUserAccount.homeDirectory
+        return [
+            home.appendingPathComponent(".TextMouth", isDirectory: true),
+            home.appendingPathComponent("Library/Containers/com.textmouth.TextMouth", isDirectory: true),
+            home.appendingPathComponent("Library/Containers/com.textmouth.TextMouth/Data/.TextMouth", isDirectory: true),
+            home.appendingPathComponent("Library/Application Support/TextMouth", isDirectory: true)
+        ]
+    }
+
+    /// What every sentinel holds.
+    let sentinelBytes: Data
+    /// Each real location, in the order of `realLocations`.
+    let locations: [Location]
+    /// The user's real TextMouth preferences when the sentinels were planted.
+    let preferences: UserPreferenceFingerprint
+
+    /// Plants the sentinels and records what is at each real location now.
+    /// A failure removes any sentinel already planted before it throws.
+    static func plant() throws -> RealLocationSentinels {
+        let process = ProcessInfo.processInfo.processIdentifier
+        let name = ".textmouth-test-sentinel-\(process)"
+        let bytes = Data("TextMouth hosted-test sentinel for process \(process). Safe to delete.\n".utf8)
+        var locations: [Location] = []
+        do {
+            for directory in realLocations {
+                var isDirectory: ObjCBool = false
+                let exists = FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory)
+                guard exists, isDirectory.boolValue else {
+                    locations.append(Location(directory: directory, existed: exists, sentinel: nil))
+                    continue
+                }
+                let sentinel = directory.appendingPathComponent(name, isDirectory: false)
+                // Created only when no file by that name exists, so a
+                // sentinel can never replace anything.
+                try bytes.write(to: sentinel, options: .withoutOverwriting)
+                locations.append(Location(directory: directory, existed: true, sentinel: sentinel))
+            }
+        } catch {
+            RealLocationSentinels(sentinelBytes: bytes, locations: locations, preferences: UserPreferenceFingerprint())
+                .remove()
+            throw error
+        }
+        return RealLocationSentinels(sentinelBytes: bytes, locations: locations, preferences: UserPreferenceFingerprint())
+    }
+
+    /// Fails the running test for every difference from what `plant()`
+    /// recorded.
+    func verify(file: StaticString = #filePath, line: UInt = #line) {
+        for location in locations {
+            let path = location.directory.path
+            XCTAssertEqual(
+                FileManager.default.fileExists(atPath: path),
+                location.existed,
+                location.existed ? "\(path) disappeared" : "\(path) was created",
+                file: file,
+                line: line
+            )
+            if let sentinel = location.sentinel {
+                XCTAssertEqual(
+                    try? Data(contentsOf: sentinel),
+                    sentinelBytes,
+                    "The sentinel in \(path) changed or disappeared",
+                    file: file,
+                    line: line
+                )
+            }
+        }
+        XCTAssertEqual(
+            UserPreferenceFingerprint(),
+            preferences,
+            "The user's real TextMouth preferences changed",
+            file: file,
+            line: line
+        )
+    }
+
+    /// Deletes the sentinels this process planted, and nothing else.
+    func remove() {
+        for location in locations {
+            if let sentinel = location.sentinel {
+                try? FileManager.default.removeItem(at: sentinel)
+            }
+        }
+    }
+}

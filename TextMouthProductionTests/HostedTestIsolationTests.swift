@@ -511,6 +511,84 @@ final class HostedTestIsolationTests: XCTestCase {
         addTeardownBlock { window.close() }
         return window
     }
+
+    // MARK: - Sentinel Proof
+
+    /// The startup repair, the sandbox-container and legacy migrations, sound
+    /// and substitution changes, the launch's window-restoration setting, and
+    /// a change of data directory leave every real location TextMouth used to
+    /// touch, and the user's real preferences, exactly as they were.
+    func testRepresentativeWorkLeavesTheUsersDataAlone() throws {
+        let sentinels = try plantSentinels()
+
+        try performRepresentativeWork(home: TextMouthRuntime.current.homeDirectory)
+
+        sentinels.verify()
+    }
+
+    /// The same holds when the default location does not exist yet: the one
+    /// case in which the old startup copied a container library into the
+    /// real ~/.TextMouth. The migration's home is an empty folder in the
+    /// sandbox holding only an old container, which migrates there and
+    /// nowhere else.
+    func testRepresentativeWorkLeavesTheUsersDataAloneWithoutADefaultLocation() throws {
+        let sentinels = try plantSentinels()
+        let emptyHome = try makeSandboxDirectory("empty-home")
+        let container = TextMouthPaths.sandboxContainerRoot(in: emptyHome)
+        try LibraryIndexSandbox.encoded(try makeLibrary(at: container))
+            .write(to: container.appendingPathComponent("library.json"))
+
+        try performRepresentativeWork(home: emptyHome)
+
+        let migratedIndex = TextMouthPaths.defaultRoot(in: emptyHome).appendingPathComponent("library.json")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: migratedIndex.path), "the container migrates inside the sandbox")
+        sentinels.verify()
+    }
+
+    /// Plants sentinels at the real locations and removes them when the test
+    /// ends, whether it passes or not.
+    private func plantSentinels() throws -> RealLocationSentinels {
+        let sentinels = try RealLocationSentinels.plant()
+        addTeardownBlock { sentinels.remove() }
+        return sentinels
+    }
+
+    /// Does, as the app does, the work that used to reach the user's data,
+    /// and puts every shared value back afterwards. `home` is where the
+    /// sandbox-container migration looks.
+    private func performRepresentativeWork(home: URL) throws {
+        preservePreferences(UserPreferenceFingerprint.textMouthKeys)
+
+        // Startup: the container migration, the directory structure, the
+        // index load with its repair (migrating a legacy Application Support
+        // index), and the directory rebuild that removes the emptied legacy
+        // folder; then the launch's window-restoration setting.
+        let index = try LibraryIndexSandbox.capture()
+        defer { index.restore() }
+        try index.stageValid(Library(), at: index.legacyURL)
+        let library = LibraryViewModel(initializeServices: false)
+        library.migrateFromSandboxContainer(home: home)
+        try TextMouthPaths.ensureDirectoryStructure()
+        library.loadLibraryIndex()
+        try FileImportService.rebuildDirectoryStructure(library: &library.library)
+        LibraryPersistenceService.flushPendingSave()
+        AppDelegate.disableWindowRestoration()
+
+        // Sound and substitution settings, changed and put back.
+        let sounds = SoundEffectService()
+        sounds.soundsEnabled.toggle()
+        sounds.volume = 0.2
+        sounds.assignments[.play] = "None"
+        sounds.resetToDefaults()
+        let substitutions = TextSubstitutionService.shared
+        let substitutionsWereOn = substitutions.isEnabled
+        substitutions.isEnabled.toggle()
+        substitutions.isEnabled = substitutionsWereOn
+
+        // A change of data directory, and back.
+        TextMouthPaths.setCustomRoot(try makeSandboxDirectory("chosen-data-directory"))
+        TextMouthPaths.setCustomRoot(nil)
+    }
 }
 
 /// Records which of some windows close, in order, by being their delegate.
