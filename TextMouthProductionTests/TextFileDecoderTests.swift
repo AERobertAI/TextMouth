@@ -27,6 +27,12 @@ final class TextFileDecoderTests: XCTestCase {
         + Array("quoted".utf8) + [0x94, 0x20, 0x96, 0x20, 0x31, 0x80]
     private static let windows1252Text = "Café “quoted” – 1€"
 
+    /// UTF-8 text holding one stray byte, 0xE9 ("é" in Windows-1252, which
+    /// can never stand alone in UTF-8), and the fallback's reading of it:
+    /// every byte one character, so each UTF-8 letter reads as two.
+    private static let strayByteBytes: [UInt8] = Array("Naïve café, ".utf8) + [0xE9] + Array(" fin".utf8)
+    private static let strayByteText = "NaÃ¯ve cafÃ©, é fin"
+
     /// Decode `bytes` as a file of `format` named "Fixture" with the
     /// format's first extension ("Fixture.html").
     private func decode(_ bytes: [UInt8], format: BookFormat = .txt) throws -> DecodedText {
@@ -188,10 +194,9 @@ final class TextFileDecoderTests: XCTestCase {
     /// dropped or replaced, though the UTF-8 letters read as two characters
     /// each.
     func testInvalidByteInUTF8TextKeepsEveryByte() throws {
-        let bytes = Array("Naïve café, ".utf8) + [0xE9] + Array(" fin".utf8)
-        let decoded = try decode(bytes)
-        XCTAssertEqual(decoded, DecodedText(text: "NaÃ¯ve cafÃ©, é fin", encoding: .windowsCP1252, basis: .fallback))
-        XCTAssertEqual(decoded.text.unicodeScalars.count, bytes.count)
+        let decoded = try decode(Self.strayByteBytes)
+        XCTAssertEqual(decoded, DecodedText(text: Self.strayByteText, encoding: .windowsCP1252, basis: .fallback))
+        XCTAssertEqual(decoded.text.unicodeScalars.count, Self.strayByteBytes.count)
     }
 
     /// Every byte has a Windows-1252 character: Foundation's for the bytes
@@ -460,6 +465,16 @@ final class TextFileDecoderTests: XCTestCase {
 
         _ = try TextFileDecoder.readText(at: file, format: .txt)
         XCTAssertEqual(debugLogLines(containing: "\(TextFileDecoder.fallbackLogTag): \(name):").count, 2)
+    }
+
+    /// A stray byte in otherwise UTF-8 text is a fallback like any other:
+    /// reading the file keeps every byte and logs the one line.
+    func testStrayByteInUTF8FileIsKeptAndLogged() throws {
+        let name = "Stray Byte \(UUID().uuidString).txt"
+        let file = try temporaryFile(named: name, holding: Self.strayByteBytes)
+
+        XCTAssertEqual(try TextFileDecoder.readText(at: file, format: .txt), Self.strayByteText)
+        XCTAssertEqual(debugLogLines(containing: "TEXT_ENCODING_FALLBACK: \(name): decoded as Windows-1252").count, 1)
     }
 
     /// An encoding the bytes give evidence for is no guess, and is not
