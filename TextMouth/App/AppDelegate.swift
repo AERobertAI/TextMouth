@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -6,6 +7,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the focused window doesn't support them, so VoiceOver doesn't encounter
     /// empty, non-interactive menus.
     let menuVisibilityManager = MenuVisibilityManager()
+
+    /// Opens the next book's reader for Continue to Next Book when no
+    /// Library window is open to receive the notification and open it.
+    private var continueToNextBookFallback: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let buildIdentity = BuildIdentity.current
@@ -26,6 +31,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start hiding/showing context-specific menus based on active window type
         menuVisibilityManager.startObserving()
+
+        // A Library window opens the next book's reader for Continue to
+        // Next Book. With none open, nothing would, so the app does.
+        continueToNextBookFallback = NotificationCenter.default
+            .publisher(for: .continueToNextBook)
+            .sink { notification in
+                guard let bookID = notification.nextBookID else { return }
+                Self.openContinuedBookIfNoLibraryWindow(
+                    bookID,
+                    router: .shared,
+                    keyWindow: NSApp.keyWindow
+                )
+            }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -45,6 +63,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// driving an application-launch Apple event.
     static func shouldOpenUntitledLibrary(hasOpenLibraryWindow: Bool) -> Bool {
         !hasOpenLibraryWindow
+    }
+
+    /// The app-level fallback for Continue to Next Book: when no Library
+    /// window is registered to open the next book's reader, open it
+    /// through an open reader window instead.
+    ///
+    /// The router's choice keeps this and the Library windows mutually
+    /// exclusive: while any Library window is registered, exactly one of
+    /// them opens the reader and this does nothing. SwiftUI gives
+    /// `openWindow` only to views, never to the app or its delegate, so
+    /// the reader opens through the action a reader window lent the
+    /// router. With no window open at all there is none, and the request
+    /// left for the book simply expires.
+    ///
+    /// - Parameters:
+    ///   - bookID: The next book, named by the notification.
+    ///   - router: The registry of open Library and reader windows.
+    ///   - keyWindow: The window currently receiving keystrokes.
+    /// - Returns: Whether this fallback opened the reader window.
+    @discardableResult
+    static func openContinuedBookIfNoLibraryWindow(
+        _ bookID: UUID,
+        router: LibraryWindowRouter,
+        keyWindow: NSWindow?
+    ) -> Bool {
+        guard case .appFallback = router.continueToNextBookOpener(keyWindow: keyWindow) else {
+            return false
+        }
+        if router.openReaderWindow(for: bookID, keyWindow: keyWindow) {
+            return true
+        }
+        TextMouthPaths.appendLog(
+            to: TextMouthPaths.debugLogFile,
+            message: "continue to next book: no window is open to open \(bookID) from"
+        )
+        return false
     }
 
     func applicationWillTerminate(_ notification: Notification) {

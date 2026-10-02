@@ -945,10 +945,7 @@ extension ReaderViewModel {
         switch behavior {
         case .stop:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: false
-            )
-            announceToVoiceOver("Finished: \(book.title)")
+            finishListening(announcing: "Finished: \(book.title)")
 
         case .loop:
             currentChapterIndex = 0
@@ -965,22 +962,36 @@ extension ReaderViewModel {
             savePosition()
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
-                announceToVoiceOver("Starting: \(nextBook.title)")
-                // Post notification to open next book (the app handles window management)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    NotificationCenter.default.post(
-                        name: .continueToNextBook,
-                        object: nil,
-                        userInfo: ["bookID": nextBook.id, "previousBookID": self.book.id]
+                if sleepTimerEndsListeningHere {
+                    // The next book would play on past this book's sleep
+                    // timer, which can pause only the book that set it.
+                    debugLog("end of book: this book's sleep timer is in effect; not starting the next book")
+                    finishListening(
+                        announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
                     )
+                } else {
+                    announceToVoiceOver("Starting: \(nextBook.title)")
+                    // Ask for the next book once VoiceOver has begun the
+                    // announcement. This reader is kept until then, so
+                    // closing its window meanwhile still continues, as
+                    // announced.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                        self.continueToNextBook(nextBook.id)
+                    }
                 }
             } else {
-                nowPlayingService.updateNowPlayingInfo(
-                    title: book.title, author: book.author, isPlaying: false
-                )
-                announceToVoiceOver("Finished: \(book.title). No more books in folder.")
+                finishListening(announcing: "Finished: \(book.title). No more books in folder.")
             }
         }
+    }
+
+    /// End listening with this finished book: Now Playing shows it
+    /// stopped, and the listener hears `announcement`.
+    private func finishListening(announcing announcement: String) {
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        announceToVoiceOver(announcement)
     }
 
     /// The effective end-of-book behavior for this book (per-book override or global default)
@@ -996,6 +1007,98 @@ extension ReaderViewModel {
     func setLocalEndOfBookBehavior(_ behavior: EndOfBookBehavior?) {
         book.localEndOfBookBehavior = behavior?.rawValue
         libraryViewModel.updateEndOfBookBehavior(bookID: book.id, behavior: behavior?.rawValue)
+    }
+
+    // MARK: - Continue to Next Book
+
+    /// How long a finished book waits after announcing the next one before
+    /// asking for it, so VoiceOver can begin "Starting: <title>" before the
+    /// next book's window takes focus.
+    static let continueToNextBookDelay: TimeInterval = 0.5
+
+    /// Ask the next book to start playing, then ask for its reader window.
+    ///
+    /// The request comes first, so it is already waiting when anything
+    /// acts on the notification: a reader open for that book claims it and
+    /// plays at once, and a reader the notification opens claims it as
+    /// soon as it has loaded. The notification goes out on this reader's
+    /// own center, where the app opens the book's reader window, or
+    /// brings it forward when it is already open.
+    ///
+    /// - Parameter nextBookID: The book after this one in its folder.
+    func continueToNextBook(_ nextBookID: UUID) {
+        let request = autoplayRequests.request(for: nextBookID, from: book.id)
+        notificationCenter.post(
+            name: .continueToNextBook,
+            object: nil,
+            userInfo: request.notificationUserInfo
+        )
+    }
+
+    /// Start playing because a finished book continued to this one, when
+    /// its request is waiting and this book has finished loading.
+    ///
+    /// The request is claimed, so it starts this book only once, whether
+    /// it is claimed when loading ends or as soon as it is made for a
+    /// reader that was already open. Playback starts the way Play starts
+    /// it, from the saved position, or resumes a paused book, so listening
+    /// statistics, Now Playing, sounds, and the passing over of silent
+    /// chapters all apply, and nothing more is announced. A reader whose
+    /// book is already playing keeps playing, untouched. A Where Am I
+    /// announcement in this window is ended first, since playback cannot
+    /// start while it speaks. A book that failed to load has nothing to
+    /// play, so its request is claimed and dropped.
+    ///
+    /// A closed reader claims nothing, and a reader still loading leaves
+    /// the request waiting until loading ends.
+    func claimAutoplayRequest() {
+        guard !hasClosed, !isLoading,
+              autoplayRequests.consume(for: book.id) != nil else { return }
+        debugLog("continue to next book: starting this book")
+        cancelWhereAmIIfActive()
+        playOrResume()
+    }
+
+    /// Throw away this book's waiting request because the book could not be
+    /// loaded, so that the request cannot start it later.
+    func discardAutoplayRequest() {
+        guard autoplayRequests.consume(for: book.id) != nil else { return }
+        debugLog("continue to next book: this book could not be loaded; request dropped")
+    }
+
+    /// Whether this book's own sleep timer ends listening with this book,
+    /// so that Continue to Next Book does not start the next one.
+    ///
+    /// The timer pauses only the book that set it, so it could never pause
+    /// the next book, which would play on past it. Continuing is therefore
+    /// ruled out while the timer is in effect: counting down, fading out,
+    /// or waiting for the end of a heading. It is also ruled out once a
+    /// timer set for the end of the document has expired, since that timer
+    /// fires as the book's last document ends, just before the book does.
+    var sleepTimerEndsListeningHere: Bool {
+        Self.sleepTimerEndsListening(
+            timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
+            timerIsActive: sleepTimerService.isActive,
+            timerDuration: sleepTimerService.duration
+        )
+    }
+
+    /// The decision behind `sleepTimerEndsListeningHere`, from the sleep
+    /// timer's state.
+    ///
+    /// - Parameters:
+    ///   - timerBelongsToThisBook: Whether the finished book set the timer.
+    ///   - timerIsActive: Whether the timer is counting down, waiting for
+    ///     its moment, or fading out.
+    ///   - timerDuration: What the timer was set for, which it keeps after
+    ///     expiring until it is stopped or replaced.
+    nonisolated static func sleepTimerEndsListening(
+        timerBelongsToThisBook: Bool,
+        timerIsActive: Bool,
+        timerDuration: SleepTimerDuration?
+    ) -> Bool {
+        guard timerBelongsToThisBook else { return false }
+        return timerIsActive || timerDuration == .endOfDocument
     }
 
     // MARK: - Sleep Timer

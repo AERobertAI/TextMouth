@@ -41,7 +41,7 @@ struct TextMouthApp: App {
 
         // Book reader windows — opened programmatically via openWindow(id:value:)
         // Restoration disabled so old reader windows don't reopen on launch.
-        WindowGroup("Book Reader", id: "book-reader", for: UUID.self) { $bookID in
+        WindowGroup("Book Reader", id: BookReaderWindowView.windowID, for: UUID.self) { $bookID in
             if let bookID = bookID {
                 BookReaderWindowView(
                     bookID: bookID,

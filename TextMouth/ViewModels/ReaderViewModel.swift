@@ -115,6 +115,14 @@ final class ReaderViewModel: ObservableObject {
     /// the shared rules edited in Substitutions settings, unless the reader
     /// was created with its own.
     let substitutionService: TextSubstitutionService
+    /// Where Continue to Next Book leaves its requests to start playing:
+    /// the shared store, unless the reader was created with its own.
+    let autoplayRequests: ReaderAutoplayRequests
+    /// The center this reader listens on for commands and for Continue to
+    /// Next Book, and posts its own Continue to Next Book to: the default
+    /// center, unless the reader was created with its own, as tests do to
+    /// keep their notifications from the running app.
+    let notificationCenter: NotificationCenter
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -244,18 +252,28 @@ final class ReaderViewModel: ObservableObject {
     ///   - substitutionService: Rules applied to text before it is spoken.
     ///     Nil uses the shared rules edited in Substitutions settings; tests
     ///     pass their own so the user's rules cannot change what is spoken.
+    ///   - autoplayRequests: Where finished books ask this one to start
+    ///     playing. Nil uses the shared store; tests pass their own.
+    ///   - notificationCenter: Where the reader listens for commands and for
+    ///     Continue to Next Book, and posts its own Continue to Next Book.
+    ///     Tests pass their own, so their notifications never reach the
+    ///     running app's windows.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
-        substitutionService: TextSubstitutionService? = nil
+        substitutionService: TextSubstitutionService? = nil,
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        notificationCenter: NotificationCenter = .default
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
         self.settingsViewModel = settingsViewModel
-        // Resolved here rather than as a default argument, so the shared
-        // main-actor service is read inside this main-actor initializer.
+        // Resolved here rather than as default arguments, so the shared
+        // main-actor services are read inside this main-actor initializer.
         self.substitutionService = substitutionService ?? .shared
+        self.autoplayRequests = autoplayRequests ?? .shared
+        self.notificationCenter = notificationCenter
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -535,7 +553,7 @@ final class ReaderViewModel: ObservableObject {
     }
 
     private func setupNotifications() {
-        let nc = NotificationCenter.default
+        let nc = notificationCenter
 
         nc.publisher(for: .togglePlayback)
             .sink { [weak self] notification in
@@ -740,6 +758,16 @@ final class ReaderViewModel: ObservableObject {
                 )
             }
             .store(in: &cancellables)
+
+        // A finished book continuing to this one. Claiming its request
+        // starts playback once; a reader still loading claims it when
+        // loading ends instead.
+        nc.publisher(for: .continueToNextBook)
+            .sink { [weak self] notification in
+                guard let self, notification.nextBookID == self.book.id else { return }
+                self.claimAutoplayRequest()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Content Loading
@@ -837,12 +865,18 @@ final class ReaderViewModel: ObservableObject {
                     // Save position with global offset now that we have chapter data
                     self.savePosition()
                     self.refreshPlaybackUI()
+                    // A finished book may have continued to this one while
+                    // it loaded: start playing for it now.
+                    self.claimAutoplayRequest()
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
                     guard let self, !self.hasClosed else { return }
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
+                    // A book that cannot load cannot play for a finished
+                    // book that continued to it; its error shows instead.
+                    self.discardAutoplayRequest()
                 }
             }
         }

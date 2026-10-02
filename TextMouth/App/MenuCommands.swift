@@ -243,6 +243,12 @@ extension Notification.Name {
     static let copyReadingPosition = Notification.Name("copyReadingPosition")
     static let searchInBook = Notification.Name("searchInBook")
     static let newFromText = Notification.Name("newFromText")
+    /// Posted by a reader whose book finished with Continue to Next Book,
+    /// once it has left the next book a request to start playing
+    /// (`ReaderAutoplayRequests`). `userInfo` names the next book and the
+    /// finished one (`Notification.ContinueToNextBookKey`). The app opens
+    /// the next book's reader window, or brings it forward when it is
+    /// already open, and that reader claims the request and plays.
     static let continueToNextBook = Notification.Name("continueToNextBook")
     static let removeFromLibrary = Notification.Name("removeFromLibrary")
     static let newFolder = Notification.Name("newFolder")
