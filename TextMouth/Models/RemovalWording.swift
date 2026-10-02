@@ -43,11 +43,12 @@ enum RemovalMode: Equatable, CaseIterable {
         }
     }
 
-    /// What happens to the files, as a clause to build sentences from:
-    /// "its files go to the Trash, where you can recover them until the
-    /// Trash is emptied". `plural` chooses "their" over "its".
-    func filesClause(plural: Bool) -> String {
-        let files = plural ? "their files" : "its files"
+    /// What happens to the files of `owner`, a possessive such as "its" or
+    /// "a deleted book's", as a clause to build sentences from: "its files
+    /// go to the Trash, where you can recover them until the Trash is
+    /// emptied".
+    func filesClause(of owner: String) -> String {
+        let files = "\(owner) files"
         switch self {
         case .keepFiles:
             return "\(files) stay in the TextMouth library folder"
@@ -58,11 +59,16 @@ enum RemovalMode: Equatable, CaseIterable {
         }
     }
 
+    /// The files clause for one book ("its files") or several ("their
+    /// files").
+    func filesClause(plural: Bool) -> String {
+        filesClause(of: plural ? "their" : "its")
+    }
+
     /// The files clause as a sentence of its own: "Their files go to the
     /// Trash, where you can recover them until the Trash is emptied."
     func filesSentence(plural: Bool) -> String {
-        let clause = filesClause(plural: plural)
-        return clause.prefix(1).uppercased() + clause.dropFirst() + "."
+        filesClause(plural: plural).capitalizingFirstLetter + "."
     }
 
     /// The report that `subject` was removed this way: "Moved 3 books to the
@@ -275,9 +281,7 @@ struct LibraryRemoveCommandWording: Equatable {
         guard preferences.confirmsFirst else {
             return removal.mode.filesSentence(plural: removal.count != 1)
         }
-        let deleting = removal.mode.spokenAction("the files")
-        return "Asks whether to \(deleting.prefix(1).lowercased() + deleting.dropFirst()) "
-            + "or keep them in the TextMouth library folder."
+        return "Asks whether to \(preferences.deletingTheFiles) or keep them in the TextMouth library folder."
     }
 }
 
@@ -367,5 +371,51 @@ struct RemovalPreferences: Equatable {
             confirmsFirst: config.confirmBeforeDelete,
             movesToTrash: config.moveToTrashInsteadOfDeleting
         )
+    }
+
+    /// The deleting action as a phrase inside a sentence: "move the files
+    /// to the Trash" or "delete the files permanently".
+    var deletingTheFiles: String {
+        deletionMode.spokenAction("the files").lowercasingFirstLetter
+    }
+
+    // MARK: Storage Settings
+
+    /// What deleting a book does under the Trash preference, as Storage
+    /// settings explain it, beside what Remove from Library Only does.
+    var deletionSummary: String {
+        let keeping = RemovalMode.keepFiles
+        return "When a book is deleted, \(deletionMode.filesClause(plural: false)). "
+            + "With \(keeping.buttonTitle()), \(keeping.filesClause(plural: false))."
+    }
+
+    /// The hint for "Confirm before removing a book": what removing does
+    /// with the preference on and off, in the deleting mode in force.
+    var confirmationExplanation: String {
+        "When on, removing a book first asks whether to \(deletingTheFiles) "
+            + "or keep them in the TextMouth library folder. "
+            + "When off, removing a book will \(deletingTheFiles) at once."
+    }
+
+    /// The hint for "Move to Trash instead of deleting": what happens to a
+    /// deleted book's files with the preference on and off.
+    static var trashPreferenceExplanation: String {
+        "When on, \(RemovalMode.moveToTrash.filesClause(of: "a deleted book's")). "
+            + "When off, \(RemovalMode.deletePermanently.filesClause(of: "its"))."
+    }
+}
+
+// MARK: - Sentence Case
+
+private extension String {
+    /// The text with its first letter in upper case, to start a sentence.
+    var capitalizingFirstLetter: String {
+        prefix(1).uppercased() + dropFirst()
+    }
+
+    /// The text with its first letter in lower case, to sit inside a
+    /// sentence.
+    var lowercasingFirstLetter: String {
+        prefix(1).lowercased() + dropFirst()
     }
 }

@@ -205,6 +205,44 @@ final class RemovalWordingTests: XCTestCase {
         XCTAssertEqual(deletes.accessibilityHint, "Their files are deleted permanently and cannot be recovered.")
     }
 
+    // MARK: - Storage Settings
+
+    /// Storage settings explain the removal preferences in the words the
+    /// removals use: what deleting does in the mode in force, that Remove
+    /// from Library Only keeps the files, and what each toggle changes.
+    func testStorageSettingsExplanations() {
+        let trash = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        XCTAssertEqual(
+            trash.deletionSummary,
+            "When a book is deleted, its files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "With Remove from Library Only, its files stay in the TextMouth library folder."
+        )
+        XCTAssertEqual(
+            trash.confirmationExplanation,
+            "When on, removing a book first asks whether to move the files to the Trash "
+                + "or keep them in the TextMouth library folder. "
+                + "When off, removing a book will move the files to the Trash at once."
+        )
+
+        let permanent = RemovalPreferences(confirmsFirst: false, movesToTrash: false)
+        XCTAssertEqual(
+            permanent.deletionSummary,
+            "When a book is deleted, its files are deleted permanently and cannot be recovered. "
+                + "With Remove from Library Only, its files stay in the TextMouth library folder."
+        )
+        XCTAssertEqual(
+            permanent.confirmationExplanation,
+            "When on, removing a book first asks whether to delete the files permanently "
+                + "or keep them in the TextMouth library folder. "
+                + "When off, removing a book will delete the files permanently at once."
+        )
+        XCTAssertEqual(
+            RemovalPreferences.trashPreferenceExplanation,
+            "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "When off, its files are deleted permanently and cannot be recovered."
+        )
+    }
+
     // MARK: - Deleting a Folder
 
     /// Delete Everything says whether the folder's files go to the Trash or

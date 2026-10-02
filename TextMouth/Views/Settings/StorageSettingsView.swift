@@ -189,20 +189,21 @@ struct StorageSettingsView: View {
                         ConfigService.shared.config.confirmBeforeDelete = newValue
                         ConfigService.shared.saveToDisk()
                     }
-                    .accessibilityHint("When enabled, you will be asked to confirm before a book is removed, with the option to keep or delete the file")
+                    .accessibilityHint(removalPreferences.confirmationExplanation)
 
                 Toggle("Move to Trash instead of deleting", isOn: $moveToTrash)
                     .onChange(of: moveToTrash) { newValue in
                         ConfigService.shared.config.moveToTrashInsteadOfDeleting = newValue
                         ConfigService.shared.saveToDisk()
                     }
-                    .accessibilityHint("When enabled, deleted books are moved to the Trash where they can be recovered. When disabled, files are permanently deleted.")
+                    .accessibilityHint(RemovalPreferences.trashPreferenceExplanation)
 
-                Text(moveToTrash
-                    ? "Removed books go to the Trash and can be recovered."
-                    : "Removed books are permanently deleted from disk.")
+                // What deleting does now, beside Remove from Library Only,
+                // which always keeps the files (TODO A08).
+                Text(removalPreferences.deletionSummary)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             } header: {
                 Text("Removal Behavior")
             }
@@ -325,6 +326,11 @@ struct StorageSettingsView: View {
     /// Whether the library index could not be read and is being recovered.
     private var isRecoveringIndex: Bool {
         libraryViewModel.indexRecovery != nil
+    }
+
+    /// The removal preferences as this pane's toggles currently set them.
+    private var removalPreferences: RemovalPreferences {
+        RemovalPreferences(confirmsFirst: confirmBeforeDelete, movesToTrash: moveToTrash)
     }
 
     /// Whether the location and rebuild buttons are unavailable right now.
