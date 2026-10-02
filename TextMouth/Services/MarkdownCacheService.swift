@@ -250,24 +250,26 @@ enum MarkdownCacheService {
     /// EPUB: converts each chapter's HTML to Markdown with chapter separators.
     /// HTML: converts the HTML to Markdown, stripping duplicate navigation
     /// exactly as the direct parser (HTMLParser) does.
-    /// Markdown: uses the file as-is.
+    /// Markdown: uses the file's text as-is.
     /// Plain text: literal Markdown with the plain-text headings as ATX headings.
+    /// HTML, Markdown, and plain-text files are decoded by `TextFileDecoder`,
+    /// as the direct parsers decode them (see `BookParser.parse(url:format:)`).
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
         let markdown: String
         switch format {
         case .epub:
             return try extractFromEPUB(url: url)
         case .html:
-            let html = try String(contentsOf: url, encoding: .utf8)
+            let html = try TextFileDecoder.readText(at: url, format: format)
             markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
         case .markdown:
-            // Already Markdown — use as-is
-            markdown = try String(contentsOf: url, encoding: .utf8)
+            // Already Markdown — use the decoded text as-is
+            markdown = try TextFileDecoder.readText(at: url, format: format)
         case .txt:
             // The same line analysis as the direct parser, written as literal
             // Markdown, so a cached book reads exactly as
             // PlainTextParser.parse(text:) reads it.
-            let text = try String(contentsOf: url, encoding: .utf8)
+            let text = try TextFileDecoder.readText(at: url, format: format)
             markdown = PlainTextParser.markdown(text: text)
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url)
