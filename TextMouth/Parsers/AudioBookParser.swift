@@ -130,9 +130,15 @@ enum AudioBookParser {
     /// - Parameter prober: checks that each file plays and measures it,
     ///   probing each file once; the app's AVFoundation probe unless a test
     ///   stands in for it.
+    /// - Returns: the book's content, one file path per heading, and, for a
+    ///   manifest with sections, the sections as the book plays them: an
+    ///   end slightly past its file's end is moved back to that end (see
+    ///   `endTolerance(forFileLasting:)`).
     /// - Throws: `AudioParseError.unplayableFile` naming the first file, in
     ///   playing order, that cannot be played; `.invalidSegment` for a
-    ///   manifest section with a missing file or impossible times.
+    ///   manifest section with a missing file or impossible times; and,
+    ///   for a section whose times do not fit its file, the section errors
+    ///   `boundedSegments(_:fileDurations:)` describes.
     static func parseDirectory(
         url: URL,
         prober: AudioMediaProber = .avFoundation
@@ -177,7 +183,7 @@ enum AudioBookParser {
                 author: overallAuthor,
                 prober: prober
             )
-            return (content: result.content, filePaths: result.filePaths, segments: segments)
+            return (content: result.content, filePaths: result.filePaths, segments: result.segments)
         }
 
         var chapters: [Chapter] = []
@@ -208,7 +214,8 @@ enum AudioBookParser {
     /// Parse segmented audio where chapters are time ranges within audio files.
     /// Each segment specifies a file + start/end time. Segments referencing the
     /// same file become chapters that share the underlying audio, with playback
-    /// controlled by clip start/end times.
+    /// controlled by clip start/end times. Returns the segments as the book
+    /// plays them (see `boundedSegments(_:fileDurations:)`).
     private static func parseSegmentedAudio(
         segments: [AudioSegment],
         audioDir: URL,
@@ -216,7 +223,7 @@ enum AudioBookParser {
         title: String,
         author: String,
         prober: AudioMediaProber
-    ) async throws -> (content: DocumentContent, filePaths: [String]) {
+    ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]) {
         // Only reference discovered in-package media. A manifest cannot
         // escape the package or introduce negative/non-finite clip ranges.
         // Every section is checked before any file is opened, so a path
@@ -237,20 +244,20 @@ enum AudioBookParser {
             prober: prober
         )
 
+        // Fit every section to its file before any becomes a heading.
+        let bounded = try boundedSegments(segments, fileDurations: fileDurations)
+
         var chapters: [Chapter] = []
         var filePaths: [String] = []
 
-        for (index, (segment, fileDuration)) in zip(segments, fileDurations).enumerated() {
+        for (index, (segment, fileDuration)) in zip(bounded.segments, fileDurations).enumerated() {
             let filePath = audioDir.appendingPathComponent(segment.file).path
 
-            // Calculate duration from start/end times; an end time of 0
-            // means "play to end of file".
-            var duration = segment.endTime - segment.startTime
-            if duration <= 0 {
-                duration = fileDuration - segment.startTime
-            }
-
-            guard duration.isFinite, duration > 0 else { throw AudioParseError.invalidDuration }
+            // An end time of 0 means "play to end of file". Either way the
+            // section lasts a positive time: it starts before its file ends,
+            // and any other end lies after its start and within the file.
+            let end = segment.endTime == 0 ? fileDuration : segment.endTime
+            let duration = end - segment.startTime
 
             let placeholderLength = placeholderLength(for: max(1, duration))
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
@@ -265,8 +272,155 @@ enum AudioBookParser {
             filePaths.append(filePath)
         }
 
+        // Moved ends are recorded only once the whole book has parsed, so
+        // a book refused for another reason leaves no misleading record.
+        for clamped in bounded.clampedFiles {
+            clamped.log(bookTitle: title)
+        }
+
         let content = DocumentContent(title: title, author: author, chapters: chapters)
-        return (content: content, filePaths: filePaths)
+        return (content: content, filePaths: filePaths, segments: bounded.segments)
+    }
+
+    // MARK: - Section Bounds
+
+    /// The tag that starts the debug-log line recording sections whose ends
+    /// ran past their file's end and were moved back to it.
+    static let clampLogTag = "AUDIO_SEGMENT_CLAMPED"
+
+    /// Seconds any section may end past the measured end of its file.
+    static let endToleranceSeconds: TimeInterval = 1
+
+    /// The share of its file's length a section may end past the file's
+    /// end, on top of `endToleranceSeconds`.
+    static let endToleranceFraction = 0.01
+
+    /// How far past the measured end of a file lasting `fileDuration`
+    /// seconds a section may claim to end and still be accepted, with its
+    /// end moved back to the file's end: one second plus one percent of the
+    /// file.
+    ///
+    /// DAISY producers time each clip against the recording before it is
+    /// encoded, and DAISY audio is mostly MP3. Encoding adds a delay before
+    /// the audio and padding after it (LAME, the usual MP3 encoder, delays
+    /// by 576 samples and pads to a whole frame; AAC encoders commonly
+    /// prime with 2,112 samples, per Apple's TN2258), and decoders may trim
+    /// them again. A clip's end can therefore lie past the encoded file's
+    /// measured end by up to about a tenth of a second at the low sample
+    /// rates audiobooks use, and by more where a producer rounds clip times
+    /// up. The DAISY
+    /// Consortium's own validator accepts audio whose duration differs
+    /// from the book's declared timing by up to half a second (DAISY
+    /// Pipeline 2, daisy202-validator, option timeToleranceMs, default 500:
+    /// "The duration of the audio files can deviate from the duration
+    /// declared in the DAISY 2.02 fileset by this many milliseconds"). One
+    /// second is twice that. The one percent covers timing that drifts
+    /// along a long file, as clip times computed from a nominal bit rate or
+    /// sample rate do: 36 seconds over an hour. An end beyond that is not
+    /// padding but navigation made for other audio, such as an end an hour
+    /// past the end of a ten-minute file.
+    static func endTolerance(forFileLasting fileDuration: TimeInterval) -> TimeInterval {
+        endToleranceSeconds + endToleranceFraction * fileDuration
+    }
+
+    /// `segments` as the book will play them, each checked against the
+    /// measured length of its file (`fileDurations`, in the same order).
+    /// The first problem in book order is thrown:
+    ///
+    /// - A section must start before its file ends; otherwise
+    ///   `AudioParseError.sectionStartsPastEnd`.
+    /// - A section may end past its file's end by up to
+    ///   `endTolerance(forFileLasting:)`, which covers encoder padding. Its
+    ///   end is then moved back to exactly the file's end, and the move is
+    ///   reported once per file in `clampedFiles`. An end further out is
+    ///   `AudioParseError.sectionEndsPastEnd`. An end of 0 keeps its
+    ///   meaning, "play to the end of the file".
+    /// - Within one file, each section must start at or after the start of
+    ///   the section before it in that file; otherwise
+    ///   `AudioParseError.sectionStartsBeforeEarlierSection`. Navigation in
+    ///   reading order never goes back within a file, so a section that
+    ///   does was timed against other audio or names the wrong file, and
+    ///   the listener would hear the book out of order. Sections may
+    ///   overlap, though: the DAISY
+    ///   converter ends a heading at the last clip of its file in its SMIL
+    ///   file when the next heading plays from another file, so a later
+    ///   heading in the first file can start inside it. Overlap repeats
+    ///   audio but never loses any, and refusing it would refuse such books.
+    private static func boundedSegments(
+        _ segments: [AudioSegment],
+        fileDurations: [TimeInterval]
+    ) throws -> (segments: [AudioSegment], clampedFiles: [ClampedFile]) {
+        var bounded: [AudioSegment] = []
+        // In the order the files' first sections were moved back.
+        var clampedFiles: [ClampedFile] = []
+        // The latest section so far in each file, which, as starts never go
+        // back within a file, starts last of that file's sections so far.
+        var latestSectionInFile: [String: (name: AudioSectionName, start: TimeInterval)] = [:]
+
+        for (index, (segment, fileDuration)) in zip(segments, fileDurations).enumerated() {
+            let name = AudioSectionName(title: segment.title, number: index + 1)
+            guard segment.startTime < fileDuration else {
+                throw AudioParseError.sectionStartsPastEnd(
+                    section: name, file: segment.file, start: segment.startTime, fileDuration: fileDuration
+                )
+            }
+
+            var playable = segment
+            if segment.endTime > fileDuration {
+                guard segment.endTime <= fileDuration + endTolerance(forFileLasting: fileDuration) else {
+                    throw AudioParseError.sectionEndsPastEnd(
+                        section: name, file: segment.file, end: segment.endTime, fileDuration: fileDuration
+                    )
+                }
+                playable.endTime = fileDuration
+                let overshoot = segment.endTime - fileDuration
+                if let place = clampedFiles.firstIndex(where: { $0.file == segment.file }) {
+                    clampedFiles[place].sectionCount += 1
+                    clampedFiles[place].largestOvershoot = max(clampedFiles[place].largestOvershoot, overshoot)
+                } else {
+                    clampedFiles.append(ClampedFile(
+                        file: segment.file, fileDuration: fileDuration, sectionCount: 1, largestOvershoot: overshoot
+                    ))
+                }
+            }
+
+            if let earlier = latestSectionInFile[segment.file], segment.startTime < earlier.start {
+                throw AudioParseError.sectionStartsBeforeEarlierSection(
+                    section: name, file: segment.file, start: segment.startTime,
+                    earlierSection: earlier.name, earlierStart: earlier.start
+                )
+            }
+            latestSectionInFile[segment.file] = (name: name, start: segment.startTime)
+            bounded.append(playable)
+        }
+        return (segments: bounded, clampedFiles: clampedFiles)
+    }
+
+    /// The sections of one file whose ends ran past the file's measured
+    /// end, within the tolerance, and were moved back to it.
+    private struct ClampedFile {
+        /// The file's path inside the book's audio folder.
+        let file: String
+        /// How long the file plays, in seconds.
+        let fileDuration: TimeInterval
+        /// How many of its sections were moved back.
+        var sectionCount: Int
+        /// The furthest any of them ran past the file's end, in seconds.
+        var largestOvershoot: TimeInterval
+
+        /// Record the move in the console and the debug log, as the single
+        /// line `AUDIO_SEGMENT_CLAMPED: <book>: <file>: …`. A line break
+        /// in the book's title or the file's name becomes a space, so the
+        /// entry stays on one line.
+        func log(bookTitle: String) {
+            let sections = sectionCount == 1 ? "1 section" : "\(sectionCount) sections"
+            let line = "\(AudioBookParser.clampLogTag): \(bookTitle): \(file): \(sections) ended up to "
+                + String(format: "%.3f", largestOvershoot) + " s past the file's measured end ("
+                + String(format: "%.3f", fileDuration) + " s) and now end with it"
+            let singleLine = line.components(separatedBy: .newlines).joined(separator: " ")
+            print(singleLine)
+            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: singleLine)
+        }
     }
 
     /// How long each of `files` plays, in the same order, as `prober`
@@ -297,6 +451,28 @@ enum AudioParseError: LocalizedError, Equatable {
     /// is the file's path inside the book's audio folder ("Disc 2/03.mp3"),
     /// or a single-file book's file name.
     case unplayableFile(file: String, problem: AudioMediaProblem)
+    /// The section `section` starts `start` seconds into its file `file`
+    /// (its path inside the book's audio folder), at or after the end of
+    /// that file, which plays for `fileDuration` seconds.
+    case sectionStartsPastEnd(section: AudioSectionName, file: String, start: TimeInterval, fileDuration: TimeInterval)
+    /// The section `section` ends `end` seconds into its file `file`,
+    /// further past the end of that file (`fileDuration` seconds) than
+    /// encoder padding explains (`AudioBookParser.endTolerance`).
+    case sectionEndsPastEnd(section: AudioSectionName, file: String, end: TimeInterval, fileDuration: TimeInterval)
+    /// The section `section` starts `start` seconds into its file `file`,
+    /// before `earlierSection`, which comes earlier in the book and starts
+    /// `earlierStart` seconds into the same file.
+    case sectionStartsBeforeEarlierSection(
+        section: AudioSectionName,
+        file: String,
+        start: TimeInterval,
+        earlierSection: AudioSectionName,
+        earlierStart: TimeInterval
+    )
+
+    /// What a listener can do about a section that does not fit its file:
+    /// the sentence that ends every such message.
+    static let mismatchAdvice = "The book's navigation does not match its audio; get a fresh copy and import it again."
 
     var errorDescription: String? {
         switch self {
@@ -312,7 +488,40 @@ enum AudioParseError: LocalizedError, Equatable {
                 container: "this audiobook",
                 original: "the book"
             )
+        // Times are written as they are spoken ("1 hour, 3 minutes"), which
+        // reads the same on screen, aloud, and in braille; "1:03:00" can be
+        // heard as a time of day.
+        case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
+            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
+                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+        case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
+            return "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into its file “\(file)”, "
+                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+        case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
+            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
+                + "before the \(earlierSection.phrase), which comes earlier in the book and starts "
+                + "\(TimeFormatting.spoken(earlierStart)) in. \(Self.mismatchAdvice)"
         }
+    }
+}
+
+/// How an error names one section of a segmented audiobook: by the title
+/// its heading shows, or, for a heading without a title, by its place
+/// among the book's headings. User-facing text calls sections headings,
+/// never chapters.
+struct AudioSectionName: Equatable, Sendable {
+    /// The section's title, as the manifest gives it.
+    let title: String
+    /// The section's place among the book's headings, counting from 1.
+    let number: Int
+
+    /// The name as it reads after "the": `heading “Tide Tables”`, or
+    /// `untitled heading 3` for a blank title. A title's line breaks become
+    /// spaces, so the message stays one line.
+    var phrase: String {
+        let oneLine = title.components(separatedBy: .newlines).joined(separator: " ")
+            .trimmingCharacters(in: .whitespaces)
+        return oneLine.isEmpty ? "untitled heading \(number)" : "heading “\(oneLine)”"
     }
 }
 
