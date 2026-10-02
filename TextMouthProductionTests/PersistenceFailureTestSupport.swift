@@ -66,6 +66,22 @@ extension XCTestCase {
         return restore
     }
 
+    /// A folder of the test's own under the isolated data root, removed with
+    /// everything in it when the test ends.
+    func makeTestDirectory(_ name: String) throws -> URL {
+        let directory = TextMouthPaths.root.appendingPathComponent(
+            "\(name)-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock {
+            // Write permission first, or nothing inside could be removed.
+            _ = chmod(directory.path, 0o755)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        return directory
+    }
+
     /// A managed book with a real package in the isolated library, holding
     /// its content file and its bookInfo.json, removed when the test ends.
     /// - Parameters:
