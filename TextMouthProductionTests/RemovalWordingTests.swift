@@ -218,6 +218,36 @@ final class RemovalWordingTests: XCTestCase {
         XCTAssertEqual(deletes.accessibilityHint, "Their files are deleted permanently and cannot be recovered.")
     }
 
+    /// The menu bar's Remove command names no count, and for each pair of
+    /// preferences says what choosing it does: it asks first, or it moves
+    /// the files to the Trash, or it deletes them permanently. It reads the
+    /// same as the context-menu item for one book.
+    func testMenuBarRemoveTitleForEveryPreferenceCombination() {
+        let cases: [(confirmsFirst: Bool, movesToTrash: Bool, title: String)] = [
+            (true, true, "Remove from Library..."),
+            (true, false, "Remove from Library..."),
+            (false, true, "Move to Trash"),
+            (false, false, "Delete Permanently"),
+        ]
+
+        for expected in cases {
+            let preferences = RemovalPreferences(
+                confirmsFirst: expected.confirmsFirst,
+                movesToTrash: expected.movesToTrash
+            )
+            XCTAssertEqual(
+                LibraryRemoveCommandWording.menuBarTitle(preferences: preferences),
+                expected.title,
+                "\(preferences)"
+            )
+            XCTAssertEqual(
+                LibraryRemoveCommandWording(preferences: preferences, count: 1).menuTitle,
+                expected.title,
+                "the context menu agrees for one book: \(preferences)"
+            )
+        }
+    }
+
     // MARK: - Storage Settings
 
     /// Storage settings explain the removal preferences in the words the

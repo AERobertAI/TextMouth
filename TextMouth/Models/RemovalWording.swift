@@ -255,13 +255,26 @@ struct LibraryRemoveCommandWording: Equatable {
         self.init(preferences: preferences, count: books.count, title: books.first?.title)
     }
 
+    /// The command's title when it asks how to remove before removing
+    /// anything; the ellipsis says that a choice follows.
+    private static let askFirstTitle = "Remove from Library..."
+
     /// The context-menu item: "Remove from Library..." or "Remove 3 Books
     /// from Library..." when it asks first, otherwise "Move to Trash",
     /// "Move 3 Books to Trash", or "Delete 3 Books Permanently". A menu item
     /// is read by its title, so the title alone must say all of this.
     var menuTitle: String {
         guard preferences.confirmsFirst else { return removal.buttonTitle }
-        return removal.count == 1 ? "Remove from Library..." : "Remove \(removal.count) Books from Library..."
+        return removal.count == 1 ? Self.askFirstTitle : "Remove \(removal.count) Books from Library..."
+    }
+
+    /// The menu bar's Remove command, which acts on whatever is selected in
+    /// the library window and so names no count: "Remove from Library..."
+    /// when it asks first, otherwise "Move to Trash" or "Delete
+    /// Permanently". With confirmation off it never promises less than it
+    /// does.
+    static func menuBarTitle(preferences: RemovalPreferences) -> String {
+        preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
     }
 
     /// The edit bar's short button: "Remove..." when it asks first,

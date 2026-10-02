@@ -224,6 +224,42 @@ final class RemovalOutcomeTests: XCTestCase {
         }
     }
 
+    // MARK: - Menu Bar
+
+    /// The menu bar the running app draws titles its Remove command by the
+    /// removal preferences, and retitles it when they change. Skipped when
+    /// this run's menu bar has no Library menu with that command.
+    func testMenuBarRemoveCommandFollowsThePreferences() throws {
+        let combinations = [true, false].flatMap { confirmsFirst in
+            [true, false].map { RemovalPreferences(confirmsFirst: confirmsFirst, movesToTrash: $0) }
+        }
+        let possibleTitles = Set(combinations.map { LibraryRemoveCommandWording.menuBarTitle(preferences: $0) })
+
+        /// The Remove command's title in the Library menu, read afresh each
+        /// time, after asking the menu to bring its items up to date as it
+        /// does before it opens.
+        func removeCommandTitle() -> String? {
+            guard let libraryMenu = NSApp.mainMenu?.items.first(where: { $0.title == "Library" })?.submenu else {
+                return nil
+            }
+            libraryMenu.delegate?.menuNeedsUpdate?(libraryMenu)
+            return libraryMenu.items.first { possibleTitles.contains($0.title) }?.title
+        }
+        guard removeCommandTitle() != nil else {
+            throw XCTSkip("This run's menu bar has no Library menu with a Remove command")
+        }
+
+        for preferences in combinations {
+            withRemovalPreferences(confirmsFirst: preferences.confirmsFirst, movesToTrash: preferences.movesToTrash) {
+                let expected = LibraryRemoveCommandWording.menuBarTitle(preferences: preferences)
+                XCTAssertTrue(
+                    waitUntil(timeout: 3) { removeCommandTitle() == expected },
+                    "Expected “\(expected)”; the menu shows “\(removeCommandTitle() ?? "nothing")”"
+                )
+            }
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Runs `body` with the two removal preferences set as given, then puts
