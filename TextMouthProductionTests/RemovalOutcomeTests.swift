@@ -115,6 +115,75 @@ final class RemovalOutcomeTests: XCTestCase {
         }
     }
 
+    // MARK: - Duplicate Finder
+
+    /// With "Confirm before removing a book" on, the Duplicate Finder asks
+    /// first, in the words of the deleting mode, and removes nothing until
+    /// the user confirms; with it off, it removes at once.
+    func testDuplicateFinderAsksFirstWhenThePreferenceIsOn() throws {
+        let books = [unpackagedBook("Atlas"), unpackagedBook("Atlas, Second Copy")]
+
+        XCTAssertEqual(
+            DuplicateRemoval.firstStep(
+                removing: books,
+                preferences: RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+            ),
+            .confirm(RemovalWording(.moveToTrash, books: books))
+        )
+        let permanent = DuplicateRemoval.firstStep(
+            removing: books,
+            preferences: RemovalPreferences(confirmsFirst: true, movesToTrash: false)
+        )
+        guard case .confirm(let wording) = permanent else {
+            return XCTFail("Expected a confirmation, got \(permanent)")
+        }
+        XCTAssertEqual(wording.confirmationTitle, "Delete 2 Books Permanently?")
+        XCTAssertEqual(wording.buttonTitle, "Delete 2 Books Permanently")
+        XCTAssertEqual(
+            DuplicateRemoval.firstStep(
+                removing: books,
+                preferences: RemovalPreferences(confirmsFirst: false, movesToTrash: true)
+            ),
+            .removeNow
+        )
+    }
+
+    /// The Duplicate Finder removes through the library's Trash-aware path:
+    /// with the Trash preference off, a real package is deleted permanently
+    /// and the outcome says so, in place, with no library alert. Books that
+    /// are no longer in the library are skipped.
+    func testDuplicateFinderRemovesThroughTheTrashAwarePath() throws {
+        try withRemovalPreferences(confirmsFirst: true, movesToTrash: false) {
+            let book = try makePackagedBook("Twice Imported")
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library(books: [book])
+
+            XCTAssertEqual(DuplicateRemoval.remove([UUID()], from: model), .success(nil))
+            let outcome = DuplicateRemoval.remove([book.id], from: model)
+
+            XCTAssertEqual(outcome, .success("Deleted “Twice Imported” permanently."))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+            XCTAssertTrue(model.library.books.isEmpty)
+            XCTAssertFalse(model.showError)
+        }
+    }
+
+    /// VoiceOver hears the finder's removal button say exactly what it does.
+    /// SwiftUI may build accessibility elements for its buttons only for a
+    /// connected assistive app; when it exposes none here, the test is
+    /// skipped, and the label is still covered by the wording tests.
+    func testDuplicateFinderButtonLabelReachesAccessibility() throws {
+        let wording = RemovalWording(.moveToTrash, count: 2)
+
+        try withHostedControls(DuplicateRemovalButton(wording: wording, action: {})) { controls in
+            let buttons = controls.filter { $0.role == .button }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertEqual(buttons.map(\.label), ["Move 2 selected books to the Trash"])
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Runs `body` with the two removal preferences set as given, then puts
