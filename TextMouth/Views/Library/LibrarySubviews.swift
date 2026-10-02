@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 // MARK: - Edit Mode Bar
@@ -325,6 +326,22 @@ extension Array where Element == BookFolder {
             let a = $0.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
             let b = $1.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
             return a < b
+        }
+    }
+}
+
+// MARK: - Removal Preferences
+
+extension View {
+    /// Keeps `preferences` equal to the removal preferences in config.json,
+    /// so removal buttons and confirmations always describe what removing
+    /// will really do, even right after the preferences change in Settings.
+    /// Only a change to one of the two preferences updates it, so other
+    /// settings changes cause no redraw.
+    @MainActor
+    func trackingRemovalPreferences(_ preferences: Binding<RemovalPreferences>) -> some View {
+        onReceive(ConfigService.shared.$config.map { RemovalPreferences($0) }.removeDuplicates()) { current in
+            preferences.wrappedValue = current
         }
     }
 }

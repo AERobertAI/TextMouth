@@ -159,6 +159,9 @@ struct LibraryView: View {
     @State private var showTextInput = false
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
+    /// Whether removing asks first and where deleted files go, kept current
+    /// so removal buttons and confirmations say what removal will do.
+    @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
 
     var body: some View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
@@ -556,6 +559,7 @@ struct LibraryView: View {
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
         }))
+        .trackingRemovalPreferences($removalPreferences)
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -764,7 +768,9 @@ struct LibraryView: View {
                 )
             }
         }
-        // Delete folder dialog: move contents out vs delete everything
+        // Delete folder dialog: move contents out vs delete everything. The
+        // words say whether everything goes to the Trash or is deleted
+        // permanently, as the Trash preference chooses (TODO A08).
         .alert(
             "Delete Folder?",
             isPresented: $libraryViewModel.showDeleteFolderDialog
@@ -772,24 +778,23 @@ struct LibraryView: View {
             Button("Move Contents Out") {
                 libraryViewModel.showDeleteFolderDestinationSheet = true
             }
-            Button("Delete Everything", role: .destructive) {
+            Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 libraryViewModel.showDeleteEverythingConfirm = true
             }
             Button("Cancel", role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
-            if let folder = libraryViewModel.pendingDeleteFolder {
-                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
-                Text("\"\(folder.name)\" contains \(count) \(count == 1 ? "book" : "books") and may have subfolders. What would you like to do?")
+            if libraryViewModel.pendingDeleteFolder != nil {
+                Text(deleteEverythingWording.choiceMessage)
             }
         }
         // Second confirmation for Delete Everything
         .alert(
-            "Are you sure?",
+            deleteEverythingWording.confirmationTitle,
             isPresented: $libraryViewModel.showDeleteEverythingConfirm
         ) {
-            Button("Delete Everything", role: .destructive) {
+            Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 if let folder = libraryViewModel.pendingDeleteFolder {
                     libraryViewModel.removeFolderAndEverything(folder)
                     libraryViewModel.pendingDeleteFolder = nil
@@ -799,9 +804,8 @@ struct LibraryView: View {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
-            if let folder = libraryViewModel.pendingDeleteFolder {
-                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
-                Text("This will permanently remove the folder \"\(folder.name)\" and all \(count) \(count == 1 ? "book" : "books") inside it. This cannot be undone.")
+            if libraryViewModel.pendingDeleteFolder != nil {
+                Text(deleteEverythingWording.confirmationMessage)
             }
         }
         // Move contents destination picker
@@ -867,6 +871,18 @@ struct LibraryView: View {
             .accessibilityIdentifier(voiceOverFocusID)
             .background(StandardVoiceOverFocus(delay: 1.2))
         }
+    }
+
+    /// The words for Delete Everything on the folder awaiting confirmation,
+    /// in the mode the Trash preference chooses. With no folder pending, no
+    /// dialog shows, and only the mode-dependent button title matters.
+    private var deleteEverythingWording: FolderRemovalWording {
+        let folder = libraryViewModel.pendingDeleteFolder
+        return FolderRemovalWording(
+            mode: removalPreferences.deletionMode,
+            folderName: folder?.name ?? "",
+            bookCount: folder.map { libraryViewModel.library.totalBooksInFolderTree($0.fullPath) } ?? 0
+        )
     }
 
     /// Toggle a book's membership in the edit selection set

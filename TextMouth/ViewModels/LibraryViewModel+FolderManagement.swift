@@ -81,7 +81,16 @@ extension LibraryViewModel {
         }
     }
 
-    /// Remove a folder and permanently delete all its contents (books, subfolders, .tmb files).
+    /// The removal preferences in force: whether removing a book asks first,
+    /// and whether deleted files go to the Trash or are deleted permanently.
+    var removalPreferences: RemovalPreferences {
+        RemovalPreferences(configService.config)
+    }
+
+    /// Remove a folder and delete all its contents (books, subfolders, .tmb
+    /// files), to the Trash or permanently as the preference chooses. Items
+    /// that cannot be deleted stay in the library, and the error alert names
+    /// them in the words of that mode.
     func removeFolderAndEverything(_ folder: BookFolder) {
         let path = folder.fullPath
         // Validate again at the destructive boundary: legacy/edited indexes
@@ -118,7 +127,12 @@ extension LibraryViewModel {
         }
         save()
         if !failures.isEmpty {
-            errorMessage = "Some items could not be moved to Trash and remain in the library:\n" + failures.joined(separator: "\n")
+            let wording = FolderRemovalWording(
+                mode: removalPreferences.deletionMode,
+                folderName: folder.name,
+                bookCount: booksToRemove.count
+            )
+            errorMessage = wording.failureMessage(failures)
             showError = true
         }
     }
