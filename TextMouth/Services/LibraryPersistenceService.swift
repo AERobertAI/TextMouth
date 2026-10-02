@@ -51,6 +51,9 @@ enum LibraryPersistenceService {
     ///    record it replaces and the highest revision written here before.
     /// 5. Library index writes run on `saveQueue`, so suspending them while
     ///    the index cannot be read never holds back a package write.
+    /// 6. Each debounced or flushed write reports its outcome to the failure
+    ///    center as it finishes, without waiting for anyone, so reporting
+    ///    never changes this order (`writeQueuedBookInfo`).
     ///
     /// Imports, folder moves, and migrations write records directly
     /// (`Book.saveBookInfoThrowing`), under the same index and revision
@@ -156,7 +159,7 @@ enum LibraryPersistenceService {
             let pending = pendingBookInfos
             pendingBookInfos.removeAll()
             for (_, update) in pending {
-                _ = try? writeBookInfo(update.book, contentIndex: update.contentIndex)
+                writeQueuedBookInfo(update.book, contentIndex: update.contentIndex)
             }
         }
     }
@@ -305,6 +308,12 @@ enum LibraryPersistenceService {
             // The waiting snapshot is on disk now, merged with the analysis:
             // forget it, so its debounce does not write it a second time.
             cancelQueuedWrites(for: analyzed)
+            // That snapshot was the book's latest state, so an earlier failed
+            // write of the book is settled too. A merge into the stored
+            // record alone saved nothing newer and settles nothing.
+            if pending != nil {
+                failureCenter.recordSuccess(.book(analyzed.id))
+            }
             return merged
         }
     }
@@ -337,8 +346,15 @@ enum LibraryPersistenceService {
     /// A line break in the title or a path becomes a space, so the entry
     /// stays on one line.
     private static func logDroppedAnalysis(of book: Book, because change: String) {
-        let line = "CONTENT_ANALYSIS_DROPPED: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
-            + "\(change); the result was not saved"
+        logLine(
+            "CONTENT_ANALYSIS_DROPPED: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
+                + "\(change); the result was not saved"
+        )
+    }
+
+    /// Records `line` in the console and the debug log as one line: a line
+    /// break in a title or a path becomes a space.
+    private static func logLine(_ line: String) {
         let singleLine = line.components(separatedBy: .newlines).joined(separator: " ")
         print(singleLine)
         TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: singleLine)
@@ -361,9 +377,72 @@ enum LibraryPersistenceService {
             bookInfoSaveQueue.asyncAfter(deadline: .now() + 0.5) {
                 guard bookInfoGenerations[book.id] == generation,
                       let update = pendingBookInfos.removeValue(forKey: book.id) else { return }
-                _ = try? writeBookInfo(update.book, contentIndex: update.contentIndex)
+                writeQueuedBookInfo(update.book, contentIndex: update.contentIndex)
             }
         }
+    }
+
+    /// Writes a queued record, as a debounced save and the termination flush
+    /// do, and reports the outcome to the failure center without holding up
+    /// the queue (TODO S09). A record written settles any earlier failure of
+    /// the book; a failure is reported with the book's title, the record's
+    /// path, and a retry of this same write. A package retired by Remove
+    /// from Library Only is skipped quietly, as `writeBookInfo` decides.
+    ///
+    /// A write that fails because the book's package is gone, while the
+    /// library folder is still there, is dropped with one debug log line
+    /// instead: the book was moved, which wrote its record at the new place,
+    /// or it left the library, after this write was queued. Must run on
+    /// bookInfoSaveQueue.
+    private static func writeQueuedBookInfo(_ book: Book, contentIndex: BookContentIndex?) {
+        do {
+            guard try writeBookInfo(book, contentIndex: contentIndex) else { return }
+            failureCenter.recordSuccess(.book(book.id))
+        } catch {
+            guard !packageWasMovedOrRemoved(book) else {
+                logLine(
+                    "BOOK_METADATA_DROPPED: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
+                        + "no package at \(book.tmbDirectory.path); the book moved or left the library "
+                        + "after this write was queued"
+                )
+                return
+            }
+            failureCenter.recordFailure(
+                .bookRecord(bookID: book.id, title: book.title),
+                path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
+                error: error
+            ) { failureID in
+                retryBookInfoWrite(book, contentIndex: contentIndex, failureID: failureID)
+            }
+        }
+    }
+
+    /// Writes `book`'s record again for a retry of the failed write
+    /// `failureID`, on the metadata queue, and waits for it. Nothing is
+    /// written when a later write of the book has settled that failure
+    /// meanwhile. A book whose package has moved or left the library since
+    /// has no record left to write there, so its failure is withdrawn.
+    private static func retryBookInfoWrite(
+        _ book: Book,
+        contentIndex: BookContentIndex?,
+        failureID: PersistenceFailure.ID
+    ) {
+        bookInfoSaveQueue.sync {
+            guard failureCenter.isOutstanding(failureID) else { return }
+            guard !packageWasMovedOrRemoved(book) else {
+                failureCenter.withdraw(.book(book.id))
+                return
+            }
+            writeQueuedBookInfo(book, contentIndex: contentIndex)
+        }
+    }
+
+    /// Whether `book`'s package is gone while the library folder is still
+    /// there, which means the book moved or left the library. An unavailable
+    /// volume takes the library folder too, and a package that exists but
+    /// cannot be examined is not missing, so neither is mistaken for this.
+    private static func packageWasMovedOrRemoved(_ book: Book) -> Bool {
+        isMissing(book.tmbDirectory) && !isMissing(TextMouthPaths.libraryDir)
     }
 
     /// Writes one package's metadata unless Remove from Library Only retired
@@ -646,8 +725,6 @@ enum LibraryPersistenceService {
 
     /// Records a library index recovery event in the console and the debug log.
     private static func logIndexEvent(_ message: String) {
-        let line = "LIBRARY_INDEX: \(message)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        logLine("LIBRARY_INDEX: \(message)")
     }
 }

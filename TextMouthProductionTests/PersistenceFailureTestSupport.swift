@@ -55,6 +55,46 @@ struct WriteObstruction {
 }
 
 extension XCTestCase {
+    /// Takes write permission from `directory`, so files cannot be created,
+    /// replaced, or removed inside it, and gives it back when the test ends.
+    /// - Returns: A function that gives the permission back sooner.
+    @discardableResult
+    func makeReadOnly(_ directory: URL) -> @Sendable () -> Void {
+        XCTAssertEqual(chmod(directory.path, 0o555), 0, "could not make \(directory.path) read-only")
+        let restore: @Sendable () -> Void = { _ = chmod(directory.path, 0o755) }
+        addTeardownBlock(restore)
+        return restore
+    }
+
+    /// A managed book with a real package in the isolated library, holding
+    /// its content file and its bookInfo.json, removed when the test ends.
+    /// - Parameters:
+    ///   - title: The book's title.
+    ///   - folderPath: The library folder that holds the package.
+    func makePackagedBook(_ title: String, folderPath: String = "") throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        try TextMouthPaths.ensureLibrarySubfolder(folderPath)
+        let packageName = "FailureFixture-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let content = package.appendingPathComponent("book.txt")
+        try Data("Failure fixture".utf8).write(to: content)
+        let book = Book(
+            title: title,
+            format: .txt,
+            filePath: content.path,
+            md5Hash: "failure-\(UUID().uuidString)",
+            folderPath: folderPath,
+            tmbDirectoryName: packageName
+        )
+        try book.saveBookInfoThrowing()
+        // A test that moves the package elsewhere removes it from there.
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: package)
+        }
+        return book
+    }
+
     /// The shared failure center that the app's services report to, cleared
     /// now and again when the test ends, so no test sees another's failures.
     @MainActor
