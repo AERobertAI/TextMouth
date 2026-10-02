@@ -643,15 +643,11 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     }
 
     /// Run `body` with a speech service whose global speed, pitch, and voice
-    /// come from a private suite, then stop it and remove the suite.
+    /// come from a private store in the sandbox, then stop it. The store is
+    /// emptied when the test ends.
     private func withSpeechService(_ body: (SpeechService) throws -> Void) throws {
-        let suiteName = "com.textmouth.tests.pre-rendered-speech.service.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        let speech = SpeechService(userDefaults: defaults)
-        defer {
-            speech.stop()
-            defaults.removePersistentDomain(forName: suiteName)
-        }
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("pre-rendered-speech.service"))
+        defer { speech.stop() }
         try body(speech)
     }
 
@@ -811,8 +807,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         substitutions: [SubstitutionRule] = [],
         _ body: (ReaderViewModel, HeldRenderQueue) throws -> Void
     ) throws {
-        let suiteName = "com.textmouth.tests.pre-rendered-speech.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let defaults = makeSandboxedPreferences("pre-rendered-speech")
         defaults.set(punctuationPauseLevel, forKey: SettingsPolicy.punctuationPauseLevel.key)
         let configFile = FileManager.default.temporaryDirectory
             .appendingPathComponent("pre-rendered-speech-\(UUID().uuidString).json")
@@ -851,7 +846,6 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         reader.isLoading = false
         defer {
             reader.close()
-            defaults.removePersistentDomain(forName: suiteName)
             try? FileManager.default.removeItem(at: configFile)
         }
         try recordingAnnouncements {
