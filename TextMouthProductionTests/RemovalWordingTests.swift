@@ -126,30 +126,43 @@ final class RemovalWordingTests: XCTestCase {
 
     // MARK: - The Library's Choice
 
-    /// The library's confirmation offers the deleting mode the Trash
-    /// preference chooses beside Remove from Library Only, and explains
-    /// both.
-    func testChoiceWordingForTheLibraryConfirmation() {
-        let trash = RemovalChoiceWording(books: [book("Field Notes")], movesToTrash: true)
-        XCTAssertEqual(trash.title, "Remove Book?")
-        XCTAssertEqual(trash.deleteButtonTitle, "Move to Trash")
-        XCTAssertEqual(trash.keepButtonTitle, "Remove from Library Only")
-        XCTAssertEqual(
-            trash.message,
-            "Choose how to remove “Field Notes” from the library. "
-                + "With Move to Trash, its files go to the Trash, where you can recover them until the Trash is emptied. "
-                + "With Remove from Library Only, its files stay in the TextMouth library folder."
-        )
+    /// The library's Remove Book dialog, for one book and for several, in
+    /// each deleting mode: the title counts the books, the deleting button
+    /// says what the Trash preference makes it do beside Remove from Library
+    /// Only, and the message explains both buttons by the names they carry.
+    func testRemoveBookDialogWordingForEveryModeAndCount() {
+        let one = [book("Field Notes")]
+        let several = [book("Atlas"), book("Bestiary"), book("Codex")]
+        let trashFiles = "go to the Trash, where you can recover them until the Trash is emptied"
+        let deletedFiles = "are deleted permanently and cannot be recovered"
+        let keptFiles = "stay in the TextMouth library folder"
+        let cases: [(books: [Book], movesToTrash: Bool, title: String, deleteButton: String, message: String)] = [
+            (one, true, "Remove Book?", "Move to Trash",
+             "Choose how to remove “Field Notes” from the library. With Move to Trash, its files \(trashFiles). "
+                + "With Remove from Library Only, its files \(keptFiles)."),
+            (one, false, "Remove Book?", "Delete Permanently",
+             "Choose how to remove “Field Notes” from the library. With Delete Permanently, its files \(deletedFiles). "
+                + "With Remove from Library Only, its files \(keptFiles)."),
+            (several, true, "Remove 3 Books?", "Move to Trash",
+             "Choose how to remove 3 books from the library. With Move to Trash, their files \(trashFiles). "
+                + "With Remove from Library Only, their files \(keptFiles)."),
+            (several, false, "Remove 3 Books?", "Delete Permanently",
+             "Choose how to remove 3 books from the library. With Delete Permanently, their files \(deletedFiles). "
+                + "With Remove from Library Only, their files \(keptFiles)."),
+        ]
 
-        let permanent = RemovalChoiceWording(books: [book("A"), book("B")], movesToTrash: false)
-        XCTAssertEqual(permanent.title, "Remove 2 Books?")
-        XCTAssertEqual(permanent.deleteButtonTitle, "Delete Permanently")
-        XCTAssertEqual(
-            permanent.message,
-            "Choose how to remove 2 books from the library. "
-                + "With Delete Permanently, their files are deleted permanently and cannot be recovered. "
-                + "With Remove from Library Only, their files stay in the TextMouth library folder."
-        )
+        for expected in cases {
+            let wording = RemovalChoiceWording(books: expected.books, movesToTrash: expected.movesToTrash)
+            let name = "\(expected.books.count) book(s), Trash \(expected.movesToTrash ? "on" : "off")"
+            XCTAssertEqual(wording.title, expected.title, name)
+            XCTAssertEqual(wording.deleteButtonTitle, expected.deleteButton, name)
+            XCTAssertEqual(wording.keepButtonTitle, "Remove from Library Only", name)
+            XCTAssertEqual(wording.message, expected.message, name)
+            // Each button is explained by the very name it carries, so what
+            // is read aloud matches what is shown.
+            XCTAssertTrue(wording.message.contains("With \(wording.deleteButtonTitle), "), name)
+            XCTAssertTrue(wording.message.contains("With \(wording.keepButtonTitle), "), name)
+        }
     }
 
     // MARK: - The Library's Remove Command
@@ -203,6 +216,36 @@ final class RemovalWordingTests: XCTestCase {
         XCTAssertEqual(deletes.shortTitle, "Delete Permanently")
         XCTAssertEqual(deletes.accessibilityLabel, "Delete 3 books permanently")
         XCTAssertEqual(deletes.accessibilityHint, "Their files are deleted permanently and cannot be recovered.")
+    }
+
+    /// The menu bar's Remove command names no count, and for each pair of
+    /// preferences says what choosing it does: it asks first, or it moves
+    /// the files to the Trash, or it deletes them permanently. It reads the
+    /// same as the context-menu item for one book.
+    func testMenuBarRemoveTitleForEveryPreferenceCombination() {
+        let cases: [(confirmsFirst: Bool, movesToTrash: Bool, title: String)] = [
+            (true, true, "Remove from Library..."),
+            (true, false, "Remove from Library..."),
+            (false, true, "Move to Trash"),
+            (false, false, "Delete Permanently"),
+        ]
+
+        for expected in cases {
+            let preferences = RemovalPreferences(
+                confirmsFirst: expected.confirmsFirst,
+                movesToTrash: expected.movesToTrash
+            )
+            XCTAssertEqual(
+                LibraryRemoveCommandWording.menuBarTitle(preferences: preferences),
+                expected.title,
+                "\(preferences)"
+            )
+            XCTAssertEqual(
+                LibraryRemoveCommandWording(preferences: preferences, count: 1).menuTitle,
+                expected.title,
+                "the context menu agrees for one book: \(preferences)"
+            )
+        }
     }
 
     // MARK: - Storage Settings

@@ -150,6 +150,10 @@ struct NavigationCommands: Commands {
 }
 
 struct LibraryCommands: Commands {
+    /// The removal preferences, observed so the Remove command's title
+    /// always says what choosing it will do (TODO A08).
+    @ObservedObject private var removal = RemovalPreferencesModel.shared
+
     var body: some Commands {
         CommandMenu("Library") {
             Button("Edit Mode") {
@@ -183,7 +187,10 @@ struct LibraryCommands: Commands {
 
             Divider()
 
-            Button("Remove from Library") {
+            // "Remove from Library..." when it asks first; with confirmation
+            // off it deletes at once, so it says "Move to Trash" or
+            // "Delete Permanently".
+            Button(LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences)) {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
             // Cmd+Delete handled by KeyboardShortcutManager for window targeting

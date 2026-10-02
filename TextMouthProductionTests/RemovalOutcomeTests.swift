@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -18,6 +19,30 @@ final class RemovalOutcomeTests: XCTestCase {
                 RemovalPreferences(confirmsFirst: false, movesToTrash: true)
             )
         }
+    }
+
+    /// The shared preferences model, which the library's views, its Remove
+    /// Book dialog, and the menu bar word removal from, publishes when a
+    /// removal preference changes and stays quiet when another setting does.
+    func testSharedModelPublishesOnlyRemovalPreferenceChanges() {
+        let service = ConfigService.shared
+        let model = RemovalPreferencesModel.shared
+        let savedBookID = service.config.lastOpenedBookID
+        let savedTrash = service.config.moveToTrashInsteadOfDeleting
+        defer {
+            service.config.lastOpenedBookID = savedBookID
+            service.config.moveToTrashInsteadOfDeleting = savedTrash
+        }
+        var published: [RemovalPreferences] = []
+        let subscription = model.$preferences.dropFirst().sink { published.append($0) }
+        defer { subscription.cancel() }
+
+        service.config.lastOpenedBookID = UUID().uuidString
+        XCTAssertTrue(published.isEmpty, "another setting publishes nothing")
+
+        service.config.moveToTrashInsteadOfDeleting.toggle()
+        XCTAssertEqual(published, [RemovalPreferences(service.config)])
+        XCTAssertEqual(model.preferences, RemovalPreferences(service.config))
     }
 
     // MARK: - Delete Everything
@@ -196,6 +221,42 @@ final class RemovalOutcomeTests: XCTestCase {
             }
             XCTAssertTrue(labels.contains("Move 2 selected books to the Trash"), "\(labels)")
             XCTAssertTrue(labels.contains("Delete 2 books permanently"), "\(labels)")
+        }
+    }
+
+    // MARK: - Menu Bar
+
+    /// The menu bar the running app draws titles its Remove command by the
+    /// removal preferences, and retitles it when they change. Skipped when
+    /// this run's menu bar has no Library menu with that command.
+    func testMenuBarRemoveCommandFollowsThePreferences() throws {
+        let combinations = [true, false].flatMap { confirmsFirst in
+            [true, false].map { RemovalPreferences(confirmsFirst: confirmsFirst, movesToTrash: $0) }
+        }
+        let possibleTitles = Set(combinations.map { LibraryRemoveCommandWording.menuBarTitle(preferences: $0) })
+
+        /// The Remove command's title in the Library menu, read afresh each
+        /// time, after asking the menu to bring its items up to date as it
+        /// does before it opens.
+        func removeCommandTitle() -> String? {
+            guard let libraryMenu = NSApp.mainMenu?.items.first(where: { $0.title == "Library" })?.submenu else {
+                return nil
+            }
+            libraryMenu.delegate?.menuNeedsUpdate?(libraryMenu)
+            return libraryMenu.items.first { possibleTitles.contains($0.title) }?.title
+        }
+        guard removeCommandTitle() != nil else {
+            throw XCTSkip("This run's menu bar has no Library menu with a Remove command")
+        }
+
+        for preferences in combinations {
+            withRemovalPreferences(confirmsFirst: preferences.confirmsFirst, movesToTrash: preferences.movesToTrash) {
+                let expected = LibraryRemoveCommandWording.menuBarTitle(preferences: preferences)
+                XCTAssertTrue(
+                    waitUntil(timeout: 3) { removeCommandTitle() == expected },
+                    "Expected “\(expected)”; the menu shows “\(removeCommandTitle() ?? "nothing")”"
+                )
+            }
         }
     }
 

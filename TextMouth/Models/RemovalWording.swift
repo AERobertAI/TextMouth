@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// What removing books does with their files (TODO A08). Every removal
@@ -254,13 +255,26 @@ struct LibraryRemoveCommandWording: Equatable {
         self.init(preferences: preferences, count: books.count, title: books.first?.title)
     }
 
+    /// The command's title when it asks how to remove before removing
+    /// anything; the ellipsis says that a choice follows.
+    private static let askFirstTitle = "Remove from Library..."
+
     /// The context-menu item: "Remove from Library..." or "Remove 3 Books
     /// from Library..." when it asks first, otherwise "Move to Trash",
     /// "Move 3 Books to Trash", or "Delete 3 Books Permanently". A menu item
     /// is read by its title, so the title alone must say all of this.
     var menuTitle: String {
         guard preferences.confirmsFirst else { return removal.buttonTitle }
-        return removal.count == 1 ? "Remove from Library..." : "Remove \(removal.count) Books from Library..."
+        return removal.count == 1 ? Self.askFirstTitle : "Remove \(removal.count) Books from Library..."
+    }
+
+    /// The menu bar's Remove command, which acts on whatever is selected in
+    /// the library window and so names no count: "Remove from Library..."
+    /// when it asks first, otherwise "Move to Trash" or "Delete
+    /// Permanently". With confirmation off it never promises less than it
+    /// does.
+    static func menuBarTitle(preferences: RemovalPreferences) -> String {
+        preferences.confirmsFirst ? askFirstTitle : preferences.deletionMode.buttonTitle()
     }
 
     /// The edit bar's short button: "Remove..." when it asks first,
@@ -402,6 +416,35 @@ struct RemovalPreferences: Equatable {
     static var trashPreferenceExplanation: String {
         "When on, \(RemovalMode.moveToTrash.filesClause(of: "a deleted book's")). "
             + "When off, \(RemovalMode.deletePermanently.filesClause(of: "its"))."
+    }
+}
+
+/// The removal preferences as config.json holds them, published only when
+/// one of the two changes. The library's views, its Remove Book dialog, and
+/// the menu bar all word removal from this one model, so none of them is
+/// left promising the old behavior after a preference changes in Settings,
+/// and other settings changes redraw none of them.
+@MainActor
+final class RemovalPreferencesModel: ObservableObject {
+    /// The model the app's windows and menus share.
+    static let shared = RemovalPreferencesModel()
+
+    /// The removal preferences now in force.
+    @Published private(set) var preferences: RemovalPreferences
+
+    /// Keeps `preferences` in step with config.json.
+    private var subscription: AnyCancellable?
+
+    private init(configService: ConfigService = .shared) {
+        preferences = RemovalPreferences(configService.config)
+        subscription = configService.$config
+            .map { RemovalPreferences($0) }
+            .removeDuplicates()
+            .sink { [weak self] current in
+                // The first value is the current one; publish only changes.
+                guard let self, self.preferences != current else { return }
+                self.preferences = current
+            }
     }
 }
 
