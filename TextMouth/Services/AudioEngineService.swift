@@ -533,6 +533,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     var outputVolume: Float { engine.mainMixerNode.outputVolume }
     var intendedVolume: Float { currentVolume }
 
+    /// The speed and pitch the time-pitch unit applies to rendered audio as it
+    /// plays. Internal visibility lets hosted tests confirm that audio
+    /// rendered ahead plays at the speed and pitch chosen when it starts.
+    var playbackRate: Float { timePitch.rate }
+    var playbackPitchCents: Float { timePitch.pitch }
+
     /// Seek within the current rendered buffer. No re-rendering, no engine restart.
     func seek(toCharOffset charOffset: Int) {
         guard let buffer = renderedBuffer, let format = renderFormat else { return }

@@ -489,18 +489,17 @@ final class ReaderViewModel: ObservableObject {
             self.chapterPlaybackGeneration += 1
 
             // Use the pre-rendered engine for an instant start when it holds
-            // this chapter's audio
-            if let lookAhead = self.lookAhead,
-               lookAhead.chapterIndex == nextIndex,
-               lookAhead.engine.hasRenderedAudio {
+            // exactly this chapter's speech, rendered from the text and voice
+            // in effect now. Audio rendered before the voice, a substitution
+            // rule, the punctuation pauses, or the skipped sections changed is
+            // discarded instead, and the chapter starts from its current text.
+            if let preEngine = self.takeLookAheadEngine(for: speech) {
                 self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
                 // The prepared speech's map covers every pipeline stage
                 self.currentTransformation = speech.transformation
                 self.currentOffsetMap = speech.offsetMap
-                self.speechService.usePreRenderedEngine(lookAhead.engine, text: speech.text)
-                // The adopted look-ahead is used up; forget it without
-                // cancelling, then pre-render the chapter after that
-                self.lookAhead = nil
+                self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
+                // Pre-render the chapter after that
                 self.preRenderNextChapter()
             } else {
                 self.startSpeaking(SpeechStart(speech: speech, offset: 0))

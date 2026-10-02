@@ -386,8 +386,25 @@ extension ReaderViewModel {
     struct LookAhead {
         /// The chapter being rendered.
         let chapterIndex: Int
+        /// What the render was asked for: the chapter's spoken text and the
+        /// voice, as they were when the chapter was chosen.
+        let signature: SpeechRenderSignature
         /// The engine rendering the chapter, and then holding its audio.
         let engine: AudioEngineService
+    }
+
+    /// What rendering `speech` asks of the synthesizer now: its exact text,
+    /// in the voice chosen now.
+    func renderRequest(for speech: ChapterSpeech) -> SpeechRenderRequest {
+        SpeechRenderRequest(text: speech.text, voice: speechService.currentVoice)
+    }
+
+    /// The signature that audio for chapter `chapterIndex` must carry to be
+    /// played now: the chapter's speech prepared from the current skipped
+    /// sections, punctuation pauses, and substitution rules, in the current
+    /// voice. Nil when there is no such chapter.
+    func currentRenderSignature(forChapterAt chapterIndex: Int) -> SpeechRenderSignature? {
+        preparedSpeech(forChapterAt: chapterIndex).map { renderRequest(for: $0).signature }
     }
 
     /// Pre-render the next speakable chapter's audio in the background so
@@ -411,7 +428,8 @@ extension ReaderViewModel {
             return
         }
 
-        let lookAhead = LookAhead(chapterIndex: nextIdx, engine: AudioEngineService())
+        let request = renderRequest(for: speech)
+        let lookAhead = LookAhead(chapterIndex: nextIdx, signature: request.signature, engine: AudioEngineService())
         self.lookAhead = lookAhead
         // Capture generation so stale renders from rapid navigation are discarded
         let renderGeneration = chapterPlaybackGeneration
@@ -426,22 +444,42 @@ extension ReaderViewModel {
             )
         }
         renderScheduler.render(
-            SpeechRenderRequest(text: chapterText, voice: speechService.currentVoice),
+            request,
             engine: lookAhead.engine,
             shouldStart: isStillWanted,
             completion: { [weak self] success in
-                guard let self else { return }
-                guard success, isStillWanted() else {
-                    // A render that failed, or that playback has moved past,
-                    // leaves nothing to look ahead to.
-                    if self.chosenLookAheadChapter(renderedBy: lookAhead.engine) != nil {
-                        self.lookAhead = nil
-                    }
-                    return
-                }
-                self.debugLog("preRender: chapter \(nextIdx) ready (\(chapterText.utf16Length) UTF-16 units)")
+                self?.finishLookAheadRender(lookAhead, succeeded: success && isStillWanted())
             }
         )
+    }
+
+    /// Keep a finished look-ahead render only while its audio is exactly what
+    /// its chapter would render now, and otherwise leave nothing to look ahead
+    /// to. A render whose inputs changed while it ran, such as a voice chosen,
+    /// a substitution rule edited, the punctuation pause level moved, or a
+    /// section skipped, is never kept.
+    ///
+    /// - Parameters:
+    ///   - render: The look-ahead the render was queued for.
+    ///   - succeeded: Whether the render produced audio and was still wanted
+    ///     in its playback generation when it finished.
+    private func finishLookAheadRender(_ render: LookAhead, succeeded: Bool) {
+        // A render the reader has since replaced or discarded keeps nothing.
+        guard chosenLookAheadChapter(renderedBy: render.engine) != nil else { return }
+        guard succeeded else {
+            debugLog("preRender: chapter \(render.chapterIndex) did not render, or playback moved on; nothing looked ahead to")
+            lookAhead = nil
+            return
+        }
+        // Prepare the chapter's speech again from the settings in effect now:
+        // a setting changed while the render ran makes the signatures differ.
+        let current = currentRenderSignature(forChapterAt: render.chapterIndex)
+        guard let rendered = render.engine.renderedSignature, rendered == current else {
+            debugLog("preRender: dropped chapter \(render.chapterIndex), rendered from inputs that changed while it ran (rendered \(render.engine.renderedSignature?.description ?? "nothing"), now \(current?.description ?? "no chapter"))")
+            lookAhead = nil
+            return
+        }
+        debugLog("preRender: chapter \(render.chapterIndex) ready (\(rendered))")
     }
 
     /// Forget the look-ahead. A render still in progress is abandoned: the
@@ -450,6 +488,39 @@ extension ReaderViewModel {
     func discardLookAhead() {
         lookAhead?.engine.cancelRender()
         lookAhead = nil
+    }
+
+    /// Take the look-ahead's engine to play `speech`, the chapter that is
+    /// beginning, when it holds exactly that speech's audio: rendered for the
+    /// same chapter, finished, and signed with the text and voice speech uses
+    /// now. The look-ahead is used up either way.
+    ///
+    /// A look-ahead that cannot be used is discarded with one log line saying
+    /// why, and the caller starts the chapter the ordinary way, from its
+    /// current text, so the audio, the offsets, and Where Am I always describe
+    /// the same speech.
+    ///
+    /// - Returns: The engine to adopt, or nil when the chapter must start
+    ///   without pre-rendered audio.
+    func takeLookAheadEngine(for speech: ChapterSpeech) -> AudioEngineService? {
+        guard let lookAhead else { return nil }
+        let current = renderRequest(for: speech).signature
+        let reason: String
+        if lookAhead.chapterIndex != speech.chapterIndex {
+            reason = "it was for chapter \(lookAhead.chapterIndex)"
+        } else if !lookAhead.engine.hasRenderedAudio {
+            reason = "it was still rendering"
+        } else if lookAhead.engine.renderedSignature != current {
+            reason = "it was rendered from other inputs (\(lookAhead.engine.renderedSignature?.description ?? "unsigned"), now \(current))"
+        } else {
+            // Used up by the chapter that plays it: forget it without
+            // abandoning anything.
+            self.lookAhead = nil
+            return lookAhead.engine
+        }
+        debugLog("preRender: not using the look-ahead for chapter \(speech.chapterIndex): \(reason)")
+        discardLookAhead()
+        return nil
     }
 
     /// The chapter of the reader's look-ahead when that look-ahead renders

@@ -591,7 +591,11 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             ]
         ) { reader in
             let earlierEngine = AudioEngineService()
-            reader.lookAhead = ReaderViewModel.LookAhead(chapterIndex: 1, engine: earlierEngine)
+            reader.lookAhead = ReaderViewModel.LookAhead(
+                chapterIndex: 1,
+                signature: try XCTUnwrap(reader.currentRenderSignature(forChapterAt: 1)),
+                engine: earlierEngine
+            )
             reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first))
 
             reader.preRenderNextChapter()
@@ -613,7 +617,11 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             ],
             skipping: ["Notes"]
         ) { reader in
-            reader.lookAhead = ReaderViewModel.LookAhead(chapterIndex: 1, engine: AudioEngineService())
+            reader.lookAhead = ReaderViewModel.LookAhead(
+                chapterIndex: 1,
+                signature: try XCTUnwrap(reader.currentRenderSignature(forChapterAt: 1)),
+                engine: AudioEngineService()
+            )
 
             reader.preRenderNextChapter()
 
