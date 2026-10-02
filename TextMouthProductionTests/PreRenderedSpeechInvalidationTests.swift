@@ -165,6 +165,22 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// Stopping speech abandons the look-ahead too, even while its render
+    /// runs, so a stopped reader holds no rendered audio; the next Play
+    /// chooses the next chapter afresh.
+    func testStoppingAbandonsTheLookAhead() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            let running = try XCTUnwrap(renders.startNext())
+
+            reader.stop()
+            renders.finishRunning()
+
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertFalse(running.engine.hasRenderedAudio)
+        }
+    }
+
     /// A look-ahead chosen again is a new render even for the same chapter:
     /// the render it replaced never starts.
     func testAReplacedLookAheadNeverStartsEvenForTheSameChapter() throws {

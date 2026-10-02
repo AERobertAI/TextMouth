@@ -239,6 +239,10 @@ extension ReaderViewModel {
             audioPlaybackService.stop()
         } else {
             speechService.stop()
+            // Stopped speech looks ahead to nothing: the next Play chooses
+            // the next chapter afresh. Abandoning the look-ahead now also
+            // releases its rendered audio instead of holding it while idle.
+            discardLookAhead()
         }
         finishStopping(wasActive: wasActive, wasSleepTimerFading: wasSleepTimerFading)
     }
