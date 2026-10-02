@@ -51,17 +51,20 @@ extension ReaderViewModel {
         announceToVoiceOver("Pitch \(formatted)")
     }
 
-    /// Set voice for this book only
+    /// Set voice for this book only. The next chapter, if already rendered
+    /// ahead in the old voice, is rendered again in this one.
     func setLocalVoice(_ voice: AVSpeechSynthesisVoice) {
         speechService.currentVoice = voice
         book.localVoiceID = voice.identifier
         saveLocalVoiceSettings()
+        refreshLookAhead()
         announceToVoiceOver("Voice changed to \(voice.name)")
     }
 
     /// Apply this book's saved voice, speed, and pitch overrides to the speech
     /// engine. Runs when the reader opens and again after global speech
-    /// settings change, because per-book overrides take priority.
+    /// settings change, because per-book overrides take priority. A voice
+    /// that changed either way also brings the look-ahead up to date.
     ///
     /// Audio books store their playback multiplier in `localWPM`, so their
     /// saved speed must never reach the speech engine: 1.25 would clamp to
@@ -78,6 +81,7 @@ extension ReaderViewModel {
            let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
             speechService.currentVoice = voice
         }
+        refreshLookAhead()
     }
 
     /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
@@ -129,6 +133,7 @@ extension ReaderViewModel {
         if let voice = settingsViewModel.selectedVoice {
             speechService.currentVoice = voice
         }
+        refreshLookAhead()
         announceToVoiceOver("Using global voice and speed settings")
     }
 
@@ -149,7 +154,9 @@ extension ReaderViewModel {
         skippedHeadingIDs.contains(heading.id)
     }
 
-    /// Toggle the skip state for a heading section
+    /// Toggle the skip state for a heading section. A next chapter already
+    /// rendered ahead is rendered again when the change alters what it says,
+    /// or which chapter comes next.
     func toggleHeadingSkip(_ heading: Heading) {
         var ids = book.skippedHeadingIDs ?? []
         if ids.contains(heading.id) {
@@ -161,6 +168,7 @@ extension ReaderViewModel {
         }
         book.skippedHeadingIDs = ids
         libraryViewModel.updateSkippedHeadings(bookID: book.id, skippedIDs: ids)
+        refreshLookAhead()
     }
 
     /// Remove text under skipped headings from a chapter's text.

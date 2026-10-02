@@ -551,9 +551,7 @@ extension ReaderViewModel {
             // playing — invalidate stale callbacks before changing state
             chapterPlaybackGeneration += 1
             // Cancel stale pre-rendered chapter
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
+            discardLookAhead()
 
             speechService.stop()
 
@@ -630,9 +628,7 @@ extension ReaderViewModel {
             seekSpeechService(toOriginalOffset: charOffset)
         } else {
             chapterPlaybackGeneration += 1
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
+            discardLookAhead()
 
             speechService.stop()
             currentChapterIndex = chapIdx
@@ -687,9 +683,7 @@ extension ReaderViewModel {
             // jump away — discard it so a stale render doesn't get
             // adopted later. Same cleanup pattern as skipByTime() and
             // navigateTo().
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
+            discardLookAhead()
 
             currentChapterIndex = chapIdx
             currentCharacterOffset = charOffset
@@ -804,9 +798,7 @@ extension ReaderViewModel {
             // Different chapter, not playing, or silent text after the new
             // position — invalidate stale callbacks first
             chapterPlaybackGeneration += 1
-            nextChapterEngine?.cancelRender()
-            nextChapterEngine = nil
-            nextChapterIndex = nil
+            discardLookAhead()
 
             speechService.stop()
             currentChapterIndex = chapterIndex

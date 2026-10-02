@@ -123,6 +123,9 @@ final class ReaderViewModel: ObservableObject {
     /// center, unless the reader was created with its own, as tests do to
     /// keep their notifications from the running app.
     let notificationCenter: NotificationCenter
+    /// Renders the look-ahead's audio: the shared render queue, unless the
+    /// reader was created with its own, as tests do to hold renders.
+    let renderScheduler: any SpeechRenderScheduling
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -211,10 +214,10 @@ final class ReaderViewModel: ObservableObject {
     /// Debounce skip calls — ignore rapid-fire duplicates.
     /// Accessed from Navigation extension.
     var lastSkipTime: Date = .distantPast
-    /// Pre-rendered audio engine for the next chapter (for seamless chapter transitions).
+    /// The next speakable chapter, rendered ahead so it can start the moment
+    /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
-    var nextChapterEngine: AudioEngineService?
-    var nextChapterIndex: Int?
+    var lookAhead: LookAhead?
     /// Incremented on every navigation/skip action. The onUtteranceFinished callback
     /// checks this to ignore stale completions from a chapter that was playing before
     /// the user navigated away.
@@ -258,13 +261,17 @@ final class ReaderViewModel: ObservableObject {
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
     ///     running app's windows.
+    ///   - renderScheduler: Renders the next chapter ahead of time. Nil uses
+    ///     the shared render queue; tests pass one that holds each render
+    ///     until they let it start and finish.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        renderScheduler: (any SpeechRenderScheduling)? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -274,6 +281,7 @@ final class ReaderViewModel: ObservableObject {
         self.substitutionService = substitutionService ?? .shared
         self.autoplayRequests = autoplayRequests ?? .shared
         self.notificationCenter = notificationCenter
+        self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -289,6 +297,7 @@ final class ReaderViewModel: ObservableObject {
 
         setupCallbacks()
         setupNotifications()
+        observeSpokenAudioSettings()
         forwardSpeechState()
 
         if isAudioBook {
@@ -301,6 +310,31 @@ final class ReaderViewModel: ObservableObject {
         }
 
         loadContent()
+    }
+
+    /// Bring the look-ahead up to date when a setting that shapes spoken audio
+    /// changes outside this reader: the substitution rules or whether they
+    /// apply, edited in Settings, and the global punctuation pause level,
+    /// which Settings or an edit to config.json can change. A change notice
+    /// can arrive before its change is in place (the substitution service's
+    /// arrives before it), so the refresh waits for the main queue's next
+    /// turn, by which time it is.
+    private func observeSpokenAudioSettings() {
+        substitutionService.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.refreshLookAhead() }
+            .store(in: &cancellables)
+
+        // The settings model announces every change it makes, once or more;
+        // only a new punctuation pause level shapes spoken audio.
+        settingsViewModel.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .map { [weak self] _ in self?.settingsViewModel.punctuationPauseLevel }
+            .prepend(settingsViewModel.punctuationPauseLevel)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in self?.refreshLookAhead() }
+            .store(in: &cancellables)
     }
 
     /// Forward speechService @Published state to our own @Published properties
@@ -481,17 +515,16 @@ final class ReaderViewModel: ObservableObject {
             self.chapterPlaybackGeneration += 1
 
             // Use the pre-rendered engine for an instant start when it holds
-            // this chapter's audio
-            if let preEngine = self.nextChapterEngine,
-               self.nextChapterIndex == nextIndex,
-               preEngine.hasRenderedAudio {
+            // exactly this chapter's speech, rendered from the text and voice
+            // in effect now. Audio rendered before the voice, a substitution
+            // rule, the punctuation pauses, or the skipped sections changed is
+            // discarded instead, and the chapter starts from its current text.
+            if let preEngine = self.takeLookAheadEngine(for: speech) {
                 self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
                 // The prepared speech's map covers every pipeline stage
                 self.currentTransformation = speech.transformation
                 self.currentOffsetMap = speech.offsetMap
                 self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
-                self.nextChapterEngine = nil
-                self.nextChapterIndex = nil
                 // Pre-render the chapter after that
                 self.preRenderNextChapter()
             } else {

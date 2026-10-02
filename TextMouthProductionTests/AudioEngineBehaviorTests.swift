@@ -188,6 +188,36 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertFalse(engine.hasRenderedAudio)
     }
 
+    /// Discarded audio takes its signature with it, so an engine with no
+    /// audio never claims to hold audio rendered from anything.
+    func testDiscardRenderedAudioForgetsItsSignature() {
+        let engine = AudioEngineService()
+        engine._installRenderedAudioForTesting(
+            signature: SpeechRenderSignature(text: "Chapter one.", voiceIdentifier: "voice.a")
+        )
+
+        engine.discardRenderedAudio()
+
+        XCTAssertNil(engine.renderedSignature)
+    }
+
+    /// Adopting pre-rendered audio adopts what it was rendered from, so the
+    /// speech engine can still tell which text and voice its audio belongs to.
+    func testAudioEngineAdoptionCarriesTheRenderedSignature() {
+        let signature = SpeechRenderSignature(text: "Chapter two.", voiceIdentifier: "voice.b")
+        let source = AudioEngineService()
+        source._installRenderedAudioForTesting(signature: signature)
+        let receiver = AudioEngineService()
+        receiver._installRenderedAudioForTesting(
+            signature: SpeechRenderSignature(text: "Chapter one.", voiceIdentifier: "voice.b")
+        )
+
+        receiver.adoptRenderedAudio(from: source)
+
+        XCTAssertEqual(receiver.renderedSignature, signature)
+        XCTAssertTrue(receiver.hasRenderedAudio)
+    }
+
     func testAudioEngineAdoptionPreservesReceiverVolume() {
         let receiver = AudioEngineService()
         let source = AudioEngineService()
