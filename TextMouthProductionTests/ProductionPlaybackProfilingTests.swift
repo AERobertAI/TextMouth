@@ -106,9 +106,7 @@ final class ProductionPlaybackProfilingTests: XCTestCase {
             peakRSS = max(peakRSS, residentBytes())
         }
         engine.render(
-            text: profileText,
-            voice: AVSpeechSynthesisVoice(language: "en-US"),
-            wpm: 200
+            SpeechRenderRequest(text: profileText, voice: AVSpeechSynthesisVoice(language: "en-US"))
         ) { success in
             renderSucceeded = success
             rendered.fulfill()

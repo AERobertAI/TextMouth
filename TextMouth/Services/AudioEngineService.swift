@@ -1,6 +1,91 @@
 @preconcurrency import AVFoundation
 import Combine
 
+/// Identifies rendered speech audio by everything that went into it, so audio
+/// rendered ahead of time is only ever played for exactly the speech it was
+/// rendered from.
+///
+/// A render reads two things, the text and the voice (see
+/// `SpeechRenderRequest`), and the signature covers both. The text is the end
+/// of the reader's playback pipeline, so every setting that shapes it is
+/// covered through the text itself: skipped sections, punctuation pauses,
+/// substitution rules, and whether those rules are enabled. A setting that
+/// changed the audio without changing the text would have to be added here.
+///
+/// Speed and pitch are deliberately not part of it. The engine renders every
+/// text at one fixed rate and pitch, and its time-pitch unit applies the
+/// listener's speed and pitch while the audio plays, so audio rendered while
+/// one speed was chosen plays correctly at any other.
+///
+/// The text is identified by a hash of its exact characters together with its
+/// length in UTF-16 code units. Swift seeds that hash anew in every process,
+/// so a signature compares only with signatures made by the same run of the
+/// app and is never stored.
+struct SpeechRenderSignature: Hashable, Sendable {
+    /// A hash of the text's exact characters.
+    let textHash: Int
+    /// The text's length in UTF-16 code units: the units of every offset into
+    /// it, including the rendered audio's map from text to audio frames.
+    let textUTF16Length: Int
+    /// The voice's identifier, or nil for the system's default voice.
+    let voiceIdentifier: String?
+
+    /// The signature of rendering `text` with the voice `voiceIdentifier`
+    /// names, or with the system's default voice when it is nil.
+    init(text: String, voiceIdentifier: String?) {
+        textHash = Self.exactHash(of: text)
+        textUTF16Length = text.utf16Length
+        self.voiceIdentifier = voiceIdentifier
+    }
+
+    /// A hash of `text`'s exact UTF-8 bytes.
+    ///
+    /// Hashing the `String` itself would not do: Swift hashes strings by
+    /// canonical equivalence, so two encodings of the same accented letter
+    /// would hash alike although the synthesizer is handed different
+    /// characters, at different offsets.
+    private static func exactHash(of text: String) -> Int {
+        var hasher = Hasher()
+        // `withUTF8` needs a mutable string because it may first copy a
+        // bridged string into contiguous storage; the copy leaves `text` as is.
+        var contiguousText = text
+        contiguousText.withUTF8 { hasher.combine(bytes: UnsafeRawBufferPointer($0)) }
+        return hasher.finalize()
+    }
+}
+
+extension SpeechRenderSignature: CustomStringConvertible {
+    /// A short form for the debug and transition logs: the text's length and
+    /// hash, then the voice.
+    var description: String {
+        let hash = String(UInt(bitPattern: textHash), radix: 16)
+        return "\(textUTF16Length) UTF-16 units #\(hash), voice \(voiceIdentifier ?? "default")"
+    }
+}
+
+/// One render: the text to synthesize and the voice to synthesize it with.
+///
+/// `AudioEngineService.render(_:completion:)` reads nothing but this request,
+/// and the request's signature covers every field, so the signature describes
+/// the rendered audio exactly. A new input to rendering belongs here, and in
+/// the signature.
+struct SpeechRenderRequest: Sendable {
+    /// The exact text handed to the synthesizer.
+    let text: String
+    /// The voice to render with; nil renders with the system's default voice.
+    let voice: AVSpeechSynthesisVoice?
+    /// Everything the rendered audio depends on.
+    let signature: SpeechRenderSignature
+
+    /// A request to render `text` with `voice`, signed once here so the text
+    /// is hashed only once however often the signature is compared.
+    init(text: String, voice: AVSpeechSynthesisVoice?) {
+        self.text = text
+        self.voice = voice
+        signature = SpeechRenderSignature(text: text, voiceIdentifier: voice?.identifier)
+    }
+}
+
 /// Pre-renders speech to audio buffers using AVSpeechSynthesizer.write(),
 /// then plays through AVAudioEngine with AVAudioUnitTimePitch for
 /// real-time speed adjustment and instant seeking.
@@ -14,6 +99,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     private var renderedBuffer: AVAudioPCMBuffer?
     private var renderFormat: AVAudioFormat?
+    /// Everything the audio in `renderedBuffer` was rendered from, or nil
+    /// while the engine holds no rendered audio. Set, cleared, and adopted
+    /// together with the buffer, so the audio always carries its signature.
+    private(set) var renderedSignature: SpeechRenderSignature?
 
     private var wordFrameMap: [(charOffset: Int, frame: AVAudioFramePosition)] = []
     private var totalFrames: AVAudioFrameCount = 0
@@ -93,13 +182,22 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return true
     }
 
-    func render(text: String, voice: AVSpeechSynthesisVoice?, wpm: Double, completion: @escaping @Sendable (Bool) -> Void) {
+    /// Render `request` into this engine's buffer, replacing any audio it
+    /// held, then report on the main queue whether the audio was installed.
+    ///
+    /// Everything rendering reads comes from `request`, and the installed
+    /// audio carries `request.signature` as `renderedSignature`. Speech is
+    /// always rendered at one fixed rate and pitch; the listener's speed and
+    /// pitch are applied while it plays (see `setSpeed` and `setPitch`).
+    func render(_ request: SpeechRenderRequest, completion: @escaping @Sendable (Bool) -> Void) {
         // Cancel any in-progress render first to free TTS resources
         cancelRender()
 
+        let text = request.text
         isRendering = true
         wordFrameMap = []
         renderedBuffer = nil
+        renderedSignature = nil
         // Render at 0.7 rate (~457 WPM empirically) for a good balance of speed and quality
         renderWPM = 457.0
 
@@ -115,7 +213,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             self.renderLock.unlock()
 
             let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = voice
+            utterance.voice = request.voice
             utterance.rate = 0.7
             utterance.prefersAssistiveTechnologySettings = false
 
@@ -215,6 +313,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                     return
                 }
                 self.renderedBuffer = combinedBuffer
+                self.renderedSignature = request.signature
                 self.renderFormat = audioFormat
                 self.wordFrameMap = completedMap
                 // totalFrames tracks only the speech portion for position
@@ -379,6 +478,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         let discardedAudio = renderedBuffer != nil
         stop()
         renderedBuffer = nil
+        renderedSignature = nil
         renderFormat = nil
         wordFrameMap = []
         totalFrames = 0
@@ -510,9 +610,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// Adopt pre-rendered audio from another AudioEngineService instance.
     /// Used for seamless chapter transitions where the next chapter was pre-rendered.
+    /// The audio's signature comes with it, so this engine can still tell
+    /// what its audio was rendered from.
     func adoptRenderedAudio(from other: AudioEngineService) {
         stop()
         renderedBuffer = other.renderedBuffer
+        renderedSignature = other.renderedSignature
         renderFormat = other.renderFormat
         wordFrameMap = other.wordFrameMap
         totalFrames = other.totalFrames
@@ -573,11 +676,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// Installs a minimal deterministic buffer so tests can verify render
     /// ownership and disposal without invoking the system speech synthesizer.
-    func _installRenderedAudioForTesting() {
+    ///
+    /// - Parameter signature: What the stand-in audio is said to have been
+    ///   rendered from, as a finished render would record it.
+    func _installRenderedAudioForTesting(signature: SpeechRenderSignature? = nil) {
         let format = AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1)!
         buffer.frameLength = 1
         renderedBuffer = buffer
+        renderedSignature = signature
         renderFormat = format
         wordFrameMap = [(charOffset: 0, frame: 0), (charOffset: 1, frame: 1)]
         totalFrames = 1

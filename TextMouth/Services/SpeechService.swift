@@ -197,19 +197,28 @@ final class SpeechRenderCoordinator: @unchecked Sendable {
         qos: .userInitiated
     )
 
+    /// Render `request` into `engine` once every earlier render has finished.
+    ///
+    /// - Parameters:
+    ///   - request: The text and voice to render; the engine records the
+    ///     request's signature with the audio.
+    ///   - engine: The engine that receives the audio.
+    ///   - shouldStart: Asked on the main queue when the render reaches the
+    ///     front of the queue, and again when it finishes. A render that is no
+    ///     longer wanted never starts, and its completion reports false.
+    ///   - completion: Called on the main queue with whether the render
+    ///     succeeded and was still wanted when it finished.
     func render(
-        text: String,
+        _ request: SpeechRenderRequest,
         engine: AudioEngineService,
-        voice: AVSpeechSynthesisVoice?,
-        wpm: Double,
         shouldStart: @escaping @MainActor @Sendable () -> Bool,
         completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
         enqueue(
-            textLength: text.utf16Length,
+            textLength: request.text.utf16Length,
             shouldStart: shouldStart,
             start: { finish in
-                engine.render(text: text, voice: voice, wpm: wpm, completion: finish)
+                engine.render(request, completion: finish)
             },
             completion: completion
         )
@@ -494,10 +503,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // Pre-render in background so engine is ready for seeks, pauses, or next chapter.
         // We do NOT switch mid-playback — direct mode runs until a natural break.
         SpeechRenderCoordinator.shared.render(
-            text: text,
+            SpeechRenderRequest(text: text, voice: currentVoice),
             engine: audioEngine,
-            voice: currentVoice,
-            wpm: wordsPerMinute,
             shouldStart: { [weak self] in self?.renderGeneration == myGeneration },
             completion: { [weak self] success in
             guard let self = self else { return }

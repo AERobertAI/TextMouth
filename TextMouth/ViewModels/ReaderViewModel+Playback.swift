@@ -415,10 +415,8 @@ extension ReaderViewModel {
             )
         }
         SpeechRenderCoordinator.shared.render(
-            text: chapterText,
+            SpeechRenderRequest(text: chapterText, voice: speechService.currentVoice),
             engine: engine,
-            voice: speechService.currentVoice,
-            wpm: speechService.wordsPerMinute,
             shouldStart: isStillWanted,
             completion: { [weak self] success in
                 guard let self, success, isStillWanted() else { return }
