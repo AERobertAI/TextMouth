@@ -341,6 +341,16 @@ extension Array where Element == BookFolder {
 
 // MARK: - Removal Preferences
 
+/// The removal preferences as config.json changes them, one value per
+/// change to either preference. One shared stream, so a view that draws
+/// again keeps its subscription rather than subscribing anew each time.
+@MainActor
+private enum RemovalPreferencesFeed {
+    static let changes = ConfigService.shared.$config
+        .map { RemovalPreferences($0) }
+        .removeDuplicates()
+}
+
 extension View {
     /// Keeps `preferences` equal to the removal preferences in config.json,
     /// so removal buttons and confirmations always describe what removing
@@ -349,7 +359,7 @@ extension View {
     /// settings changes cause no redraw.
     @MainActor
     func trackingRemovalPreferences(_ preferences: Binding<RemovalPreferences>) -> some View {
-        onReceive(ConfigService.shared.$config.map { RemovalPreferences($0) }.removeDuplicates()) { current in
+        onReceive(RemovalPreferencesFeed.changes) { current in
             preferences.wrappedValue = current
         }
     }
