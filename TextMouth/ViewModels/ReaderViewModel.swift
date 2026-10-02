@@ -315,9 +315,10 @@ final class ReaderViewModel: ObservableObject {
     /// Bring the look-ahead up to date when a setting that shapes spoken audio
     /// changes outside this reader: the substitution rules or whether they
     /// apply, edited in Settings, and the global punctuation pause level,
-    /// which Settings or an edit to config.json can change. Both models
-    /// announce a change before making it, so the refresh waits for the main
-    /// queue's next turn, when the change is in place.
+    /// which Settings or an edit to config.json can change. A change notice
+    /// can arrive before its change is in place (the substitution service's
+    /// arrives before it), so the refresh waits for the main queue's next
+    /// turn, by which time it is.
     private func observeSpokenAudioSettings() {
         substitutionService.objectWillChange
             .receive(on: DispatchQueue.main)
