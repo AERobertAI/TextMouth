@@ -21,6 +21,9 @@ struct LibraryWindowView: View {
     @StateObject private var folderNav = FolderNavigationHistory()
     /// Suppresses saving sort settings back to the library when loading from a folder change
     @State private var isLoadingFolderSort = false
+    /// The removal preferences, observed so the Remove Book dialog's words
+    /// follow a change made in Settings, even while the dialog is open.
+    @ObservedObject private var removal = RemovalPreferencesModel.shared
 
     var body: some View {
         ZStack {
@@ -129,19 +132,19 @@ struct LibraryWindowView: View {
                 Text("The book has been imported successfully. Delete the original file?")
             }
         }
-        // Remove book confirmation dialog (supports single or multiple books)
+        // Remove book confirmation dialog (supports single or multiple books).
+        // Its words say whether the files go to the Trash, are deleted
+        // permanently, or stay, as the Trash preference chooses (TODO A08).
         .alert(
-            libraryViewModel.pendingRemoveBooks.count > 1
-                ? "Remove \(libraryViewModel.pendingRemoveBooks.count) Books?"
-                : "Remove Book?",
+            removalChoice.title,
             isPresented: $libraryViewModel.showRemoveBookDialog
         ) {
-            Button("Remove & Delete", role: .destructive) {
+            Button(removalChoice.deleteButtonTitle, role: .destructive) {
                 let books = libraryViewModel.pendingRemoveBooks
                 libraryViewModel.removeBooksAndDelete(books)
                 libraryViewModel.pendingRemoveBooks = []
             }
-            Button("Remove from Library Only") {
+            Button(removalChoice.keepButtonTitle) {
                 let books = libraryViewModel.pendingRemoveBooks
                 libraryViewModel.removeBooksFromLibraryOnly(books)
                 libraryViewModel.pendingRemoveBooks = []
@@ -150,11 +153,8 @@ struct LibraryWindowView: View {
                 libraryViewModel.pendingRemoveBooks = []
             }
         } message: {
-            let books = libraryViewModel.pendingRemoveBooks
-            if books.count == 1, let book = books.first {
-                Text("Remove \"\(book.title)\"? \"Remove & Delete\" also deletes the .tmb package from disk. \"Remove from Library Only\" keeps the file.")
-            } else if books.count > 1 {
-                Text("Remove \(books.count) books? \"Remove & Delete\" also deletes the .tmb packages from disk. \"Remove from Library Only\" keeps the files.")
+            if !libraryViewModel.pendingRemoveBooks.isEmpty {
+                Text(removalChoice.message)
             }
         }
         // Duplicate import dialog
@@ -234,6 +234,15 @@ struct LibraryWindowView: View {
                 openWindow(id: BookReaderWindowView.windowID, value: bookID)
             }
         }
+    }
+
+    /// The words for the Remove Book confirmation, in the mode the Trash
+    /// preference chooses.
+    private var removalChoice: RemovalChoiceWording {
+        RemovalChoiceWording(
+            books: libraryViewModel.pendingRemoveBooks,
+            movesToTrash: removal.preferences.movesToTrash
+        )
     }
 
     private var windowTitle: String {
