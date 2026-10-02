@@ -433,8 +433,9 @@ final class LibraryOnlyRemovalTests: XCTestCase {
 
     /// Importing the same file again lists the book once, in a new package,
     /// and still once after a restart: the retained package stays retired
-    /// instead of returning as a second copy. The import path does not yet
-    /// look for a retained package to take back, so its marker stays.
+    /// instead of returning as a second copy. A file import does not look
+    /// for a retained package to take back, so its marker stays; importing
+    /// a .tmb package does (see `RetainedPackageImportTests`).
     @MainActor
     func testReimportingTheSameFileListsTheBookOnce() throws {
         let book = try makePackage(title: "Imported Again")
