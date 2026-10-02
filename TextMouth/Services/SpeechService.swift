@@ -288,7 +288,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// Fallback direct synthesizer
     private let directSynth = AVSpeechSynthesizer()
-    private var usingDirectMode = false
+    /// Whether speech comes straight from the synthesizer rather than from
+    /// rendered audio. Readable outside this class so tests can tell which
+    /// backend a seek or resume chose.
+    private(set) var usingDirectMode = false
 
     /// Tracks whether we were cancelled/paused/stopped during async rendering
     private var renderGeneration: Int = 0
@@ -350,6 +353,23 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// The full text currently being spoken
     private var currentText: String = ""
+
+    /// Whether the engine holds audio rendered from exactly the text being
+    /// spoken, in the voice chosen now.
+    ///
+    /// Direct speech switches to rendered audio, at a seek, a resume, the
+    /// start of a sleep fade, or a recovery, only then. Any other audio is
+    /// stale: rendered in the previous voice when a voice was chosen part-way
+    /// through the text, or from another text when a render finished after
+    /// it was abandoned. Speech then carries on directly in the current
+    /// voice. Rendered audio already playing keeps playing until its text
+    /// ends, since switching mid-playback is never seamless.
+    private var renderedAudioMatchesSpeech: Bool {
+        // Most direct speech has no rendered audio yet; skip hashing the text.
+        guard let rendered = audioEngine.renderedSignature else { return false }
+        return rendered == SpeechRenderSignature(text: currentText, voiceIdentifier: currentVoice?.identifier)
+    }
+
     /// In direct mode, the character offset into currentText where the trimmed utterance starts.
     /// Added to delegate-reported ranges so callers always get absolute positions.
     private var directModeBaseOffset: Int = 0
@@ -533,10 +553,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             } else {
                 self.transitionLog("RENDER_FAILED: engine render failed, staying in direct mode")
             }
-            // Engine is now ready. It will be used when:
-            // - User seeks (seek() checks audioEngine.hasRenderedAudio)
+            // Engine is now ready. While its audio still matches this text
+            // in the current voice (renderedAudioMatchesSpeech), it is used when:
+            // - User seeks (seek() switches to engine)
             // - User pauses then resumes (resume() switches to engine)
-            // - Chapter ends (next chapter can start directly in engine mode)
+            // - A sleep fade starts, or the direct-speech watchdog recovers
             }
         )
     }
@@ -643,9 +664,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     /// Recover an utterance for which AVFoundation became idle without sending
-    /// a usable finish callback. Prefer rendered audio when available. Without
-    /// rendered audio, continue a nearly-complete chunk at its known boundary;
-    /// otherwise restart at the last reported word so content is not skipped.
+    /// a usable finish callback. Prefer rendered audio of this speech when
+    /// available. Without it, continue a nearly-complete chunk at its known
+    /// boundary; otherwise restart at the last reported word so content is
+    /// not skipped.
     private func recoverFromIdleDirectSynthesizer(watchedUtteranceID: ObjectIdentifier) {
         guard liveDirectUtterance.map(ObjectIdentifier.init) == watchedUtteranceID,
               usingDirectMode,
@@ -657,7 +679,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
         let reportedOffset = currentWordRange?.location ?? directModeBaseOffset
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
-        if audioEngine.hasRenderedAudio {
+        if renderedAudioMatchesSpeech {
             transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
             stopDirectSynthesizer()
             usingDirectMode = false
@@ -726,8 +748,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// Apply a sleep timer volume update to whichever speech backend is
     /// actually audible. Rendered playback supports mixer updates directly.
-    /// Direct synthesis is switched to rendered audio when available; very
-    /// large chapters instead use pre-volume-adjusted utterance segments.
+    /// Direct synthesis is switched to rendered audio of this speech when
+    /// available; otherwise, as for very large chapters, it fades through
+    /// pre-volume-adjusted utterance segments.
     func setSleepTimerFadeVolume(_ volume: Float, duration: TimeInterval) {
         guard isSpeaking, !isPaused else { return }
 
@@ -737,7 +760,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 min(currentWordRange?.location ?? directModeBaseOffset, currentText.utf16Length)
             )
 
-            if audioEngine.hasRenderedAudio {
+            if renderedAudioMatchesSpeech {
                 transitionLog("SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
                 stopDirectSynthesizer()
                 usingDirectMode = false
@@ -910,7 +933,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let action = SpeechResumePolicy.action(
             usingDirectMode: usingDirectMode,
             pendingDirectSeekOffset: pendingDirectSeekOffset,
-            engineHasRenderedAudio: audioEngine.hasRenderedAudio,
+            // Only audio of this speech, in the current voice, counts: stale
+            // audio is never switched to. A paused engine resumes its own
+            // audio whatever this says.
+            engineHasRenderedAudio: renderedAudioMatchesSpeech,
             engineIsPaused: audioEngine.isPaused,
             engineIsPlaying: audioEngine.isPlaying,
             directSynthIsPaused: directSynth.isPaused,
@@ -1024,6 +1050,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// Start playback using a pre-rendered AudioEngineService (for seamless chapter transitions).
     /// Swaps the pre-rendered engine in and starts playing immediately — no direct mode, no rendering delay.
+    /// The caller has checked that `preEngine` holds audio rendered from exactly
+    /// `text` in the current voice (see `ReaderViewModel.takeLookAheadEngine(for:)`);
+    /// its signature comes along, so later seeks and resumes can check it too.
     func usePreRenderedEngine(_ preEngine: AudioEngineService, text: String, fromCharOffset charOffset: Int = 0) {
         stop()
         currentText = text
@@ -1052,8 +1081,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     // MARK: - Seeking
 
     /// Seek to a character offset within the current text.
-    /// If audio engine is ready, switches to it for instant seeking.
-    /// Otherwise restarts direct speech from the new offset.
+    /// Rendered audio already playing seeks within itself. Direct speech
+    /// switches to rendered audio of this speech, in the current voice, for
+    /// instant seeking once it is ready, and otherwise restarts direct speech
+    /// from the new offset.
     func seek(toCharOffset offset: Int) {
         // Bump the position-tracking generation so any in-flight 100ms
         // polling dispatch (offset captured pre-seek, word extraction
@@ -1061,36 +1092,32 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // to main and doesn't overwrite the now-correct position.
         positionGeneration += 1
 
-        if audioEngine.hasRenderedAudio {
-            // Engine is ready — use it (switch from direct mode if needed)
-            if usingDirectMode {
-                stopDirectSynthesizer()
-                if isPaused {
-                    pendingDirectSeekOffset = offset
-                } else {
-                    transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
-                    usingDirectMode = false
-                    audioEngine.setSpeed(wpm: wordsPerMinute)
-                    audioEngine.setPitch(multiplier: pitchMultiplier)
-                    audioEngine.play(fromCharOffset: offset)
-                    startPositionTracking()
-                }
-            } else {
-                audioEngine.seek(toCharOffset: offset)
-                if audioEngine.isPlaying {
-                    startPositionTracking()
-                }
-            }
-        } else if usingDirectMode {
-            // No engine yet — restart direct mode from new position.
-            // stopDirectSynthesizer() clears the live-utterance marker so
-            // the OLD utterance's didFinish (if it fires after speakDirect
-            // assigns a new live utterance) is correctly seen as stale.
+        if usingDirectMode {
+            // Direct speech stops either way. stopDirectSynthesizer() clears
+            // the live-utterance marker so the OLD utterance's didFinish (if
+            // it fires after speakDirect assigns a new live utterance) is
+            // correctly seen as stale. Paused, the move waits for resume,
+            // which then chooses how to continue.
             stopDirectSynthesizer()
             if isPaused {
                 pendingDirectSeekOffset = offset
+            } else if renderedAudioMatchesSpeech {
+                transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
+                usingDirectMode = false
+                audioEngine.setSpeed(wpm: wordsPerMinute)
+                audioEngine.setPitch(multiplier: pitchMultiplier)
+                audioEngine.play(fromCharOffset: offset)
+                startPositionTracking()
             } else {
+                // No rendered audio of this speech yet, or only audio from
+                // before the voice changed: restart direct speech here.
                 speakDirect(currentText, fromCharOffset: offset)
+            }
+        } else if audioEngine.hasRenderedAudio {
+            // Rendered audio is the backend already: seek within it.
+            audioEngine.seek(toCharOffset: offset)
+            if audioEngine.isPlaying {
+                startPositionTracking()
             }
         }
         let range = NSRange(location: offset, length: 0)

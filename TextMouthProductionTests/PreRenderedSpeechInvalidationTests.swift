@@ -196,7 +196,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     func testChoosingAnotherVoiceNeverPlaysAudioInTheOldVoice() throws {
         for timing in ChangeTiming.allCases {
             try assertStaleLookAheadIsNotPlayed(when: timing) { reader in
-                reader.setLocalVoice(try self.anotherVoice(than: reader))
+                reader.setLocalVoice(try self.anotherVoice(than: reader.speechService.currentVoice))
             }
         }
     }
@@ -344,7 +344,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     /// A voice chosen for this book.
     func testChoosingAVoiceForTheBookReArmsTheLookAheadOnce() throws {
         try assertChangeReArmsTheLookAheadOnce { reader in
-            reader.setLocalVoice(try self.anotherVoice(than: reader))
+            reader.setLocalVoice(try self.anotherVoice(than: reader.speechService.currentVoice))
         }
     }
 
@@ -352,7 +352,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     /// reader is told that speech settings changed.
     func testAVoiceChosenInSettingsReArmsTheLookAheadOnce() throws {
         try assertChangeReArmsTheLookAheadOnce { reader in
-            reader.speechService.currentVoice = try self.anotherVoice(than: reader)
+            reader.speechService.currentVoice = try self.anotherVoice(than: reader.speechService.currentVoice)
             reader.notificationCenter.post(name: .speechSettingsChanged, object: nil)
         }
     }
@@ -480,6 +480,95 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    // MARK: - The speech service's own rendered audio
+
+    // While it speaks a text directly, the speech service renders the same
+    // text in the background and switches to that audio at the next seek or
+    // resume. It switches only to audio of the text it is speaking, in the
+    // current voice. Each test stops speech before the main run loop turns,
+    // so the synthesizer is never heard.
+
+    /// Audio rendered from the text being spoken, in the current voice, is
+    /// what a seek switches to.
+    func testSeekingSwitchesToRenderedAudioOfTheSpeech() throws {
+        try withSpeechService { speech in
+            speech.speak(Self.spokenText)
+            speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech))
+
+            speech.seek(toCharOffset: 6)
+            let switchedToRenderedAudio = !speech.usingDirectMode
+            speech.stop()
+
+            XCTAssertTrue(switchedToRenderedAudio)
+        }
+    }
+
+    /// After another voice is chosen part-way through the text, a seek
+    /// restarts direct speech, in the new voice, instead of switching to
+    /// audio rendered in the old one.
+    func testSeekingAfterAVoiceChangeContinuesDirectly() throws {
+        try withSpeechService { speech in
+            speech.speak(Self.spokenText)
+            speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech))
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            speech.seek(toCharOffset: 6)
+            let continuedDirectly = speech.usingDirectMode
+            speech.stop()
+
+            XCTAssertTrue(continuedDirectly)
+        }
+    }
+
+    /// Audio of another text, such as a render that finished after it was
+    /// abandoned could leave behind, is never switched to.
+    func testSeekingNeverSwitchesToAnotherTextsAudio() throws {
+        try withSpeechService { speech in
+            speech.speak(Self.spokenText)
+            speech.audioEngine._installRenderedAudioForTesting(
+                signature: SpeechRenderRequest(text: "Lamps came on along the pier.", voice: speech.currentVoice).signature
+            )
+
+            speech.seek(toCharOffset: 6)
+            let continuedDirectly = speech.usingDirectMode
+            speech.stop()
+
+            XCTAssertTrue(continuedDirectly)
+        }
+    }
+
+    /// Resuming paused direct speech switches to audio of the speech.
+    func testResumingSwitchesToRenderedAudioOfTheSpeech() throws {
+        try withSpeechService { speech in
+            speech.speak(Self.spokenText)
+            speech.pause()
+            speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech))
+
+            speech.resume()
+            let switchedToRenderedAudio = !speech.usingDirectMode
+            speech.stop()
+
+            XCTAssertTrue(switchedToRenderedAudio)
+        }
+    }
+
+    /// Resuming after another voice was chosen continues directly, in the
+    /// new voice, rather than in audio rendered in the old one.
+    func testResumingAfterAVoiceChangeContinuesDirectly() throws {
+        try withSpeechService { speech in
+            speech.speak(Self.spokenText)
+            speech.pause()
+            speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech))
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            speech.resume()
+            let continuedDirectly = speech.usingDirectMode
+            speech.stop()
+
+            XCTAssertTrue(continuedDirectly)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// When a setting changes relative to the look-ahead render.
@@ -510,6 +599,27 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         pattern: "quay",
         replacement: "pier"
     )
+
+    /// What the speech service tests speak.
+    private static let spokenText = "Gulls circled the harbour wall."
+
+    /// The signature of `spokenText` rendered in `speech`'s current voice.
+    private static func signature(of speech: SpeechService) -> SpeechRenderSignature {
+        SpeechRenderRequest(text: spokenText, voice: speech.currentVoice).signature
+    }
+
+    /// Run `body` with a speech service whose global speed, pitch, and voice
+    /// come from a private suite, then stop it and remove the suite.
+    private func withSpeechService(_ body: (SpeechService) throws -> Void) throws {
+        let suiteName = "com.textmouth.tests.pre-rendered-speech.service.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let speech = SpeechService(userDefaults: defaults)
+        defer {
+            speech.stop()
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        try body(speech)
+    }
 
     /// Let the main queue run what is queued on it, and what that queues in
     /// turn: the reader hears of changes made in other models there.
@@ -553,11 +663,11 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
-    /// An installed voice other than the one `reader` speaks with now; the
-    /// test is skipped on a Mac with a single voice.
-    private func anotherVoice(than reader: ReaderViewModel) throws -> AVSpeechSynthesisVoice {
-        let current = reader.speechService.currentVoice?.identifier
-        guard let voice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.identifier != current }) else {
+    /// An installed voice other than `current`; the test is skipped on a Mac
+    /// with a single voice.
+    private func anotherVoice(than current: AVSpeechSynthesisVoice?) throws -> AVSpeechSynthesisVoice {
+        let currentIdentifier = current?.identifier
+        guard let voice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.identifier != currentIdentifier }) else {
             throw XCTSkip("Changing voices needs a second installed voice")
         }
         return voice
