@@ -487,10 +487,14 @@ enum LibraryPersistenceService {
     /// Deleting bookInfo.json is only a courtesy to older TextMouth versions,
     /// which know nothing of the marker. When it fails, the failure is logged
     /// and returned, and the package stays retired regardless.
+    ///
+    /// A failed write of the book's record is withdrawn either way: nothing
+    /// is left to save for a book that has left the library (TODO S09).
     static func retirePackage(of book: Book, removedAt: Date = Date()) throws -> PackageRetirement {
         try bookInfoSaveQueue.sync { () throws -> PackageRetirement in
             guard !book.tmbDirectoryName.isEmpty, !isMissing(book.tmbDirectory) else {
                 cancelQueuedWrites(for: book)
+                failureCenter.withdraw(.book(book.id))
                 RemovedFromLibraryMarker.log("removed from the library; it has no package on disk", for: book)
                 return PackageRetirement(isPackageMarked: false, recordDeletionError: nil)
             }
@@ -506,8 +510,22 @@ enum LibraryPersistenceService {
             }
             retiredPackages.insert(RetiredPackage(book))
             cancelQueuedWrites(for: book)
+            failureCenter.withdraw(.book(book.id))
             RemovedFromLibraryMarker.log("removed from the library; its package stays at \(package.path)", for: book)
             return PackageRetirement(isPackageMarked: true, recordDeletionError: deleteRecord(of: book))
+        }
+    }
+
+    /// Forgets `book`, which has just left the library with its package
+    /// deleted (TODO S09). Writes still queued for it are dropped, since its
+    /// package is gone, and a failed write of its record is withdrawn, since
+    /// nothing is left to save. It runs on the metadata queue, after any
+    /// write for the book already under way, so that write's report cannot
+    /// outlast the withdrawal.
+    static func forgetDeletedBook(_ book: Book) {
+        bookInfoSaveQueue.sync {
+            cancelQueuedWrites(for: book)
+            failureCenter.withdraw(.book(book.id))
         }
     }
 

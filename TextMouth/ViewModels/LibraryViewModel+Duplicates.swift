@@ -54,7 +54,7 @@ extension LibraryViewModel {
             presentFilesystemError("Could not replace duplicate", error: error)
             return
         }
-        library.removeBook(id: existing.id)
+        removeDeletedBook(existing)
 
         // Add new book (already has its own .tmb from import)
         library.addBook(newBook)

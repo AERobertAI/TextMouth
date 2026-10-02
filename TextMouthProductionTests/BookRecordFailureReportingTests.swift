@@ -126,4 +126,55 @@ final class BookRecordFailureReportingTests: XCTestCase {
 
         XCTAssertFalse(center.hasUnsavedChanges)
     }
+
+    // MARK: - Books Leaving the Library
+
+    /// A book whose record could not be saved has nothing left to save once
+    /// it is removed and deleted: its failure is withdrawn, so neither the
+    /// banner nor quitting holds on to it. (The deletion is injected, so
+    /// nothing goes to the real Trash.)
+    @MainActor
+    func testRemovingAndDeletingABookWithdrawsItsFailure() throws {
+        let center = cleanSharedFailureCenter()
+        let book = try failedRecord("Deleted While Unsaved")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+
+        let outcome = model.removeBooksAndDeleteReturningOutcome([book]) { _ in }
+
+        XCTAssertTrue(outcome.succeeded)
+        XCTAssertTrue(model.library.books.isEmpty)
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    /// Remove from Library Only withdraws the book's failure the same way
+    /// when it retires the package.
+    @MainActor
+    func testRemovingABookFromTheLibraryOnlyWithdrawsItsFailure() throws {
+        let center = cleanSharedFailureCenter()
+        let book = try failedRecord("Kept Out While Unsaved")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+
+        model.removeBooksFromLibraryOnly([book])
+
+        XCTAssertTrue(model.library.books.isEmpty)
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    // MARK: - Helpers
+
+    /// A packaged book titled `title` whose record write has just failed
+    /// and been reported, in a package that is writable again.
+    @MainActor
+    private func failedRecord(_ title: String) throws -> Book {
+        let book = try makePackagedBook(title)
+        let giveBackPermission = makeReadOnly(book.tmbDirectory)
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertTrue(PersistenceFailureCenter.shared.hasUnsavedChanges, "the record write did not fail")
+        giveBackPermission()
+        return book
+    }
 }
