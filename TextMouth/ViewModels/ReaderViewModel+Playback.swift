@@ -425,7 +425,7 @@ extension ReaderViewModel {
                 chosenChapterIndex: self.chosenLookAheadChapter(renderedBy: lookAhead.engine)
             )
         }
-        SpeechRenderCoordinator.shared.render(
+        renderScheduler.render(
             SpeechRenderRequest(text: chapterText, voice: speechService.currentVoice),
             engine: lookAhead.engine,
             shouldStart: isStillWanted,

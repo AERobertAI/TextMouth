@@ -123,6 +123,9 @@ final class ReaderViewModel: ObservableObject {
     /// center, unless the reader was created with its own, as tests do to
     /// keep their notifications from the running app.
     let notificationCenter: NotificationCenter
+    /// Renders the look-ahead's audio: the shared render queue, unless the
+    /// reader was created with its own, as tests do to hold renders.
+    let renderScheduler: any SpeechRenderScheduling
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -258,13 +261,17 @@ final class ReaderViewModel: ObservableObject {
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
     ///     running app's windows.
+    ///   - renderScheduler: Renders the next chapter ahead of time. Nil uses
+    ///     the shared render queue; tests pass one that holds each render
+    ///     until they let it start and finish.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        renderScheduler: (any SpeechRenderScheduling)? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -274,6 +281,7 @@ final class ReaderViewModel: ObservableObject {
         self.substitutionService = substitutionService ?? .shared
         self.autoplayRequests = autoplayRequests ?? .shared
         self.notificationCenter = notificationCenter
+        self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)

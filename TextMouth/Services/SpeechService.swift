@@ -261,6 +261,24 @@ final class SpeechRenderCoordinator: @unchecked Sendable {
     }
 }
 
+/// Renders speech for the reader's look-ahead: the shared
+/// `SpeechRenderCoordinator` in the app, and in tests a stand-in that holds
+/// each render until the test lets it start and finish.
+@MainActor
+protocol SpeechRenderScheduling: AnyObject {
+    /// Render `request` into `engine` when its turn comes, exactly as
+    /// `SpeechRenderCoordinator.render(_:engine:shouldStart:completion:)`
+    /// does.
+    func render(
+        _ request: SpeechRenderRequest,
+        engine: AudioEngineService,
+        shouldStart: @escaping @MainActor @Sendable () -> Bool,
+        completion: @escaping @MainActor @Sendable (Bool) -> Void
+    )
+}
+
+extension SpeechRenderCoordinator: SpeechRenderScheduling {}
+
 /// Manages TTS playback using two modes:
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
 ///    plays through AVAudioEngine + AVAudioUnitTimePitch for real-time speed changes and instant seeking.
