@@ -75,9 +75,11 @@ final class SleepTimerService: ObservableObject {
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
-    /// Preferences store used for the restart-timer duration. Production uses
-    /// the app's standard defaults; tests inject an isolated suite so resetting
-    /// a fixture can never remove the user's real saved duration.
+    /// Preferences store used for the restart-timer duration: this process's
+    /// preferences, which are the standard store in the app and the
+    /// sandboxed one under hosted tests. Tests may also inject a suite of
+    /// their own, so resetting a fixture never removes a duration that
+    /// another test, or the user, saved.
     private let userDefaults: UserDefaults
 
     private var timer: Timer?
@@ -102,7 +104,7 @@ final class SleepTimerService: ObservableObject {
 
     /// Production uses the shared instance. The internal initializer remains
     /// injectable so hosted tests can use disposable preferences storage.
-    init(userDefaults: UserDefaults = .standard) {
+    init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences) {
         self.userDefaults = userDefaults
         loadLastUsedDuration()
     }

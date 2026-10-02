@@ -16,28 +16,43 @@ enum SoundEvent: String, CaseIterable, Codable, Identifiable {
 /// Manages playback of short sound effects for UI events.
 /// Uses macOS system sounds from /System/Library/Sounds/ by default.
 class SoundEffectService: ObservableObject {
+    /// The keys of the three sound preferences. Every release has used
+    /// them, so saved choices keep loading.
+    private enum PreferenceKey {
+        static let enabled = "soundEffectsEnabled"
+        static let volume = "soundEffectsVolume"
+        static let assignments = "soundEffectAssignments"
+    }
+
     @Published var soundsEnabled: Bool {
-        didSet { UserDefaults.standard.set(soundsEnabled, forKey: "soundEffectsEnabled") }
+        didSet { preferences.set(soundsEnabled, forKey: PreferenceKey.enabled) }
     }
     @Published var assignments: [SoundEvent: String] {
         didSet { saveAssignments() }
     }
     @Published var volume: Float {
-        didSet { UserDefaults.standard.set(volume, forKey: "soundEffectsVolume") }
+        didSet { preferences.set(volume, forKey: PreferenceKey.volume) }
     }
+
+    /// The store holding the sound preferences.
+    private let preferences: UserDefaults
 
     /// Currently playing sound (kept alive until playback finishes)
     private var currentSound: NSSound?
 
     static let systemSoundsPath = "/System/Library/Sounds"
 
-    init() {
-        let enabled = UserDefaults.standard.object(forKey: "soundEffectsEnabled") as? Bool ?? true
+    /// Loads the sound preferences from `preferences`: this process's
+    /// preferences unless a test passes its own. Missing values fall back to
+    /// sounds on, half volume, and the default assignments.
+    init(preferences: UserDefaults = TextMouthRuntime.current.preferences) {
+        self.preferences = preferences
+        let enabled = preferences.object(forKey: PreferenceKey.enabled) as? Bool ?? true
         self.soundsEnabled = enabled
-        let vol = UserDefaults.standard.object(forKey: "soundEffectsVolume") as? Float ?? 0.5
+        let vol = preferences.object(forKey: PreferenceKey.volume) as? Float ?? 0.5
         self.volume = vol
 
-        if let data = UserDefaults.standard.data(forKey: "soundEffectAssignments"),
+        if let data = preferences.data(forKey: PreferenceKey.assignments),
            let saved = try? JSONDecoder().decode([String: String].self, from: data) {
             var loaded: [SoundEvent: String] = [:]
             for (key, value) in saved {
@@ -68,7 +83,7 @@ class SoundEffectService: ObservableObject {
             dict[event.rawValue] = sound
         }
         if let data = try? JSONEncoder().encode(dict) {
-            UserDefaults.standard.set(data, forKey: "soundEffectAssignments")
+            preferences.set(data, forKey: PreferenceKey.assignments)
         }
     }
 

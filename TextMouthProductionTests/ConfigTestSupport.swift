@@ -40,16 +40,11 @@ extension ConfigService.AppConfig {
 }
 
 extension XCTestCase {
-    /// A throwaway preferences suite, deleted when the test ends, so tests
-    /// never read or change the user's real settings. Main-actor isolated,
-    /// like the test classes that call it, so the teardown block may keep
-    /// the suite.
-    @MainActor
+    /// A throwaway preferences store, kept in the sandbox and emptied when
+    /// the test ends, so tests never read or change the user's real
+    /// settings (see `makeSandboxedPreferences`).
     func isolatedDefaults() throws -> UserDefaults {
-        let suiteName = "com.textmouth.tests.config.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
-        return defaults
+        makeSandboxedPreferences("config")
     }
 
     /// The debug log's lines that contain `text`, waiting first for every

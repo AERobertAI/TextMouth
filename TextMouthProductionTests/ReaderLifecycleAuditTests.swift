@@ -33,14 +33,14 @@ final class ReaderLifecycleAuditTests: XCTestCase {
     func testInactiveReaderCannotCancelAnotherBooksFade() {
         let service = SleepTimerService.shared
         let savedDuration = service.lastUsedDuration
-        let savedPreference = UserDefaults.standard.object(forKey: "sleepTimer.lastUsedDuration")
+        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: "sleepTimer.lastUsedDuration")
         defer {
             service._resetForTesting()
             if let savedDuration {
                 service.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
                 service.stop()
             }
-            UserDefaults.standard.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
+            TextMouthRuntime.current.preferences.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
         }
         let owner = UUID()
         service.start(duration: .minutes(1), ownerID: owner, onExpire: {}, fadeOutDuration: 10)

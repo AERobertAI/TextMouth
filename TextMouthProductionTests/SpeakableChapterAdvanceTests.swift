@@ -832,8 +832,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
         at position: ReadingPosition? = nil,
         _ body: (ReaderViewModel) throws -> Void
     ) throws {
-        let suiteName = "com.textmouth.tests.speakable-chapters.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let defaults = makeSandboxedPreferences("speakable-chapters")
         defaults.set(endOfBook.rawValue, forKey: SettingsPolicy.endOfBookBehavior.key)
         defaults.set(punctuationPauseLevel, forKey: SettingsPolicy.punctuationPauseLevel.key)
         let settings = SettingsViewModel(
@@ -876,7 +875,6 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             statistics.endSession()
             statistics.stats = savedStatistics
             statistics.save()
-            defaults.removePersistentDomain(forName: suiteName)
         }
         try body(reader)
     }

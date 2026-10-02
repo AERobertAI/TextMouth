@@ -101,9 +101,7 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
     /// Adding F/B defaults in an upgrade must never steal a binding that the
     /// user already assigned to an older action.
     func testNewShortcutDefaultsDoNotDuplicateLegacyCustomBindings() throws {
-        let suiteName = UUID().uuidString
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("shortcuts")
         let existingForwardBinding = KeyBinding(key: "f")
         let saved = [
             ShortcutAction.whereAmI.rawValue: [existingForwardBinding],
@@ -124,7 +122,7 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
     }
 
     func testAddingBindingRemovesItFromPreviousAction() throws {
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        let defaults = makeSandboxedPreferences("shortcuts")
         let manager = KeyboardShortcutManager(
             userDefaults: defaults,
             installsEventMonitor: false
@@ -139,7 +137,7 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
     }
 
     func testRemovingAllBindingsLeavesActionUnassigned() throws {
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
+        let defaults = makeSandboxedPreferences("shortcuts")
         let manager = KeyboardShortcutManager(
             userDefaults: defaults,
             installsEventMonitor: false

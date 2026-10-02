@@ -5,31 +5,6 @@ import AppKit
 /// Regression coverage for the formats advertised by the production app.
 @MainActor
 final class BookFormatTests: XCTestCase {
-    /// Hosted tests must never initialize services against the user's real data.
-    func testProductionTestsUseIsolatedDataDirectory() {
-        XCTAssertTrue(TextMouthPaths.root.path.contains("TextMouthTests-"))
-        XCTAssertNotEqual(TextMouthPaths.root.standardizedFileURL, TextMouthPaths.defaultRoot.standardizedFileURL)
-    }
-
-    /// The legacy Application Support library lies outside the data root, so
-    /// it needs its own isolation: startup would otherwise migrate, quarantine,
-    /// or delete a developer's real legacy index.
-    func testLegacyLibraryLocationsStayInsideIsolatedRoot() throws {
-        let rootPrefix = TextMouthPaths.root.standardizedFileURL.path + "/"
-        let legacyLocations = [
-            try XCTUnwrap(TextMouthPaths.oldAppSupportDir),
-            try XCTUnwrap(TextMouthPaths.oldLibraryFile),
-            try XCTUnwrap(TextMouthPaths.oldBooksDir)
-        ]
-
-        for location in legacyLocations {
-            XCTAssertTrue(
-                location.standardizedFileURL.path.hasPrefix(rootPrefix),
-                "\(location.path) is outside the isolated test root"
-            )
-        }
-    }
-
     /// Legacy binary Word documents are not Office Open XML archives and cannot
     /// be parsed by DOCXParser, so they must not be detected as DOCX input.
     func testLegacyDocIsNotAdvertisedAsDOCX() {

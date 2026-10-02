@@ -116,9 +116,7 @@ final class PlaybackPolicyProductionTests: XCTestCase {
     /// injected extreme is clamped at launch, and a non-finite or missing
     /// value reloads as the default.
     func testSpeechServiceValidatesStoredGlobalSpeedAndPitch() throws {
-        let suiteName = "com.textmouth.tests.speech-defaults.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("speech-defaults")
         defaults.set(1e308, forKey: "wordsPerMinute")
         defaults.set(-2.0, forKey: "pitchMultiplier")
 

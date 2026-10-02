@@ -9,16 +9,10 @@ import XCTest
 final class PlaybackSettingsAuditTests: XCTestCase {
     /// Per-book speed and pitch must leave global defaults untouched.
     func testRuntimeSpeechSettingsDoNotPersistGlobalDefaults() {
-        let defaults = UserDefaults.standard
-        let savedSpeed = defaults.object(forKey: "wordsPerMinute")
-        let savedPitch = defaults.object(forKey: "pitchMultiplier")
-        defer {
-            defaults.set(savedSpeed, forKey: "wordsPerMinute")
-            defaults.set(savedPitch, forKey: "pitchMultiplier")
-        }
+        let defaults = makeSandboxedPreferences("speech-globals")
         defaults.set(200.0, forKey: "wordsPerMinute")
         defaults.set(1.0, forKey: "pitchMultiplier")
-        let service = SpeechService()
+        let service = SpeechService(userDefaults: defaults)
 
         service.setSpeedRealtime(325)
         service.setPitchRealtime(1.4)
@@ -452,6 +446,13 @@ final class PlaybackSettingsAuditTests: XCTestCase {
 
     /// Run `body` with a known global speech speed so WPM assertions are
     /// exact, then restore the saved preference (removing it if it was unset).
+    ///
+    /// Unlike every other preference in the hosted tests, this one is still
+    /// written to the standard store, the developer's own preferences: the
+    /// reader builds its speech service with `SpeechService()`, whose global
+    /// speed comes from there. Once that initializer reads
+    /// `TextMouthRuntime.current.preferences` (TODO Q01 follow-up), this
+    /// helper should write that store instead.
     private func withGlobalSpeechSpeed(_ wordsPerMinute: Double, _ body: () -> Void) {
         let defaults = UserDefaults.standard
         let savedSpeed = defaults.object(forKey: "wordsPerMinute")

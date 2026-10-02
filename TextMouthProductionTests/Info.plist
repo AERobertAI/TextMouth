@@ -18,6 +18,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSPrincipalClass</key>
+	<string>$(PRODUCT_MODULE_NAME).TextMouthTestBundle</string>
 	<key>TextMouthProfileLibraryRoot</key>
 	<string>$(TEXTMOUTH_PROFILE_LIBRARY_ROOT)</string>
 	<key>TextMouthEPUBRegressionFixture</key>

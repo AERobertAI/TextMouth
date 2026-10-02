@@ -123,57 +123,59 @@ enum DataDirectoryMigrator {
 }
 
 /// Central path manager for the ~/.TextMouth directory structure.
-/// The location is configurable — stored in UserDefaults as the bootstrap source
-/// (since we need to know where to look before we can read config.json).
-/// The default is ~/.TextMouth in the user's real home directory.
+/// The location is configurable — stored in the preferences as the bootstrap
+/// source (since we need to know where to look before we can read
+/// config.json). The default is .TextMouth in the home directory that
+/// `TextMouthRuntime` supplies: the user's real home in the app, and the
+/// process's sandbox under hosted tests.
 enum TextMouthPaths {
 
-    /// UserDefaults key for the custom data directory path
+    /// Preferences key for the custom data directory path. Every release has
+    /// used it, so a location chosen earlier keeps loading.
     private static let customPathKey = "textMouthDataDirectory"
 
-    /// Hosted unit tests launch the application before the test bundle runs.
-    /// Give that process an isolated root immediately so application startup,
-    /// migrations, and cache maintenance cannot touch the user's real library.
-    private static let unitTestRoot: URL? = {
-        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil else {
-            return nil
-        }
-        return FileManager.default.temporaryDirectory
-            .appendingPathComponent("TextMouthTests-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
-    }()
+    /// Name of the data directory inside a home directory.
+    static let dataDirectoryName = ".TextMouth"
 
-    /// The default location: ~/.TextMouth
+    /// The default data directory inside `home`.
+    static func defaultRoot(in home: URL) -> URL {
+        home.appendingPathComponent(dataDirectoryName, isDirectory: true)
+    }
+
+    /// The default location: .TextMouth in this process's home directory,
+    /// which is the user's real home in the app and the sandbox under
+    /// hosted tests.
     static var defaultRoot: URL {
-        // Use ProcessInfo to get the real home directory, bypassing any sandbox redirection
-        let realHome: String
-        if let pw = getpwuid(getuid()) {
-            realHome = String(cString: pw.pointee.pw_dir)
-        } else {
-            realHome = NSHomeDirectory()
-        }
-        return URL(fileURLWithPath: realHome).appendingPathComponent(".TextMouth", isDirectory: true)
+        defaultRoot(in: TextMouthRuntime.current.homeDirectory)
     }
 
     // MARK: - Root
 
-    /// The active data directory. Returns the custom path if set, otherwise the default.
-    static var root: URL {
-        if let unitTestRoot {
-            return unitTestRoot
-        }
-        if let customPath = UserDefaults.standard.string(forKey: customPathKey),
-           !customPath.isEmpty {
+    /// The active data directory of a process with `runtime`: the custom
+    /// location when one is in use (see `customRootPath(for:)`), otherwise
+    /// the default location in the runtime's home.
+    static func root(for runtime: TextMouthRuntime) -> URL {
+        if let customPath = customRootPath(for: runtime) {
             return URL(fileURLWithPath: customPath)
         }
-        return defaultRoot
+        return defaultRoot(in: runtime.homeDirectory)
+    }
+
+    /// The active data directory of this process (see `root(for:)`).
+    static var root: URL {
+        root(for: .current)
     }
 
     /// Set a custom data directory path. Pass nil to reset to default.
-    static func setCustomRoot(_ url: URL?) {
+    /// - Parameters:
+    ///   - url: The new data directory, or nil for the default location.
+    ///   - preferences: The store holding the setting: this process's
+    ///     preferences unless a test passes its own.
+    static func setCustomRoot(_ url: URL?, in preferences: UserDefaults = TextMouthRuntime.current.preferences) {
         if let url = url {
-            UserDefaults.standard.set(url.path, forKey: customPathKey)
+            preferences.set(url.path, forKey: customPathKey)
         } else {
-            UserDefaults.standard.removeObject(forKey: customPathKey)
+            preferences.removeObject(forKey: customPathKey)
         }
     }
 
@@ -182,13 +184,27 @@ enum TextMouthPaths {
         root.path
     }
 
-    /// Whether a custom (non-default) path is set
+    /// Whether this process uses a custom (non-default) data directory.
     static var isCustomPath: Bool {
-        if let customPath = UserDefaults.standard.string(forKey: customPathKey),
-           !customPath.isEmpty {
-            return true
+        customRootPath(for: .current) != nil
+    }
+
+    /// The custom data directory a process with `runtime` uses, or nil when
+    /// it uses the default location.
+    ///
+    /// The app uses the location the user chose, when the preferences hold
+    /// one; an empty path counts as none, as it always has. A process
+    /// hosting tests always uses the default location in its sandbox and
+    /// ignores a custom one, even one a test sets through `setCustomRoot`,
+    /// so hosted startup, migrations, cache maintenance, and the background
+    /// saves and logs that follow the root never leave the sandbox.
+    private static func customRootPath(for runtime: TextMouthRuntime) -> String? {
+        guard !runtime.isHostedTest,
+              let path = runtime.preferences.string(forKey: customPathKey),
+              !path.isEmpty else {
+            return nil
         }
-        return false
+        return path
     }
 
     // MARK: - Subdirectories
@@ -385,34 +401,30 @@ enum TextMouthPaths {
 
     // MARK: - Old Path Helpers (for migration)
 
-    /// Old sandbox container path
-    static var oldContainerDir: URL? {
-        // The sandbox container that macOS creates
-        let containers = FileManager.default.homeDirectoryForCurrentUser
-            .deletingLastPathComponent() // go up from sandboxed home
-        let containerPath = containers
-            .appendingPathComponent("Containers/com.textmouth.TextMouth/Data/.TextMouth", isDirectory: true)
-        if FileManager.default.fileExists(atPath: containerPath.path) {
-            return containerPath
-        }
-        return nil
+    /// Where a sandboxed release of TextMouth kept its data directory, in
+    /// `home`: the .TextMouth folder in the app's container, which such a
+    /// release saw as its home directory.
+    static func sandboxContainerRoot(in home: URL) -> URL {
+        home.appendingPathComponent("Library/Containers/com.textmouth.TextMouth/Data", isDirectory: true)
+            .appendingPathComponent(dataDirectoryName, isDirectory: true)
     }
 
-    /// The Application Support directory used by the oldest TextMouth
-    /// versions, which kept their library index and books there.
-    ///
-    /// Hosted tests get a location inside their isolated root instead. The
-    /// legacy directory lies outside the data root, so without this the test
-    /// host's startup could migrate, quarantine, or delete a developer's real
-    /// legacy library, and legacy-location tests could not run safely.
-    static var oldAppSupportDir: URL? {
-        if let unitTestRoot {
-            return unitTestRoot
-                .appendingPathComponent("LegacyApplicationSupport", isDirectory: true)
-                .appendingPathComponent("TextMouth", isDirectory: true)
-        }
-        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+    /// The Application Support folder in `home` where the oldest releases of
+    /// TextMouth kept their library index and books.
+    static func legacyApplicationSupportDirectory(in home: URL) -> URL {
+        home.appendingPathComponent("Library/Application Support", isDirectory: true)
             .appendingPathComponent("TextMouth", isDirectory: true)
+    }
+
+    /// The oldest releases' Application Support folder in this process's home.
+    ///
+    /// It lies outside the data root, so only the runtime's home keeps it
+    /// apart from the user's: under hosted tests it is inside the sandbox,
+    /// where the test host's startup cannot migrate, quarantine, or delete a
+    /// developer's real legacy library, and legacy-location tests can run
+    /// safely. Never nil; it stays optional for its callers.
+    static var oldAppSupportDir: URL? {
+        legacyApplicationSupportDirectory(in: TextMouthRuntime.current.homeDirectory)
     }
 
     static var oldBooksDir: URL? {

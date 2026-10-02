@@ -6,12 +6,13 @@ import XCTest
 /// the reason, in the words of the library's error alert, and raises no
 /// alert in the Library window behind Settings.
 ///
-/// Safety: the hosted app shares the real app's preferences, where a move
-/// that went through would record the new data directory. Every move here
-/// is refused before anything is copied, at least twice over, and the
+/// Safety: a move that went through would record the new data directory in
+/// the preferences, which every test in the process shares (they are the
+/// sandbox's, never the user's; see `TextMouthRuntime`). Every move here is
+/// refused before anything is copied, at least twice over, and the
 /// preferences are put back as each test found them regardless. Reset to
-/// Default is never driven, because its destination is the real
-/// ~/.TextMouth; its wording is checked through the shared outcome rule.
+/// Default is never driven; its wording is checked through the shared
+/// outcome rule.
 @MainActor
 final class StorageOperationOutcomeTests: XCTestCase {
     // MARK: - Refused While the Index Is Unreadable
@@ -209,9 +210,10 @@ final class StorageOperationOutcomeTests: XCTestCase {
     }
 
     /// Puts the data-directory preferences back as the test found them: the
-    /// custom location in the shared preferences, and config.json's field.
+    /// custom location in this process's preferences, which every test
+    /// shares, and config.json's field.
     private func protectDataDirectoryPreferences() {
-        let defaults = UserDefaults.standard
+        let defaults = TextMouthRuntime.current.preferences
         // TextMouthPaths' private key for a custom data directory.
         let key = "textMouthDataDirectory"
         let savedLocation = defaults.string(forKey: key)

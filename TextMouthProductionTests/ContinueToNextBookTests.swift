@@ -461,9 +461,7 @@ final class ContinueToNextBookTests: XCTestCase {
     /// empty with no open session; they and the preferences suite are put
     /// back when the test ends.
     private func makeWorld(books: [Book]) throws -> World {
-        let suiteName = "com.textmouth.tests.continue-to-next-book.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("continue-to-next-book")
         let notifications = NotificationCenter()
         let settings = SettingsViewModel(
             notificationCenter: notifications,
@@ -638,14 +636,14 @@ final class ContinueToNextBookTests: XCTestCase {
         let timer = SleepTimerService.shared
         let preferenceKey = "sleepTimer.lastUsedDuration"
         let savedDuration = timer.lastUsedDuration
-        let savedPreference = UserDefaults.standard.object(forKey: preferenceKey)
+        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: preferenceKey)
         addTeardownBlock {
             timer._resetForTesting()
             if let savedDuration {
                 timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
                 timer.stop()
             }
-            UserDefaults.standard.set(savedPreference, forKey: preferenceKey)
+            TextMouthRuntime.current.preferences.set(savedPreference, forKey: preferenceKey)
         }
         timer.start(duration: duration, ownerID: owner, onExpire: {})
         return timer

@@ -83,11 +83,9 @@ final class VoiceOverAnnouncerTests: XCTestCase {
 
     /// Sleep timer milestones keep their medium priority.
     func testSleepTimerMilestoneAnnouncesAtMediumPriority() throws {
-        // A throwaway preferences suite keeps the user's last-used timer
+        // A throwaway preferences store keeps the user's last-used timer
         // duration out of reach.
-        let suiteName = "com.textmouth.tests.announcer.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("announcer")
         let timer = SleepTimerService(userDefaults: defaults)
         defer { timer._resetForTesting() }
         timer.start(duration: .minutes(1), ownerID: UUID(), onExpire: {})
