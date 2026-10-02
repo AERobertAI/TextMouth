@@ -140,9 +140,7 @@ extension LibraryViewModel {
                     let imported: ImportedBook
                     if let archive = try? Archive(url: url, accessMode: .read),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
-                        imported = ImportedBook(
-                            book: try FileImportService.importDAISYAudioZip(from: url, toFolder: folderPath)
-                        )
+                        imported = try FileImportService.importDAISYAudioZipWithReport(from: url, toFolder: folderPath)
                     } else {
                         imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
                     }
@@ -150,8 +148,8 @@ extension LibraryViewModel {
                     return
                 }
                 if Self.isAudioZip(url: url) {
-                    let book = try FileImportService.importAudioZip(from: url, toFolder: folderPath)
-                    DispatchQueue.main.sync { self.completeSingleImportedBook(ImportedBook(book: book), originalURL: url) }
+                    let imported = try FileImportService.importAudioZipWithReport(from: url, toFolder: folderPath)
+                    DispatchQueue.main.sync { self.completeSingleImportedBook(imported, originalURL: url) }
                     return
                 }
 

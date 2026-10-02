@@ -208,6 +208,65 @@ final class StagedImportTests: XCTestCase {
         XCTAssertEqual(adopted.books.first?.tmbDirectoryName, "Visible Copy.tmb")
     }
 
+    // MARK: - Audio Archives
+
+    /// An archive whose tracks hold no audio has no playable chapter: its
+    /// import fails while reading its audio, leaves nothing in the folder,
+    /// and leaves the archive as it was.
+    func testAudioArchiveWithoutPlayableTracksFailsAndLeavesNothingBehind() throws {
+        let archive = try makeAudioArchive("Lecture Series", tracks: ["01.mp3", "02.mp3"]) { track in
+            try AudioTestFixtures.writeNonAudioBytes(to: track)
+        }
+
+        assertImportFails(at: .readingAudio, of: archive, with: FileImportService.importAudioZipWithReport(from:toFolder:observer:))
+    }
+
+    /// An archive that holds no audio file at all fails the same way.
+    func testArchiveWithNoAudioFilesFailsAndLeavesNothingBehind() throws {
+        let archive = try makeAudioArchive("Liner Notes", tracks: ["notes.json"]) { file in
+            try Data("{}".utf8).write(to: file)
+        }
+
+        let failure = assertImportFails(
+            at: .readingAudio,
+            of: archive,
+            with: FileImportService.importAudioZipWithReport(from:toFolder:observer:)
+        )
+
+        XCTAssertEqual(failure?.underlying as? AudioParseError, .noAudioFiles)
+    }
+
+    /// A playable archive becomes exactly one published package: its tracks
+    /// in the package's audio folder and a record holding their index.
+    func testAudioArchiveImportPublishesOnePackage() throws {
+        let archive = try makeAudioArchive("Morning Lectures", tracks: ["01.wav", "02.wav"]) { track in
+            try AudioTestFixtures.writeSilence(to: track)
+        }
+
+        let imported = try FileImportService.importAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        let book = imported.book
+        XCTAssertEqual(try folderEntries(), [book.tmbDirectoryName])
+        XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("audio").path)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).contentIndex?.chapters.count, 2)
+        XCTAssertEqual(book.sourceFilePath, archive.path)
+    }
+
+    /// A DAISY archive whose audio cannot be converted (it has no navigation
+    /// document to convert from) fails at that step and, unlike before,
+    /// leaves no empty package behind.
+    func testDAISYAudioArchiveThatCannotBeConvertedLeavesNothingBehind() throws {
+        let archive = try makeAudioArchive("Talking Book", tracks: ["01.mp3"]) { track in
+            try AudioTestFixtures.writeNonAudioBytes(to: track)
+        }
+
+        assertImportFails(
+            at: .convertingAudio,
+            of: archive,
+            with: FileImportService.importDAISYAudioZipWithReport(from:toFolder:observer:)
+        )
+    }
+
     // MARK: - ZIP Batches
 
     /// A ZIP of three files, two of which cannot be read, imports the third,
@@ -266,16 +325,21 @@ final class StagedImportTests: XCTestCase {
         return Data(bytes)
     }()
 
-    /// Imports `source` into this test's folder, telling `observer` of each
-    /// step, and asserts that the import fails at `step` and leaves
-    /// everything as it was: an `ImportFailure` naming the file and the
-    /// step, nothing in the folder but `leftovers` (what the observer itself
-    /// put there), the source's bytes unchanged, and one log line. Returns
-    /// the failure.
+    /// An import function as the tests call it: the source, the library
+    /// folder, and the observer told of each step.
+    private typealias Importer = (URL, String, ImportStepObserver?) throws -> ImportedBook
+
+    /// Imports `source` into this test's folder with `importer`, telling
+    /// `observer` of each step, and asserts that the import fails at `step`
+    /// and leaves everything as it was: an `ImportFailure` naming the file
+    /// and the step, nothing in the folder but `leftovers` (what the
+    /// observer itself put there), the source's bytes unchanged, and one log
+    /// line. Returns the failure.
     @discardableResult
     private func assertImportFails(
         at step: ImportStep,
         of source: URL,
+        with importer: Importer = FileImportService.importFileWithReport(from:toFolder:observer:),
         observer: ImportStepObserver? = nil,
         leftovers: Set<String> = [],
         file: StaticString = #filePath,
@@ -286,7 +350,7 @@ final class StagedImportTests: XCTestCase {
         var failure: ImportFailure?
 
         XCTAssertThrowsError(
-            try FileImportService.importFileWithReport(from: source, toFolder: folderPath, observer: observer),
+            try importer(source, folderPath, observer),
             file: file,
             line: line
         ) { error in
@@ -312,6 +376,23 @@ final class StagedImportTests: XCTestCase {
             line: line
         )
         return failure
+    }
+
+    /// A ZIP archive named `name`.zip holding one file per name in `tracks`,
+    /// each written by `write`, at the archive's top level.
+    private func makeAudioArchive(
+        _ name: String,
+        tracks: [String],
+        write: (URL) throws -> Void
+    ) throws -> URL {
+        let folder = sources.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for track in tracks {
+            try write(folder.appendingPathComponent(track))
+        }
+        let archive = sources.appendingPathComponent("\(name).zip")
+        try FileManager.default.zipItem(at: folder, to: archive, shouldKeepParent: false)
+        return archive
     }
 
     /// A short, readable plain-text source with a name unique to this test.

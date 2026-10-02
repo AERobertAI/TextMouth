@@ -911,143 +911,170 @@ enum FileImportService {
     /// Extracts audio files, parses SMIL timing for chapter segments,
     /// and generates a manifest.json with segment data.
     static func importDAISYAudioZip(from zipURL: URL, toFolder folderPath: String = "") throws -> Book {
-        try TextMouthPaths.ensureDirectoryStructure()
-        if !folderPath.isEmpty {
-            try TextMouthPaths.ensureLibrarySubfolder(folderPath)
+        try importDAISYAudioZipWithReport(from: zipURL, toFolder: folderPath).book
+    }
+
+    /// Import a DAISY audio ZIP as a multi-chapter audio book, staged like
+    /// every import: the audio is converted into a hidden package and read
+    /// as the reader will, and the package is published only once its
+    /// bookInfo.json is on disk.
+    /// - Parameter observer: told as each step on the staged package begins.
+    /// - Throws: an `ImportFailure` naming the archive and the step that
+    ///   failed; whatever was staged is removed first.
+    static func importDAISYAudioZipWithReport(
+        from zipURL: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
+            try run.begin(.readingSource)
+            let hash = try md5Hash(of: zipURL)
+            let provider = ArchiveFileProvider(archive: try Archive(url: zipURL, accessMode: .read))
+            let metadata = ImportedFileMetadata.read(from: zipURL, format: .daisy)
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+                title: metadata.title,
+                author: metadata.author,
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.convertingAudio, in: staging.directory)
+            let audioDirectory = try makeAudioDirectory(in: staging)
+            // DAISY 2.02 books are navigated by ncc.html, DAISY 3 by an OPF.
+            let isDAISY202 = provider.listFiles().contains { path in
+                let lowercased = path.lowercased()
+                return lowercased.hasSuffix("ncc.html") || lowercased.hasSuffix("ncc.htm")
+            }
+            let manifest = try DAISYAudioConverter.convertToAudioBook(
+                from: provider,
+                version: isDAISY202 ? .daisy202 : .daisy3,
+                toDirectory: audioDirectory
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try encoder.encode(manifest).write(to: audioDirectory.appendingPathComponent("manifest.json"))
+
+            let staged = stagedAudioBook(
+                id: bookID,
+                title: metadata.title,
+                author: metadata.author,
+                audioDirectory: audioDirectory,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                staging: staging,
+                source: zipURL
+            )
+            return try publishReadableBook(staged, from: staging, run: &run)
         }
-
-        let hash = try md5Hash(of: zipURL)
-        let dateAdded = Date()
-        let bookID = UUID()
-
-        // Open the ZIP and detect DAISY version
-        let archive = try Archive(url: zipURL, accessMode: .read)
-        let provider = ArchiveFileProvider(archive: archive)
-
-        // Read metadata
-        var title = zipURL.deletingPathExtension().lastPathComponent
-        var author = "Unknown"
-        if let metadata = try? DAISYParser.readMetadata(from: zipURL) {
-            if !metadata.title.isEmpty { title = metadata.title }
-            if !metadata.author.isEmpty { author = metadata.author }
-        }
-
-        let tmbName = TextMouthPaths.tmbName(
-            title: title,
-            author: author,
-            dateAdded: dateAdded,
-            bookID: bookID
-        )
-        let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
-        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
-
-        // Create audio directory
-        let audioDir = tmbDir.appendingPathComponent("audio", isDirectory: true)
-        try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
-
-        // Detect version and convert
-        let allFiles = provider.listFiles()
-        let version: DAISYVersion
-        if allFiles.contains(where: { $0.lowercased().hasSuffix("ncc.html") || $0.lowercased().hasSuffix("ncc.htm") }) {
-            version = .daisy202
-        } else {
-            version = .daisy3
-        }
-
-        let manifest = try DAISYAudioConverter.convertToAudioBook(
-            from: provider,
-            version: version,
-            toDirectory: audioDir
-        )
-
-        // Write manifest.json
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let manifestData = try encoder.encode(manifest)
-        try manifestData.write(to: audioDir.appendingPathComponent("manifest.json"))
-
-        var book = Book(
-            id: bookID,
-            title: title,
-            author: author,
-            format: .audio,
-            filePath: audioDir.path,
-            md5Hash: hash,
-            folderPath: folderPath,
-            dateAdded: dateAdded,
-            tmbDirectoryName: tmbName,
-            sourceFilePath: zipURL.path
-        )
-
-        let contentIndex = try? BookContentAnalysisService.load(book: book).index
-        if let contentIndex { book.applyContentIndexSummary(contentIndex) }
-        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
-        return book
     }
 
     /// Import a ZIP of audio files as a single multi-chapter audio book.
     /// Returns a single Book where each audio file is a chapter.
     static func importAudioZip(from zipURL: URL, toFolder folderPath: String = "") throws -> Book {
-        try TextMouthPaths.ensureDirectoryStructure()
-        if !folderPath.isEmpty {
-            try TextMouthPaths.ensureLibrarySubfolder(folderPath)
+        try importAudioZipWithReport(from: zipURL, toFolder: folderPath).book
+    }
+
+    /// Import a ZIP of audio files as one audio book, staged like every
+    /// import: the archive is extracted into a hidden package and its audio
+    /// read as the reader will, so an archive without one playable track is
+    /// never published, and the package is published only once its
+    /// bookInfo.json is on disk.
+    /// - Parameter observer: told as each step on the staged package begins.
+    /// - Throws: an `ImportFailure` naming the archive and the step that
+    ///   failed; whatever was staged is removed first.
+    static func importAudioZipWithReport(
+        from zipURL: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
+            try run.begin(.readingSource)
+            let hash = try md5Hash(of: zipURL)
+            let zipName = zipURL.deletingPathExtension().lastPathComponent
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+                title: zipName,
+                author: "Unknown",
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.extractingArchive, in: staging.directory)
+            let audioDirectory = try makeAudioDirectory(in: staging)
+            try FileManager.default.unzipItem(at: zipURL, to: audioDirectory)
+
+            // A manifest beside the audio can name the book and its author.
+            var title = zipName
+            var author = "Unknown"
+            let manifestURL = audioDirectory.appendingPathComponent("manifest.json")
+            if let data = try? Data(contentsOf: manifestURL),
+               let manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) {
+                if let manifestTitle = manifest.title { title = manifestTitle }
+                if let manifestAuthor = manifest.author { author = manifestAuthor }
+            }
+
+            // Reading the audio uses the reader's discovery rules (wrapper
+            // folders count; Finder metadata named like audio does not), so
+            // an archive with no playable track fails there.
+            let staged = stagedAudioBook(
+                id: bookID,
+                title: title,
+                author: author,
+                audioDirectory: audioDirectory,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                staging: staging,
+                source: zipURL
+            )
+            return try publishReadableBook(staged, from: staging, run: &run)
         }
+    }
 
-        let hash = try md5Hash(of: zipURL)
-        let zipName = zipURL.deletingPathExtension().lastPathComponent
-        let dateAdded = Date()
-        let bookID = UUID()
-        let tmbName = TextMouthPaths.tmbName(
-            title: zipName,
-            author: "Unknown",
-            dateAdded: dateAdded,
-            bookID: bookID
-        )
-        let tmbDir = TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbName)
-        try FileManager.default.createDirectory(at: tmbDir, withIntermediateDirectories: true)
+    /// Creates the folder an audio archive's tracks go in, inside `staging`.
+    private static func makeAudioDirectory(in staging: ImportStaging) throws -> URL {
+        let audioDirectory = staging.directory.appendingPathComponent("audio", isDirectory: true)
+        try FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: false)
+        return audioDirectory
+    }
 
-        // Extract ZIP into the .tmb directory
-        let audioDir = tmbDir.appendingPathComponent("audio", isDirectory: true)
-        try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
-        try FileManager.default.unzipItem(at: zipURL, to: audioDir)
-
-        // Use the reader's discovery rules, including wrapper folders and
-        // excluding Finder metadata that happens to have an audio extension.
-        let audioFiles = try AudioBookParser.audioFiles(in: audioDir)
-
-        guard !audioFiles.isEmpty else {
-            throw FileImportError.importFailed("No audio files found in ZIP")
-        }
-
-        // Check for manifest
-        let manifestURL = audioDir.appendingPathComponent("manifest.json")
-        var title = zipName
-        var author = "Unknown"
-        if FileManager.default.fileExists(atPath: manifestURL.path),
-           let data = try? Data(contentsOf: manifestURL),
-           let manifest = try? JSONDecoder().decode(AudioManifest.self, from: data) {
-            if let t = manifest.title { title = t }
-            if let a = manifest.author { author = a }
-        }
-
-        // Use the first audio file as the "main" file path
-        var book = Book(
-            id: bookID,
+    /// The book an audio archive becomes: one audio book whose file path is
+    /// its folder of tracks inside the staged package, imported from `source`.
+    private static func stagedAudioBook(
+        id: UUID,
+        title: String,
+        author: String,
+        audioDirectory: URL,
+        md5Hash: String,
+        folderPath: String,
+        dateAdded: Date,
+        staging: ImportStaging,
+        source: URL
+    ) -> Book {
+        Book(
+            id: id,
             title: title,
             author: author,
             format: .audio,
-            filePath: audioDir.path,  // Points to the audio directory
-            md5Hash: hash,
+            filePath: audioDirectory.path,
+            md5Hash: md5Hash,
             folderPath: folderPath,
             dateAdded: dateAdded,
-            tmbDirectoryName: tmbName,
-            sourceFilePath: zipURL.path
+            tmbDirectoryName: staging.name,
+            sourceFilePath: source.path
         )
-
-        let contentIndex = try? BookContentAnalysisService.load(book: book).index
-        if let contentIndex { book.applyContentIndexSummary(contentIndex) }
-        try? book.saveBookInfoThrowing(contentIndex: contentIndex)
-        return book
     }
 
     /// Supported UTTypes for file import dialogs
