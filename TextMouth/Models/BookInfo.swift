@@ -230,6 +230,18 @@ struct BookState: Codable {
 }
 
 extension BookState {
+    /// The analysis-owned fields this state records (see
+    /// `Book.ContentAnalysisFields`).
+    var contentAnalysisFields: Book.ContentAnalysisFields {
+        Book.ContentAnalysisFields(
+            totalWordCount: totalWordCount,
+            totalCharacterCount: totalCharacterCount,
+            audioDuration: audioDuration,
+            contentIndexVersion: contentIndexVersion,
+            cacheFormatVersion: cacheFormatVersion
+        )
+    }
+
     /// The revision that follows `latest`. At `Int.max`, which only a
     /// hand-edited file could hold, it stays put rather than overflow.
     static func revision(after latest: Int) -> Int {

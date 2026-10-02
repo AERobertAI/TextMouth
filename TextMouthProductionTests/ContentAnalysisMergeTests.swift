@@ -80,6 +80,68 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(summarized.contentAnalysisFields, silent.contentAnalysisFields)
     }
 
+    // MARK: - Saves Without an Index
+
+    /// A library row hears of a committed analysis a moment after the
+    /// package does, so a save of the row in between carries the counts and
+    /// versions from before the analysis. That save still records the
+    /// row's newer reading state, but keeps the stored index together with
+    /// the analysis fields measured with it.
+    func testSaveWithoutAnIndexKeepsTheStoredAnalysis() throws {
+        let row = try makePackage(title: "Lagging Row")
+        let index = Self.index(of: "one two three")
+        try LibraryPersistenceService.saveContentAnalysis(for: row, index: index, cacheFormatVersion: "9.9.9")
+
+        var lagging = row
+        lagging.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 8)
+        XCTAssertNil(lagging.totalWordCount, "the row has not heard of the analysis yet")
+        LibraryPersistenceService.saveBookInfo(for: lagging)
+        LibraryPersistenceService.flushPendingSave()
+
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 8)
+        XCTAssertEqual(record.contentIndex, index)
+        XCTAssertEqual(record.state.totalWordCount, 3)
+        XCTAssertEqual(record.state.contentIndexVersion, index.version)
+        XCTAssertEqual(record.state.cacheFormatVersion, "9.9.9")
+    }
+
+    /// A save that carries an index records that index with the saved
+    /// book's own analysis fields, which describe it.
+    func testSaveWithAnIndexRecordsItsOwnAnalysis() throws {
+        let book = try makePackage(title: "Indexed Save")
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: Self.index(of: "one two three"), cacheFormatVersion: "9.9.9"
+        )
+        let newer = Self.index(of: "one two three four five")
+        var analyzed = book
+        analyzed.applyContentAnalysis(newer, cacheFormatVersion: "9.9.10")
+
+        LibraryPersistenceService.saveBookInfo(for: analyzed, contentIndex: newer)
+        LibraryPersistenceService.flushPendingSave()
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.contentIndex, newer)
+        XCTAssertEqual(record.state.totalWordCount, 5)
+        XCTAssertEqual(record.state.cacheFormatVersion, "9.9.10")
+    }
+
+    /// Over a record with no index there is no analysis to keep, so a save
+    /// without an index records the book's own counts and versions.
+    func testSaveOverAnUnindexedRecordRecordsTheBooksOwnFields() throws {
+        var book = try makePackage(title: "Never Indexed")
+        book.totalWordCount = 12
+        book.totalCharacterCount = 60
+        book.cacheFormatVersion = "9.9.9"
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertNil(record.contentIndex)
+        XCTAssertEqual(record.state.contentAnalysisFields, book.contentAnalysisFields)
+    }
+
     // MARK: - Revisions
 
     /// Every write of a package record stores one more than the record it

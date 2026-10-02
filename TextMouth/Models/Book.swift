@@ -467,17 +467,29 @@ struct Book: Identifiable, Codable, Hashable {
     /// The bookInfo.json this book writes over `stored`, the record now in
     /// its package (nil when there is none or it cannot be read).
     ///
-    /// `contentIndex` replaces the stored index. Without one the stored
-    /// index is kept: a position or metadata save must not erase an analysis
-    /// produced by a background migration or import.
+    /// The content index and the analysis fields measured with it
+    /// (`ContentAnalysisFields`) travel together. A write that carries
+    /// `contentIndex` records it with this book's analysis fields, which
+    /// describe it. A write without one, such as a position, bookmark, or
+    /// metadata save, keeps the stored index together with the stored
+    /// fields: a library row can lag behind an analysis committed moments
+    /// earlier, and its older counts and versions must neither erase that
+    /// analysis nor be recorded beside an index they do not describe. Only
+    /// when no index is stored does such a write record its own fields.
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
     /// rising even when the stored record has lost its own.
     func bookInfo(replacing stored: BookInfo?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
-        var info = makeBookInfo()
-        info.contentIndex = contentIndex ?? stored?.contentIndex
+        var recorded = self
+        var index = contentIndex
+        if index == nil, let stored, let storedIndex = stored.contentIndex {
+            index = storedIndex
+            recorded.contentAnalysisFields = stored.state.contentAnalysisFields
+        }
+        var info = recorded.makeBookInfo()
+        info.contentIndex = index
         info.state.revision = BookState.revision(after: max(stored?.state.revision ?? 0, revisionFloor))
         return info
     }
