@@ -292,11 +292,60 @@ struct Book: Identifiable, Codable, Hashable {
         localSkipBackwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
     }
 
+    /// The fields of a book that content analysis owns: the word and
+    /// character counts, the audio duration, and the versions of the content
+    /// index and text cache they were measured from. An analysis result
+    /// changes these and nothing else, whether it lands in the package
+    /// record or on the library row. Every other field of a book is user
+    /// state or metadata, which only the user's own actions change.
+    struct ContentAnalysisFields: Equatable, Sendable {
+        var totalWordCount: Int?
+        var totalCharacterCount: Int?
+        var audioDuration: TimeInterval?
+        var contentIndexVersion: String?
+        var cacheFormatVersion: String?
+    }
+
+    /// This book's analysis-owned fields. Setting them changes exactly those
+    /// fields, so a record or a row that takes an analysis keeps every
+    /// reading position, bookmark, setting, and edit it had.
+    var contentAnalysisFields: ContentAnalysisFields {
+        get {
+            ContentAnalysisFields(
+                totalWordCount: totalWordCount,
+                totalCharacterCount: totalCharacterCount,
+                audioDuration: audioDuration,
+                contentIndexVersion: contentIndexVersion,
+                cacheFormatVersion: cacheFormatVersion
+            )
+        }
+        set {
+            totalWordCount = newValue.totalWordCount
+            totalCharacterCount = newValue.totalCharacterCount
+            audioDuration = newValue.audioDuration
+            contentIndexVersion = newValue.contentIndexVersion
+            cacheFormatVersion = newValue.cacheFormatVersion
+        }
+    }
+
+    /// Records a completed analysis of this book: the statistics and version
+    /// of `index` and, when the analysis vouches for one, the version of the
+    /// text cache it read or wrote. A nil `cacheFormatVersion` keeps the
+    /// book's own, since such an analysis says nothing about the cache.
+    mutating func applyContentAnalysis(_ index: BookContentIndex, cacheFormatVersion: String?) {
+        contentAnalysisFields = ContentAnalysisFields(
+            totalWordCount: index.totalWordCount,
+            totalCharacterCount: index.totalCharacterCount,
+            audioDuration: index.totalAudioDuration,
+            contentIndexVersion: index.version,
+            cacheFormatVersion: cacheFormatVersion ?? self.cacheFormatVersion
+        )
+    }
+
+    /// Records the statistics and version of `index`, keeping the book's text
+    /// cache version (see `applyContentAnalysis(_:cacheFormatVersion:)`).
     mutating func applyContentIndexSummary(_ index: BookContentIndex) {
-        totalWordCount = index.totalWordCount
-        totalCharacterCount = index.totalCharacterCount
-        audioDuration = index.totalAudioDuration
-        contentIndexVersion = index.version
+        applyContentAnalysis(index, cacheFormatVersion: nil)
     }
 
     /// Whether this book overrides any global voice, speed, or pitch setting.
