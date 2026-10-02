@@ -10,7 +10,8 @@ import XCTest
 /// announcing anything: when it finishes loading, or at once when it was
 /// already open. Only that book's reader responds, a reader still loading
 /// waits until it has loaded, and a book that cannot be loaded drops the
-/// request.
+/// request. A sleep timer the finished book set keeps the next book from
+/// starting, since it could never pause that book.
 ///
 /// Every book is a package of silent audio tracks, so a reader that starts
 /// playing is never heard. Each test's readers listen on a private
