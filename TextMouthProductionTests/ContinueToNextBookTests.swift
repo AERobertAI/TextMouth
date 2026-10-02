@@ -461,9 +461,7 @@ final class ContinueToNextBookTests: XCTestCase {
     /// empty with no open session; they and the preferences suite are put
     /// back when the test ends.
     private func makeWorld(books: [Book]) throws -> World {
-        let suiteName = "com.textmouth.tests.continue-to-next-book.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("continue-to-next-book")
         let notifications = NotificationCenter()
         let settings = SettingsViewModel(
             notificationCenter: notifications,

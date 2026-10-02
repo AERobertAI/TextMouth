@@ -480,9 +480,7 @@ final class ReaderAudioFailureTests: XCTestCase {
         try book.saveBookInfoThrowing(contentIndex: analysis.index)
         try damage(tracks)
 
-        let suiteName = "com.textmouth.tests.reader-audio-failures.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("reader-audio-failures")
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

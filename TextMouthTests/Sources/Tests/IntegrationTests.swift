@@ -781,16 +781,12 @@ test("Sleep timer: end-of-heading fires on second heading boundary") {
     // Never exercise the production singleton in hosted tests: its reset
     // helper clears persisted timer history. A disposable defaults suite keeps
     // the scenario hermetic and protects the user's restart-timer duration.
-    let suiteName = "com.textmouth.tests.integration-timer.\(UUID().uuidString)"
-    guard let timerDefaults = UserDefaults(suiteName: suiteName) else {
-        throw TestError.assertionFailed("Could not create isolated sleep-timer defaults")
-    }
-    timerDefaults.removePersistentDomain(forName: suiteName)
-    let timer = SleepTimerService(userDefaults: timerDefaults)
+    let timerDefaults = SandboxedPreferences("integration-timer")
+    let timer = SleepTimerService(userDefaults: timerDefaults.defaults)
     timer._resetForTesting()
     defer {
         timer._resetForTesting()
-        timerDefaults.removePersistentDomain(forName: suiteName)
+        timerDefaults.discard()
     }
 
     let ownerID = UUID()
@@ -841,16 +837,12 @@ test("Sleep timer: formatted output matches duration state") {
 #if canImport(TextMouth)
     // Use a separate disposable suite for this scenario as well; sharing the
     // app singleton would couple the test to live application preferences.
-    let suiteName = "com.textmouth.tests.integration-timer.\(UUID().uuidString)"
-    guard let timerDefaults = UserDefaults(suiteName: suiteName) else {
-        throw TestError.assertionFailed("Could not create isolated sleep-timer defaults")
-    }
-    timerDefaults.removePersistentDomain(forName: suiteName)
-    let timer = SleepTimerService(userDefaults: timerDefaults)
+    let timerDefaults = SandboxedPreferences("integration-timer")
+    let timer = SleepTimerService(userDefaults: timerDefaults.defaults)
     timer._resetForTesting()
     defer {
         timer._resetForTesting()
-        timerDefaults.removePersistentDomain(forName: suiteName)
+        timerDefaults.discard()
     }
 
     try assertEqual(timer.formattedRemaining, "")

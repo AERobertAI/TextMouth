@@ -6,15 +6,13 @@ final class SleepTimerServiceTests: XCTestCase {
     private var service: SleepTimerService!
     private var owner: UUID!
     private var testDefaults: UserDefaults!
-    private var testDefaultsSuiteName: String!
 
     override func setUp() {
         super.setUp()
-        // A unique preferences suite prevents fixture cleanup from deleting
-        // the user's real `sleepTimer.lastUsedDuration` value.
-        testDefaultsSuiteName = "com.textmouth.tests.sleep-timer.\(UUID().uuidString)"
-        testDefaults = UserDefaults(suiteName: testDefaultsSuiteName)
-        testDefaults.removePersistentDomain(forName: testDefaultsSuiteName)
+        // A preferences store of the test's own, kept in the sandbox and
+        // emptied when the test ends, so fixture cleanup never deletes a
+        // `sleepTimer.lastUsedDuration` value saved anywhere else.
+        testDefaults = makeSandboxedPreferences("sleep-timer")
         service = SleepTimerService(userDefaults: testDefaults)
         service._resetForTesting()
         owner = UUID()
@@ -24,9 +22,7 @@ final class SleepTimerServiceTests: XCTestCase {
         service._resetForTesting()
         service = nil
         owner = nil
-        testDefaults.removePersistentDomain(forName: testDefaultsSuiteName)
         testDefaults = nil
-        testDefaultsSuiteName = nil
         super.tearDown()
     }
 

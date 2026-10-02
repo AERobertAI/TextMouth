@@ -127,9 +127,7 @@ final class SettingsPolicyTests: XCTestCase {
     /// a missing key is the default, and anything stored is validated. Text
     /// that is not a number reads as 0, which for speed means "not chosen".
     func testStoredValueReadsDefaultsLikeAppStorageAndValidates() throws {
-        let suiteName = "com.textmouth.tests.settings-policy.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let defaults = makeSandboxedPreferences("settings-policy")
         let rule = SettingsPolicy.wordsPerMinute
 
         XCTAssertEqual(rule.storedValue(in: defaults), 200, "missing key")
