@@ -128,8 +128,15 @@ struct TextTransformation {
 final class TextSubstitutionService: ObservableObject {
     @Published var rules: [SubstitutionRule] = []
     @Published var isEnabled: Bool = true {
-        didSet { UserDefaults.standard.set(isEnabled, forKey: "substitutionsEnabled") }
+        didSet { preferences.set(isEnabled, forKey: Self.isEnabledKey) }
     }
+
+    /// Preferences key for `isEnabled`. Every release has used it, so the
+    /// user's choice keeps loading.
+    private static let isEnabledKey = "substitutionsEnabled"
+
+    /// The store holding `isEnabled`.
+    private let preferences: UserDefaults
 
     /// Cached compiled regexes keyed by rule ID
     private var regexCache: [UUID: NSRegularExpression] = [:]
@@ -143,16 +150,32 @@ final class TextSubstitutionService: ObservableObject {
 
     static let shared = TextSubstitutionService()
 
+    /// The app's service: `isEnabled` from this process's preferences, and
+    /// the rules from substitutions.json.
     private init() {
-        isEnabled = UserDefaults.standard.object(forKey: "substitutionsEnabled") as? Bool ?? true
+        preferences = TextMouthRuntime.current.preferences
+        isEnabled = Self.storedIsEnabled(in: preferences)
         loadRules()
     }
 
     /// Dependency-injected initializer for deterministic production-target
     /// tests. It deliberately does not read or write the persisted rule file.
-    init(rules: [SubstitutionRule], isEnabled: Bool = true) {
+    /// Changing `isEnabled` saves it to `preferences`: this process's
+    /// preferences unless the test passes its own.
+    init(
+        rules: [SubstitutionRule],
+        isEnabled: Bool = true,
+        preferences: UserDefaults = TextMouthRuntime.current.preferences
+    ) {
+        self.preferences = preferences
         self.rules = rules
         self.isEnabled = isEnabled
+    }
+
+    /// Whether substitutions are on as `preferences` records it: on unless
+    /// the user turned them off.
+    static func storedIsEnabled(in preferences: UserDefaults) -> Bool {
+        preferences.object(forKey: isEnabledKey) as? Bool ?? true
     }
 
     // MARK: - Rule Management

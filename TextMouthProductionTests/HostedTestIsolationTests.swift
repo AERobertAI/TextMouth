@@ -330,4 +330,41 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertNotNil(preferences.data(forKey: "soundEffectAssignments"))
         XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
     }
+
+    // MARK: - Text Substitutions
+
+    /// The substitution switch reads its saved value from the store it is
+    /// given and saves changes there under its original key; the user's
+    /// preferences stay as they were.
+    func testSubstitutionSwitchReadsAndWritesItsStore() {
+        let store = makeSandboxedPreferences("substitutions")
+        let usersPreferences = UserPreferenceFingerprint()
+        XCTAssertTrue(TextSubstitutionService.storedIsEnabled(in: store), "on until the user turns it off")
+        store.set(false, forKey: "substitutionsEnabled")
+        XCTAssertFalse(TextSubstitutionService.storedIsEnabled(in: store))
+
+        let service = TextSubstitutionService(rules: [], isEnabled: false, preferences: store)
+        service.isEnabled = true
+
+        XCTAssertEqual(store.object(forKey: "substitutionsEnabled") as? Bool, true)
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
+
+    /// The app's shared service saves the switch to this process's
+    /// preferences.
+    func testSharedSubstitutionSwitchUsesThisProcessPreferences() {
+        preservePreferences(["substitutionsEnabled"])
+        let usersPreferences = UserPreferenceFingerprint()
+        let shared = TextSubstitutionService.shared
+        let original = shared.isEnabled
+        defer { shared.isEnabled = original }
+
+        shared.isEnabled = !original
+
+        XCTAssertEqual(
+            TextMouthRuntime.current.preferences.object(forKey: "substitutionsEnabled") as? Bool,
+            !original
+        )
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
 }
