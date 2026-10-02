@@ -543,6 +543,54 @@ struct Book: Identifiable, Codable, Hashable {
             bookmarks: bookmarks
         )
     }
+
+    /// The book a package record describes, the inverse of `makeBookInfo()`.
+    /// Every field bookInfo.json keeps comes from `record`. The file path,
+    /// folder, and package name come from where the caller found the
+    /// package, because a record cannot vouch for where its package is now.
+    init(record: BookInfo, filePath: String, folderPath: String, tmbDirectoryName: String) {
+        let metadata = record.metadata
+        let state = record.state
+        self.init(
+            id: metadata.bookID,
+            title: metadata.title,
+            author: metadata.author,
+            format: metadata.format,
+            filePath: filePath,
+            md5Hash: metadata.md5Hash,
+            folderPath: folderPath,
+            dateAdded: metadata.dateAdded,
+            lastOpened: metadata.lastOpened,
+            readingPosition: state.readingPosition,
+            bookmarks: record.bookmarks,
+            totalWordCount: state.totalWordCount,
+            totalCharacterCount: state.totalCharacterCount,
+            tmbDirectoryName: tmbDirectoryName,
+            sourceFilePath: metadata.sourceFilePath,
+            lastPlaybackStarted: state.lastPlaybackStarted,
+            lastPlaybackStopped: state.lastPlaybackStopped,
+            localVoiceID: state.localVoiceID,
+            localWPM: state.localWPM,
+            localPitch: state.localPitch,
+            skippedHeadingIDs: state.skippedHeadingIDs,
+            localEndOfBookBehavior: state.localEndOfBookBehavior,
+            localSkipForwardUnit: state.localSkipForwardUnit,
+            localSkipBackwardUnit: state.localSkipBackwardUnit,
+            manualSortOrder: state.manualSortOrder,
+            audioDuration: state.audioDuration,
+            audioAlbum: metadata.audioAlbum,
+            audioGenre: metadata.audioGenre,
+            audioYear: metadata.audioYear,
+            epubPublisher: metadata.publisher,
+            epubPublicationDate: metadata.publicationDate,
+            epubISBN: metadata.isbn,
+            epubLanguage: metadata.language,
+            epubIdentifier: metadata.epubIdentifier,
+            epubVersion: metadata.epubVersion,
+            cacheFormatVersion: state.cacheFormatVersion,
+            contentIndexVersion: state.contentIndexVersion
+        )
+    }
 }
 
 struct ReadingPosition: Codable, Hashable {

@@ -80,6 +80,244 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(summarized.contentAnalysisFields, silent.contentAnalysisFields)
     }
 
+    // MARK: - Merging Into the Latest State
+
+    /// The acceptance scenario of TODO S05. An analysis starts on the book as
+    /// it was. Meanwhile the user adds a bookmark, saves a reading position,
+    /// edits the title, opens the book, and changes its settings through the
+    /// library, and all of it reaches the disk. Released afterwards, the
+    /// analysis lands on that newer state: reloaded, the package has every
+    /// newer field, the analysis's own fields, and its index.
+    @MainActor
+    func testAnalysisReleasedAfterNewerWritesReachedTheDiskKeepsEveryNewerField() throws {
+        let original = try makePackage(title: "Started Long Ago")
+        let analysis = try analyze(original)
+        let model = makeModel(with: [original])
+
+        makeNewerWrites(to: original, through: model)
+        waitPastLibrarySaveDebounce()
+        let flushed = try BookInfo.load(from: original.tmbDirectory)
+        XCTAssertEqual(flushed.metadata.title, "Retitled Meanwhile", "the newer writes reached the disk first")
+
+        let committed = try XCTUnwrap(try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+
+        let reloaded = try BookInfo.load(from: original.tmbDirectory)
+        assertNewerWritesSurvived(in: reloaded)
+        XCTAssertEqual(reloaded.contentIndex, analysis.index)
+        XCTAssertEqual(reloaded.state.contentAnalysisFields, analysis.book.contentAnalysisFields)
+        XCTAssertEqual(reloaded.state.revision, try XCTUnwrap(flushed.state.revision) + 1)
+        XCTAssertEqual(committed.title, "Retitled Meanwhile", "the result describes what was written")
+        XCTAssertEqual(committed.contentAnalysisFields, analysis.book.contentAnalysisFields)
+    }
+
+    /// The same writes still waiting in the debounce when the analysis is
+    /// released are merged with it and written at once, not lost; the
+    /// debounce then writes nothing more.
+    @MainActor
+    func testAnalysisMergesIntoNewerWritesStillWaiting() throws {
+        let original = try makePackage(title: "Saved Moments Ago")
+        let analysis = try analyze(original)
+        let model = makeModel(with: [original])
+
+        makeNewerWrites(to: original, through: model)
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+
+        let merged = try BookInfo.load(from: original.tmbDirectory)
+        assertNewerWritesSurvived(in: merged)
+        XCTAssertEqual(merged.contentIndex, analysis.index)
+        XCTAssertEqual(merged.state.contentAnalysisFields, analysis.book.contentAnalysisFields)
+
+        waitPastLibrarySaveDebounce()
+        XCTAssertEqual(try revision(of: original), merged.state.revision, "the merged snapshot is not written again")
+    }
+
+    /// When the merged record cannot be written, the analysis fails with
+    /// the error, and the newer state waiting to be saved is not lost with
+    /// it: its own debounce still writes it once the package can take it.
+    func testFailedAnalysisWriteKeepsTheWaitingSnapshot() throws {
+        let book = try makePackage(title: "Read-Only For A Moment")
+        let analysis = try analyze(book)
+        var newer = book
+        newer.manualSortOrder = 7
+        LibraryPersistenceService.saveBookInfo(for: newer)
+        XCTAssertEqual(chmod(book.tmbDirectory.path, 0o555), 0)
+        defer { chmod(book.tmbDirectory.path, 0o755) }
+
+        XCTAssertThrowsError(try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+        XCTAssertEqual(chmod(book.tmbDirectory.path, 0o755), 0)
+        LibraryPersistenceService.flushPendingSave()
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.state.manualSortOrder, 7)
+        XCTAssertNil(record.contentIndex)
+    }
+
+    /// A book rebuilt from its record has every field it was saved with,
+    /// placed where the caller found its package.
+    func testBookRebuiltFromItsRecordHasEveryField() {
+        let book = Self.bookWithEveryFieldSet(seed: 5)
+
+        let rebuilt = Book(
+            record: book.makeBookInfo(),
+            filePath: book.filePath,
+            folderPath: book.folderPath,
+            tmbDirectoryName: book.tmbDirectoryName
+        )
+
+        XCTAssertEqual(rebuilt, book)
+    }
+
+    // MARK: - Dropping Stale Results
+
+    /// An analysis of a source that has since been replaced (the library
+    /// now records another hash) is dropped: the record is left exactly as
+    /// it was, and one log line names the book and the change.
+    func testAnalysisOfAReplacedSourceIsDroppedAndLogged() throws {
+        let original = try makePackage(title: "Replaced Source")
+        let stale = try analyze(original)
+        let replaced = try replaceSource(of: original, with: "# Second Edition\n\nOne two three four five six.")
+        let before = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: original.tmbDirectory))
+
+        let committed = try LibraryPersistenceService.saveContentAnalysis(
+            for: stale.book, index: stale.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+
+        XCTAssertNil(committed)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: original.tmbDirectory)), before)
+        let lines = droppedLines(for: original)
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(lines.first?.contains("\"Replaced Source\"") == true, "\(lines)")
+        XCTAssertTrue(
+            lines.first?.contains("MD5 \(original.md5Hash) is now \(replaced.md5Hash)") == true,
+            "\(lines)"
+        )
+    }
+
+    /// A book moved to another folder while it was analyzed lives in another
+    /// package, so a result for the old one is dropped and its newer state,
+    /// still waiting to be saved, is written as it is.
+    @MainActor
+    func testAnalysisOfABookMovedMeanwhileIsDropped() throws {
+        let original = try makePackage(title: "Moved Meanwhile")
+        let stale = try analyze(original)
+        let model = makeModel(with: [original])
+        let destination = "Analysis Merge Destination \(UUID().uuidString.prefix(8))"
+        createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(destination, isDirectory: true))
+        model.moveBooks([original], toFolder: destination)
+        let moved = try XCTUnwrap(model.bookByID(original.id))
+        XCTAssertEqual(moved.folderPath, destination)
+        model.persistReadingPosition(bookID: original.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 5))
+
+        XCTAssertNil(try LibraryPersistenceService.saveContentAnalysis(
+            for: stale.book, index: stale.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+        LibraryPersistenceService.flushPendingSave()
+
+        let record = try BookInfo.load(from: moved.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 5)
+        XCTAssertNil(record.contentIndex)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: original.tmbDirectory.path), "no package is recreated")
+        XCTAssertTrue(droppedLines(for: original).first?.contains("its source file moved") == true)
+    }
+
+    /// A package whose record names another book, as a legacy package
+    /// shared by two books can, never takes this book's result.
+    func testAnalysisOfAPackageHoldingAnotherBooksRecordIsDropped() throws {
+        let book = try makePackage(title: "Shares A Package")
+        let analysis = try analyze(book)
+        var other = Self.bookWithEveryFieldSet(seed: 6)
+        other.folderPath = book.folderPath
+        other.tmbDirectoryName = book.tmbDirectoryName
+        try other.makeBookInfo().save(to: book.tmbDirectory)
+
+        XCTAssertNil(try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.metadata.bookID, other.id)
+        XCTAssertNil(record.contentIndex)
+        XCTAssertTrue(
+            droppedLines(for: book).first?.contains("belongs to book \(other.id.uuidString.prefix(8))") == true
+        )
+    }
+
+    /// Two analyses of one book, one of its first source and one of the
+    /// source that replaced it, leave the second source's result whichever
+    /// finishes last: the first is dropped as soon as the library records
+    /// the replacement.
+    func testAnalysesFinishingOutOfOrderLeaveTheLaterSourcesResult() throws {
+        for laterFinishesFirst in [true, false] {
+            let original = try makePackage(title: "Two Editions")
+            let earlier = try analyze(original)
+            let replaced = try replaceSource(of: original, with: "# Second Edition\n\nOne two three four five six.")
+            let later = try analyze(replaced)
+            XCTAssertNotEqual(earlier.index, later.index)
+
+            for result in laterFinishesFirst ? [later, earlier] : [earlier, later] {
+                try LibraryPersistenceService.saveContentAnalysis(
+                    for: result.book, index: result.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+                )
+            }
+
+            let record = try BookInfo.load(from: original.tmbDirectory)
+            let order = laterFinishesFirst ? "later first" : "later last"
+            XCTAssertEqual(record.metadata.md5Hash, replaced.md5Hash, order)
+            XCTAssertEqual(record.contentIndex, later.index, order)
+            XCTAssertEqual(record.state.contentAnalysisFields, later.book.contentAnalysisFields, order)
+            XCTAssertEqual(droppedLines(for: original).count, 1, order)
+        }
+    }
+
+    // MARK: - Invariants Kept
+
+    /// A package retired by Remove from Library Only still takes nothing:
+    /// neither an analysis released after the removal, nor a save that a
+    /// reader left open queues alongside it. Nothing is logged as stale.
+    func testRetiredPackageStillDropsEveryWrite() throws {
+        let book = try makePackage(title: "Removed Mid-Analysis")
+        let analysis = try analyze(book)
+        _ = try LibraryPersistenceService.retirePackage(of: book)
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        XCTAssertNil(try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+        LibraryPersistenceService.flushPendingSave()
+        waitPastLibrarySaveDebounce()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path))
+        XCTAssertTrue(droppedLines(for: book).isEmpty)
+    }
+
+    /// While library.json writes are suspended because the index could not
+    /// be read (TODO S01), an analysis and the newer state it merges with
+    /// are still written to the package.
+    func testAnalysisIsSavedWhileLibraryIndexWritesAreSuspended() throws {
+        try sandbox.stage(.truncated, at: sandbox.indexURL)
+        _ = LibraryPersistenceService.load()
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
+        let book = try makePackage(title: "Analyzed During Recovery")
+        let analysis = try analyze(book)
+        var newer = book
+        newer.manualSortOrder = 3
+        LibraryPersistenceService.saveBookInfo(for: newer)
+
+        XCTAssertNotNil(try LibraryPersistenceService.saveContentAnalysis(
+            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.contentIndex, analysis.index)
+        XCTAssertEqual(record.state.manualSortOrder, 3)
+    }
+
     // MARK: - Saves Without an Index
 
     /// A library row hears of a committed analysis a moment after the
@@ -286,6 +524,84 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// The revision of the bookInfo.json in `book`'s package.
     private func revision(of book: Book) throws -> Int? {
         try BookInfo.load(from: book.tmbDirectory).state.revision
+    }
+
+    /// Analyzes `book` exactly as a cache batch does: writes its text cache
+    /// and returns the index with the book stamped with it, which is what
+    /// the batch then commits.
+    private func analyze(_ book: Book) throws -> (book: Book, index: BookContentIndex) {
+        var analyzed = book
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &analyzed))
+        return (analyzed, index)
+    }
+
+    /// Replaces `book`'s source file with `text` and records the new hash
+    /// through the metadata queue, as the library does when a source
+    /// changes (an EPUB metadata edit written back to the file, for one).
+    /// Returns the book as the library now has it.
+    private func replaceSource(of book: Book, with text: String) throws -> Book {
+        try text.write(toFile: book.filePath, atomically: true, encoding: .utf8)
+        var replaced = book
+        replaced.md5Hash = try FileImportService.md5Hash(of: URL(fileURLWithPath: book.filePath))
+        LibraryPersistenceService.saveBookInfo(for: replaced)
+        LibraryPersistenceService.flushPendingSave()
+        return replaced
+    }
+
+    /// A library model listing `books`, without the app's services.
+    @MainActor
+    private func makeModel(with books: [Book]) -> LibraryViewModel {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books)
+        return model
+    }
+
+    /// Changes `book` through the library as a reader would while its
+    /// analysis runs: a bookmark, a reading position, a new title, opening
+    /// it, its voice, speed, and pitch, a skipped heading, and its playback
+    /// times. Each change is saved through the normal debounced path.
+    @MainActor
+    private func makeNewerWrites(to book: Book, through model: LibraryViewModel) {
+        model.addBookmark(bookID: book.id, chapterIndex: 0, characterOffset: 9, label: "Added Meanwhile")
+        model.persistReadingPosition(bookID: book.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 9))
+        var retitled = book
+        retitled.title = "Retitled Meanwhile"
+        model.updateBookMetadata(retitled)
+        model.markBookOpened(book.id)
+        model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: "voice.meanwhile", wpm: 240, pitch: 1.2)
+        model.updateSkippedHeadings(bookID: book.id, skippedIDs: ["heading-meanwhile"])
+        model.updatePlaybackTimestamps(
+            bookID: book.id, started: Self.playbackStart, stopped: Self.playbackStart.addingTimeInterval(60)
+        )
+    }
+
+    /// Asserts that `record` holds every change `makeNewerWrites` made.
+    private func assertNewerWritesSurvived(
+        in record: BookInfo,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(record.metadata.title, "Retitled Meanwhile", file: file, line: line)
+        XCTAssertEqual(record.bookmarks.map(\.label), ["Added Meanwhile"], file: file, line: line)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 9, file: file, line: line)
+        XCTAssertNotNil(record.metadata.lastOpened, file: file, line: line)
+        XCTAssertFalse(record.state.isNew, file: file, line: line)
+        XCTAssertEqual(record.state.localVoiceID, "voice.meanwhile", file: file, line: line)
+        XCTAssertEqual(record.state.localWPM, 240, file: file, line: line)
+        XCTAssertEqual(record.state.localPitch, 1.2, file: file, line: line)
+        XCTAssertEqual(record.state.skippedHeadingIDs, ["heading-meanwhile"], file: file, line: line)
+        XCTAssertEqual(record.state.lastPlaybackStarted, Self.playbackStart, file: file, line: line)
+        XCTAssertEqual(
+            record.state.lastPlaybackStopped, Self.playbackStart.addingTimeInterval(60), file: file, line: line
+        )
+    }
+
+    /// A whole-second time, which bookInfo.json's ISO 8601 dates keep exactly.
+    private static let playbackStart = Date(timeIntervalSince1970: 1_790_000_000)
+
+    /// The debug log's CONTENT_ANALYSIS_DROPPED lines about `book`.
+    private func droppedLines(for book: Book) -> [String] {
+        debugLogLines(containing: "CONTENT_ANALYSIS_DROPPED: book \(book.id.uuidString.prefix(8))")
     }
 
     /// An index of one chapter holding `text`.
