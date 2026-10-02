@@ -373,27 +373,77 @@ extension LibraryViewModel {
     }
 
     // MARK: - Directory Management
+    //
+    // Each maintenance operation comes in two forms (TODO A07). The plain
+    // form explains problems through the library's alerts, as it always
+    // did. The `...ReturningOutcome` form, which Storage settings use,
+    // presents nothing and returns the outcome, so the status line where
+    // the user started the operation says what really happened. Both forms
+    // run the same work.
+
+    /// Words that begin each maintenance failure, before the reason.
+    private static let rebuildFailureContext = "Failed to rebuild directory"
+    private static let resetFailureContext = "Failed to rebuild to default"
+    private static let moveFailureContext = "Failed to move directory"
 
     /// Rebuild the .TextMouth directory structure, migrate all books,
     /// adopt orphaned .tmb packages, and extract missing content caches.
+    /// Problems are explained through the library's alerts.
     func rebuildDirectory() {
-        do {
+        presentThroughAlerts(runDirectoryRebuild(), failureContext: Self.rebuildFailureContext)
+    }
+
+    /// Rebuild Directory, returning its outcome and presenting nothing. It
+    /// succeeds with "Done. N books in library.", followed by any legacy
+    /// books that could not move into packages, or fails with the reason
+    /// nothing was rebuilt, such as an unreadable library index.
+    func rebuildDirectoryReturningOutcome() -> OperationOutcome {
+        let run = runDirectoryRebuild()
+        let bookCount = library.books.count
+        return Self.maintenanceOutcome(
+            run,
+            failureContext: Self.rebuildFailureContext,
+            done: "Done. \(bookCount) \(bookCount == 1 ? "book" : "books") in library."
+        )
+    }
+
+    /// The work of Rebuild Directory: the legacy migration report, or the
+    /// error that stopped the rebuild.
+    private func runDirectoryRebuild() -> Result<LegacyMigrationReport?, Error> {
+        Result {
             try ensureLibraryIndexIsReadable()
             let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
             save()
             LibraryPersistenceService.saveAllBookInfos(library)
             // Extract content caches for any newly adopted books, then recalculate stats
             updateContentCachesAndStatistics()
-            showLegacyMigrationIssues(migration)
-        } catch {
-            errorMessage = "Failed to rebuild directory: \(error.localizedDescription)"
-            showError = true
+            return migration
         }
     }
 
-    /// Rebuild to the default location (~/.TextMouth), moving data there
+    /// Rebuild to the default location (~/.TextMouth), moving data there.
+    /// Problems are explained through the library's alerts.
     func rebuildToDefault() {
-        do {
+        presentThroughAlerts(runRebuildToDefault(), failureContext: Self.resetFailureContext)
+    }
+
+    /// Reset to Default, returning its outcome and presenting nothing. It
+    /// succeeds with "Done. Data is now at <path>.", followed by any legacy
+    /// books that could not move into packages, or fails with the reason,
+    /// such as a default location that already holds other files.
+    func rebuildToDefaultReturningOutcome() -> OperationOutcome {
+        let run = runRebuildToDefault()
+        return Self.maintenanceOutcome(
+            run,
+            failureContext: Self.resetFailureContext,
+            done: "Done. Data is now at \(TextMouthPaths.rootPath)."
+        )
+    }
+
+    /// The work of Reset to Default: the legacy migration report, or the
+    /// error that stopped it.
+    private func runRebuildToDefault() -> Result<LegacyMigrationReport?, Error> {
+        Result {
             try ensureLibraryIndexIsReadable()
             let defaultRoot = TextMouthPaths.defaultRoot
             if TextMouthPaths.root.path != defaultRoot.path {
@@ -404,26 +454,79 @@ extension LibraryViewModel {
             configService.config.dataDirectoryPath = ""
             configService.saveToDisk()
             save()
-            showLegacyMigrationIssues(migration)
-        } catch {
-            errorMessage = "Failed to rebuild to default: \(error.localizedDescription)"
-            showError = true
+            return migration
         }
     }
 
-    /// Move the data directory to a new location
+    /// Move the data directory to a new location. A failure is explained
+    /// through the library's error alert; a location requested by editing
+    /// config.json arrives this way.
     func moveDataDirectory(to newURL: URL) {
+        presentThroughAlerts(runDataDirectoryMove(to: newURL), failureContext: Self.moveFailureContext)
+    }
+
+    /// Change Location, returning its outcome and presenting nothing. It
+    /// succeeds with "Done. Data is now at <path>." or fails with the
+    /// reason nothing moved, such as a destination that is not empty.
+    func moveDataDirectoryReturningOutcome(to newURL: URL) -> OperationOutcome {
+        let run = runDataDirectoryMove(to: newURL)
+        return Self.maintenanceOutcome(
+            run,
+            failureContext: Self.moveFailureContext,
+            done: "Done. Data is now at \(TextMouthPaths.rootPath)."
+        )
+    }
+
+    /// The work of moving the data directory: no legacy migration report,
+    /// or the error that stopped the move. A failed move leaves config.json
+    /// naming the directory still in use.
+    private func runDataDirectoryMove(to newURL: URL) -> Result<LegacyMigrationReport?, Error> {
         do {
             try ensureLibraryIndexIsReadable()
             try TextMouthPaths.moveDataDirectory(to: newURL, library: &library)
             configService.config.dataDirectoryPath = newURL.path
             configService.saveToDisk()
             save()
+            return .success(nil)
         } catch {
             configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
             configService.saveToDisk()
-            errorMessage = "Failed to move directory: \(error.localizedDescription)"
-            showError = true
+            return .failure(error)
+        }
+    }
+
+    /// Reports a maintenance run through the library's alerts: a failure as
+    /// "<context>: <reason>", or after a success any legacy books that could
+    /// not move into packages.
+    private func presentThroughAlerts(
+        _ run: Result<LegacyMigrationReport?, Error>,
+        failureContext: String
+    ) {
+        switch run {
+        case .success(let migration):
+            if let migration {
+                showLegacyMigrationIssues(migration)
+            }
+        case .failure(let error):
+            presentFilesystemError(failureContext, error: error)
+        }
+    }
+
+    /// The outcome of a maintenance run for the workflow that started it:
+    /// `done`, followed by any legacy books that could not move into
+    /// packages, or the failure as "<context>: <reason>". Callers build
+    /// `done` after the run, so it describes the state the run left.
+    nonisolated static func maintenanceOutcome(
+        _ run: Result<LegacyMigrationReport?, Error>,
+        failureContext: String,
+        done: String
+    ) -> OperationOutcome {
+        switch run {
+        case .success(let migration):
+            guard let issues = migration?.userSummary else { return .success(done) }
+            return .success(done + "\n\n" + issues)
+        case .failure(let error):
+            return .failure(failureContext, error)
         }
     }
 

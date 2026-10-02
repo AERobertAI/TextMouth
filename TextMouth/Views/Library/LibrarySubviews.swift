@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 // MARK: - Edit Mode Bar
@@ -7,11 +8,19 @@ import SwiftUI
 struct EditModeBar: View {
     let selectedCount: Int
     let totalCount: Int
+    /// Whether removing asks first and where deleted files go, so the
+    /// Remove button says what it will do.
+    let removalPreferences: RemovalPreferences
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
     let onMove: () -> Void
     let onRemove: () -> Void
     let onDone: () -> Void
+
+    /// The words for removing the selected books.
+    private var removal: LibraryRemoveCommandWording {
+        LibraryRemoveCommandWording(preferences: removalPreferences, count: selectedCount)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -34,9 +43,10 @@ struct EditModeBar: View {
                 .disabled(selectedCount == 0)
                 .accessibilityLabel("Move \(selectedCount) \(selectedCount == 1 ? "book" : "books") to folder")
 
-            Button("Remove", role: .destructive) { onRemove() }
+            Button(removal.shortTitle, role: .destructive) { onRemove() }
                 .disabled(selectedCount == 0)
-                .accessibilityLabel("Remove \(selectedCount) \(selectedCount == 1 ? "book" : "books") from library")
+                .accessibilityLabel(removal.accessibilityLabel)
+                .accessibilityHint(removal.accessibilityHint)
 
             Button("Done") { onDone() }
                 .fontWeight(.semibold)
@@ -325,6 +335,32 @@ extension Array where Element == BookFolder {
             let a = $0.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
             let b = $1.fullPath.lowercased().replacingOccurrences(of: "/", with: "\0")
             return a < b
+        }
+    }
+}
+
+// MARK: - Removal Preferences
+
+/// The removal preferences as config.json changes them, one value per
+/// change to either preference. One shared stream, so a view that draws
+/// again keeps its subscription rather than subscribing anew each time.
+@MainActor
+private enum RemovalPreferencesFeed {
+    static let changes = ConfigService.shared.$config
+        .map { RemovalPreferences($0) }
+        .removeDuplicates()
+}
+
+extension View {
+    /// Keeps `preferences` equal to the removal preferences in config.json,
+    /// so removal buttons and confirmations always describe what removing
+    /// will really do, even right after the preferences change in Settings.
+    /// Only a change to one of the two preferences updates it, so other
+    /// settings changes cause no redraw.
+    @MainActor
+    func trackingRemovalPreferences(_ preferences: Binding<RemovalPreferences>) -> some View {
+        onReceive(RemovalPreferencesFeed.changes) { current in
+            preferences.wrappedValue = current
         }
     }
 }

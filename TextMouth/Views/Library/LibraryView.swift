@@ -97,6 +97,34 @@ enum LibrarySelectionPolicy {
     }
 }
 
+/// Where a library window goes after one of its folder sheets renames or
+/// moves a folder (TODO A07). Pure, so the rule is tested without a window.
+enum FolderSheetNavigation {
+    /// The folder path a window shows after an edit that tried to move the
+    /// folder at `oldPath` to `newPath` (nil when the folder is no longer in
+    /// the library). Only a success moves anything: a window showing that
+    /// folder, or a folder inside it, follows it to its new path, and every
+    /// other window stays where it is. After a failure, whether a refused
+    /// name, a collision, or a write that failed, the window stays exactly
+    /// where it was, just as the library did.
+    static func folderPath(
+        showing currentPath: String,
+        after outcome: OperationOutcome,
+        folderMovedFrom oldPath: String,
+        to newPath: String?
+    ) -> String {
+        // The root never moves, and an empty prefix would match every path.
+        guard outcome.succeeded, let newPath, !oldPath.isEmpty else { return currentPath }
+        if currentPath == oldPath {
+            return newPath
+        }
+        if currentPath.hasPrefix(oldPath + "/") {
+            return newPath + String(currentPath.dropFirst(oldPath.count))
+        }
+        return currentPath
+    }
+}
+
 struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
@@ -131,6 +159,9 @@ struct LibraryView: View {
     @State private var showTextInput = false
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
+    /// Whether removing asks first and where deleted files go, kept current
+    /// so removal buttons and confirmations say what removal will do.
+    @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
 
     var body: some View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
@@ -172,6 +203,7 @@ struct LibraryView: View {
                 EditModeBar(
                     selectedCount: effectiveSelection.count,
                     totalCount: filteredBooks.count,
+                    removalPreferences: removalPreferences,
                     onSelectAll: {
                         editSelection = Set(filteredBooks.map { $0.id })
                     },
@@ -338,7 +370,15 @@ struct LibraryView: View {
                                     }
                                 }
                                 Divider()
-                                Button(isMulti ? "Remove \(targetBooks.count) Books from Library" : "Remove from Library", role: .destructive) {
+                                // Says what removal will do: ask first, or
+                                // move the files to the Trash, or delete them.
+                                Button(
+                                    LibraryRemoveCommandWording(
+                                        preferences: removalPreferences,
+                                        books: targetBooks
+                                    ).menuTitle,
+                                    role: .destructive
+                                ) {
                                     libraryViewModel.removeBooks(targetBooks)
                                     clearAllSelections()
                                 }
@@ -481,16 +521,23 @@ struct LibraryView: View {
                 .accessibilityLabel("Sort books by \(sortField.rawValue), \(sortAscending ? "ascending" : "descending")")
             }
         }
+        // Each sheet below closes only after its operation succeeds. After a
+        // failure it stays open with the user's input and shows the reason,
+        // and the window's folder and selection stay as they were (TODO A07).
         .sheet(isPresented: $showNewFolderSheet) {
             NewFolderSheet(
                 folderName: $newFolderName,
                 parentPath: $newFolderParentPath,
                 folders: libraryViewModel.library.folders,
                 onCreate: {
-                    libraryViewModel.createFolder(name: newFolderName, parentPath: newFolderParentPath)
-                    newFolderName = ""
-                    newFolderParentPath = currentFolderPath
-                    showNewFolderSheet = false
+                    closingOnSuccess(libraryViewModel.createFolderReturningOutcome(
+                        name: newFolderName,
+                        parentPath: newFolderParentPath
+                    )) {
+                        newFolderName = ""
+                        newFolderParentPath = currentFolderPath
+                        showNewFolderSheet = false
+                    }
                 },
                 onCancel: {
                     newFolderName = ""
@@ -506,12 +553,13 @@ struct LibraryView: View {
                     library: libraryViewModel.library,
                     lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
                     onMove: { path in
-                        libraryViewModel.moveBooks(booksToMove, toFolder: path)
-                        clearAllSelections()
-                        showMoveSheet = false
+                        closingOnSuccess(libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)) {
+                            clearAllSelections()
+                            showMoveSheet = false
+                        }
                     },
                     onCreateFolder: { name, parentPath in
-                        libraryViewModel.createFolder(name: name, parentPath: parentPath)
+                        libraryViewModel.createFolderReturningOutcome(name: name, parentPath: parentPath)
                     },
                     onCancel: { showMoveSheet = false }
                 )
@@ -520,6 +568,7 @@ struct LibraryView: View {
         .background(WindowAccessor(onWindowFound: { window in
             hostWindow = window
         }))
+        .trackingRemovalPreferences($removalPreferences)
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -703,25 +752,9 @@ struct LibraryView: View {
                     currentName: folder.name,
                     newName: $renameFolderText,
                     onRename: {
-                        libraryViewModel.renameFolder(folder, to: renameFolderText)
-                        // Update currentFolderPath if we're inside the renamed folder
-                        if currentFolderPath == folder.fullPath {
-                            let sanitized = renameFolderText
-                                .replacingOccurrences(of: "/", with: "-")
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-                            currentFolderPath = folder.parentPath.isEmpty
-                                ? sanitized
-                                : "\(folder.parentPath)/\(sanitized)"
-                        } else if currentFolderPath.hasPrefix(folder.fullPath + "/") {
-                            let sanitized = renameFolderText
-                                .replacingOccurrences(of: "/", with: "-")
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-                            let newPrefix = folder.parentPath.isEmpty
-                                ? sanitized
-                                : "\(folder.parentPath)/\(sanitized)"
-                            currentFolderPath = newPrefix + String(currentFolderPath.dropFirst(folder.fullPath.count))
+                        editFolder(folder, closing: { showRenameFolderSheet = false }) {
+                            libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
                         }
-                        showRenameFolderSheet = false
                     },
                     onCancel: {
                         showRenameFolderSheet = false
@@ -736,14 +769,17 @@ struct LibraryView: View {
                     folder: folder,
                     library: libraryViewModel.library,
                     onMove: { newParent in
-                        libraryViewModel.moveFolder(folder, toParent: newParent)
-                        showMoveFolderSheet = false
+                        editFolder(folder, closing: { showMoveFolderSheet = false }) {
+                            libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
+                        }
                     },
                     onCancel: { showMoveFolderSheet = false }
                 )
             }
         }
-        // Delete folder dialog: move contents out vs delete everything
+        // Delete folder dialog: move contents out vs delete everything. The
+        // words say whether everything goes to the Trash or is deleted
+        // permanently, as the Trash preference chooses (TODO A08).
         .alert(
             "Delete Folder?",
             isPresented: $libraryViewModel.showDeleteFolderDialog
@@ -751,24 +787,23 @@ struct LibraryView: View {
             Button("Move Contents Out") {
                 libraryViewModel.showDeleteFolderDestinationSheet = true
             }
-            Button("Delete Everything", role: .destructive) {
+            Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 libraryViewModel.showDeleteEverythingConfirm = true
             }
             Button("Cancel", role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
-            if let folder = libraryViewModel.pendingDeleteFolder {
-                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
-                Text("\"\(folder.name)\" contains \(count) \(count == 1 ? "book" : "books") and may have subfolders. What would you like to do?")
+            if libraryViewModel.pendingDeleteFolder != nil {
+                Text(deleteEverythingWording.choiceMessage)
             }
         }
         // Second confirmation for Delete Everything
         .alert(
-            "Are you sure?",
+            deleteEverythingWording.confirmationTitle,
             isPresented: $libraryViewModel.showDeleteEverythingConfirm
         ) {
-            Button("Delete Everything", role: .destructive) {
+            Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 if let folder = libraryViewModel.pendingDeleteFolder {
                     libraryViewModel.removeFolderAndEverything(folder)
                     libraryViewModel.pendingDeleteFolder = nil
@@ -778,9 +813,8 @@ struct LibraryView: View {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
-            if let folder = libraryViewModel.pendingDeleteFolder {
-                let count = libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
-                Text("This will permanently remove the folder \"\(folder.name)\" and all \(count) \(count == 1 ? "book" : "books") inside it. This cannot be undone.")
+            if libraryViewModel.pendingDeleteFolder != nil {
+                Text(deleteEverythingWording.confirmationMessage)
             }
         }
         // Move contents destination picker
@@ -790,9 +824,13 @@ struct LibraryView: View {
                     folder: folder,
                     library: libraryViewModel.library,
                     onConfirm: { destination in
-                        libraryViewModel.removeFolderMovingContents(folder, toPath: destination)
-                        libraryViewModel.pendingDeleteFolder = nil
-                        libraryViewModel.showDeleteFolderDestinationSheet = false
+                        closingOnSuccess(libraryViewModel.removeFolderMovingContentsReturningOutcome(
+                            folder,
+                            toPath: destination
+                        )) {
+                            libraryViewModel.pendingDeleteFolder = nil
+                            libraryViewModel.showDeleteFolderDestinationSheet = false
+                        }
                     },
                     onCancel: {
                         libraryViewModel.pendingDeleteFolder = nil
@@ -844,9 +882,64 @@ struct LibraryView: View {
         }
     }
 
+    /// The words for Delete Everything on the folder awaiting confirmation,
+    /// in the mode the Trash preference chooses. With no folder pending, no
+    /// dialog shows, and only the mode-dependent button title matters.
+    private var deleteEverythingWording: FolderRemovalWording {
+        let folder = libraryViewModel.pendingDeleteFolder
+        return FolderRemovalWording(
+            mode: removalPreferences.deletionMode,
+            folderName: folder?.name ?? "",
+            bookCount: folder.map { libraryViewModel.library.totalBooksInFolderTree($0.fullPath) } ?? 0
+        )
+    }
+
     /// Toggle a book's membership in the edit selection set
     private func toggleEditSelection(_ id: UUID) {
         editSelection = LibrarySelectionPolicy.toggled(editSelection, id: id)
+    }
+
+    // MARK: - Finishing Sheets
+
+    /// Finishes the operation a sheet started: after a success runs `close`,
+    /// which clears what the sheet was editing and closes it. Returns the
+    /// outcome either way, so the sheet can show and announce a failure
+    /// while it stays open with the user's input.
+    private func closingOnSuccess(_ outcome: OperationOutcome, close: () -> Void) -> OperationOutcome {
+        if outcome.succeeded {
+            close()
+        }
+        return outcome
+    }
+
+    /// Runs `edit`, a rename or move of `folder` from one of the folder
+    /// sheets, and finishes the sheet. After a success the sheet closes, and
+    /// a window showing the folder, or a folder inside it, follows it to its
+    /// new path; after a failure the folder shown stays as it was.
+    private func editFolder(
+        _ folder: BookFolder,
+        closing close: () -> Void,
+        _ edit: () -> OperationOutcome
+    ) -> OperationOutcome {
+        // Read the folder's path from the library on both sides of the edit:
+        // the sheet's copy is from when it opened, and another window may
+        // have moved the folder since.
+        let pathBefore = libraryViewModel.library.folders.first { $0.id == folder.id }?.fullPath ?? folder.fullPath
+        let outcome = edit()
+        let pathAfter = libraryViewModel.library.folders.first { $0.id == folder.id }?.fullPath
+        let destination = FolderSheetNavigation.folderPath(
+            showing: currentFolderPath,
+            after: outcome,
+            folderMovedFrom: pathBefore,
+            to: pathAfter
+        )
+        // Assign only a real change, compared by exact spelling: navigating
+        // clears the selection, while a normalization-only rename must
+        // still store the folder's new spelling.
+        if !BookFolder.spellingsMatch(destination, currentFolderPath) {
+            currentFolderPath = destination
+        }
+        return closingOnSuccess(outcome, close: close)
     }
 
     /// Clear all selections (both native and edit mode) and exit edit mode

@@ -109,7 +109,15 @@ final class DeletionSafetyTests: XCTestCase {
 
         XCTAssertEqual(viewModel.library.books.map(\.id), [book.id])
         XCTAssertTrue(viewModel.showError)
-        XCTAssertTrue(viewModel.errorMessage?.contains("remain in the library") == true)
+        // The book that stayed is named, in the words of the deleting mode
+        // the Trash preference chooses.
+        XCTAssertEqual(
+            viewModel.errorMessage,
+            viewModel.removalPreferences.deletionMode.failureMessage(
+                ["Cannot Delete: \(SimulatedTrashError().localizedDescription)"]
+            )
+        )
+        XCTAssertTrue(viewModel.errorMessage?.contains("remains in the library") == true)
     }
 
     func testPartialDeletionRemovesOnlySuccessfullyDeletedBooks() {

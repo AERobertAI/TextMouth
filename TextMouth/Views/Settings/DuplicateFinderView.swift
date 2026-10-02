@@ -139,6 +139,50 @@ enum DuplicateFinderEngine {
     }
 }
 
+/// How the Duplicate Finder removes the books selected in it (TODO A08). It
+/// deletes their files, to the Trash or permanently as the preference
+/// chooses, through the library's Trash-aware path, and asks first when
+/// "Confirm before removing a book" is on.
+enum DuplicateRemoval {
+    /// What pressing the removal button does first.
+    enum Step: Equatable {
+        /// Ask, in these words; nothing is removed until the user confirms.
+        case confirm(RemovalWording)
+        /// Remove at once.
+        case removeNow
+    }
+
+    /// The first step of removing `books` under `preferences`.
+    static func firstStep(removing books: [Book], preferences: RemovalPreferences) -> Step {
+        guard preferences.confirmsFirst else { return .removeNow }
+        return .confirm(RemovalWording(preferences.deletionMode, books: books))
+    }
+
+    /// Removes the books with these IDs that are still in the library,
+    /// deleting their packages through the library's Trash-aware path, and
+    /// returns the outcome in the words of the deleting mode. Books removed
+    /// elsewhere since they were selected are skipped.
+    @MainActor
+    static func remove(_ bookIDs: Set<UUID>, from libraryViewModel: LibraryViewModel) -> OperationOutcome {
+        let books = libraryViewModel.library.books.filter { bookIDs.contains($0.id) }
+        guard !books.isEmpty else { return .success(nil) }
+        return libraryViewModel.removeBooksAndDeleteReturningOutcome(books)
+    }
+}
+
+/// The Duplicate Finder's removal button, which says what it does: "Move 2
+/// Selected to Trash" or "Delete 2 Selected Permanently", spoken in full.
+struct DuplicateRemovalButton: View {
+    /// The words for removing the selected books.
+    let wording: RemovalWording
+    let action: () -> Void
+
+    var body: some View {
+        Button(wording.selectionButtonTitle, role: .destructive, action: action)
+            .accessibilityLabel(wording.selectionAccessibilityLabel)
+    }
+}
+
 /// Sheet for finding and removing duplicate books across the library
 struct DuplicateFinderView: View {
     @ObservedObject var libraryViewModel: LibraryViewModel
@@ -156,6 +200,20 @@ struct DuplicateFinderView: View {
     @State private var isbnCache: [UUID: String] = [:]
     /// Whether ISBN loading is in progress
     @State private var isLoadingISBNs = false
+    /// Whether removing asks first and where deleted files go, kept current
+    /// so the button and its confirmation say what removal will do.
+    @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
+    /// The removal waiting for the user's confirmation.
+    @State private var pendingRemoval: PendingRemoval?
+    /// What the last removal did, shown under the buttons.
+    @State private var removalOutcome: OperationOutcome?
+
+    /// A removal waiting for confirmation: the books it captured when it
+    /// was requested, and the words the confirmation shows.
+    private struct PendingRemoval {
+        let bookIDs: Set<UUID>
+        let wording: RemovalWording
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -199,26 +257,24 @@ struct DuplicateFinderView: View {
                     .disabled(activeFilters.isEmpty || isLoadingISBNs)
                     .accessibilityHint("Searches the entire library for books matching the selected criteria")
 
-                    if hasScanned && !selectedForRemoval.isEmpty {
+                    if hasScanned && !selectedBooks.isEmpty {
                         Spacer()
-                        Button("Remove \(selectedForRemoval.count) Selected", role: .destructive) {
-                            let booksToRemove = libraryViewModel.library.books.filter {
-                                selectedForRemoval.contains($0.id)
-                            }
-                            // Use removeBooksAndDelete directly — the user already
-                            // confirmed by pressing this button, and removeBooks would
-                            // try to show a nested confirmation dialog inside this sheet
-                            libraryViewModel.removeBooksAndDelete(booksToRemove)
-                            selectedForRemoval = []
-                            // Re-scan with updated library after a brief delay for state to settle
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                runScan()
-                            }
-                        }
-                        .accessibilityLabel("Remove \(selectedForRemoval.count) selected books from library")
+                        DuplicateRemovalButton(
+                            wording: RemovalWording(removalPreferences.deletionMode, books: selectedBooks),
+                            action: requestRemoval
+                        )
                     }
                 }
                 .padding(.top, 4)
+
+                // What the last removal did, also announced when it happened.
+                if let outcome = removalOutcome, let message = outcome.message {
+                    Text(message)
+                        .font(.callout)
+                        .foregroundColor(outcome.succeeded ? .secondary : .red)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding()
 
@@ -278,6 +334,21 @@ struct DuplicateFinderView: View {
         }
         .frame(width: 600, height: 550)
         .navigationTitle("Find Duplicates")
+        .trackingRemovalPreferences($removalPreferences)
+        // The confirmation is presented from the sheet itself, so the
+        // confirmation preference is honored here too.
+        .alert(
+            pendingRemoval?.wording.confirmationTitle ?? "",
+            isPresented: isConfirmingRemoval,
+            presenting: pendingRemoval
+        ) { removal in
+            Button(removal.wording.buttonTitle, role: .destructive) {
+                finishRemoval(of: removal.bookIDs)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { removal in
+            Text(removal.wording.confirmationMessage)
+        }
     }
 
     // MARK: - Scan Logic
@@ -307,6 +378,52 @@ struct DuplicateFinderView: View {
             isbnCache: isbnCache
         )
         hasScanned = true
+    }
+
+    // MARK: - Removal
+
+    /// The books selected for removal that are still in the library.
+    private var selectedBooks: [Book] {
+        libraryViewModel.library.books.filter { selectedForRemoval.contains($0.id) }
+    }
+
+    /// Whether the removal confirmation is showing; dismissing it drops the
+    /// pending removal.
+    private var isConfirmingRemoval: Binding<Bool> {
+        Binding(
+            get: { pendingRemoval != nil },
+            set: { isShowing in
+                if !isShowing { pendingRemoval = nil }
+            }
+        )
+    }
+
+    /// Removes the selected books, first asking inside this sheet when
+    /// "Confirm before removing a book" is on.
+    private func requestRemoval() {
+        let books = selectedBooks
+        guard !books.isEmpty else { return }
+        let bookIDs = Set(books.map(\.id))
+        switch DuplicateRemoval.firstStep(removing: books, preferences: removalPreferences) {
+        case .confirm(let wording):
+            pendingRemoval = PendingRemoval(bookIDs: bookIDs, wording: wording)
+        case .removeNow:
+            finishRemoval(of: bookIDs)
+        }
+    }
+
+    /// Removes the books, shows what happened under the buttons and has
+    /// VoiceOver announce it, keeps any book that stayed in the library
+    /// selected so it can be tried again, and scans again.
+    private func finishRemoval(of bookIDs: Set<UUID>) {
+        let outcome = DuplicateRemoval.remove(bookIDs, from: libraryViewModel)
+        removalOutcome = outcome
+        if let message = outcome.message {
+            VoiceOverAnnouncer.announce(message)
+        }
+        let remaining = Set(libraryViewModel.library.books.map(\.id))
+        selectedForRemoval.formIntersection(remaining)
+        runScan()
     }
 
     // MARK: - Helpers
