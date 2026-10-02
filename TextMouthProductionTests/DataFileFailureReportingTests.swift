@@ -1,10 +1,11 @@
 import XCTest
 @testable import TextMouth
 
-/// A save of the listening statistics that fails is reported to the failure
-/// center with the file's path and a retry, instead of only being printed,
-/// and the next save that succeeds settles it (TODO S09). Each test writes
-/// a file of its own in a folder it makes read-only.
+/// A save of the listening statistics or the settings that fails is
+/// reported to the failure center with the file's path and a retry, instead
+/// of only being logged, and the next save that succeeds settles it (TODO
+/// S09). Each test writes a file of its own, made to fail by a read-only
+/// folder or an injected write.
 @MainActor
 final class DataFileFailureReportingTests: XCTestCase {
     // MARK: - Statistics
@@ -50,6 +51,55 @@ final class DataFileFailureReportingTests: XCTestCase {
         defer { relaunched.shutdown() }
         XCTAssertEqual(relaunched.stats.finishedBooks.map(\.title), ["Read Through"])
         XCTAssertEqual(recorder.announcements.map(\.message), ["Listening statistics saved."])
+    }
+
+    // MARK: - Settings
+
+    /// A settings save that cannot be written is reported with config.json's
+    /// path, in place of only the debug log line; Retry saves the settings
+    /// once writing works again, and settles the failure.
+    func testAFailedSettingsSaveIsReportedAndRetrySavesTheSettings() throws {
+        let center = cleanSharedFailureCenter()
+        let refusing = FailureSwitch()
+        let url = try makeTestDirectory("SettingsFailure").appendingPathComponent("config.json")
+        let service = ConfigService(fileURL: url, fileOperations: ConfigService.FileOperations(
+            write: { data, url in
+                try refusing.throwIfOn()
+                try data.write(to: url, options: .atomic)
+            },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+
+        service.config.wordsPerMinute = 425
+        service.saveToDisk()
+
+        let failure = try XCTUnwrap(center.outstandingFailures().first)
+        XCTAssertEqual(failure.subject, .configuration)
+        XCTAssertEqual(failure.path, url.path)
+        XCTAssertEqual(failure.sentence, "Settings could not be saved: The volume is read-only.")
+        XCTAssertEqual(debugLogLines(containing: "CONFIG_FILE: could not save \(url.path)").count, 1)
+
+        refusing.isOn = false
+        recordingAnnouncements { center.retry(.configuration) }
+
+        XCTAssertFalse(center.hasUnsavedChanges)
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).wordsPerMinute, 425)
+    }
+
+    /// A save that finds config.json already holding the settings has
+    /// nothing to write, and still settles an earlier failure: the settings
+    /// are on disk.
+    func testASaveThatFindsTheSettingsOnDiskSettlesAFailure() throws {
+        let center = cleanSharedFailureCenter()
+        let url = try makeTestDirectory("SettingsOnDisk").appendingPathComponent("config.json")
+        let service = ConfigService(fileURL: url)
+        center.recordFailure(.configuration, path: url.path, error: WriteRefused())
+        try ConfigService.fileData(for: service.config).write(to: url)
+
+        service.saveToDisk()
+
+        XCTAssertFalse(center.hasUnsavedChanges)
     }
 
     // MARK: - Helpers

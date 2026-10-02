@@ -22,6 +22,24 @@ final class CallLog<Value> {
     }
 }
 
+/// A switch a test flips to make an injected file operation fail or work.
+/// Main-actor isolated, so `@Sendable` closures may capture it.
+@MainActor
+final class FailureSwitch {
+    /// Whether the operation fails.
+    var isOn: Bool
+
+    /// A switch that starts on (failing) unless told otherwise.
+    init(isOn: Bool = true) {
+        self.isOn = isOn
+    }
+
+    /// Throws `WriteRefused` while the switch is on.
+    func throwIfOn() throws {
+        if isOn { throw WriteRefused() }
+    }
+}
+
 /// A folder standing where a file is written, so every write of that file
 /// fails ("Is a directory") until `clear()` puts back what was there. Only
 /// that one file is affected, which matters in the hosted test root that
