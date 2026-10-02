@@ -211,10 +211,10 @@ final class ReaderViewModel: ObservableObject {
     /// Debounce skip calls — ignore rapid-fire duplicates.
     /// Accessed from Navigation extension.
     var lastSkipTime: Date = .distantPast
-    /// Pre-rendered audio engine for the next chapter (for seamless chapter transitions).
+    /// The next speakable chapter, rendered ahead so it can start the moment
+    /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
-    var nextChapterEngine: AudioEngineService?
-    var nextChapterIndex: Int?
+    var lookAhead: LookAhead?
     /// Incremented on every navigation/skip action. The onUtteranceFinished callback
     /// checks this to ignore stale completions from a chapter that was playing before
     /// the user navigated away.
@@ -482,17 +482,17 @@ final class ReaderViewModel: ObservableObject {
 
             // Use the pre-rendered engine for an instant start when it holds
             // this chapter's audio
-            if let preEngine = self.nextChapterEngine,
-               self.nextChapterIndex == nextIndex,
-               preEngine.hasRenderedAudio {
+            if let lookAhead = self.lookAhead,
+               lookAhead.chapterIndex == nextIndex,
+               lookAhead.engine.hasRenderedAudio {
                 self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
                 // The prepared speech's map covers every pipeline stage
                 self.currentTransformation = speech.transformation
                 self.currentOffsetMap = speech.offsetMap
-                self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
-                self.nextChapterEngine = nil
-                self.nextChapterIndex = nil
-                // Pre-render the chapter after that
+                self.speechService.usePreRenderedEngine(lookAhead.engine, text: speech.text)
+                // The adopted look-ahead is used up; forget it without
+                // cancelling, then pre-render the chapter after that
+                self.lookAhead = nil
                 self.preRenderNextChapter()
             } else {
                 self.startSpeaking(SpeechStart(speech: speech, offset: 0))

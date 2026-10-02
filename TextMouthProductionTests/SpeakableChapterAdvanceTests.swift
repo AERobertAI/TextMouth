@@ -533,7 +533,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
 
             reader.play()
             let spokenText = reader.currentTransformation?.modifiedText
-            let lookAhead = reader.nextChapterIndex
+            let lookAhead = reader.lookAhead?.chapterIndex
             finishChapter(reader)
             settle()
 
@@ -565,7 +565,7 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             defer { visits.cancel() }
 
             reader.play()
-            let lookAhead = reader.nextChapterIndex
+            let lookAhead = reader.lookAhead?.chapterIndex
             finishChapter(reader)
             let continuedSpeaking = reader.speechService.isSpeaking
             silence(reader)
@@ -590,16 +590,16 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
                 Chapter(title: "Three", text: "Third chapter."),
             ]
         ) { reader in
-            reader.nextChapterEngine = AudioEngineService()
-            reader.nextChapterIndex = 1
+            let earlierEngine = AudioEngineService()
+            reader.lookAhead = ReaderViewModel.LookAhead(chapterIndex: 1, engine: earlierEngine)
             reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first))
 
             reader.preRenderNextChapter()
             // Keep the newly queued render from starting.
             reader.chapterPlaybackGeneration += 1
 
-            XCTAssertNil(reader.nextChapterEngine)
-            XCTAssertEqual(reader.nextChapterIndex, 2)
+            XCTAssertFalse(reader.lookAhead?.engine === earlierEngine)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 2)
         }
     }
 
@@ -613,13 +613,11 @@ final class SpeakableChapterAdvanceTests: XCTestCase {
             ],
             skipping: ["Notes"]
         ) { reader in
-            reader.nextChapterEngine = AudioEngineService()
-            reader.nextChapterIndex = 1
+            reader.lookAhead = ReaderViewModel.LookAhead(chapterIndex: 1, engine: AudioEngineService())
 
             reader.preRenderNextChapter()
 
-            XCTAssertNil(reader.nextChapterEngine)
-            XCTAssertNil(reader.nextChapterIndex)
+            XCTAssertNil(reader.lookAhead)
         }
     }
 
