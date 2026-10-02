@@ -11,6 +11,9 @@ struct BookReaderWindowView: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
     @EnvironmentObject var soundEffectService: SoundEffectService
     @StateObject private var viewModel: ReaderViewModel
+    /// Opens reader windows. Lent to the router for the app delegate's
+    /// Continue to Next Book fallback, which has no openWindow of its own.
+    @Environment(\.openWindow) private var openWindow
 
     init(bookID: UUID, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
         self.bookID = bookID
@@ -29,10 +32,18 @@ struct BookReaderWindowView: View {
     }
 
     var body: some View {
+        // Read while the view is installed, as SwiftUI requires, and kept
+        // by the router for opening the next book's reader from here.
+        let openReaderWindow = openWindow
         ReaderView(viewModel: viewModel)
             .background(WindowAccessor(
                 onWindowFound: { window in
                     viewModel.hostWindow = window
+                    // With no Library window open, the app delegate opens
+                    // the next book's reader from a reader window like this.
+                    LibraryWindowRouter.shared.registerReaderWindow(window) { bookID in
+                        openReaderWindow(id: Self.windowID, value: bookID)
+                    }
                     NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
                 },
                 onWindowBecameKey: {
@@ -47,6 +58,9 @@ struct BookReaderWindowView: View {
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
+                if let window = viewModel.hostWindow {
+                    LibraryWindowRouter.shared.unregisterReaderWindow(window)
+                }
                 viewModel.close()
             }
             .frame(minWidth: 600, minHeight: 400)
