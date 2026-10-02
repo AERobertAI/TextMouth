@@ -357,6 +357,27 @@ final class StagedImportTests: XCTestCase {
         }
     }
 
+    /// An archive that cannot be extracted at all fails as a whole, naming
+    /// the archive and the step in plain words, logged once, with nothing
+    /// imported and the archive left as it was.
+    func testArchiveThatCannotBeExtractedFailsNamingIt() throws {
+        let archive = sources.appendingPathComponent("Torn Download \(UUID().uuidString.prefix(8)).zip")
+        try Data("not a ZIP archive".utf8).write(to: archive)
+        let bytes = try Data(contentsOf: archive)
+
+        XCTAssertThrowsError(try FileImportService.importZip(from: archive, toFolder: folderPath)) { error in
+            XCTAssertEqual((error as? ImportFailure)?.fileName, archive.lastPathComponent)
+            XCTAssertEqual(
+                (error as? ImportFailure)?.reason,
+                "Extracting the archive failed: The archive is damaged, incomplete, or not a ZIP archive."
+            )
+        }
+
+        XCTAssertEqual(try Data(contentsOf: archive), bytes)
+        XCTAssertEqual(try folderEntries(), [])
+        XCTAssertEqual(debugLogLines(containing: "IMPORT_FAILED: \(archive.lastPathComponent): Extracting the archive failed: ").count, 1)
+    }
+
     // MARK: - Fixtures
 
     /// Bytes that no text decoder can read, saved under a text file's name.

@@ -31,6 +31,12 @@ enum FileImportError: LocalizedError {
     /// ("Operation Stopped") that do not tell a listener what is wrong. The
     /// file is described as playback describes such a file.
     case unplayableAudio(AudioPlaybackFailure)
+    /// A ZIP archive could not be read. ZIPFoundation's own errors carry no
+    /// description a listener could use ("ArchiveError error 13").
+    case unreadableArchive
+    /// A ZIP archive holds a link to a file outside it, which ZIPFoundation
+    /// refuses to extract.
+    case archiveLinksOutside
 
     var errorDescription: String? {
         switch self {
@@ -39,6 +45,8 @@ enum FileImportError: LocalizedError {
         case .importFailed(let msg): return "Import failed: \(msg)"
         case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written."
         case .unplayableAudio(let failure): return failure.message
+        case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive."
+        case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
         }
     }
 }
@@ -700,19 +708,26 @@ enum FileImportService {
     /// Pass existingHashes to skip files whose content already exists in the library,
     /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns imported books together with any per-file failures.
+    /// - Throws: an `ImportFailure` naming the archive when it cannot be
+    ///   extracted at all. A book inside it that fails is listed in the
+    ///   result's failures instead, and the others still import.
     static func importZip(
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil
     ) throws -> ZipImportResult {
-        try TextMouthPaths.ensureDirectoryStructure()
-
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        try FileManager.default.unzipItem(at: zipURL, to: tempDir)
+        // Extraction is the one archive-wide step that can fail; each book
+        // in the archive then imports, or fails, on its own.
+        try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
+            try run.begin(.extractingArchive)
+            try TextMouthPaths.ensureDirectoryStructure()
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            try extractArchive(zipURL, into: tempDir)
+        }
 
         // First pass: find all supported files, including nested ZIP files
         // that contain DAISY packages
@@ -1027,7 +1042,7 @@ enum FileImportService {
 
             try run.begin(.extractingArchive, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            try FileManager.default.unzipItem(at: zipURL, to: audioDirectory)
+            try extractArchive(zipURL, into: audioDirectory)
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName
@@ -1054,6 +1069,20 @@ enum FileImportService {
                 source: zipURL
             )
             return try publishReadableBook(staged, from: staging, run: &run)
+        }
+    }
+
+    /// Extracts the ZIP archive at `archive` into `directory`. ZIPFoundation's
+    /// own errors have no description a listener could use, so they are
+    /// told in plain words; other errors, such as a missing archive or a
+    /// full disk, already describe themselves.
+    private static func extractArchive(_ archive: URL, into directory: URL) throws {
+        do {
+            try FileManager.default.unzipItem(at: archive, to: directory)
+        } catch Archive.ArchiveError.uncontainedSymlink {
+            throw FileImportError.archiveLinksOutside
+        } catch is Archive.ArchiveError {
+            throw FileImportError.unreadableArchive
         }
     }
 
