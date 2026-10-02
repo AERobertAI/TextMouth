@@ -422,4 +422,49 @@ final class HostedTestIsolationTests: XCTestCase {
 
         XCTAssertEqual(UserPreferenceFingerprint(UserPreferenceFingerprint.textMouthKeys + keys), usersPreferences)
     }
+
+    // MARK: - VoiceOver Announcements
+
+    /// The app posts its announcements to VoiceOver; a process hosting tests
+    /// records them instead.
+    func testOnlyTheAppPostsAnnouncements() {
+        let app = TextMouthRuntime.detect(
+            environment: [:],
+            processIdentifier: 4242,
+            temporaryDirectory: FileManager.default.temporaryDirectory
+        )
+
+        XCTAssertEqual(VoiceOverAnnouncer.defaultDelivery(for: app), .post)
+        XCTAssertEqual(VoiceOverAnnouncer.defaultDelivery(for: .current), .record)
+    }
+
+    /// An announcement a test does not capture itself is recorded, where a
+    /// test can still find it, and never reaches VoiceOver on the machine
+    /// running the suite.
+    func testUncapturedAnnouncementIsRecordedInsteadOfPosted() {
+        let message = "Isolation check \(UUID().uuidString)"
+
+        VoiceOverAnnouncer.announce(message, priority: .low)
+
+        XCTAssertEqual(
+            VoiceOverAnnouncer.recordedAnnouncements.last,
+            VoiceOverAnnouncement(message: message, priority: .low)
+        )
+    }
+
+    /// The recording poster delivers to the record and nowhere else; a
+    /// capture a test installs still takes precedence over it.
+    func testRecordingPosterKeepsAnnouncementsAndYieldsToACapture() {
+        let recording = VoiceOverAnnouncer.makePoster(delivering: .record)
+        let countBefore = VoiceOverAnnouncer.recordedAnnouncements.count
+
+        recording(VoiceOverAnnouncement(message: "Recorded", priority: .medium), nil)
+        let captured = recordingAnnouncements {
+            VoiceOverAnnouncer.announce("Captured")
+        }
+
+        XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.count, countBefore + 1)
+        XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.last?.message, "Recorded")
+        XCTAssertEqual(captured.announcements.map(\.message), ["Captured"])
+    }
 }

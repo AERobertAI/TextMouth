@@ -15,15 +15,49 @@ struct VoiceOverAnnouncement: Equatable {
 /// announce through `announce`, so the notification format and the choice of
 /// window live in one place. Tests replace `poster` to capture announcements
 /// without a window, a running screen reader, or AppKit posting.
+///
+/// In a process hosting tests the default poster records instead of posting
+/// (see `Delivery`), so a test that does not capture its announcements never
+/// makes VoiceOver speak on the machine running the suite.
 @MainActor
 enum VoiceOverAnnouncer {
     /// Delivers one announcement. `window` is the caller's preferred window,
     /// or nil when the caller has none.
     typealias Poster = @MainActor (_ announcement: VoiceOverAnnouncement, _ window: NSWindow?) -> Void
 
-    /// The poster in use: `postThroughAccessibility` in the app. A test may
-    /// install its own, and must put the previous poster back when it ends.
-    static var poster: Poster = postThroughAccessibility
+    /// How the default poster delivers an announcement.
+    enum Delivery: Equatable {
+        /// Ask VoiceOver to speak it, as the app does.
+        case post
+        /// Keep it in `recordedAnnouncements` without posting, as a process
+        /// hosting tests does.
+        case record
+    }
+
+    /// The delivery a process with `runtime` starts with: posting in the
+    /// app, recording under hosted tests.
+    nonisolated static func defaultDelivery(for runtime: TextMouthRuntime) -> Delivery {
+        runtime.isHostedTest ? .record : .post
+    }
+
+    /// The poster in use: at first the one this process's runtime calls for
+    /// (see `defaultDelivery(for:)`). A test may install its own, and must
+    /// put the previous poster back when it ends.
+    static var poster: Poster = makePoster(delivering: defaultDelivery(for: .current))
+
+    /// The announcements the recording poster kept instead of posting, oldest
+    /// first. The app never records any.
+    private(set) static var recordedAnnouncements: [VoiceOverAnnouncement] = []
+
+    /// The poster that delivers announcements as `delivery` says.
+    static func makePoster(delivering delivery: Delivery) -> Poster {
+        switch delivery {
+        case .post:
+            return postThroughAccessibility
+        case .record:
+            return { announcement, _ in recordedAnnouncements.append(announcement) }
+        }
+    }
 
     /// Asks VoiceOver to speak `message`.
     ///
