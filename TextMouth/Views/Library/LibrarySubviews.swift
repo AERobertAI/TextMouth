@@ -8,11 +8,19 @@ import SwiftUI
 struct EditModeBar: View {
     let selectedCount: Int
     let totalCount: Int
+    /// Whether removing asks first and where deleted files go, so the
+    /// Remove button says what it will do.
+    let removalPreferences: RemovalPreferences
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
     let onMove: () -> Void
     let onRemove: () -> Void
     let onDone: () -> Void
+
+    /// The words for removing the selected books.
+    private var removal: LibraryRemoveCommandWording {
+        LibraryRemoveCommandWording(preferences: removalPreferences, count: selectedCount)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -35,9 +43,10 @@ struct EditModeBar: View {
                 .disabled(selectedCount == 0)
                 .accessibilityLabel("Move \(selectedCount) \(selectedCount == 1 ? "book" : "books") to folder")
 
-            Button("Remove", role: .destructive) { onRemove() }
+            Button(removal.shortTitle, role: .destructive) { onRemove() }
                 .disabled(selectedCount == 0)
-                .accessibilityLabel("Remove \(selectedCount) \(selectedCount == 1 ? "book" : "books") from library")
+                .accessibilityLabel(removal.accessibilityLabel)
+                .accessibilityHint(removal.accessibilityHint)
 
             Button("Done") { onDone() }
                 .fontWeight(.semibold)

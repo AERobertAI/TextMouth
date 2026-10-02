@@ -203,6 +203,7 @@ struct LibraryView: View {
                 EditModeBar(
                     selectedCount: effectiveSelection.count,
                     totalCount: filteredBooks.count,
+                    removalPreferences: removalPreferences,
                     onSelectAll: {
                         editSelection = Set(filteredBooks.map { $0.id })
                     },
@@ -369,7 +370,15 @@ struct LibraryView: View {
                                     }
                                 }
                                 Divider()
-                                Button(isMulti ? "Remove \(targetBooks.count) Books from Library" : "Remove from Library", role: .destructive) {
+                                // Says what removal will do: ask first, or
+                                // move the files to the Trash, or delete them.
+                                Button(
+                                    LibraryRemoveCommandWording(
+                                        preferences: removalPreferences,
+                                        books: targetBooks
+                                    ).menuTitle,
+                                    role: .destructive
+                                ) {
                                     libraryViewModel.removeBooks(targetBooks)
                                     clearAllSelections()
                                 }

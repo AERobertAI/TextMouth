@@ -152,6 +152,59 @@ final class RemovalWordingTests: XCTestCase {
         )
     }
 
+    // MARK: - The Library's Remove Command
+
+    /// With confirmation on, the library's Remove command says it removes
+    /// from the library and that it will ask how; with it off, it says where
+    /// the files go. Menu titles say it all, since menus read titles only.
+    func testLibraryRemoveCommandWording() {
+        let asks = LibraryRemoveCommandWording(
+            preferences: RemovalPreferences(confirmsFirst: true, movesToTrash: true),
+            count: 3
+        )
+        XCTAssertEqual(asks.menuTitle, "Remove 3 Books from Library...")
+        XCTAssertEqual(asks.shortTitle, "Remove...")
+        XCTAssertEqual(asks.accessibilityLabel, "Remove 3 books from the library")
+        XCTAssertEqual(
+            asks.accessibilityHint,
+            "Asks whether to move the files to the Trash or keep them in the TextMouth library folder."
+        )
+
+        let asksAboutOne = LibraryRemoveCommandWording(
+            preferences: RemovalPreferences(confirmsFirst: true, movesToTrash: false),
+            count: 1,
+            title: "Field Notes"
+        )
+        XCTAssertEqual(asksAboutOne.menuTitle, "Remove from Library...")
+        XCTAssertEqual(asksAboutOne.accessibilityLabel, "Remove “Field Notes” from the library")
+        XCTAssertEqual(
+            asksAboutOne.accessibilityHint,
+            "Asks whether to delete the files permanently or keep them in the TextMouth library folder."
+        )
+
+        let trashes = LibraryRemoveCommandWording(
+            preferences: RemovalPreferences(confirmsFirst: false, movesToTrash: true),
+            count: 1,
+            title: "Field Notes"
+        )
+        XCTAssertEqual(trashes.menuTitle, "Move to Trash")
+        XCTAssertEqual(trashes.shortTitle, "Move to Trash")
+        XCTAssertEqual(trashes.accessibilityLabel, "Move “Field Notes” to the Trash")
+        XCTAssertEqual(
+            trashes.accessibilityHint,
+            "Its files go to the Trash, where you can recover them until the Trash is emptied."
+        )
+
+        let deletes = LibraryRemoveCommandWording(
+            preferences: RemovalPreferences(confirmsFirst: false, movesToTrash: false),
+            count: 3
+        )
+        XCTAssertEqual(deletes.menuTitle, "Delete 3 Books Permanently")
+        XCTAssertEqual(deletes.shortTitle, "Delete Permanently")
+        XCTAssertEqual(deletes.accessibilityLabel, "Delete 3 books permanently")
+        XCTAssertEqual(deletes.accessibilityHint, "Their files are deleted permanently and cannot be recovered.")
+    }
+
     // MARK: - Deleting a Folder
 
     /// Delete Everything says whether the folder's files go to the Trash or

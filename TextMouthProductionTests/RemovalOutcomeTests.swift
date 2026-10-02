@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -168,19 +169,33 @@ final class RemovalOutcomeTests: XCTestCase {
         }
     }
 
-    /// VoiceOver hears the finder's removal button say exactly what it does.
-    /// SwiftUI may build accessibility elements for its buttons only for a
-    /// connected assistive app; when it exposes none here, the test is
-    /// skipped, and the label is still covered by the wording tests.
-    func testDuplicateFinderButtonLabelReachesAccessibility() throws {
-        let wording = RemovalWording(.moveToTrash, count: 2)
+    /// VoiceOver hears each removal button say exactly what it does: the
+    /// Duplicate Finder's and the library edit bar's. SwiftUI may build
+    /// accessibility elements for its buttons only for a connected assistive
+    /// app; when it exposes none here, the test is skipped, and the labels
+    /// are still covered by the wording tests.
+    func testRemovalButtonLabelsReachAccessibility() throws {
+        let buttons = VStack {
+            DuplicateRemovalButton(wording: RemovalWording(.moveToTrash, count: 2), action: {})
+            EditModeBar(
+                selectedCount: 2,
+                totalCount: 5,
+                removalPreferences: RemovalPreferences(confirmsFirst: false, movesToTrash: false),
+                onSelectAll: {},
+                onDeselectAll: {},
+                onMove: {},
+                onRemove: {},
+                onDone: {}
+            )
+        }
 
-        try withHostedControls(DuplicateRemovalButton(wording: wording, action: {})) { controls in
-            let buttons = controls.filter { $0.role == .button }
-            guard !buttons.isEmpty else {
+        try withHostedControls(buttons) { controls in
+            let labels = controls.filter { $0.role == .button }.map(\.label)
+            guard !labels.isEmpty else {
                 throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
             }
-            XCTAssertEqual(buttons.map(\.label), ["Move 2 selected books to the Trash"])
+            XCTAssertTrue(labels.contains("Move 2 selected books to the Trash"), "\(labels)")
+            XCTAssertTrue(labels.contains("Delete 2 books permanently"), "\(labels)")
         }
     }
 

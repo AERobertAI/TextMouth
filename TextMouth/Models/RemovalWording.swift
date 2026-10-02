@@ -224,6 +224,63 @@ struct RemovalChoiceWording: Equatable {
     }
 }
 
+// MARK: - The Library's Remove Command
+
+/// The words for the library's Remove command in the book context menu and
+/// the edit bar. With "Confirm before removing a book" on, it asks how to
+/// remove the books, so it promises nothing about their files; with it off,
+/// it deletes them at once, so it says how.
+struct LibraryRemoveCommandWording: Equatable {
+    let preferences: RemovalPreferences
+    /// The words for deleting the books at once in the mode the Trash
+    /// preference chooses.
+    let removal: RemovalWording
+
+    /// The command for `count` books; `title` names the book when there is
+    /// exactly one.
+    init(preferences: RemovalPreferences, count: Int, title: String? = nil) {
+        self.preferences = preferences
+        removal = RemovalWording(preferences.deletionMode, count: count, title: title)
+    }
+
+    /// The command for `books`.
+    init(preferences: RemovalPreferences, books: [Book]) {
+        self.init(preferences: preferences, count: books.count, title: books.first?.title)
+    }
+
+    /// The context-menu item: "Remove from Library..." or "Remove 3 Books
+    /// from Library..." when it asks first, otherwise "Move to Trash",
+    /// "Move 3 Books to Trash", or "Delete 3 Books Permanently". A menu item
+    /// is read by its title, so the title alone must say all of this.
+    var menuTitle: String {
+        guard preferences.confirmsFirst else { return removal.buttonTitle }
+        return removal.count == 1 ? "Remove from Library..." : "Remove \(removal.count) Books from Library..."
+    }
+
+    /// The edit bar's short button: "Remove..." when it asks first,
+    /// otherwise "Move to Trash" or "Delete Permanently".
+    var shortTitle: String {
+        preferences.confirmsFirst ? "Remove..." : removal.mode.buttonTitle()
+    }
+
+    /// What VoiceOver says for the button: "Remove 3 books from the library"
+    /// when it asks first, otherwise "Move 3 books to the Trash".
+    var accessibilityLabel: String {
+        preferences.confirmsFirst ? "Remove \(removal.subject) from the library" : removal.accessibilityLabel
+    }
+
+    /// What VoiceOver adds after a pause: the choice that follows, or what
+    /// happens to the files.
+    var accessibilityHint: String {
+        guard preferences.confirmsFirst else {
+            return removal.mode.filesSentence(plural: removal.count != 1)
+        }
+        let deleting = removal.mode.spokenAction("the files")
+        return "Asks whether to \(deleting.prefix(1).lowercased() + deleting.dropFirst()) "
+            + "or keep them in the TextMouth library folder."
+    }
+}
+
 // MARK: - Removing a Folder
 
 /// The words for Delete Everything: deleting a folder, its subfolders, and
