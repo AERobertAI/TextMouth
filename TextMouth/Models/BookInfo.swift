@@ -146,6 +146,12 @@ struct BookState: Codable {
     var cacheFormatVersion: String?
     /// Version of the persisted BookContentIndex in this package.
     var contentIndexVersion: String?
+    /// How many times this record has been written. Every write of
+    /// bookInfo.json stores at least one more than the record it replaces
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`), so of two
+    /// writes the later carries the higher revision, across restarts too.
+    /// Nil in a record written before revisions were kept, which counts as 0.
+    var revision: Int?
 
     init(
         readingPosition: ReadingPosition? = nil,
@@ -165,7 +171,8 @@ struct BookState: Codable {
         manualSortOrder: Int? = nil,
         audioDuration: TimeInterval? = nil,
         cacheFormatVersion: String? = nil,
-        contentIndexVersion: String? = nil
+        contentIndexVersion: String? = nil,
+        revision: Int? = nil
     ) {
         self.readingPosition = readingPosition
         self.totalWordCount = totalWordCount
@@ -185,6 +192,7 @@ struct BookState: Codable {
         self.audioDuration = audioDuration
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
+        self.revision = revision
     }
 
     /// Decodes saved state, repairing the values `SettingsPolicy` checks
@@ -214,10 +222,32 @@ struct BookState: Codable {
         audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
         cacheFormatVersion = try container.decodeIfPresent(String.self, forKey: .cacheFormatVersion)
         contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+        // Like a count, a revision is never negative. One that cannot be
+        // read counts as none, so the next write numbers from there instead
+        // of the whole record failing over a bookkeeping field.
+        revision = fields.count(.revision)
     }
 }
 
 extension BookState {
+    /// The analysis-owned fields this state records (see
+    /// `Book.ContentAnalysisFields`).
+    var contentAnalysisFields: Book.ContentAnalysisFields {
+        Book.ContentAnalysisFields(
+            totalWordCount: totalWordCount,
+            totalCharacterCount: totalCharacterCount,
+            audioDuration: audioDuration,
+            contentIndexVersion: contentIndexVersion,
+            cacheFormatVersion: cacheFormatVersion
+        )
+    }
+
+    /// The revision that follows `latest`. At `Int.max`, which only a
+    /// hand-edited file could hold, it stays put rather than overflow.
+    static func revision(after latest: Int) -> Int {
+        latest == .max ? latest : latest + 1
+    }
+
     /// Applies the book format's range to `localWPM`: the words-per-minute
     /// range for text, `AudioSpeed` normalization for an audio multiplier.
     /// `BookInfo` calls this once it has decoded the format; `codingPath`

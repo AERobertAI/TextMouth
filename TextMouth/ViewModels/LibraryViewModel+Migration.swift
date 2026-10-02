@@ -9,34 +9,26 @@ private func releaseBatchParserMemory() {
     _ = malloc_zone_pressure_relief(nil, 0)
 }
 
-/// Small value retained until the main actor publishes a completed book. The
-/// full chapter/heading index is already on disk and can be released after each
-/// book instead of pinning parser allocation regions for the entire migration.
+/// Small value retained until the main actor publishes a completed book: the
+/// analysis fields its package records. The full chapter/heading index is
+/// already on disk and can be released after each book instead of pinning
+/// parser allocation regions for the entire migration.
 private struct ContentAnalysisSummary: Sendable {
     let bookID: UUID
-    let cacheFormatVersion: String?
-    let totalWordCount: Int
-    let totalCharacterCount: Int
-    let audioDuration: TimeInterval?
-    let contentIndexVersion: String
+    let fields: Book.ContentAnalysisFields
 
-    init(bookID: UUID, index: BookContentIndex, cacheFormatVersion: String?) {
-        self.bookID = bookID
-        self.cacheFormatVersion = cacheFormatVersion
-        totalWordCount = index.totalWordCount
-        totalCharacterCount = index.totalCharacterCount
-        audioDuration = index.totalAudioDuration
-        contentIndexVersion = index.version
+    /// The analysis fields of `committed`, the book as its package records
+    /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`).
+    init(committed: Book) {
+        bookID = committed.id
+        fields = committed.contentAnalysisFields
     }
 
+    /// Gives `book`, the library row, the committed analysis fields and
+    /// nothing else. The row keeps its own reading state, settings, and
+    /// metadata, which are at least as new as its package's.
     func apply(to book: inout Book) {
-        book.totalWordCount = totalWordCount
-        book.totalCharacterCount = totalCharacterCount
-        book.audioDuration = audioDuration
-        book.contentIndexVersion = contentIndexVersion
-        if let cacheFormatVersion {
-            book.cacheFormatVersion = cacheFormatVersion
-        }
+        book.contentAnalysisFields = fields
     }
 }
 
@@ -235,16 +227,15 @@ extension LibraryViewModel {
 
                     do {
                         let analysis = try BookContentAnalysisService.load(book: book)
-                        try LibraryPersistenceService.saveContentAnalysis(
+                        // `book` is the row as it was when this pass began. The
+                        // result lands on the book's latest state; a dropped one
+                        // leaves the row alone, so a later pass tries again.
+                        guard let committed = try LibraryPersistenceService.saveContentAnalysis(
                             for: book,
                             index: analysis.index,
                             cacheFormatVersion: analysis.cacheFormatVersion
-                        )
-                        let summary = ContentAnalysisSummary(
-                            bookID: book.id,
-                            index: analysis.index,
-                            cacheFormatVersion: analysis.cacheFormatVersion
-                        )
+                        ) else { return true }
+                        let summary = ContentAnalysisSummary(committed: committed)
 
                         DispatchQueue.main.async {
                             guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
@@ -344,17 +335,24 @@ extension LibraryViewModel {
                 if !force, let savedIndex = BookContentAnalysisService.completedTextCacheIndex(for: book) {
                     // An earlier run already committed this book; repairing
                     // the library summary requires no source parsing or writes.
-                    return ContentAnalysisSummary(bookID: book.id, index: savedIndex, cacheFormatVersion: currentVersion)
+                    // The package records this index with the current version.
+                    var recovered = book
+                    recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
+                    return ContentAnalysisSummary(committed: recovered)
                 }
                 var updatedBook = book
                 guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &updatedBook) else {
                     return nil
                 }
                 do {
-                    try LibraryPersistenceService.saveContentAnalysis(
+                    // `book` is the row as it was when the batch was queued. The
+                    // result lands on the book's latest state; a dropped one
+                    // leaves the library version unchanged, so a later pass
+                    // tries again.
+                    guard let committed = try LibraryPersistenceService.saveContentAnalysis(
                         for: updatedBook, index: contentIndex, cacheFormatVersion: currentVersion
-                    )
-                    return ContentAnalysisSummary(bookID: book.id, index: contentIndex, cacheFormatVersion: currentVersion)
+                    ) else { return nil }
+                    return ContentAnalysisSummary(committed: committed)
                 } catch {
                     // Leave the library version unchanged so startup retries
                     // a book whose new index could not be committed.

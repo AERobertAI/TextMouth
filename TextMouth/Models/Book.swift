@@ -292,11 +292,60 @@ struct Book: Identifiable, Codable, Hashable {
         localSkipBackwardUnit.flatMap(SkipUnit.init(rawValue:)) ?? fallback
     }
 
+    /// The fields of a book that content analysis owns: the word and
+    /// character counts, the audio duration, and the versions of the content
+    /// index and text cache they were measured from. An analysis result
+    /// changes these and nothing else, whether it lands in the package
+    /// record or on the library row. Every other field of a book is user
+    /// state or metadata, which only the user's own actions change.
+    struct ContentAnalysisFields: Equatable, Sendable {
+        var totalWordCount: Int?
+        var totalCharacterCount: Int?
+        var audioDuration: TimeInterval?
+        var contentIndexVersion: String?
+        var cacheFormatVersion: String?
+    }
+
+    /// This book's analysis-owned fields. Setting them changes exactly those
+    /// fields, so a record or a row that takes an analysis keeps every
+    /// reading position, bookmark, setting, and edit it had.
+    var contentAnalysisFields: ContentAnalysisFields {
+        get {
+            ContentAnalysisFields(
+                totalWordCount: totalWordCount,
+                totalCharacterCount: totalCharacterCount,
+                audioDuration: audioDuration,
+                contentIndexVersion: contentIndexVersion,
+                cacheFormatVersion: cacheFormatVersion
+            )
+        }
+        set {
+            totalWordCount = newValue.totalWordCount
+            totalCharacterCount = newValue.totalCharacterCount
+            audioDuration = newValue.audioDuration
+            contentIndexVersion = newValue.contentIndexVersion
+            cacheFormatVersion = newValue.cacheFormatVersion
+        }
+    }
+
+    /// Records a completed analysis of this book: the statistics and version
+    /// of `index` and, when the analysis vouches for one, the version of the
+    /// text cache it read or wrote. A nil `cacheFormatVersion` keeps the
+    /// book's own, since such an analysis says nothing about the cache.
+    mutating func applyContentAnalysis(_ index: BookContentIndex, cacheFormatVersion: String?) {
+        contentAnalysisFields = ContentAnalysisFields(
+            totalWordCount: index.totalWordCount,
+            totalCharacterCount: index.totalCharacterCount,
+            audioDuration: index.totalAudioDuration,
+            contentIndexVersion: index.version,
+            cacheFormatVersion: cacheFormatVersion ?? self.cacheFormatVersion
+        )
+    }
+
+    /// Records the statistics and version of `index`, keeping the book's text
+    /// cache version (see `applyContentAnalysis(_:cacheFormatVersion:)`).
     mutating func applyContentIndexSummary(_ index: BookContentIndex) {
-        totalWordCount = index.totalWordCount
-        totalCharacterCount = index.totalCharacterCount
-        audioDuration = index.totalAudioDuration
-        contentIndexVersion = index.version
+        applyContentAnalysis(index, cacheFormatVersion: nil)
     }
 
     /// Whether this book overrides any global voice, speed, or pitch setting.
@@ -402,19 +451,52 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// Throwing variant used by filesystem transactions that must roll back if
-    /// metadata cannot be committed alongside a package move.
+    /// metadata cannot be committed alongside a package move. Writes over the
+    /// record now in the package as `bookInfo(replacing:contentIndex:revisionFloor:)`
+    /// describes.
     func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil) throws {
-        var info = makeBookInfo()
-        if let contentIndex {
-            info.contentIndex = contentIndex
-        } else if let existing = try? BookInfo.load(from: tmbDirectory) {
-            // Metadata/position saves must not erase an analysis produced by a
-            // background migration or import.
-            info.contentIndex = existing.contentIndex
-        }
-        try info.save(to: tmbDirectory)
+        try bookInfo(replacing: storedBookInfo(), contentIndex: contentIndex).save(to: tmbDirectory)
     }
 
+    /// The bookInfo.json now in this book's package, or nil when there is
+    /// none or it cannot be read.
+    func storedBookInfo() -> BookInfo? {
+        try? BookInfo.load(from: tmbDirectory)
+    }
+
+    /// The bookInfo.json this book writes over `stored`, the record now in
+    /// its package (nil when there is none or it cannot be read).
+    ///
+    /// The content index and the analysis fields measured with it
+    /// (`ContentAnalysisFields`) travel together. A write that carries
+    /// `contentIndex` records it with this book's analysis fields, which
+    /// describe it. A write without one, such as a position, bookmark, or
+    /// metadata save, keeps the stored index together with the stored
+    /// fields: a library row can lag behind an analysis committed moments
+    /// earlier, and its older counts and versions must neither erase that
+    /// analysis nor be recorded beside an index they do not describe. Only
+    /// when no index is stored does such a write record its own fields.
+    ///
+    /// The revision is one more than the stored record's, or one more than
+    /// `revisionFloor` when that is higher. The metadata queue passes the
+    /// highest revision it has written for this book, so its revisions keep
+    /// rising even when the stored record has lost its own.
+    func bookInfo(replacing stored: BookInfo?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
+        var recorded = self
+        var index = contentIndex
+        if index == nil, let stored, let storedIndex = stored.contentIndex {
+            index = storedIndex
+            recorded.contentAnalysisFields = stored.state.contentAnalysisFields
+        }
+        var info = recorded.makeBookInfo()
+        info.contentIndex = index
+        info.state.revision = BookState.revision(after: max(stored?.state.revision ?? 0, revisionFloor))
+        return info
+    }
+
+    /// This book's metadata, state, and bookmarks as bookInfo.json records
+    /// them, without a content index or revision: those depend on the record
+    /// being replaced (`bookInfo(replacing:contentIndex:revisionFloor:)`).
     func makeBookInfo() -> BookInfo {
         BookInfo(
             metadata: BookMetadata(
@@ -459,6 +541,54 @@ struct Book: Identifiable, Codable, Hashable {
                 contentIndexVersion: contentIndexVersion
             ),
             bookmarks: bookmarks
+        )
+    }
+
+    /// The book a package record describes, the inverse of `makeBookInfo()`.
+    /// Every field bookInfo.json keeps comes from `record`. The file path,
+    /// folder, and package name come from where the caller found the
+    /// package, because a record cannot vouch for where its package is now.
+    init(record: BookInfo, filePath: String, folderPath: String, tmbDirectoryName: String) {
+        let metadata = record.metadata
+        let state = record.state
+        self.init(
+            id: metadata.bookID,
+            title: metadata.title,
+            author: metadata.author,
+            format: metadata.format,
+            filePath: filePath,
+            md5Hash: metadata.md5Hash,
+            folderPath: folderPath,
+            dateAdded: metadata.dateAdded,
+            lastOpened: metadata.lastOpened,
+            readingPosition: state.readingPosition,
+            bookmarks: record.bookmarks,
+            totalWordCount: state.totalWordCount,
+            totalCharacterCount: state.totalCharacterCount,
+            tmbDirectoryName: tmbDirectoryName,
+            sourceFilePath: metadata.sourceFilePath,
+            lastPlaybackStarted: state.lastPlaybackStarted,
+            lastPlaybackStopped: state.lastPlaybackStopped,
+            localVoiceID: state.localVoiceID,
+            localWPM: state.localWPM,
+            localPitch: state.localPitch,
+            skippedHeadingIDs: state.skippedHeadingIDs,
+            localEndOfBookBehavior: state.localEndOfBookBehavior,
+            localSkipForwardUnit: state.localSkipForwardUnit,
+            localSkipBackwardUnit: state.localSkipBackwardUnit,
+            manualSortOrder: state.manualSortOrder,
+            audioDuration: state.audioDuration,
+            audioAlbum: metadata.audioAlbum,
+            audioGenre: metadata.audioGenre,
+            audioYear: metadata.audioYear,
+            epubPublisher: metadata.publisher,
+            epubPublicationDate: metadata.publicationDate,
+            epubISBN: metadata.isbn,
+            epubLanguage: metadata.language,
+            epubIdentifier: metadata.epubIdentifier,
+            epubVersion: metadata.epubVersion,
+            cacheFormatVersion: state.cacheFormatVersion,
+            contentIndexVersion: state.contentIndexVersion
         )
     }
 }

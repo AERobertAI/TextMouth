@@ -24,8 +24,31 @@ enum LibraryPersistenceService {
         label: "com.textmouth.libraryPersistence",
         qos: .utility
     )
-    /// Serialize package metadata writes as well. This prevents a frequent
-    /// position save from overwriting an index produced by background analysis.
+    /// Every package metadata (bookInfo.json) write this service makes runs
+    /// on this serial queue and ends in `writeBookInfo`, which drops writes
+    /// into packages Remove from Library Only retired and gives each record
+    /// the next revision. Its ordering guarantee, for each book:
+    ///
+    /// 1. A save waits half a second as the book's pending snapshot. A newer
+    ///    save replaces it, and only the newest snapshot's debounce block
+    ///    writes (`bookInfoGenerations`), so an older state is never
+    ///    written after a newer one.
+    /// 2. The latest durable state of a book is therefore its pending
+    ///    snapshot while one waits, and otherwise its bookInfo.json on disk.
+    /// 3. An analysis result is merged into that latest state on this queue
+    ///    (`saveContentAnalysis`), so no save can land between reading the
+    ///    state and writing the merge. It changes only the analysis fields
+    ///    and the content index, and a later save without an index keeps
+    ///    both (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`), so
+    ///    neither kind of write undoes the other, in either order.
+    /// 4. Revisions only rise: each write stores one more than both the
+    ///    record it replaces and the highest revision written here before.
+    /// 5. Library index writes run on `saveQueue`, so suspending them while
+    ///    the index cannot be read never holds back a package write.
+    ///
+    /// Imports, folder moves, and migrations write records directly
+    /// (`Book.saveBookInfoThrowing`), under the same index and revision
+    /// rules but outside this order.
     private static let bookInfoSaveQueue = DispatchQueue(
         label: "com.textmouth.bookInfoPersistence",
         qos: .utility
@@ -42,6 +65,12 @@ enum LibraryPersistenceService {
     nonisolated(unsafe) private static var loggedSkippedIndexWrite = false
     nonisolated(unsafe) private static var pendingBookInfos: [UUID: (book: Book, contentIndex: BookContentIndex?)] = [:]
     nonisolated(unsafe) private static var bookInfoGenerations: [UUID: UInt] = [:]
+    /// The highest revision this process has written into each book's
+    /// bookInfo.json (`BookState.revision`). Every write stores at least one
+    /// more, so the revisions of a book's writes keep rising even when its
+    /// record is replaced without one or cannot be read. Confined to
+    /// bookInfoSaveQueue.
+    nonisolated(unsafe) private static var bookInfoRevisions: [UUID: Int] = [:]
     /// Packages retired by Remove from Library Only: those retired in this
     /// session, and those whose marker a write has already found. Confined
     /// to bookInfoSaveQueue, where every package metadata write checks it.
@@ -116,7 +145,7 @@ enum LibraryPersistenceService {
             let pending = pendingBookInfos
             pendingBookInfos.removeAll()
             for (_, update) in pending {
-                try? writeBookInfo(update.book, contentIndex: update.contentIndex)
+                _ = try? writeBookInfo(update.book, contentIndex: update.contentIndex)
             }
         }
     }
@@ -175,27 +204,107 @@ enum LibraryPersistenceService {
         enqueueBookInfoSave(book: book, contentIndex: contentIndex)
     }
 
-    /// Commit a completed parser result immediately while preserving any newer
-    /// reading-state snapshot already waiting on the metadata queue. Batch
-    /// migrations use this instead of retaining every full index until the end.
-    /// A result for a book removed with Remove from Library Only while it was
-    /// being parsed is dropped without an error.
+    /// Commits a completed content analysis immediately and returns the book
+    /// as its package now records it, so the caller can give the library row
+    /// the same analysis fields (`Book.contentAnalysisFields`); nil when
+    /// nothing was written, because the book has no package or the result
+    /// was dropped. Batch migrations commit each book this way instead of
+    /// retaining every full index until the end.
+    ///
+    /// `analyzed` is the book as the analysis saw it when it started, which
+    /// may be minutes out of date. On the metadata queue the result is merged
+    /// into the latest durable state of the book: the snapshot still waiting
+    /// in the debounce if there is one, otherwise the bookInfo.json on disk,
+    /// and `analyzed` itself only when neither exists (a record that cannot
+    /// be read counts as none, as it does for every save). Only the analysis
+    /// fields and the content index change; the reading position, bookmarks,
+    /// settings, and edited metadata stay exactly as that state has them.
+    ///
+    /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
+    /// debug log, when the latest state describes other content than was
+    /// analyzed (`contentChange(from:to:)`). A result for a book removed with
+    /// Remove from Library Only while it was being parsed is dropped quietly.
+    /// Neither is an error.
+    ///
+    /// The content decides, not the revision. Every reading checkpoint,
+    /// bookmark, and metadata edit raises a book's revision, and the reader
+    /// saves a checkpoint every few seconds, so an analysis rejected for not
+    /// matching the revision it started from would be thrown away whenever
+    /// the user kept reading during a long extraction, and the book open in
+    /// the reader would never get its index. None of those writes can make
+    /// an analysis wrong: it reads only the book's source, and only another
+    /// source can.
+    @discardableResult
     static func saveContentAnalysis(
-        for book: Book,
+        for analyzed: Book,
         index: BookContentIndex,
         cacheFormatVersion: String?
-    ) throws {
-        guard !book.tmbDirectoryName.isEmpty else { return }
+    ) throws -> Book? {
+        guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
-        try bookInfoSaveQueue.sync {
-            var mergedBook = pendingBookInfos.removeValue(forKey: book.id)?.book ?? book
-            bookInfoGenerations[book.id] = (bookInfoGenerations[book.id] ?? 0) &+ 1
-            mergedBook.applyContentIndexSummary(index)
-            if let cacheFormatVersion {
-                mergedBook.cacheFormatVersion = cacheFormatVersion
+        return try bookInfoSaveQueue.sync { () throws -> Book? in
+            let pending = pendingBookInfos[analyzed.id]?.book
+            let stored = pending == nil ? analyzed.storedBookInfo() : nil
+            // The record was read from the analyzed book's package, so that
+            // is where the book it describes lives.
+            let latest = pending ?? stored.map {
+                Book(
+                    record: $0,
+                    filePath: analyzed.filePath,
+                    folderPath: analyzed.folderPath,
+                    tmbDirectoryName: analyzed.tmbDirectoryName
+                )
+            } ?? analyzed
+            if let change = contentChange(from: analyzed, to: latest) {
+                logDroppedAnalysis(of: analyzed, because: change)
+                return nil
             }
-            try writeBookInfo(mergedBook, contentIndex: index)
+
+            var merged = latest
+            merged.applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
+            // A failed write throws here, leaving any waiting snapshot to its
+            // own debounce, so the newer user state outlives the lost result.
+            guard try writeBookInfo(merged, contentIndex: index, stored: stored) else { return nil }
+            // The waiting snapshot is on disk now, merged with the analysis:
+            // forget it, so its debounce does not write it a second time.
+            cancelQueuedWrites(for: analyzed)
+            return merged
         }
+    }
+
+    /// What changed about the content of `analyzed` by the time its analysis
+    /// finished, as `latest`, the book's latest durable state, shows it,
+    /// worded for the log; nil when `latest` still describes the analyzed
+    /// content. An analysis holds for one book, the bytes of its source (the
+    /// MD5 hash), the parser that read them (the format), and the file where
+    /// they live, whose package also holds the text cache it wrote.
+    private static func contentChange(from analyzed: Book, to latest: Book) -> String? {
+        if latest.id != analyzed.id {
+            return "the record in its package belongs to book \(latest.id.uuidString.prefix(8))"
+        }
+        if latest.md5Hash != analyzed.md5Hash {
+            return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))"
+        }
+        if latest.format != analyzed.format {
+            return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)"
+        }
+        if latest.filePath != analyzed.filePath {
+            return "its source file moved from \(analyzed.filePath) to \(latest.filePath)"
+        }
+        return nil
+    }
+
+    /// Records in the console and the debug log that an analysis of `book`
+    /// was dropped because of `change`, as the single line
+    /// `CONTENT_ANALYSIS_DROPPED: book <ID prefix> "<title>": <change>; ...`.
+    /// A line break in the title or a path becomes a space, so the entry
+    /// stays on one line.
+    private static func logDroppedAnalysis(of book: Book, because change: String) {
+        let line = "CONTENT_ANALYSIS_DROPPED: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
+            + "\(change); the result was not saved"
+        let singleLine = line.components(separatedBy: .newlines).joined(separator: " ")
+        print(singleLine)
+        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: singleLine)
     }
 
     /// Save all bookInfo.json files (for bulk operations like migration/rebuild).
@@ -215,17 +324,33 @@ enum LibraryPersistenceService {
             bookInfoSaveQueue.asyncAfter(deadline: .now() + 0.5) {
                 guard bookInfoGenerations[book.id] == generation,
                       let update = pendingBookInfos.removeValue(forKey: book.id) else { return }
-                try? writeBookInfo(update.book, contentIndex: update.contentIndex)
+                _ = try? writeBookInfo(update.book, contentIndex: update.contentIndex)
             }
         }
     }
 
     /// Writes one package's metadata unless Remove from Library Only retired
-    /// the package. Debounced saves, the termination flush, and analysis
-    /// results all end here. Must run on bookInfoSaveQueue.
-    private static func writeBookInfo(_ book: Book, contentIndex: BookContentIndex?) throws {
-        guard !isRetired(book) else { return }
-        try book.saveBookInfoThrowing(contentIndex: contentIndex)
+    /// the package, and reports whether it was written. Debounced saves, the
+    /// termination flush, and analysis results all end here. Each write
+    /// stores the next revision, and never one below the highest this
+    /// process has written for the book, even when the stored record has
+    /// lost its own. `stored` is the record now in the package when the
+    /// caller has just read it; otherwise it is read here. Must run on
+    /// bookInfoSaveQueue.
+    private static func writeBookInfo(
+        _ book: Book,
+        contentIndex: BookContentIndex?,
+        stored: BookInfo? = nil
+    ) throws -> Bool {
+        guard !isRetired(book) else { return false }
+        let record = book.bookInfo(
+            replacing: stored ?? book.storedBookInfo(),
+            contentIndex: contentIndex,
+            revisionFloor: bookInfoRevisions[book.id] ?? 0
+        )
+        try record.save(to: book.tmbDirectory)
+        bookInfoRevisions[book.id] = record.state.revision
+        return true
     }
 
     // MARK: - Remove from Library Only
