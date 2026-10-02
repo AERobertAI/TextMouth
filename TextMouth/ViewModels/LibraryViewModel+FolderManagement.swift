@@ -2,6 +2,13 @@ import SwiftUI
 
 /// Extension for folder CRUD operations — creating, removing (with content
 /// relocation or deletion), moving, renaming, and querying folder contents.
+///
+/// Each folder edit a sheet can start comes in two forms (TODO A07). The
+/// `...ReturningOutcome` form reports what happened to its caller and
+/// presents nothing, so a sheet can stay open with the reason after a
+/// failure. The plain form keeps its original behavior for every other
+/// caller: it runs the same edit and explains a failure through the
+/// library's error alert.
 extension LibraryViewModel {
 
     // MARK: - Folder Operations
@@ -10,6 +17,14 @@ extension LibraryViewModel {
     /// already at that location on this volume) is explained with a message
     /// that names the conflict.
     func createFolder(name: String, parentPath: String) {
+        presentFailure(of: createFolderReturningOutcome(name: name, parentPath: parentPath))
+    }
+
+    /// Creates a folder and returns what happened, presenting nothing. A
+    /// refused name fails with a message naming the conflict, and a
+    /// directory that cannot be created fails with the file system's reason;
+    /// either way the library is unchanged.
+    func createFolderReturningOutcome(name: String, parentPath: String) -> OperationOutcome {
         // Publish the folder only after its directory exists, matching book
         // moves and renames when storage is unavailable or a file collides.
         var proposed = library
@@ -17,15 +32,15 @@ extension LibraryViewModel {
         do {
             folder = try proposed.createFolderThrowing(name: name, parentPath: parentPath)
         } catch {
-            presentFolderConflict(error, context: "Could not create folder")
-            return
+            return Self.outcome(refusing: error, context: "Could not create folder")
         }
         do {
             try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
             library = proposed
             save()
+            return .success(nil)
         } catch {
-            presentFilesystemError("Could not create folder", error: error)
+            return .failure("Could not create folder", error)
         }
     }
 
@@ -35,12 +50,24 @@ extension LibraryViewModel {
     /// conflict and leaves both the library and the disk untouched. The
     /// folder's disk directory is removed after all contents have been moved out.
     func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
+        presentFailure(of: removeFolderMovingContentsReturningOutcome(folder, toPath: destination))
+    }
+
+    /// Removes a folder, moving its contents to `destination`, and returns
+    /// what happened, presenting nothing. A refused removal changes nothing;
+    /// a removal whose packages cannot all move is rolled back.
+    func removeFolderMovingContentsReturningOutcome(
+        _ folder: BookFolder,
+        toPath destination: String
+    ) -> OperationOutcome {
         var proposed = library
         do {
             try proposed.removeFolderThrowing(id: folder.id, movingContentsTo: destination)
         } catch {
-            presentFolderConflict(error, context: "Could not delete \"\(folder.name)\" and move its contents")
-            return
+            return Self.outcome(
+                refusing: error,
+                context: "Could not delete \"\(folder.name)\" and move its contents"
+            )
         }
 
         do {
@@ -48,8 +75,9 @@ extension LibraryViewModel {
                 try TextMouthPaths.ensureLibrarySubfolder(proposedFolder.fullPath)
             }
             try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
+            return .success(nil)
         } catch {
-            presentFilesystemError("Could not relocate folder contents", error: error)
+            return .failure("Could not relocate folder contents", error)
         }
     }
 
@@ -98,34 +126,50 @@ extension LibraryViewModel {
     /// Move a folder to a new parent, preserving its internal structure on
     /// disk. A refused move is explained with a message naming the conflict.
     func moveFolder(_ folder: BookFolder, toParent newParentPath: String) {
+        presentFailure(of: moveFolderReturningOutcome(folder, toParent: newParentPath))
+    }
+
+    /// Moves a folder to a new parent and returns what happened, presenting
+    /// nothing. A refused move changes nothing; a move whose packages cannot
+    /// all move is rolled back.
+    func moveFolderReturningOutcome(_ folder: BookFolder, toParent newParentPath: String) -> OperationOutcome {
         var proposed = library
         do {
             try proposed.moveFolderThrowing(id: folder.id, toParentPath: newParentPath)
         } catch {
-            presentFolderConflict(error, context: "Could not move \"\(folder.name)\"")
-            return
+            return Self.outcome(refusing: error, context: "Could not move \"\(folder.name)\"")
         }
         do {
             try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
+            return .success(nil)
         } catch {
-            presentFilesystemError("Could not move folder", error: error)
+            return .failure("Could not move folder", error)
         }
     }
 
     /// Rename a folder, updating disk directory and all book file paths. A
     /// refused name is explained with a message naming the conflict.
     func renameFolder(_ folder: BookFolder, to newName: String) {
+        presentFailure(of: renameFolderReturningOutcome(folder, to: newName))
+    }
+
+    /// Renames a folder and returns what happened, presenting nothing. A
+    /// refused name changes nothing; a rename whose directory or packages
+    /// cannot all move is rolled back, directory spelling included.
+    func renameFolderReturningOutcome(_ folder: BookFolder, to newName: String) -> OperationOutcome {
         let equivalence = FolderPathEquivalence.library
         var proposed = library
         do {
             try proposed.renameFolderThrowing(id: folder.id, to: newName, equivalence: equivalence)
         } catch {
-            presentFolderConflict(error, context: "Could not rename \"\(folder.name)\"")
-            return
+            return Self.outcome(refusing: error, context: "Could not rename \"\(folder.name)\"")
         }
-        // The rename just found this folder in the library, so both exist.
+        // The rename just found this folder in the library, so both exist;
+        // should either be missing, nothing changed, and the outcome says so.
         guard let oldPath = library.folders.first(where: { $0.id == folder.id })?.fullPath,
-              let newPath = proposed.folders.first(where: { $0.id == folder.id })?.fullPath else { return }
+              let newPath = proposed.folders.first(where: { $0.id == folder.id })?.fullPath else {
+            return Self.outcome(refusing: .folderNotFound, context: "Could not rename \"\(folder.name)\"")
+        }
 
         // A case-only or normalization-only rename still names the same
         // directory on this volume. Rename that directory in place first; the
@@ -141,12 +185,13 @@ extension LibraryViewModel {
                 affectedBookIDs: bookIDsChangingFolder(in: proposed),
                 equivalence: equivalence
             )
+            return .success(nil)
         } catch {
             if respelled {
                 // Best effort: give the directory back its original spelling.
                 _ = try? TextMouthPaths.respellLibrarySubfolder(from: newPath, to: oldPath)
             }
-            presentFilesystemError("Could not rename folder", error: error)
+            return .failure("Could not rename folder", error)
         }
     }
 
@@ -175,8 +220,18 @@ extension LibraryViewModel {
     /// involved. An unchanged request stays a silent no-op, matching the
     /// sheets, which simply disable their buttons for it.
     func presentFolderConflict(_ conflict: FolderOperationConflict, context: String) {
-        guard conflict != .unchanged else { return }
-        presentFilesystemError(context, error: conflict)
+        presentFailure(of: Self.outcome(refusing: conflict, context: context))
+    }
+
+    /// The outcome of a folder edit the library refused: a failure whose
+    /// message names the folders involved, or a silent success for an edit
+    /// that would leave the folder exactly as it is, which has nothing to
+    /// report (the sheets disable their buttons for it).
+    nonisolated static func outcome(
+        refusing conflict: FolderOperationConflict,
+        context: String
+    ) -> OperationOutcome {
+        conflict == .unchanged ? .success(nil) : .failure(context, conflict)
     }
 
     /// Legacy: remove folder, moving contents to parent

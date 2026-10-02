@@ -129,8 +129,17 @@ extension LibraryViewModel {
         moveBooks([book], toFolder: path)
     }
 
-    /// Move one or more books to the specified folder path
+    /// Move one or more books to the specified folder path. A failure is
+    /// explained through the library's error alert.
     func moveBooks(_ books: [Book], toFolder path: String) {
+        presentFailure(of: moveBooksReturningOutcome(books, toFolder: path))
+    }
+
+    /// Moves books to the folder at `path` and returns what happened,
+    /// presenting nothing, so the move sheet can stay open with the reason
+    /// after a failure (TODO A07). A failed move puts back any package that
+    /// already moved and leaves the library as it was.
+    func moveBooksReturningOutcome(_ books: [Book], toFolder path: String) -> OperationOutcome {
         var proposed = library
         let ids = Set(books.map(\.id))
         for index in proposed.books.indices where ids.contains(proposed.books[index].id) {
@@ -139,8 +148,9 @@ extension LibraryViewModel {
         do {
             try commitLibraryTransition(proposed, affectedBookIDs: ids)
             lastMovedFolderPath = path
+            return .success(nil)
         } catch {
-            presentFilesystemError("Could not move books", error: error)
+            return .failure("Could not move books", error)
         }
     }
 
@@ -240,8 +250,19 @@ extension LibraryViewModel {
         FileImportService.removeEmptyLibrarySubdirectories(library: library)
     }
 
+    /// Explains a failed operation through the library's error alert as
+    /// "<context>: <reason>".
     func presentFilesystemError(_ context: String, error: Error) {
-        errorMessage = "\(context): \(error.localizedDescription)"
+        presentFailure(of: .failure(context, error))
+    }
+
+    /// Shows a failed outcome's message through the library's error alert;
+    /// a success shows nothing. Workflows that report outcomes where they
+    /// started, such as the library's sheets and Storage settings, do not
+    /// call this, so their failures never surface a second time elsewhere.
+    func presentFailure(of outcome: OperationOutcome) {
+        guard let message = outcome.failureMessage else { return }
+        errorMessage = message
         showError = true
     }
 
