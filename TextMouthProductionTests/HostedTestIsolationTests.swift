@@ -467,4 +467,69 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.last?.message, "Recorded")
         XCTAssertEqual(captured.announcements.map(\.message), ["Captured"])
     }
+
+    // MARK: - Reader Windows
+
+    /// The bundle's principal class registered the reader window check, and
+    /// XCTest is reporting this run to it.
+    func testReaderWindowCheckIsRegistered() {
+        XCTAssertTrue(ReaderWindowLeakCheck.shared.sawBundleStart)
+    }
+
+    /// The check closes exactly the reader windows that were not open when
+    /// the test began, recognizing them as the app's menus do, and names
+    /// them for the failure.
+    func testReaderWindowCheckClosesOnlyNewReaderWindows() {
+        let earlierReader = makeOffscreenWindow(identifier: "book-reader-AppWindow-1", title: "Book: Earlier")
+        let leftOpen = makeOffscreenWindow(identifier: "book-reader-AppWindow-2", title: "Book: Left Open")
+        let library = makeOffscreenWindow(identifier: nil, title: "All Folders")
+        let settings = makeOffscreenWindow(identifier: "com_apple_SwiftUI_Settings_window", title: "General")
+        let closes = WindowCloseRecorder(watching: [earlierReader, leftOpen, library, settings])
+
+        let titles = ReaderWindowLeakCheck.closeNewReaderWindows(
+            among: [earlierReader, leftOpen, library, settings],
+            except: [ObjectIdentifier(earlierReader)]
+        )
+
+        XCTAssertEqual(titles, ["\"Book: Left Open\""])
+        XCTAssertEqual(closes.closedTitles, ["Book: Left Open"])
+    }
+
+    /// A titled window that is never shown, so it cannot reach the screen or
+    /// VoiceOver, closed when the test ends.
+    private func makeOffscreenWindow(identifier: String?, title: String) -> NSWindow {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        // Tests own this window; AppKit must not release it again on close.
+        window.isReleasedWhenClosed = false
+        window.identifier = identifier.map { NSUserInterfaceItemIdentifier($0) }
+        window.title = title
+        addTeardownBlock { window.close() }
+        return window
+    }
+}
+
+/// Records which of some windows close, in order, by being their delegate.
+@MainActor
+private final class WindowCloseRecorder: NSObject, NSWindowDelegate {
+    /// The titles of the watched windows that closed, oldest first.
+    private(set) var closedTitles: [String] = []
+
+    /// Becomes the delegate of every window in `windows`, which keep it only
+    /// weakly; the caller holds the recorder for as long as it watches.
+    init(watching windows: [NSWindow]) {
+        super.init()
+        for window in windows {
+            window.delegate = self
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        closedTitles.append(window.title)
+    }
 }
