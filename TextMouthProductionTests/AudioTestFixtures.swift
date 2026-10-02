@@ -2,6 +2,8 @@ import AVFoundation
 import XCTest
 
 /// Real audio files, and files that only look like audio, for hosted tests.
+/// Every test that needs an audio file writes it here, so each kind of
+/// fixture has exactly one writer.
 ///
 /// Each test writes its files into its own folder under the temporary
 /// directory and removes the folder when it ends, so no fixture is shared

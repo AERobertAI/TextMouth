@@ -791,7 +791,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let book = try makeAudioBook()
         let folder = URL(fileURLWithPath: book.filePath)
         let outside = try scratchFolder("ContentIndexOutsideTrack").appendingPathComponent("elsewhere.wav")
-        try writeSilence(to: outside)
+        try AudioTestFixtures.writeSilence(to: outside)
         try replaceWithLink("02.wav", in: folder, to: outside)
 
         let result = try BookContentAnalysisService.load(book: book)
@@ -1057,7 +1057,7 @@ final class ContentIndexValidationTests: XCTestCase {
         let package = try makePackage("ContentIndexAudio")
         let folder = package.url.appendingPathComponent("audio", isDirectory: true)
         for track in tracks {
-            try writeSilence(to: folder.appendingPathComponent(track))
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(track))
         }
         let book = Book(
             title: "Index Fixture \(UUID().uuidString)", format: .audio, filePath: folder.path,
