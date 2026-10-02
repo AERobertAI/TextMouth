@@ -135,11 +135,12 @@ test("PlainText parser handles Unicode in headings") {
 }
 
 test("PlainText parser handles mixed line endings") {
-    // CRLF ends one line, like LF, so a wrapped paragraph stays one
-    // paragraph and the text reads exactly as its LF copy does.
-    let text = "# Heading One\r\n\r\nSome text\r\nwraps here\r\n\r\n# Heading Two\r\n\r\nMore text"
-    let content = parsePlainText(text: text, title: "CRLF")
-    let lfContent = parsePlainText(text: text.replacingOccurrences(of: "\r\n", with: "\n"), title: "CRLF")
+    // CRLF, a lone CR, and LF each end one line, so a wrapped paragraph
+    // stays one paragraph and the text reads exactly as its LF copy does.
+    let text = "# Heading One\r\n\r\nSome text\rwraps here\n\r\n# Heading Two\r\rMore text"
+    let lfText = "# Heading One\n\nSome text\nwraps here\n\n# Heading Two\n\nMore text"
+    let content = parsePlainText(text: text, title: "Mixed")
+    let lfContent = parsePlainText(text: lfText, title: "Mixed")
     try assertEqual(content.allHeadings.map(\.text), ["Heading One", "Heading Two"])
     try assertEqual(content.chapters.first?.text, "Heading One\n\nSome text wraps here\n\nHeading Two\n\nMore text")
     try assertEqual(content.chapters.first?.text, lfContent.chapters.first?.text)
