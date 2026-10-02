@@ -42,6 +42,12 @@ enum LibraryPersistenceService {
     nonisolated(unsafe) private static var loggedSkippedIndexWrite = false
     nonisolated(unsafe) private static var pendingBookInfos: [UUID: (book: Book, contentIndex: BookContentIndex?)] = [:]
     nonisolated(unsafe) private static var bookInfoGenerations: [UUID: UInt] = [:]
+    /// The highest revision this process has written into each book's
+    /// bookInfo.json (`BookState.revision`). Every write stores at least one
+    /// more, so the revisions of a book's writes keep rising even when its
+    /// record is replaced without one or cannot be read. Confined to
+    /// bookInfoSaveQueue.
+    nonisolated(unsafe) private static var bookInfoRevisions: [UUID: Int] = [:]
     /// Packages retired by Remove from Library Only: those retired in this
     /// session, and those whose marker a write has already found. Confined
     /// to bookInfoSaveQueue, where every package metadata write checks it.
@@ -222,10 +228,18 @@ enum LibraryPersistenceService {
 
     /// Writes one package's metadata unless Remove from Library Only retired
     /// the package. Debounced saves, the termination flush, and analysis
-    /// results all end here. Must run on bookInfoSaveQueue.
+    /// results all end here. Each write stores the next revision, and never
+    /// one below the highest this process has written for the book, even
+    /// when the stored record has lost its own. Must run on bookInfoSaveQueue.
     private static func writeBookInfo(_ book: Book, contentIndex: BookContentIndex?) throws {
         guard !isRetired(book) else { return }
-        try book.saveBookInfoThrowing(contentIndex: contentIndex)
+        let record = book.bookInfo(
+            replacing: book.storedBookInfo(),
+            contentIndex: contentIndex,
+            revisionFloor: bookInfoRevisions[book.id] ?? 0
+        )
+        try record.save(to: book.tmbDirectory)
+        bookInfoRevisions[book.id] = record.state.revision
     }
 
     // MARK: - Remove from Library Only

@@ -6,15 +6,21 @@ import XCTest
 /// must land on the latest state of the book, never on that old copy
 /// (TODO S05).
 final class ContentAnalysisMergeTests: XCTestCase {
+    /// The hosted test root's library index, put back after each test.
+    private var sandbox: LibraryIndexSandbox!
     /// Folders this test created in the test root's library, removed after
     /// it with every package inside.
     private var createdDirectories: [URL] = []
 
     override func setUpWithError() throws {
+        sandbox = try LibraryIndexSandbox.capture()
         createdDirectories = []
     }
 
     override func tearDownWithError() throws {
+        // Optional: tear-down also runs when capturing failed in set-up.
+        // Restoring flushes pending saves, so none lands in a removed folder.
+        sandbox?.restore()
         for directory in createdDirectories {
             try? FileManager.default.removeItem(at: directory)
         }
@@ -129,6 +135,57 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(BookState.revision(after: 0), 1)
         XCTAssertEqual(BookState.revision(after: 41), 42)
         XCTAssertEqual(BookState.revision(after: .max), .max)
+    }
+
+    /// Each write through the metadata queue (a debounced save, the quit
+    /// flush, and an analysis result) raises the book's revision by one.
+    func testEveryMetadataQueueWriteRaisesTheRevision() throws {
+        let book = try makePackage(title: "Queued Revisions")
+        XCTAssertEqual(try revision(of: book), 1, "the import's own write")
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        waitPastLibrarySaveDebounce()
+        XCTAssertEqual(try revision(of: book), 2, "the debounced save")
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(try revision(of: book), 3, "the quit flush")
+
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: Self.index(of: "one two three"), cacheFormatVersion: nil
+        )
+        XCTAssertEqual(try revision(of: book), 4, "the analysis result")
+    }
+
+    /// The queue numbers its first write of a book from the revision on
+    /// disk, as it does after a restart, when it remembers nothing.
+    func testMetadataQueueContinuesFromTheRevisionOnDisk() throws {
+        let book = try makePackage(title: "Restarted", writingRecord: false)
+        var record = book.makeBookInfo()
+        record.state.revision = 41
+        try record.save(to: book.tmbDirectory)
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try revision(of: book), 42)
+    }
+
+    /// A record replaced without a revision (as an earlier version, or a
+    /// rewrite of every package, leaves it) does not send the book's
+    /// revisions back to 1: the queue continues above its own last write.
+    func testMetadataQueueRevisionsNeverFallWhenARecordLosesItsOwn() throws {
+        let book = try makePackage(title: "Lost Revision")
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+        let written = try XCTUnwrap(try revision(of: book))
+        try book.makeBookInfo().save(to: book.tmbDirectory)
+        XCTAssertNil(try revision(of: book))
+
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try revision(of: book), written + 1)
     }
 
     // MARK: - Fixtures
