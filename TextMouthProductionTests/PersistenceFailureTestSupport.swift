@@ -21,3 +21,49 @@ final class CallLog<Value> {
         calls.append(value)
     }
 }
+
+/// A folder standing where a file is written, so every write of that file
+/// fails ("Is a directory") until `clear()` puts back what was there. Only
+/// that one file is affected, which matters in the hosted test root that
+/// the running app shares.
+struct WriteObstruction {
+    /// The file that cannot be written while the obstruction stands.
+    let url: URL
+    /// The file's bytes before the obstruction, or nil when it had none.
+    private let originalBytes: Data?
+
+    /// Replaces the file at `url` with a folder that is not empty.
+    static func place(at url: URL) throws -> WriteObstruction {
+        let original = try? Data(contentsOf: url)
+        try? FileManager.default.removeItem(at: url)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try Data("obstruction".utf8).write(to: url.appendingPathComponent("obstruction"))
+        return WriteObstruction(url: url, originalBytes: original)
+    }
+
+    /// Removes the folder and puts back the file's bytes, or leaves no file
+    /// when there was none. Clearing twice does no harm.
+    func clear() {
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            try? FileManager.default.removeItem(at: url)
+            if let originalBytes {
+                try? originalBytes.write(to: url, options: .atomic)
+            }
+        }
+    }
+}
+
+extension XCTestCase {
+    /// The shared failure center that the app's services report to, cleared
+    /// now and again when the test ends, so no test sees another's failures.
+    @MainActor
+    func cleanSharedFailureCenter() -> PersistenceFailureCenter {
+        let center = PersistenceFailureCenter.shared
+        center.reset()
+        addTeardownBlock {
+            await MainActor.run { PersistenceFailureCenter.shared.reset() }
+        }
+        return center
+    }
+}

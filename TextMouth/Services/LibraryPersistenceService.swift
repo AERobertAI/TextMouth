@@ -16,6 +16,12 @@ import Foundation
 /// Library Only retired (`retirePackage(of:)`): queued, flushed, and
 /// analysis writes for it are dropped, so none can recreate the
 /// bookInfo.json that orphan adoption would read.
+///
+/// A write that fails is reported to `PersistenceFailureCenter` with a
+/// retry of the same write, and the next write of the same file that
+/// succeeds settles it (TODO S09), so a full disk or a vanished volume is
+/// never mistaken for saved data. A write skipped while index writes are
+/// suspended is not a failure: the recovery banner already says so.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -93,6 +99,11 @@ enum LibraryPersistenceService {
         TextMouthPaths.libraryIndexFile
     }
 
+    /// Where failed writes are reported.
+    private static var failureCenter: PersistenceFailureCenter {
+        .shared
+    }
+
     /// Legacy library file (for migration)
     private static var legacyLibraryFileURL: URL? {
         TextMouthPaths.oldLibraryFile
@@ -153,15 +164,33 @@ enum LibraryPersistenceService {
     /// Write a snapshot to library.json. Must run on saveQueue. Debounced saves
     /// and flushes both end here, so this check also stops a snapshot that was
     /// queued before the index was found unreadable.
+    ///
+    /// A failure is reported with a retry of this snapshot, and the library
+    /// then counts as unsaved until an index write succeeds.
     private static func write(_ library: Library) {
         guard !indexWritesSuspended else {
             noteSkippedIndexWrite()
             return
         }
         do {
-            try encodeAndWrite(library, to: libraryFileURL)
+            try writeIndexFile(library)
         } catch {
             print("Failed to save library: \(error)")
+            failureCenter.recordFailure(.libraryIndex, path: libraryFileURL.path, error: error) { failureID in
+                retryIndexWrite(library, failureID: failureID)
+            }
+        }
+    }
+
+    /// Writes `library` again for a retry of the failed index write
+    /// `failureID`, and waits for the write, which reports its own outcome.
+    /// Nothing is written when a later index write has settled that failure
+    /// meanwhile: this snapshot would replace a newer one. A snapshot still
+    /// waiting for its debounce is newer, and is written after this one.
+    private static func retryIndexWrite(_ library: Library, failureID: PersistenceFailure.ID) {
+        saveQueue.sync {
+            guard failureCenter.isOutstanding(failureID) else { return }
+            write(library)
         }
     }
 
@@ -176,9 +205,17 @@ enum LibraryPersistenceService {
             }
             pendingLibrary = nil
             saveGeneration &+= 1
-            try encodeAndWrite(library, to: libraryFileURL)
+            try writeIndexFile(library)
             return true
         }
+    }
+
+    /// Writes `library` as library.json and tells the failure center that
+    /// the index is saved, which settles any earlier failed write of it.
+    /// Must run on saveQueue.
+    private static func writeIndexFile(_ library: Library) throws {
+        try encodeAndWrite(library, to: libraryFileURL)
+        failureCenter.recordSuccess(.libraryIndex)
     }
 
     /// Encode `library` the way every index write does and replace `url`
@@ -581,7 +618,7 @@ enum LibraryPersistenceService {
                     throw LibraryIndexRecoveryError.couldNotPreserve(indexURL)
                 }
             }
-            try encodeAndWrite(library, to: indexURL)
+            try writeIndexFile(library)
             endIndexWriteSuspension()
             logIndexEvent(
                 "rebuilt the library index with \(library.books.count) book(s); "
