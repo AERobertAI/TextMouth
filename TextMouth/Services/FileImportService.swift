@@ -201,6 +201,20 @@ enum FileImportService {
     /// Package symlinks are rejected so copied content cannot continue to
     /// depend on files outside the managed library.
     static func inspectTMBPackage(at packageURL: URL) throws -> TMBPackageInspection {
+        try checkPackageStructure(at: packageURL)
+        let info: BookInfo
+        do {
+            info = try BookInfo.load(from: packageURL)
+        } catch {
+            throw TMBPackageImportError.invalidPackage("bookInfo.json is missing or unreadable")
+        }
+        return try inspectContent(of: packageURL, describedBy: info)
+    }
+
+    /// Checks that `packageURL` is a .tmb directory that neither is nor
+    /// holds a symbolic link, so nothing copied from it can depend on files
+    /// outside the package.
+    private static func checkPackageStructure(at packageURL: URL) throws {
         var isDirectory: ObjCBool = false
         guard packageURL.pathExtension.lowercased() == "tmb",
               FileManager.default.fileExists(atPath: packageURL.path, isDirectory: &isDirectory),
@@ -222,14 +236,15 @@ enum FileImportService {
                 }
             }
         }
+    }
 
-        let info: BookInfo
-        do {
-            info = try BookInfo.load(from: packageURL)
-        } catch {
-            throw TMBPackageImportError.invalidPackage("bookInfo.json is missing or unreadable")
-        }
-
+    /// Checks the content `info` names inside `packageURL`: a safe file name
+    /// that exists, in the format `info` records, and, for a file, with the
+    /// checksum it records. Only an audio book's content may be a folder.
+    private static func inspectContent(
+        of packageURL: URL,
+        describedBy info: BookInfo
+    ) throws -> TMBPackageInspection {
         let fileName = info.metadata.originalFileName
         guard !fileName.isEmpty,
               URL(fileURLWithPath: fileName).lastPathComponent == fileName,
@@ -263,44 +278,57 @@ enum FileImportService {
     /// Copy a validated external package into the managed library and return a
     /// Book whose paths refer only to the managed copy.
     static func importTMBPackage(from sourceURL: URL) throws -> Book {
-        let inspection = try inspectTMBPackage(at: sourceURL)
-        try TextMouthPaths.ensureDirectoryStructure()
+        try importTMBPackageWithReport(from: sourceURL).book
+    }
 
-        let info = inspection.info
-        let tmbName = TextMouthPaths.tmbName(
-            title: info.metadata.title,
-            author: info.metadata.author,
-            dateAdded: info.metadata.dateAdded,
-            bookID: info.metadata.bookID
-        )
-        let destination = TextMouthPaths.tmbPath(folderPath: "", tmbName: tmbName)
-        guard !FileManager.default.fileExists(atPath: destination.path) else {
-            throw TMBPackageImportError.destinationExists(tmbName)
+    /// Copies the validated package at `sourceURL` into the library's top
+    /// level, staged like every import, with its reading position,
+    /// bookmarks, and settings. The staged copy is validated again, so every
+    /// later path and value comes from the exact package being published,
+    /// and loses any removal marker it carried, which would otherwise retire
+    /// the book again at the next launch. Its content is then read as the
+    /// reader will, and it is published only once its bookInfo.json reads
+    /// back.
+    /// - Parameter observer: told as each step on the staged package begins.
+    /// - Throws: an `ImportFailure` naming the package and the step that
+    ///   failed. Whatever was staged is removed, and the source package is
+    ///   never changed.
+    static func importTMBPackageWithReport(
+        from sourceURL: URL,
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
+            try run.begin(.checkingPackage)
+            let metadata = try inspectTMBPackage(at: sourceURL).info.metadata
+
+            try run.begin(.preparingPackage)
+            let destination = try destinationPackageURL(
+                title: metadata.title,
+                author: metadata.author,
+                dateAdded: metadata.dateAdded,
+                bookID: metadata.bookID,
+                folderPath: ""
+            )
+            guard !FileManager.default.fileExists(atPath: destination.path) else {
+                throw TMBPackageImportError.destinationExists(destination.lastPathComponent)
+            }
+
+            try run.begin(.copying)
+            let staging = try ImportStaging.copy(of: sourceURL, publishingTo: destination)
+            defer { staging.discard() }
+
+            try run.begin(.checkingPackage, in: staging.directory)
+            let copied = try inspectTMBPackage(at: staging.directory)
+            try RemovedFromLibraryMarker.remove(from: staging.directory)
+
+            let staged = bookFromPackageInfo(
+                copied.info,
+                packageURL: staging.directory,
+                folderPath: "",
+                tmbName: staging.name
+            )
+            return try publishReadableBook(staged, from: staging, run: &run)
         }
-
-        let staging = TextMouthPaths.libraryDir
-            .appendingPathComponent(".import-\(UUID().uuidString).tmb", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: staging) }
-        try FileManager.default.copyItem(at: sourceURL, to: staging)
-
-        // Revalidate the copy to ensure all subsequent paths and metadata come
-        // from the exact package that will be adopted.
-        let copiedInspection = try inspectTMBPackage(at: staging)
-        try FileManager.default.moveItem(at: staging, to: destination)
-
-        let book = bookFromPackageInfo(
-            copiedInspection.info,
-            packageURL: destination,
-            folderPath: "",
-            tmbName: tmbName
-        )
-        do {
-            try bookInfo(for: book).save(to: destination)
-        } catch {
-            try? FileManager.default.removeItem(at: destination)
-            throw error
-        }
-        return book
     }
 
     /// Builds a Book from validated package metadata and a trusted package
@@ -445,53 +473,6 @@ enum FileImportService {
         return repaired
     }
 
-    private static func bookInfo(for book: Book) -> BookInfo {
-        BookInfo(
-            metadata: BookMetadata(
-                title: book.title,
-                author: book.author,
-                format: book.format,
-                md5Hash: book.md5Hash,
-                dateAdded: book.dateAdded,
-                lastOpened: book.lastOpened,
-                originalFileName: book.bookFileURL.lastPathComponent,
-                folderPath: book.folderPath,
-                bookID: book.id,
-                sourceFilePath: book.sourceFilePath,
-                publisher: book.epubPublisher,
-                publicationDate: book.epubPublicationDate,
-                isbn: book.epubISBN,
-                language: book.epubLanguage,
-                epubIdentifier: book.epubIdentifier,
-                epubVersion: book.epubVersion,
-                audioAlbum: book.audioAlbum,
-                audioGenre: book.audioGenre,
-                audioYear: book.audioYear
-            ),
-            state: BookState(
-                readingPosition: book.readingPosition,
-                totalWordCount: book.totalWordCount,
-                totalCharacterCount: book.totalCharacterCount,
-                isNew: book.lastOpened == nil,
-                tmbDirectoryName: book.tmbDirectoryName,
-                lastPlaybackStarted: book.lastPlaybackStarted,
-                lastPlaybackStopped: book.lastPlaybackStopped,
-                localVoiceID: book.localVoiceID,
-                localWPM: book.localWPM,
-                localPitch: book.localPitch,
-                skippedHeadingIDs: book.skippedHeadingIDs,
-                localEndOfBookBehavior: book.localEndOfBookBehavior,
-                localSkipForwardUnit: book.localSkipForwardUnit,
-                localSkipBackwardUnit: book.localSkipBackwardUnit,
-                manualSortOrder: book.manualSortOrder,
-                audioDuration: book.audioDuration,
-                cacheFormatVersion: book.cacheFormatVersion,
-                contentIndexVersion: book.contentIndexVersion
-            ),
-            bookmarks: book.bookmarks
-        )
-    }
-
     /// Import a single file into a .tmb package, returning a Book model.
     /// Extracts EPUB metadata if available. Callers that must know which
     /// chapters could not be read use `importFileWithReport` instead.
@@ -530,7 +511,7 @@ enum FileImportService {
             let dateAdded = Date()
 
             try run.begin(.preparingPackage)
-            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: metadata.title,
                 author: metadata.author,
                 dateAdded: dateAdded,
@@ -592,7 +573,7 @@ enum FileImportService {
             let dateAdded = Date()
 
             try run.begin(.preparingPackage)
-            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: title,
                 author: author,
                 dateAdded: dateAdded,
@@ -623,10 +604,11 @@ enum FileImportService {
 
     // MARK: - Staged Imports
 
-    /// The location a newly imported book's package will be published at, in
-    /// the library folder `folderPath`, whose directory is created first if
-    /// needed. Its name is unique to `bookID`.
-    private static func newPackageURL(
+    /// Where an import publishes a book's package: in the library folder
+    /// `folderPath`, whose directory is created first if needed, under the
+    /// name the book's title, author, date added, and ID give it, which no
+    /// other book's package shares.
+    private static func destinationPackageURL(
         title: String,
         author: String,
         dateAdded: Date,
@@ -988,7 +970,7 @@ enum FileImportService {
             let dateAdded = Date()
 
             try run.begin(.preparingPackage)
-            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: metadata.title,
                 author: metadata.author,
                 dateAdded: dateAdded,
@@ -1055,7 +1037,7 @@ enum FileImportService {
             let dateAdded = Date()
 
             try run.begin(.preparingPackage)
-            let staging = try ImportStaging.makeEmpty(publishingTo: try newPackageURL(
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
                 title: zipName,
                 author: "Unknown",
                 dateAdded: dateAdded,

@@ -96,15 +96,26 @@ extension LibraryViewModel {
                     }
                 }
                 guard shouldCopy else { return }
-                let book = try FileImportService.importTMBPackage(from: url)
-                DispatchQueue.main.sync {
-                    self.library.addBook(book)
-                    self.save()
-                    NotificationCenter.default.post(name: .openBookWindow, object: book.id)
-                }
+                let imported = try FileImportService.importTMBPackageWithReport(from: url)
+                DispatchQueue.main.sync { self.completePackageImport(imported) }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
+        }
+    }
+
+    /// Publish the book a package import produced and open it. A book that
+    /// is missing chapters is announced through the library's alert instead
+    /// of opened, so its reader window does not take focus from the warning.
+    /// The package the user chose is never deleted.
+    func completePackageImport(_ imported: ImportedBook) {
+        importProgressMessage = ""
+        library.addBook(imported.book)
+        save()
+        if let warning = imported.warning {
+            presentImportMessage(warning)
+        } else {
+            NotificationCenter.default.post(name: .openBookWindow, object: imported.book.id)
         }
     }
 
