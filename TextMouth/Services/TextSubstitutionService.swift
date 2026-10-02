@@ -128,15 +128,17 @@ struct TextTransformation {
 final class TextSubstitutionService: ObservableObject {
     @Published var rules: [SubstitutionRule] = []
     @Published var isEnabled: Bool = true {
-        didSet { preferences.set(isEnabled, forKey: Self.isEnabledKey) }
+        didSet { preferences?.set(isEnabled, forKey: Self.isEnabledKey) }
     }
 
     /// Preferences key for `isEnabled`. Every release has used it, so the
     /// user's choice keeps loading.
     private static let isEnabledKey = "substitutionsEnabled"
 
-    /// The store holding `isEnabled`.
-    private let preferences: UserDefaults
+    /// The store `isEnabled` is saved to: this process's preferences for the
+    /// app's shared service, and for a test's own service only a store the
+    /// test passes. Nil saves nothing.
+    private let preferences: UserDefaults?
 
     /// Cached compiled regexes keyed by rule ID
     private var regexCache: [UUID: NSRegularExpression] = [:]
@@ -153,19 +155,20 @@ final class TextSubstitutionService: ObservableObject {
     /// The app's service: `isEnabled` from this process's preferences, and
     /// the rules from substitutions.json.
     private init() {
-        preferences = TextMouthRuntime.current.preferences
+        let preferences = TextMouthRuntime.current.preferences
+        self.preferences = preferences
         isEnabled = Self.storedIsEnabled(in: preferences)
         loadRules()
     }
 
     /// Dependency-injected initializer for deterministic production-target
-    /// tests. It deliberately does not read or write the persisted rule file.
-    /// Changing `isEnabled` saves it to `preferences`: this process's
-    /// preferences unless the test passes its own.
+    /// tests. It deliberately does not read or write the persisted rule file,
+    /// and it saves `isEnabled` only to `preferences` when the test passes a
+    /// store, so changing the switch leaves nothing behind for other tests.
     init(
         rules: [SubstitutionRule],
         isEnabled: Bool = true,
-        preferences: UserDefaults = TextMouthRuntime.current.preferences
+        preferences: UserDefaults? = nil
     ) {
         self.preferences = preferences
         self.rules = rules

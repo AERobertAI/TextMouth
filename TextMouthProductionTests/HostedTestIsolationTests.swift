@@ -350,6 +350,24 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
     }
 
+    /// A test's own service given no store saves the switch nowhere, so
+    /// toggling it leaves nothing behind for the shared service or for
+    /// later tests.
+    func testTestSubstitutionServiceSavesTheSwitchOnlyToAGivenStore() {
+        let key = "substitutionsEnabled"
+        preservePreferences([key])
+        let preferences = TextMouthRuntime.current.preferences
+        preferences.removeObject(forKey: key)
+        let usersPreferences = UserPreferenceFingerprint()
+
+        let service = TextSubstitutionService(rules: [], isEnabled: true)
+        service.isEnabled = false
+
+        XCTAssertFalse(service.isEnabled)
+        XCTAssertNil(preferences.object(forKey: key))
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
+
     /// The app's shared service saves the switch to this process's
     /// preferences.
     func testSharedSubstitutionSwitchUsesThisProcessPreferences() {
