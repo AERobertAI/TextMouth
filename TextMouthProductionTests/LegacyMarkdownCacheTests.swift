@@ -218,18 +218,10 @@ final class LegacyMarkdownCacheTests: XCTestCase {
 
     // MARK: - Importing Sources
 
-    /// Import a source file named `fileName` through the production path,
-    /// which copies it into a package, writes content.md, and stamps the
-    /// cache version.
+    /// Import `source`, written as UTF-8 to a file named `fileName`, through
+    /// the production path (see `importBookFile(_:named:)`).
     private func importBook(_ source: String, fileName: String) throws -> Book {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
-        let file = directory.appendingPathComponent(fileName)
-        try source.write(to: file, atomically: true, encoding: .utf8)
-        let book = try FileImportService.importFile(from: file)
-        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
-        return book
+        try importBookFile(Data(source.utf8), named: fileName)
     }
 
     // MARK: - Plain Text
