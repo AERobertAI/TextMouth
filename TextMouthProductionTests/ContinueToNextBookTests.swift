@@ -373,6 +373,77 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertTrue(asked().isEmpty)
     }
 
+    // MARK: - Sleep timer
+
+    /// The finished book's own sleep timer ends listening while it is in
+    /// effect, and once a timer set for the end of the document has
+    /// expired; a timer that expired some other way, or another book's,
+    /// does not.
+    func testOnlyTheFinishedBooksEffectiveSleepTimerEndsListening() {
+        let cases: [(name: String, owned: Bool, active: Bool, duration: SleepTimerDuration?, ends: Bool)] = [
+            ("counting down", true, true, .minutes(30), true),
+            ("waiting for a heading's end", true, true, .endOfHeading, true),
+            ("fading out at the document's end", true, true, .endOfDocument, true),
+            ("expired at the document's end", true, false, .endOfDocument, true),
+            ("expired earlier, then resumed", true, false, .minutes(30), false),
+            ("expired at a heading, then resumed", true, false, .endOfHeading, false),
+            ("stopped", true, false, nil, false),
+            ("another book's, counting down", false, true, .minutes(30), false),
+            ("another book's, expired at its document's end", false, false, .endOfDocument, false),
+        ]
+        for testCase in cases {
+            XCTAssertEqual(
+                ReaderViewModel.sleepTimerEndsListening(
+                    timerBelongsToThisBook: testCase.owned,
+                    timerIsActive: testCase.active,
+                    timerDuration: testCase.duration
+                ),
+                testCase.ends,
+                testCase.name
+            )
+        }
+    }
+
+    /// A sleep timer the finished book set could never pause the next book,
+    /// so while it counts down the next book is not started: the finished
+    /// book says why, and asks for nothing.
+    func testFinishedBooksRunningSleepTimerKeepsTheNextBookFromStarting() throws {
+        try assertSleepTimerKeepsTheNextBookFromStarting { finishedBookID in
+            startSharedSleepTimer(.minutes(30), ownedBy: finishedBookID)
+        }
+    }
+
+    /// A timer set for the end of the document expires as the last document
+    /// ends, just before the book does, so the next book is not started.
+    func testSleepTimerExpiredAtTheDocumentsEndKeepsTheNextBookFromStarting() throws {
+        try assertSleepTimerKeepsTheNextBookFromStarting { finishedBookID in
+            let timer = startSharedSleepTimer(.endOfDocument, ownedBy: finishedBookID)
+            timer.notifyDocumentEnd(by: finishedBookID)
+            XCTAssertFalse(timer.isActive, "The timer did not expire")
+        }
+    }
+
+    /// Another book's sleep timer pauses only that book, so it does not
+    /// keep the finished book from continuing.
+    func testAnotherBooksSleepTimerDoesNotStopContinuing() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(finishedReader)
+        waitUntilLoaded(nextReader)
+        startSharedSleepTimer(.minutes(30), ownedBy: UUID())
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            XCTAssertTrue(eventually { nextReader.isCurrentlyPlaying }, "The next book never started")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
+        XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
+    }
+
     // MARK: - Fixtures
 
     /// A test's private surroundings: the library holding its books,
@@ -507,6 +578,76 @@ final class ContinueToNextBookTests: XCTestCase {
             .sink { _ in starts += 1 }
             .store(in: &subscriptions)
         return { starts }
+    }
+
+    /// Check that the sleep timer `setUpTimer` arranges for the finished
+    /// book keeps an open, loaded next book from starting: the finished book
+    /// says it finished and why the next one did not start, leaves no
+    /// request, and asks for no window.
+    ///
+    /// - Parameter setUpTimer: Arranges the shared sleep timer, given the
+    ///   finished book's ID, just before the book ends.
+    private func assertSleepTimerKeepsTheNextBookFromStarting(
+        _ setUpTimer: (UUID) -> Void,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(finishedReader)
+        waitUntilLoaded(nextReader)
+        let asked = recordContinueRequests(in: world)
+        setUpTimer(finished.id)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            // Long enough for a request to have been made.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Finished: First Volume. Next book not started because of the sleep timer."],
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(asked().isEmpty, "Asked for the next book", file: file, line: line)
+        XCTAssertFalse(world.requests.hasRequest(for: next.id), "Requested the next book", file: file, line: line)
+        XCTAssertFalse(nextReader.isCurrentlyPlaying, "The next book started", file: file, line: line)
+        XCTAssertFalse(nextReader.audioPlaybackService.isPlaying, "The next book plays", file: file, line: line)
+        XCTAssertEqual(
+            ReadingStatsService.shared.stats.finishedBooks.map(\.bookID),
+            [finished.id.uuidString],
+            file: file,
+            line: line
+        )
+    }
+
+    /// Start the app's one sleep timer for `owner`, and put it back as it
+    /// was when the test ends: stopped, with the user's last-used duration
+    /// and its saved preference restored.
+    @discardableResult
+    private func startSharedSleepTimer(
+        _ duration: SleepTimerDuration,
+        ownedBy owner: UUID
+    ) -> SleepTimerService {
+        let timer = SleepTimerService.shared
+        let preferenceKey = "sleepTimer.lastUsedDuration"
+        let savedDuration = timer.lastUsedDuration
+        let savedPreference = UserDefaults.standard.object(forKey: preferenceKey)
+        addTeardownBlock {
+            timer._resetForTesting()
+            if let savedDuration {
+                timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
+                timer.stop()
+            }
+            UserDefaults.standard.set(savedPreference, forKey: preferenceKey)
+        }
+        timer.start(duration: duration, ownerID: owner, onExpire: {})
+        return timer
     }
 
     /// Record every `.continueToNextBook` posted on `world`'s notification

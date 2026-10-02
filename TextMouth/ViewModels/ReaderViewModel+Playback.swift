@@ -962,13 +962,22 @@ extension ReaderViewModel {
             savePosition()
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
-                announceToVoiceOver("Starting: \(nextBook.title)")
-                // Ask for the next book once VoiceOver has begun the
-                // announcement. This reader is kept until then, so
-                // closing its window meanwhile still continues, as
-                // announced.
-                DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                    self.continueToNextBook(nextBook.id)
+                if sleepTimerEndsListeningHere {
+                    // The next book would play on past this book's sleep
+                    // timer, which can pause only the book that set it.
+                    debugLog("end of book: this book's sleep timer is in effect; not starting the next book")
+                    finishListening(
+                        announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
+                    )
+                } else {
+                    announceToVoiceOver("Starting: \(nextBook.title)")
+                    // Ask for the next book once VoiceOver has begun the
+                    // announcement. This reader is kept until then, so
+                    // closing its window meanwhile still continues, as
+                    // announced.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                        self.continueToNextBook(nextBook.id)
+                    }
                 }
             } else {
                 finishListening(announcing: "Finished: \(book.title). No more books in folder.")
@@ -1055,6 +1064,41 @@ extension ReaderViewModel {
     func discardAutoplayRequest() {
         guard autoplayRequests.consume(for: book.id) != nil else { return }
         debugLog("continue to next book: this book could not be loaded; request dropped")
+    }
+
+    /// Whether this book's own sleep timer ends listening with this book,
+    /// so that Continue to Next Book does not start the next one.
+    ///
+    /// The timer pauses only the book that set it, so it could never pause
+    /// the next book, which would play on past it. Continuing is therefore
+    /// ruled out while the timer is in effect: counting down, fading out,
+    /// or waiting for the end of a heading. It is also ruled out once a
+    /// timer set for the end of the document has expired, since that timer
+    /// fires as the book's last document ends, just before the book does.
+    var sleepTimerEndsListeningHere: Bool {
+        Self.sleepTimerEndsListening(
+            timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
+            timerIsActive: sleepTimerService.isActive,
+            timerDuration: sleepTimerService.duration
+        )
+    }
+
+    /// The decision behind `sleepTimerEndsListeningHere`, from the sleep
+    /// timer's state.
+    ///
+    /// - Parameters:
+    ///   - timerBelongsToThisBook: Whether the finished book set the timer.
+    ///   - timerIsActive: Whether the timer is counting down, waiting for
+    ///     its moment, or fading out.
+    ///   - timerDuration: What the timer was set for, which it keeps after
+    ///     expiring until it is stopped or replaced.
+    nonisolated static func sleepTimerEndsListening(
+        timerBelongsToThisBook: Bool,
+        timerIsActive: Bool,
+        timerDuration: SleepTimerDuration?
+    ) -> Bool {
+        guard timerBelongsToThisBook else { return false }
+        return timerIsActive || timerDuration == .endOfDocument
     }
 
     // MARK: - Sleep Timer
