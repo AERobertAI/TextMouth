@@ -1497,13 +1497,7 @@ enum FileImportService {
             // Find the actual book file inside the .tmb (skip metadata/cache
             // files, including a removal marker that names some other book)
             let tmbContents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-            let bookFileName = tmbContents.first { name in
-                !name.hasPrefix(".")
-                && name != "bookInfo.json"
-                && name != "content.md"
-                && name != "cachedAudio"
-                && name != TextMouthPaths.removedFromLibraryMarkerName
-            }
+            let bookFileName = tmbContents.first(where: isPackageContentName)
 
             guard let fileName = bookFileName else { continue }
             let bookFilePath = url.appendingPathComponent(fileName).path
