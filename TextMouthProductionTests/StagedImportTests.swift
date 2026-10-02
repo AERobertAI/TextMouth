@@ -68,8 +68,9 @@ final class StagedImportTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "IMPORT_FAILED: \(source.lastPathComponent): Reading its text failed: ").count, 1)
     }
 
-    /// A binary file named as plain text cannot be read as text, so its
-    /// import fails at that step and leaves nothing behind.
+    /// A file named as plain text whose bytes cannot be read as text (here
+    /// a corrupted UTF-16 file) fails while reading its text and leaves
+    /// nothing behind.
     func testBinaryNamedAsTextFailsAndLeavesNothingBehind() throws {
         let source = sources.appendingPathComponent("Field Notes.txt")
         try Self.undecodableBytes.write(to: source)
@@ -380,16 +381,19 @@ final class StagedImportTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// Bytes that no text decoder can read, saved under a text file's name.
-    /// They are not UTF-8, they carry no byte-order mark, and they include
-    /// the five byte values Windows-1252 leaves undefined (0x81, 0x8D, 0x8F,
-    /// 0x90, 0x9D), which Foundation refuses to decode in that encoding, so
-    /// even a decoder that falls back to it cannot read them.
+    /// Bytes that no text decoder can read, saved under a text file's name,
+    /// as a cut-off or corrupted UTF-16 file is: a UTF-16 byte-order mark,
+    /// then high surrogates that no low surrogate follows, then one odd
+    /// byte. They are not UTF-8 (0xFF never occurs in UTF-8), and a decoder
+    /// that honors the mark must refuse them rather than guess another
+    /// encoding, as TextMouth's does (TODO T08). Plain binary without a mark
+    /// would not do: that decoder reads any other bytes as Windows-1252.
     private static let undecodableBytes: Data = {
-        var bytes: [UInt8] = []
-        for block in 0..<64 {
-            bytes += [0x81, 0x00, 0x8D, 0x8F, 0x90, 0x9D, UInt8(block), 0xFF]
+        var bytes: [UInt8] = [0xFF, 0xFE]
+        for _ in 0..<64 {
+            bytes += [0x00, 0xD8]
         }
+        bytes.append(0x41)
         return Data(bytes)
     }()
 
