@@ -945,10 +945,7 @@ extension ReaderViewModel {
         switch behavior {
         case .stop:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-            nowPlayingService.updateNowPlayingInfo(
-                title: book.title, author: book.author, isPlaying: false
-            )
-            announceToVoiceOver("Finished: \(book.title)")
+            finishListening(announcing: "Finished: \(book.title)")
 
         case .loop:
             currentChapterIndex = 0
@@ -974,12 +971,18 @@ extension ReaderViewModel {
                     self.continueToNextBook(nextBook.id)
                 }
             } else {
-                nowPlayingService.updateNowPlayingInfo(
-                    title: book.title, author: book.author, isPlaying: false
-                )
-                announceToVoiceOver("Finished: \(book.title). No more books in folder.")
+                finishListening(announcing: "Finished: \(book.title). No more books in folder.")
             }
         }
+    }
+
+    /// End listening with this finished book: Now Playing shows it
+    /// stopped, and the listener hears `announcement`.
+    private func finishListening(announcing announcement: String) {
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        announceToVoiceOver(announcement)
     }
 
     /// The effective end-of-book behavior for this book (per-book override or global default)
