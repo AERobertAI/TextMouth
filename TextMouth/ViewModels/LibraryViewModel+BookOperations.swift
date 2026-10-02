@@ -90,23 +90,56 @@ extension LibraryViewModel {
         return paragraphs.isEmpty ? nil : paragraphs.joined(separator: "\n\n")
     }
 
-    /// Remove books from the library and delete their .tmb packages
+    /// Remove books from the library and delete their .tmb packages, to the
+    /// Trash or permanently as the preference chooses. Books whose packages
+    /// cannot be deleted stay, and the error alert names them in the words
+    /// of that mode.
     func removeBooksAndDelete(_ books: [Book]) {
         performRemoveBooks(books, deleteTMB: true)
     }
 
-    /// Internal helper to remove books with optional .tmb deletion
+    /// Remove & Delete for a workflow that reports the result where it was
+    /// started, such as the Duplicate Finder; presents nothing (TODO A08).
+    /// Returns the mode's completion message, such as "Moved 2 books to the
+    /// Trash.", or, when some books stayed, what was removed followed by
+    /// which books stayed and why.
+    func removeBooksAndDeleteReturningOutcome(
+        _ books: [Book],
+        deletePackage: ((Book) throws -> Void)? = nil
+    ) -> OperationOutcome {
+        removeBooksReturningOutcome(books, deletingPackages: true, deletePackage: deletePackage)
+    }
+
+    /// Internal helper to remove books with optional .tmb deletion. Books
+    /// that stay are named through the library's error alert.
     func performRemoveBooks(
         _ books: [Book],
         deleteTMB: Bool,
         deletePackage: ((Book) throws -> Void)? = nil
     ) {
+        presentFailure(of: removeBooksReturningOutcome(
+            books,
+            deletingPackages: deleteTMB,
+            deletePackage: deletePackage
+        ))
+    }
+
+    /// Removes `books` from the library. With `deletingPackages`, each
+    /// package is deleted first, through the Trash-aware path unless a test
+    /// injects `deletePackage`, and a book whose package cannot be deleted
+    /// stays. Returns the outcome in the words of the deleting mode in force.
+    private func removeBooksReturningOutcome(
+        _ books: [Book],
+        deletingPackages: Bool,
+        deletePackage: ((Book) throws -> Void)?
+    ) -> OperationOutcome {
         let deletePackage = deletePackage ?? { book in
             try FileImportService.deleteBookPackage(book)
         }
+        var removed: [Book] = []
         var failures: [String] = []
         for book in books {
-            if deleteTMB {
+            if deletingPackages {
                 do {
                     try deletePackage(book)
                 } catch {
@@ -115,12 +148,16 @@ extension LibraryViewModel {
                 }
             }
             library.removeBook(id: book.id)
+            removed.append(book)
         }
         save()
-        if !failures.isEmpty {
-            errorMessage = "Some books could not be moved to Trash and remain in the library:\n" + failures.joined(separator: "\n")
-            showError = true
-        }
+        guard deletingPackages else { return .success(nil) }
+
+        let mode = removalPreferences.deletionMode
+        let completion = removed.isEmpty ? nil : RemovalWording(mode, books: removed).completionMessage
+        guard !failures.isEmpty else { return .success(completion) }
+        let report = [completion, mode.failureMessage(failures)].compactMap { $0 }
+        return .failure(report.joined(separator: "\n\n"))
     }
 
     // MARK: - Moving Books

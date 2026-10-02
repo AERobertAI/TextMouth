@@ -44,6 +44,77 @@ final class RemovalOutcomeTests: XCTestCase {
         }
     }
 
+    // MARK: - Remove & Delete
+
+    /// Remove & Delete reports what it did in the words of the mode in
+    /// force, and raises no alert of its own.
+    func testRemoveAndDeleteReportsTheModesCompletion() {
+        for movesToTrash in [true, false] {
+            withRemovalPreferences(confirmsFirst: true, movesToTrash: movesToTrash) {
+                let books = [unpackagedBook("Atlas"), unpackagedBook("Bestiary")]
+                let model = LibraryViewModel(initializeServices: false)
+                model.library = Library(books: books)
+                var deleted: [UUID] = []
+
+                let outcome = model.removeBooksAndDeleteReturningOutcome(books) { deleted.append($0.id) }
+
+                XCTAssertEqual(
+                    outcome,
+                    .success(movesToTrash ? "Moved 2 books to the Trash." : "Deleted 2 books permanently.")
+                )
+                XCTAssertEqual(deleted, books.map(\.id))
+                XCTAssertTrue(model.library.books.isEmpty)
+                XCTAssertFalse(model.showError)
+            }
+        }
+    }
+
+    /// When some books stay, the report says what was removed and then which
+    /// books stayed and why. The plain form, which the library's Remove &
+    /// Delete uses, shows the same words through the library's alert.
+    func testRemoveAndDeleteReportsTheBooksThatStayed() {
+        withRemovalPreferences(confirmsFirst: true, movesToTrash: true) {
+            let removable = unpackagedBook("Kept Out")
+            let stuck = unpackagedBook("Stuck")
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library(books: [removable, stuck])
+            let refusingStuck: (Book) throws -> Void = { book in
+                if book.id == stuck.id { throw DeletionRefused() }
+            }
+
+            let outcome = model.removeBooksAndDeleteReturningOutcome([removable, stuck], deletePackage: refusingStuck)
+
+            let stayed = "This book could not be moved to the Trash and remains in the library:\n"
+                + "Stuck: The volume is read-only."
+            XCTAssertEqual(outcome, .failure("Moved “Kept Out” to the Trash.\n\n" + stayed))
+            XCTAssertEqual(model.library.books.map(\.id), [stuck.id])
+            XCTAssertFalse(model.showError)
+
+            model.performRemoveBooks([stuck], deleteTMB: true, deletePackage: refusingStuck)
+
+            XCTAssertTrue(model.showError)
+            XCTAssertEqual(model.errorMessage, stayed)
+        }
+    }
+
+    /// With the Trash preference off, Remove & Delete deletes a real package
+    /// permanently through the library's Trash-aware deletion path, and says
+    /// so. (With it on, that path would use the real Trash, so it is not
+    /// driven; the wording tests cover what it says.)
+    func testRemoveAndDeleteDeletesARealPackagePermanentlyWhenTrashIsOff() throws {
+        try withRemovalPreferences(confirmsFirst: true, movesToTrash: false) {
+            let book = try makePackagedBook("Ephemeral Notes")
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library(books: [book])
+
+            let outcome = model.removeBooksAndDeleteReturningOutcome([book])
+
+            XCTAssertEqual(outcome, .success("Deleted “Ephemeral Notes” permanently."))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+            XCTAssertTrue(model.library.books.isEmpty)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Runs `body` with the two removal preferences set as given, then puts
@@ -87,4 +158,30 @@ final class RemovalOutcomeTests: XCTestCase {
         XCTFail("The deletion guard accepted \(book.title), which has no package name")
         return ""
     }
+
+    /// A managed book with a real package at the top of the test root's
+    /// library, removed when the test ends if it is still there.
+    private func makePackagedBook(_ title: String) throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let packageName = "RemovalFixture-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let content = package.appendingPathComponent("book.txt")
+        try Data("Removal fixture".utf8).write(to: content)
+        let book = Book(
+            title: title,
+            format: .txt,
+            filePath: content.path,
+            md5Hash: "removal-\(UUID().uuidString)",
+            tmbDirectoryName: packageName
+        )
+        try book.saveBookInfoThrowing()
+        return book
+    }
+}
+
+/// A deletion failure with a fixed reason, so messages compare word for word.
+private struct DeletionRefused: LocalizedError {
+    var errorDescription: String? { "The volume is read-only." }
 }
