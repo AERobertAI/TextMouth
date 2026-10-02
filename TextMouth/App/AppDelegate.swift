@@ -24,10 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
 
-        // Disable macOS automatic window state restoration so previous sessions don't
-        // spawn extra library or reader windows on launch. Only one library window
-        // should appear on startup; additional ones require Cmd+N.
-        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        Self.disableWindowRestoration()
 
         // Start hiding/showing context-specific menus based on active window type
         menuVisibilityManager.startObserving()
@@ -44,6 +41,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     keyWindow: NSApp.keyWindow
                 )
             }
+    }
+
+    /// Disables macOS automatic window state restoration
+    /// (`NSQuitAlwaysKeepsWindows`), so previous sessions don't spawn extra
+    /// library or reader windows on launch. Only one library window should
+    /// appear on startup; additional ones require Cmd+N.
+    ///
+    /// - Parameter preferences: Where the setting is saved: this process's
+    ///   preferences. In the app they are the standard store AppKit reads;
+    ///   under hosted tests they are the sandbox's, so the test host never
+    ///   rewrites the developer's own copy of the setting.
+    static func disableWindowRestoration(in preferences: UserDefaults = TextMouthRuntime.current.preferences) {
+        preferences.set(false, forKey: "NSQuitAlwaysKeepsWindows")
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

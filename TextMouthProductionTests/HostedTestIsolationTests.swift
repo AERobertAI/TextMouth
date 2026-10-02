@@ -367,4 +367,30 @@ final class HostedTestIsolationTests: XCTestCase {
         )
         XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
     }
+
+    // MARK: - Window Restoration
+
+    /// Launch turns window restoration off in the store it is given, under
+    /// the key AppKit reads.
+    func testWindowRestorationSettingIsSavedToItsStore() {
+        let store = makeSandboxedPreferences("window-restoration")
+
+        AppDelegate.disableWindowRestoration(in: store)
+
+        XCTAssertEqual(store.object(forKey: "NSQuitAlwaysKeepsWindows") as? Bool, false)
+    }
+
+    /// The hosted app's launch saves the setting to the sandboxed store,
+    /// never to the user's preferences.
+    func testHostedLaunchSavesWindowRestorationToTheSandbox() {
+        let key = "NSQuitAlwaysKeepsWindows"
+        preservePreferences([key])
+        let usersPreferences = UserPreferenceFingerprint()
+        TextMouthRuntime.current.preferences.removeObject(forKey: key)
+
+        AppDelegate.disableWindowRestoration()
+
+        XCTAssertEqual(TextMouthRuntime.current.preferences.object(forKey: key) as? Bool, false)
+        XCTAssertEqual(UserPreferenceFingerprint(), usersPreferences)
+    }
 }
