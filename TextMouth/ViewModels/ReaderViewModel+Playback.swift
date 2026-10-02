@@ -998,6 +998,39 @@ extension ReaderViewModel {
         libraryViewModel.updateEndOfBookBehavior(bookID: book.id, behavior: behavior?.rawValue)
     }
 
+    // MARK: - Continue to Next Book
+
+    /// Start playing because a finished book continued to this one, when
+    /// its request is waiting and this book has finished loading.
+    ///
+    /// The request is claimed, so it starts this book only once, whether
+    /// it is claimed when loading ends or as soon as it is made for a
+    /// reader that was already open. Playback starts the way Play starts
+    /// it, from the saved position, or resumes a paused book, so listening
+    /// statistics, Now Playing, sounds, and the passing over of silent
+    /// chapters all apply, and nothing more is announced. A reader whose
+    /// book is already playing keeps playing, untouched. A Where Am I
+    /// announcement in this window is ended first, since playback cannot
+    /// start while it speaks. A book that failed to load has nothing to
+    /// play, so its request is claimed and dropped.
+    ///
+    /// A closed reader claims nothing, and a reader still loading leaves
+    /// the request waiting until loading ends.
+    func claimAutoplayRequest() {
+        guard !hasClosed, !isLoading,
+              autoplayRequests.consume(for: book.id) != nil else { return }
+        debugLog("continue to next book: starting this book")
+        cancelWhereAmIIfActive()
+        playOrResume()
+    }
+
+    /// Throw away this book's waiting request because the book could not be
+    /// loaded, so that the request cannot start it later.
+    func discardAutoplayRequest() {
+        guard autoplayRequests.consume(for: book.id) != nil else { return }
+        debugLog("continue to next book: this book could not be loaded; request dropped")
+    }
+
     // MARK: - Sleep Timer
 
     /// Start a sleep timer owned by this book. Replaces any timer that
