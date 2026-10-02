@@ -83,18 +83,309 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(content.chapters.map(\.text.count), [20])
     }
 
+    // MARK: - Probing One File
+
+    /// A valid file plays exactly as long as its samples last, whether
+    /// stored as WAVE or encoded as AAC.
+    func testProbeMeasuresValidFiles() async throws {
+        let wave = folder.appendingPathComponent("two seconds.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let aac = folder.appendingPathComponent("one second.m4a")
+        try AudioTestFixtures.writeAACSilence(to: aac, duration: 1)
+
+        let waveDuration = try await AudioMediaProbe.duration(of: wave).get()
+        let aacDuration = try await AudioMediaProbe.duration(of: aac).get()
+
+        XCTAssertEqual(waveDuration, 2)
+        XCTAssertEqual(aacDuration, 1, accuracy: 0.01)
+    }
+
+    /// A plain text file named like an MP3 cannot be opened as audio.
+    func testProbeRefusesTextNamedAsAudio() async throws {
+        let file = folder.appendingPathComponent("note.mp3")
+        try AudioTestFixtures.writePlainText(to: file)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .failure(.cannotOpen))
+    }
+
+    /// A WAVE file cut off right after its header opens, but holds no audio.
+    func testProbeRefusesWAVWhoseSamplesAreMissing() async throws {
+        let file = folder.appendingPathComponent("cut off.wav")
+        try AudioTestFixtures.writeWAVHeaderWithoutSamples(to: file)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .failure(.noAudio))
+    }
+
+    /// A WAVE file whose samples cannot be decoded cannot be opened.
+    func testProbeRefusesWAVWhoseSamplesCannotBeDecoded() async throws {
+        let file = folder.appendingPathComponent("garbled.wav")
+        try AudioTestFixtures.writeWAVWithUndecodableSamples(to: file)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .failure(.cannotOpen))
+    }
+
+    /// An AAC file cut off before its first sample still opens with its
+    /// full duration; decoding its opening fails.
+    func testProbeRefusesAACCutOffBeforeItsAudio() async throws {
+        let file = folder.appendingPathComponent("no audio data.m4a")
+        try AudioTestFixtures.writeTruncatedAAC(to: file, keepingAudioFraction: 0)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .failure(.cannotDecode))
+    }
+
+    /// An AAC file cut off halfway through its audio, as an interrupted
+    /// download leaves it, still opens with its full duration and decodes
+    /// at its start; decoding its end fails.
+    func testProbeRefusesAACThatBreaksOffPartway() async throws {
+        let file = folder.appendingPathComponent("half downloaded.m4a")
+        try AudioTestFixtures.writeTruncatedAAC(to: file, keepingAudioFraction: 0.5)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .failure(.endsEarly))
+    }
+
+    // MARK: - Damaged Files Fail By Name
+
+    /// Text named as a track fails the book, naming the file by its path in
+    /// the book, in the sentence used for every damaged file.
+    func testTextNamedAsATrackFailsNamingItsPathInTheBook() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("Disc 1/01.wav"))
+        try AudioTestFixtures.writePlainText(to: folder.appendingPathComponent("Disc 2/02.mp3"))
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "Disc 2/02.mp3", problem: .cannotOpen))
+        XCTAssertEqual(
+            error?.localizedDescription,
+            "The file “Disc 2/02.mp3” in this audiobook is damaged or incomplete: it cannot be opened as audio. "
+                + "Get a fresh copy of the book, then import it again."
+        )
+    }
+
+    /// One undecodable track among valid ones fails the book, naming it.
+    func testFolderWithOneUndecodableTrackFailsNamingThatTrack() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"))
+        try AudioTestFixtures.writeWAVWithUndecodableSamples(to: folder.appendingPathComponent("02.wav"))
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("03.wav"))
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "02.wav", problem: .cannotOpen))
+    }
+
+    /// A track cut off after its header fails, naming it.
+    func testTrackWithoutSamplesFailsNamingIt() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"))
+        try AudioTestFixtures.writeWAVHeaderWithoutSamples(to: folder.appendingPathComponent("02.wav"))
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "02.wav", problem: .noAudio))
+    }
+
+    /// A track whose download stopped partway fails at import, naming it,
+    /// rather than opening and failing partway through playback.
+    func testTruncatedAACTrackFailsNamingIt() async throws {
+        try AudioTestFixtures.writeAACSilence(to: folder.appendingPathComponent("01.m4a"))
+        try AudioTestFixtures.writeTruncatedAAC(to: folder.appendingPathComponent("02.m4a"), keepingAudioFraction: 0.5)
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "02.m4a", problem: .endsEarly))
+        XCTAssertEqual(
+            error?.localizedDescription,
+            "The file “02.m4a” in this audiobook is damaged or incomplete: "
+                + "its audio breaks off before the length the file declares. "
+                + "Get a fresh copy of the book, then import it again."
+        )
+    }
+
+    /// With several damaged tracks, the one named is the first in playing
+    /// order (here the manifest's order), though all are probed together.
+    func testFirstDamagedTrackInPlayingOrderIsNamed() async throws {
+        try AudioTestFixtures.writeWAVHeaderWithoutSamples(to: folder.appendingPathComponent("a.wav"))
+        try AudioTestFixtures.writePlainText(to: folder.appendingPathComponent("b.mp3"))
+        try writeManifest(order: ["b.mp3", "a.wav"])
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "b.mp3", problem: .cannotOpen))
+    }
+
+    /// A section playing from a damaged file fails, naming that file.
+    func testSectionPlayingFromADamagedFileFailsNamingTheFile() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeTruncatedAAC(to: folder.appendingPathComponent("b.m4a"), keepingAudioFraction: 0.5)
+        try writeManifest(sections: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 1),
+            AudioSegment(title: "Survey", file: "b.m4a", startTime: 0, endTime: 1)
+        ])
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .unplayableFile(file: "b.m4a", problem: .endsEarly))
+    }
+
+    /// A single-file book that cannot be played fails, naming the file.
+    func testSingleDamagedFileFailsNamingIt() async throws {
+        let file = folder.appendingPathComponent("Lecture.mp3")
+        try AudioTestFixtures.writePlainText(to: file)
+
+        do {
+            _ = try await AudioBookParser.parse(url: file)
+            XCTFail("A text file parsed as audio")
+        } catch {
+            XCTAssertEqual(error as? AudioParseError, .unplayableFile(file: "Lecture.mp3", problem: .cannotOpen))
+        }
+    }
+
+    /// Each problem is told in the sentence every damaged file gets: the
+    /// file, what is wrong with it, and what to do.
+    func testUnplayableFileMessagesSayWhatIsWrongAndWhatToDo() {
+        let reasons: [(AudioMediaProblem, String)] = [
+            (.cannotOpen, "it cannot be opened as audio"),
+            (.noAudio, "it holds no audio that can be played"),
+            (.cannotDecode, "its audio cannot be decoded"),
+            (.endsEarly, "its audio breaks off before the length the file declares")
+        ]
+        for (problem, reason) in reasons {
+            XCTAssertEqual(
+                AudioParseError.unplayableFile(file: "Disc 2/03.mp3", problem: problem).errorDescription,
+                "The file “Disc 2/03.mp3” in this audiobook is damaged or incomplete: \(reason). "
+                    + "Get a fresh copy of the book, then import it again."
+            )
+        }
+    }
+
+    // MARK: - Each File Probed Once
+
+    /// Sections sharing a file probe it once: four sections in two files
+    /// are two probes, and the book parses as without the recorder.
+    func testFileSharedBySectionsIsProbedOnce() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try writeManifest(sections: [
+            AudioSegment(title: "One", file: "a.wav", startTime: 0, endTime: 0.5),
+            AudioSegment(title: "Two", file: "a.wav", startTime: 0.5, endTime: 1),
+            AudioSegment(title: "Three", file: "a.wav", startTime: 1, endTime: 2),
+            AudioSegment(title: "Four", file: "b.wav", startTime: 0, endTime: 0)
+        ])
+        let recorder = ProbeRecorder()
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder, prober: recorder.prober())
+
+        XCTAssertEqual(recorder.probedFiles.sorted(), ["a.wav", "b.wav"])
+        XCTAssertEqual(parsed.content.chapters.map(\.text.count), [10, 10, 10, 10])
+    }
+
+    /// Each track of a folder is probed exactly once.
+    func testEachTrackIsProbedOnce() async throws {
+        for track in ["01.wav", "02.wav", "03.wav"] {
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(track))
+        }
+        let recorder = ProbeRecorder()
+
+        _ = try await AudioBookParser.parseDirectory(url: folder, prober: recorder.prober())
+
+        XCTAssertEqual(recorder.probedFiles.sorted(), ["01.wav", "02.wav", "03.wav"])
+    }
+
+    /// A manifest section naming a file outside the book, or impossible
+    /// times, is refused before any file is handed to AVFoundation.
+    func testMalformedSectionsAreRefusedBeforeAnyFileIsProbed() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("Track.wav"))
+        let malformed = [
+            AudioSegment(title: "Outside", file: "../Track.wav", startTime: 0, endTime: 1),
+            AudioSegment(title: "Negative", file: "Track.wav", startTime: -1, endTime: 1),
+            AudioSegment(title: "Reversed", file: "Track.wav", startTime: 0.75, endTime: 0.5)
+        ]
+        for section in malformed {
+            // A valid section first, so its file would be probed if
+            // checking stopped at the first bad section.
+            try writeManifest(sections: [
+                AudioSegment(title: "Valid", file: "Track.wav", startTime: 0, endTime: 0.5),
+                section
+            ])
+            let recorder = ProbeRecorder()
+
+            let error = await parseDirectoryError(prober: recorder.prober())
+
+            XCTAssertEqual(error, .invalidSegment, section.title)
+            XCTAssertEqual(recorder.probedFiles, [], section.title)
+        }
+    }
+
+    /// Files are probed several at a time, and never more at once than
+    /// `maximumConcurrentProbes`: every probe waits until that many are
+    /// running, so all eight tracks parse only if they really run together,
+    /// and a missing limit would let more than that many run.
+    func testTracksAreProbedSeveralAtATimeUpToTheLimit() async throws {
+        let tracks = (1...8).map { String(format: "%02d.wav", $0) }
+        for track in tracks {
+            // Named like audio; the recorder answers without opening them.
+            XCTAssertTrue(FileManager.default.createFile(atPath: folder.appendingPathComponent(track).path, contents: nil))
+        }
+        let recorder = ProbeRecorder()
+        let limit = AudioMediaProber.maximumConcurrentProbes
+
+        let parsed = try await AudioBookParser.parseDirectory(
+            url: folder,
+            prober: recorder.prober(holdingUntilRunning: limit, answering: 1)
+        )
+
+        XCTAssertEqual(parsed.content.chapters.count, tracks.count)
+        XCTAssertEqual(recorder.mostRunningAtOnce, limit)
+        XCTAssertEqual(recorder.probedFiles.sorted(), tracks)
+    }
+
     // MARK: - Helpers
 
+    /// The error `parseDirectory` throws for this test's folder, probing
+    /// with `prober`; nil, after recording a failure, when the folder
+    /// parses or throws another kind of error.
+    private func parseDirectoryError(
+        prober: AudioMediaProber = .avFoundation,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async -> AudioParseError? {
+        do {
+            _ = try await AudioBookParser.parseDirectory(url: folder, prober: prober)
+            XCTFail("The folder parsed without an error", file: file, line: line)
+            return nil
+        } catch let error as AudioParseError {
+            return error
+        } catch {
+            XCTFail("Unexpected error: \(error)", file: file, line: line)
+            return nil
+        }
+    }
+
     /// Write this test's manifest.json: the book's title and author, the
-    /// titles of whole-file tracks, and the sections, as an import or the
-    /// DAISY converter writes it.
+    /// titles of whole-file tracks, their playing order, and the sections,
+    /// as an import or the DAISY converter writes it.
     private func writeManifest(
         title: String? = nil,
         author: String? = nil,
         chapterTitles: [String: String]? = nil,
+        order: [String]? = nil,
         sections: [AudioSegment]? = nil
     ) throws {
-        let manifest = AudioManifest(title: title, author: author, chapters: chapterTitles, segments: sections)
+        let manifest = AudioManifest(
+            title: title,
+            author: author,
+            chapters: chapterTitles,
+            order: order,
+            segments: sections
+        )
         try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
     }
 
@@ -103,5 +394,62 @@ final class AudioMediaValidationTests: XCTestCase {
     /// `Equatable`).
     private func describe(_ sections: [AudioSegment]?) -> [String] {
         (sections ?? []).map { "\($0.title) | \($0.file) | \($0.startTime)–\($0.endTime)" }
+    }
+}
+
+/// Stands in for the app's prober: records each file it is asked to probe
+/// and how many probes run at once, then answers as the app's prober would,
+/// or with a fixed duration. Probes run on several threads at once, so
+/// every stored property is read and written under the lock.
+private final class ProbeRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var files: [String] = []
+    private var running = 0
+    private var mostRunning = 0
+
+    /// The name of every file probed so far, in the order the probes began.
+    var probedFiles: [String] { locked { files } }
+
+    /// The most probes that were ever running at the same time.
+    var mostRunningAtOnce: Int { locked { mostRunning } }
+
+    /// A prober that records each probe, holds it until `count` probes have
+    /// run at once (giving up after two seconds, so a parse that never runs
+    /// that many still ends), then answers with `duration` when given and
+    /// otherwise as the app's prober does.
+    func prober(holdingUntilRunning count: Int = 0, answering duration: TimeInterval? = nil) -> AudioMediaProber {
+        AudioMediaProber { url in
+            self.begin(url)
+            defer { self.end() }
+            let deadline = Date().addingTimeInterval(2)
+            while self.mostRunningAtOnce < count, Date() < deadline {
+                try? await Task.sleep(nanoseconds: 5_000_000)
+            }
+            if let duration {
+                return .success(duration)
+            }
+            return await AudioMediaProber.avFoundation.probe(url)
+        }
+    }
+
+    /// Record that a probe of `url` began.
+    private func begin(_ url: URL) {
+        locked {
+            files.append(url.lastPathComponent)
+            running += 1
+            mostRunning = max(mostRunning, running)
+        }
+    }
+
+    /// Record that a probe ended.
+    private func end() {
+        locked { running -= 1 }
+    }
+
+    /// Run `body` holding the lock.
+    private func locked<Value>(_ body: () -> Value) -> Value {
+        lock.lock()
+        defer { lock.unlock() }
+        return body()
     }
 }

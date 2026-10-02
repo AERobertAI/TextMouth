@@ -1,5 +1,4 @@
 import Foundation
-import AVFoundation
 
 /// Parses audio files into DocumentContent for the reader.
 /// For single audio files: extracts chapter markers if available (M4B), otherwise single chapter.
@@ -76,13 +75,16 @@ enum AudioBookParser {
     }
 
     /// Parse a single audio file. Extracts chapters from M4B metadata if available.
-    static func parse(url: URL) async throws -> DocumentContent {
-        let asset = AVURLAsset(url: url)
-        let duration = try await asset.load(.duration)
-        let totalSeconds = CMTimeGetSeconds(duration)
-        guard totalSeconds.isFinite && totalSeconds > 0 else {
-            throw AudioParseError.invalidDuration
-        }
+    /// - Parameter prober: checks that the file plays and measures it; the
+    ///   app's AVFoundation probe unless a test stands in for it.
+    /// - Throws: `AudioParseError.unplayableFile` naming the file when it
+    ///   cannot be played (see `AudioMediaProbe`).
+    static func parse(url: URL, prober: AudioMediaProber = .avFoundation) async throws -> DocumentContent {
+        // One file in, one duration out.
+        let totalSeconds = try await playableDurations(
+            of: [(name: url.lastPathComponent, url: url)],
+            prober: prober
+        )[0]
 
         // Try to extract metadata
         let metadata = await AudioPlaybackService.extractMetadata(from: url)
@@ -125,7 +127,16 @@ enum AudioBookParser {
 
     /// Parse a directory of audio files as a multi-chapter audio book.
     /// Files are ordered alphabetically unless a manifest.json is found.
-    static func parseDirectory(url: URL) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
+    /// - Parameter prober: checks that each file plays and measures it,
+    ///   probing each file once; the app's AVFoundation probe unless a test
+    ///   stands in for it.
+    /// - Throws: `AudioParseError.unplayableFile` naming the first file, in
+    ///   playing order, that cannot be played; `.invalidSegment` for a
+    ///   manifest section with a missing file or impossible times.
+    static func parseDirectory(
+        url: URL,
+        prober: AudioMediaProber = .avFoundation
+    ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
         let fm = FileManager.default
         var audioFiles = try Self.audioFiles(in: url)
 
@@ -163,7 +174,8 @@ enum AudioBookParser {
                 audioDir: url,
                 availableFiles: Set(audioFiles.map { relativeName(of: $0, in: url) }),
                 title: overallTitle,
-                author: overallAuthor
+                author: overallAuthor,
+                prober: prober
             )
             return (content: result.content, filePaths: result.filePaths, segments: segments)
         }
@@ -171,14 +183,14 @@ enum AudioBookParser {
         var chapters: [Chapter] = []
         var filePaths: [String] = []
 
-        for (index, fileURL) in audioFiles.enumerated() {
-            let fileName = fileURL.deletingPathExtension().lastPathComponent
-            let title = chapterTitles[relativeName(of: fileURL, in: url)] ?? fileName
+        // Every track is checked and measured before any becomes a heading,
+        // so a damaged track fails the whole book, by its name in the book.
+        let tracks = audioFiles.map { (name: relativeName(of: $0, in: url), url: $0) }
+        let durations = try await playableDurations(of: tracks, prober: prober)
 
-            guard let dur = await AudioPlaybackService.getDuration(of: fileURL),
-                  dur.isFinite, dur > 0 else { throw AudioParseError.invalidDuration }
-            let placeholderLength = placeholderLength(for: dur)
-            let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
+        for (index, (track, duration)) in zip(tracks, durations).enumerated() {
+            let title = chapterTitles[track.name] ?? track.url.deletingPathExtension().lastPathComponent
+            let placeholderText = String(repeating: " ", count: max(1, placeholderLength(for: duration)))
 
             let heading = Heading(level: 1, text: title, chapterIndex: index, characterOffset: 0)
             chapters.append(Chapter(
@@ -186,7 +198,7 @@ enum AudioBookParser {
                 text: placeholderText,
                 headings: [heading]
             ))
-            filePaths.append(fileURL.path)
+            filePaths.append(track.url.path)
         }
 
         let content = DocumentContent(title: overallTitle, author: overallAuthor, chapters: chapters)
@@ -202,30 +214,39 @@ enum AudioBookParser {
         audioDir: URL,
         availableFiles: Set<String>,
         title: String,
-        author: String
+        author: String,
+        prober: AudioMediaProber
     ) async throws -> (content: DocumentContent, filePaths: [String]) {
-        var chapters: [Chapter] = []
-        var filePaths: [String] = []
-
-        for (index, segment) in segments.enumerated() {
-            // Only reference discovered in-package media. A manifest cannot
-            // escape the package or introduce negative/non-finite clip ranges.
+        // Only reference discovered in-package media. A manifest cannot
+        // escape the package or introduce negative/non-finite clip ranges.
+        // Every section is checked before any file is opened, so a path
+        // the manifest made up never reaches AVFoundation.
+        for segment in segments {
             guard availableFiles.contains(segment.file),
                   segment.startTime.isFinite, segment.startTime >= 0,
                   segment.endTime.isFinite, segment.endTime >= 0,
                   segment.endTime == 0 || segment.endTime > segment.startTime else {
                 throw AudioParseError.invalidSegment
             }
+        }
+
+        // Check and measure each file the sections play from. A file that
+        // several sections share is probed once, and they share its length.
+        let fileDurations = try await playableDurations(
+            of: segments.map { (name: $0.file, url: audioDir.appendingPathComponent($0.file)) },
+            prober: prober
+        )
+
+        var chapters: [Chapter] = []
+        var filePaths: [String] = []
+
+        for (index, (segment, fileDuration)) in zip(segments, fileDurations).enumerated() {
             let filePath = audioDir.appendingPathComponent(segment.file).path
 
-            // Calculate duration from start/end times
+            // Calculate duration from start/end times; an end time of 0
+            // means "play to end of file".
             var duration = segment.endTime - segment.startTime
             if duration <= 0 {
-                // endTime of 0 means "play to end of file" — get actual duration
-                let fileURL = URL(fileURLWithPath: filePath)
-                guard let fileDuration = await AudioPlaybackService.getDuration(of: fileURL) else {
-                    throw AudioParseError.invalidDuration
-                }
                 duration = fileDuration - segment.startTime
             }
 
@@ -247,15 +268,35 @@ enum AudioBookParser {
         let content = DocumentContent(title: title, author: author, chapters: chapters)
         return (content: content, filePaths: filePaths)
     }
+
+    /// How long each of `files` plays, in the same order, as `prober`
+    /// measures it. Each distinct file is probed once, however many times
+    /// it is listed. `name` is how an error names the file: its path inside
+    /// the book's audio folder, or a single book's file name.
+    /// - Throws: `AudioParseError.unplayableFile` naming the first listed
+    ///   file that cannot be played.
+    private static func playableDurations(
+        of files: [(name: String, url: URL)],
+        prober: AudioMediaProber
+    ) async throws -> [TimeInterval] {
+        let outcomes = await prober.probeEach(files.map(\.url))
+        return try zip(files, outcomes).map { file, outcome in
+            try outcome.mapError { AudioParseError.unplayableFile(file: file.name, problem: $0) }.get()
+        }
+    }
 }
 
 // MARK: - Errors
 
-enum AudioParseError: LocalizedError {
+enum AudioParseError: LocalizedError, Equatable {
     case invalidDuration
     case noAudioFiles
     case unsupportedFormat
     case invalidSegment
+    /// The audio file `file` cannot be played, because of `problem`. `file`
+    /// is the file's path inside the book's audio folder ("Disc 2/03.mp3"),
+    /// or a single-file book's file name.
+    case unplayableFile(file: String, problem: AudioMediaProblem)
 
     var errorDescription: String? {
         switch self {
@@ -263,6 +304,14 @@ enum AudioParseError: LocalizedError {
         case .noAudioFiles: return "No supported audio files found."
         case .unsupportedFormat: return "Unsupported audio format."
         case .invalidSegment: return "An audio section refers to a missing file or an invalid time range."
+        case .unplayableFile(let file, let problem):
+            // Damage is described as it is for every other kind of book.
+            return PackageDamage.message(
+                file: file,
+                reason: problem.reason,
+                container: "this audiobook",
+                original: "the book"
+            )
         }
     }
 }
