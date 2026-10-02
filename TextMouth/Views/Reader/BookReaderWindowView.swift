@@ -2,6 +2,10 @@ import SwiftUI
 
 /// Root view for a book reader window. Creates and manages a ReaderViewModel for the book.
 struct BookReaderWindowView: View {
+    /// The identifier of the reader window scene. Each of its windows
+    /// shows one book and is opened with that book's ID.
+    nonisolated static let windowID = "book-reader"
+
     let bookID: UUID
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
