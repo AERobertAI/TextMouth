@@ -494,6 +494,9 @@ private struct HeadingNavigatorRow: View, Equatable {
     }
 }
 
+/// The headings sheet's only input is its reader (PERF30).
+extension HeadingNavigatorView: SheetOverOneReader {}
+
 struct HeadingRow: View {
     let heading: Heading
     let isCurrent: Bool

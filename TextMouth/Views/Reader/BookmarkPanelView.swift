@@ -428,6 +428,9 @@ struct BookmarkPanelView: View {
     }
 }
 
+/// The bookmark panel's only input is its reader (PERF30).
+extension BookmarkPanelView: SheetOverOneReader {}
+
 extension BookmarkPanelView {
     /// Row for `bookmark`, located by the heading that contains it. Both the
     /// list and the Bookmarks rotor build rows here so they always agree.

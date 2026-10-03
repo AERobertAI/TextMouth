@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftUI
 
 /// What a view shows of its reader, republished only when it changes
 /// (PERF30).
@@ -36,5 +37,25 @@ final class ReaderSnapshot<Value: Equatable>: ObservableObject {
                     }
                 }
             }
+    }
+}
+
+/// A sheet over a reader whose only input is that reader: everything else it
+/// shows comes from its own state, its environment, and its snapshot of the
+/// reader, which SwiftUI follows apart from this comparison. So two such
+/// sheets are the same when they show the same reader (PERF30). The reader
+/// view presenting a sheet makes it again each time it draws, eight times a
+/// second while a book plays, and SwiftUI's own comparison of the new sheet
+/// with the old does not always find them the same: the bookmark panel, once
+/// its focus had moved, drew again every time.
+protocol SheetOverOneReader: View, Equatable {
+    /// The reader the sheet shows, its only input.
+    nonisolated var viewModel: ReaderViewModel { get }
+}
+
+extension SheetOverOneReader {
+    /// Whether two sheets show the same reader.
+    nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.viewModel === rhs.viewModel
     }
 }

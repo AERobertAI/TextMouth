@@ -815,6 +815,9 @@ struct BookVoicePickerView: View {
     }
 }
 
+/// The voice sheet's only input is its reader (PERF30).
+extension BookVoicePickerView: SheetOverOneReader {}
+
 // MARK: - Book Info Bar
 
 /// The strip above the reader text showing progress, time-remaining,
