@@ -377,20 +377,20 @@ final class ContinueToNextBookTests: XCTestCase {
     // MARK: - Sleep timer
 
     /// The finished book's own sleep timer ends listening while it is in
-    /// effect, and once a timer set for the end of the document has
+    /// effect, and once a timer set for the end of the chapter has
     /// expired; a timer that expired some other way, or another book's,
     /// does not.
     func testOnlyTheFinishedBooksEffectiveSleepTimerEndsListening() {
         let cases: [(name: String, owned: Bool, active: Bool, duration: SleepTimerDuration?, ends: Bool)] = [
             ("counting down", true, true, .minutes(30), true),
             ("waiting for a heading's end", true, true, .endOfHeading, true),
-            ("fading out at the document's end", true, true, .endOfDocument, true),
-            ("expired at the document's end", true, false, .endOfDocument, true),
+            ("fading out at the chapter's end", true, true, .endOfChapter, true),
+            ("expired at the chapter's end", true, false, .endOfChapter, true),
             ("expired earlier, then resumed", true, false, .minutes(30), false),
             ("expired at a heading, then resumed", true, false, .endOfHeading, false),
             ("stopped", true, false, nil, false),
             ("another book's, counting down", false, true, .minutes(30), false),
-            ("another book's, expired at its document's end", false, false, .endOfDocument, false),
+            ("another book's, expired at its chapter's end", false, false, .endOfChapter, false),
         ]
         for testCase in cases {
             XCTAssertEqual(
@@ -414,11 +414,11 @@ final class ContinueToNextBookTests: XCTestCase {
         }
     }
 
-    /// A timer set for the end of the document expires as the last document
+    /// A timer set for the end of the chapter expires as the last chapter
     /// ends, just before the book does, so the next book is not started.
-    func testSleepTimerExpiredAtTheDocumentsEndKeepsTheNextBookFromStarting() throws {
+    func testSleepTimerExpiredAtTheChaptersEndKeepsTheNextBookFromStarting() throws {
         try assertSleepTimerKeepsTheNextBookFromStarting { finishedBookID in
-            let timer = startSharedSleepTimer(.endOfDocument, ownedBy: finishedBookID)
+            let timer = startSharedSleepTimer(.endOfChapter, ownedBy: finishedBookID)
             timer.notifyDocumentEnd(by: finishedBookID)
             XCTAssertFalse(timer.isActive, "The timer did not expire")
         }

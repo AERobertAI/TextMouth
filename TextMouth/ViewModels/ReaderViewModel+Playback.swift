@@ -42,7 +42,7 @@ extension ReaderViewModel {
         readingStatsService.startSession(bookID: book.id)
         // Resume any sleep-timer countdown that was halted at the
         // matching pause(). No-op when no countdown was paused (cold
-        // start, expired/cancelled timer, heading/document mode).
+        // start, expired/cancelled timer, heading/chapter mode).
         sleepTimerService.resumeCountdown(by: book.id)
         if isAudioBook {
             playAudioChapter()
@@ -1307,7 +1307,7 @@ extension ReaderViewModel {
     /// playing, and the next chapter takes it over as it begins.
     ///
     /// Called as each chapter's audio starts, and as this book's sleep timer
-    /// is set or cancelled, since a timer set for the end of the document
+    /// is set or cancelled, since a timer set for the end of the chapter
     /// stops playback at the chapter's end. Only audio playing or paused in
     /// the cursor's chapter's own file is given a file to follow: audio that
     /// has stopped, or that still plays a file the library has moved since,
@@ -1326,7 +1326,7 @@ extension ReaderViewModel {
     /// end:
     /// - at the last chapter, where the book's end-of-book behavior decides
     ///   what comes next;
-    /// - while this book's sleep timer is set for the end of the document,
+    /// - while this book's sleep timer is set for the end of the chapter,
     ///   which expires as every audiobook chapter ends
     ///   (`sleepTimerStopsAtChapterEnd`);
     /// - when the next chapter's file is only in the cloud, where the player
@@ -1344,7 +1344,7 @@ extension ReaderViewModel {
         return nextFile
     }
 
-    /// Whether this book's sleep timer is set for the end of the document,
+    /// Whether this book's sleep timer is set for the end of the chapter,
     /// which expires as every chapter of an audiobook ends: playback must
     /// stop there rather than roll on into the next chapter.
     private var sleepTimerStopsAtChapterEnd: Bool {
@@ -1357,7 +1357,7 @@ extension ReaderViewModel {
 
     /// The decision behind `sleepTimerStopsAtChapterEnd`, from the sleep
     /// timer's state: only this book's own timer counts, and only while it
-    /// is in effect, waiting for the end of the document or fading out
+    /// is in effect, waiting for the end of the chapter or fading out
     /// there. A timer that has expired stops nothing more.
     ///
     /// - Parameters:
@@ -1370,7 +1370,7 @@ extension ReaderViewModel {
         timerIsActive: Bool,
         timerDuration: SleepTimerDuration?
     ) -> Bool {
-        timerBelongsToThisBook && timerIsActive && timerDuration == .endOfDocument
+        timerBelongsToThisBook && timerIsActive && timerDuration == .endOfChapter
     }
 
     // MARK: - Audio Playback Failures
@@ -1637,8 +1637,8 @@ extension ReaderViewModel {
     /// the next book, which would play on past it. Continuing is therefore
     /// ruled out while the timer is in effect: counting down, fading out,
     /// or waiting for the end of a heading. It is also ruled out once a
-    /// timer set for the end of the document has expired, since that timer
-    /// fires as the book's last document ends, just before the book does.
+    /// timer set for the end of the chapter has expired, since that timer
+    /// fires as the book's last chapter ends, just before the book does.
     var sleepTimerEndsListeningHere: Bool {
         Self.sleepTimerEndsListening(
             timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
@@ -1662,7 +1662,7 @@ extension ReaderViewModel {
         timerDuration: SleepTimerDuration?
     ) -> Bool {
         guard timerBelongsToThisBook else { return false }
-        return timerIsActive || timerDuration == .endOfDocument
+        return timerIsActive || timerDuration == .endOfChapter
     }
 
     // MARK: - Sleep Timer
@@ -1740,7 +1740,7 @@ extension ReaderViewModel {
             },
             fadeOutDuration: fadeOutDuration
         )
-        // A timer for the end of the document stops playback at this
+        // A timer for the end of the chapter stops playback at this
         // chapter's end, where no file may follow on; any other timer lets
         // the next chapter's file follow (TODO PERF09).
         nameFileAfterCurrentChapter()
@@ -1882,7 +1882,7 @@ extension ReaderViewModel {
             // Halt any minutes-based countdown so it doesn't keep
             // ticking during the pause and expire while the user is
             // taking a break. Mid-fade pauses fall through the branch
-            // above and do not reach here. Heading/document-end modes
+            // above and do not reach here. Heading/chapter-end modes
             // are no-ops — the service guards on duration kind.
             sleepTimerService.pauseCountdown(by: book.id)
         }

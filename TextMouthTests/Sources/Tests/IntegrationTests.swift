@@ -849,8 +849,8 @@ test("Sleep timer: formatted output matches duration state") {
     timer.start(duration: .endOfHeading, onExpire: {})
     try assertEqual(timer.formattedRemaining, "End of heading")
 
-    timer.start(duration: .endOfDocument, onExpire: {})
-    try assertEqual(timer.formattedRemaining, "End of document")
+    timer.start(duration: .endOfChapter, onExpire: {})
+    try assertEqual(timer.formattedRemaining, "End of chapter")
 
     timer.start(duration: .minutes(15), onExpire: {})
     timer.remainingSeconds = 905
@@ -864,7 +864,7 @@ test("Sleep timer: formatted output matches duration state") {
         guard isActive else { return "" }
         if isFadingOut { return "Fading out" }
         if case .endOfHeading = duration { return "End of heading" }
-        if case .endOfDocument = duration { return "End of document" }
+        if case .endOfChapter = duration { return "End of chapter" }
         let minutes = remainingSeconds / 60
         let seconds = remainingSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)
@@ -873,7 +873,7 @@ test("Sleep timer: formatted output matches duration state") {
     try assertEqual(formattedRemaining(isActive: false, isFadingOut: false, duration: nil, remainingSeconds: 0), "")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: true, duration: .minutes(5), remainingSeconds: 0), "Fading out")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfHeading, remainingSeconds: 0), "End of heading")
-    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfDocument, remainingSeconds: 0), "End of document")
+    try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .endOfChapter, remainingSeconds: 0), "End of chapter")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(15), remainingSeconds: 905), "15:05")
     try assertEqual(formattedRemaining(isActive: true, isFadingOut: false, duration: .minutes(1), remainingSeconds: 59), "0:59")
 #endif

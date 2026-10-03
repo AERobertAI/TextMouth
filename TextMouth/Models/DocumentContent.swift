@@ -301,23 +301,28 @@ struct HeadingSweep {
     }
 }
 
+/// What a sleep timer waits for before it pauses playback: a number of
+/// minutes of listening, or a place the book reaches.
 enum SleepTimerDuration: Hashable {
     case minutes(Int)
     case endOfHeading
-    case endOfDocument
+    /// The end of the chapter playing, before the next chapter starts. It
+    /// took the place of the timer once called End of document, which a
+    /// saved preference may still name (`SleepTimerService`).
+    case endOfChapter
 
     var displayName: String {
         switch self {
         case .minutes(let m): return "\(m) minutes"
         case .endOfHeading: return "End of heading"
-        case .endOfDocument: return "End of document"
+        case .endOfChapter: return "End of chapter"
         }
     }
 
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),
-        .endOfHeading, .endOfDocument
+        .endOfHeading, .endOfChapter
     ]
 }
 

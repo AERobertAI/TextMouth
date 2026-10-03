@@ -49,7 +49,7 @@ final class SleepTimerService: ObservableObject {
 
     /// Identifier of the book that started the current timer. Used to
     /// gate `pauseCountdown(by:)`, `resumeCountdown(by:)`, and the
-    /// heading/document-end notifications so a different book's
+    /// heading/chapter-end notifications so a different book's
     /// playback events can't accidentally affect this timer.
     /// Nil means no active owner (timer is stopped, or was started
     /// without an owner — the latter only in tests).
@@ -189,8 +189,8 @@ final class SleepTimerService: ObservableObject {
             case .endOfHeading:
                 kind = "endOfHeading"
                 minutes = nil
-            case .endOfDocument:
-                kind = "endOfDocument"
+            case .endOfChapter:
+                kind = "endOfChapter"
                 minutes = nil
             }
         }
@@ -199,6 +199,11 @@ final class SleepTimerService: ObservableObject {
         /// editable with `defaults write`, so minutes below the supported
         /// range are rejected and minutes above it are clamped: arming a
         /// timer multiplies them by 60, which would overflow for Int.max.
+        ///
+        /// "endOfDocument", saved before End of chapter took the place of
+        /// End of document, restores End of chapter: that timer always
+        /// stopped where a chapter ended, and Restart Sleep Timer should
+        /// arm the timer the listener last chose.
         func toModel() -> SleepTimerDuration? {
             switch kind {
             case "minutes":
@@ -206,7 +211,7 @@ final class SleepTimerService: ObservableObject {
                 guard let minutes, minutes >= supported.lowerBound else { return nil }
                 return .minutes(min(minutes, supported.upperBound))
             case "endOfHeading": return .endOfHeading
-            case "endOfDocument": return .endOfDocument
+            case "endOfChapter", "endOfDocument": return .endOfChapter
             default: return nil
             }
         }
@@ -219,7 +224,7 @@ final class SleepTimerService: ObservableObject {
     /// callbacks; the previous owner's callbacks are dropped.
     ///
     /// - Parameters:
-    ///   - duration: minutes, end-of-heading, or end-of-document
+    ///   - duration: minutes, end-of-heading, or end-of-chapter
     ///   - ownerID: UUID of the book starting the timer (use `book.id`).
     ///     Optional only because some unit tests don't have a book —
     ///     production callers should always pass an ID so pause/resume
@@ -270,9 +275,9 @@ final class SleepTimerService: ObservableObject {
             remainingSeconds = 0
             endOfHeadingTriggered = false
             timerLog(.event, "START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
-        case .endOfDocument:
+        case .endOfChapter:
             remainingSeconds = 0
-            timerLog(.event, "START kind=end-of-document fadeSeconds=\(fadeOutDuration)")
+            timerLog(.event, "START kind=end-of-chapter fadeSeconds=\(fadeOutDuration)")
         }
     }
 
@@ -354,7 +359,7 @@ final class SleepTimerService: ObservableObject {
     /// Called from the playback layer when the user pauses, so the
     /// timer doesn't keep ticking in the background and expire while
     /// the user is away on a break.
-    /// - No-op for heading-end / document-end modes (no wall-clock).
+    /// - No-op for heading-end / chapter-end modes (no wall-clock).
     /// - No-op when a fade is already in progress.
     /// - No-op when called by a non-owner — Book B pausing must not
     ///   affect a timer owned by Book A.
@@ -425,10 +430,10 @@ final class SleepTimerService: ObservableObject {
         }
     }
 
-    /// Notify the timer that the document ended in the owner book.
-    /// Only the owner can trigger an `endOfDocument` timer.
+    /// Notify the timer that a chapter ended in the owner book.
+    /// Only the owner can trigger an `endOfChapter` timer.
     func notifyDocumentEnd(by callerID: UUID) {
-        guard isActive, case .endOfDocument = duration else { return }
+        guard isActive, case .endOfChapter = duration else { return }
         guard self.ownerID == callerID else {
             timerLog(.event, "DOCUMENT_END_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
             return
@@ -566,7 +571,7 @@ final class SleepTimerService: ObservableObject {
         guard isActive else { return "" }
         if isFadingOut { return "Fading out" }
         if case .endOfHeading = duration { return "End of heading" }
-        if case .endOfDocument = duration { return "End of document" }
+        if case .endOfChapter = duration { return "End of chapter" }
         let minutes = remainingSeconds / 60
         let seconds = remainingSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)

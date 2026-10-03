@@ -170,8 +170,8 @@ final class SleepTimerServiceTests: XCTestCase {
 
         start(.endOfHeading)
         XCTAssertEqual(service.formattedRemaining, "End of heading")
-        start(.endOfDocument)
-        XCTAssertEqual(service.formattedRemaining, "End of document")
+        start(.endOfChapter)
+        XCTAssertEqual(service.formattedRemaining, "End of chapter")
         service.stop()
         XCTAssertEqual(service.formattedRemaining, "")
     }
@@ -293,8 +293,8 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(service.isActive)
     }
 
-    func testPauseDoesNotChangeDocumentTimer() {
-        start(.endOfDocument)
+    func testPauseDoesNotChangeChapterTimer() {
+        start(.endOfChapter)
 
         service.pauseCountdown(by: owner)
         service.notifyDocumentEnd(by: owner)
@@ -444,9 +444,9 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(expirations, 1)
     }
 
-    func testOnlyOwnerExpiresDocumentTimer() {
+    func testOnlyOwnerExpiresChapterTimer() {
         var expirations = 0
-        start(.endOfDocument, onExpire: { expirations += 1 })
+        start(.endOfChapter, onExpire: { expirations += 1 })
 
         service.notifyDocumentEnd(by: UUID())
         XCTAssertEqual(expirations, 0)
@@ -506,12 +506,32 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     func testLastUsedDurationPersistsAcrossServiceInstances() {
-        start(.endOfDocument)
+        start(.endOfChapter)
 
         let restored = SleepTimerService(userDefaults: testDefaults)
 
-        XCTAssertEqual(restored.lastUsedDuration, .endOfDocument)
+        XCTAssertEqual(restored.lastUsedDuration, .endOfChapter)
         restored._resetForTesting()
+    }
+
+    /// A duration saved as "endOfDocument", before End of chapter took the
+    /// place of End of document, restores End of chapter, so Restart Sleep
+    /// Timer still arms the timer the listener last chose. The new name is
+    /// what is saved from now on.
+    func testSavedEndOfDocumentRestoresEndOfChapter() throws {
+        let key = "sleepTimer.lastUsedDuration"
+        testDefaults.set(Data(#"{"kind":"endOfDocument"}"#.utf8), forKey: key)
+
+        let restored = SleepTimerService(userDefaults: testDefaults)
+        defer { restored._resetForTesting() }
+
+        XCTAssertEqual(restored.lastUsedDuration, .endOfChapter)
+        restored.start(duration: try XCTUnwrap(restored.lastUsedDuration), onExpire: {})
+        let saved = try XCTUnwrap(testDefaults.data(forKey: key))
+        XCTAssertEqual(
+            try JSONSerialization.jsonObject(with: saved) as? [String: String],
+            ["kind": "endOfChapter"]
+        )
     }
 
     /// The restored duration is editable with `defaults write`. Minutes above

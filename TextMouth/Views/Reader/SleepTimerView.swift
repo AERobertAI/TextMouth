@@ -161,7 +161,7 @@ struct SleepTimerView: View {
     // MARK: - New Timer Section
 
     /// Always visible. Lists preset durations + a custom-minutes field +
-    /// the heading-end / document-end options. Selecting any of these
+    /// the heading-end / chapter-end options. Selecting any of these
     /// calls `viewModel.startSleepTimer(duration:startPlaybackIfNeeded:)`
     /// which ALWAYS replaces any timer already running — the sheet's UI
     /// for "set a new timer" is the same whether or not one is currently
@@ -230,10 +230,10 @@ struct SleepTimerView: View {
             }
             .accessibilityLabel("Stop at end of current heading and start playing")
 
-            Button("End of document") {
-                setNewTimer(.endOfDocument)
+            Button("End of chapter") {
+                setNewTimer(.endOfChapter)
             }
-            .accessibilityLabel("Stop at end of document and start playing")
+            .accessibilityLabel("Stop at end of chapter and start playing")
         }
     }
 
