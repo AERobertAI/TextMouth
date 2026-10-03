@@ -229,13 +229,13 @@ final class SettingsViewModel: ObservableObject {
         didSet { syncToConfig() }
     }
     @AppStorage var showBookmarkInPlaybackControls: Bool {
-        didSet { publishPlaybackControlsChange() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
     @AppStorage var showSpeedInPlaybackControls: Bool {
-        didSet { publishPlaybackControlsChange() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
     @AppStorage var playbackNavigationUnitControlModeRaw: String {
-        didSet { publishPlaybackControlsChange() }
+        didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
 
     /// Whether to monitor Bluetooth device disconnections and suppress
@@ -535,6 +535,9 @@ final class SettingsViewModel: ObservableObject {
         config.restartTimerGestureEnabled = restartTimerGestureEnabled
         config.restartTimerGesturePattern = restartTimerGesturePattern
         config.restartTimerGestureWindow = restartTimerGestureWindow
+        config.playbackNavigationUnitControlMode = playbackNavigationUnitControlMode.rawValue
+        config.showBookmarkInPlaybackControls = showBookmarkInPlaybackControls
+        config.showSpeedInPlaybackControls = showSpeedInPlaybackControls
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
     }
@@ -565,7 +568,8 @@ final class SettingsViewModel: ObservableObject {
     /// Snapshots can be built in code as well as decoded, so every value
     /// passes through the same `SettingsPolicy` rules as the decoder: numbers
     /// are clamped before assignment, and an empty or unsupported choice, an
-    /// unset speed or pitch, or empty text leaves the current preference alone.
+    /// unset speed or pitch, empty text, or a newer field the file leaves out
+    /// (nil) leaves the current preference alone.
     func applyConfigChanges(_ config: ConfigService.AppConfig) {
         withoutSyncingToConfig {
             adopt(config.selectedVoiceID.nonEmpty, into: \.selectedVoiceID)
@@ -617,6 +621,13 @@ final class SettingsViewModel: ObservableObject {
                 rule: SettingsPolicy.restartTimerGestureWindow,
                 into: \.restartTimerGestureWindow
             )
+            adopt(
+                config.playbackNavigationUnitControlMode,
+                rule: SettingsPolicy.playbackNavigationUnitControlMode,
+                into: \.playbackNavigationUnitControlModeRaw
+            )
+            adopt(config.showBookmarkInPlaybackControls, into: \.showBookmarkInPlaybackControls)
+            adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
             // Handle external change to dataDirectoryPath
             if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
                 notificationCenter.post(

@@ -35,6 +35,9 @@ extension ConfigService.AppConfig {
         config.restartTimerGestureEnabled = true
         config.restartTimerGesturePattern = "togglePlayPause,nextTrack"
         config.restartTimerGestureWindow = 3.5
+        config.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.separate.rawValue
+        config.showBookmarkInPlaybackControls = true
+        config.showSpeedInPlaybackControls = false
         return config
     }
 }

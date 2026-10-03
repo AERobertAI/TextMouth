@@ -141,6 +141,14 @@ extension LenientFields {
         }
         return rule.value(fromRaw: rawValue)
     }
+
+    /// A `config.json` switch that may be absent: nil when the field is
+    /// missing, null, or unreadable, which leaves the preference as it is.
+    /// Switches added to the file after it first shipped read this way, so a
+    /// file from an earlier version never turns one back to its default.
+    func optionalFlag(_ key: Key) -> Bool? {
+        optionalValue(key) { (flag: Bool) in flag }
+    }
 }
 
 // MARK: - Saved book state fields

@@ -230,6 +230,21 @@ final class ConfigService: ObservableObject {
         /// pattern over.
         var restartTimerGestureWindow: Double = SettingsPolicy.restartTimerGestureWindow.configDefault
 
+        // MARK: Fields added after the file first shipped
+        //
+        // A file written before one of these existed lacks it. Each reads as
+        // nil or empty then, which leaves the preference as it is, so a file
+        // from an earlier version never resets a newer preference.
+
+        /// Which per-book navigation menus the playback bar shows (a
+        /// `PlaybackNavigationUnitControlMode` raw value); empty keeps the
+        /// current choice.
+        var playbackNavigationUnitControlMode: String = ""
+        /// Whether the playback bar shows the bookmark button.
+        var showBookmarkInPlaybackControls: Bool?
+        /// Whether the playback bar shows the speed controls.
+        var showSpeedInPlaybackControls: Bool?
+
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
         /// fields). A field that is unreadable, out of range, or unsupported
@@ -289,6 +304,12 @@ final class ConfigService: ObservableObject {
                 .restartTimerGestureWindow,
                 rule: SettingsPolicy.restartTimerGestureWindow
             )
+            playbackNavigationUnitControlMode = fields.rawChoice(
+                .playbackNavigationUnitControlMode,
+                rule: SettingsPolicy.playbackNavigationUnitControlMode
+            )
+            showBookmarkInPlaybackControls = fields.optionalFlag(.showBookmarkInPlaybackControls)
+            showSpeedInPlaybackControls = fields.optionalFlag(.showSpeedInPlaybackControls)
         }
 
         init() {}

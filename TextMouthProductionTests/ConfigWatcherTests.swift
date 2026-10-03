@@ -544,6 +544,35 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(service.config.wordsPerMinute, 300 + Double(replacements - 1))
     }
 
+    // MARK: - Preferences Mirrored Since TODO C04
+
+    /// An edit of the playback bar's preferences, noticed through the
+    /// watcher's handler, is applied once, refreshes open playback bars once
+    /// per change, and writes nothing back.
+    func testExternalEditOfThePlaybackBarIsAppliedOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+        let revision = settings.playbackControlsSettingsRevision
+
+        edit.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.shared.rawValue
+        edit.showBookmarkInPlaybackControls = false
+        edit.showSpeedInPlaybackControls = true
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(settings.playbackNavigationUnitControlMode, .shared)
+        XCTAssertFalse(settings.showBookmarkInPlaybackControls)
+        XCTAssertTrue(settings.showSpeedInPlaybackControls)
+        XCTAssertEqual(settings.playbackControlsSettingsRevision, revision + 3)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the

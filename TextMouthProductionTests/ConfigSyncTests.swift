@@ -450,6 +450,58 @@ final class ConfigSyncTests: XCTestCase {
         }
     }
 
+    // MARK: - The playback bar
+
+    /// The playback bar's preferences are applied from config.json, which
+    /// refreshes open playback bars once per change, and saved back to it.
+    func testPlaybackBarPreferencesAreAppliedAndSaved() throws {
+        let viewModel = makeIsolatedViewModel(try isolatedDefaults())
+        let revision = viewModel.playbackControlsSettingsRevision
+        var config = ConfigService.AppConfig()
+        config.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.shared.rawValue
+        config.showBookmarkInPlaybackControls = true
+        config.showSpeedInPlaybackControls = false
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, .shared)
+        XCTAssertTrue(viewModel.showBookmarkInPlaybackControls)
+        XCTAssertFalse(viewModel.showSpeedInPlaybackControls)
+        XCTAssertEqual(viewModel.playbackControlsSettingsRevision, revision + 3)
+
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(saved.playbackNavigationUnitControlMode, PlaybackNavigationUnitControlMode.shared.rawValue)
+        XCTAssertEqual(saved.showBookmarkInPlaybackControls, true)
+        XCTAssertEqual(saved.showSpeedInPlaybackControls, false)
+    }
+
+    /// A file that leaves the playback bar's switches out, as files from
+    /// earlier versions do, or holds values TextMouth cannot use, leaves
+    /// every one of these preferences as it is, and logs each unusable value.
+    func testMissingOrUnusablePlaybackBarPreferencesLeaveThemAlone() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let defaults = try isolatedDefaults()
+        defaults.set(PlaybackNavigationUnitControlMode.separate.rawValue, forKey: "playbackNavigationUnitControlMode")
+        defaults.set(true, forKey: "showBookmarkInPlaybackControls")
+        defaults.set(false, forKey: "showSpeedInPlaybackControls")
+        let viewModel = makeIsolatedViewModel(defaults)
+        let revision = viewModel.playbackControlsSettingsRevision
+        let menuChoice = "Floating Menu \(UUID().uuidString)"
+
+        viewModel.applyConfigChanges(try decodeConfig("""
+        {"playbackNavigationUnitControlMode": "\(menuChoice)", "showBookmarkInPlaybackControls": "no"}
+        """))
+        viewModel.applyConfigChanges(try decodeConfig("{}"))
+
+        XCTAssertEqual(viewModel.playbackNavigationUnitControlMode, .separate)
+        XCTAssertTrue(viewModel.showBookmarkInPlaybackControls)
+        XCTAssertFalse(viewModel.showSpeedInPlaybackControls)
+        XCTAssertEqual(viewModel.playbackControlsSettingsRevision, revision, "nothing changed")
+        XCTAssertEqual(debugLogLines(containing: menuChoice).count, 1)
+        XCTAssertFalse(debugLogLines(containing: "config.json showBookmarkInPlaybackControls: could not be read").isEmpty)
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or
