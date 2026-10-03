@@ -11,28 +11,50 @@ enum HTMLToMarkdownConverter {
         stripDuplicateNavigation: Bool = false,
         headingTargets: [String: MarkdownHeadingAnnotation] = [:]
     ) throws -> String {
-        let doc = try SwiftSoup.parse(html)
+        try convert(
+            document: SwiftSoup.parse(html),
+            readingFlow: PublicationSemantics.ReadingFlow(source: html),
+            stripDuplicateNavigation: stripDuplicateNavigation,
+            headingTargets: headingTargets
+        )
+    }
 
-        let body = doc.body() ?? doc
+    /// Convert `document`, already parsed from markup whose reading-flow
+    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:)`
+    /// converts that markup, so a reader that has parsed a document for
+    /// other reasons need not parse it again. Removing duplicate navigation
+    /// changes `document`.
+    static func convert(
+        document: Document,
+        readingFlow: PublicationSemantics.ReadingFlow,
+        stripDuplicateNavigation: Bool = false,
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+    ) throws -> String {
+        let body = document.body() ?? document
         if stripDuplicateNavigation {
-            try removeDuplicateNavigation(from: body)
+            try removeDuplicateNavigation(from: body, readingFlow: readingFlow)
         }
 
         var result = ""
-        convertNode(body, into: &result, context: Context(headingTargets: headingTargets))
+        convertNode(body, into: &result, context: Context(headingTargets: headingTargets, readingFlow: readingFlow))
         return result.trimmingCharacters(in: writtenWhitespace)
     }
 
     /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
     /// chapter has real heading elements outside nav, so nav-only headings
-    /// remain available for sparse documents.
-    static func removeDuplicateNavigation(from body: Element) throws {
+    /// remain available for sparse documents. `readingFlow` holds the rules
+    /// of the document `body` belongs to, when its markup is known.
+    static func removeDuplicateNavigation(
+        from body: Element,
+        readingFlow: PublicationSemantics.ReadingFlow = .unknownSource
+    ) throws {
         var allHeadingCount = 0
         var navHeadingCount = 0
         var navigationElements: [Element] = []
         collectNavigationDetails(
             from: body,
             insideNavigation: false,
+            readingFlow: readingFlow,
             allHeadingCount: &allHeadingCount,
             navHeadingCount: &navHeadingCount,
             navigationElements: &navigationElements
@@ -51,6 +73,7 @@ enum HTMLToMarkdownConverter {
     private static func collectNavigationDetails(
         from node: Node,
         insideNavigation: Bool,
+        readingFlow: PublicationSemantics.ReadingFlow,
         allHeadingCount: inout Int,
         navHeadingCount: inout Int,
         navigationElements: inout [Element]
@@ -59,7 +82,7 @@ enum HTMLToMarkdownConverter {
             // Hidden content, page lists, and landmarks are never converted,
             // so they neither count as headings nor need removing as navigation.
             guard let element = child as? Element,
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+                  !readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
             let isNavigation = insideNavigation || tag == "nav"
             if tag == "nav" {
@@ -77,6 +100,7 @@ enum HTMLToMarkdownConverter {
             collectNavigationDetails(
                 from: element,
                 insideNavigation: isNavigation,
+                readingFlow: readingFlow,
                 allHeadingCount: &allHeadingCount,
                 navHeadingCount: &navHeadingCount,
                 navigationElements: &navigationElements
@@ -90,6 +114,8 @@ enum HTMLToMarkdownConverter {
     private struct Context {
         /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
         var headingTargets: [String: MarkdownHeadingAnnotation]
+        /// Which elements of the document are outside its reading flow.
+        var readingFlow: PublicationSemantics.ReadingFlow
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
@@ -122,7 +148,7 @@ enum HTMLToMarkdownConverter {
         // Content outside the rendered reading flow (the hidden attribute, page
         // lists, and landmarks) contributes no words, headings, or destinations.
         guard tag != "script", tag != "style",
-              !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
+              !context.readingFlow.excludes(element) else { return }
 
         // Keep the element's words apart from its neighbors' exactly where the
         // direct reader does (HTMLReadingBoundary): a block is a paragraph of
@@ -147,7 +173,7 @@ enum HTMLToMarkdownConverter {
             // before the heading line, never inside the label: the Markdown
             // parser gives both the same offset and keeps the visible heading,
             // and a heading without visible text still keeps its destination.
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: false, into: &result)
             }
             // The heading line holds the label the direct reader gives it,
@@ -222,7 +248,7 @@ enum HTMLToMarkdownConverter {
         // and it always stands on a line of its own. Destinations inside the
         // block precede it rather than becoming words of the code.
         case "pre":
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: false, into: &result)
             }
             let code = HTMLReadingText.preformattedText(of: element)
@@ -235,7 +261,7 @@ enum HTMLToMarkdownConverter {
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
         case "code":
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: true, into: &result)
             }
             appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
@@ -321,20 +347,17 @@ enum HTMLToMarkdownConverter {
 
     /// Destinations carried by a heading's descendants, in document order.
     /// Content outside the reading flow is skipped exactly as conversion skips it.
-    private static func headingAnnotations(
-        inside heading: Element,
-        headingTargets: [String: MarkdownHeadingAnnotation]
-    ) -> [MarkdownHeadingAnnotation] {
-        guard !headingTargets.isEmpty else { return [] }
+    private static func headingAnnotations(inside heading: Element, context: Context) -> [MarkdownHeadingAnnotation] {
+        guard !context.headingTargets.isEmpty else { return [] }
         var annotations: [MarkdownHeadingAnnotation] = []
         for child in heading.getChildNodes() {
             guard let element = child as? Element,
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+                  !context.readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
-            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
                 annotations.append(annotation)
             }
-            annotations += headingAnnotations(inside: element, headingTargets: headingTargets)
+            annotations += headingAnnotations(inside: element, context: context)
         }
         return annotations
     }
@@ -356,7 +379,7 @@ enum HTMLToMarkdownConverter {
             }
             // A hidden item is not rendered: it must neither leave an empty
             // bullet nor take a number from the visible items that follow it.
-            guard !PublicationSemantics.isExcludedFromReadingFlow(item) else { continue }
+            guard !context.readingFlow.excludes(item) else { continue }
             appendBlock(between, to: &result)
             between = ""
             itemCount += 1

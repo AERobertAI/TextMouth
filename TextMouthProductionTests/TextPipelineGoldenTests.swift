@@ -1,3 +1,4 @@
+import SwiftSoup
 import XCTest
 @testable import TextMouth
 
@@ -205,6 +206,50 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertTrue(text.contains("nobody marked it hidden in the markup"))
         XCTAssertTrue(text.contains("Café on the üpper reach"))
         XCTAssertFalse(text.contains("A LATER COPY"))
+    }
+
+    /// Markup that never spells "hidden", in any mix of capitals, can give
+    /// no element the attribute; markup that does, anywhere, may.
+    func testOnlyMarkupSpellingHiddenMayHideAnElement() {
+        let mayHide = [
+            "<p hidden>a</p>", "<P HIDDEN>a</P>", "<div HiDdEn=\"\">a</div>", "a hidden word in text",
+            "hidhidden", "hhidden", "hiddenhidden", "xHIDDEN", "hidden",
+        ]
+        let cannotHide = [
+            "", "<p>plain</p>", "hidde", "idden", "hid den", "hid\u{AD}den", "hid&#100;en",
+            "h\u{130}dden", "ｈｉｄｄｅｎ", "<p data-hide=\"1\">a</p>",
+        ]
+        for markup in mayHide {
+            XCTAssertTrue(PublicationSemantics.mayCarryHiddenAttribute(markup), markup)
+        }
+        for markup in cannotHide {
+            XCTAssertFalse(PublicationSemantics.mayCarryHiddenAttribute(markup), markup)
+        }
+    }
+
+    /// A document's reading-flow rules give, for every element of every
+    /// document in the generated EPUBs, exactly the answers the rules for
+    /// markup of unknown source give, whether or not its markup can hide.
+    func testDocumentReadingFlowAnswersAsTheGeneralRulesDo() throws {
+        typealias Fixtures = TextPipelineFixtures
+        let documents = (Fixtures.navigationEPUB() + Fixtures.ncxEPUB())
+            .filter { entry in [".xhtml", ".html"].contains { entry.path.hasSuffix($0) } }
+            .map { String(decoding: $0.data, as: UTF8.self) }
+        var checked = 0
+        var skipped = 0
+        for html in documents {
+            let flow = PublicationSemantics.ReadingFlow(source: html)
+            if !flow.mayHideElements { skipped += 1 }
+            for element in try SwiftSoup.parse(html).getAllElements() {
+                XCTAssertEqual(flow.excludes(element), PublicationSemantics.isExcludedFromReadingFlow(element), "\(element)")
+                XCTAssertEqual(flow.isHidden(element), PublicationSemantics.isHidden(element), "\(element)")
+                checked += 1
+            }
+        }
+        // Both kinds of document were checked.
+        XCTAssertGreaterThan(skipped, 0)
+        XCTAssertLessThan(skipped, documents.count)
+        XCTAssertGreaterThan(checked, 100)
     }
 
     // MARK: - HTML Conversion (PERF18)
