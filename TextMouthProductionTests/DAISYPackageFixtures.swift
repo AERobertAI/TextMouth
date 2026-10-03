@@ -152,6 +152,29 @@ enum DAISYPackageFixtures {
         "dtbook-2005-3.dtd": "<!ELEMENT dtbook ANY>"
     ]
 
+    // MARK: - Varying a Book
+
+    /// `files` with each entry of `changes` added, or replacing the file at
+    /// its path, and the files at the paths in `removed` left out.
+    static func files(
+        _ files: [String: String],
+        changing changes: [String: String] = [:],
+        removing removed: [String] = []
+    ) -> [String: String] {
+        var result = files.merging(changes) { _, change in change }
+        for path in removed {
+            result[path] = nil
+        }
+        return result
+    }
+
+    /// `text` cut off just before the first occurrence of `marker`, as an
+    /// interrupted copy or download leaves a file.
+    static func truncated(_ text: String, before marker: String) -> String {
+        guard let range = text.range(of: marker) else { return text }
+        return String(text[..<range.lowerBound])
+    }
+
     // MARK: - Writing Fixtures
 
     /// `files` with each path moved into the folder `folder`, as an archive
