@@ -119,6 +119,57 @@ final class ExtractionReportTests: XCTestCase {
         XCTAssertTrue(two.message.hasPrefix("2 chapters could not be read: chapter 2 (“x.html”)"), two.message)
     }
 
+    // MARK: - PDF Pages
+
+    /// A PDF whose pictures OCR could not read on some page is incomplete,
+    /// so its import warns and keeps the original, and the message names
+    /// those pages and why.
+    func testPDFWithPagesOCRCouldNotReadIsIncompleteAndSaysWhy() {
+        let report = ExtractionReport(container: "this PDF", pdf: PDFExtractionDiagnostics(pages: [
+            PDFPageDiagnosis(pageNumber: 1, source: .embedded, recognition: .notNeeded),
+            PDFPageDiagnosis(pageNumber: 2, source: .embedded, recognition: .couldNotRun("text recognition is not available"))
+        ]))
+
+        XCTAssertFalse(report.isComplete)
+        XCTAssertEqual(
+            report.message,
+            "OCR could not run on 1 of 2 pages, so text that appears only in its images is missing: "
+                + "page 2 (text recognition is not available)."
+        )
+    }
+
+    /// A PDF read in full is complete, whatever OCR found, and its message
+    /// speaks of pages rather than chapters.
+    func testPDFReadInFullIsComplete() {
+        let report = ExtractionReport(container: "this PDF", pdf: PDFExtractionDiagnostics(pages: [
+            PDFPageDiagnosis(pageNumber: 1, source: .both, recognition: .recognizedText),
+            PDFPageDiagnosis(pageNumber: 2, source: .none, recognition: .foundNothing)
+        ]))
+
+        XCTAssertTrue(report.isComplete)
+        XCTAssertEqual(report.message, "Every page was read.")
+    }
+
+    /// Chapters left out and pages OCR could not read are both said, the
+    /// chapters first.
+    func testChapterAndPageProblemsAreBothSaid() {
+        let report = ExtractionReport(
+            container: "this book",
+            chapterCount: 2,
+            omissions: [omission(2, "b.html", .missingMember)],
+            pdf: PDFExtractionDiagnostics(pages: [
+                PDFPageDiagnosis(pageNumber: 1, source: .none, recognition: .couldNotRun("no model"))
+            ])
+        )
+
+        XCTAssertEqual(
+            report.message,
+            "1 of 2 chapters could not be read: chapter 2 (“b.html”) is missing from this book. "
+                + "OCR could not run on the PDF's only page, so text that appears only in its images is missing: "
+                + "page 1 (no model)."
+        )
+    }
+
     // MARK: - Helpers
 
     /// An omission with the given number, file, and reason.

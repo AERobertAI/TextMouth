@@ -142,6 +142,107 @@ final class LegacyPDFParserTests: XCTestCase {
         XCTAssertNil(PDFTextParser.readMetadata(from: url))
     }
 
+    // MARK: - Fixture Markdown
+
+    /// The formatted fixture reads exactly as it always has: headings from
+    /// font sizes, inline emphasis, and lines joined into paragraphs.
+    func testFormattedFixtureReadsAsItAlwaysHas() throws {
+        XCTAssertEqual(try PDFTextParser.extractMarkdown(from: fixture("test_formatted.pdf")), Self.formattedMarkdown)
+    }
+
+    /// The outlined fixture reads exactly as it always has: headings from
+    /// its outline, with the page text read without heading detection.
+    func testOutlinedFixtureReadsAsItAlwaysHas() throws {
+        XCTAssertEqual(try PDFTextParser.extractMarkdown(from: fixture("test_with_outline.pdf")), Self.outlinedMarkdown)
+    }
+
+    /// The Markdown `test_formatted.pdf` has always been read as.
+    private static let formattedMarkdown = """
+        # The Seasonal Almanac
+
+
+        *by Dorothy Whitfield*
+
+        # Chapter 1: Spring
+
+
+        Spring arrives not as a single event but as a sequence of small awakenings. The soil loosens before the first shoots appear. Birdsong returns before the leaves do. The careful observer notices these precursors and prepares accordingly. The **equinox** marks the astronomical beginning, but the *practical* start of spring varies by latitude, altitude, and local microclimate. A gardener in the lowlands may be planting weeks before one in the hills.
+
+        ## Early Planting
+
+
+        Root vegetables tolerate cool soil better than fruiting crops. Begin with radishes, carrots, and turnips. These can be sown directly as soon as the ground can be worked.
+
+        ### Soil Preparation
+
+
+        Turn the soil to a depth of eight inches. Incorporate compost at a ratio of one part compost to three parts native soil. Test pH if possible — most vegetables prefer 6.0 to 7.0.
+
+        # Chapter 2: Summer
+
+
+        The long days of summer demand attention to watering schedules above all else. Most garden plants require approximately one inch of water per week, delivered consistently rather than in sporadic heavy doses.
+
+        ## Heat Management
+
+
+        Mulch serves double duty in summer: it retains moisture and suppresses weeds. Apply two to three inches of organic mulch around established plants, keeping it away from stems to prevent rot.
+
+        # Chapter 3: Autumn
+
+
+        The harvest season rewards patience and planning. Crops planted in spring reach maturity, and the **second planting window** opens for cool-weather crops that will carry through early winter.
+
+        ## Preserving the Harvest
+
+
+        Canning, drying, and root-cellaring each suit different produce. Tomatoes and fruits preserve well in jars. Herbs dry readily in bundled bunches hung in a warm, dry space with good airflow.
+        """
+
+    /// The Markdown `test_with_outline.pdf` has always been read as.
+    private static let outlinedMarkdown = """
+        # The Seasonal Almanac
+
+
+        # Chapter 1: Spring
+
+
+        ## Early Planting
+
+        **The Seasonal Almanac**
+
+        *by Dorothy Whitfield*
+
+        **Chapter 1: Spring**
+
+        Spring arrives not as a single event but as a sequence of small awakenings.
+
+        **Early Planting**
+
+        Root vegetables tolerate cool soil better than fruiting crops.
+
+
+        # Chapter 2: Summer
+
+
+        ## Heat Management
+
+        **Chapter 2: Summer**
+
+        The long days of summer demand attention to watering schedules.
+
+        **Heat Management**
+
+        Mulch serves double duty in summer: it retains moisture and suppresses weeds.
+
+
+        # Chapter 3: Autumn
+
+        **Chapter 3: Autumn**
+
+        The harvest season rewards patience and planning.
+        """
+
     private func line(_ text: String, headingLevel: Int? = nil, fontSize: CGFloat = 12) -> PDFTextParser.TextLine {
         PDFTextParser.TextLine(
             text: text,

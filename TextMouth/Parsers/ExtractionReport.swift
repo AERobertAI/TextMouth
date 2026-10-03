@@ -45,6 +45,10 @@ struct ExtractionOmission: Equatable, Sendable {
 /// What a tolerant extraction could not read, with a sentence that says so
 /// aloud. An import presents the sentence as a warning and keeps the original
 /// file; cache rebuilds record it in the debug log.
+///
+/// A PDF's report also says how each page's text was read (`pdf`): from
+/// its embedded text, by OCR, both, or neither, and where OCR found
+/// nothing or could not run (TODO T09).
 struct ExtractionReport: Equatable, Sendable {
     /// Names the book in the report's sentences, completing "is missing
     /// from …" ("this EPUB book"), as `PackageDamage` names the container of
@@ -60,33 +64,48 @@ struct ExtractionReport: Equatable, Sendable {
     var blankChapterCount: Int
     /// The chapters that could not be read, in reading order.
     var omissions: [ExtractionOmission]
+    /// How each page of a PDF was read; nil for every other format.
+    var pdf: PDFExtractionDiagnostics?
 
     /// A report of `chapterCount` chapters, `blankChapterCount` of them
-    /// blank, with `omissions` left out. The defaults describe an extraction
-    /// with nothing to report, as formats that do not report yet produce.
+    /// blank, with `omissions` left out, and, for a PDF, how its pages were
+    /// read. The defaults describe an extraction with nothing to report, as
+    /// formats that do not report yet produce.
     init(
         container: String = "this book",
         chapterCount: Int = 0,
         blankChapterCount: Int = 0,
-        omissions: [ExtractionOmission] = []
+        omissions: [ExtractionOmission] = [],
+        pdf: PDFExtractionDiagnostics? = nil
     ) {
         self.container = container
         self.chapterCount = chapterCount
         self.blankChapterCount = blankChapterCount
         self.omissions = omissions
+        self.pdf = pdf
     }
 
-    /// Whether every chapter the reading order names was read.
-    var isComplete: Bool { omissions.isEmpty }
+    /// Whether everything the source holds was read: every chapter the
+    /// reading order names and, for a PDF, every page that needed OCR.
+    var isComplete: Bool { omissions.isEmpty && (pdf?.isComplete ?? true) }
 
-    /// One sentence naming every chapter left out, its file, and why, for a
-    /// reader to hear, for example: "2 of 14 chapters could not be read:
-    /// chapter 7 (“OEBPS/ch07.xhtml”) is missing from this EPUB book;
-    /// chapter 9 (“OEBPS/ch09.xhtml”) is damaged or incomplete."
+    /// What could not be read, for a reader to hear: one sentence naming
+    /// every chapter left out, its file, and why, for example: "2 of 14
+    /// chapters could not be read: chapter 7 (“OEBPS/ch07.xhtml”) is missing
+    /// from this EPUB book; chapter 9 (“OEBPS/ch09.xhtml”) is damaged or
+    /// incomplete." For a PDF, the sentence names the pages OCR could not
+    /// run on (see `PDFExtractionDiagnostics.problem`).
     var message: String {
-        guard !omissions.isEmpty else { return "Every chapter was read." }
-        let problems = omissions.map(describe).joined(separator: "; ")
-        return "\(summary): \(problems)."
+        var sentences: [String] = []
+        if !omissions.isEmpty {
+            let problems = omissions.map(describe).joined(separator: "; ")
+            sentences.append("\(summary): \(problems).")
+        }
+        if let pageProblem = pdf?.problem {
+            sentences.append(pageProblem)
+        }
+        guard sentences.isEmpty else { return sentences.joined(separator: " ") }
+        return pdf == nil ? "Every chapter was read." : "Every page was read."
     }
 
     // MARK: Sentence Parts

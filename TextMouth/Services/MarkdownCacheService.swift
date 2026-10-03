@@ -315,7 +315,11 @@ enum MarkdownCacheService {
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:
-            markdown = try PDFTextParser.extractMarkdown(from: url)
+            // The report says how each page was read and names any page
+            // whose pictures OCR could not read, so an import warns and
+            // keeps the original, and every generation logs those pages.
+            let pdf = try PDFTextParser.extract(from: url)
+            return ExtractedCache(markdown: pdf.markdown, report: pdf.report)
         case .audio:
             // Audio books don't get text caching
             markdown = ""

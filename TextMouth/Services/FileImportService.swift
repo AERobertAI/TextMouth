@@ -74,21 +74,22 @@ struct TMBPackageInspection {
     let contentURL: URL
 }
 
-/// A book an import produced, with the report of the chapters its source
-/// could not supply. The library decides from the report whether the
-/// original file may be deleted and whether the reader must be warned.
+/// A book an import produced, with the report of what its source could not
+/// supply. The library decides from the report whether the original file
+/// may be deleted and whether the reader must be warned.
 struct ImportedBook {
     var book: Book
-    /// The chapters the source names that could not be read. It is empty
-    /// for a complete book and for formats that do not report omissions yet.
+    /// The chapters the source names that could not be read and, for a PDF,
+    /// the pages whose pictures OCR could not read. It reports nothing
+    /// missing for a complete book and for formats that do not report yet.
     var report = ExtractionReport()
     /// Whether the book was copied from a DAISY book kept as loose files:
     /// its folder, or its OPF or ncc.html inside that folder (TODO I02).
     var isFromPackageFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
-    /// that left chapters out never deletes it or offers to, whatever the
-    /// "After Importing a Book" preference says.
+    /// that left chapters or pages out never deletes it or offers to,
+    /// whatever the "After Importing a Book" preference says.
     var keepsOriginal: Bool { !report.isComplete }
 
     /// Whether the "After Importing a Book" preference may delete the
@@ -98,8 +99,9 @@ struct ImportedBook {
     /// never deleted (TODO I02).
     var mayDeleteOriginal: Bool { !keepsOriginal && !isFromPackageFolder }
 
-    /// The warning an import that left chapters out presents once: what is
-    /// missing, then that the original was kept. Nil for a complete import.
+    /// The warning an import that left chapters or pages out presents once:
+    /// what is missing, then that the original was kept. Nil for a complete
+    /// import.
     var warning: String? {
         guard keepsOriginal else { return nil }
         return "\(report.message) The original file was kept."
@@ -184,15 +186,28 @@ struct ImportedFileMetadata {
 /// A file from a ZIP import that did not import in full, with what went
 /// wrong: why it failed, or what its book is missing.
 struct ZipImportFailure: Equatable {
+    /// What a book imported without all of its text is missing, which
+    /// decides where the batch's summary lists it.
+    enum Missing: Equatable {
+        /// Chapters its reading order names.
+        case chapters
+        /// Pages of a PDF whose pictures OCR could not read.
+        case pages
+    }
+
     let fileName: String
     let message: String
+    /// For a book imported without all of its text, what it is missing. A
+    /// file that failed keeps the default, which nothing reads.
+    var missing: Missing = .chapters
 }
 
 struct ZipImportResult {
     let books: [Book]
     let failures: [ZipImportFailure]
-    /// Books that were imported without some of their chapters, by file,
-    /// each with its extraction report's sentence. They keep the ZIP.
+    /// Books that were imported without all of their text (some chapters,
+    /// or pages of a PDF whose pictures OCR could not read), by file, each
+    /// with its extraction report's sentence. They keep the ZIP.
     var incompleteBooks: [ZipImportFailure] = []
     /// Where the batch stopped when the reader cancelled it (TODO I05); nil
     /// when it ran to its end. A cancelled batch keeps the ZIP.
@@ -200,25 +215,33 @@ struct ZipImportResult {
 
     /// Whether the original ZIP must be kept whatever the "After Importing
     /// a Book" preference says: a file in it failed, a book from it is
-    /// missing chapters, or the batch was cancelled before every book was
-    /// imported, so the ZIP is still the only complete copy of something.
+    /// missing chapters or pages, or the batch was cancelled before every
+    /// book was imported, so the ZIP is still the only complete copy of
+    /// something.
     var keepsOriginal: Bool {
         !failures.isEmpty || !incompleteBooks.isEmpty || cancellation != nil
     }
 
     /// What the library's alert says about the batch: where it stopped, when
-    /// it was cancelled; the files that failed; then the books missing
-    /// chapters. A cancelled batch, or one with books missing chapters, also
-    /// says the original ZIP was kept. Nil when every file imported in full
-    /// and the batch ran to its end.
+    /// it was cancelled; the files that failed; the books missing chapters;
+    /// then the PDFs with pages that could not be read. A cancelled batch,
+    /// or one with books missing chapters or pages, also says the original
+    /// ZIP was kept. Nil when every file imported in full and the batch ran
+    /// to its end.
     var failureSummary: String? {
         var sections: [String] = []
         if !failures.isEmpty {
             sections.append("\(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(Self.lines(failures))")
         }
-        if !incompleteBooks.isEmpty {
-            let count = incompleteBooks.count
-            sections.append("\(count) book\(count == 1 ? " is" : "s are") missing chapters:\n\(Self.lines(incompleteBooks))")
+        let missingChapters = incompleteBooks.filter { $0.missing == .chapters }
+        if !missingChapters.isEmpty {
+            let books = CountWording.phrase(missingChapters.count, singular: "book is", plural: "books are")
+            sections.append("\(books) missing chapters:\n\(Self.lines(missingChapters))")
+        }
+        let missingPages = incompleteBooks.filter { $0.missing == .pages }
+        if !missingPages.isEmpty {
+            let books = CountWording.phrase(missingPages.count, singular: "book has", plural: "books have")
+            sections.append("\(books) pages that could not be read:\n\(Self.lines(missingPages))")
         }
         guard !sections.isEmpty || cancellation != nil else { return nil }
 
@@ -924,9 +947,9 @@ enum FileImportService {
     }
 
     /// What reading a book's content as the reader will produced: the index
-    /// to save with the book, and the report of the chapters its source could
-    /// not supply (always complete for audio and for formats that do not
-    /// report omissions).
+    /// to save with the book, and the report of the chapters or pages its
+    /// source could not supply (always complete for audio and for formats
+    /// that do not report omissions).
     struct ReadableContent {
         var index: BookContentIndex
         var report = ExtractionReport()
@@ -1208,8 +1231,14 @@ enum FileImportService {
                 seenHashes.insert(imported.book.md5Hash)
                 books.append(imported.book)
                 if !imported.report.isComplete {
+                    // A PDF whose pictures OCR could not read is missing
+                    // pages; any other incomplete book is missing chapters.
                     incompleteBooks.append(
-                        ZipImportFailure(fileName: fileURL.lastPathComponent, message: imported.report.message)
+                        ZipImportFailure(
+                            fileName: fileURL.lastPathComponent,
+                            message: imported.report.message,
+                            missing: imported.report.pdf?.isComplete == false ? .pages : .chapters
+                        )
                     )
                 }
             } catch {
