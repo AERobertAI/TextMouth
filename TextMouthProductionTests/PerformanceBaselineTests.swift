@@ -25,8 +25,10 @@ final class PerformanceBaselineTests: XCTestCase {
     /// How many live reading positions each run of that measurement
     /// averages: a run takes milliseconds, though one takes microseconds.
     private static let liveUpdatesPerRun = 1_000
-    /// How many cloud refreshes each run of that measurement averages.
-    private static let refreshesPerRun = 20
+    /// How many cloud refreshes each run of that measurement averages: a
+    /// refresh of a library outside the cloud takes a fraction of a
+    /// millisecond, so a run of a hundred takes tens of milliseconds.
+    private static let refreshesPerRun = 100
     /// How many reader publishes each run of the heading sheet measurement
     /// averages, after three that warm it up.
     private static let publishesPerRun = 20
@@ -359,20 +361,25 @@ final class PerformanceBaselineTests: XCTestCase {
 
     // MARK: - The Cloud
 
-    /// One cloud refresh of the 643 books in a library outside the cloud,
-    /// as every visible Library window makes each minute: the library's
-    /// location is read once and nothing else (PERF16; 82 ms before it).
+    /// The processor time of one cloud refresh of the 643 books in a
+    /// library outside the cloud, as every visible Library window makes
+    /// each minute: the library's location is read once and nothing else
+    /// (PERF16; 82 ms before it). Processor time, on every thread, rather
+    /// than the time it takes: the refresh hands its little work to a
+    /// utility thread and back, and on a busy Mac those hops wait several
+    /// times longer while the work stays the same.
     func testCloudRefreshOfALocalLibrary() async throws {
         let packages = PerformanceFixtures.cloudRefreshPackages()
         let storage = BookCloudStorageService(items: UbiquitousItemStatusProvider())
         let states = BookCloudStates()
 
         try await baselines.checkAwaiting(.cloudRefresh) {
-            let start = ContinuousClock.now
+            let start = PerformanceClock.processCPUNanoseconds()
             for _ in 0..<Self.refreshesPerRun {
                 await states.refresh(packages, using: storage)
             }
-            return PerformanceClock.milliseconds(since: start) / Double(Self.refreshesPerRun)
+            let nanoseconds = PerformanceClock.processCPUNanoseconds() - start
+            return Double(nanoseconds) / 1_000_000 / Double(Self.refreshesPerRun)
         }
         XCTAssertEqual(states.libraryLocation, .local, "the hosted test root is not in a cloud location")
         XCTAssertEqual(states.states, [:], "a local library's refresh recorded cloud states")

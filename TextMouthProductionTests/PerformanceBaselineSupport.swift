@@ -155,10 +155,11 @@ extension PerformanceMeasure {
         unit: .milliseconds
     )
 
-    /// One cloud refresh of a library on this Mac.
+    /// One cloud refresh of a library on this Mac, in processor time.
     static let cloudRefresh = PerformanceMeasure(
         name: "cloud.refreshLocalLibrary",
-        summary: "One cloud refresh of a 643-book library that is not in a cloud location.",
+        summary: "Processor time, on every thread, of one cloud refresh of a 643-book library "
+            + "that is not in a cloud location.",
         unit: .milliseconds
     )
 
@@ -866,5 +867,12 @@ enum PerformanceClock {
     /// nor other processes add to.
     static func threadCPUNanoseconds() -> UInt64 {
         clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+    }
+
+    /// The processor time every thread of this process has used, in
+    /// nanoseconds: the work of something that hands its work to other
+    /// threads, which a busy Mac's waits for those threads do not add to.
+    static func processCPUNanoseconds() -> UInt64 {
+        clock_gettime_nsec_np(CLOCK_PROCESS_CPUTIME_ID)
     }
 }
