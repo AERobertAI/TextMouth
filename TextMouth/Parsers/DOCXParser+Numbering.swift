@@ -47,6 +47,23 @@ struct DOCXNumbering {
     func listType(numId: String, level: Int) -> ListType {
         levelFormat(numId: numId, level: level)?.listType ?? .bullet
     }
+
+    /// The key under which the paragraphs of list instance `numId` share
+    /// their counts: its abstract definition, every instance of which Word
+    /// numbers as one list, or the instance itself when it names none.
+    func counterKey(numId: String) -> String {
+        numIdToAbstractId[numId].map { "abstract:" + $0 } ?? "instance:" + numId
+    }
+
+    /// The levels list instance `numId` starts afresh when its first
+    /// paragraph appears, shallowest first: those it overrides with a start
+    /// override or a replacement level.
+    func restartedLevels(numId: String) -> [Int] {
+        (levelOverrides[numId] ?? [:])
+            .filter { $0.value.startOverride != nil || $0.value.level != nil }
+            .keys
+            .sorted()
+    }
 }
 
 /// One level of a list definition (`w:lvl`).
@@ -123,6 +140,96 @@ enum ListType {
 enum DOCXListMarker: Equatable {
     case bullet
     case number(Int)
+}
+
+// MARK: - List Numbers
+
+/// Numbers a document's list paragraphs in reading order, as Word numbers
+/// them (ISO/IEC 29500-1 §17.9):
+/// - The instances of one abstract definition share their counts, so a
+///   list Word splits across instances numbers on across them. An instance
+///   that overrides a level's start (with a start override or a replacement
+///   level) starts that level afresh when its first paragraph appears,
+///   which is how Word stores Restart Numbering; later paragraphs of any
+///   instance count on from there. The standard counts per abstract
+///   definition (the example in §17.9.25) without spelling out how
+///   instances share a count; this follows Word as it is observed to number.
+/// - A level counts on from its start value, one item at a time.
+/// - Every item starts afresh the deeper levels that restart after it
+///   (`ListLevelFormat.restarts(level:afterItemAt:)`).
+struct DOCXListCounter {
+    /// The list definitions the paragraphs refer to.
+    let numbering: DOCXNumbering
+    /// The number last given at each level, by counter key. A level with no
+    /// number gives its next item its start value.
+    private var counts: [String: [Int: Int]] = [:]
+    /// The list instances whose first paragraph has been numbered.
+    private var startedInstances: Set<String> = []
+
+    init(numbering: DOCXNumbering) {
+        self.numbering = numbering
+    }
+
+    /// The marker of the next paragraph of list instance `numId` at
+    /// `level`: its number, or a bullet when that level is bulleted or not
+    /// defined. Either way the item starts afresh the deeper levels that
+    /// restart after it.
+    mutating func marker(numId: String, level: Int) -> DOCXListMarker {
+        let key = numbering.counterKey(numId: numId)
+        var levels = counts[key] ?? [:]
+        if startedInstances.insert(numId).inserted {
+            // An overridden level starts afresh, and with it the levels
+            // below it, as though an item at that level had appeared.
+            for overridden in numbering.restartedLevels(numId: numId) {
+                levels[overridden] = nil
+                restartLevels(deeperThan: overridden, of: numId, in: &levels)
+            }
+        }
+        restartLevels(deeperThan: level, of: numId, in: &levels)
+
+        var marker = DOCXListMarker.bullet
+        if let format = numbering.levelFormat(numId: numId, level: level), format.listType == .numbered {
+            let number = Self.number(after: levels[level], start: format.start)
+            levels[level] = number
+            marker = .number(number)
+        }
+        counts[key] = levels
+        return marker
+    }
+
+    /// The marker of the next paragraph numbered by its paragraph style
+    /// alone (a "List Number" style, naming no list instance): each such
+    /// style counts as a list of one level, from 1.
+    mutating func marker(numberedStyle styleId: String) -> DOCXListMarker {
+        let key = "style:" + styleId
+        let number = Self.number(after: counts[key]?[0], start: 1)
+        counts[key] = [0: number]
+        return .number(number)
+    }
+
+    /// Forget every count, so each list starts again from its start value.
+    mutating func restartAll() {
+        counts.removeAll()
+    }
+
+    /// Clear the counts of the levels deeper than `level` that restart
+    /// after an item at `level`, by the definitions list instance `numId`
+    /// gives them. A level the instance does not define restarts, as a
+    /// level does by default.
+    private func restartLevels(deeperThan level: Int, of numId: String, in levels: inout [Int: Int]) {
+        for deeper in levels.keys.filter({ $0 > level }) {
+            let format = numbering.levelFormat(numId: numId, level: deeper)
+            if format?.restarts(level: deeper, afterItemAt: level) ?? true {
+                levels[deeper] = nil
+            }
+        }
+    }
+
+    /// The number after `previous`, held to the largest a list item can
+    /// show, or `start` when the level has not counted since it started.
+    private static func number(after previous: Int?, start: Int) -> Int {
+        previous.map { min($0 + 1, ListLevelFormat.largestNumber) } ?? start
+    }
 }
 
 /// SAX parser for word/numbering.xml

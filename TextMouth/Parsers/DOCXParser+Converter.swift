@@ -19,7 +19,6 @@ struct DOCXConversion {
 /// properly formatted Markdown.
 class DOCXToMarkdownConverter: DOCXSAXParser {
     private let styles: DOCXStyles
-    private let numbering: DOCXNumbering
     private let relationships: [String: String]
 
     // Output accumulation
@@ -56,9 +55,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var currentRowCells: [String] = []
     private var currentCellText = ""
 
-    // List counter tracking (for numbered lists).
-    // Counters reset when a non-list paragraph interrupts a list sequence.
-    private var listCounters: [String: [Int: Int]] = [:] // numId -> [level: count]
+    /// Numbers the list paragraphs from the package's list definitions.
+    /// Its counts start again when a non-list paragraph interrupts a list.
+    private var listCounter: DOCXListCounter
     private var previousParagraphWasList = false
 
     /// The list items open in the Markdown list being written, outermost
@@ -79,7 +78,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         relationships: [String: String]
     ) {
         self.styles = styles
-        self.numbering = numbering
+        self.listCounter = DOCXListCounter(numbering: numbering)
         self.relationships = relationships
         super.init(data: data, file: file)
     }
@@ -299,10 +298,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             || styles.bulletListStyles.contains(currentParagraphStyle)
             || styles.numberedListStyles.contains(currentParagraphStyle)
 
-        // Reset all list counters when transitioning from list to non-list,
-        // so that subsequent numbered lists restart at 1
+        // TextMouth's policy for a list interrupted by other text: every
+        // list starts again from its start value afterwards. (Word would
+        // continue the list's count; DOCXEdgeCaseTests pins this policy.)
         if !isListParagraph && previousParagraphWasList {
-            listCounters.removeAll()
+            listCounter.restartAll()
         }
         previousParagraphWasList = isListParagraph
 
@@ -314,31 +314,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         }
         // Check if this paragraph is a list item (via numPr or list style)
         else if let numId = listNumId {
-            let marker: DOCXListMarker
-            switch numbering.listType(numId: numId, level: listLevel) {
-            case .bullet:
-                marker = .bullet
-            case .numbered:
-                // Track counter for this list
-                var counter = listCounters[numId] ?? [:]
-                let current = (counter[listLevel] ?? 0) + 1
-                counter[listLevel] = current
-                listCounters[numId] = counter
-                marker = .number(current)
-            }
-            writeListItem(text, level: listLevel, marker: marker)
+            writeListItem(text, level: listLevel, marker: listCounter.marker(numId: numId, level: listLevel))
         }
         // Style-based list detection (e.g. "ListBullet", "ListNumber" styles)
         else if styles.bulletListStyles.contains(currentParagraphStyle) {
             writeListItem(text, level: 0, marker: .bullet)
         }
         else if styles.numberedListStyles.contains(currentParagraphStyle) {
-            let key = "style-\(currentParagraphStyle)"
-            var counter = listCounters[key] ?? [:]
-            let current = (counter[0] ?? 0) + 1
-            counter[0] = current
-            listCounters[key] = counter
-            writeListItem(text, level: 0, marker: .number(current))
+            writeListItem(text, level: 0, marker: listCounter.marker(numberedStyle: currentParagraphStyle))
         }
         // Regular paragraph
         else {
