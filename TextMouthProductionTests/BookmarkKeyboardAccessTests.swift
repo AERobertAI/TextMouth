@@ -796,14 +796,6 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
     }
 
-    /// Offer `key` to the panel's window as a key equivalent, as AppKit does
-    /// with a key pressed in a window, so that the button with that keyboard
-    /// shortcut can take it. Returns whether anything did.
-    private func pressKeyEquivalent(_ key: KeyEquivalent, in hostingView: NSView) -> Bool {
-        guard let window = hostingView.window, let event = keyDown(key, in: window) else { return false }
-        return window.performKeyEquivalent(with: event)
-    }
-
     /// Press `key` in the panel's window, which hands it to the control
     /// with keyboard focus.
     private func press(_ key: KeyEquivalent, in hostingView: NSView) {
@@ -811,35 +803,6 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
             return XCTFail("No key-down event for \(key.character.unicodeScalars.map(\.value))")
         }
         window.sendEvent(event)
-    }
-
-    /// A key-down event for `key` in `window`, as the keyboard sends it; nil
-    /// for a key these tests never press.
-    private func keyDown(_ key: KeyEquivalent, in window: NSWindow) -> NSEvent? {
-        // Virtual key codes of the keys these tests press.
-        let keyCodes: [Character: UInt16] = [
-            KeyEquivalent.return.character: 36,
-            KeyEquivalent.escape.character: 53,
-            KeyEquivalent.space.character: 49,
-            KeyEquivalent.upArrow.character: 126,
-            KeyEquivalent.downArrow.character: 125,
-        ]
-        guard let keyCode = keyCodes[key.character] else { return nil }
-        let characters = String(key.character)
-        // The keyboard flags arrow keys as function keys on the numeric pad.
-        let isArrow = key == .upArrow || key == .downArrow
-        return NSEvent.keyEvent(
-            with: .keyDown,
-            location: .zero,
-            modifierFlags: isArrow ? [.function, .numericPad] : [],
-            timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber,
-            context: nil,
-            characters: characters,
-            charactersIgnoringModifiers: characters,
-            isARepeat: false,
-            keyCode: keyCode
-        )
     }
 
     /// Wait `seconds` for the panel to move keyboard focus. After a focus
@@ -857,16 +820,6 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     /// editing a bookmark.
     private func noteFields(in hostingView: NSView) -> [NSTextField] {
         descendants(of: hostingView, as: NSTextField.self).filter(\.isEditable)
-    }
-
-    /// Every accessibility element below `root` whose label is `label`,
-    /// groups included.
-    private func accessibilityElements(labelled label: String, in root: Any) -> [NSAccessibilityProtocol] {
-        guard let node = root as? NSAccessibilityProtocol else { return [] }
-        let match = node.accessibilityLabel() == label ? [node] : []
-        return match + (node.accessibilityChildren() ?? []).flatMap {
-            accessibilityElements(labelled: label, in: $0)
-        }
     }
 
     /// Why the keyboard tests skip on a Mac with keyboard navigation off.
