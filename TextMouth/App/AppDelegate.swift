@@ -113,11 +113,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Whether TextMouth may quit now (TODO S09). The exact sequence:
     ///
-    /// 0. While the library moves (FR02), the move is stopped first, as its
-    ///    Cancel stops it, so no partial copy is left behind, or, when its
-    ///    copy is complete, let finish; this request is cancelled, and
+    /// 0. While a library move copies (FR02), the move is stopped first, as
+    ///    its Cancel stops it, so no partial copy is left behind, or, when
+    ///    its copy is complete, let finish; this request is cancelled, and
     ///    TextMouth asks to quit again once the move has ended, which starts
-    ///    over here.
+    ///    over here. A move that has not started copying has written
+    ///    nothing, and is no reason to wait.
     /// 1. Here, everything pending is flushed as the termination path
     ///    flushes it, but nothing is ended: the library index and every
     ///    queued book record (`LibraryPersistenceService.flushPendingSave`),

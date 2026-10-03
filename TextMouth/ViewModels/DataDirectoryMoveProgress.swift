@@ -228,18 +228,26 @@ final class DataDirectoryMoveProgress: ObservableObject, Identifiable {
 
     // MARK: Quitting
 
-    /// Stops the move under way, if any, before TextMouth quits, so no
-    /// partial copy is left behind: Cancel is pressed, or, when the copy is
-    /// already complete, the move is let finish, and `quit` runs once it has
-    /// ended. Returns whether a move was under way, in which case the
-    /// request to quit is to be cancelled for now.
+    /// Stops the move under way, if it is copying, before TextMouth quits,
+    /// so no partial copy is left behind: Cancel is pressed, or, when the
+    /// copy is already complete, the move is let finish, and `quit` runs
+    /// once it has ended. A move that has not started copying, still
+    /// waiting for other work or getting ready, has written nothing, and
+    /// does not hold up quitting. Returns whether a move was stopped, in
+    /// which case the request to quit is to be cancelled for now.
     @discardableResult
     static func stopForQuit(then quit: @escaping @MainActor @Sendable () -> Void) -> Bool {
-        guard let move = running, !move.hasEnded else { return false }
+        guard let move = running, !move.hasEnded, move.hasStartedCopying else { return false }
         VoiceOverAnnouncer.announce(DataDirectoryMoveWording.quitAnnouncement)
         move.cancel()
         move.whenEnded(quit)
         return true
+    }
+
+    /// Whether the copy has started, so the move may have written a
+    /// partial copy that only its own ending deletes.
+    var hasStartedCopying: Bool {
+        phase == .copying || phase == .finishing
     }
 }
 

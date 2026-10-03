@@ -271,6 +271,22 @@ final class DataDirectoryMoveTests: XCTestCase {
         XCTAssertTrue(waitUntil { quits.count == 1 }, "TextMouth did not ask to quit again once the move ended")
     }
 
+    /// A move still waiting for other work, or getting ready, has written
+    /// nothing, so it does not hold up quitting, and is not cancelled.
+    func testAMoveThatHasNotStartedCopyingDoesNotHoldUpQuitting() {
+        let move = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Backup/Library"))
+        move.begin()
+        defer { move.end() }
+
+        recordingAnnouncements {
+            XCTAssertFalse(DataDirectoryMoveProgress.stopForQuit(then: { XCTFail("quitting waited for a move") }))
+            move.wait(for: .importing)
+            XCTAssertFalse(DataDirectoryMoveProgress.stopForQuit(then: { XCTFail("quitting waited for a move") }))
+        }
+
+        XCTAssertFalse(move.isCancelled)
+    }
+
     /// A move whose copy is complete cannot be cancelled; quitting waits
     /// for it to finish.
     func testQuittingWhileAMoveFinishesLetsItFinish() {
