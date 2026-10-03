@@ -9,7 +9,7 @@ import ZIPFoundation
 ///
 /// - `audioArchiveExpansion`, 8 GB, for an import whose archives hold audio
 ///   or other archives (which may hold audio). The longest commercial
-///   audiobooks run 50 to 60 hours: about 3.2 GB as 128 kbps MP3, under
+///   audiobooks run 50 to 60 hours: 2.9 to 3.5 GB as 128 kbps MP3, under
 ///   7 GB even at 256 kbps; a 12-hour book as CD-quality WAVE is about
 ///   7.6 GB. Every real single audiobook fits, with room to spare.
 /// - `otherArchiveExpansion`, 2 GB, for archives of books without audio.
