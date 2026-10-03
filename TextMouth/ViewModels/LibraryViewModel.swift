@@ -122,17 +122,17 @@ final class LibraryViewModel: ObservableObject {
     /// False for the inert model used by previews and tests, which never
     /// starts disk maintenance, observers, or background analysis by itself.
     let runsBackgroundWork: Bool
-    /// What the data-directory check works with: the app's preferences and
-    /// volume notifications, or a test's.
+    /// What the data-directory check and the session lease work with: the
+    /// app's preferences, volume notifications, and lease, or a test's.
     let dataDirectoryEnvironment: DataDirectoryEnvironment
     /// Whether the startup the launch check defers has run: at launch, or
     /// on the Try Again that first found the library.
     private(set) var hasStartedLibrary = false
     /// The data directory the last check found the library in, which an
     /// unmount or a failed write may take away; nil until one is found.
-    var availableDataDirectory: DataDirectoryLocation?
+    private(set) var availableDataDirectory: DataDirectoryLocation?
     /// The reason last announced to VoiceOver, so each is announced once.
-    var announcedUnavailability: DataDirectoryUnavailability?
+    private(set) var announcedUnavailability: DataDirectoryUnavailability?
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
