@@ -119,6 +119,102 @@ where Value: RawRepresentable & CaseIterable & Sendable, Value.RawValue == Strin
     }
 }
 
+// MARK: - Thresholds that can be switched off
+
+/// Validation rule for a whole-number threshold with one value outside its
+/// range that switches the threshold off. The repeated-symbol threshold is
+/// one: -1 reads every symbol, and 2 to 99 is the shortest run that is
+/// collapsed.
+struct ThresholdSettingRule: Sendable {
+    /// Key shared by the preferences store and `config.json`.
+    let key: String
+    /// The thresholds the Settings controls offer.
+    let range: ClosedRange<Int>
+    /// The value that switches the threshold off; below `range`.
+    let offValue: Int
+    /// The value used when nothing usable is stored; inside `range`.
+    let defaultValue: Int
+
+    /// Creates a rule; `offValue` must lie below `range`, and
+    /// `defaultValue` inside it.
+    init(key: String, range: ClosedRange<Int>, offValue: Int, defaultValue: Int) {
+        assert(offValue < range.lowerBound, "The off value of \(key) must lie below its range")
+        assert(range.contains(defaultValue), "The default of \(key) must be a supported value")
+        self.key = key
+        self.range = range
+        self.offValue = offValue
+        self.defaultValue = defaultValue
+    }
+
+    /// The supported values, for log lines.
+    var supportedDescription: String {
+        "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)"
+    }
+
+    /// Validates a threshold. Any negative value is the off value, as the
+    /// user who asked for this setting described it ("negative or -1 means
+    /// always repeat everything"); any other value is clamped into `range`,
+    /// so 0 and 1, which every run already reaches, act as the lowest.
+    func validated(_ value: Int) -> Int {
+        value < 0 ? offValue : min(max(value, range.lowerBound), range.upperBound)
+    }
+
+    /// Validates a number of any size, such as one `defaults write` stored:
+    /// NaN and infinities become `defaultValue`, and any other number is
+    /// rounded and validated like a whole one.
+    func validated(_ value: Double) -> Int {
+        guard value.isFinite else { return defaultValue }
+        guard value >= 0 else { return offValue }
+        // Clamp first, so that no number is too large to become an Int.
+        return validated(Int(min(value, Double(range.upperBound)).rounded()))
+    }
+
+    /// Reads this preference from `store`, validated: `defaultValue` when
+    /// nothing is stored or the stored value is not a number; numeric text
+    /// counts as its number, as `@AppStorage` reads it.
+    func storedValue(in store: UserDefaults) -> Int {
+        switch store.object(forKey: key) {
+        case let number as NSNumber:
+            return validated(number.doubleValue)
+        case let text as String:
+            return Double(text.trimmingCharacters(in: .whitespaces)).map { validated($0) } ?? defaultValue
+        default:
+            return defaultValue
+        }
+    }
+}
+
+// MARK: - Sets of characters
+
+/// Validation rule for a preference holding a set of characters written as
+/// text, such as the symbols that form repeated-symbol runs. Only characters
+/// `admits` accepts can belong, each once; the text keeps them in the order
+/// they were written, so the Settings field shows them as they were typed,
+/// less what does not count.
+struct CharacterSetSettingRule: Sendable {
+    /// Key shared by the preferences store and `config.json`.
+    let key: String
+    /// The set used until one is saved. Already valid.
+    let defaultValue: String
+    /// Whether a character may belong to the set.
+    let admits: @Sendable (Character) -> Bool
+
+    /// `text` with every character `admits` rejects removed, and every
+    /// repeat of a character after its first: "* * - *" becomes "*-".
+    func validated(_ text: String) -> String {
+        var seen = Set<Character>()
+        return String(text.filter { admits($0) && seen.insert($0).inserted })
+    }
+
+    /// Reads this preference from `store`, validated: `defaultValue` when
+    /// nothing is stored or the stored value is not text. Empty text is a
+    /// set like any other, with no characters.
+    func storedValue(in store: UserDefaults) -> String {
+        guard let text = store.object(forKey: key) as? String else { return defaultValue }
+        return validated(text)
+    }
+}
+
 // MARK: - Preferences keyed by enum cases
 
 /// Validation rule for a preference that gives each case of an enum a value
@@ -249,6 +345,38 @@ enum SettingsPolicy {
     /// `config.json`, not in `UserDefaults`.
     static let importDeleteBehavior = EnumSettingRule(
         key: "importDeleteBehavior", defaultValue: ImportDeleteBehavior.keepOriginal
+    )
+
+    // MARK: Repeated symbols
+
+    /// How speech reads a run of a repeated symbol (Text settings, Repeated
+    /// Symbols picker): as a count until the user picks another style.
+    static let repeatedSymbolStyle = EnumSettingRule(
+        key: "repeatedSymbolStyle", defaultValue: RepeatedSymbolStyle.sayCount
+    )
+    /// The fewest symbols a run must have to be read as a count or left out
+    /// (Repeated Symbols field and stepper, 2 to 99), or -1 to read every
+    /// symbol (the Never collapse checkbox). 4 until the user picks another.
+    static let repeatedSymbolThreshold = ThresholdSettingRule(
+        key: "repeatedSymbolThreshold", range: 2...99, offValue: -1, defaultValue: 4
+    )
+    /// The symbols that can form runs (Repeated Symbols field): punctuation
+    /// and symbols only, each once.
+    ///
+    /// The default holds the ASCII symbols that voices read aloud and that
+    /// separator lines are made of, and the Unicode bullets, dashes,
+    /// ellipsis, and box-drawing lines. It leaves out the sentence
+    /// punctuation voices treat as pauses and intonation (. , ! ? ; :),
+    /// quotation marks, and brackets: every installed voice reads
+    /// "Wait.... What now?" as a pause, so collapsing the run would only add
+    /// the words "4 periods". A user who wants them can type them in.
+    static let repeatedSymbolSet = CharacterSetSettingRule(
+        key: "repeatedSymbolSet",
+        defaultValue: "*-=_~#+/\\|<>^&%$@`"
+            + "\u{2022}\u{25E6}\u{2023}\u{2043}\u{00B7}"  // • ◦ ‣ ⁃ ·
+            + "\u{2010}\u{2012}\u{2013}\u{2014}\u{2015}\u{2026}"  // ‐ ‒ – — ― …
+            + "\u{2500}\u{2501}\u{2550}\u{2504}\u{2505}\u{2508}\u{2509}\u{254C}\u{254D}",  // ─ ━ ═ ┄ ┅ ┈ ┉ ╌ ╍
+        admits: { RepeatedSymbolRule.canFormRuns($0) }
     )
 
     // MARK: Keyed by enum cases

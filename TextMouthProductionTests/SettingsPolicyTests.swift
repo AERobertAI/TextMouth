@@ -204,6 +204,87 @@ final class SettingsPolicyTests: XCTestCase {
         )
     }
 
+    // MARK: - Repeated symbols
+
+    /// The repeated-symbol rules match the Repeated Symbols controls: a
+    /// picker of three styles, counting by default; a threshold from 2 to 99
+    /// with -1 for Never collapse, 4 by default; and a default symbol set
+    /// that is already valid.
+    func testRepeatedSymbolRulesMatchTheSettingsControls() {
+        XCTAssertEqual(SettingsPolicy.repeatedSymbolStyle.defaultValue, .sayCount)
+        XCTAssertEqual(SettingsPolicy.repeatedSymbolStyle.allowedRawValues, ["repeat", "count", "omit"])
+        let threshold = SettingsPolicy.repeatedSymbolThreshold
+        XCTAssertEqual(threshold.range, 2...99)
+        XCTAssertEqual(threshold.offValue, -1)
+        XCTAssertEqual(threshold.defaultValue, 4)
+        let symbols = SettingsPolicy.repeatedSymbolSet
+        XCTAssertEqual(symbols.validated(symbols.defaultValue), symbols.defaultValue)
+        XCTAssertEqual(Set(symbols.defaultValue), Set("*-=_~#+/\\|<>^&%$@`•◦‣⁃·‐‒–—―…─━═┄┅┈┉╌╍"))
+    }
+
+    /// Any negative threshold switches collapsing off, as -1; 0 and 1 act as
+    /// 2, the shortest run; anything past 99 is 99.
+    func testRepeatedSymbolThresholdSwitchesOffForAnyNegativeAndClampsTheRest() {
+        let rule = SettingsPolicy.repeatedSymbolThreshold
+        let cases: [(Int, Int)] = [
+            (-1, -1), (-2, -1), (Int.min, -1), (0, 2), (1, 2), (2, 2), (4, 4), (57, 57), (99, 99), (100, 99), (Int.max, 99),
+        ]
+        for (value, expected) in cases {
+            XCTAssertEqual(rule.validated(value), expected, "\(value)")
+        }
+        let numbers: [(Double, Int)] = [
+            (3.6, 4), (0.4, 2), (-0.5, -1), (1e308, 99), (-1e308, -1),
+            (Double.nan, 4), (Double.infinity, 4), (-Double.infinity, 4),
+        ]
+        for (value, expected) in numbers {
+            XCTAssertEqual(rule.validated(value), expected, "\(value)")
+        }
+        XCTAssertEqual(rule.supportedDescription, "-1 (off), or 2...99")
+    }
+
+    /// The stored threshold reads numbers and numeric text, validated, and
+    /// the default for nothing or anything else.
+    func testRepeatedSymbolThresholdReadsTheStoreLikeOtherNumbers() {
+        let defaults = makeSandboxedPreferences("settings-policy-threshold")
+        let rule = SettingsPolicy.repeatedSymbolThreshold
+
+        XCTAssertEqual(rule.storedValue(in: defaults), 4, "missing key")
+        let cases: [(Any, Int)] = [
+            (7, 7), (-1, -1), (-30, -1), (7.4, 7), (150, 99), ("12", 12), (" 6 ", 6), ("many", 4), (Data([1]), 4),
+        ]
+        for (stored, expected) in cases {
+            defaults.set(stored, forKey: rule.key)
+            XCTAssertEqual(rule.storedValue(in: defaults), expected, "\(stored)")
+        }
+    }
+
+    /// A symbol set keeps punctuation and symbols only, each once, in the
+    /// order written: spaces, letters, digits, and repeats are dropped.
+    func testRepeatedSymbolSetKeepsEachSymbolOnce() {
+        let rule = SettingsPolicy.repeatedSymbolSet
+
+        XCTAssertEqual(rule.validated("* * - * a1 ="), "*-=")
+        XCTAssertEqual(rule.validated("~\n~\t#"), "~#")
+        XCTAssertEqual(rule.validated(""), "")
+        XCTAssertEqual(rule.validated("abc 123"), "")
+        XCTAssertEqual(rule.validated("★☆★"), "★☆")
+    }
+
+    /// The stored symbol set is the default until one is saved; saved text,
+    /// empty text included, is validated; a value that is not text reads as
+    /// the default.
+    func testRepeatedSymbolSetReadsTheStore() {
+        let defaults = makeSandboxedPreferences("settings-policy-symbols")
+        let rule = SettingsPolicy.repeatedSymbolSet
+
+        XCTAssertEqual(rule.storedValue(in: defaults), rule.defaultValue, "missing key")
+        let cases: [(Any, String)] = [("*=", "*="), ("* = *", "*="), ("", ""), ("xyz", ""), (5, rule.defaultValue)]
+        for (stored, expected) in cases {
+            defaults.set(stored, forKey: rule.key)
+            XCTAssertEqual(rule.storedValue(in: defaults), expected, "\(stored)")
+        }
+    }
+
     // MARK: - Saved book state
 
     /// A text book's saved speed is words per minute, clamped to the global
