@@ -527,6 +527,11 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 /// `AudioEndNoticePolicy`). An end that comes while playback is paused is
 /// held until it resumes.
 ///
+/// Starting any player costs about a quarter of a second of silence before
+/// its clock moves, a new one or a stopped one alike. A file named to follow
+/// the loaded one (`setFileAfterCurrent(_:)`) is queued behind it, so the
+/// player rolls straight on into it with no gap (TODO PERF09).
+///
 /// `@unchecked Sendable`: everything it holds is read and changed on the
 /// main thread. Its owner, the reader, is main-actor isolated, and every
 /// AVFoundation callback it installs runs on the main queue or hops there;
@@ -553,8 +558,25 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// `onPlaybackFinished`.
     var onPlaybackFailed: ((AudioPlaybackFailure) -> Void)?
 
-    private var player: AVPlayer?
+    /// The player, which holds the loaded file's item and, behind it, the
+    /// item of any file named to follow.
+    private var player: AVQueuePlayer?
+    /// The loaded file's item.
     private var playerItem: AVPlayerItem?
+    /// The file named to follow the loaded one, with its item, queued behind
+    /// the loaded file's item, and the asset that item plays; or nil
+    /// (`setFileAfterCurrent(_:)`).
+    private var followingFile: (url: URL, item: AVPlayerItem, asset: AVURLAsset)?
+    /// Watches the following file's item, which is dropped from the queue
+    /// should it fail before playback reaches it.
+    private var followingItemStatusObservation: NSKeyValueObservation?
+    /// Whether the loaded file began playing by rolling straight on from the
+    /// file before it, and has not been moved since: playing it from its
+    /// start then plays on rather than setting it back.
+    private var rolledOnIntoLoadedFile = false
+    /// Watches the player arrive at the loaded file it is rolling on into,
+    /// to have it stop at that file's end in turn (`stopAtLoadedFileEnd()`).
+    private var arrivalObservation: NSKeyValueObservation?
     private var timeObserver: Any?
     /// Counts the position observers installed, one for each player. Each
     /// observer's ticks carry the count it was installed with, so a tick of
@@ -679,13 +701,18 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// otherwise.
     ///
     /// Either way the loaded file begins a new play: nothing AVFoundation
-    /// posted before can end what plays next.
+    /// posted before can end what plays next. A file named to follow the one
+    /// loaded before is forgotten; it is named again for each play.
     private func loadFile(_ url: URL, reusingLivePlayer: Bool) -> Bool {
+        // A player moving on into a named file is leaving the loaded file,
+        // so it is never kept to go on playing it.
+        let isMovingOn = isMovingOnToFollowingFile
+        dropFollowingFile()
         chained = nil
         let normalizedURL = url.standardizedFileURL
         // A failure releases its player, so a live player for this URL has
         // not failed and can keep playing the file.
-        if reusingLivePlayer, let loadedURL, loadedURL == normalizedURL, player != nil {
+        if reusingLivePlayer, !isMovingOn, let loadedURL, loadedURL == normalizedURL, player != nil {
             clipEndTime = nil
             playGeneration.advance()
             return true
@@ -705,11 +732,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         }
         failure = nil
 
-        let asset = AVURLAsset(url: normalizedURL)
-        let item = AVPlayerItem(asset: asset)
-        item.audioTimePitchAlgorithm = .timeDomain // Best for speech
-
-        let avPlayer = AVPlayer(playerItem: item)
+        let (item, asset) = Self.makeItem(playing: normalizedURL)
+        let avPlayer = AVQueuePlayer(items: [item])
+        // Like a plain player, stop at the end of the loaded file, unless a
+        // file named to follow it is queued (`setFileAfterCurrent(_:)`).
+        avPlayer.actionAtItemEnd = .pause
         avPlayer.automaticallyWaitsToMinimizeStalling = false
         // Re-apply tracked volume to the new player. AVPlayer defaults
         // to 1.0, which discards any in-progress sleep timer fade.
@@ -719,24 +746,38 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         self.player = avPlayer
         self.loadedURL = normalizedURL
 
-        // Get duration — cancel any previous load to avoid stale overwrites
+        loadDuration(of: item, asset: asset)
+        setupTimeObserver()
+        setupItemObservers()
+        setupPlayerStatusObserver()
+        return true
+    }
+
+    /// An item playing the file at `url`, stretched in time for speech, and
+    /// the asset it plays, kept to learn the file's length from (an item's
+    /// own `asset` may be read only on the main actor).
+    private static func makeItem(playing url: URL) -> (item: AVPlayerItem, asset: AVURLAsset) {
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        item.audioTimePitchAlgorithm = .timeDomain // Best for speech
+        return (item, asset)
+    }
+
+    /// Learn how long `asset`, which the loaded file's `item` plays, lasts,
+    /// and publish it as `duration` once known, cancelling any earlier load
+    /// so that it cannot overwrite this one.
+    private func loadDuration(of item: AVPlayerItem, asset: AVURLAsset) {
         durationTask?.cancel()
-        let currentItem = item
         durationTask = Task { @MainActor in
             guard !Task.isCancelled else { return }
             if let dur = try? await asset.load(.duration) {
-                guard !Task.isCancelled, self.playerItem === currentItem else { return }
+                guard !Task.isCancelled, self.playerItem === item else { return }
                 let secs = CMTimeGetSeconds(dur)
                 if secs.isFinite && secs > 0 {
                     self.duration = secs
                 }
             }
         }
-
-        setupTimeObserver()
-        setupEndObserver()
-        setupFailureObservers()
-        return true
     }
 
     /// What keeps the file at `url` from being played, found without
@@ -803,6 +844,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// - Returns: As `play(fromTime:)` returns.
     @discardableResult
     private func playLoadedFile(from fileTime: TimeInterval) -> Bool {
+        // A file playback rolled straight on into is already playing from
+        // its start, or about to: asked to play from there, it plays on,
+        // rather than be set back by a seek. Anything else is a fresh start.
+        let playsOn = rolledOnIntoLoadedFile && fileTime <= 0
+        rolledOnIntoLoadedFile = false
+        if !playsOn {
+            restartLoadedFileIfOutOfStep()
+        }
         guard let player = player, let playerItem else { return false }
         // The item can fail before its status observation reaches the main
         // queue. Report it now rather than claim to play it meanwhile.
@@ -810,7 +859,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             reportPlaybackError(playerItem.error)
             return false
         }
-        seekPlayer(toFileTime: fileTime)
+        if !playsOn {
+            seekPlayer(toFileTime: fileTime)
+        }
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
@@ -919,6 +970,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         cancelProgressCheck()
         removeObservers()
         player?.pause()
+        // The queue goes with the player; only the bookkeeping is left.
+        followingItemStatusObservation?.invalidate()
+        followingItemStatusObservation = nil
+        arrivalObservation?.invalidate()
+        arrivalObservation = nil
+        followingFile = nil
+        rolledOnIntoLoadedFile = false
         player = nil
         playerItem = nil
         loadedURL = nil
@@ -961,6 +1019,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Move the loaded file's playback to `fileTime` seconds into it.
     private func seekLoadedFile(to fileTime: TimeInterval) {
+        rolledOnIntoLoadedFile = false
+        restartLoadedFileIfOutOfStep()
         guard let player = player else { return }
         seekPlayer(toFileTime: fileTime)
         if isPlaying && !isPaused {
@@ -978,9 +1038,180 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Set an optional clip end time for segmented audio playback.
     /// When the current time reaches this value, onPlaybackFinished is fired
     /// instead of continuing to the actual end of the audio file.
-    /// Pass nil or 0 to clear the clip boundary.
+    /// Pass nil or 0 to clear the clip boundary. A clip end forgets any file
+    /// named to follow, since the play no longer ends where the file does.
     func setClipEndTime(_ time: TimeInterval?) {
         clipEndTime = (time ?? 0) > 0 ? time : nil
+        if clipEndTime != nil {
+            dropFollowingFile()
+        }
+    }
+
+    // MARK: - The File That Follows
+
+    /// Name the file that plays after the loaded one, from its start, so
+    /// that when the loaded file plays to its end the player rolls straight
+    /// on into it, sparing the quarter of a second of silence that starting
+    /// a player costs (TODO PERF09). Nil names none, and playback stops at
+    /// the file's end as it always has.
+    ///
+    /// When the loaded file ends, `onPlaybackFinished` is called as at any
+    /// end, with the named file already the loaded one and playing, or about
+    /// to; loading it then and playing it from its start plays on, with no
+    /// seek and no new player. A stop, a pause, or another load instead
+    /// stops it or replaces it as usual.
+    ///
+    /// The file is queued only while the loaded file plays on its own to its
+    /// own end: not during a clip chain or with a clip end set, which end the
+    /// play elsewhere, and not when it cannot be read. Loading any file, a
+    /// clip end, a stop, or a failure forgets it. Once the loaded file has
+    /// played to its end and the player is moving on into the named file, a
+    /// new name changes nothing: the end about to be acted on carries
+    /// playback into the file already named.
+    ///
+    /// Name a file only when it certainly plays next: never when playback
+    /// should stop at the loaded file's end, as at a book's last chapter or
+    /// with a sleep timer that stops at the end of a chapter, and never a
+    /// file that is only in the cloud, which would stall.
+    func setFileAfterCurrent(_ url: URL?) {
+        guard !isMovingOnToFollowingFile else { return }
+        dropFollowingFile()
+        guard let url, let player, let playerItem, chained == nil, clipEndTime == nil else { return }
+        let normalizedURL = url.standardizedFileURL
+        // A file that cannot be played is left for its own load to report.
+        guard Self.fileProblem(at: normalizedURL) == nil else {
+            DiagnosticLog.trace(.playback, "audio: the file named to follow cannot be read; none is queued")
+            return
+        }
+        let (item, asset) = Self.makeItem(playing: normalizedURL)
+        guard player.canInsert(item, after: playerItem) else { return }
+        player.insert(item, after: playerItem)
+        player.actionAtItemEnd = .advance
+        followingFile = (normalizedURL, item, asset)
+        // Key-value observation can call back on any thread.
+        followingItemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            DispatchQueue.main.async { [weak self] in
+                self?.followingItemStatusDidChange(item)
+            }
+        }
+    }
+
+    /// Drop the following file's item from the queue when it fails before
+    /// playback reaches it, so the loaded file stops at its end as though
+    /// none were named, and the file's own load reports the failure.
+    private func followingItemStatusDidChange(_ item: AVPlayerItem) {
+        guard item === followingFile?.item, item.status == .failed, !isMovingOnToFollowingFile else { return }
+        DiagnosticLog.trace(.playback, "audio: the file named to follow failed before it was reached; dropped it")
+        dropFollowingFile()
+    }
+
+    /// Whether the player is moving on into the file named to follow: the
+    /// loaded file has played to its end, or the player has already left it
+    /// for the named file, and that end has yet to be acted on. The player
+    /// moves on, and shows it in `currentItem`, on its own schedule, so until
+    /// the end is acted on (`finishPlayback()`) its queue is left alone.
+    private var isMovingOnToFollowingFile: Bool {
+        guard let following = followingFile, let player, let playerItem else { return false }
+        return player.currentItem === following.item || Self.isAtEndOfFile(playerItem)
+    }
+
+    /// Whether the player's queue is out of step with the loaded file: it is
+    /// moving on into a file named to follow, or it has yet to arrive at the
+    /// loaded file, a file it was rolling on into.
+    private var isQueueOutOfStep: Bool {
+        guard let player, let playerItem else { return false }
+        return player.currentItem !== playerItem || isMovingOnToFollowingFile
+    }
+
+    /// Forget the file named to follow. Before the loaded file's end, its
+    /// item is taken off the queue, and the player again stops at the loaded
+    /// file's end. Once the player is moving on into it, the queue is left
+    /// alone, and the caller releases the player or starts the loaded file
+    /// again on a new one (`restartLoadedFileIfOutOfStep()`).
+    private func dropFollowingFile() {
+        guard let following = followingFile else { return }
+        let isMovingOn = isMovingOnToFollowingFile
+        followingItemStatusObservation?.invalidate()
+        followingItemStatusObservation = nil
+        followingFile = nil
+        guard !isMovingOn, let player else { return }
+        player.remove(following.item)
+        // A player still to arrive at the loaded file it is rolling on into
+        // is stopped at that file's end once it gets there, not before, lest
+        // it stop at the end of the file it is leaving.
+        if player.currentItem === playerItem {
+            player.actionAtItemEnd = .pause
+        }
+    }
+
+    /// Start the loaded file again on a new player when the player's queue
+    /// is out of step with it, as a seek or a play in the loaded file must
+    /// act on that file, which a queue moving on cannot be trusted to.
+    /// Playback keeps its state, playing or paused; the caller then moves it
+    /// where it wants. Any file named to follow is forgotten.
+    private func restartLoadedFileIfOutOfStep() {
+        guard isQueueOutOfStep, let url = loadedURL else { return }
+        DiagnosticLog.trace(.playback, "audio: the player was moving between files; starting the loaded file again on a new player")
+        let wasPlaying = isPlaying
+        let wasPaused = isPaused
+        // A file that fails its check now is reported as any load reports it.
+        guard loadFile(url, reusingLivePlayer: false) else { return }
+        isPlaying = wasPlaying
+        isPaused = wasPaused
+    }
+
+    /// Make the file named to follow the loaded file, as the loaded file's
+    /// play has finished with that file still queued behind it, so the player
+    /// is moving on into it or about to: a play of it from its start, which
+    /// plays on, observed as any loaded file is.
+    ///
+    /// - Returns: False when no such file is queued.
+    private func adoptFollowingFile() -> Bool {
+        guard let player, let following = followingFile,
+              player.items().contains(where: { $0 === following.item }) else { return false }
+        followingItemStatusObservation?.invalidate()
+        followingItemStatusObservation = nil
+        followingFile = nil
+        removeItemObservers()
+        playerItem = following.item
+        loadedURL = following.url
+        itemBecameReady = following.item.status == .readyToPlay
+        clipEndTime = nil
+        playStartFileTime = 0
+        restartedAfterLateEndFrom = nil
+        endHeldUntilResume = nil
+        rolledOnIntoLoadedFile = true
+        currentTime = 0
+        duration = 0
+        loadDuration(of: following.item, asset: following.asset)
+        setupItemObservers()
+        stopAtLoadedFileEnd()
+        return true
+    }
+
+    /// Have the player stop at the loaded file's end, rather than move on
+    /// past it, once it plays that file and nothing is named to follow it: at
+    /// once when it already plays it, otherwise as soon as it arrives there.
+    /// Changing what the player does at an item's end before it has moved on
+    /// could stop it at the end of the file it is leaving.
+    private func stopAtLoadedFileEnd() {
+        arrivalObservation?.invalidate()
+        arrivalObservation = nil
+        guard let player else { return }
+        guard player.currentItem !== playerItem else {
+            if followingFile == nil {
+                player.actionAtItemEnd = .pause
+            }
+            return
+        }
+        // Key-value observation can call back on any thread. `.initial`
+        // also reports an arrival made since the check above.
+        arrivalObservation = player.observe(\.currentItem, options: [.initial, .new]) { [weak self] _, _ in
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let player = self.player, player.currentItem === self.playerItem else { return }
+                self.stopAtLoadedFileEnd()
+            }
+        }
     }
 
     /// Set the playback multiplier, live if audio is currently playing.
@@ -1269,18 +1500,23 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private func playerClockDidTick() {
         guard let player else { return }
         let seconds = CMTimeGetSeconds(player.currentTime())
-        let action = AudioPositionObserverPolicy.action(
-            seconds: seconds,
-            isSeeking: seekGate.isSeeking,
-            isPlaying: isPlaying && !isPaused,
-            clipEndTime: clipEndTime
-        )
+        // While the player plays another item than the loaded file's, as it
+        // does for a moment when it rolls on from one file into the next,
+        // its clock tells nothing of the loaded file's play.
+        let action: AudioPositionObserverPolicy.Action = player.currentItem !== playerItem
+            ? .ignore
+            : AudioPositionObserverPolicy.action(
+                seconds: seconds,
+                isSeeking: seekGate.isSeeking,
+                isPlaying: isPlaying && !isPaused,
+                clipEndTime: clipEndTime
+            )
         switch action {
         case .ignore:
             // Nothing to act on: a seek still on its way, during which the
             // player may report where it was before; a time that is not a
-            // number; or paused or finished playback at or past its clip's
-            // end.
+            // number; paused or finished playback at or past its clip's end;
+            // or the clock of the file rolled on into.
             break
         case .finishClip:
             reachedEnd()
@@ -1301,6 +1537,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         let playhead: TimeInterval?
     }
 
+    /// Observe the loaded file's item: its end (`setupEndObserver()`) and
+    /// each way it can fail (`setupItemFailureObservers()`). Releasing the
+    /// player, or another file becoming the loaded one, removes these.
+    private func setupItemObservers() {
+        setupEndObserver()
+        setupItemFailureObservers()
+    }
+
     /// Watch for AVFoundation's notice that the new item played to its end.
     ///
     /// The notice is read as it is posted, on whatever thread posts it (the
@@ -1308,7 +1552,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// and the item's playhead go with it to the main queue, where
     /// `handleEndNotice(_:)` acts on it. However late it is acted on, a
     /// notice posted during an earlier play is told apart from the end of
-    /// the play under way. Releasing the player removes this observer.
+    /// the play under way.
     private func setupEndObserver() {
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
@@ -1386,6 +1630,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         let start = playStartFileTime
         let chain = chained
         let clipEnd = clipEndTime
+        let following = followingFile?.url
         let wasPlaying = isPlaying
         let wasPaused = isPaused
         // A file that fails its check now is reported as any load reports it.
@@ -1394,6 +1639,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         clipEndTime = clipEnd
         continuePlayback(fromFileTime: start, wasPlaying: wasPlaying, wasPaused: wasPaused)
         restartedAfterLateEndFrom = start
+        // The new player follows the file with whatever followed it before.
+        setFileAfterCurrent(following)
     }
 
     /// Carry playback on from the end of the clip or file it has just
@@ -1422,36 +1669,59 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ///
     /// Paused playback never finishes here: its end is held until it
     /// resumes, so the listener's pause is never overridden by moving on.
+    ///
+    /// When a file named to follow is queued behind the one that finished
+    /// (`setFileAfterCurrent(_:)`), the player rolls straight on into it:
+    /// that file becomes the loaded one and plays on, and the finished play's
+    /// end is reported just the same.
     private func finishPlayback() {
         guard isPlaying, !isPaused else { return }
         playGeneration.advance()
-        player?.pause()
-        isPlaying = false
-        isPaused = false
-        DiagnosticLog.trace(.playback, "audio play finished (generation \(playGeneration.current))")
+        if adoptFollowingFile() {
+            DiagnosticLog.trace(
+                .playback,
+                "audio play finished; playback rolled on into the file named to follow "
+                    + "(generation \(playGeneration.current))"
+            )
+        } else {
+            player?.pause()
+            isPlaying = false
+            isPaused = false
+            DiagnosticLog.trace(.playback, "audio play finished (generation \(playGeneration.current))")
+        }
         onPlaybackFinished?()
     }
 
-    /// Observe each way AVFoundation reports that the current file cannot
-    /// be played: the item's status, the player's status, the item failing
-    /// to play to its end, and the item stalling.
+    /// Observe the player's status, which can become `.failed`. Acted on
+    /// from the main queue, and only while the player is still the current
+    /// one, as `setupItemFailureObservers()` describes.
+    private func setupPlayerStatusObserver() {
+        guard let player else { return }
+        // Key-value observation can call back on any thread. `.initial`
+        // also delivers a status the player already has.
+        playerStatusObservation = player.observe(\.status, options: [.initial, .new]) { [weak self] player, _ in
+            DispatchQueue.main.async { [weak self] in
+                self?.playerStatusDidChange(player)
+            }
+        }
+    }
+
+    /// Observe each way AVFoundation reports that the loaded file's item
+    /// cannot be played: its status, its failing to play to its end, and its
+    /// stalling. The player's own status is observed with the player
+    /// (`setupPlayerStatusObserver()`).
     ///
     /// Every observation is acted on from the main queue, like the other
     /// observers, and only while its item or player is still the current
     /// one: an observation that arrives after `load(url:)` replaced them is
     /// ignored, as the duration task ignores a replaced item.
-    private func setupFailureObservers() {
-        guard let player, let item = playerItem else { return }
+    private func setupItemFailureObservers() {
+        guard let item = playerItem else { return }
         // Key-value observation can call back on any thread. `.initial`
-        // also delivers a status the item or player already has.
+        // also delivers a status the item already has.
         itemStatusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             DispatchQueue.main.async { [weak self] in
                 self?.itemStatusDidChange(item)
-            }
-        }
-        playerStatusObservation = player.observe(\.status, options: [.initial, .new]) { [weak self] player, _ in
-            DispatchQueue.main.async { [weak self] in
-                self?.playerStatusDidChange(player)
             }
         }
         failedToPlayToEndObserver = NotificationCenter.default.addObserver(
@@ -1570,11 +1840,20 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         item.duration.isNumeric && CMTimeCompare(item.currentTime(), item.duration) >= 0
     }
 
+    /// Remove every observer of the player and of the loaded file's item.
     private func removeObservers() {
         if let observer = timeObserver, let player = player {
             player.removeTimeObserver(observer)
             timeObserver = nil
         }
+        playerStatusObservation?.invalidate()
+        playerStatusObservation = nil
+        removeItemObservers()
+    }
+
+    /// Remove the observers of the loaded file's item
+    /// (`setupItemObservers()`), as when it gives way to another.
+    private func removeItemObservers() {
         for observer in [endObserver, failedToPlayToEndObserver, stallObserver].compactMap({ $0 }) {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -1583,7 +1862,5 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         stallObserver = nil
         itemStatusObservation?.invalidate()
         itemStatusObservation = nil
-        playerStatusObservation?.invalidate()
-        playerStatusObservation = nil
     }
 }

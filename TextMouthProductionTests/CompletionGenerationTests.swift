@@ -375,6 +375,280 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(events.finishedCount, 1)
     }
 
+    // MARK: - The File That Follows
+
+    /// A file named to follow the loaded one is the loaded file, playing on
+    /// the same player, when the loaded one's end is reported (TODO PERF09).
+    /// Loading it then and playing it from its start, as the reader starts
+    /// the next chapter, plays on with no new player, which then stops at
+    /// that file's end. Each file's end is reported once, and the position
+    /// never jumps back to the next file's start before the first file's end
+    /// is reported.
+    func testANamedFileFollowsOnTheSamePlayer() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.5)
+        let second = try writeSilentFile(named: "second.wav", duration: 0.5)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        var finishedCount = 0
+        var followingWasPlayingAtTheFirstEnd = false
+        playback.onPlaybackFinished = { [unowned playback] in
+            finishedCount += 1
+            guard finishedCount == 1 else { return }
+            followingWasPlayingAtTheFirstEnd = playback.isPlaying
+                && playback.loadedURL?.lastPathComponent == "second.wav"
+            XCTAssertTrue(playback.load(url: second))
+            XCTAssertTrue(playback.play(fromTime: 0))
+        }
+        var positionsBeforeTheFirstEnd: [TimeInterval] = []
+        playback.onPositionUpdate = { time in
+            if finishedCount == 0 {
+                positionsBeforeTheFirstEnd.append(time)
+            }
+        }
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        playback.setFileAfterCurrent(second)
+        let player = try XCTUnwrap(playback._playerForTesting as? AVQueuePlayer)
+        XCTAssertEqual(player.items().count, 2, "The named file was not queued")
+
+        XCTAssertTrue(eventually { finishedCount == 1 }, "The first file never finished")
+        XCTAssertTrue(followingWasPlayingAtTheFirstEnd, "The named file was not playing when the first file's end came")
+        XCTAssertTrue(playback._playerForTesting === player, "A new player was made for the file that followed")
+        XCTAssertEqual(playback.loadedURL?.lastPathComponent, "second.wav")
+        XCTAssertTrue(playback.isPlaying)
+        XCTAssertTrue(
+            eventually { player.currentItem === playback._playerItemForTesting && player.actionAtItemEnd == .pause },
+            "The player never settled on the file that followed, to stop at its end"
+        )
+        XCTAssertTrue(eventually { finishedCount == 2 }, "The file that followed never finished")
+        XCTAssertEqual(events.failures, [])
+        XCTAssertEqual(positionsBeforeTheFirstEnd, positionsBeforeTheFirstEnd.sorted(), "The position jumped back")
+    }
+
+    /// Without a file named to follow, the loaded file stops at its end and
+    /// stays the player's item, as with a plain player.
+    func testWithoutANamedFileTheLoadedFileStopsAtItsEnd() throws {
+        let file = try writeSilentFile(duration: 0.3)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "The file never finished")
+        XCTAssertFalse(playback.isPlaying)
+        XCTAssertTrue(playback._playerForTesting?.currentItem === playback._playerItemForTesting)
+    }
+
+    /// A file named to follow that cannot be read is not queued: the loaded
+    /// file stops at its end, and the named file's own load will report it.
+    func testANamedFileThatCannotBeReadIsNotQueued() throws {
+        let file = try writeSilentFile(duration: 0.3)
+        let missing = file.deletingLastPathComponent().appendingPathComponent("missing.wav")
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+
+        playback.setFileAfterCurrent(missing)
+
+        XCTAssertEqual((playback._playerForTesting as? AVQueuePlayer)?.items().count, 1)
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "The file never finished")
+        XCTAssertFalse(playback.isPlaying)
+        XCTAssertEqual(playback.loadedURL?.lastPathComponent, "chapter.wav")
+        XCTAssertEqual(events.failures, [])
+    }
+
+    /// Loading another file forgets the file named to follow the one before.
+    func testLoadingAnotherFileForgetsTheNamedOne() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.3)
+        let second = try writeSilentFile(named: "second.wav", duration: 0.3)
+        let third = try writeSilentFile(named: "third.wav", duration: 0.3)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        playback.setFileAfterCurrent(second)
+
+        XCTAssertTrue(playback.load(url: third))
+        XCTAssertTrue(playback.play())
+
+        XCTAssertEqual((playback._playerForTesting as? AVQueuePlayer)?.items().count, 1)
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "The third file never finished")
+        XCTAssertEqual(playback.loadedURL?.lastPathComponent, "third.wav")
+        XCTAssertTrue(playback._playerForTesting?.currentItem === playback._playerItemForTesting)
+    }
+
+    /// Loading the loaded file again, which keeps its player, as the next
+    /// chapter of a file with chapter marks does, forgets the file named to
+    /// follow it too, and so does a clip end.
+    func testReloadingTheFileOrSettingAClipEndForgetsTheNamedOne() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.6)
+        let second = try writeSilentFile(named: "second.wav", duration: 0.3)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        let player = try XCTUnwrap(playback._playerForTesting as? AVQueuePlayer)
+
+        playback.setFileAfterCurrent(second)
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback._playerForTesting === player)
+        XCTAssertEqual(player.items().count, 1, "Reloading the file kept the named one")
+
+        playback.setFileAfterCurrent(second)
+        playback.setClipEndTime(0.2)
+        XCTAssertEqual(player.items().count, 1, "A clip end kept the named file")
+        XCTAssertEqual(player.actionAtItemEnd, .pause)
+    }
+
+    /// A seek in the loaded file made once it has played to its end and the
+    /// player is moving on into the named file, before that end is acted on,
+    /// starts the loaded file again on a new player, rather than trust the
+    /// moving queue: that end then ends nothing, the named file is
+    /// forgotten, and the loaded file plays on from the seek and finishes
+    /// once.
+    func testASeekAsTheFileRollsOnStartsTheLoadedFileAgain() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.4)
+        let second = try writeSilentFile(named: "second.wav", duration: 2)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        playback.setFileAfterCurrent(second)
+        var hasSought = false
+        playback._endNoticeArrivedForTesting = { [unowned playback] in
+            guard !hasSought else { return }
+            hasSought = true
+            playback.seek(to: 0.1)
+        }
+
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes.count == 2 }, "The loaded file never reached its end again")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.postedDuringEarlierPlay, .endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+        XCTAssertEqual(playback.loadedURL?.lastPathComponent, "first.wav")
+        XCTAssertTrue(playback._playerForTesting?.currentItem === playback._playerItemForTesting)
+    }
+
+    /// A pause made as the loaded file's end is acted on, with the player
+    /// moving on into the named file, holds that end until playback resumes.
+    /// Resuming reports the end once, and the named file, loaded then and
+    /// played from its start, plays on, on the same player, to an end of its
+    /// own.
+    func testAPauseAsTheFileRollsOnHoldsTheEndUntilResume() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.4)
+        let second = try writeSilentFile(named: "second.wav", duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let reports = PlayerReportLog(observing: playback)
+        var finishedCount = 0
+        playback.onPlaybackFinished = { [unowned playback] in
+            finishedCount += 1
+            guard finishedCount == 1 else { return }
+            XCTAssertTrue(playback.load(url: second))
+            XCTAssertTrue(playback.play(fromTime: 0))
+        }
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        playback.setFileAfterCurrent(second)
+        let player = try XCTUnwrap(playback._playerForTesting)
+        var hasPaused = false
+        playback._endNoticeArrivedForTesting = { [unowned playback] in
+            guard !hasPaused else { return }
+            hasPaused = true
+            playback.pause()
+        }
+
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes == [.heldUntilResume] }, "The first file's end was never held")
+        XCTAssertEqual(finishedCount, 0, "Paused playback finished")
+        XCTAssertTrue(playback.isPaused)
+
+        XCTAssertTrue(playback.resume())
+        XCTAssertTrue(eventually { finishedCount == 1 }, "Resuming never finished the first file's play")
+        XCTAssertEqual(playback.loadedURL?.lastPathComponent, "second.wav")
+        XCTAssertTrue(playback.isPlaying)
+        XCTAssertFalse(playback.isPaused)
+        XCTAssertTrue(playback._playerForTesting === player)
+        XCTAssertTrue(eventually { finishedCount == 2 }, "The file that followed never finished")
+    }
+
+    /// How long the next file's clock takes to move once the loaded file's
+    /// end is reported and the next file is loaded and played, as the reader
+    /// starts the next chapter: on a new player, as without a named file,
+    /// and rolling on, with one (TODO PERF09). One line beginning
+    /// `PERF09_BENCHMARK` carries the milliseconds of five changes each as
+    /// JSON. Opt-in, since it times real playback: set
+    /// TEXTMOUTH_TRACK_CHANGE_BENCHMARK=1, or for xcodebuild
+    /// TEST_RUNNER_TEXTMOUTH_TRACK_CHANGE_BENCHMARK=1. The files are silent,
+    /// and the callbacks only record what the test polls for.
+    func testTrackChangeBenchmark() throws {
+        let variable = "TEXTMOUTH_TRACK_CHANGE_BENCHMARK"
+        guard ProcessInfo.processInfo.environment[variable] == "1" else {
+            throw XCTSkip("Set \(variable)=1 (for xcodebuild, TEST_RUNNER_\(variable)=1) to time track changes")
+        }
+        var report: [String: [Double]] = [:]
+        for namesTheNextFile in [false, true] {
+            var gaps: [Double] = []
+            for change in 0..<5 {
+                let first = try writeSilentFile(named: "first-\(change).wav", duration: 0.4)
+                let second = try writeSilentFile(named: "second-\(change).wav", duration: 1)
+                let playback = AudioPlaybackService()
+                defer { playback.stop() }
+                var endReportedAt: ContinuousClock.Instant?
+                var nextFileTimeThen: TimeInterval = 0
+                playback.onPlaybackFinished = { [unowned playback] in
+                    guard endReportedAt == nil else { return }
+                    endReportedAt = .now
+                    _ = playback.load(url: second)
+                    nextFileTimeThen = playback._playerItemForTesting.map { CMTimeGetSeconds($0.currentTime()) } ?? 0
+                    _ = playback.play(fromTime: 0)
+                }
+                XCTAssertTrue(playback.load(url: first))
+                XCTAssertTrue(playback.play())
+                if namesTheNextFile {
+                    playback.setFileAfterCurrent(second)
+                }
+                XCTAssertTrue(eventually { endReportedAt != nil }, "The first file never finished")
+                // The next file's clock moves once its time passes where it stood.
+                let moved = eventually(within: 2) {
+                    (playback._playerItemForTesting.map { CMTimeGetSeconds($0.currentTime()) } ?? 0) > nextFileTimeThen + 0.001
+                }
+                XCTAssertTrue(moved, "The next file's clock never moved")
+                if let endReportedAt {
+                    let elapsed = endReportedAt.duration(to: .now)
+                    gaps.append((Double(elapsed.components.seconds) * 1_000 + Double(elapsed.components.attoseconds) / 1e15).rounded())
+                }
+            }
+            report[namesTheNextFile ? "rollingOnMilliseconds" : "newPlayerMilliseconds"] = gaps
+        }
+        let json = try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        print("PERF09_BENCHMARK \(String(decoding: json, as: UTF8.self))")
+    }
+
+    /// Stop releases the player, the loaded file's item, and the file named
+    /// to follow, which the reader's close relies on.
+    func testStopReleasesThePlayerAndTheNamedFile() throws {
+        let first = try writeSilentFile(named: "first.wav", duration: 0.5)
+        let second = try writeSilentFile(named: "second.wav", duration: 0.5)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        XCTAssertTrue(playback.load(url: first))
+        XCTAssertTrue(playback.play())
+        playback.setFileAfterCurrent(second)
+        XCTAssertEqual((playback._playerForTesting as? AVQueuePlayer)?.items().count, 2)
+
+        playback.stop()
+
+        XCTAssertNil(playback._playerForTesting)
+        XCTAssertNil(playback._playerItemForTesting)
+        XCTAssertNil(playback.loadedURL)
+    }
+
     // MARK: - The Speech Service's Synthesizer Callbacks
 
     /// An utterance a synthesizer callback holds for the main queue keeps its
