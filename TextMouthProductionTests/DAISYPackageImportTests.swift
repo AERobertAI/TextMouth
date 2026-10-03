@@ -463,13 +463,20 @@ final class DAISYPackageImportTests: XCTestCase {
 
     // MARK: - Choosing a Book in the Open Panel
 
-    /// The Open panel offers folders, so a DAISY book's folder can be
-    /// chosen, as well as its ncc.html, an HTML file it already offered.
-    func testOpenPanelOffersFoldersAndNavigationFiles() throws {
+    /// The standard Open Book... panel offers files only, as it always did,
+    /// so Return on a folder there keeps opening the folder, as keyboard
+    /// and VoiceOver users rely on: no type it allows is a folder, and the
+    /// only one that is a directory at all is TextMouth's own package, which
+    /// the panel offers as a single file. A DAISY book's ncc.html stays
+    /// choosable, as the HTML file it is.
+    func testOpenBookPanelOffersFilesOnly() throws {
         let types = FileImportService.supportedTypes
+        let packageType = try XCTUnwrap(UTType("com.textmouth.book-package"))
         let navigationFile = try XCTUnwrap(UTType(filenameExtension: "html"))
 
-        XCTAssertTrue(types.contains(.folder))
+        XCTAssertFalse(types.contains(.folder))
+        XCTAssertFalse(types.contains(.directory))
+        XCTAssertEqual(types.filter { $0.conforms(to: .directory) }, [packageType])
         XCTAssertTrue(types.contains { navigationFile.conforms(to: $0) })
     }
 
