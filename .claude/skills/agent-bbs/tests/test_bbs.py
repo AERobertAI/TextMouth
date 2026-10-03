@@ -61,15 +61,23 @@ class TemporaryDirectoryMixin(unittest.TestCase):
 
 
 class BoardTestCase(TemporaryDirectoryMixin):
-    """Base class: each test runs commands against its own empty board."""
+    """Base class: each test runs commands against its own empty board.
+
+    Commands run from a scratch working tree (``self.worktree``), so that
+    paths resolve against it rather than against this repository.
+    """
 
     def setUp(self) -> None:
-        """Point TEXTMOUTH_BBS_DIR at a fresh directory for this test."""
+        """Point TEXTMOUTH_BBS_DIR at a fresh directory and enter a scratch tree."""
         super().setUp()
         self.board_dir = self.make_temp_dir() / "board"
         patcher = mock.patch.dict(os.environ, {bbs.BOARD_DIR_ENV: str(self.board_dir)})
         patcher.start()
         self.addCleanup(patcher.stop)
+        self.worktree = self.make_temp_dir()
+        (self.worktree / ".git").mkdir()
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.worktree)
 
     def run_bbs(self, *args: str, stdin: str = "") -> Tuple[int, str, str]:
         """Run one command in this process; return (status, stdout, stderr)."""
@@ -206,6 +214,193 @@ class RegistrationTests(BoardTestCase):
         self.fails("agents", "--active-within", "0")
         self.fails("agents", "--no-such-option")
         self.fails("heartbeat")
+
+
+class PatternTests(TemporaryDirectoryMixin):
+    """normalize_pattern and patterns_overlap: the rules behind claims."""
+
+    #: Pairs that can name a common file, whichever comes first.
+    OVERLAPPING = [
+        ("TextMouth/A.swift", "TextMouth/A.swift"),
+        ("TextMouth/A.swift", "textmouth/a.swift"),  # letter case is ignored
+        ("TextMouth/", "TextMouth/A.swift"),  # a directory covers its contents
+        ("TextMouth", "TextMouth/A.swift"),  # naming a path inside proves a directory
+        ("TextMouth/New", "TextMouth/New/*.swift"),
+        ("a/", "a/b/"),
+        ("TextMouth/*.swift", "TextMouth/A.swift"),
+        ("TextMouth/**/*.swift", "TextMouth/A.swift"),  # '**/' may be empty
+        ("TextMouth/**/*.swift", "TextMouth/Views/Deep/A.swift"),
+        ("**/Info.plist", "TextMouth/Info.plist"),
+        ("**/Info.plist", "Info.plist"),
+        ("**/Info.plist", "TextMouth/"),
+        ("TextMouth/Views/*.swift", "TextMouth/**/Library*.swift"),  # glob against glob
+        ("TextMouth/*.swift", "TextMouth/Library*"),
+        ("TextMouth/Views/", "TextMouth/*/LibraryView.swift"),
+        ("TextMouth/Lib?ary.swift", "TextMouth/Library.swift"),
+        ("TextMouth/[A-C]*.swift", "TextMouth/Book.swift"),
+        ("x/[!a-c]q", "x/[a-e]q"),
+        ("x/[!a-cx-z]q", "x/[a-z]q"),  # meet only between the excluded ranges
+        ("x/[]a]q", "x/]q"),
+        ("**", "anything/at/all"),
+        ("a/**", "a"),
+        ("*a*", "*b*"),
+    ]
+
+    #: Pairs that cannot name a common file.
+    SEPARATE = [
+        ("TextMouth/A.swift", "TextMouth/B.swift"),
+        ("TextMouth/A", "TextMouth/AB.swift"),
+        ("TextMouth/A/", "TextMouth/AB.swift"),
+        ("TextMouth/*.swift", "TextMouth/Views/A.swift"),  # '*' stays within a segment
+        ("TextMouth/*", "TextMouth/Views/A.swift"),
+        ("TextMouth/**/*.swift", "TextMouthTests/A.swift"),
+        ("**/Info.plist", "Info.plistx"),  # a file has nothing inside it
+        ("**/Info.plist", "Makefile"),
+        ("TextMouth/*.swift", "TextMouth/*.md"),
+        ("TextMouth/Lib?ary.swift", "TextMouth/Lib/ary.swift"),
+        ("TextMouth/[!A-C]*.swift", "TextMouth/Book.swift"),
+        ("TextMouth/[^A-C]*.swift", "TextMouth/Book.swift"),
+        ("x/[ab]q", "x/[cd]q"),
+        ("a/**", "ab"),
+        ("a/**/b", "a/xb"),
+        ("a/**/b/*.c", "a/**/d/*.c"),
+        ("*", "TextMouth/A.swift"),
+        ("a*", "b*"),
+    ]
+
+    def test_overlapping_patterns(self) -> None:
+        for first, second in self.OVERLAPPING:
+            with self.subTest(first=first, second=second):
+                self.assertTrue(bbs.patterns_overlap(first, second))
+                self.assertTrue(bbs.patterns_overlap(second, first))
+
+    def test_separate_patterns(self) -> None:
+        for first, second in self.SEPARATE:
+            with self.subTest(first=first, second=second):
+                self.assertFalse(bbs.patterns_overlap(first, second))
+                self.assertFalse(bbs.patterns_overlap(second, first))
+
+    def test_relative_paths_are_tidied(self) -> None:
+        cases = {
+            "./TextMouth/Views/A.swift": "TextMouth/Views/A.swift",
+            "a//b": "a/b",
+            "a/./b/../c": "a/c",
+            "TextMouth/Views/": "TextMouth/Views/",
+            "TextMouth/*/": "TextMouth/*/**",
+            "TextMouth/**/": "TextMouth/**",
+            ".": "**",
+        }
+        for raw, expected in cases.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(bbs.normalize_pattern(raw), expected)
+
+    def test_directories_on_disk_are_claimed_whole(self) -> None:
+        tree = self.make_temp_dir()
+        (tree / ".git").mkdir()
+        (tree / "Sources" / "Views").mkdir(parents=True)
+        (tree / "Sources" / "main.swift").write_text("")
+        self.assertEqual(bbs.normalize_pattern("Sources/Views", tree), "Sources/Views/")
+        self.assertEqual(bbs.normalize_pattern("Sources/main.swift", tree), "Sources/main.swift")
+        self.assertEqual(bbs.normalize_pattern("Sources/New.swift", tree), "Sources/New.swift")
+
+    def test_absolute_paths_become_relative_to_their_working_tree(self) -> None:
+        root = self.make_temp_dir()
+        (root / "main" / ".git").mkdir(parents=True)
+        (root / "linked").mkdir()
+        (root / "linked" / ".git").write_text("gitdir: ../main/.git/worktrees/linked\n")
+        for tree in ("main", "linked"):
+            with self.subTest(tree=tree):
+                self.assertEqual(bbs.normalize_pattern(str(root / tree / "Sources" / "A.swift")), "Sources/A.swift")
+                self.assertEqual(bbs.normalize_pattern(str(root / tree)), "**")
+        outside = self.make_temp_dir() / "notes.txt"
+        self.assertEqual(bbs.normalize_pattern(str(outside)), str(outside))
+
+    def test_empty_and_escaping_paths_are_rejected(self) -> None:
+        for raw in ("", "   ", "..", "../elsewhere", "a/../../b"):
+            with self.subTest(raw=raw):
+                with self.assertRaises(bbs.UserError):
+                    bbs.normalize_pattern(raw)
+
+
+class ClaimTests(BoardTestCase):
+    """claim, release, claims, and register --files."""
+
+    def test_claims_are_recorded_and_shown_by_agents(self) -> None:
+        self.register("alpha")
+        data = self.ok_json("claim", "alpha", "TextMouth/A.swift", "./TextMouth/B.swift", "TextMouth/A.swift")
+        self.assertEqual(data["claims"], ["TextMouth/A.swift", "TextMouth/B.swift"])
+        agent = self.ok_json("agents")[0]
+        self.assertEqual(agent["claims"], ["TextMouth/A.swift", "TextMouth/B.swift"])
+        self.assertIn("Claims: TextMouth/A.swift, TextMouth/B.swift", self.ok("agents"))
+
+    def test_register_files_adds_claims_without_dropping_earlier_ones(self) -> None:
+        self.register("alpha", "TextMouth/A.swift")
+        self.ok("register", "alpha", "--files", "TextMouth/B.swift")
+        self.assertEqual(self.ok_json("agents")[0]["claims"], ["TextMouth/A.swift", "TextMouth/B.swift"])
+
+    def test_claims_flags_overlaps_between_agents_only(self) -> None:
+        self.register("alpha", "TextMouth/Views/LibraryView.swift", "TextMouth/Views/*.swift")
+        self.register("beta", "TextMouth/**/Library*.swift")
+        self.register("gamma", "Docs/")
+        data = self.ok_json("claims")
+        self.assertEqual(len(data["claims"]), 4)
+        pairs = {
+            (overlap["first"]["agent"], overlap["first"]["pattern"], overlap["second"]["agent"])
+            for overlap in data["overlaps"]
+        }
+        # alpha's two claims overlap each other too, but one agent never conflicts with itself.
+        self.assertEqual(
+            pairs,
+            {
+                ("alpha", "TextMouth/Views/LibraryView.swift", "beta"),
+                ("alpha", "TextMouth/Views/*.swift", "beta"),
+            },
+        )
+        text = self.ok("claims")
+        self.assertIn("2 overlaps between agents:", text)
+        self.assertIn("alpha claims TextMouth/Views/*.swift and beta claims TextMouth/**/Library*.swift", text)
+
+    def test_claiming_reports_overlaps_with_other_agents(self) -> None:
+        self.register("alpha", "TextMouth/Views/")
+        text = self.ok("claim", "alpha", "Docs/README.md")
+        self.assertIn("No overlaps with other agents' claims.", text)
+        self.register("beta")
+        text = self.ok("claim", "beta", "TextMouth/Views/LibraryView.swift")
+        self.assertIn("beta claims TextMouth/Views/LibraryView.swift and alpha claims TextMouth/Views/", text)
+
+    def test_claims_for_one_path_lists_who_covers_it(self) -> None:
+        self.register("alpha", "TextMouth/Views/")
+        self.register("beta", "TextMouth/**/*.swift")
+        self.register("gamma", "Docs/")
+        data = self.ok_json("claims", "TextMouth/Views/LibraryView.swift")
+        self.assertEqual({claim["agent"] for claim in data["claims"]}, {"alpha", "beta"})
+        self.assertEqual(len(data["overlaps"]), 1)
+        self.assertIn("No agent claims Makefile.", self.ok("claims", "Makefile"))
+
+    def test_release_by_path_or_all(self) -> None:
+        self.register("alpha", "TextMouth/A.swift", "TextMouth/B.swift", "Docs/")
+        data = self.ok_json("release", "alpha", "textmouth/a.swift", "Docs", "TextMouth/Missing.swift")
+        self.assertEqual(data["released"], ["TextMouth/A.swift", "Docs/"])
+        self.assertEqual(data["not_claimed"], ["TextMouth/Missing.swift"])
+        self.assertEqual(data["claims"], ["TextMouth/B.swift"])
+        self.assertEqual(self.ok_json("release", "alpha", "--all")["released"], ["TextMouth/B.swift"])
+        self.assertEqual(self.ok_json("agents")[0]["claims"], [])
+
+    def test_release_needs_paths_or_all_but_not_both(self) -> None:
+        self.register("alpha", "TextMouth/A.swift")
+        self.fails("release", "alpha")
+        self.fails("release", "alpha", "TextMouth/A.swift", "--all")
+
+    def test_claims_by_unknown_agents_are_rejected(self) -> None:
+        self.assertIn("unknown agent 'nobody'", self.fails("claim", "nobody", "TextMouth/A.swift"))
+        self.assertIn("unknown agent 'nobody'", self.fails("release", "nobody", "--all"))
+
+    def test_paths_resolve_against_the_working_tree(self) -> None:
+        (self.worktree / "TextMouth" / "Views").mkdir(parents=True)
+        self.register("alpha")
+        absolute = str(self.worktree / "TextMouth" / "Library.swift")
+        data = self.ok_json("claim", "alpha", absolute, "TextMouth/Views")
+        self.assertEqual(data["claims"], ["TextMouth/Library.swift", "TextMouth/Views/"])
 
 
 class RepositoryDiscoveryTests(TemporaryDirectoryMixin):

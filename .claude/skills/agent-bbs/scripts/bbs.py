@@ -28,14 +28,17 @@ import contextlib
 import dataclasses
 import datetime as dt
 import difflib
+import fnmatch
+import functools
 import json
 import os
+import posixpath
 import re
 import sqlite3
 import sys
 import time
 from pathlib import Path
-from typing import Any, Iterable, Iterator, List, Optional
+from typing import Any, Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -187,6 +190,294 @@ def one_line(value: str, field: str, *, allow_empty: bool = False) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Paths and globs
+# ---------------------------------------------------------------------------
+
+#: Characters that make a claim a glob rather than the name of one path.
+GLOB_CHARACTERS = frozenset("*?[")
+
+#: A test that a pattern automaton applies to one character of a path.
+CharacterTest = Callable[[str], bool]
+
+
+def normalize_pattern(raw: str, worktree: Optional[Path] = None) -> str:
+    """Return a claimed path or glob in the board's canonical form.
+
+    Paths are relative to the top of the repository, the way ``git status``
+    prints them from a worktree's root, and use '/' separators. An absolute
+    path inside any working tree (the main one or a linked worktree) is made
+    relative to that tree, so agents in different worktrees name a file the
+    same way. "." stands for the whole repository.
+
+    A directory ends in '/': one typed that way, or a plain path that is a
+    directory on disk (relative paths are looked up in ``worktree``, the
+    caller's working tree). A glob typed with a trailing '/' claims what is
+    inside the directories it matches, so it gains '/**'.
+    """
+    text = os.path.expanduser(raw.strip())
+    if not text:
+        raise UserError("a path is empty")
+    directory = text.endswith("/")
+    if os.path.isabs(text):
+        absolute = Path(os.path.normpath(text))
+        directory = directory or absolute.is_dir()
+        text = _relative_to_working_tree(absolute)
+    pattern = posixpath.normpath(text)
+    if pattern == ".":
+        return "**"
+    if pattern == ".." or pattern.startswith("../"):
+        raise UserError(f"{raw!r} is outside the repository")
+    if is_glob(pattern):
+        return pattern + "/**" if directory and not pattern.endswith("**") else pattern
+    if not directory and worktree is not None and not os.path.isabs(pattern):
+        directory = (worktree / pattern).is_dir()
+    return pattern + "/" if directory else pattern
+
+
+def _relative_to_working_tree(path: Path) -> str:
+    """Express an absolute path relative to the working tree that holds it.
+
+    The nearest ancestor with a ``.git`` entry is the tree's top. Paths
+    outside every working tree stay absolute.
+    """
+    for directory in (path, *path.parents):
+        if (directory / ".git").exists():
+            return path.relative_to(directory).as_posix()
+    return path.as_posix()
+
+
+def current_worktree() -> Optional[Path]:
+    """Return the working tree that holds the current directory, if any."""
+    try:
+        return find_worktree_root(Path.cwd())
+    except OSError:  # the current directory was deleted
+        return None
+
+
+def normalize_patterns(raws: Iterable[str]) -> List[str]:
+    """Normalize several paths or globs against the caller's working tree."""
+    worktree = current_worktree()
+    return list(dict.fromkeys(normalize_pattern(raw, worktree) for raw in raws))
+
+
+def is_glob(pattern: str) -> bool:
+    """Whether a pattern uses glob syntax instead of naming one path."""
+    return not GLOB_CHARACTERS.isdisjoint(pattern)
+
+
+@functools.lru_cache(maxsize=4096)
+def patterns_overlap(first: str, second: str) -> bool:
+    """Whether two claimed paths or globs can name a common file.
+
+    * A plain path names one file. A directory (ending in '/') covers
+      everything inside it. A plain path is also a directory when the other
+      pattern's fixed leading text continues past it with a '/', because
+      naming something inside a path proves that the path is a directory.
+    * Globs follow the gitignore conventions: '*' and '?' match within one
+      path segment, '[...]' is a character class ('[!...]' or '[^...]'
+      negated), and a '**' segment spans any number of directories. A glob
+      claims exactly the paths it matches.
+    * Letter case is ignored, as macOS file names ignore it by default.
+    """
+    first, second = first.casefold(), second.casefold()
+    first, second = _directory_if_named(first, second), _directory_if_named(second, first)
+    if not (is_glob(first) or is_glob(second)):
+        return _plain_paths_overlap(first, second)
+    return _CoverageAutomaton(first).intersects(_CoverageAutomaton(second))
+
+
+def _directory_if_named(pattern: str, other: str) -> str:
+    """Mark a plain path as a directory if ``other`` names something inside it."""
+    if is_glob(pattern) or pattern.endswith("/"):
+        return pattern
+    first_glob = next((i for i, character in enumerate(other) if character in GLOB_CHARACTERS), len(other))
+    return pattern + "/" if other[:first_glob].startswith(pattern + "/") else pattern
+
+
+def _plain_paths_overlap(first: str, second: str) -> bool:
+    """Whether two plain paths name the same path or a directory holds the other."""
+    if first.rstrip("/") == second.rstrip("/"):
+        return True
+    return (first.endswith("/") and second.startswith(first)) or (
+        second.endswith("/") and first.startswith(second)
+    )
+
+
+def _any_character(character: str) -> bool:
+    """Character test for '**': every character, '/' included."""
+    return True
+
+
+def _segment_character(character: str) -> bool:
+    """Character test for '*' and '?': any character except '/'."""
+    return character != "/"
+
+
+def _literal(expected: str) -> CharacterTest:
+    """Return a character test that accepts exactly ``expected``."""
+    return expected.__eq__
+
+
+def _character_class(text: str) -> CharacterTest:
+    """Return the character test for a '[...]' class, which never matches '/'.
+
+    fnmatch translates the class itself. A leading '^' negates the class
+    like '!', as it does for git and the shells.
+    """
+    if text.startswith("[^"):
+        text = "[!" + text[2:]
+    regex = re.compile(fnmatch.translate(text))
+    return lambda character: character != "/" and regex.match(character) is not None
+
+
+def _class_end(segment: str, start: int) -> int:
+    """Return the index after the ']' closing the class opened at ``start``.
+
+    A '!' or '^' right after '[' negates the class, and a ']' right after
+    that is a member rather than the end. Returns -1 when the class is never
+    closed, in which case its '[' is an ordinary character.
+    """
+    index = start + 1
+    if index < len(segment) and segment[index] in "!^":
+        index += 1
+    if index < len(segment) and segment[index] == "]":
+        index += 1
+    end = segment.find("]", index)
+    return -1 if end < 0 else end + 1
+
+
+def _witness_characters(text: str) -> FrozenSet[str]:
+    """Return enough characters to tell whether two character tests overlap.
+
+    Every test is built from characters of the patterns (literals, class
+    members, range ends), so the characters a test accepts form runs that
+    begin at one of those characters, just after one, or at the very first
+    character, NUL. Two tests that accept a common character therefore
+    accept a common one from this set. NUL also stands for every character
+    no pattern mentions, since paths never contain it.
+    """
+    witnesses = {"\0", "/"}
+    for character in text:
+        witnesses.add(character)
+        if ord(character) < sys.maxunicode:
+            witnesses.add(chr(ord(character) + 1))
+    return frozenset(witnesses)
+
+
+class _CoverageAutomaton:
+    """A small nondeterministic automaton for the paths a pattern covers.
+
+    States are numbered from 0, the start. ``moves[state]`` lists
+    ``(test, target)`` pairs that read one character; ``skips[state]``
+    lists targets reached without reading any. The automaton accepts every
+    path the pattern matches and, for a directory (a pattern ending in
+    '/'), everything inside it as well.
+    """
+
+    def __init__(self, pattern: str) -> None:
+        """Compile a case-folded pattern one '/'-separated segment at a time."""
+        self.pattern = pattern
+        self.moves: List[List[Tuple[CharacterTest, int]]] = []
+        self.skips: List[List[int]] = []
+        state = self._new_state()
+        segments = pattern.rstrip("/").split("/")
+        for index, segment in enumerate(segments):
+            last = index == len(segments) - 1
+            if segment == "**" and last:
+                # A final '**' matches anything at all.
+                self.moves[state].append((_any_character, state))
+            elif segment == "**":
+                state = self._any_directories(state)
+            else:
+                state = self._segment(state, segment)
+                if not last:
+                    state = self._step(state, _literal("/"))
+        self.accepting = {state}
+        if pattern.endswith("/"):
+            # A directory also covers everything inside it: '/' then anything.
+            inside = self._step(state, _literal("/"))
+            self.moves[inside].append((_any_character, inside))
+            self.accepting.add(inside)
+
+    def _new_state(self) -> int:
+        """Add a state with no moves and return its number."""
+        self.moves.append([])
+        self.skips.append([])
+        return len(self.moves) - 1
+
+    def _step(self, state: int, test: CharacterTest) -> int:
+        """Add a move reading one character into a new state; return that state."""
+        target = self._new_state()
+        self.moves[state].append((test, target))
+        return target
+
+    def _any_directories(self, state: int) -> int:
+        """Add a '**/' segment, which reads nothing or anything ending in '/'."""
+        inside, end = self._new_state(), self._new_state()
+        self.skips[state] += [inside, end]
+        self.moves[inside].append((_any_character, inside))
+        self.moves[inside].append((_literal("/"), end))
+        return end
+
+    def _segment(self, state: int, segment: str) -> int:
+        """Add the moves for one segment other than '**'; return its end state."""
+        index = 0
+        while index < len(segment):
+            character = segment[index]
+            if character == "*":
+                # A run of stars inside a segment acts as one '*': stay in
+                # this state while reading any characters but '/'.
+                while index < len(segment) and segment[index] == "*":
+                    index += 1
+                self.moves[state].append((_segment_character, state))
+                continue
+            end = _class_end(segment, index) if character == "[" else -1
+            if end > 0:
+                state = self._step(state, _character_class(segment[index:end]))
+                index = end
+                continue
+            test = _segment_character if character == "?" else _literal(character)
+            state = self._step(state, test)
+            index += 1
+        return state
+
+    def intersects(self, other: "_CoverageAutomaton") -> bool:
+        """Whether some path is accepted by both automata.
+
+        A search over pairs of states: from each pair either automaton may
+        take a skip on its own, or both may read one character that both of
+        their tests accept. Reaching a pair of accepting states proves that
+        a common path exists.
+        """
+        alphabet = _witness_characters(self.pattern + other.pattern)
+        accepted: Dict[CharacterTest, FrozenSet[str]] = {}
+
+        def reads(test: CharacterTest) -> FrozenSet[str]:
+            """Return the witness characters a test accepts, once per test."""
+            if test not in accepted:
+                accepted[test] = frozenset(filter(test, alphabet))
+            return accepted[test]
+
+        start = (0, 0)
+        seen, pending = {start}, [start]
+        while pending:
+            mine, theirs = pending.pop()
+            if mine in self.accepting and theirs in other.accepting:
+                return True
+            successors = [(target, theirs) for target in self.skips[mine]]
+            successors += [(mine, target) for target in other.skips[theirs]]
+            for my_test, my_target in self.moves[mine]:
+                for their_test, their_target in other.moves[theirs]:
+                    if not reads(my_test).isdisjoint(reads(their_test)):
+                        successors.append((my_target, their_target))
+            for pair in successors:
+                if pair not in seen:
+                    seen.add(pair)
+                    pending.append(pair)
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Finding the board
 # ---------------------------------------------------------------------------
 
@@ -295,6 +586,15 @@ SCHEMA = (
         activity       TEXT NOT NULL DEFAULT 'idle',
         activity_note  TEXT NOT NULL DEFAULT '',
         activity_since TEXT NOT NULL
+    )
+    """,
+    # The paths and globs each agent is editing, in normalize_pattern form.
+    """
+    CREATE TABLE IF NOT EXISTS claims (
+        agent      TEXT NOT NULL REFERENCES agents(name) ON DELETE CASCADE,
+        pattern    TEXT NOT NULL,
+        claimed_at TEXT NOT NULL,
+        PRIMARY KEY (agent, pattern)
     )
     """,
 )
@@ -420,7 +720,7 @@ def _did_you_mean(conn: sqlite3.Connection, name: str) -> str:
 def load_agents(
     conn: sqlite3.Connection, *, name: Optional[str] = None, seen_since: Optional[str] = None
 ) -> List[dict]:
-    """Return agents as JSON-ready dicts, ordered by name.
+    """Return agents with their claims as JSON-ready dicts, ordered by name.
 
     ``name`` selects one agent; ``seen_since`` (UTC text) keeps only agents
     seen at or after that time.
@@ -434,11 +734,15 @@ def load_agents(
         params.append(seen_since)
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     rows = conn.execute(f"SELECT * FROM agents {where} ORDER BY name", params).fetchall()
+    claims: Dict[str, List[str]] = {}
+    for claim in load_claims(conn, name=name):
+        claims.setdefault(claim["agent"], []).append(claim["pattern"])
     return [
         {
             "name": row["name"],
             "role": row["role"],
             "branch": row["branch"],
+            "claims": claims.get(row["name"], []),
             "registered": row["registered_at"],
             "last_seen": row["last_seen"],
             "activity": row["activity"],
@@ -450,7 +754,7 @@ def load_agents(
 
 
 def describe_agent(agent: dict) -> str:
-    """Describe one agent in a few lines: status line, then role and branch."""
+    """Describe one agent: a status line, then role, branch, and claims."""
     activity = f"{agent['activity']} since {local_label(agent['activity_since'])}"
     if agent["activity_note"]:
         activity += f" ({agent['activity_note']})"
@@ -460,6 +764,7 @@ def describe_agent(agent: dict) -> str:
             f"{agent['name']}: {activity}; last seen {local_label(seen)}, {ago_label(seen)}",
             f"  Role: {agent['role']}",
             f"  Branch: {agent['branch']}",
+            f"  Claims: {', '.join(agent['claims']) or 'none'}",
         ]
     )
 
@@ -468,11 +773,13 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     """Create an agent, or update an existing one's role and branch.
 
     The first registration needs both --role and --branch; later ones may
-    give either, and what they leave out is kept.
+    give either, and what they leave out is kept. --files adds claims, just
+    like `claim`, and never drops earlier ones.
     """
     name = normalize_name(args.name)
     role = None if args.role is None else one_line(args.role, "role")
     branch = None if args.branch is None else one_line(args.branch, "branch")
+    patterns = normalize_patterns(args.files)
     now = to_utc_text(utc_now())
     with write_transaction(conn):
         created = conn.execute("SELECT 1 FROM agents WHERE name = ?", (name,)).fetchone() is None
@@ -490,9 +797,14 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
                 " last_seen = ? WHERE name = ?",
                 (role, branch, now, name),
             )
+        add_claims(conn, name, patterns)
         agent = load_agents(conn, name=name)[0]
+        overlaps = overlaps_involving(conn, name)
     verb = "Registered" if created else "Updated"
-    return Outcome({"created": created, "agent": agent}, f"{verb} {name}.\n{describe_agent(agent)}")
+    lines = [f"{verb} {name}.", describe_agent(agent)]
+    if agent["claims"]:
+        lines.append(describe_overlaps(overlaps, none="No overlaps with other agents' claims."))
+    return Outcome({"created": created, "agent": agent, "overlaps": overlaps}, "\n".join(lines))
 
 
 def cmd_heartbeat(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
@@ -516,6 +828,148 @@ def cmd_agents(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         heading = f"{plural(len(agents), 'agent')}{scope}:"
         text = "\n\n".join([heading] + [describe_agent(agent) for agent in agents])
     return Outcome(agents, text)
+
+
+# ---------------------------------------------------------------------------
+# Claims
+# ---------------------------------------------------------------------------
+
+
+def load_claims(conn: sqlite3.Connection, *, name: Optional[str] = None) -> List[dict]:
+    """Return claims as JSON-ready dicts, by agent and then in claiming order."""
+    where, params = ("WHERE agent = ?", (name,)) if name is not None else ("", ())
+    rows = conn.execute(
+        f"SELECT agent, pattern, claimed_at FROM claims {where} ORDER BY agent, claimed_at, rowid", params
+    ).fetchall()
+    return [{"agent": row["agent"], "pattern": row["pattern"], "claimed": row["claimed_at"]} for row in rows]
+
+
+def add_claims(conn: sqlite3.Connection, name: str, patterns: Iterable[str]) -> None:
+    """Record claims for an agent, skipping any it already holds."""
+    now = to_utc_text(utc_now())
+    held = {claim["pattern"].casefold() for claim in load_claims(conn, name=name)}
+    for pattern in patterns:
+        if pattern.casefold() not in held:
+            held.add(pattern.casefold())
+            conn.execute(
+                "INSERT INTO claims (agent, pattern, claimed_at) VALUES (?, ?, ?)", (name, pattern, now)
+            )
+
+
+def _claim_key(pattern: str) -> str:
+    """Key on which `release` matches claims: letter case and a final '/' aside."""
+    return pattern.rstrip("/").casefold()
+
+
+def find_overlaps(claims: List[dict]) -> List[dict]:
+    """Return every pair of claims, held by different agents, that overlap."""
+    return [
+        {"first": first, "second": second}
+        for index, first in enumerate(claims)
+        for second in claims[index + 1 :]
+        if first["agent"] != second["agent"] and patterns_overlap(first["pattern"], second["pattern"])
+    ]
+
+
+def overlaps_involving(conn: sqlite3.Connection, name: str) -> List[dict]:
+    """Return the overlaps between one agent's claims and other agents' claims.
+
+    Each pair lists the agent's own claim first.
+    """
+    overlaps = []
+    for overlap in find_overlaps(load_claims(conn)):
+        first, second = overlap["first"], overlap["second"]
+        if second["agent"] == name:
+            first, second = second, first
+        if first["agent"] == name:
+            overlaps.append({"first": first, "second": second})
+    return overlaps
+
+
+def describe_overlaps(overlaps: List[dict], *, none: str) -> str:
+    """List overlapping claims, one pair per line, or return ``none``."""
+    if not overlaps:
+        return none
+    lines = [f"{plural(len(overlaps), 'overlap')} between agents:"]
+    for overlap in overlaps:
+        first, second = overlap["first"], overlap["second"]
+        lines.append(
+            f"  {first['agent']} claims {first['pattern']} and {second['agent']} claims {second['pattern']}"
+        )
+    return "\n".join(lines)
+
+
+def describe_claims(claims: List[dict]) -> List[str]:
+    """Return one line per agent listing its claims in order."""
+    by_agent: Dict[str, List[str]] = {}
+    for claim in claims:
+        by_agent.setdefault(claim["agent"], []).append(claim["pattern"])
+    return [f"  {agent}: {', '.join(patterns)}" for agent, patterns in by_agent.items()]
+
+
+def cmd_claim(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Record paths or globs an agent is editing, and report overlaps."""
+    patterns = normalize_patterns(args.paths)
+    with write_transaction(conn):
+        name = require_agent(conn, args.name)
+        add_claims(conn, name, patterns)
+        claims = [claim["pattern"] for claim in load_claims(conn, name=name)]
+        overlaps = overlaps_involving(conn, name)
+    text = "\n".join(
+        [
+            f"{name} now claims: {', '.join(claims)}.",
+            describe_overlaps(overlaps, none="No overlaps with other agents' claims."),
+        ]
+    )
+    return Outcome({"agent": name, "claims": claims, "overlaps": overlaps}, text)
+
+
+def cmd_release(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Drop some or all of an agent's claims.
+
+    A claim is released by the path or glob it was made with (letter case
+    and a final '/' aside); releasing one file never narrows a broader claim.
+    """
+    if bool(args.paths) == args.all:
+        raise UserError("name the claims to release, or use --all, but not both")
+    patterns = normalize_patterns(args.paths)
+    with write_transaction(conn):
+        name = require_agent(conn, args.name)
+        held = [claim["pattern"] for claim in load_claims(conn, name=name)]
+        wanted = {_claim_key(pattern) for pattern in patterns}
+        released = held if args.all else [pattern for pattern in held if _claim_key(pattern) in wanted]
+        found = {_claim_key(pattern) for pattern in released}
+        missing = [pattern for pattern in patterns if _claim_key(pattern) not in found]
+        conn.executemany(
+            "DELETE FROM claims WHERE agent = ? AND pattern = ?", [(name, pattern) for pattern in released]
+        )
+        remaining = [pattern for pattern in held if pattern not in released]
+    lines = [f"Released for {name}: {', '.join(released)}." if released else f"Released nothing for {name}."]
+    if missing:
+        lines.append(
+            f"{name} had not claimed: {', '.join(missing)} "
+            "(release a claim by the path or glob it was made with)."
+        )
+    lines.append(f"{name} now claims: {', '.join(remaining) or 'nothing'}.")
+    data = {"agent": name, "released": released, "not_claimed": missing, "claims": remaining}
+    return Outcome(data, "\n".join(lines))
+
+
+def cmd_claims(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """List every claim, or those covering one path, flagging overlaps between agents."""
+    claims = load_claims(conn)
+    path = None
+    if args.path is not None:
+        path = normalize_patterns([args.path])[0]
+        claims = [claim for claim in claims if patterns_overlap(claim["pattern"], path)]
+    overlaps = find_overlaps(claims)
+    if not claims:
+        text = f"No agent claims {path}." if path else "No claims."
+    else:
+        heading = f"Claims covering {path}:" if path else "Claims:"
+        overlap_text = describe_overlaps(overlaps, none="No overlaps between agents.")
+        text = "\n".join([heading, *describe_claims(claims), overlap_text])
+    return Outcome({"path": path, "claims": claims, "overlaps": overlaps}, text)
 
 
 # ---------------------------------------------------------------------------
@@ -577,6 +1031,14 @@ def build_parser() -> BoardArgumentParser:
     register.add_argument("name", help="your agent name, such as your task slug")
     register.add_argument("--role", help="one line saying what you are working on (needed the first time)")
     register.add_argument("--branch", help="the git branch you work on (needed the first time)")
+    register.add_argument(
+        "--files",
+        nargs="+",
+        action="extend",
+        default=[],
+        metavar="PATH",
+        help="paths or globs you expect to edit, relative to the repository root (added to your claims)",
+    )
 
     heartbeat = command("heartbeat", cmd_heartbeat, "refresh an agent's last-seen time")
     heartbeat.add_argument("name", help="your agent name")
@@ -588,6 +1050,20 @@ def build_parser() -> BoardArgumentParser:
         metavar="MINUTES",
         help="only agents seen in the last MINUTES minutes",
     )
+
+    claim = command("claim", cmd_claim, "claim paths or globs you are editing")
+    claim.add_argument("name", help="your agent name")
+    claim.add_argument(
+        "paths", nargs="+", metavar="PATH", help="paths or globs relative to the repository root"
+    )
+
+    release = command("release", cmd_release, "release paths or globs you claimed")
+    release.add_argument("name", help="your agent name")
+    release.add_argument("paths", nargs="*", metavar="PATH", help="claims to release, as they were claimed")
+    release.add_argument("--all", action="store_true", help="release every claim you hold")
+
+    claims = command("claims", cmd_claims, "list claims and flag overlaps between agents")
+    claims.add_argument("path", nargs="?", metavar="PATH", help="only the claims that cover this path or glob")
     return parser
 
 
