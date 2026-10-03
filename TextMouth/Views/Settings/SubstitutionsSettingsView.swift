@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The Text settings tab: the substitution rules that rewrite text before it
-/// is spoken, listed in the order they apply.
+/// is spoken, listed in the order they apply, and below them the Repeated
+/// Symbols group, which sets how runs of one symbol are spoken.
 ///
 /// Every rule can be enabled, edited, moved, and deleted from the keyboard,
 /// with VoiceOver, or from a braille display. Each row has its own enable
@@ -66,6 +67,12 @@ struct SubstitutionsSettingsView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 4)
+
+            Divider()
+
+            RepeatedSymbolsSettingsView(service: service)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
         }
         .sheet(isPresented: $showAddRule) {
             SubstitutionRuleEditorView(
