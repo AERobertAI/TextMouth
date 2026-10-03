@@ -78,7 +78,7 @@ final class DataFileFailureReportingTests: XCTestCase {
         XCTAssertEqual(failure.subject, .configuration)
         XCTAssertEqual(failure.path, url.path)
         XCTAssertEqual(failure.sentence, "Settings could not be saved: The volume is read-only.")
-        XCTAssertEqual(debugLogLines(containing: "CONFIG_FILE: could not save \(url.path)").count, 1)
+        XCTAssertEqual(debugLogLines(naming: url).filter { $0.contains("CONFIG_FILE: could not save ") }.count, 1)
 
         refusing.isOn = false
         recordingAnnouncements { center.retry(.configuration) }

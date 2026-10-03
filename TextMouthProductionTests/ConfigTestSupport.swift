@@ -87,4 +87,19 @@ extension XCTestCase {
             .map(String.init)
             .filter { $0.contains(text) }
     }
+
+    /// The debug log's lines that name the file at `url`, which lies inside
+    /// the data directory, as the log policy names it: by its path inside
+    /// the data directory (`DiagnosticLog.loggablePath`). A line naming it
+    /// by its absolute path instead fails the test where this is called.
+    func debugLogLines(naming url: URL, file: StaticString = #filePath, line: UInt = #line) -> [String] {
+        XCTAssertEqual(
+            debugLogLines(containing: url.path),
+            [],
+            "the debug log named \(url.lastPathComponent) by its absolute path",
+            file: file,
+            line: line
+        )
+        return debugLogLines(containing: DiagnosticLog.loggablePath(url))
+    }
 }

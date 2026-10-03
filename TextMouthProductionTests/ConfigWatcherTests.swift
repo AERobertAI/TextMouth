@@ -59,7 +59,7 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertFalse(service.hasExistingConfig)
         XCTAssertEqual(service.loadedFile, .unreadable)
         XCTAssertEqual(service.config, ConfigService.AppConfig())
-        XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
+        XCTAssertEqual(debugLogLines(naming: url).count, 1)
     }
 
     // MARK: - Launch
@@ -141,7 +141,7 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(counter.writes, 0)
         XCTAssertEqual(try Data(contentsOf: url), broken)
         XCTAssertEqual(settings.wordsPerMinute, 250)
-        XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
+        XCTAssertEqual(debugLogLines(naming: url).count, 1)
 
         var corrected = launchConsistentConfig()
         corrected.wordsPerMinute = 300
@@ -447,7 +447,7 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(settings.sleepFadeOutDuration, 6)
         XCTAssertEqual(counter.writes, 0)
         XCTAssertEqual(try Data(contentsOf: url), broken)
-        XCTAssertEqual(debugLogLines(containing: url.path).count, 1)
+        XCTAssertEqual(debugLogLines(naming: url).count, 1)
 
         edit.sleepFadeOutDuration = 9
         try editorSave(ConfigService.fileData(for: edit), to: url)

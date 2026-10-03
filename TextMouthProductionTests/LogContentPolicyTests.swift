@@ -277,22 +277,16 @@ final class LogContentPolicyTests: XCTestCase {
 
     // MARK: - The Writer
 
-    /// The files that still hand lines straight to the writer: code outside
-    /// this policy's change, to be moved onto `DiagnosticLog`.
-    private static let filesStillWritingDirectly: Set<String> = [
-        "ConfigService.swift",
-    ]
-
-    /// Every other line goes through `DiagnosticLog`, the one place that
-    /// applies the policy: no other file calls the writer beneath it.
-    func testOnlyKnownFilesWriteAroundThePolicy() throws {
+    /// Every line goes through `DiagnosticLog`, the one place that applies
+    /// the policy: no other file calls the writer beneath it.
+    func testOnlyThePolicyCallsTheWriter() throws {
         let writingDirectly = try Self.appSources().filter { source in
             LogCallScanner.calls(in: source.text, file: source.name)
                 .contains { $0.function == "TextMouthPaths.appendLog" }
         }.map(\.name)
 
         XCTAssertTrue(writingDirectly.contains("DiagnosticLog.swift"), "the policy writes through the writer")
-        for file in writingDirectly where file != "DiagnosticLog.swift" && !Self.filesStillWritingDirectly.contains(file) {
+        for file in writingDirectly where file != "DiagnosticLog.swift" {
             XCTFail(
                 "\(file) calls TextMouthPaths.appendLog directly, around the log policy. Replace "
                     + "`TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)` with "
@@ -352,8 +346,8 @@ private enum LogCallScanner {
         LoggingFunction(name: "routingLog", level: nil),
         LoggingFunction(name: "voiceOverFocusLog", level: .trace),
         LoggingFunction(name: "diagnostic", level: .trace, file: "NowPlayingService.swift"),
-        // The writer itself, which files not yet moved onto the policy still
-        // call with their event lines.
+        // The writer itself, which only the policy calls; a call anywhere
+        // else is found, and `testOnlyThePolicyCallsTheWriter` fails it.
         LoggingFunction(name: "TextMouthPaths.appendLog", level: .event),
     ]
 
