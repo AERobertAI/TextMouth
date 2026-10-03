@@ -53,7 +53,7 @@ final class ProgressOverlayTests: XCTestCase {
         XCTAssertEqual(ProgressOverlay.cancelButtonLabel, "Cancel Import")
         XCTAssertEqual(
             ProgressOverlay.cancelButtonHint,
-            "Stops importing ZIP archives. Books already imported stay in the library."
+            "Stops importing ZIP archives after the current book. Books already imported stay in the library."
         )
         XCTAssertNil(ProgressOverlay(title: "Extracting Text", current: 1, total: 2, message: "", itemNoun: "books extracted").onCancel)
     }

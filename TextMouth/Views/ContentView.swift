@@ -314,8 +314,9 @@ struct ProgressOverlay: View {
     static let cancelButtonLabel = "Cancel Import"
     /// What VoiceOver says the Cancel button does: it stops the ZIP archive
     /// imports under way and queued (`LibraryViewModel.cancelImports()`),
-    /// and every book already imported stays.
-    static let cancelButtonHint = "Stops importing ZIP archives. Books already imported stay in the library."
+    /// though a book already being imported, such as a single audiobook
+    /// archive, is finished first, and every book already imported stays.
+    static let cancelButtonHint = "Stops importing ZIP archives after the current book. Books already imported stay in the library."
 
     var body: some View {
         VStack(spacing: 16) {
