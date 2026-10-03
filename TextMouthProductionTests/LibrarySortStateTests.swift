@@ -207,6 +207,70 @@ final class LibrarySortStateTests: XCTestCase {
         )
     }
 
+    // MARK: - Applying a Sort to Subfolders
+
+    /// Applying manual order to subfolders gives each the choice of manual
+    /// order, without a direction, and the folder's remembered directions;
+    /// it never copies the order of the books, which differ in each folder.
+    func testApplyingManualOrderToSubfoldersCopiesTheChoiceNotTheOrder() {
+        var library = Library(
+            books: [
+                Self.shelvedBook("Parent Opener", in: "Parent", manualOrder: 1),
+                Self.shelvedBook("Parent Closer", in: "Parent", manualOrder: 0),
+                Self.shelvedBook("Child Opener", in: "Parent/Child", manualOrder: 2),
+                Self.shelvedBook("Child Middle", in: "Parent/Child", manualOrder: 0),
+                Self.shelvedBook("Child Closer", in: "Parent/Child", manualOrder: 1)
+            ],
+            folders: [
+                BookFolder(name: "Parent"),
+                BookFolder(name: "Child", parentPath: "Parent"),
+                BookFolder(name: "Grandchild", parentPath: "Parent/Child"),
+                BookFolder(name: "Elsewhere")
+            ],
+            folderSortSettings: ["Elsewhere": FolderSortSetting(sortField: .author, sortAscending: false)]
+        )
+        let orderBefore = library.books.map(\.manualSortOrder)
+
+        library.applySortToSubfolders(
+            FolderSortSetting(sortField: .manual, sortAscending: false, rememberedDirections: [.title: false, .manual: true]),
+            from: "Parent"
+        )
+
+        let applied = FolderSortSetting(sortField: .manual, sortAscending: true, rememberedDirections: [.title: false])
+        for path in ["Parent", "Parent/Child", "Parent/Child/Grandchild"] {
+            XCTAssertEqual(library.folderSortSettings[path], applied, path)
+        }
+        XCTAssertEqual(library.sortSetting(for: "Elsewhere"), FolderSortSetting(sortField: .author, sortAscending: false))
+        XCTAssertEqual(library.books.map(\.manualSortOrder), orderBefore, "no book's manual position changes")
+
+        let child = LibraryLocation(category: .folders, folderPath: "Parent/Child")
+        XCTAssertEqual(child.windowTitle(sortedBy: library.sortState(at: child)), "Library: Child (Manual Order)")
+        XCTAssertEqual(
+            library.sortState(at: child).applying(.choose(.title)).titleFragment,
+            "Title Descending",
+            "a subfolder switches fields as the folder it copied does"
+        )
+    }
+
+    /// Applying any other field gives every folder that field and direction.
+    func testApplyingAFieldToSubfoldersCopiesItsDirection() {
+        var library = Library(folders: [
+            BookFolder(name: "Parent"),
+            BookFolder(name: "Child", parentPath: "Parent")
+        ])
+        let parent = LibraryLocation(category: .folders, folderPath: "Parent")
+        let dateDescending = library.sortState(at: parent)
+            .applying(.choose(.dateAdded))
+            .applying(.reverseDirection)
+
+        library.applySortToSubfolders(dateDescending.setting, from: "Parent")
+
+        for path in ["Parent", "Parent/Child"] {
+            let location = LibraryLocation(category: .folders, folderPath: path)
+            XCTAssertEqual(library.sortState(at: location), dateDescending, path)
+        }
+    }
+
     // MARK: - One Value, Shown Consistently
 
     /// For every field and saved direction, the window title, the Sort
@@ -298,6 +362,20 @@ final class LibrarySortStateTests: XCTestCase {
             )
         }
         return (books, fileSizes)
+    }
+
+    /// A book in `folder` at `manualOrder` in the folder's manual order.
+    static func shelvedBook(_ title: String, in folder: String, manualOrder: Int) -> Book {
+        let id = UUID()
+        return Book(
+            id: id,
+            title: title,
+            format: .txt,
+            filePath: "/nonexistent/sort-state/\(id.uuidString).txt",
+            md5Hash: "sort-state-\(id.uuidString)",
+            folderPath: folder,
+            manualSortOrder: manualOrder
+        )
     }
 
     /// `library` written as `LibraryPersistenceService` writes the index,

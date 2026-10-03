@@ -135,14 +135,20 @@ struct Library: Codable {
     }
 
     /// Apply a sort setting to a folder and all its subfolders recursively.
+    /// Every folder gets the setting in the form a location shows it
+    /// (`normalized`), so each sorts, and switches fields, exactly as the
+    /// folder does. For manual order that copies only the choice of manual
+    /// order, never the order of the books: each folder holds different
+    /// books and keeps its own order (TODO A06).
     mutating func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
-        folderSortSettings[folderPath] = setting
+        let applied = setting.normalized
+        folderSortSettings[folderPath] = applied
         for folder in folders {
             let path = folder.fullPath
             if path == folderPath || path.hasPrefix(folderPath.isEmpty ? "" : folderPath + "/") {
                 // For root (empty folderPath), apply to all folders
                 if folderPath.isEmpty || path != folderPath {
-                    folderSortSettings[path] = setting
+                    folderSortSettings[path] = applied
                 }
             }
         }
