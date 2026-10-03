@@ -6,12 +6,17 @@ import SwiftUI
 /// contract's own (`visibleNote`, `spokenNote`); these helpers only decide
 /// where the note appears and how it reads beside the row's other parts.
 extension BookCloudState {
-    /// Whether the spoken note carries a download percentage. The row then
-    /// speaks its reading progress as "<n> percent read", so its label never
-    /// holds two bare percentages.
-    var speaksPercentage: Bool {
+    /// Whether the book is being downloaded.
+    var isDownloading: Bool {
         if case .downloading = self { return true }
         return false
+    }
+
+    /// Whether the spoken note carries a download percentage, as only a
+    /// download's does. The row then speaks its reading progress as
+    /// "<n> percent read", so its label never holds two bare percentages.
+    var speaksPercentage: Bool {
+        isDownloading
     }
 
     /// Whether some of the book's files are not on this Mac: only in the

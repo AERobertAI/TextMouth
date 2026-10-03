@@ -166,6 +166,9 @@ struct LibraryView: View {
     /// Every book's cloud state (FR02), observed so the rows' notes follow
     /// each refresh and download. Rows read only what it recorded.
     @ObservedObject private var cloudStates = BookCloudStates.shared
+    /// This window's token for the cloud refresher, which keeps refreshing
+    /// while any Library window is visible (FR02).
+    @State private var cloudRefreshToken = UUID()
 
     var body: some View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
@@ -565,6 +568,14 @@ struct LibraryView: View {
             hostWindow = window
         }))
         .trackingRemovalPreferences($removalPreferences)
+        // Books' cloud states are refreshed when the window appears, and
+        // then on the refresher's own triggers while it stays visible.
+        .onAppear {
+            LibraryCloudRefresher.shared.libraryWindowAppeared(cloudRefreshToken, showing: libraryViewModel)
+        }
+        .onDisappear {
+            LibraryCloudRefresher.shared.libraryWindowDisappeared(cloudRefreshToken)
+        }
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
