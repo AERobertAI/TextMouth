@@ -324,12 +324,13 @@ func runFolderSortSettingTests() {
         try assertEqual(LibraryCategory.noFolder.defaultSortSetting, .defaultSort)
     }
 
-    // MARK: - Category switch round-trip (simulates the ContentView load/save cycle)
+    // MARK: - Category switch round-trip (each location keeps its own key)
 
     test("Round-trip: folder → recent → folder does not pollute folder sort") {
-        // Simulates ContentView's load/save flow. If saveSortSettings() fires
-        // during a load (due to SwiftUI onChange batching), the recent sort
-        // must not be saved under the folder's key.
+        // A window moving from a folder to Recent and back reads each
+        // location's setting under its own key. Showing a sort never saves it
+        // (TODO A06), and a change made in Recent is saved under the
+        // category's key, never the folder's.
         var library = Library()
         let folderPath = "Fiction"
 
@@ -344,8 +345,7 @@ func runFolderSortSettingTests() {
         try assertEqual(recentSetting.sortField, .lastOpened)
         try assertTrue(!recentSetting.sortAscending)
 
-        // Step 3: if save fires during load, it must target the category key, NOT the folder
-        // Simulate correct save: saves to "__recent__"
+        // Step 3: a change made in Recent is saved under the category key, NOT the folder's
         library.setSortSetting(recentSetting, for: recentKey)
 
         // Step 4: switch back to folder → folder should still have no stored setting

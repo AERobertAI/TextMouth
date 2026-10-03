@@ -96,6 +96,32 @@ final class LibraryBookSorterTests: XCTestCase {
         XCTAssertEqual(LibraryBookSorter.recursiveFileSize(at: file), 17)
     }
 
+    /// Library lists sort with the sort a location shows: file sizes are
+    /// measured on disk, and manual order that an earlier version saved as
+    /// descending still lists books in the order the user arranged.
+    func testListsSortBooksAsTheLocationsSortShowsThem() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        var books: [Book] = []
+        for (title, size, manualOrder) in [("Middle", 20, 0), ("Large", 30, 2), ("Small", 10, 1)] {
+            let file = folder.appendingPathComponent("\(title).txt")
+            try Data(repeating: 0, count: size).write(to: file)
+            var book = makeBook(title: title)
+            book.filePath = file.path
+            book.manualSortOrder = manualOrder
+            books.append(book)
+        }
+        let model = LibraryViewModel(initializeServices: false)
+
+        let largestFirst = LibrarySortState(restoring: FolderSortSetting(sortField: .fileSize, sortAscending: false))
+        XCTAssertEqual(model.sortedBooks(books, by: largestFirst).map(\.title), ["Large", "Middle", "Small"])
+
+        let earlierManual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: false))
+        XCTAssertEqual(model.sortedBooks(books, by: earlierManual).map(\.title), ["Middle", "Small", "Large"])
+    }
+
     func testLibraryPersistenceFlushWritesNewestPendingSnapshot() throws {
         let first = makeBook(title: "Older Snapshot")
         let newest = makeBook(title: "Newest Snapshot")

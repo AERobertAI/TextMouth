@@ -130,8 +130,6 @@ struct LibraryView: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
     @Binding var currentFolderPath: String
     @Binding var category: LibraryCategory
-    @Binding var sortField: LibrarySortField
-    @Binding var sortAscending: Bool
     @Binding var showFileImporter: Bool
     let onOpenBook: (Book) -> Void
 
@@ -344,7 +342,7 @@ struct LibraryView: View {
                                     showMoveSheet = true
                                 }
                                 // Manual order move commands (single book only, when sort is Manual)
-                                if !isMulti && sortField == .manual {
+                                if !isMulti && sort.field == .manual {
                                     let canUp = libraryViewModel.canMoveBookInManualOrder(
                                         bookID: book.id, direction: -1, folderPath: currentFolderPath
                                     )
@@ -389,7 +387,7 @@ struct LibraryView: View {
                             }
                     }
                     .onMove { source, destination in
-                        if sortField == .manual {
+                        if sort.field == .manual {
                             libraryViewModel.reorderBooksInFolder(
                                 folderPath: currentFolderPath,
                                 from: source,
@@ -481,39 +479,36 @@ struct LibraryView: View {
                     .accessibilityLabel("Create new folder")
                 }
 
-                // Sort controls
+                // Sort controls. Every item reads the one sort the location
+                // shows and changes it only through userChangedSort, so the
+                // menu, the window title, and the order agree (TODO A06).
                 Menu {
+                    // A checkmark marks the field shown, for VoiceOver as
+                    // well as on screen; choosing that field again reverses
+                    // its direction, as the menu always has.
                     ForEach(LibrarySortField.allCases, id: \.self) { field in
-                        Button {
-                            if sortField == field {
-                                sortAscending.toggle()
-                            } else {
-                                sortField = field
-                                sortAscending = true
-                            }
-                        } label: {
-                            HStack {
-                                Text(field.rawValue)
-                                if sortField == field {
-                                    Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
-                                }
-                            }
-                        }
+                        Toggle(field.rawValue, isOn: Binding(
+                            get: { sort.isChecked(field) },
+                            set: { _ in userChangedSort(.choose(field)) }
+                        ))
                     }
                     Divider()
-                    Button {
-                        sortAscending.toggle()
-                    } label: {
-                        Text(sortAscending ? "Sort Descending" : "Sort Ascending")
+                    // Disabled in manual order, which has no direction; the
+                    // hint says why, to VoiceOver and as a tooltip.
+                    Button(sort.directionCommandTitle) {
+                        userChangedSort(.reverseDirection)
                     }
+                    .disabled(!sort.isDirectionCommandEnabled)
+                    .help(sort.directionCommandHint)
+                    .accessibilityHint(sort.directionCommandHint)
                     // Only show "Apply to Subfolders" when in folders mode and subfolders exist
                     if category == .folders {
                         let hasSubfolders = !libraryViewModel.subfoldersOf(currentFolderPath).isEmpty
                         if hasSubfolders {
                             Divider()
                             Button {
-                                let setting = FolderSortSetting(sortField: sortField, sortAscending: sortAscending)
-                                libraryViewModel.applySortToSubfolders(setting, from: currentFolderPath)
+                                libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
+                                announceToVoiceOver(sort.subfolderAnnouncement)
                             } label: {
                                 Text("Apply Sort to All Subfolders")
                             }
@@ -522,7 +517,7 @@ struct LibraryView: View {
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
-                .accessibilityLabel("Sort books by \(sortField.rawValue), \(sortAscending ? "ascending" : "descending")")
+                .accessibilityLabel(sort.menuAccessibilityLabel)
             }
         }
         // Each sheet below closes only after its operation succeeds. After a
@@ -967,11 +962,32 @@ struct LibraryView: View {
         return filteredBooks.filter { ids.contains($0.id) }
     }
 
+    /// Where this list is: its category and, in Folders, its folder.
+    private var location: LibraryLocation {
+        LibraryLocation(category: category, folderPath: currentFolderPath)
+    }
+
+    /// The sort the list shows, restored from the setting saved for its
+    /// location whenever the view draws, so the first frame, a change of
+    /// folder or category, a change made in another window, and a library
+    /// replaced by index recovery all show the saved sort (TODO A06).
+    /// Showing it never saves it.
+    private var sort: LibrarySortState {
+        libraryViewModel.sortState(at: location)
+    }
+
+    /// Makes and saves a change the user chose in the Sort menu, the one
+    /// way a location's sort changes, then says the sort now shown, since
+    /// the menu closes without saying it (TODO A06).
+    private func userChangedSort(_ change: LibrarySortChange) {
+        let shown = libraryViewModel.userChangedSort(change, at: location)
+        announceToVoiceOver(shown.changeAnnouncement)
+    }
+
     private var displayedBooks: [Book] {
         libraryViewModel.sortedBooks(
             libraryViewModel.booksForCategory(category, folderPath: currentFolderPath),
-            by: sortField,
-            ascending: sortAscending
+            by: sort
         )
     }
 
@@ -1015,7 +1031,7 @@ struct LibraryView: View {
     /// Only works when a single book is selected and sort is Manual Order.
     /// Announces the result to VoiceOver.
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard sortField == .manual else { return }
+        guard sort.field == .manual else { return }
         let ids = effectiveSelection
         guard ids.count == 1, let bookID = ids.first else { return }
         if let result = libraryViewModel.moveBookInManualOrder(
