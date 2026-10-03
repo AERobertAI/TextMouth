@@ -4,6 +4,7 @@ import Foundation
 @testable import TextMouth
 #endif
 
+@MainActor
 func runDAISYEdgeCaseTests() {
 print("\n--- DAISY Edge Case Tests ---")
 

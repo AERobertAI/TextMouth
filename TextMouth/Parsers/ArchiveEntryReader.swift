@@ -104,6 +104,25 @@ enum ArchiveFigures {
     }
 }
 
+// MARK: - Opening
+
+extension Archive {
+    /// The ZIP archive at `url`, opened for reading, or nil when it cannot
+    /// be opened: nothing is there, it cannot be read, or it is not a ZIP
+    /// archive. For callers that only ask whether a file is an archive they
+    /// can read; a caller that reports why an archive did not open uses the
+    /// throwing initializer itself.
+    ///
+    /// This is exactly what ZIPFoundation's deprecated failable initializer,
+    /// `init?(url:accessMode:preferredEncoding:)`, does (TODO Q06). Naming
+    /// `pathEncoding` selects the throwing initializer that replaces it:
+    /// given only a URL and an access mode, `try?` resolves to the
+    /// deprecated one.
+    static func openedForReading(at url: URL) -> Archive? {
+        try? Archive(url: url, accessMode: .read, pathEncoding: nil)
+    }
+}
+
 // MARK: - Reading
 
 /// The one way TextMouth takes an entry's bytes out of a ZIP archive,

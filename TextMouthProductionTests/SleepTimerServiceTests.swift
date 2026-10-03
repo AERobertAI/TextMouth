@@ -7,8 +7,11 @@ final class SleepTimerServiceTests: XCTestCase {
     private var owner: UUID!
     private var testDefaults: UserDefaults!
 
-    override func setUp() {
-        super.setUp()
+    /// Set-up and tear-down are the asynchronous overrides, which run on the
+    /// main actor this class is isolated to, as the service and these
+    /// properties require; XCTest's synchronous ones are nonisolated.
+    override func setUp() async throws {
+        try await super.setUp()
         // A preferences store of the test's own, kept in the sandbox and
         // emptied when the test ends, so fixture cleanup never deletes a
         // `sleepTimer.lastUsedDuration` value saved anywhere else.
@@ -18,12 +21,12 @@ final class SleepTimerServiceTests: XCTestCase {
         owner = UUID()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         service._resetForTesting()
         service = nil
         owner = nil
         testDefaults = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     /// Starts a timer with inert callbacks unless a test supplies behavior.

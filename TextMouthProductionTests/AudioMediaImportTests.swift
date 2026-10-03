@@ -147,6 +147,35 @@ final class AudioMediaImportTests: XCTestCase {
         ])
     }
 
+    /// The library's own ZIP import sends an archive holding a DAISY book
+    /// with audio to the audio importer: it opens the archive a second
+    /// time, finds the audio there, and the book imports as an audio book
+    /// (TODO Q06 pins this before the archive is opened through another
+    /// initializer; `DAISYPackageImportTests` covers the archive without
+    /// audio). The import saves the library, so the hosted test root's
+    /// library index is put back afterwards, and the archive is kept.
+    @MainActor
+    func testLibraryImportsADAISYArchiveWithAudioAsAnAudioBook() throws {
+        let index = try LibraryIndexSandbox.capture()
+        defer { index.restore() }
+        useAfterImportingBehavior(.keepOriginal)
+        let title = "Harbor Soundings \(UUID().uuidString)"
+        let book = try makeDAISYBook(title: title, lastClipEnds: (2, 1))
+        XCTAssertTrue(DAISYParser.isDAISYZip(url: book))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        model.importZipAsync(from: book, toFolder: folderPath)
+
+        XCTAssertTrue(
+            eventually(within: 60) { !model.library.books.isEmpty || model.showError },
+            "the import never finished"
+        )
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.library.books.map(\.format), [.audio])
+        XCTAssertEqual(model.library.books.map(\.title), [title])
+    }
+
     // MARK: - Helpers
 
     /// An import function as these tests call it: the source, the library

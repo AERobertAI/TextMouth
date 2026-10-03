@@ -108,36 +108,45 @@ struct WindowAccessor: NSViewRepresentable {
 private class WindowAccessorView: NSView {
     var onWindowFound: ((NSWindow) -> Void)?
     var onWindowBecameKey: (() -> Void)?
-    private var keyWindowObserver: NSObjectProtocol?
-
-    deinit {
-        removeKeyWindowObserver()
-    }
+    /// The observation of the host window becoming key. Replacing it, as a
+    /// move to another window does, or releasing it with this view stops
+    /// observing, so a closed window never retains the callbacks.
+    private var keyWindowObservation: NotificationObservation?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        removeKeyWindowObserver()
+        keyWindowObservation = nil
         if let window = window {
             onWindowFound?(window)
             if window.isKeyWindow {
                 onWindowBecameKey?()
             }
-            keyWindowObserver = NotificationCenter.default.addObserver(
+            keyWindowObservation = NotificationObservation(NotificationCenter.default.addObserver(
                 forName: NSWindow.didBecomeKeyNotification,
                 object: window,
                 queue: .main
             ) { [weak self] _ in
-                self?.onWindowBecameKey?()
-            }
+                // Delivered on the main queue, as `queue: .main` asks.
+                MainActor.assumeIsolated { self?.onWindowBecameKey?() }
+            })
         }
     }
+}
 
-    /// Stops observing the previous host when SwiftUI moves or destroys the
-    /// representable, preventing a closed window from retaining callbacks.
-    private func removeKeyWindowObserver() {
-        if let keyWindowObserver {
-            NotificationCenter.default.removeObserver(keyWindowObserver)
-            self.keyWindowObserver = nil
-        }
+/// One block-based NotificationCenter observation, ended when this object
+/// is released (TODO Q06). The view that owns it is main-actor isolated, but
+/// its deinit is not, so it cannot remove an observer itself; this object's
+/// token never changes after `init`, and `removeObserver(_:)` is
+/// thread-safe, so releasing it from any thread ends the observation.
+private final class NotificationObservation {
+    /// The token `addObserver(forName:object:queue:using:)` returned.
+    private let token: NSObjectProtocol
+
+    init(_ token: NSObjectProtocol) {
+        self.token = token
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(token)
     }
 }

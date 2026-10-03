@@ -5,6 +5,7 @@ import Foundation
 /// Verifies that .tmb directories on disk but not in library.json
 /// are discovered, reconstructed from their bookInfo.json, and added
 /// to the library.
+@MainActor
 func runOrphanAdoptionTests() {
     print("\n--- Orphan Adoption Tests ---")
 
@@ -373,6 +374,7 @@ func runOrphanAdoptionTests() {
 
 // MARK: - Misplaced .tmb Relocation Tests
 
+@MainActor
 func runRelocationTests() {
     print("\n--- TMB Relocation Tests ---")
 
@@ -511,6 +513,7 @@ func runRelocationTests() {
 
 // MARK: - Empty Directory Cleanup Tests
 
+@MainActor
 func runEmptyDirectoryCleanupTests() {
     print("\n--- Empty Directory Cleanup Tests ---")
 
@@ -607,6 +610,7 @@ func runEmptyDirectoryCleanupTests() {
 
 // MARK: - Orphan Non-Re-Adoption Tests
 
+@MainActor
 func runOrphanNonReAdoptionTests() {
     print("\n--- Orphan Non-Re-Adoption Tests ---")
 

@@ -38,6 +38,7 @@ private func navigationBook(title: String, folderPath: String) -> Book {
     )
 }
 
+@MainActor
 func runFolderNavigationHistoryTests() {
     print("\n--- Folder Navigation History Tests ---")
 

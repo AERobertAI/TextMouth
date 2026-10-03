@@ -11,6 +11,7 @@ private func legacyListLevel(_ format: String) -> ListLevelFormat {
 private func legacyListLevel(_ format: String) -> String { format }
 #endif
 
+@MainActor
 func runDOCXEdgeCaseTests() {
 print("\n--- DOCX Edge Case Tests ---")
 

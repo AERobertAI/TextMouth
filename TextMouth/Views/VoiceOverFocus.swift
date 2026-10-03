@@ -7,6 +7,19 @@ import Accessibility
 /// for an element with this identifier.
 let voiceOverFocusID = "vo-focus-target"
 
+/// The informal NSAccessibility getters VoiceOver focus asks of elements
+/// that are not views, such as the nodes SwiftUI publishes. Each is named
+/// through AppKit's NSAccessibility protocol, so the compiler checks it, and
+/// is the same selector the getter's name builds at run time (TODO Q06).
+/// Callers ask `responds(to:)` before `perform(_:)`, as an element need not
+/// answer every getter.
+private enum AccessibilityGetter {
+    static let identifier = #selector(NSAccessibilityProtocol.accessibilityIdentifier)
+    static let label = #selector(NSAccessibilityProtocol.accessibilityLabel)
+    static let role = #selector(NSAccessibilityProtocol.accessibilityRole)
+    static let children = #selector(NSAccessibilityProtocol.accessibilityChildren)
+}
+
 struct StandardVoiceOverFocus: NSViewRepresentable {
     var delay: TimeInterval = 0.8
 
@@ -58,10 +71,10 @@ enum VoiceOverFocusDiagnostics {
                 + "\(labelLength(view.accessibilityLabel())) id='\(identifier.isEmpty ? "nil" : identifier)'"
         }
         if let object = element as? NSObject {
-            let role = string(object, "accessibilityRole") ?? "nil"
-            let identifier = string(object, "accessibilityIdentifier") ?? "nil"
+            let role = string(object, AccessibilityGetter.role) ?? "nil"
+            let identifier = string(object, AccessibilityGetter.identifier) ?? "nil"
             return "\(className(of: object)) role=\(role) "
-                + "\(labelLength(string(object, "accessibilityLabel"))) id='\(identifier)'"
+                + "\(labelLength(string(object, AccessibilityGetter.label))) id='\(identifier)'"
         }
         return String(describing: type(of: element))
     }
@@ -88,12 +101,11 @@ enum VoiceOverFocusDiagnostics {
         NSStringFromClass(type(of: object)).components(separatedBy: ".").last ?? "?"
     }
 
-    /// The string `object` returns for the accessibility getter `getter`, if
-    /// it answers it.
-    private static func string(_ object: NSObject, _ getter: String) -> String? {
-        let selector = Selector((getter))
-        guard object.responds(to: selector) else { return nil }
-        return object.perform(selector)?.takeUnretainedValue() as? String
+    /// The string `object` returns for the accessibility getter `getter`
+    /// (one of `AccessibilityGetter`'s), if it answers it.
+    private static func string(_ object: NSObject, _ getter: Selector) -> String? {
+        guard object.responds(to: getter) else { return nil }
+        return object.perform(getter)?.takeUnretainedValue() as? String
     }
 
     /// How a label is named in a diagnostic: by its length alone.
@@ -129,8 +141,12 @@ class StandardVoiceOverFocusTriggerView: NSView {
     /// pending work and let the latest instance win.
     private static var pendingWork: [ObjectIdentifier: DispatchWorkItem] = [:]
 
+    // The three focus policies below are pure, reading only their
+    // arguments, so they are nonisolated: tests and any other context call
+    // them directly, though the view itself is main-actor isolated.
+
     /// Pure focus-stealing guard used before posting accessibility events.
-    static func shouldPostFocus(
+    nonisolated static func shouldPostFocus(
         isSheet: Bool,
         targetWindowIsKey: Bool,
         anotherWindowIsKey: Bool
@@ -140,12 +156,12 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
     /// Sheets receive extra retries because their accessibility hierarchy is
     /// commonly published later than a standard window's hierarchy.
-    static func focusAttemptCount(isSheet: Bool) -> Int {
+    nonisolated static func focusAttemptCount(isSheet: Bool) -> Int {
         isSheet ? 4 : 2
     }
 
     /// Defines which accessibility nodes are safe generic fallback targets.
-    static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
+    nonisolated static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
         if role == "AXRow" || role == "AXCell" || role == "AXTextField" { return true }
         return role == "AXButton" && !isScrollerPart && label?.isEmpty == false
     }
@@ -264,8 +280,8 @@ class StandardVoiceOverFocusTriggerView: NSView {
         }
 
         if let focusedObj = focused as? NSObject,
-           focusedObj.responds(to: Selector(("accessibilityIdentifier"))) {
-            if let focusedID = focusedObj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String,
+           focusedObj.responds(to: AccessibilityGetter.identifier) {
+            if let focusedID = focusedObj.perform(AccessibilityGetter.identifier)?.takeUnretainedValue() as? String,
                focusedID == voiceOverFocusID {
                 return true
             }
@@ -274,13 +290,13 @@ class StandardVoiceOverFocusTriggerView: NSView {
         if let focusedObj = focused as? NSObject, let targetObj = target as? NSObject {
             let focusedLabel: String? = {
                 if let v = focusedObj as? NSView { return v.accessibilityLabel() }
-                guard focusedObj.responds(to: Selector(("accessibilityLabel"))) else { return nil }
-                return focusedObj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+                guard focusedObj.responds(to: AccessibilityGetter.label) else { return nil }
+                return focusedObj.perform(AccessibilityGetter.label)?.takeUnretainedValue() as? String
             }()
             let targetLabel: String? = {
                 if let v = targetObj as? NSView { return v.accessibilityLabel() }
-                guard targetObj.responds(to: Selector(("accessibilityLabel"))) else { return nil }
-                return targetObj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+                guard targetObj.responds(to: AccessibilityGetter.label) else { return nil }
+                return targetObj.perform(AccessibilityGetter.label)?.takeUnretainedValue() as? String
             }()
             if let fl = focusedLabel, let tl = targetLabel, !fl.isEmpty, fl == tl {
                 return true
@@ -296,8 +312,8 @@ class StandardVoiceOverFocusTriggerView: NSView {
         if let obj = root as? NSObject {
             let role: String? = {
                 if let view = obj as? NSView { return view.accessibilityRole()?.rawValue }
-                guard obj.responds(to: Selector(("accessibilityRole"))) else { return nil }
-                return obj.perform(Selector(("accessibilityRole")))?.takeUnretainedValue() as? String
+                guard obj.responds(to: AccessibilityGetter.role) else { return nil }
+                return obj.perform(AccessibilityGetter.role)?.takeUnretainedValue() as? String
             }()
             if let role = role {
                 let label = accessibilityLabel(for: root)?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -313,8 +329,8 @@ class StandardVoiceOverFocusTriggerView: NSView {
         let children: [Any]
         if let view = root as? NSView {
             children = view.accessibilityChildren() ?? []
-        } else if let obj = root as? NSObject, obj.responds(to: Selector(("accessibilityChildren"))) {
-            children = (obj.perform(Selector(("accessibilityChildren")))?.takeUnretainedValue() as? [Any]) ?? []
+        } else if let obj = root as? NSObject, obj.responds(to: AccessibilityGetter.children) {
+            children = (obj.perform(AccessibilityGetter.children)?.takeUnretainedValue() as? [Any]) ?? []
         } else {
             children = []
         }
@@ -332,10 +348,10 @@ class StandardVoiceOverFocusTriggerView: NSView {
             return view.accessibilityLabel()
         }
         guard let obj = value as? NSObject,
-              obj.responds(to: Selector(("accessibilityLabel"))) else {
+              obj.responds(to: AccessibilityGetter.label) else {
             return nil
         }
-        return obj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+        return obj.perform(AccessibilityGetter.label)?.takeUnretainedValue() as? String
     }
 
     func findElementByIdentifier(_ identifier: String, root: Any, depth: Int) -> Any? {
@@ -350,8 +366,8 @@ class StandardVoiceOverFocusTriggerView: NSView {
                     }
                 }
             }
-            if obj.responds(to: Selector(("accessibilityIdentifier"))) {
-                if let axID = obj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String,
+            if obj.responds(to: AccessibilityGetter.identifier) {
+                if let axID = obj.perform(AccessibilityGetter.identifier)?.takeUnretainedValue() as? String,
                    axID == identifier {
                     return root
                 }
@@ -362,7 +378,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
         if let view = root as? NSView {
             children = view.accessibilityChildren() ?? []
         } else if let obj = root as? NSObject,
-                  obj.responds(to: Selector(("accessibilityChildren"))) {
+                  obj.responds(to: AccessibilityGetter.children) {
             children = (obj.value(forKey: "accessibilityChildren") as? [Any]) ?? []
         } else {
             children = []
@@ -391,7 +407,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
         if let view = node as? NSView {
             children = view.accessibilityChildren() ?? []
         } else if let obj = node as? NSObject,
-                  obj.responds(to: Selector(("accessibilityChildren"))) {
+                  obj.responds(to: AccessibilityGetter.children) {
             children = (obj.value(forKey: "accessibilityChildren") as? [Any]) ?? []
         } else {
             children = []
@@ -587,10 +603,10 @@ final class VoiceOverFocusTriggerView: NSView {
             return identifier.isEmpty ? nil : identifier
         }
         guard let obj = value as? NSObject,
-              obj.responds(to: Selector(("accessibilityIdentifier"))) else {
+              obj.responds(to: AccessibilityGetter.identifier) else {
             return nil
         }
-        return obj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String
+        return obj.perform(AccessibilityGetter.identifier)?.takeUnretainedValue() as? String
     }
 
     private func accessibilityLabel(for value: Any) -> String? {
@@ -598,10 +614,10 @@ final class VoiceOverFocusTriggerView: NSView {
             return view.accessibilityLabel()
         }
         guard let obj = value as? NSObject,
-              obj.responds(to: Selector(("accessibilityLabel"))) else {
+              obj.responds(to: AccessibilityGetter.label) else {
             return nil
         }
-        return obj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String
+        return obj.perform(AccessibilityGetter.label)?.takeUnretainedValue() as? String
     }
 
     func findFirstInteractiveElement(root: Any, depth: Int) -> Any? {
@@ -610,8 +626,8 @@ final class VoiceOverFocusTriggerView: NSView {
         if let obj = root as? NSObject {
             let role: String? = {
                 if let view = obj as? NSView { return view.accessibilityRole()?.rawValue }
-                guard obj.responds(to: Selector(("accessibilityRole"))) else { return nil }
-                return obj.perform(Selector(("accessibilityRole")))?.takeUnretainedValue() as? String
+                guard obj.responds(to: AccessibilityGetter.role) else { return nil }
+                return obj.perform(AccessibilityGetter.role)?.takeUnretainedValue() as? String
             }()
             if let role = role {
                 if role == "AXRow" || role == "AXCell" { return root }
@@ -623,8 +639,8 @@ final class VoiceOverFocusTriggerView: NSView {
         let children: [Any]
         if let view = root as? NSView {
             children = view.accessibilityChildren() ?? []
-        } else if let obj = root as? NSObject, obj.responds(to: Selector(("accessibilityChildren"))) {
-            children = (obj.perform(Selector(("accessibilityChildren")))?.takeUnretainedValue() as? [Any]) ?? []
+        } else if let obj = root as? NSObject, obj.responds(to: AccessibilityGetter.children) {
+            children = (obj.perform(AccessibilityGetter.children)?.takeUnretainedValue() as? [Any]) ?? []
         } else {
             children = []
         }
@@ -649,8 +665,8 @@ final class VoiceOverFocusTriggerView: NSView {
                     }
                 }
             }
-            if obj.responds(to: Selector(("accessibilityIdentifier"))) {
-                if let axID = obj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String,
+            if obj.responds(to: AccessibilityGetter.identifier) {
+                if let axID = obj.perform(AccessibilityGetter.identifier)?.takeUnretainedValue() as? String,
                    axID == identifier {
                     return root
                 }
@@ -661,7 +677,7 @@ final class VoiceOverFocusTriggerView: NSView {
         if let view = root as? NSView {
             children = view.accessibilityChildren() ?? []
         } else if let obj = root as? NSObject,
-                  obj.responds(to: Selector(("accessibilityChildren"))) {
+                  obj.responds(to: AccessibilityGetter.children) {
             children = (obj.value(forKey: "accessibilityChildren") as? [Any]) ?? []
         } else {
             children = []

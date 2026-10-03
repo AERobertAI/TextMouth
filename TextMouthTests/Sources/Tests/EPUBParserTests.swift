@@ -30,6 +30,7 @@ private func parseHTML(html: String, title: String) throws -> DocumentContent {
 }
 #endif
 
+@MainActor
 func runEPUBParserTests() {
 print("\n--- EPUB Parser Tests (Alice in Wonderland) ---")
 

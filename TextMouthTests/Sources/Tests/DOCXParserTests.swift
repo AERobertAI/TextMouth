@@ -43,6 +43,7 @@ private func assertPinnedMarkdown(_ name: String, bytes: Int, sha256: String) th
 }
 #endif
 
+@MainActor
 func runDOCXParserTests() {
 print("\n--- DOCX Parser Tests (test_book.docx) ---")
 

@@ -160,6 +160,7 @@ let defaultSoundAssignments: [SoundEvent: String] = [
 ]
 #endif
 
+@MainActor
 func runKeyboardShortcutTests() {
 print("\n--- KeyBinding Model Tests ---")
 

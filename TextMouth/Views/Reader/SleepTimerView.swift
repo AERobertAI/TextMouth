@@ -27,8 +27,9 @@ import SwiftUI
 /// "two book windows = two timer sheets" duplication the user reported.
 struct SleepTimerView: View {
     /// Presets share one source of truth for rendering and initial focus.
-    static let presetMinutes = [10, 15, 30, 45, 60]
-    static let initialFocusPresetMinutes = presetMinutes[0]
+    /// Constants, so nonisolated: tests read them from any context.
+    nonisolated static let presetMinutes = [10, 15, 30, 45, 60]
+    nonisolated static let initialFocusPresetMinutes = presetMinutes[0]
 
     @ObservedObject var viewModel: ReaderViewModel
     @ObservedObject var sleepTimerService: SleepTimerService
@@ -259,7 +260,9 @@ struct SleepTimerView: View {
 
     /// Pure routing helper used by tests to guarantee that an explicit parent
     /// close action wins, with Environment dismiss retained as a safe fallback.
-    static func performDismiss(onClose: (() -> Void)?, fallback: () -> Void) {
+    /// Nonisolated, as it only calls what it is given, synchronously, in its
+    /// caller's context: the sheet's main actor, or a test's.
+    nonisolated static func performDismiss(onClose: (() -> Void)?, fallback: () -> Void) {
         if let onClose {
             onClose()
         } else {
@@ -268,8 +271,8 @@ struct SleepTimerView: View {
     }
 
     /// Identify the sole initial VoiceOver target only while the sheet's
-    /// one-time focus request remains active.
-    static func isInitialFocusTarget(minutes: Int, shouldRequest: Bool) -> Bool {
+    /// one-time focus request remains active. Pure, so nonisolated.
+    nonisolated static func isInitialFocusTarget(minutes: Int, shouldRequest: Bool) -> Bool {
         shouldRequest && minutes == initialFocusPresetMinutes
     }
 }

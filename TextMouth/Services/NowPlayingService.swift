@@ -217,7 +217,10 @@ final class NowPlayingService {
     private let defaultOutputDeviceProvider: (() -> AudioDeviceID?)?
     private let audioDeviceIDsProvider: (() -> [AudioDeviceID])?
     private let bluetoothDeviceProvider: ((AudioDeviceID) -> Bool)?
-    private let scheduleRemoteCommandAction: (@escaping @MainActor () -> Void) -> Void
+    /// Runs an accepted remote command's action later, on the main actor.
+    /// The action is @Sendable because the default scheduler hands it to the
+    /// main dispatch queue; tests capture it to run when they choose.
+    private let scheduleRemoteCommandAction: (@escaping @MainActor @Sendable () -> Void) -> Void
 
     /// The block-based registration API returns the exact target token that
     /// must later be passed to `removeTarget(_:)`. Retaining those pairs avoids
@@ -302,7 +305,7 @@ final class NowPlayingService {
         audioDeviceIDs: (() -> [AudioDeviceID])? = nil,
         isBluetoothDevice: ((AudioDeviceID) -> Bool)? = nil,
         scheduleRemoteCommandAction: @escaping (
-            @escaping @MainActor () -> Void
+            @escaping @MainActor @Sendable () -> Void
         ) -> Void = { action in
             DispatchQueue.main.async {
                 action()

@@ -99,6 +99,7 @@ private func adjustedBookmarkOffset(
 #endif
 }
 
+@MainActor
 func runBookmarkToggleTests() {
 
 // ====================================================================

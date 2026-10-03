@@ -251,7 +251,7 @@ enum DAISYParser {
     /// is not one book but a batch, whose books import one by one; an
     /// archive with a book at its top level is that book (TODO I02).
     static func isDAISYZip(url: URL) -> Bool {
-        guard let archive = try? Archive(url: url, accessMode: .read) else { return false }
+        guard let archive = Archive.openedForReading(at: url) else { return false }
         // Cached, since detection and the count of books both list the archive.
         let provider = CachingFileProvider(wrapping: ArchiveFileProvider(archive: archive))
         guard detectVersion(in: provider) != nil else { return false }
@@ -306,7 +306,7 @@ enum DAISYParser {
                     entry: url.lastPathComponent,
                     wrapping: DirectoryFileProvider(baseURL: parentDir)
                 )
-            } else if let archive = try? Archive(url: url, accessMode: .read) {
+            } else if let archive = Archive.openedForReading(at: url) {
                 // Try opening as ZIP anyway (some DAISY files don't have .zip extension)
                 base = ArchiveFileProvider(archive: archive)
             } else {

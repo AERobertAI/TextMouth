@@ -4,6 +4,7 @@ import Foundation
 @testable import TextMouth
 #endif
 
+@MainActor
 func runBugRegressionTests() {
 print("\n--- Bug Regression Tests ---")
 

@@ -31,8 +31,9 @@ struct HeadingNavigatorView: View {
     }
 
     /// Shared row/rotor label format so VoiceOver speaks heading names before
-    /// structural level and optional status details.
-    static func accessibilityDescription(
+    /// structural level and optional status details. Pure, so nonisolated:
+    /// `HeadingListItem`, which is not main-actor isolated, and tests call it.
+    nonisolated static func accessibilityDescription(
         text: String,
         level: Int,
         isSkipped: Bool = false,
@@ -279,7 +280,8 @@ struct HeadingNavigatorView: View {
     /// Prefer the currently read heading for initial accessibility focus.
     /// Documents whose first heading begins after the saved reading position
     /// have no current heading yet, so they intentionally fall back to row one.
-    static func initialFocusHeadingID(
+    /// Pure, so nonisolated, and tests call it from any context.
+    nonisolated static func initialFocusHeadingID(
         currentHeadingID: String?,
         headingItems: [HeadingListItem]
     ) -> String? {

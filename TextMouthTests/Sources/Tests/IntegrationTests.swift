@@ -119,7 +119,6 @@ test("Markdown parse → headings are in document order with correct offsets") {
     let md = try String(contentsOf: url, encoding: .utf8)
     let content = try parseMarkdown(markdown: md, title: "Sample")
 
-    let headings = content.allHeadings
     // Headings should be in order of characterOffset within each chapter
     for chapter in content.chapters {
         var lastOffset = -1
@@ -261,7 +260,7 @@ print("\n--- Integration: Reading Position + Time Estimation ---")
 test("Library: update reading position → time estimation uses position") {
     var library = Library()
     let bookID = UUID()
-    var book = Book(
+    let book = Book(
         id: bookID,
         title: "Long Book",
         format: .txt,
@@ -394,7 +393,7 @@ test("Substitution: empty replacement deletes matched text") {
 
 test("Substitution: offset map correctly tracks position through length changes") {
     // Build offset mapping manually to verify the pipeline
-    let original = "Dr. Smith"
+    // Original: "Dr. Smith"
     // After substitution: "Doctor Smith"
     // "Dr." (3 chars) → "Doctor" (6 chars), delta = -3 (original is shorter)
 

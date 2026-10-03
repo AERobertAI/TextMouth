@@ -24,6 +24,14 @@ private final class LegacyScenarioRecorder: @unchecked Sendable {
     }
 }
 
+/// Runs one legacy scenario, `block`, as an XCTest activity named `name`,
+/// recording a failure, named for the scenario, for any error it throws.
+///
+/// Main-actor isolated, as `XCTContext.runActivity` is, so every scenario
+/// runner (`run…Tests()`) and the test class that calls it are main-actor
+/// isolated too (TODO Q06). XCTest already runs those synchronous test
+/// methods on the main thread; isolation lets the compiler see it.
+@MainActor
 func test(_ name: String, _ block: () throws -> Void) {
     LegacyScenarioRecorder.shared.recordScenario()
     XCTContext.runActivity(named: name) { _ in
@@ -94,6 +102,7 @@ func testFilePath(_ name: String) -> String {
         .path
 }
 
+@MainActor
 final class LegacyOffsetMapScenarioTests: XCTestCase {
     func testLegacyOffsetMapScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -119,6 +128,7 @@ final class LegacyTextSubstitutionScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyParserEdgeCaseScenarioTests: XCTestCase {
     func testLegacyParserEdgeCaseScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -131,6 +141,7 @@ final class LegacyParserEdgeCaseScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyBookmarkToggleScenarioTests: XCTestCase {
     func testLegacyBookmarkToggleScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -143,6 +154,7 @@ final class LegacyBookmarkToggleScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyKeyboardShortcutScenarioTests: XCTestCase {
     func testLegacyKeyboardShortcutScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -155,6 +167,7 @@ final class LegacyKeyboardShortcutScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyDOCXParserScenarioTests: XCTestCase {
     func testLegacyDOCXParserScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -167,6 +180,7 @@ final class LegacyDOCXParserScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyDOCXEdgeCaseScenarioTests: XCTestCase {
     func testLegacyDOCXEdgeCaseScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -179,6 +193,7 @@ final class LegacyDOCXEdgeCaseScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyEPUBParserScenarioTests: XCTestCase {
     func testLegacyEPUBParserScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -191,6 +206,7 @@ final class LegacyEPUBParserScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyDAISYParserScenarioTests: XCTestCase {
     func testLegacyDAISYParserScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -203,6 +219,7 @@ final class LegacyDAISYParserScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyDAISYEdgeCaseScenarioTests: XCTestCase {
     func testLegacyDAISYEdgeCaseScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -215,6 +232,7 @@ final class LegacyDAISYEdgeCaseScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyDAISYAudioScenarioTests: XCTestCase {
     func testLegacyDAISYAudioScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -253,6 +271,7 @@ final class LegacyIntegrationScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyBugRegressionScenarioTests: XCTestCase {
     func testLegacyBugRegressionScenarios() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -265,6 +284,7 @@ final class LegacyBugRegressionScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyFolderNavigationScenarioTests: XCTestCase {
     func testFolderNavigationScenariosUseProductionHistory() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -277,6 +297,7 @@ final class LegacyFolderNavigationScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyFolderSortSettingScenarioTests: XCTestCase {
     func testFolderSortSettingScenariosUseProductionLibrary() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -289,6 +310,7 @@ final class LegacyFolderSortSettingScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyManualOrderScenarioTests: XCTestCase {
     func testManualOrderScenariosUseProductionPolicy() {
         let initialCount = LegacyScenarioRecorder.shared.count
@@ -301,6 +323,7 @@ final class LegacyManualOrderScenarioTests: XCTestCase {
     }
 }
 
+@MainActor
 final class LegacyOrphanRecoveryScenarioTests: XCTestCase {
     func testOrphanAdoptionScenariosUseProductionRecovery() {
         let initialCount = LegacyScenarioRecorder.shared.count

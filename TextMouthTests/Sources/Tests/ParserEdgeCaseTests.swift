@@ -16,6 +16,7 @@ private func parsePlainText(text: String, title: String) -> DocumentContent {
 }
 #endif
 
+@MainActor
 func runParserEdgeCaseTests() {
 print("\n--- Parser Edge Cases ---")
 

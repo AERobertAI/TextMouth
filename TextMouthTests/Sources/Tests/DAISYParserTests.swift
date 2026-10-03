@@ -47,6 +47,7 @@ private func parseHTML(html: String, title: String = "Untitled") throws -> Docum
 }
 #endif
 
+@MainActor
 func runDAISYParserTests() {
 print("\n--- DAISY 3 Parser Tests (Hyperion) ---")
 

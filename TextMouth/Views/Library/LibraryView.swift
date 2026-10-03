@@ -412,12 +412,12 @@ struct LibraryView: View {
                     clearAllSelections()
                 }
             }
-            .onChange(of: currentFolderPath) { _ in
+            .onChange(of: currentFolderPath) { _, _ in
                 // Clear selections when navigating to a different folder
                 editSelection = []
                 selectedBookIDs = []
             }
-            .onChange(of: category) { _ in
+            .onChange(of: category) { _, _ in
                 // Clear selections when switching library categories
                 editSelection = []
                 selectedBookIDs = []
