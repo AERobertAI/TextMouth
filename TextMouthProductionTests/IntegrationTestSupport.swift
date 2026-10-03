@@ -32,18 +32,20 @@ struct IntegrationLibraryFolder {
     }
 
     /// Removes the folder and everything in it. Queued package writes are
-    /// made first, so none can land in a package after it is gone, and write
-    /// permission is given back to every directory first, since a test may
-    /// have made one read-only.
+    /// made first, so none can land in a package after it is gone, and
+    /// permission is given back to every directory first, the folder's own
+    /// before its contents are listed, since a test may have taken it away.
     func remove() {
         LibraryPersistenceService.flushPendingSave()
         guard FileManager.default.fileExists(atPath: url.path) else { return }
+        chmod(url.path, 0o755)
         if let enumerator = FileManager.default.enumerator(atPath: url.path) {
+            // Each directory is listed only after it has been returned here,
+            // so its permission is back before its own contents are read.
             for case let relative as String in enumerator {
                 chmod(url.appendingPathComponent(relative).path, 0o755)
             }
         }
-        chmod(url.path, 0o755)
         try? FileManager.default.removeItem(at: url)
     }
 }
