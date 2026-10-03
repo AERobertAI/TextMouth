@@ -112,7 +112,7 @@ I checked the second point on this Mac, read-only:
   - Saving stops.
   - The windows switch to the same screen.
   - Unsaved changes stay listed in `PersistenceFailureCenter`, so they can be retried.
-- **Logs** move to `~/Library/Logs/TextMouth`, so logging keeps working and nothing churns in the cloud.
+- **Logs** move to `~/Library/Logs/TextMouth`, so logging keeps working and nothing churns in the cloud. *(Superseded October 3: the user chose to keep the logs inside the data directory, with a Storage settings picker to move them to this Mac's Logs folder; see the README.)*
 
 ## 4. Revised recommendation
 

@@ -62,4 +62,4 @@ xcodebuild test ... -only-testing:TextMouthProductionTests/CloudDriveIntegration
 | Dot-folder sync | Within 4 s |
 | Remove Download while uploading | Refused with "not uploaded" |
 
-Still unverified on Dropbox: the app's own screens and commands (this matrix), behaviour while Dropbox is paused, quit, signed out, or offline, and progress within one large file. iCloud Drive and Google Drive runs wait for the go-ahead.
+Still unverified on every drive: the app's own screens and commands (this matrix), behaviour while a drive is paused, quit, signed out, or offline, and progress within one large file. The iCloud Drive and Google Drive runs were made on October 3 after the user's go-ahead and both pass all five tests; iCloud Drive syncs a book package as one item, which the app now handles (see the README's cloud section).
