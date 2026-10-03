@@ -228,6 +228,146 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(leftoverExtractionDirectories(), [])
     }
 
+    // MARK: - Progress and Cancellation
+
+    /// The batch tells its extraction, the entries done of the total, before
+    /// its first book, an archive inside under that archive's own name, and
+    /// then each book imported of the total found.
+    func testExtractionProgressComesBeforeTheFirstBook() throws {
+        let inner = try makeArchive("Inner", [TestZIPEntry("Tides.txt", Self.notes("tides"))])
+        let archive = try makeArchive("Library Export", [
+            TestZIPEntry("Rope Splicing.txt", Self.notes("rope")),
+            TestZIPEntry("Collection.zip", try Data(contentsOf: inner))
+        ])
+        var reports: [ZipImportProgress] = []
+
+        _ = try FileImportService.importZip(from: archive, toFolder: folderPath, progress: { reports.append($0) })
+
+        let name = archive.lastPathComponent
+        XCTAssertEqual(reports, [
+            .extracting(archive: name, done: 0, total: 2),
+            .extracting(archive: name, done: 1, total: 2),
+            .extracting(archive: name, done: 2, total: 2),
+            .extracting(archive: "Collection.zip", done: 0, total: 1),
+            .extracting(archive: "Collection.zip", done: 1, total: 1),
+            .importing(done: 1, total: 2),
+            .importing(done: 2, total: 2)
+        ])
+    }
+
+    /// Cancelling while the archive is extracted stops before any book:
+    /// nothing is imported or left extracted, the summary says where the
+    /// batch stopped and that the original was kept, and the cancellation is
+    /// logged, not as a failure.
+    func testCancellingWhileExtractingImportsNothing() throws {
+        let archive = try makeArchive("Library Export", (1...4).map { TestZIPEntry("Book \($0).txt", Self.notes("book \($0)")) })
+        let cancellation = ImportCancellation()
+
+        let result = try FileImportService.importZip(
+            from: archive,
+            toFolder: folderPath,
+            progress: { progress in
+                if case .extracting(archive: _, done: 2, total: _) = progress { cancellation.cancel() }
+            },
+            isCancelled: cancellation.check
+        )
+
+        XCTAssertEqual(result.cancellation, .whileExtracting)
+        XCTAssertEqual(result.books, [])
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(
+            result.failureSummary,
+            "Import cancelled while extracting the archive, before any book was imported.\nThe original file was kept."
+        )
+        XCTAssertEqual(try folderEntries(), [])
+        XCTAssertEqual(leftoverExtractionDirectories(), [])
+        XCTAssertEqual(debugLogLines(containing: "IMPORT_CANCELLED: \(archive.lastPathComponent): while extracting the archive").count, 1)
+        XCTAssertEqual(debugLogLines(containing: "IMPORT_FAILED: \(archive.lastPathComponent)").count, 0)
+    }
+
+    /// Cancelling while an archive inside is extracted stops the batch the
+    /// same way, before any book.
+    func testCancellingWhileAnArchiveInsideIsExtractedImportsNothing() throws {
+        let inner = try makeArchive("Inner", (1...3).map { TestZIPEntry("Tide \($0).txt", Self.notes("tide \($0)")) })
+        let archive = try makeArchive("Library Export", [
+            TestZIPEntry("Rope Splicing.txt", Self.notes("rope")),
+            TestZIPEntry("Collection.zip", try Data(contentsOf: inner))
+        ])
+        let cancellation = ImportCancellation()
+
+        let result = try FileImportService.importZip(
+            from: archive,
+            toFolder: folderPath,
+            progress: { progress in
+                if case .extracting(archive: "Collection.zip", done: 1, total: _) = progress { cancellation.cancel() }
+            },
+            isCancelled: cancellation.check
+        )
+
+        XCTAssertEqual(result.cancellation, .whileExtracting)
+        XCTAssertEqual(result.books, [])
+        XCTAssertEqual(try folderEntries(), [])
+        XCTAssertEqual(leftoverExtractionDirectories(), [])
+    }
+
+    /// Cancelling between books stops before the next one and keeps those
+    /// already imported: the summary says after how many of how many the
+    /// batch stopped, and nothing is left staged or extracted.
+    func testCancellingBetweenBooksKeepsTheBooksAlreadyImported() throws {
+        let archive = try makeArchive("Library Export", (1...3).map { TestZIPEntry("Book \($0).txt", Self.notes("book \($0)")) })
+        let cancellation = ImportCancellation()
+
+        let result = try FileImportService.importZip(
+            from: archive,
+            toFolder: folderPath,
+            progress: { progress in
+                if progress == .importing(done: 1, total: 3) { cancellation.cancel() }
+            },
+            isCancelled: cancellation.check
+        )
+
+        XCTAssertEqual(result.cancellation, .afterBooks(completed: 1, total: 3))
+        XCTAssertEqual(result.books.map(\.title), ["Book 1"])
+        XCTAssertEqual(result.failureSummary, "Import cancelled after 1 of 3 books. Imported 1 book.\nThe original file was kept.")
+        XCTAssertEqual(try folderEntries(), Set(result.books.map(\.tmbDirectoryName)))
+        XCTAssertEqual(leftoverExtractionDirectories(), [])
+        XCTAssertEqual(debugLogLines(containing: "IMPORT_CANCELLED: \(archive.lastPathComponent): after 1 of 3 books").count, 1)
+    }
+
+    /// A cancelled batch's summary starts with where it stopped, lists its
+    /// failures as before, and says the original was kept; a batch that ran
+    /// to its end in full still has none.
+    func testSummaryOfACancelledBatch() {
+        let book = Book(title: "Rope Splicing", format: .txt, filePath: "/tmp/rope.txt", md5Hash: "a")
+        let failure = ZipImportFailure(fileName: "Knots.docx", message: "Reading its text failed: unreadable")
+
+        XCTAssertEqual(
+            ZipImportResult(books: [book], failures: [failure], cancellation: .afterBooks(completed: 2, total: 5)).failureSummary,
+            "Import cancelled after 2 of 5 books. Imported 1 book, but 1 file failed:\n"
+                + "Knots.docx: Reading its text failed: unreadable\nThe original file was kept."
+        )
+        XCTAssertEqual(
+            ZipImportResult(books: [], failures: [], cancellation: .afterBooks(completed: 0, total: 1)).failureSummary,
+            "Import cancelled after 0 of 1 book. Imported 0 books.\nThe original file was kept."
+        )
+        XCTAssertNil(ZipImportResult(books: [book], failures: []).failureSummary)
+    }
+
+    /// The import overlay's bar counts books, so while an archive is
+    /// extracted it is left indeterminate and the message counts the items
+    /// extracted; once books import, both count books, as before.
+    func testOverlayShowsExtractionThenBooks() {
+        let extracting = LibraryViewModel.overlayProgress(for: .extracting(archive: "Library Export.zip", done: 37, total: 120))
+        let importing = LibraryViewModel.overlayProgress(for: .importing(done: 3, total: 10))
+
+        XCTAssertEqual(extracting.current, 0)
+        XCTAssertEqual(extracting.total, 0)
+        XCTAssertEqual(extracting.message, "Extracting “Library Export.zip”: 37 of 120 items...")
+        XCTAssertEqual(importing.current, 3)
+        XCTAssertEqual(importing.total, 10)
+        XCTAssertEqual(importing.message, "Importing book 3 of 10...")
+    }
+
     // MARK: - Audio Archives
 
     /// An audio archive past its budget is refused before anything is
@@ -356,11 +496,12 @@ final class ArchiveImportBoundsTests: XCTestCase {
         Data("Notes on \(subject): keep the line dry and coiled after use.".utf8)
     }
 
-    /// An archive named `name`.zip holding `entries` in order, in this
-    /// test's sources folder.
+    /// An archive named `name`, a short tag of its own, and ".zip", holding
+    /// `entries` in order, in this test's sources folder. The tag keeps the
+    /// debug log lines naming it this test's own.
     private func makeArchive(_ name: String, _ entries: [TestZIPEntry], compression: CompressionMethod = .none) throws -> URL {
         let made = try makeTemporaryZip(prefix: "ArchiveImportBounds", orderedEntries: entries, compressionMethod: compression)
-        let archive = sources.appendingPathComponent("\(name).zip")
+        let archive = sources.appendingPathComponent("\(name) \(UUID().uuidString.prefix(8)).zip")
         try FileManager.default.moveItem(at: made, to: archive)
         return archive
     }

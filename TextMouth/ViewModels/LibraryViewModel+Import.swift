@@ -235,12 +235,8 @@ extension LibraryViewModel {
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes,
-                    progress: { completed, total in
-                        DispatchQueue.main.async {
-                            self.importProgressCurrent = completed
-                            self.importProgressTotal = total
-                            self.importProgressMessage = "Importing book \(completed) of \(total)..."
-                        }
+                    progress: { progress in
+                        DispatchQueue.main.async { self.showZipImportProgress(progress) }
                     }
                 )
                 DispatchQueue.main.sync {
@@ -249,6 +245,28 @@ extension LibraryViewModel {
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
+        }
+    }
+
+    /// Shows how far a ZIP batch has got in the import overlay (TODO I05).
+    private func showZipImportProgress(_ progress: ZipImportProgress) {
+        let shown = Self.overlayProgress(for: progress)
+        importProgressCurrent = shown.current
+        importProgressTotal = shown.total
+        importProgressMessage = shown.message
+    }
+
+    /// What the import overlay shows for a ZIP batch's progress. Its bar and
+    /// count speak of books, so while the archive is extracted the bar is
+    /// left indeterminate and the message counts the archive's items
+    /// extracted, so the overlay moves before the first book imports; once
+    /// books import, the bar and the message count them, as before.
+    nonisolated static func overlayProgress(for progress: ZipImportProgress) -> (current: Int, total: Int, message: String) {
+        switch progress {
+        case let .extracting(archive, done, total):
+            return (0, 0, "Extracting “\(archive)”: \(done) of \(total) items...")
+        case let .importing(done, total):
+            return (done, total, "Importing book \(done) of \(total)...")
         }
     }
 
