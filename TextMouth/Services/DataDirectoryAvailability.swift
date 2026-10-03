@@ -116,6 +116,40 @@ enum DataDirectoryGate {
     }
 }
 
+/// How the library learns that its data directory came and went (FR02).
+enum DataDirectoryEvents {
+    /// The `userInfo` key of the data directory's path in a
+    /// `.dataDirectoryWriteFoundFolderMissing` notification.
+    static let rootKey = "root"
+
+    /// Tells the library model, on the main thread, that a write found the
+    /// folder of the data directory at `root` missing, as when its drive was
+    /// unplugged or its cloud service signed out. Writers call this from
+    /// their own queues.
+    static func reportMissingFolder(_ root: URL) {
+        let path = root.path
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: .dataDirectoryWriteFoundFolderMissing,
+                object: nil,
+                userInfo: [rootKey: path]
+            )
+        }
+    }
+}
+
+extension Notification.Name {
+    /// Posted on the main thread when a write found the data directory's
+    /// folder missing, with its path under `DataDirectoryEvents.rootKey`:
+    /// the library model checks the data directory again (FR02).
+    static let dataDirectoryWriteFoundFolderMissing = Notification.Name("dataDirectoryWriteFoundFolderMissing")
+
+    /// Posted on the main thread when the library model finds the data
+    /// directory available again after it was not (FR02): services that
+    /// left their files unread while it was missing read them now.
+    static let dataDirectoryDidBecomeAvailable = Notification.Name("dataDirectoryDidBecomeAvailable")
+}
+
 /// Thrown in place of creating a data directory that is missing, or of
 /// writing into one the library model found unavailable (FR02). Its
 /// description follows what failed, as in "Listening statistics could not
