@@ -515,18 +515,24 @@ final class ConfigService: ObservableObject {
         disarm()
     }
 
-    /// Reconciles config.json once the data directory is back, after this
-    /// service left it unread or unsaved while the directory was unavailable
-    /// (FR02). The file is treated as an edit found on disk: each setting
-    /// changed here meanwhile keeps its new value, every other one takes the
-    /// file's, the result is published for the settings model to apply and
-    /// then saved, and the watcher follows the file again. The settings in
-    /// use when the file was first skipped stand for what it last held.
+    /// Follows config.json again once the data directory is back (FR02).
+    /// When this service left the file unread or unsaved meanwhile, the file
+    /// is first reconciled as an edit found on disk: each setting changed
+    /// here meanwhile keeps its new value, every other one takes the file's,
+    /// and the result is published for the settings model to apply, then
+    /// saved. The settings in use when the file was first skipped stand for
+    /// what it last held. A watcher that lost the file while the library was
+    /// away attaches to it again, and checks it, so an edit saved elsewhere
+    /// meanwhile is applied too; one still attached is left as it is.
     func dataDirectoryBecameAvailable() {
-        guard skippedFileWhileUnavailable, !isFileUnavailable else { return }
-        skippedFileWhileUnavailable = false
-        saveToDisk()
-        rearmWatcher()
+        guard !isFileUnavailable else { return }
+        if skippedFileWhileUnavailable {
+            skippedFileWhileUnavailable = false
+            saveToDisk()
+        }
+        if watchedFile == nil {
+            rearmWatcher()
+        }
     }
 
     // MARK: - Persistence

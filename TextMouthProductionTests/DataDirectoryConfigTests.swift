@@ -89,6 +89,41 @@ final class DataDirectoryConfigTests: XCTestCase {
         withExtendedLifetime(subscription) {}
     }
 
+    /// A watcher that lost config.json while the library was away attaches to
+    /// it again once the library is back, and applies an edit saved
+    /// elsewhere meanwhile.
+    func testTheWatcherFollowsConfigAgainOnceTheLibraryIsBack() throws {
+        let root = try makeDataDirectoryMoveDestination("WatcherAway")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
+        let file = root.appendingPathComponent("config.json")
+        var before = ConfigService.AppConfig()
+        before.wordsPerMinute = 250
+        try ConfigService.fileData(for: before).write(to: file)
+        StorageBoundary.shared.publish(root: root)
+        addTeardownBlock { DataDirectoryGate.open(root) }
+        let counter = WatchCounter()
+        let service = ConfigService(fileOperations: counter.operations, coalescingDelay: .milliseconds(20))
+        addTeardownBlock { service.shutdown() }
+        var published: [ConfigService.AppConfig] = []
+        let subscription = service.externalEdits.sink { published.append($0) }
+        service.startWatching()
+        XCTAssertEqual(counter.opens, 1)
+
+        // The library goes away, and another Mac's edit replaces the file.
+        DataDirectoryGate.close(root)
+        var edited = before
+        edited.wordsPerMinute = 410
+        try ConfigService.fileData(for: edited).write(to: file, options: .atomic)
+        XCTAssertTrue(waitUntil(timeout: 5) { counter.closes == 1 }, "the watcher kept following the file while away")
+
+        DataDirectoryGate.open(root)
+        NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
+
+        XCTAssertEqual(counter.opens, 2, "the watcher did not attach to the file again")
+        XCTAssertTrue(waitUntil(timeout: 5) { published.last?.wordsPerMinute == 410 }, "the edit made meanwhile was not applied")
+        withExtendedLifetime(subscription) {}
+    }
+
     // MARK: - Helpers
 
     /// The move requests a settings model, on a preferences store of its
@@ -114,5 +149,34 @@ final class DataDirectoryConfigTests: XCTestCase {
         settings.applyConfigChanges(config)
 
         return requested.calls
+    }
+}
+
+/// Counts the watch descriptors a config service opens and closes, doing
+/// what the system's operations do.
+@MainActor
+private final class WatchCounter {
+    /// Descriptors opened to watch config.json.
+    private(set) var opens = 0
+    /// Watch descriptors closed.
+    private(set) var closes = 0
+
+    /// The system's operations, with opens and closes counted.
+    var operations: ConfigService.FileOperations {
+        let system = ConfigService.FileOperations.system
+        return ConfigService.FileOperations(
+            write: system.write,
+            openForEvents: { [self] path in
+                let descriptor = system.openForEvents(path)
+                if descriptor >= 0 {
+                    opens += 1
+                }
+                return descriptor
+            },
+            close: { [self] descriptor in
+                closes += 1
+                system.close(descriptor)
+            }
+        )
     }
 }
