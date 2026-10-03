@@ -193,6 +193,48 @@ final class PersistenceCostTests: XCTestCase {
         XCTAssertFalse(model.isExtracting, "a current cache was queued again")
     }
 
+    // MARK: - PERF17: Settings Saves
+
+    /// How often config.json is written, and how long the main thread spends
+    /// on it, while the speed slider is dragged through twenty steps: each
+    /// step changes the preference, which saves config.json. The service is
+    /// bound to a file of the test's own, with its writes counted.
+    @MainActor
+    func testSettingsSaveCost() async throws {
+        let writes = CallCounter()
+        let configFile = try makeConfigFileURL()
+        let service = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
+            write: { data, url in
+                writes.increment()
+                try data.write(to: url, options: .atomic)
+            },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("settings-save-cost"),
+            configService: service
+        )
+        let clock = ContinuousClock()
+
+        let started = clock.now
+        for step in 1...20 {
+            settings.wordsPerMinute = 200 + Double(step * 5)
+        }
+        let drag = clock.now - started
+        let writesWhileDragging = writes.count
+        try await Task.sleep(for: .milliseconds(600))
+
+        Self.report(
+            "PERF17 dragging the speed slider through 20 steps wrote config.json \(writesWhileDragging) times "
+                + "as it moved and \(writes.count) in all, in \(Self.milliseconds(drag)) ms of main thread"
+        )
+        let saved = try ConfigService.decode(Data(contentsOf: configFile))
+        XCTAssertEqual(saved.wordsPerMinute, 300, "config.json does not hold the last speed")
+    }
+
     // MARK: - Fixtures
 
     /// A small Markdown book numbered `number`, in a package of its own in
