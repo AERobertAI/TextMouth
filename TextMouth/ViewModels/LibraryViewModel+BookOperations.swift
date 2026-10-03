@@ -208,19 +208,19 @@ extension LibraryViewModel {
     /// A book whose old and new folders name the same directory under
     /// `equivalence` (a case- or normalization-only respelling) stays where it
     /// is; only its recorded path and package record change.
+    ///
+    /// A move that writes a book's record has saved the book's current state,
+    /// so it settles any earlier failed write of the book. Undoing a failed
+    /// transition is never silent: what cannot be put back is reported to the
+    /// failure center (`rollBack`). `disk` makes the moves and writes; tests
+    /// replace it to make one of them fail.
     func commitLibraryTransition(
         _ proposedLibrary: Library,
         affectedBookIDs: Set<UUID>,
-        equivalence: FolderPathEquivalence = .library
+        equivalence: FolderPathEquivalence = .library,
+        disk: LibraryTransitionDisk = .system
     ) throws {
-        struct Move {
-            let original: Book
-            var updated: Book
-            let source: URL
-            let destination: URL
-            /// False when the package already sits in its destination directory.
-            let needsDiskMove: Bool
-        }
+        typealias Move = LibraryTransitionMove
 
         var proposed = proposedLibrary
         let existingPaths = Set(library.folders.map(\.fullPath))
@@ -270,11 +270,11 @@ extension LibraryViewModel {
         var rewrittenRecordIDs: Set<UUID> = []
         do {
             for move in moves where move.needsDiskMove {
-                try FileManager.default.moveItem(at: move.source, to: move.destination)
+                try disk.moveItem(move.source, move.destination)
                 completedMoves.append(move)
             }
             for move in moves {
-                try move.updated.saveBookInfoThrowing()
+                try disk.writeRecord(move.updated)
                 rewrittenRecordIDs.insert(move.original.id)
             }
             // Empty folders have no book move to create their destinations.
@@ -283,20 +283,101 @@ extension LibraryViewModel {
                 try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
             }
         } catch {
-            for move in completedMoves.reversed() {
-                try? FileManager.default.moveItem(at: move.destination, to: move.source)
-                try? move.original.saveBookInfoThrowing()
-            }
-            // Packages that stayed in place may already carry the new record.
-            for move in moves where !move.needsDiskMove && rewrittenRecordIDs.contains(move.original.id) {
-                try? move.original.saveBookInfoThrowing()
-            }
+            rollBack(moves, completed: completedMoves, rewrittenRecordIDs: rewrittenRecordIDs, disk: disk)
             throw error
         }
 
         library = proposed
         save()
+        // Each moved book's record now holds its current state, where its
+        // package is: an earlier failed write of the book is settled.
+        for move in moves {
+            failureCenter.recordSuccess(.book(move.original.id))
+        }
         FileImportService.removeEmptyLibrarySubdirectories(library: library)
+    }
+
+    /// Undoes the disk side of a library transition that failed, while the
+    /// library still holds every book where it was (TODO S09). Each package
+    /// that moved goes back, the last one moved first; then each book whose
+    /// record was rewritten gets the record of its current state back, where
+    /// its package now is. A package that moved but whose record was not
+    /// rewritten carried its record with it, unchanged, so it needs none.
+    ///
+    /// Nothing here is silent. A package that cannot be moved back is
+    /// reported with both paths, so the user knows where its files are, and
+    /// keeps its rewritten record, which describes where it is; a record
+    /// that cannot be restored is reported as the book's unsaved record.
+    /// Each report carries a retry.
+    private func rollBack(
+        _ moves: [LibraryTransitionMove],
+        completed: [LibraryTransitionMove],
+        rewrittenRecordIDs: Set<UUID>,
+        disk: LibraryTransitionDisk
+    ) {
+        var stranded: Set<UUID> = []
+        for move in completed.reversed() where !moveBack(move, disk: disk) {
+            stranded.insert(move.original.id)
+        }
+        for move in moves
+        where rewrittenRecordIDs.contains(move.original.id) && !stranded.contains(move.original.id) {
+            restoreRecord(ofBookID: move.original.id, disk: disk)
+        }
+    }
+
+    /// Moves `move`'s package back to where the library expects it, and
+    /// returns whether it is back. One that cannot be moved back is reported
+    /// to the failure center with where it is and where it belongs; its
+    /// retry moves it back and then restores its record.
+    private func moveBack(_ move: LibraryTransitionMove, disk: LibraryTransitionDisk) -> Bool {
+        do {
+            try disk.moveItem(move.destination, move.source)
+            return true
+        } catch {
+            failureCenter.recordFailure(
+                .strandedPackage(
+                    bookID: move.original.id,
+                    title: move.original.title,
+                    location: move.destination.path,
+                    home: move.source.path
+                ),
+                path: move.destination.path,
+                error: error
+            ) { [weak self] _ in
+                guard let self, self.moveBack(move, disk: disk) else { return }
+                self.restoreRecord(ofBookID: move.original.id, disk: disk)
+            }
+            return false
+        }
+    }
+
+    /// Writes the record of the book `id` as the library now holds it, into
+    /// the package where the library expects it. Success settles the book's
+    /// failure; a failure is reported as the book's unsaved record, with a
+    /// retry of this restore. A book no longer in the library has no record
+    /// left to restore, so its failure is withdrawn.
+    private func restoreRecord(ofBookID id: UUID, disk: LibraryTransitionDisk) {
+        guard let book = bookByID(id) else {
+            failureCenter.withdraw(.book(id))
+            return
+        }
+        do {
+            try disk.writeRecord(book)
+            failureCenter.recordSuccess(.book(id))
+        } catch {
+            failureCenter.recordFailure(
+                .bookRecord(bookID: id, title: book.title),
+                path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
+                error: error
+            ) { [weak self] _ in
+                self?.restoreRecord(ofBookID: id, disk: disk)
+            }
+        }
+    }
+
+    /// Where the library's failed writes and cleanups are reported and shown.
+    var failureCenter: PersistenceFailureCenter {
+        .shared
     }
 
     /// Explains a failed operation through the library's error alert as
@@ -440,4 +521,40 @@ extension LibraryViewModel {
         guard !idString.isEmpty, let uuid = UUID(uuidString: idString) else { return nil }
         return library.books.first { $0.id == uuid }
     }
+}
+
+// MARK: - Library Transitions
+
+/// One book's part in a library transition: the book before and after, and
+/// the package directory it moves between.
+struct LibraryTransitionMove {
+    /// The book as the library holds it before the transition.
+    let original: Book
+    /// The book as the transition leaves it.
+    var updated: Book
+    /// Where its package is before the transition.
+    let source: URL
+    /// Where its package goes.
+    let destination: URL
+    /// False when the package already sits in its destination directory.
+    let needsDiskMove: Bool
+}
+
+/// The disk operations a library transition makes, and its rollback undoes.
+/// Tests replace them to make one fail at a chosen moment (TODO S09).
+struct LibraryTransitionDisk: Sendable {
+    /// Moves a package directory from the first URL to the second.
+    var moveItem: @MainActor @Sendable (_ source: URL, _ destination: URL) throws -> Void
+    /// Writes a book's record into its package.
+    var writeRecord: @MainActor @Sendable (_ book: Book) throws -> Void
+
+    /// The operations the app makes.
+    static let system = LibraryTransitionDisk(
+        moveItem: { source, destination in
+            try FileManager.default.moveItem(at: source, to: destination)
+        },
+        writeRecord: { book in
+            try book.saveBookInfoThrowing()
+        }
+    )
 }
