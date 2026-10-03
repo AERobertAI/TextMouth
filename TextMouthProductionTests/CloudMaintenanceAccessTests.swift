@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// How maintenance reaches a cloud library's files (FR02,
@@ -71,6 +72,37 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
         XCTAssertTrue(access.isInCloud(book.bookFileURL))
         XCTAssertTrue(access.isInCloud(shelf.appendingPathComponent("Unlisted.tmb")))
         XCTAssertFalse(access.isInCloud(folderURL.appendingPathComponent("Missing.md")))
+    }
+
+    /// A missing item whose nearest folders are missing too, below a folder
+    /// only the cloud can list, is in the cloud however many levels up that
+    /// folder is.
+    func testPresenceFindsAFolderInTheCloudSeveralLevelsUp() throws {
+        let shelf = folderURL.appendingPathComponent("Shelf", isDirectory: true)
+        try FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
+        cloud.markDataless(shelf)
+
+        let deep = shelf.appendingPathComponent("Unlisted.tmb/Deeper/removedFromLibrary.json")
+
+        XCTAssertEqual(cloud.access.presence(of: deep), .inCloud)
+    }
+
+    /// A file missing from a package that is there, as a removal marker
+    /// almost always is, is absent after one question about the package
+    /// (PERF13): a folder found with downloads off lies in no dataless
+    /// folder, so the folders above it are not asked about.
+    func testPresenceStopsAtThePackageAroundAMissingFile() throws {
+        let book = try makePackagedBook()
+        let asked = AskedItems()
+        let access = MaintenanceFileAccess(isDataless: { url in
+            asked.note(url)
+            return false
+        })
+
+        let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory)
+
+        XCTAssertEqual(access.presence(of: marker), .absent)
+        XCTAssertEqual(asked.paths, [FakeCloudFiles.key(book.tmbDirectory)])
     }
 
     // MARK: - The Files a Pass Reads
@@ -306,5 +338,23 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
     /// path is spelled.
     private func assertSameItem(_ found: URL?, _ expected: URL, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(found.map(FakeCloudFiles.key), FakeCloudFiles.key(expected), file: file, line: line)
+    }
+}
+
+/// The items an access was asked whether they are dataless, in order, by
+/// their keys (`FakeCloudFiles.key`). The list lives in an
+/// OSAllocatedUnfairLock: an access may be asked from any thread.
+private final class AskedItems: Sendable {
+    /// The keys asked about so far.
+    private let items = OSAllocatedUnfairLock(initialState: [String]())
+
+    /// Notes that the item at `url` was asked about.
+    func note(_ url: URL) {
+        items.withLock { $0.append(FakeCloudFiles.key(url)) }
+    }
+
+    /// The keys asked about so far, in order.
+    var paths: [String] {
+        items.withLock { $0 }
     }
 }

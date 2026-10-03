@@ -217,6 +217,14 @@ struct MaintenanceFileAccess: Sendable {
     /// dataless, up to the data directory (or, for an item outside it, up to
     /// the volume's root). An item missing from such a folder may only be
     /// missing from what this Mac knows of it.
+    ///
+    /// The walk ends at the first folder that is there and is not dataless
+    /// (PERF13): with dataless files left in the cloud, looking a folder up
+    /// through a dataless one is refused, so a folder found there lies in
+    /// none. For a file missing from its package, as a removal marker almost
+    /// always is, that is the package itself, one folder up, where the walk
+    /// used to ask every folder up to the data directory, for every book at
+    /// launch.
     private func hasDatalessFolder(above url: URL) -> Bool {
         let dataDirectory = TextMouthPaths.root.standardizedFileURL.path
         let stopsAtDataDirectory = Self.isItem(url, inside: TextMouthPaths.root)
@@ -226,12 +234,26 @@ struct MaintenanceFileAccess: Sendable {
                 if isDataless(folder) {
                     return true
                 }
+                if Self.hasItem(at: folder) {
+                    return false
+                }
                 if stopsAtDataDirectory && folder.path == dataDirectory {
                     return false
                 }
                 folder.deleteLastPathComponent()
             }
             return false
+        }
+    }
+
+    /// Whether something is at `url`, downloaded or not, asked of its
+    /// metadata alone with one lstat(2), which reads no content and follows
+    /// no link.
+    static func hasItem(at url: URL) -> Bool {
+        var status = stat()
+        return url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return false }
+            return lstat(path, &status) == 0
         }
     }
 

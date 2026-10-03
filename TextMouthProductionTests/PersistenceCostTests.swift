@@ -141,6 +141,11 @@ final class PersistenceCostTests: XCTestCase {
     /// user's 643 are (averaging 1.9 folders deep), each with a current,
     /// fingerprinted text cache. The repair's file checks go through an
     /// access that counts its lstat calls.
+    ///
+    /// Before PERF13: 1,183 lstat calls (5.9 a book) in 33.8 ms, the
+    /// removal-marker check walking every folder up to the data directory,
+    /// and 12.5 ms of main thread for the cache filter. Now the walk stops
+    /// at the package, and the filter runs off the main thread.
     @MainActor
     func testLaunchCost() async throws {
         let top = "Launch Cost \(UUID().uuidString.prefix(8))"
@@ -171,15 +176,20 @@ final class PersistenceCostTests: XCTestCase {
                 + "in \(Self.milliseconds(repair)) ms on the main thread"
         )
 
+        XCTAssertLessThanOrEqual(lstats.count, 3 * books.count, "the repair walks the folders above each package again")
+
         let finished = expectation(description: "The text cache batch finished")
+        let mainThreadChecksBefore = lstats.onMainThread
         let filterStarted = clock.now
         model.extractMissingContentCaches(access: access) { finished.fulfill() }
         let filterOnMain = clock.now - filterStarted
+        let mainThreadChecks = lstats.onMainThread - mainThreadChecksBefore
         await fulfillment(of: [finished], timeout: 30)
         Self.report(
             "PERF13 the text cache filter of \(books.count) books held the main thread "
                 + "\(Self.milliseconds(filterOnMain)) ms"
         )
+        XCTAssertEqual(mainThreadChecks, 0, "the text cache filter checked files on the main thread")
         XCTAssertFalse(model.isExtracting, "a current cache was queued again")
     }
 
@@ -398,19 +408,29 @@ final class PersistenceCostTests: XCTestCase {
 // MARK: - Counting Calls
 
 /// Counts calls made from any thread, as a maintenance pass's file checks
-/// are. Its count lives in an OSAllocatedUnfairLock.
+/// are, and how many came from the main thread. Its counts live in an
+/// OSAllocatedUnfairLock.
 private final class CallCounter: Sendable {
-    /// How many calls were counted.
-    private let calls = OSAllocatedUnfairLock(initialState: 0)
+    /// How many calls were counted, and how many on the main thread.
+    private let calls = OSAllocatedUnfairLock(initialState: (all: 0, onMainThread: 0))
 
-    /// Counts one call.
+    /// Counts one call, made on the current thread.
     func increment() {
-        calls.withLock { $0 += 1 }
+        let isMain = Thread.isMainThread
+        calls.withLock {
+            $0.all += 1
+            if isMain { $0.onMainThread += 1 }
+        }
     }
 
     /// How many calls were counted.
     var count: Int {
-        calls.withLock { $0 }
+        calls.withLock { $0.all }
+    }
+
+    /// How many of them were made on the main thread.
+    var onMainThread: Int {
+        calls.withLock { $0.onMainThread }
     }
 }
 

@@ -445,14 +445,9 @@ extension BookInfo {
     }
 
     /// Whether the package holds a contentIndex.json, downloaded or not,
-    /// asked of the file's metadata alone: one lstat(2), which reads no
-    /// content.
+    /// asked of the file's metadata alone, reading no content.
     fileprivate static func hasContentIndexFile(in tmbDir: URL) -> Bool {
-        var status = stat()
-        return TextMouthPaths.contentIndexPath(in: tmbDir).withUnsafeFileSystemRepresentation { path in
-            guard let path else { return false }
-            return lstat(path, &status) == 0
-        }
+        MaintenanceFileAccess.hasItem(at: TextMouthPaths.contentIndexPath(in: tmbDir))
     }
 }
 

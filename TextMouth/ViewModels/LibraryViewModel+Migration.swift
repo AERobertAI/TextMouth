@@ -517,21 +517,39 @@ extension LibraryViewModel {
     ) {
         // A second scene/action must not launch the same library migration again.
         guard !isExtracting else { return }
-        // These checks stat every book's files with dataless files left in
-        // the cloud (FR02): one that would download a folder's listing fails
-        // at once instead of waiting on the network, and the book it could
-        // not check is listed, for the batch to find its files in the cloud.
-        let booksNeedingCache = DatalessFiles.withoutDownloading {
-            library.books.filter { book in
+        // Finding the books makes several stat calls for every text book,
+        // a fortieth of a second at launch for the user's library, so it
+        // runs off the main thread (PERF13), and the batch starts once it is
+        // done, unless another one has started meanwhile.
+        let books = library.books
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let booksNeedingCache = Self.booksNeedingCacheUpdate(books, access: access)
+            DispatchQueue.main.async {
+                guard let self, !self.isExtracting else { return }
+                self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
+                    completion?()
+                }
+            }
+        }
+    }
+
+    /// The text books of `books` whose caches the startup batch makes or
+    /// rebuilds: those with no cache, an outdated one, or a source or cache
+    /// of another size than when the cache was written. Run on any thread.
+    ///
+    /// The checks stat every book's files with dataless files left in the
+    /// cloud (FR02): one that would download a folder's listing fails at
+    /// once instead of waiting on the network, and the book it could not
+    /// check is listed, for the batch to find its files in the cloud.
+    nonisolated static func booksNeedingCacheUpdate(_ books: [Book], access: MaintenanceFileAccess) -> [Book] {
+        DatalessFiles.withoutDownloading {
+            books.filter { book in
                 guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
                 // Needs cache if missing or if the stored version is outdated
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-                return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
+                return hasResizedTextCacheFile(book, isDataless: access.isDataless)
             }
-        }
-        rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
-            completion?()
         }
     }
 
