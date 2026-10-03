@@ -797,28 +797,35 @@ final class ContentIndexValidationTests: XCTestCase {
         try assertRepairIsReused(result, for: book)
     }
 
-    /// A sound index describing other text than content.md now holds is set
+    /// A sound index describing other text than content.md holds is set
     /// aside and the cache re-indexed, so offsets point into the words the
-    /// reader shows.
+    /// reader shows. content.md itself still holds what was written, as its
+    /// digest confirms, so it is indexed again rather than rebuilt (an
+    /// edited content.md is rebuilt from the source instead; see
+    /// `TextCacheVerificationTests`).
     func testTextIndexDescribingOtherTextIsRebuilt() throws {
         let book = try makeTextBook()
         let saved = try savedIndex(of: book)
+        // An index of other text, written apart from content.md: its second
+        // chapter is longer, though the package's fingerprints are unchanged.
         let addition = " Nine ten."
-        let cache = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
-        try String(contentsOf: cache, encoding: .utf8)
-            .replacingOccurrences(of: "Six seven eight.", with: "Six seven eight.\(addition)")
-            .write(to: cache, atomically: true, encoding: .utf8)
+        var otherChapters = try MarkdownCacheService.loadFromCache(for: book).chapters
+        otherChapters[1].text += addition
+        var other = BookContentIndex.build(fromChapters: otherChapters, format: book.format)
+        other.textCacheFingerprint = saved.textCacheFingerprint
+        try book.saveBookInfoThrowing(contentIndex: other)
 
         let result = try BookContentAnalysisService.load(book: book)
 
         XCTAssertFalse(result.usedPersistedIndex)
         assertAligned(result, for: book)
         let savedLength = saved.chapters[1].characterCount
-        XCTAssertEqual(result.index.chapters[1].characterCount, savedLength + addition.utf16.count)
+        XCTAssertEqual(result.index.chapters[1].characterCount, savedLength)
         XCTAssertEqual(
             rejections(of: book),
-            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].characterCount is \(savedLength), but the reading text holds \(savedLength + addition.utf16.count)"]
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].characterCount is \(savedLength + addition.utf16.count), but the reading text holds \(savedLength)"]
         )
+        XCTAssertTrue(debugLogLines(containing: "CACHE_STALE: \(book.title):").isEmpty)
         try assertRepairIsReused(result, for: book)
     }
 
@@ -981,7 +988,9 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// Every book in TestData, imported the way a user imports it, saves an
     /// index that passes validation and matches its cache, so opening the
-    /// book reuses it: the checks reject nothing the parsers produce.
+    /// book reuses it: the checks reject nothing the parsers produce. The
+    /// cache's fingerprints are verified by size and date alone, so opening
+    /// an unchanged book of any format reads no file for a digest.
     func testEveryImportedFixtureKeepsTheFastPath() throws {
         let testData = try requireFile("sample.md").deletingLastPathComponent()
         let fixtures = try FileManager.default.contentsOfDirectory(at: testData, includingPropertiesForKeys: nil)
@@ -1000,9 +1009,12 @@ final class ContentIndexValidationTests: XCTestCase {
                 saved.validationFailure(for: book.format, audioBaseURL: URL(fileURLWithPath: book.filePath)),
                 name
             )
-            let result = try BookContentAnalysisService.load(book: book)
+            let counter = CountingFingerprintHasher()
+            let result = try BookContentAnalysisService.load(book: book, hasher: counter.hasher)
             XCTAssertTrue(result.usedPersistedIndex, name)
             XCTAssertEqual(result.index, saved, name)
+            XCTAssertEqual(counter.count, 0, name)
+            XCTAssertEqual(saved.textCacheFingerprint == nil, book.format.isAudio, name)
         }
     }
 

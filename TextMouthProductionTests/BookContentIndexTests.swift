@@ -340,9 +340,23 @@ final class BookContentIndexTests: XCTestCase {
 
         let result = try BookContentAnalysisService.load(book: book)
 
-        XCTAssertTrue(result.usedPersistedIndex)
-        XCTAssertEqual(result.content.contentIndex, index)
+        // The saved index is injected as it is, except for the fingerprints
+        // that this first load of a cache written without them records
+        // (TODO T07); they are new, so the caller must save the index.
+        var injected = result.content.contentIndex
+        XCTAssertNotNil(injected.textCacheFingerprint)
+        injected.textCacheFingerprint = nil
+        XCTAssertEqual(injected, index)
+        XCTAssertFalse(result.usedPersistedIndex)
         XCTAssertEqual(result.content.totalWordCount, index.totalWordCount)
+
+        // Once saved as callers save it, the fingerprinted index is reused.
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: book, index: result.index, cacheFormatVersion: result.cacheFormatVersion
+        )
+        let reopened = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(reopened.usedPersistedIndex)
+        XCTAssertEqual(reopened.content.contentIndex, result.index)
     }
 
     func testParserVersionForcesPreviousCacheGenerationToRebuild() {

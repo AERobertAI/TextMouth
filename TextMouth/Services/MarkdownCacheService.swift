@@ -260,7 +260,8 @@ enum MarkdownCacheService {
         for book: Book,
         contentIndex: BookContentIndex? = nil
     ) throws -> DocumentContent {
-        let markdown = try String(contentsOf: cacheURL(for: book), encoding: .utf8)
+        let url = cacheURL(for: book)
+        let markdown = try cacheText(from: Data(contentsOf: url), at: url)
 
         return parseMultiChapterMarkdown(
             markdown,
@@ -268,6 +269,18 @@ enum MarkdownCacheService {
             bookAuthor: book.author,
             contentIndex: contentIndex
         )
+    }
+
+    /// The text of a content.md whose bytes, read from `url`, are `bytes`.
+    /// They are decoded as UTF-8 exactly as reading the file as a string
+    /// decodes it, a leading byte-order mark dropped, so a load that needs
+    /// the bytes for their digest reads the file once. Bytes that are not
+    /// UTF-8 throw the error that reading the file as a string throws.
+    static func cacheText(from bytes: Data, at url: URL) throws -> String {
+        guard let text = String(data: bytes, encoding: .utf8) else {
+            throw CocoaError(.fileReadCorruptFile, userInfo: [NSURLErrorKey: url])
+        }
+        return text
     }
 
     // MARK: - Format-Specific Extraction
