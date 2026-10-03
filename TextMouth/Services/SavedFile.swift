@@ -2,9 +2,10 @@ import Foundation
 
 // MARK: - Files Another Mac Writes Too (FR02 Polish: Several Macs)
 
-/// A small file of the data directory that TextMouth reads whole and
-/// replaces whole, and that another Mac sharing the library writes too, such
-/// as reading_stats.json and substitutions.json.
+/// A small file that TextMouth reads whole and replaces whole: one of the
+/// data directory that another Mac sharing the library writes too, such as
+/// reading_stats.json and substitutions.json, or one of this Mac's own, such
+/// as the books it keeps (`KeptBooks`).
 ///
 /// In a cloud library such a file can be only in the cloud, when the sync
 /// service removed its content to free space, so it is read with dataless

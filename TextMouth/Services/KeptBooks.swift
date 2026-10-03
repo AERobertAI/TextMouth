@@ -110,34 +110,31 @@ final class KeptBooks: ObservableObject {
     }
 
     /// The set saved at `file`: empty when there is no file. A file that
-    /// can't be read or decoded is preserved beside itself and keeps no book.
+    /// can't be read or decoded keeps no book: it is preserved beside itself
+    /// first (`SavedFile`), and one KEEP_ON_MAC line says so. The file is on
+    /// this Mac's own disk, so it is never only in the cloud.
     private static func load(from file: URL) -> Set<UUID> {
-        let data: Data
-        do {
-            data = try Data(contentsOf: file)
-        } catch CocoaError.fileReadNoSuchFile {
+        let unusable: (bytes: Data?, reason: String)
+        switch SavedFile.read(file, using: SavedFile.readWithoutDownloading) {
+        case .missing, .inCloud:
             return []
-        } catch {
-            preserveUnusable(file, bytes: nil, because: error)
-            return []
+        case .contents(let data):
+            do {
+                return Set(try JSONDecoder().decode(Contents.self, from: data).books)
+            } catch {
+                unusable = (data, error.localizedDescription)
+            }
+        case .unreadable(let reason):
+            unusable = (nil, reason)
         }
-        do {
-            return Set(try JSONDecoder().decode(Contents.self, from: data).books)
-        } catch {
-            preserveUnusable(file, bytes: data, because: error)
-            return []
-        }
-    }
-
-    /// Keeps a copy of the unusable file at `file`, holding `bytes` when they
-    /// could be read, and logs why it keeps no book.
-    private static func preserveUnusable(_ file: URL, bytes: Data?, because error: Error) {
-        let copy = LibraryIndexQuarantine.preserve(file, bytes: bytes)
-        DiagnosticLog.event(
-            .storage,
-            "KEEP_ON_MAC: could not read \(DiagnosticLog.loggablePath(file)): \(error.localizedDescription); "
-                + "no book is kept on this Mac until one is kept again; "
-                + "preserved copy: \(copy.map { DiagnosticLog.loggablePath($0) } ?? "none could be made")"
+        SavedFile.preserveUnusable(
+            file,
+            bytes: unusable.bytes,
+            because: unusable.reason,
+            logging: "KEEP_ON_MAC",
+            in: .storage,
+            standIn: "no book is kept on this Mac until one is kept again"
         )
+        return []
     }
 }
