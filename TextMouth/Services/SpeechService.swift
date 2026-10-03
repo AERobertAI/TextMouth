@@ -209,7 +209,10 @@ enum DirectSpeechFadePlanner {
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
 /// Current-chapter and look-ahead renders must therefore never overlap.
-final class SpeechRenderCoordinator: @unchecked Sendable {
+///
+/// It holds nothing but its serial queue, so the compiler checks that it is
+/// `Sendable`; state added later needs a lock or an actor.
+final class SpeechRenderCoordinator: Sendable {
     static let shared = SpeechRenderCoordinator()
     static let maximumTextLength = 100_000
 
