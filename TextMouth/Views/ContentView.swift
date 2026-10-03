@@ -32,15 +32,9 @@ struct LibraryWindowView: View {
                 }
             )
 
-            // Import progress overlay
+            // Import progress overlay, whose Cancel button stops ZIP imports
             if libraryViewModel.isImporting {
-                ProgressOverlay(
-                    title: "Importing Books",
-                    current: libraryViewModel.importProgressCurrent,
-                    total: libraryViewModel.importProgressTotal,
-                    message: libraryViewModel.importProgressMessage,
-                    itemNoun: "books processed"
-                )
+                Self.importProgressOverlay(for: libraryViewModel)
             }
 
             // Text extraction progress overlay (shown on startup or re-extraction)
@@ -373,5 +367,23 @@ struct ProgressOverlay: View {
             return "\(title): \(current) of \(total) \(itemNoun)"
         }
         return message.isEmpty ? title : "\(title): \(message)"
+    }
+}
+
+extension LibraryWindowView {
+    /// The overlay a Library window shows while imports run: their progress,
+    /// and a Cancel button, which Escape presses too, that stops the ZIP
+    /// imports under way and queued (`LibraryViewModel.cancelImports()`,
+    /// TODO I05). The window's body shows exactly this overlay, made here so
+    /// tests can press the very button the window shows.
+    static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
+        ProgressOverlay(
+            title: "Importing Books",
+            current: libraryViewModel.importProgressCurrent,
+            total: libraryViewModel.importProgressTotal,
+            message: libraryViewModel.importProgressMessage,
+            itemNoun: "books processed",
+            onCancel: libraryViewModel.cancelImports
+        )
     }
 }

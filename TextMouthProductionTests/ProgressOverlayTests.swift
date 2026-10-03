@@ -6,10 +6,11 @@ import XCTest
 /// The progress overlay as VoiceOver meets it (TODO I05): a container
 /// labelled with its status, whose message joins the status while the bar
 /// has no total, holding a Cancel button named "Cancel Import" that Escape
-/// presses too. SwiftUI builds the accessibility elements of its texts and
-/// buttons only for a connected assistive app, so the rendered tests skip,
-/// rather than fail, when it exposes none; the wording tests cover every
-/// label either way.
+/// presses too, which in the Library window's import overlay reaches the
+/// library's `cancelImports()`. SwiftUI builds the accessibility elements
+/// of its texts and buttons only for a connected assistive app, so the
+/// rendered tests skip, rather than fail, when it exposes none; the wording
+/// tests cover every label either way.
 @MainActor
 final class ProgressOverlayTests: XCTestCase {
 
@@ -114,6 +115,38 @@ final class ProgressOverlayTests: XCTestCase {
             }
             XCTAssertTrue(waitUntil { cancels.count == 1 }, "Escape pressed the button \(cancels.count) times")
         }
+    }
+
+    // MARK: - The Library Window's Import Overlay
+
+    /// The overlay the Library window shows while imports run reads the
+    /// library's import progress under its own title and noun, and has a
+    /// Cancel button.
+    func testImportOverlayShowsTheLibrarysProgress() {
+        let library = LibraryViewModel(initializeServices: false)
+        library.importProgressCurrent = 3
+        library.importProgressTotal = 10
+        library.importProgressMessage = "Importing book 3 of 10..."
+
+        let overlay = LibraryWindowView.importProgressOverlay(for: library)
+
+        XCTAssertEqual(overlay.spokenStatus, "Importing Books: 3 of 10 books processed")
+        XCTAssertEqual(overlay.message, "Importing book 3 of 10...")
+        XCTAssertNotNil(overlay.onCancel)
+    }
+
+    /// The import overlay's Cancel reaches the library's `cancelImports()`:
+    /// the imports queued so far are cancelled, and an import queued
+    /// afterwards would not be.
+    func testImportOverlaysCancelReachesTheLibrary() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        let queuedBefore = library.importOperationQueue.currentCancellation
+        let cancel = try XCTUnwrap(LibraryWindowView.importProgressOverlay(for: library).onCancel)
+
+        cancel()
+
+        XCTAssertTrue(queuedBefore.isCancelled)
+        XCTAssertFalse(library.importOperationQueue.currentCancellation.isCancelled)
     }
 
     // MARK: - Fixtures
