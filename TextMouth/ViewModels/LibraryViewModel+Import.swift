@@ -311,11 +311,12 @@ extension LibraryViewModel {
     }
 
     /// Removes, off the main thread, the extraction directories that ZIP
-    /// imports interrupted by a crash or a forced quit left in the data
-    /// directory (TODO I05), which can hold gigabytes nothing else removes.
-    /// Startup calls it once; a directory an import of this process is
-    /// using, or another running copy of TextMouth's, is never removed
-    /// (`ArchiveExtractionDirectory.removeLeftovers`).
+    /// imports interrupted by a crash or a forced quit left in this Mac's
+    /// Archive Extraction folder or the data directory's (TODO I05, FR02),
+    /// which can hold gigabytes nothing else removes. Startup calls it once;
+    /// a directory an import of this process is using, or another running
+    /// copy of TextMouth's, is never removed
+    /// (`ArchiveExtractionDirectory.removeLeftovers()`).
     func removeLeftoverArchiveExtractions() {
         DispatchQueue.global(qos: .utility).async {
             ArchiveExtractionDirectory.removeLeftovers()

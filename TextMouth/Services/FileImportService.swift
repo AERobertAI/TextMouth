@@ -1026,8 +1026,10 @@ enum FileImportService {
     /// budget (`ArchiveLimits`, TODO I05): each is refused before anything of
     /// it is written when its declared size, its entries, or the free space it
     /// needs pass their limits, and each file is held to its recorded size as
-    /// it is written. Everything goes into one extraction directory in the
-    /// data directory (`ArchiveExtractionDirectory`), removed on every exit.
+    /// it is written. Everything goes into one extraction directory
+    /// (`ArchiveExtractionDirectory`), on this Mac while the data directory
+    /// shares its volume and in the data directory otherwise (FR02), removed
+    /// on every exit.
     /// - Parameters:
     ///   - progress: told the entries extracted of each archive's total, then
     ///     the books imported of the total found, so the overlay moves before
