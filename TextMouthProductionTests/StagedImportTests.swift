@@ -61,8 +61,7 @@ final class StagedImportTests: XCTestCase {
                 + DOCXParserError.invalidArchive.localizedDescription
         )
         XCTAssertTrue(model.library.books.isEmpty)
-        XCTAssertFalse(model.showDeleteOriginalDialog)
-        XCTAssertNil(model.pendingOriginalURL)
+        XCTAssertTrue(model.importDecisions.isEmpty)
         XCTAssertEqual(try Data(contentsOf: source), bytes)
         XCTAssertEqual(try folderEntries(), [])
         XCTAssertEqual(debugLogLines(containing: "IMPORT_FAILED: \(source.lastPathComponent): Reading its text failed: ").count, 1)

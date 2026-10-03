@@ -55,8 +55,8 @@ final class SerialImportQueue: @unchecked Sendable {
 extension LibraryViewModel {
 
     /// Imports the items opened from Finder and opens each book once it is
-    /// in the library. The Library window the router chooses for the items
-    /// calls this (TODO A05).
+    /// in the library and its questions are answered (TODO I01). The Library
+    /// window the router chooses for the items calls this (TODO A05).
     func importAndOpenFiles(urls: [URL]) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
@@ -90,6 +90,13 @@ extension LibraryViewModel {
         for source in Self.importSources(for: item) {
             importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport)
         }
+    }
+
+    /// The request for an import queued now: it joins the batch of every
+    /// import queued so far, which the overlay's Cancel stops along with the
+    /// batch's questions (TODO I05, I01).
+    private func importRequest(opensAfterImport: Bool = false) -> ImportRequest {
+        ImportRequest(opensAfterImport: opensAfterImport, batch: importOperationQueue.currentCancellation)
     }
 
     // MARK: - Import DAISY Folder…
@@ -246,18 +253,23 @@ extension LibraryViewModel {
     /// Stops the ZIP imports under way and those waiting behind them (TODO
     /// I05): a running batch stops before its next entry or book, keeps the
     /// books it already imported, and its summary says where it stopped; a
-    /// waiting ZIP import never starts. Imports started afterwards are not
-    /// affected. The import overlay has no Cancel button yet; one would call
-    /// this.
+    /// waiting ZIP import never starts. The import overlay's Cancel button
+    /// calls this. Every question the stopped imports raised is withdrawn
+    /// with them, and one they raise later is never asked (TODO I01): a
+    /// duplicate's new copy is discarded, an original file is kept, and a
+    /// ZIP archive's books stay where they are. Imports started afterwards,
+    /// and their questions, are not affected.
     func cancelImports() {
         importOperationQueue.cancelEnqueued()
+        withdrawCancelledImportDecisions()
     }
 
     /// Import a zip file asynchronously with progress tracking. The import
     /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
     /// stops it while it waits as well as while it runs (TODO I05).
     func importZipAsync(from url: URL, toFolder folderPath: String) {
-        let cancellation = importOperationQueue.currentCancellation
+        let request = importRequest()
+        let cancellation = request.batch
         importOperationQueue.enqueue { [weak self] in
             guard let self = self else { return }
             // A ZIP import cancelled while it waited never starts, and says
@@ -278,12 +290,16 @@ extension LibraryViewModel {
                     } else {
                         imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
                     }
-                    DispatchQueue.main.sync { self.completeSingleImportedBook(imported, originalURL: url) }
+                    DispatchQueue.main.sync {
+                        self.completeSingleImportedBook(imported, originalURL: url, request: request)
+                    }
                     return
                 }
                 if Self.isAudioZip(url: url) {
                     let imported = try FileImportService.importAudioZipWithReport(from: url, toFolder: folderPath)
-                    DispatchQueue.main.sync { self.completeSingleImportedBook(imported, originalURL: url) }
+                    DispatchQueue.main.sync {
+                        self.completeSingleImportedBook(imported, originalURL: url, request: request)
+                    }
                     return
                 }
 
@@ -301,7 +317,7 @@ extension LibraryViewModel {
                     isCancelled: cancellation.check
                 )
                 DispatchQueue.main.sync {
-                    self.completeZIPImport(result, originalURL: url, folderPath: folderPath)
+                    self.completeZIPImport(result, originalURL: url, folderPath: folderPath, request: request)
                 }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
@@ -331,7 +347,12 @@ extension LibraryViewModel {
         }
     }
 
+    /// Imports one file on the import queue, and with `openAfterImport`
+    /// opens its book once the book is in the library and its questions are
+    /// answered (TODO I01). Other files import meanwhile; their questions
+    /// wait their turn.
     func importSingleFileAsync(from url: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
+        let request = importRequest(opensAfterImport: openAfterImport)
         importOperationQueue.enqueue { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
@@ -340,7 +361,7 @@ extension LibraryViewModel {
             do {
                 let imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
                 DispatchQueue.main.sync {
-                    self.completeSingleImportedBook(imported, originalURL: url, openAfterImport: openAfterImport)
+                    self.completeSingleImportedBook(imported, originalURL: url, request: request)
                 }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
@@ -355,44 +376,62 @@ extension LibraryViewModel {
     }
 
     /// Publish one imported book, a document or a DAISY or audio ZIP, through
-    /// the same duplicate decision. Original-file handling waits for the
-    /// user's acceptance, and `openAfterImport` opens the book once added.
+    /// the same duplicate question. A duplicate's question is queued behind
+    /// any already waiting, holding the book, its original, and `request`, so
+    /// the answer acts on this book whatever imports finish meanwhile (TODO
+    /// I01). The original is handled, and the book opened when `request`
+    /// asks, once the book is in the library: a question about the original
+    /// comes first, and the book opens once it is answered.
     ///
     /// An import that left chapters out still adds its book, but announces
     /// what is missing once through the library's alert (or, for a duplicate,
-    /// with the duplicate choice, so two alerts never compete), and its
+    /// with the duplicate question, so the two never compete), and its
     /// original is never deleted or offered for deletion, whatever the
     /// preference. Such a book is not opened automatically either: the
     /// reader window would take focus from the warning in the library window.
     /// A DAISY book copied from its folder of files never has its original
     /// deleted or offered for deletion either (`ImportedBook.mayDeleteOriginal`).
-    func completeSingleImportedBook(_ imported: ImportedBook, originalURL: URL, openAfterImport: Bool = false) {
+    func completeSingleImportedBook(
+        _ imported: ImportedBook,
+        originalURL: URL,
+        request: ImportRequest = ImportRequest()
+    ) {
         importProgressMessage = ""
         let book = imported.book
-        // Without an original to offer, a later duplicate choice cannot
+        // Without an original to offer, a later duplicate answer cannot
         // delete it either.
         let deletableOriginal = imported.mayDeleteOriginal ? originalURL : nil
+        var request = request
+        if imported.warning != nil {
+            request.opensAfterImport = false
+        }
         guard addBookCheckingDuplicate(
-            book, toFolder: book.folderPath, originalURL: deletableOriginal, warning: imported.warning
+            book, originalURL: deletableOriginal, warning: imported.warning, request: request
         ) else {
             return
         }
         save()
-        if let deletableOriginal {
-            handleOriginalFileDeletion(url: deletableOriginal)
-        }
         if let warning = imported.warning {
             presentImportMessage(warning)
-        } else if openAfterImport {
-            readerOpener(book.id)
         }
+        finishAddedBook(book, originalURL: deletableOriginal, request: request)
     }
 
     /// Publish a batch result while retaining an archive that still contains
     /// failed or unimported content, a book imported without some of its
     /// chapters, or books a cancel left unimported (`ZipImportResult
     /// .keepsOriginal`). This also covers empty/duplicate-only ZIPs.
-    func completeZIPImport(_ result: ZipImportResult, originalURL: URL, folderPath: String) {
+    ///
+    /// The batch's questions, whether to delete the archive and whether to
+    /// put several books in a folder of their own, are queued in that order
+    /// behind any already waiting, each holding this archive and these books
+    /// and `request` (TODO I01).
+    func completeZIPImport(
+        _ result: ZipImportResult,
+        originalURL: URL,
+        folderPath: String,
+        request: ImportRequest = ImportRequest()
+    ) {
         let priorIDs = Set(library.books.map(\.id))
         for book in result.books { library.addBook(book) }
         let acceptedBooks = result.books.filter { book in
@@ -403,13 +442,13 @@ extension LibraryViewModel {
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
-        if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count {
-            handleOriginalFileDeletion(url: originalURL)
+        if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count,
+           let question = originalFileQuestion(for: originalURL, of: nil, request: request) {
+            ask(question)
         }
         if acceptedBooks.count > 1 {
-            pendingZipBooks = acceptedBooks
-            pendingZipFolderPath = folderPath
-            showZipFolderDialog = true
+            let batch = ImportDecision.ZipBatch(archiveURL: originalURL, books: acceptedBooks, folderPath: folderPath)
+            ask(ImportDecision(kind: .zipFolder(batch), request: request))
         }
     }
 
@@ -433,6 +472,7 @@ extension LibraryViewModel {
     func createBookFromText(title: String, author: String, text: String, toFolder folderPath: String = "") {
         let bookTitle = TextImportPolicy.resolvedTitle(title)
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
+        let request = importRequest()
         importOperationQueue.enqueue { [weak self] in
             guard let self else { return }
             do {
@@ -444,7 +484,7 @@ extension LibraryViewModel {
                     toFolder: folderPath
                 )
                 DispatchQueue.main.async {
-                    if self.addBookCheckingDuplicate(imported.book, toFolder: folderPath) {
+                    if self.addBookCheckingDuplicate(imported.book, request: request) {
                         self.save()
                     }
                 }

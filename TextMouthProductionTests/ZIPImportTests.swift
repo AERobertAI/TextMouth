@@ -40,8 +40,8 @@ final class ZIPImportTests: XCTestCase {
         viewModel.completeSingleImportedBook(ImportedBook(book: imported), originalURL: URL(fileURLWithPath: "/tmp/source.zip"))
 
         XCTAssertEqual(viewModel.library.books.map(\.id), [existing.id])
-        XCTAssertEqual(viewModel.pendingDuplicateBook?.id, imported.id)
-        XCTAssertTrue(viewModel.showDuplicateDialog)
+        XCTAssertEqual(viewModel.importDecisions.current?.duplicate?.book.id, imported.id)
+        XCTAssertEqual(viewModel.importDecisions.current?.duplicate?.existing.id, existing.id)
     }
 
     /// Use a disposable file and restore the config preference after each

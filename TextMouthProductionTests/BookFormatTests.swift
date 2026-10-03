@@ -42,16 +42,16 @@ final class BookFormatTests: XCTestCase {
         XCTAssertFalse(
             viewModel.addBookCheckingDuplicate(
                 duplicate,
-                toFolder: "",
                 originalURL: source
             )
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(viewModel.importDecisions.current?.duplicate?.originalURL, source)
 
-        viewModel.cancelDuplicate()
+        viewModel.answerCurrentImportDecision(.cancel)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
-        XCTAssertNil(viewModel.pendingDuplicateOriginalURL)
+        XCTAssertTrue(viewModel.importDecisions.isEmpty)
     }
 
     func testAcceptedDuplicateProcessesOriginalDeletionPreference() throws {
@@ -69,18 +69,17 @@ final class BookFormatTests: XCTestCase {
         XCTAssertFalse(
             viewModel.addBookCheckingDuplicate(
                 duplicate,
-                toFolder: "",
                 originalURL: source
             )
         )
         // Deleting goes to the Trash when that preference is on: keep this
         // test's file out of the real Trash.
         withTrashPreference(movesToTrash: false) {
-            viewModel.keepDuplicate()
+            viewModel.answerCurrentImportDecision(.keepBoth)
         }
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
-        XCTAssertNil(viewModel.pendingDuplicateOriginalURL)
+        XCTAssertTrue(viewModel.importDecisions.isEmpty)
     }
 
     func testFailedCacheGenerationDoesNotStampCurrentVersion() {

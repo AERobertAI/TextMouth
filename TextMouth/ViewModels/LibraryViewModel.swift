@@ -52,14 +52,14 @@ final class LibraryViewModel: ObservableObject {
     /// Incremented periodically to force library views to refresh time estimates
     @Published var refreshTick: UInt = 0
 
-    /// For zip import: show dialog to create a folder for imported books
-    @Published var showZipFolderDialog = false
-    @Published var pendingZipBooks: [Book] = []
-    @Published var pendingZipFolderPath: String = ""
-
-    /// For asking about deleting original file
-    @Published var showDeleteOriginalDialog = false
-    @Published var pendingOriginalURL: URL?
+    /// The questions imports are waiting to ask, one at a time and in the
+    /// order they arose (TODO I01): whether to replace or keep a duplicate,
+    /// whether to delete an original file, and whether to put a ZIP
+    /// archive's books in a folder of their own. Only the import and
+    /// question code in LibraryViewModel+Import and LibraryViewModel+Duplicates
+    /// changes it; each Library window's question sheet shows its current
+    /// question (`ImportDecisionPresenter`).
+    @Published var importDecisions = ImportDecisionQueue()
 
     /// Book removal confirmation (supports single or multi-book removal)
     @Published var showRemoveBookDialog = false
@@ -73,16 +73,6 @@ final class LibraryViewModel: ObservableObject {
     @Published var pendingDeleteFolder: BookFolder?
     @Published var showDeleteFolderDestinationSheet = false
     @Published var showDeleteEverythingConfirm = false
-
-    /// Duplicate import detection
-    @Published var showDuplicateDialog = false
-    @Published var pendingDuplicateBook: Book?
-    @Published var pendingDuplicateExisting: Book?
-    @Published var pendingDuplicateFolder: String = ""
-    @Published var pendingDuplicateOriginalURL: URL?
-    /// What the pending duplicate's own import could not read, told with the
-    /// duplicate choice so the warning never needs a second alert at once.
-    @Published var pendingDuplicateWarning: String?
 
     /// Import progress tracking
     @Published var isImporting = false

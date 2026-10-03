@@ -14,7 +14,6 @@ struct LibraryWindowView: View {
     /// Presents the New from Text sheet, from the toolbar or through the
     /// router for File > New from Text....
     @State private var showTextInput = false
-    @State private var zipFolderName = ""
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: NSWindow?
 
@@ -103,37 +102,6 @@ struct LibraryWindowView: View {
         } message: {
             Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
         }
-        // Zip folder creation dialog
-        .alert("Create Folder for Imported Books?", isPresented: $libraryViewModel.showZipFolderDialog) {
-            TextField("Folder name", text: $zipFolderName)
-            Button("Create Folder") {
-                libraryViewModel.moveZipBooksToFolder(folderName: zipFolderName)
-                zipFolderName = ""
-            }
-            Button("No Thanks", role: .cancel) {
-                libraryViewModel.pendingZipBooks = []
-            }
-        } message: {
-            Text("\(libraryViewModel.pendingZipBooks.count) books were imported from the ZIP. Would you like to create a new folder to hold them?")
-        }
-        // Delete original file confirmation dialog, in the words of the Trash
-        // preference, which decides where the file goes
-        .alert(
-            libraryViewModel.pendingOriginalFileWording.confirmationTitle,
-            isPresented: $libraryViewModel.showDeleteOriginalDialog
-        ) {
-            Button(libraryViewModel.pendingOriginalFileWording.buttonTitle, role: .destructive) {
-                if let url = libraryViewModel.pendingOriginalURL {
-                    libraryViewModel.deleteOriginalFile(at: url)
-                }
-                libraryViewModel.pendingOriginalURL = nil
-            }
-            Button("Keep", role: .cancel) {
-                libraryViewModel.pendingOriginalURL = nil
-            }
-        } message: {
-            Text(libraryViewModel.pendingOriginalFileWording.confirmationMessage)
-        }
         // Remove book confirmation dialog (supports single or multiple books).
         // Its words say whether the files go to the Trash, are deleted
         // permanently, or stay, as the Trash preference chooses (TODO A08).
@@ -159,27 +127,10 @@ struct LibraryWindowView: View {
                 Text(removalChoice.message)
             }
         }
-        // Duplicate import dialog
-        .alert("Duplicate Book Found", isPresented: $libraryViewModel.showDuplicateDialog) {
-            Button("Replace Existing") {
-                libraryViewModel.replaceDuplicate()
-            }
-            Button("Keep Both") {
-                libraryViewModel.keepDuplicate()
-            }
-            Button("Cancel", role: .cancel) {
-                libraryViewModel.cancelDuplicate()
-            }
-        } message: {
-            if let existing = libraryViewModel.pendingDuplicateExisting {
-                let choice = "A book matching \"\(existing.title)\" is already in your library. Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?"
-                // A new copy missing chapters says so with the choice, so it
-                // never replaces a complete copy unannounced.
-                let incomplete = libraryViewModel.pendingDuplicateWarning
-                    .map { "\n\nThe copy just imported is incomplete. \($0)" } ?? ""
-                Text(verbatim: choice + incomplete)
-            }
-        }
+        // Import questions: replace or keep a duplicate, delete an original
+        // file, put a ZIP archive's books in a folder. They wait in one queue
+        // and are asked one at a time (TODO I01).
+        .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
         // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
         // items opened from Finder, opening a book's reader, and Continue to
         // Next Book are app-wide actions: the router hands each to exactly
