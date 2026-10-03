@@ -154,6 +154,42 @@ final class StorageGenerationWorkTests: XCTestCase {
         second?.release()
     }
 
+    // MARK: - The Import Queue
+
+    /// A move waits for the import under way to finish and holds the import
+    /// queued behind it, which says it is held, until the move has
+    /// published; that import then runs under the new generation.
+    func testTheImportQueueFinishesItsCurrentImportAndHoldsTheRest() async throws {
+        let boundary = try makeBoundary()
+        let queue = SerialImportQueue(boundary: boundary)
+        let firstStarted = expectation(description: "the first import started")
+        let secondHeld = expectation(description: "the second import was told it is held")
+        let secondRan = expectation(description: "the second import ran")
+        let finishFirst = makeGate()
+        queue.enqueue {
+            firstStarted.fulfill()
+            finishFirst.wait()
+        }
+        queue.enqueue(whileHeld: { secondHeld.fulfill() }) {
+            XCTAssertEqual(boundary.current.number, 1, "the second import ran before the move published")
+            secondRan.fulfill()
+        }
+        await fulfillment(of: [firstStarted], timeout: 10)
+        let hold = try makeHold(on: boundary)
+        var reports: [StorageWork] = []
+
+        await hold.waitForWorkUnderWay { work in
+            reports.append(work)
+            finishFirst.signal()
+        }
+        await fulfillment(of: [secondHeld], timeout: 10)
+        boundary.publish(root: try makeSandboxDirectory("ImportQueuePublished"))
+        hold.release()
+
+        XCTAssertEqual(reports, [.importing])
+        await fulfillment(of: [secondRan], timeout: 10)
+    }
+
     // MARK: - Fixtures
 
     /// A boundary of the test's own, starting at a scratch folder.

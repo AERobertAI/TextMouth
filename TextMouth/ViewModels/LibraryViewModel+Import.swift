@@ -4,8 +4,15 @@ import ZIPFoundation
 
 /// Serial background executor for imports. Activity callbacks are delivered on
 /// the main queue, while operations always run off the UI thread.
+///
+/// Each import is storage work (TODO S04): a data-directory move waits for
+/// the import under way to finish, adding its book to the library, and
+/// holds the imports queued after it until the move has published, so they
+/// choose their destinations in the new data directory.
 final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
+    /// Where each import runs as storage work.
+    private let boundary: StorageBoundary
     private let stateLock = NSLock()
     private var activeCount = 0
     /// The cancellation the imports enqueued since the last
@@ -14,6 +21,12 @@ final class SerialImportQueue: @unchecked Sendable {
     /// Backs `stepObserver`; guarded by `stateLock`.
     private var storedStepObserver: (@Sendable (ImportStep, URL) throws -> Void)?
     var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+
+    /// A queue whose imports run as storage work of `boundary`: the app's,
+    /// unless a test passes its own.
+    init(boundary: StorageBoundary = .shared) {
+        self.boundary = boundary
+    }
 
     /// Told as each step of a queued single-file or text import begins on
     /// its staged package (see `ImportStepObserver`), on the import queue;
@@ -52,10 +65,16 @@ final class SerialImportQueue: @unchecked Sendable {
         cancelled.cancel()
     }
 
-    func enqueue(_ operation: @escaping @Sendable () -> Void) {
+    /// Queues `operation`, one import, behind those already queued. It runs
+    /// as storage work: while a data-directory move holds such work, it
+    /// tells `whileHeld` and waits for the move to finish.
+    func enqueue(whileHeld: (@Sendable () -> Void)? = nil, _ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
+        let boundary = self.boundary
         queue.async { [weak self] in
-            operation()
+            boundary.perform(.importing, whileHeld: whileHeld) { _ in
+                operation()
+            }
             self?.updateCount(by: -1)
         }
     }
@@ -121,6 +140,22 @@ extension LibraryViewModel {
         }
     }
 
+    /// What the import overlay says while a data-directory move holds an
+    /// import back (TODO S04).
+    nonisolated static let importWaitingForMoveMessage = "Waiting for the data directory move to finish..."
+
+    /// Queues `operation`, one import, on the import queue. While a
+    /// data-directory move holds imports back, the overlay says why this one
+    /// waits, until it starts and says what it imports.
+    private func enqueueImport(_ operation: @escaping @Sendable () -> Void) {
+        importOperationQueue.enqueue(whileHeld: { [weak self] in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.importProgressMessage = Self.importWaitingForMoveMessage
+            }
+        }, operation)
+    }
+
     /// The request for an import queued now from the Library window
     /// `origin`: it joins the batch of every import queued so far, which the
     /// overlay's Cancel stops along with the batch's questions (TODO I05,
@@ -173,7 +208,7 @@ extension LibraryViewModel {
     /// from Library Only retained is taken back where it is, and any other
     /// is copied into the library (`FileImportService.importTMBPackage`).
     func openTMBPackage(from url: URL) {
-        importOperationQueue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
@@ -306,7 +341,7 @@ extension LibraryViewModel {
     func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
         let request = importRequest(from: origin)
         let cancellation = request.batch
-        importOperationQueue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self = self else { return }
             // A ZIP import cancelled while it waited never starts, and says
             // nothing: the batch that was running reports the cancel.
@@ -395,7 +430,7 @@ extension LibraryViewModel {
     ) {
         let request = importRequest(from: origin, opensAfterImport: openAfterImport)
         let queue = importOperationQueue
-        queue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
@@ -527,7 +562,7 @@ extension LibraryViewModel {
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
         let request = importRequest(from: origin)
         let queue = importOperationQueue
-        queue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self else { return }
             do {
                 let imported = try FileImportService.importText(
@@ -538,7 +573,9 @@ extension LibraryViewModel {
                     toFolder: folderPath,
                     observer: queue.stepObserver
                 )
-                DispatchQueue.main.async {
+                // Synchronously, as every import adds its book: before the
+                // import's storage work ends (TODO S04).
+                DispatchQueue.main.sync {
                     if self.addBookCheckingDuplicate(imported.book, request: request) {
                         self.save()
                     }
