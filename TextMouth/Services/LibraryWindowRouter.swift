@@ -3,7 +3,8 @@ import Combine
 
 /// Routes each app-wide action to the one window that should take it
 /// (TODO A05): an action asked for by a menu command, a keyboard shortcut,
-/// or a finished book, whichever window is key, or with no window open.
+/// Finder, or a finished book, whichever window is key, or with no window
+/// open.
 ///
 /// It keeps weak references to the open Library windows, each with its way
 /// of taking an action, and to the open reader windows, each with its way of
@@ -249,7 +250,7 @@ final class LibraryWindowRouter: ObservableObject {
         case .newLibraryWindow:
             pendingActions.add(action, at: now())
             log("no open window can take \(action.logDescription); it waits for a Library window")
-            requestLibraryWindow(after: 0)
+            requestLibraryWindow(after: libraryWindowRequestDelay(for: action))
         }
     }
 
@@ -292,6 +293,26 @@ final class LibraryWindowRouter: ObservableObject {
     func expectLibraryWindow() {
         guard !hasRegisteredWindow else { return }
         libraryWindowRequestedAt = now()
+    }
+
+    /// How long items opened from Finder wait for a Library window before
+    /// the router asks for one, in seconds. SwiftUI shows a Library window
+    /// itself for items opened from Finder, before the app delegate hears of
+    /// them: it brings back the Library window closed most recently, or
+    /// opens a new one. In the running app that window has registered by the
+    /// time the items reach the router, so this is only a safety net. On a
+    /// cold launch the items wait for the first Library window instead
+    /// (`expectLibraryWindow()`).
+    static let finderOpenGracePeriod: TimeInterval = 2
+
+    /// How long `action` waits for a Library window before the router asks
+    /// for one: no time at all, except for items opened from Finder, for
+    /// which SwiftUI shows a Library window itself (`finderOpenGracePeriod`).
+    private func libraryWindowRequestDelay(for action: GlobalAction) -> TimeInterval {
+        if case .openFiles = action {
+            return Self.finderOpenGracePeriod
+        }
+        return 0
     }
 
     /// Asks for a Library window once `delay` seconds have passed, if one
@@ -384,8 +405,9 @@ final class LibraryWindowRouter: ObservableObject {
 // MARK: - App-Wide Action Vocabulary
 
 /// An action the app takes as a whole, asked for by a menu command, a
-/// keyboard shortcut, or a finished book, whichever window is key, or with
-/// no window open at all (TODO A05). The router decides who takes each one
+/// keyboard shortcut, Finder, or a finished book, whichever window is key,
+/// or with no window open at all (TODO A05). The router decides who takes
+/// each one
 /// (`LibraryWindowRouter.handler(for:keyWindow:registeredLibraryWindows:readerWindows:)`),
 /// so it is taken exactly once whatever windows exist.
 enum GlobalAction: Equatable {
@@ -400,6 +422,10 @@ enum GlobalAction: Equatable {
     /// Navigate > Go to Library, or its shortcut: a Library window comes to
     /// the front.
     case goToLibrary
+    /// Items opened from Finder, with Open With, a drop on the Dock icon,
+    /// or a launch to open them: a Library window imports them, showing its
+    /// progress and any question or failure, and each book then opens.
+    case openFiles([URL])
     /// Open a book's reader window, or bring it forward when it is already
     /// open: a book just imported, or a package from Finder the library
     /// already lists.
@@ -416,13 +442,14 @@ enum GlobalAction: Equatable {
         switch self {
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             return bookID
-        case .openBookFile, .newFromText, .importDAISYFolder, .goToLibrary:
+        case .openBookFile, .newFromText, .importDAISYFolder, .goToLibrary, .openFiles:
             return nil
         }
     }
 
     /// The notifications that ask for app-wide actions, which the router
-    /// listens for (`LibraryWindowRouter.listen(to:)`).
+    /// listens for (`LibraryWindowRouter.listen(to:)`). Items opened from
+    /// Finder arrive by the app delegate instead, which routes them itself.
     static let routedNotificationNames: [Notification.Name] = [
         .openBookFile,
         .newFromText,
@@ -467,6 +494,8 @@ enum GlobalAction: Equatable {
             return "Import DAISY Folder"
         case .goToLibrary:
             return "Go to Library"
+        case .openFiles(let items):
+            return "open \(items.count) item(s) from Finder"
         case .openBookWindow(let bookID):
             return "open book \(bookID.uuidString.prefix(8))"
         case .continueToNextBook(let bookID):

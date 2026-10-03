@@ -187,8 +187,8 @@ struct LibraryWindowView: View {
             }
         }
         // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
-        // opening a book's reader, and Continue to Next Book are app-wide
-        // actions: the router takes each posted one and hands it to exactly
+        // items opened from Finder, opening a book's reader, and Continue to
+        // Next Book are app-wide actions: the router hands each to exactly
         // one window (TODO A05), this one through
         // `takeGlobalAction(_:openingReadersWith:)` when it is chosen.
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
@@ -294,6 +294,12 @@ struct LibraryWindowView: View {
             presentDAISYFolderPanel()
         case .goToLibrary:
             bringToFront()
+        case .openFiles(let items):
+            // A Library window is already on screen for the items: SwiftUI
+            // shows one for them, or the router opened one. The import's
+            // progress and questions appear there, and each book imported
+            // opens afterwards.
+            libraryViewModel.importAndOpenFiles(urls: items)
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             // Opens the book's reader window, or brings it forward when it
             // is already open.

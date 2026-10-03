@@ -205,6 +205,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertNil(GlobalAction.newFromText.bookToOpen)
         XCTAssertNil(GlobalAction.importDAISYFolder.bookToOpen)
         XCTAssertNil(GlobalAction.goToLibrary.bookToOpen)
+        XCTAssertNil(GlobalAction.openFiles([URL(fileURLWithPath: "/Books/Volume.epub")]).bookToOpen)
     }
 
     /// Who takes each kind of app-wide action in every window arrangement
@@ -223,7 +224,10 @@ final class LibraryWindowRouterTests: XCTestCase {
         // Settings, or any other window that is neither Library nor reader.
         let otherWindow = makeWindow()
         let book = UUID()
-        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .newFromText, .importDAISYFolder, .goToLibrary]
+        let finderItems = [URL(fileURLWithPath: "/Books/Volume.epub")]
+        let actionsNeedingALibrary: [GlobalAction] = [
+            .openBookFile, .newFromText, .importDAISYFolder, .goToLibrary, .openFiles(finderItems),
+        ]
         let actionsOpeningAReader: [GlobalAction] = [.openBookWindow(book), .continueToNextBook(book)]
 
         let arrangements: [(
@@ -311,20 +315,27 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertNil(GlobalAction(notification: Notification(name: .goBack)))
     }
 
-    /// Every app-wide action posted is taken exactly once, in every window
+    /// Every app-wide action is taken exactly once, in every window
     /// arrangement TODO A05 names, however many Library windows are open:
     /// by the one Library window the decision names, by a reader window, or,
     /// when no open window can take it, by the one Library window opened for
-    /// it once that window registers.
-    func testEveryPostedActionIsTakenExactlyOnceInEveryArrangement() {
+    /// it once that window registers. Each action arrives as it does in the
+    /// app: posted on the router's center, or, for items opened from Finder,
+    /// handed over by the app delegate.
+    func testEveryActionIsTakenExactlyOnceInEveryArrangement() {
         let book = UUID()
-        let posts: [(name: Notification.Name, object: Any?, userInfo: [AnyHashable: Any]?, action: GlobalAction)] = [
-            (.openBookFile, nil, nil, .openBookFile),
-            (.newFromText, nil, nil, .newFromText),
-            (.importDAISYFolder, nil, nil, .importDAISYFolder),
-            (.goToLibrary, nil, nil, .goToLibrary),
-            (.openBookWindow, book, nil, .openBookWindow(book)),
-            (.continueToNextBook, nil, [Notification.ContinueToNextBookKey.bookID: book], .continueToNextBook(book)),
+        let finderItems = [URL(fileURLWithPath: "/Books/Volume.epub")]
+        let deliveries: [(action: GlobalAction, deliver: (RouterHarness) -> Void)] = [
+            (.openBookFile, { $0.post(.openBookFile) }),
+            (.newFromText, { $0.post(.newFromText) }),
+            (.importDAISYFolder, { $0.post(.importDAISYFolder) }),
+            (.goToLibrary, { $0.post(.goToLibrary) }),
+            (.openBookWindow(book), { $0.post(.openBookWindow, object: book) }),
+            (
+                .continueToNextBook(book),
+                { $0.post(.continueToNextBook, userInfo: [Notification.ContinueToNextBookKey.bookID: book]) }
+            ),
+            (.openFiles(finderItems), { $0.router.route(.openFiles(finderItems)) }),
         ]
         let arrangements: [(
             name: String,
@@ -346,7 +357,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         ]
 
         for arrangement in arrangements {
-            for post in posts {
+            for delivery in deliveries {
                 let harness = RouterHarness()
                 // Library windows that registered and then closed, as when
                 // the app keeps running after its windows close.
@@ -361,8 +372,9 @@ final class LibraryWindowRouterTests: XCTestCase {
                 case .reader(let index): harness.keyWindow = readers[index]
                 }
 
-                harness.post(post.name, object: post.object, userInfo: post.userInfo)
-                harness.runDueWork()
+                delivery.deliver(harness)
+                // Items from Finder wait a little longer for a window.
+                harness.advance(by: LibraryWindowRouter.finderOpenGracePeriod)
                 // When the action waits, the Library window it asked for
                 // opens and registers.
                 if harness.libraryWindowRequests > 0 {
@@ -370,9 +382,10 @@ final class LibraryWindowRouterTests: XCTestCase {
                     harness.runDueWork()
                 }
 
-                let taker = post.action.bookToOpen == nil ? arrangement.libraryActionTaker : arrangement.readerActionTaker
-                let context = "\(arrangement.name): \(post.action)"
-                XCTAssertEqual(harness.takings, [RouterHarness.taking(of: post.action, by: taker)], context)
+                let action = delivery.action
+                let taker = action.bookToOpen == nil ? arrangement.libraryActionTaker : arrangement.readerActionTaker
+                let context = "\(arrangement.name): \(action)"
+                XCTAssertEqual(harness.takings, [RouterHarness.taking(of: action, by: taker)], context)
                 XCTAssertEqual(harness.libraryWindowRequests, taker == "new Library" ? 1 : 0, context)
                 XCTAssertEqual(harness.router.waitingActions, [], context)
             }
@@ -554,6 +567,72 @@ final class LibraryWindowRouterTests: XCTestCase {
         harness.runDueWork()
 
         XCTAssertEqual(harness.takings, ["kept Library: openBookFile"])
+    }
+
+    // MARK: - Items opened from Finder
+
+    /// Items opened from Finder on a cold launch, before any Library window
+    /// has registered, wait for the first Library window SwiftUI opens
+    /// without asking for another, and are imported once, by that window: a
+    /// Library window registering after it imports nothing. They arrive
+    /// through the app delegate.
+    func testItemsOpenedFromFinderAtLaunchAreImportedOnceByTheFirstLibraryWindow() {
+        let harness = RouterHarness()
+        let appDelegate = AppDelegate()
+        appDelegate.router = harness.router
+        let items = [
+            URL(fileURLWithPath: "/Books/First Volume.epub"),
+            URL(fileURLWithPath: "/Books/Second Volume.txt"),
+        ]
+        harness.router.expectLibraryWindow()
+
+        appDelegate.application(NSApp, open: items)
+        harness.advance(by: LibraryWindowRouter.finderOpenGracePeriod)
+        XCTAssertEqual(harness.libraryWindowRequests, 0)
+        XCTAssertEqual(harness.router.waitingActions, [.openFiles(items)])
+
+        harness.addLibraryWindow(named: "first Library")
+        harness.runDueWork()
+        harness.addLibraryWindow(named: "second Library")
+        harness.runDueWork()
+
+        XCTAssertEqual(harness.takings, ["first Library: \(GlobalAction.openFiles(items))"])
+        XCTAssertEqual(harness.libraryWindowRequests, 0)
+    }
+
+    /// Items opened from Finder with no Library window registered wait for
+    /// the one SwiftUI shows for them. Only when none has registered by the
+    /// end of the grace period does the router ask for one, which then
+    /// imports them.
+    func testItemsOpenedFromFinderAskForALibraryWindowOnlyAfterTheGracePeriod() {
+        let harness = RouterHarness()
+        let items = [URL(fileURLWithPath: "/Books/Volume.epub")]
+
+        harness.router.route(.openFiles(items))
+        harness.advance(by: LibraryWindowRouter.finderOpenGracePeriod - 0.5)
+        XCTAssertEqual(harness.libraryWindowRequests, 0)
+        harness.advance(by: 0.5)
+        XCTAssertEqual(harness.libraryWindowRequests, 1)
+
+        harness.addLibraryWindow(named: "Library")
+        harness.runDueWork()
+        XCTAssertEqual(harness.takings, ["Library: \(GlobalAction.openFiles(items))"])
+    }
+
+    /// While only readers are open, items opened from Finder go to the
+    /// Library window SwiftUI shows for them, and no other is asked for.
+    func testItemsOpenedFromFinderGoToTheLibraryWindowSwiftUIShows() {
+        let harness = RouterHarness()
+        harness.keyWindow = harness.addReaderWindow(named: "reader")
+        let items = [URL(fileURLWithPath: "/Books/Volume.epub")]
+
+        harness.router.route(.openFiles(items))
+        harness.runDueWork()
+        harness.addLibraryWindow(named: "Library SwiftUI shows")
+        harness.advance(by: LibraryWindowRouter.finderOpenGracePeriod)
+
+        XCTAssertEqual(harness.takings, ["Library SwiftUI shows: \(GlobalAction.openFiles(items))"])
+        XCTAssertEqual(harness.libraryWindowRequests, 0)
     }
 
     // MARK: - Actions waiting for a Library window
@@ -786,10 +865,14 @@ private final class RouterHarness {
         notifications.post(name: name, object: object, userInfo: userInfo)
     }
 
-    /// Runs every piece of scheduled work that has fallen due, in the order
-    /// it was scheduled, including any it schedules in turn.
+    /// Runs every piece of scheduled work that has fallen due, the earliest
+    /// due first and work due at the same moment in the order it was
+    /// scheduled, as the main queue would, including any it schedules in
+    /// turn.
     func runDueWork() {
-        while let index = scheduled.firstIndex(where: { $0.due <= now }) {
+        while let index = scheduled.indices
+            .filter({ scheduled[$0].due <= now })
+            .min(by: { scheduled[$0].due < scheduled[$1].due }) {
             let item = scheduled.remove(at: index)
             item.work()
         }

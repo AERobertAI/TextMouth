@@ -7,13 +7,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// empty, non-interactive menus.
     let menuVisibilityManager = MenuVisibilityManager()
 
+    /// The router that takes app-wide actions: the shared one, which the
+    /// Library and reader windows register with, unless a test sets its own.
+    var router = LibraryWindowRouter.shared
+
     /// Starts routing app-wide actions (TODO A05) before Finder can hand
     /// over a book at launch. SwiftUI opens the first Library window itself,
     /// so an action that arrives before that window registers waits for it
     /// instead of opening a second. Later, an action no open window can take
     /// opens a Library window through SwiftUI's main scene.
     func applicationWillFinishLaunching(_ notification: Notification) {
-        let router = LibraryWindowRouter.shared
         router.openLibraryWindow = Self.openLibraryWindowThroughSwiftUI
         router.expectLibraryWindow()
         router.listen(to: .default)
@@ -82,7 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// document-style URL into an already-windowed application.
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         Self.shouldOpenUntitledLibrary(
-            hasOpenLibraryWindow: LibraryWindowRouter.shared.hasRegisteredWindow
+            hasOpenLibraryWindow: router.hasRegisteredWindow
         )
     }
 
@@ -131,16 +134,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statsService.shutdown()
     }
 
-    /// Handle files opened via Finder "Open With" or drag-to-dock
+    /// Takes the items opened from Finder, with Open With, a drop on the
+    /// Dock icon, or a launch to open them, as one app-wide action: the
+    /// Library window the router chooses imports them and opens each book
+    /// (TODO A05). With every Library window closed, SwiftUI shows one again
+    /// before this is called; on a cold launch, before any Library window
+    /// has registered, the items wait for the first one.
     func application(_ application: NSApplication, open urls: [URL]) {
-        NotificationCenter.default.post(
-            name: .openFilesFromFinder,
-            object: nil,
-            userInfo: ["urls": urls]
-        )
+        router.route(.openFiles(urls))
     }
-}
-
-extension Notification.Name {
-    static let openFilesFromFinder = Notification.Name("openFilesFromFinder")
 }
