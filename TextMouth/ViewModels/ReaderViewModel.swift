@@ -890,14 +890,24 @@ final class ReaderViewModel: ObservableObject {
     /// The book's own edits are laid over the metadata back on the main
     /// actor, from the reader's copy of the book as it is by then, so an
     /// edit the library makes while the book loads is shown too (TODO P10).
-    nonisolated static func readContent(of book: Book, audioTagsFrom tagsURL: URL? = nil) throws -> LoadedContent {
+    ///
+    /// A text book's reading text goes through `readingTexts`, this Mac's
+    /// cache of the reading text of the large books opened lately (PERF22,
+    /// `ReadingTextCache`): it is read from there when kept for the book's
+    /// content.md as it is, and kept there after a parse otherwise.
+    nonisolated static func readContent(
+        of book: Book,
+        audioTagsFrom tagsURL: URL? = nil,
+        readingTexts: ReadingTextCache? = .shared
+    ) throws -> LoadedContent {
         let url = book.bookFileURL
         let format = book.format
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
         let analysis = try BookContentAnalysisService.load(
             book: book,
-            regenerateTextCache: cacheOutdated
+            regenerateTextCache: cacheOutdated,
+            readingTexts: readingTexts
         )
 
         var fileMetadata: EPUBMetadata?
