@@ -129,15 +129,17 @@ enum TextMouthPaths {
     /// The name of the folder of books inside the data directory.
     static let libraryFolderName = "Library"
 
-    /// The name of the folder of logs inside the data directory.
-    static let logsFolderName = "Logs"
-
     static var libraryDir: URL {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
+    /// The diagnostic logs' folder: this Mac's ~/Library/Logs/TextMouth
+    /// (`MachineLocalPaths.logs`), never the data directory (FR02), so
+    /// logging works while the data directory is missing and the logs
+    /// never sync to the cloud. Logs written into the data directory's own
+    /// Logs folder by earlier releases stay there.
     static var logsDir: URL {
-        root.appendingPathComponent(logsFolderName, isDirectory: true)
+        MachineLocalPaths.logs
     }
 
     static var configFile: URL {
@@ -254,10 +256,8 @@ enum TextMouthPaths {
         } else {
             try requireExistingDataDirectory(root)
         }
-        // The data directory's own folders, each directly inside it.
-        for name in [libraryFolderName, logsFolderName] {
-            try createFolders([name], inside: root)
-        }
+        // The data directory's own folder of books, directly inside it.
+        try createFolders([libraryFolderName], inside: root)
     }
 
     /// Creates the library subfolder `folderPath`, with any folder above it
@@ -529,7 +529,7 @@ enum TextMouthPaths {
     private static func appendNow(_ data: Data, to logFile: URL) {
         do {
             guard FileManager.default.fileExists(atPath: logFile.path) else {
-                try data.write(to: logFile)
+                try createLogFile(logFile, holding: data)
                 return
             }
             let handle = try FileHandle(forWritingTo: logFile)
@@ -545,6 +545,19 @@ enum TextMouthPaths {
         } catch {
             // Intentionally dropped: see above.
         }
+    }
+
+    /// Starts the log file at `logFile` with `data`. This Mac's logs folder
+    /// is made first when it is missing, as on the first launch after the
+    /// logs left the data directory (FR02); no other folder is ever made
+    /// for a log, so a line never brings back a data directory that is gone.
+    private static func createLogFile(_ logFile: URL, holding data: Data) throws {
+        let folder = logFile.deletingLastPathComponent()
+        if folder.standardizedFileURL.path == logsDir.standardizedFileURL.path,
+           !FileManager.default.fileExists(atPath: folder.path) {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        try data.write(to: logFile)
     }
 
     /// Keep the full log as its one `.previous` generation and let the caller

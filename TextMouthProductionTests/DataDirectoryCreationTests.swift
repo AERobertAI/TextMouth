@@ -19,7 +19,8 @@ final class DataDirectoryCreationTests: XCTestCase {
         try TextMouthPaths.ensureDirectoryStructure(at: root, isDefaultLocation: true)
 
         XCTAssertTrue(Self.isFolder(root.appendingPathComponent("Library")))
-        XCTAssertTrue(Self.isFolder(root.appendingPathComponent("Logs")))
+        // The logs are this Mac's own, never the data directory's (FR02).
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("Logs").path))
         XCTAssertNotNil(try LibraryIdentity.read(in: root), "the new library has no identity")
     }
 
@@ -65,7 +66,8 @@ final class DataDirectoryCreationTests: XCTestCase {
         try TextMouthPaths.ensureDirectoryStructure(at: root, isDefaultLocation: false)
 
         XCTAssertTrue(Self.isFolder(root.appendingPathComponent("Library")))
-        XCTAssertTrue(Self.isFolder(root.appendingPathComponent("Logs")))
+        // The logs are this Mac's own, never the data directory's (FR02).
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("Logs").path))
         XCTAssertNil(try LibraryIdentity.read(in: root))
     }
 

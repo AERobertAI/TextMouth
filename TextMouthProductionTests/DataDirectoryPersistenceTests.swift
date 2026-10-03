@@ -28,6 +28,8 @@ final class DataDirectoryPersistenceTests: XCTestCase {
         LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Before \(marker)")]))
         LibraryPersistenceService.flushPendingSave()
         let original = try Data(contentsOf: index)
+        let skippedNote = "skipped writing the library index because the data directory isn't available"
+        let notesBefore = debugLogLines(containing: skippedNote).count
         DataDirectoryGate.close(root)
         addTeardownBlock { DataDirectoryGate.open(root) }
 
@@ -38,10 +40,7 @@ final class DataDirectoryPersistenceTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: index), original, "an index was written while the library was unavailable")
         XCTAssertEqual(PersistenceFailureCenter.shared.outstandingFailures().count, 0)
-        XCTAssertEqual(
-            debugLogLines(containing: "skipped writing the library index because the data directory isn't available").count,
-            1
-        )
+        XCTAssertEqual(debugLogLines(containing: skippedNote).count - notesBefore, 1, "the skip was not logged once")
 
         DataDirectoryGate.open(root)
         LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Saved \(marker)")]))
@@ -82,12 +81,10 @@ final class DataDirectoryPersistenceTests: XCTestCase {
     /// current one until the test ends.
     private func makeCurrentDataDirectory(_ label: String) throws -> URL {
         let root = try makeDataDirectoryMoveDestination(label)
-        for folder in ["Library", "Logs"] {
-            try FileManager.default.createDirectory(
-                at: root.appendingPathComponent(folder, isDirectory: true),
-                withIntermediateDirectories: true
-            )
-        }
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent("Library", isDirectory: true),
+            withIntermediateDirectories: true
+        )
         StorageBoundary.shared.publish(root: root)
         return root
     }

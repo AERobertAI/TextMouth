@@ -46,7 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // The data directory first, so its Logs folder can take the line.
+        // The default data directory on a first launch. The logs are this
+        // Mac's own (FR02), so the line below is written whatever state the
+        // data directory is in.
         try? TextMouthPaths.ensureDirectoryStructure()
         Self.logBuildIdentity(.current)
 

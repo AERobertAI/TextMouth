@@ -77,8 +77,9 @@ enum DiagnosticLog {
         case app
     }
 
-    /// The log files, all in the Logs folder of the data directory. Each
-    /// keeps at most two generations: itself and one `.previous`.
+    /// The log files, all in this Mac's ~/Library/Logs/TextMouth, never in
+    /// the data directory (`TextMouthPaths.logsDir`, FR02). Each keeps at
+    /// most two generations: itself and one `.previous`.
     enum File: String, CaseIterable, Sendable {
         /// The main log: every line that has no log of its own below.
         case debug = "textmouth_debug.log"
@@ -89,7 +90,7 @@ enum DiagnosticLog {
         /// audio, and how each chunk of direct speech started and finished.
         case speechTransitions = "textmouth_transition.log"
 
-        /// Where the file is in the current data directory.
+        /// Where the file is: in this Mac's logs folder.
         var url: URL {
             TextMouthPaths.logsDir.appendingPathComponent(rawValue)
         }
