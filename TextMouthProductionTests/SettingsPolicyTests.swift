@@ -183,6 +183,27 @@ final class SettingsPolicyTests: XCTestCase {
         )
     }
 
+    /// Shortcuts keep only the actions TextMouth knows, each with a list
+    /// whose every shortcut can be read, written the way TextMouth writes
+    /// them; an empty list is a choice, an action with no shortcut.
+    func testShortcutRuleKeepsKnownActionsWithReadableLists() {
+        let rule = SettingsPolicy.keyboardShortcuts
+
+        XCTAssertEqual(
+            rule.requestedValues(fromConfig: [
+                "Where Am I?": ["Option+W"], "Go to Library": [], "Teleport": ["t"], "Play / Pause": ["space", "kk"],
+            ]),
+            [.whereAmI: [KeyBinding(key: "w", option: true)], .goToLibrary: []]
+        )
+        XCTAssertEqual(rule.validatedConfigValue(["cmd + shift + B", "space"]), ["shift+command+b", "space"])
+        XCTAssertNil(rule.validatedConfigValue(["space", "comand+k"]))
+        XCTAssertFalse(rule.names("where am i?"), "action names are case-sensitive")
+        XCTAssertEqual(
+            rule.fileEntries([.togglePlayback: [KeyBinding(key: "space"), KeyBinding(key: "k")]]),
+            ["Play / Pause": ["space", "k"]]
+        )
+    }
+
     // MARK: - Saved book state
 
     /// A text book's saved speed is words per minute, clamped to the global

@@ -122,7 +122,8 @@ where Value: RawRepresentable & CaseIterable & Sendable, Value.RawValue == Strin
 // MARK: - Preferences keyed by enum cases
 
 /// Validation rule for a preference that gives each case of an enum a value
-/// of its own, such as a sound for each playback event.
+/// of its own: a sound for each playback event, or the shortcuts of each
+/// action.
 ///
 /// `config.json` holds such a preference as an object keyed by the cases'
 /// raw values, each value in a readable form (`FileValue`) that the rule
