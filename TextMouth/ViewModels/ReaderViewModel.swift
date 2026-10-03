@@ -1360,6 +1360,37 @@ final class ReaderViewModel: ObservableObject {
         removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
+        // Last, once nothing above needs the book's text.
+        releaseWhatGrowsWithTheBook()
+    }
+
+    /// Lets go of everything a closed reader holds that grows with its book
+    /// (PERF27). SwiftUI keeps a closed reader window, and with it this
+    /// reader, for the rest of the session, so without this every book
+    /// opened and closed kept its whole text and the last chapter's rendered
+    /// speech (tens of megabytes for a long chapter) until the app quit.
+    ///
+    /// Released: the subscriptions, so a closed reader reacts to nothing;
+    /// the look-ahead (which `stop()` has already dropped for a text book);
+    /// the rendered speech of the chapter last played; the offset maps of
+    /// its speech; the text window the reader showed; an audiobook's lists
+    /// of files and clips; and the book's content, with its headings. An
+    /// audiobook's player and its item went with `stop()`. What is left is
+    /// the reader itself and its services, whose size does not depend on
+    /// the book.
+    private func releaseWhatGrowsWithTheBook() {
+        cancellables.removeAll()
+        discardLookAhead()
+        speechService.audioEngine.discardRenderedAudio()
+        currentTransformation = nil
+        currentOffsetMap = nil
+        pendingPlaybackUIRefresh = nil
+        visibleTextWindowState = nil
+        displayVisibleTextWindow = ""
+        audioChapterFiles = []
+        audioSegments = []
+        // Also empties `headings`, which follow the content.
+        content = nil
     }
 
 }

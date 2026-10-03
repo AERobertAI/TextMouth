@@ -173,8 +173,47 @@ struct LibraryView: View {
     @State private var cloudRefreshToken = UUID()
     /// A Remove Download refusal to show in this window (FR02).
     @State private var cloudRefusal: LibraryCloudRefusal?
+    /// Whether this Library window has closed. SwiftUI keeps a closed window
+    /// and its views for the rest of the session, and every change to the
+    /// library would still rebuild this list nobody can see, so a closed
+    /// window shows a placeholder instead (PERF27). SwiftUI can show a closed
+    /// Library window again, for a book opened from Finder: the list comes
+    /// back as soon as the window is on screen or key.
+    @State private var isWindowClosed = false
 
     var body: some View {
+        Group {
+            if isWindowClosed {
+                ClosedLibraryWindowPlaceholder()
+            } else {
+                libraryContent
+            }
+        }
+        // Outside the list, so the window is followed while it is closed too.
+        .background(WindowAccessor(
+            onWindowFound: { window in
+                hostWindow = window
+            },
+            onWindowBecameKey: reopenAfterClosing,
+            onWindowWillClose: {
+                isWindowClosed = true
+            },
+            onWindowBecameVisible: reopenAfterClosing
+        ))
+    }
+
+    /// Shows the list again in a window SwiftUI brought back after it closed.
+    private func reopenAfterClosing() {
+        if isWindowClosed {
+            isWindowClosed = false
+        }
+    }
+
+    /// The window's library while the window is open: the list of the
+    /// location's folders and books, with its bars, toolbar, and sheets.
+    @ViewBuilder
+    private var libraryContent: some View {
+        let _ = ViewBodyCounter.record("LibraryView.list")
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
 
         VStack(spacing: 0) {
@@ -478,9 +517,6 @@ struct LibraryView: View {
                 )
             }
         }
-        .background(WindowAccessor(onWindowFound: { window in
-            hostWindow = window
-        }))
         .trackingRemovalPreferences($removalPreferences)
         // Keeps the books' cloud states refreshed while the window is
         // visible, and shows Remove Download's refusals (FR02).
@@ -1235,6 +1271,21 @@ struct LibraryView: View {
             .font(.callout)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding([.horizontal, .top])
+    }
+}
+
+// MARK: - Closed Window (PERF27)
+
+/// What a Library window shows once it has closed, in place of its list
+/// (PERF27). Nobody sees it unless SwiftUI shows the window again, and then
+/// only for the moment until the list returns; VoiceOver reads it as the
+/// window's name.
+private struct ClosedLibraryWindowPlaceholder: View {
+    var body: some View {
+        Text("Library")
+            .font(.title2)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
