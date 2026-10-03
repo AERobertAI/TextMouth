@@ -123,6 +123,167 @@ struct TextTransformation {
     var hasChanges: Bool { originalText != modifiedText }
 }
 
+/// The substitution rules in force at one moment, each compiled and ready
+/// to match: everything applying them reads, as values.
+///
+/// `TextSubstitutionService.substitutionPass` makes one from its rules, and
+/// its `transform(_:)` applies one. Being `Sendable`, a pass carries the
+/// rules off the main actor, where speech for a long chapter is prepared;
+/// being `Equatable`, it tells a prepared chapter whether the rules it was
+/// prepared with are still the ones in force (PERF02).
+struct SubstitutionPass: Equatable, Sendable {
+    /// How one rule finds its matches.
+    enum Matcher: Equatable, Sendable {
+        /// The pattern as literal text, found by `NSString`'s search.
+        case literal
+        /// A regular expression, with the template its matches are replaced
+        /// by: a regex rule's own pattern and replacement, or a whole-word
+        /// rule's literal pattern between word-boundary lookarounds and its
+        /// replacement escaped to be taken literally.
+        case expression(NSRegularExpression, template: String)
+        /// A pattern that did not compile, which matches nothing.
+        case nothing
+    }
+
+    /// One rule ready to match.
+    struct CompiledRule: Equatable, Sendable {
+        /// The rule as the user wrote it.
+        let rule: SubstitutionRule
+        /// How its matches are found.
+        let matcher: Matcher
+    }
+
+    /// One match of a rule: the UTF-16 range it covers in the text it was
+    /// found in, and the text to put there, with any group references of a
+    /// regular expression already filled in.
+    struct Replacement: Sendable {
+        let range: NSRange
+        let replacement: String
+    }
+
+    /// The rules, in the order they apply; empty while substitutions are off.
+    let rules: [CompiledRule]
+
+    /// No rules at all: what applies while substitutions are off.
+    static let none = SubstitutionPass(rules: [])
+
+    /// `text` with every rule applied in order, each to the text the rules
+    /// before it made, and the map between offsets in `text` and in the
+    /// result.
+    func transform(_ text: String) -> TextTransformation {
+        guard !rules.isEmpty else { return .identity(text) }
+
+        // Apply rules sequentially and compose their coordinate maps. Sorting
+        // all rules' breakpoints together mixes different intermediate texts.
+        var current = text
+        var stages: [OffsetMap] = []
+
+        for rule in rules {
+            guard let stage = Self.applying(replacements(of: rule, in: current), to: current) else { continue }
+            current = stage.text
+            stages.append(stage.offsetMap)
+        }
+
+        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
+    }
+
+    /// Every match of `rule` in `text`, in text order.
+    func replacements(of rule: CompiledRule, in text: String) -> [Replacement] {
+        switch rule.matcher {
+        case .literal:
+            return Self.literalReplacements(of: rule.rule, in: text)
+        case .expression(let regex, let template):
+            let fullRange = NSRange(location: 0, length: (text as NSString).length)
+            return regex.matches(in: text, range: fullRange).map { match in
+                Replacement(
+                    range: match.range,
+                    replacement: regex.replacementString(for: match, in: text, offset: 0, template: template)
+                )
+            }
+        case .nothing:
+            return []
+        }
+    }
+
+    /// Every match of a plain rule's literal pattern in `text`, each searched
+    /// for after the one before, ignoring letter case unless the rule is
+    /// case sensitive.
+    private static func literalReplacements(of rule: SubstitutionRule, in text: String) -> [Replacement] {
+        var results: [Replacement] = []
+        let nsText = text as NSString
+        let fullLength = nsText.length
+        let options: NSString.CompareOptions = rule.caseSensitive ? [] : [.caseInsensitive]
+        var remaining = NSRange(location: 0, length: fullLength)
+
+        while remaining.length > 0 {
+            let match = nsText.range(of: rule.pattern, options: options, range: remaining)
+            guard match.location != NSNotFound else { break }
+            results.append(Replacement(range: match, replacement: rule.replacement))
+            let nextLocation = NSMaxRange(match)
+            remaining = NSRange(location: nextLocation, length: fullLength - nextLocation)
+        }
+        return results
+    }
+
+    /// `text` with one rule's `replacements` made, and the map between
+    /// offsets in `text` and in the result; nil when none can be made.
+    ///
+    /// `replacements` are a rule's matches in `text`, in text order and not
+    /// overlapping, as the matchers find them. Their ranges count UTF-16 code
+    /// units, as `NSRegularExpression` and `NSString` report them. A range
+    /// that does not convert to indices of `text` is left out, from the text
+    /// and from the map alike, so an invalid Unicode range never shifts later
+    /// offsets; a matcher that broke its promise of order is treated the same
+    /// way rather than trapping.
+    ///
+    /// The result is built in one forward pass: the text between matches,
+    /// then each replacement, appended in turn, with every range converted
+    /// against `text`, which never changes, so finding where its UTF-16
+    /// offsets fall is paid for once. Making the replacements in place, back
+    /// to front, rescanned the changed text for every match on non-ASCII
+    /// text, so time grew with the chapter's length times its matches
+    /// (PERF01: 3.4 s for a chapter of a million UTF-16 units). Both make the
+    /// same replacements: that pass changed only text after the range it
+    /// converted next, and Foundation converts a range on Unicode scalar
+    /// boundaries, so each range met the same characters there as it does
+    /// here.
+    static func applying(
+        _ replacements: [Replacement],
+        to text: String
+    ) -> (text: String, offsetMap: OffsetMap)? {
+        var result = ""
+        // Most rules change little, so the result is about as long as `text`.
+        result.reserveCapacity(text.utf8.count)
+        var copiedUpTo = text.startIndex
+        // The map has a breakpoint after each replacement, in the result:
+        // there, a result offset plus the total change in length so far is
+        // the offset in `text`. `shift` is how far the result's offsets have
+        // moved from `text`'s by then.
+        var shift = 0
+        var totalDelta = 0
+        var points: [(targetPos: Int, cumulativeDelta: Int)] = []
+        points.reserveCapacity(replacements.count)
+
+        for replacement in replacements {
+            guard let bounds = Range(replacement.range, in: text),
+                  bounds.lowerBound >= copiedUpTo else { continue }
+            result += text[copiedUpTo..<bounds.lowerBound]
+            result += replacement.replacement
+            copiedUpTo = bounds.upperBound
+
+            let replacementLength = replacement.replacement.utf16Length
+            let lengthChange = replacement.range.length - replacementLength
+            totalDelta += lengthChange
+            points.append((targetPos: replacement.range.location + shift + replacementLength, cumulativeDelta: totalDelta))
+            shift -= lengthChange
+        }
+
+        guard !points.isEmpty else { return nil }
+        result += text[copiedUpTo...]
+        return (result, OffsetMap(points: points))
+    }
+}
+
 /// Manages text substitution rules and applies them to text before TTS.
 ///
 /// It also keeps the repeated-symbol settings (Text settings, Repeated
@@ -415,179 +576,58 @@ final class TextSubstitutionService: ObservableObject {
 
     /// Apply all enabled rules to the text, returning the modified text and an offset mapping.
     func transform(_ text: String) -> TextTransformation {
-        guard isEnabled else { return .identity(text) }
-
-        let enabledRules = rules.filter { $0.isEnabled && !$0.pattern.isEmpty }
-        guard !enabledRules.isEmpty else { return .identity(text) }
-
-        // Apply rules sequentially and compose their coordinate maps. Sorting
-        // all rules' breakpoints together mixes different intermediate texts.
-        var current = text
-        var stages: [OffsetMap] = []
-
-        for rule in enabledRules {
-            guard let stage = Self.applying(findReplacements(in: current, rule: rule), to: current) else { continue }
-            current = stage.text
-            stages.append(stage.offsetMap)
-        }
-
-        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
+        substitutionPass.transform(text)
     }
 
-    /// `text` with one rule's `replacements` made, and the map between
-    /// offsets in `text` and in the result; nil when none can be made.
-    ///
-    /// `replacements` are a rule's matches in `text`, in text order and not
-    /// overlapping, as the matchers find them. Their ranges count UTF-16 code
-    /// units, as `NSRegularExpression` and `NSString` report them. A range
-    /// that does not convert to indices of `text` is left out, from the text
-    /// and from the map alike, so an invalid Unicode range never shifts later
-    /// offsets; a matcher that broke its promise of order is treated the same
-    /// way rather than trapping.
-    ///
-    /// The result is built in one forward pass: the text between matches,
-    /// then each replacement, appended in turn, with every range converted
-    /// against `text`, which never changes, so finding where its UTF-16
-    /// offsets fall is paid for once. Making the replacements in place, back
-    /// to front, rescanned the changed text for every match on non-ASCII
-    /// text, so time grew with the chapter's length times its matches
-    /// (PERF01: 3.4 s for a chapter of a million UTF-16 units). Both make the
-    /// same replacements: that pass changed only text after the range it
-    /// converted next, and Foundation converts a range on Unicode scalar
-    /// boundaries, so each range met the same characters there as it does
-    /// here.
-    nonisolated static func applying(
-        _ replacements: [Replacement],
-        to text: String
-    ) -> (text: String, offsetMap: OffsetMap)? {
-        var result = ""
-        // Most rules change little, so the result is about as long as `text`.
-        result.reserveCapacity(text.utf8.count)
-        var copiedUpTo = text.startIndex
-        // The map has a breakpoint after each replacement, in the result:
-        // there, a result offset plus the total change in length so far is
-        // the offset in `text`. `shift` is how far the result's offsets have
-        // moved from `text`'s by then.
-        var shift = 0
-        var totalDelta = 0
-        var points: [(targetPos: Int, cumulativeDelta: Int)] = []
-        points.reserveCapacity(replacements.count)
-
-        for replacement in replacements {
-            guard let bounds = Range(replacement.range, in: text),
-                  bounds.lowerBound >= copiedUpTo else { continue }
-            result += text[copiedUpTo..<bounds.lowerBound]
-            result += replacement.replacement
-            copiedUpTo = bounds.upperBound
-
-            let replacementLength = replacement.replacement.utf16Length
-            let lengthChange = replacement.range.length - replacementLength
-            totalDelta += lengthChange
-            points.append((targetPos: replacement.range.location + shift + replacementLength, cumulativeDelta: totalDelta))
-            shift -= lengthChange
-        }
-
-        guard !points.isEmpty else { return nil }
-        result += text[copiedUpTo...]
-        return (result, OffsetMap(points: points))
+    /// The rules in force now, each compiled and ready to apply: nothing
+    /// while substitutions are off, and otherwise every enabled rule with a
+    /// pattern, in order. A value, so speech can be prepared with it off the
+    /// main actor, and so a prepared chapter can tell whether the rules it
+    /// was prepared with are still the ones in force (PERF02).
+    var substitutionPass: SubstitutionPass {
+        guard isEnabled else { return .none }
+        return SubstitutionPass(rules: rules.filter { $0.isEnabled && !$0.pattern.isEmpty }.map { compiled($0) })
     }
 
-    // MARK: - Pattern Matching
-
-    /// One match of a rule: the UTF-16 range it covers in the text it was
-    /// found in, and the text to put there, with any group references of a
-    /// regular expression already filled in.
-    struct Replacement {
-        let range: NSRange
-        let replacement: String
-    }
-
-    /// Every match of `rule` in `text`, in text order. Internal rather than
-    /// private so the oracle tests (SpeechPreparationSubstitutionTests) can
-    /// make the same matches the way substitutions were made before PERF01.
-    func findReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
+    /// `rule` ready to match: a regex rule with its own pattern, a whole-word
+    /// rule with its literal pattern between word-boundary lookarounds, and
+    /// any other rule as literal text. A pattern that does not compile
+    /// matches nothing.
+    private func compiled(_ rule: SubstitutionRule) -> SubstitutionPass.CompiledRule {
         if rule.isRegex {
-            return findRegexReplacements(in: text, rule: rule)
+            // Group references ($1, \1, and so on) in the replacement are
+            // filled in from each match.
+            let matcher = compiledRegex(for: rule).map { SubstitutionPass.Matcher.expression($0, template: rule.replacement) }
+            return SubstitutionPass.CompiledRule(rule: rule, matcher: matcher ?? .nothing)
         }
         if rule.isWholeWordEffective {
-            return findWholeWordReplacements(in: text, rule: rule)
+            // The replacement is taken literally, as for a plain rule: its
+            // regular-expression metacharacters are escaped first, or a `$`
+            // or `\` in a pronunciation would be read as a group reference
+            // and silently disappear.
+            let template = NSRegularExpression.escapedTemplate(for: rule.replacement)
+            let matcher = wholeWordRegex(for: rule).map { SubstitutionPass.Matcher.expression($0, template: template) }
+            return SubstitutionPass.CompiledRule(rule: rule, matcher: matcher ?? .nothing)
         }
-        return findPlainReplacements(in: text, rule: rule)
+        return SubstitutionPass.CompiledRule(rule: rule, matcher: .literal)
     }
 
-    private func findPlainReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
-        var results: [Replacement] = []
-        let nsText = text as NSString
-        let fullLength = nsText.length
-        let options: NSString.CompareOptions = rule.caseSensitive ? [] : [.caseInsensitive]
-        var remaining = NSRange(location: 0, length: fullLength)
-
-        while remaining.length > 0 {
-            let match = nsText.range(of: rule.pattern, options: options, range: remaining)
-            guard match.location != NSNotFound else { break }
-            results.append(Replacement(range: match, replacement: rule.replacement))
-            let nextLocation = NSMaxRange(match)
-            remaining = NSRange(location: nextLocation, length: fullLength - nextLocation)
-        }
-        return results
-    }
-
-    private func findRegexReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
-        guard let regex = compiledRegex(for: rule) else { return [] }
-        let nsText = text as NSString
-        let fullRange = NSRange(location: 0, length: nsText.length)
-        let matches = regex.matches(in: text, range: fullRange)
-
-        return matches.map { match in
-            // Expand group references (\1, \2, etc.) in the replacement template
-            let expanded = regex.replacementString(for: match, in: text, offset: 0, template: rule.replacement)
-            return Replacement(range: match.range, replacement: expanded)
-        }
-    }
-
-    /// Whole-word matching for plain (non-regex) rules. The user-supplied
-    /// pattern is treated as literal text and wrapped with Unicode-aware
-    /// lookarounds so the match is rejected when adjacent to a letter,
-    /// digit, combining mark, or underscore.
-    ///
-    /// `\p{L}` is any Unicode letter (covers accented characters, CJK,
-    /// etc.), `\p{N}` is any Unicode number, `\p{M}` is any combining
-    /// mark — included so a base letter followed by a separately-encoded
-    /// diacritic is treated as one word, not as a letter followed by
-    /// punctuation. Plain `\b` would NOT work here because patterns like
-    /// "|" are non-word characters, so a regex word boundary doesn't
-    /// apply to them. The lookarounds work for both word and non-word
-    /// patterns.
-    ///
-    /// Replacement is taken literally — no `$1`/`\1` group expansion,
-    /// matching the behaviour of the existing plain-text path.
-    private func findWholeWordReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
-        guard let regex = wholeWordRegex(for: rule) else { return [] }
-        let nsText = text as NSString
-        let fullRange = NSRange(location: 0, length: nsText.length)
-        let matches = regex.matches(in: text, range: fullRange)
-
-        // Use the literal replacement string. Escape any regex metacharacters
-        // in the user's replacement before handing it to NSRegularExpression's
-        // template-expansion engine, otherwise a `$` or `\` in a pronunciation
-        // replacement would be interpreted as a back-reference and either
-        // silently disappear or throw at runtime.
-        let escapedReplacement = NSRegularExpression.escapedTemplate(for: rule.replacement)
-        return matches.map { match in
-            let expanded = regex.replacementString(
-                for: match,
-                in: text,
-                offset: 0,
-                template: escapedReplacement
-            )
-            return Replacement(range: match.range, replacement: expanded)
-        }
-    }
+    // MARK: - Pattern Compilation
 
     /// Compile (and cache) the lookaround-wrapped regex for a whole-word
     /// rule. Builds the pattern from the rule's literal text via
     /// `escapedPattern(for:)` so regex metacharacters in the user's input
     /// are taken literally.
+    ///
+    /// The lookarounds reject a match next to a letter, digit, combining
+    /// mark, or underscore. `\p{L}` is any Unicode letter (covers accented
+    /// characters, CJK, etc.), `\p{N}` is any Unicode number, `\p{M}` is any
+    /// combining mark — included so a base letter followed by a
+    /// separately-encoded diacritic is treated as one word, not as a letter
+    /// followed by punctuation. Plain `\b` would NOT work here because
+    /// patterns like "|" are non-word characters, so a regex word boundary
+    /// doesn't apply to them. The lookarounds work for both word and
+    /// non-word patterns.
     private func wholeWordRegex(for rule: SubstitutionRule) -> NSRegularExpression? {
         if let cached = wholeWordRegexCache[rule.id] { return cached }
         let escaped = NSRegularExpression.escapedPattern(for: rule.pattern)
@@ -599,6 +639,8 @@ final class TextSubstitutionService: ObservableObject {
         return regex
     }
 
+    /// Compile (and cache) a regex rule's own pattern; nil when it does not
+    /// compile.
     private func compiledRegex(for rule: SubstitutionRule) -> NSRegularExpression? {
         if let cached = regexCache[rule.id] { return cached }
         var options: NSRegularExpression.Options = []

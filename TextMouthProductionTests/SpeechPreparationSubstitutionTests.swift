@@ -157,19 +157,20 @@ final class SpeechPreparationSubstitutionTests: XCTestCase {
     // MARK: - The old algorithm
 
     /// `TextSubstitutionService.transform(_:)` as it was before PERF01, line
-    /// for line, with each rule's matches found by `service` as they were
-    /// then: each rule's replacements were made in place, back to front.
+    /// for line: each rule's replacements were made in place, back to front.
+    /// Each rule's matches are found by the app's own matchers, which PERF01
+    /// left unchanged and PERF02 moved into `SubstitutionPass`.
     private func legacyTransform(_ text: String, by service: TextSubstitutionService) -> TextTransformation {
-        guard service.isEnabled else { return .identity(text) }
-
-        let enabledRules = service.rules.filter { $0.isEnabled && !$0.pattern.isEmpty }
-        guard !enabledRules.isEmpty else { return .identity(text) }
+        // The enabled rules with a pattern, in order, or none while
+        // substitutions are off.
+        let pass = service.substitutionPass
+        guard !pass.rules.isEmpty else { return .identity(text) }
 
         var current = text
         var stages: [OffsetMap] = []
 
-        for rule in enabledRules {
-            let replacements = service.findReplacements(in: current, rule: rule).filter {
+        for rule in pass.rules {
+            let replacements = pass.replacements(of: rule, in: current).filter {
                 Range($0.range, in: current) != nil
             }
             guard !replacements.isEmpty else { continue }
