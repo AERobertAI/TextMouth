@@ -22,6 +22,14 @@ import Foundation
 /// succeeds settles it (TODO S09), so a full disk or a vanished volume is
 /// never mistaken for saved data. A write skipped while index writes are
 /// suspended is not a failure: the recovery banner already says so.
+///
+/// Library index writes are skipped the same way while the library model
+/// has found the data directory unavailable (FR02, `DataDirectoryGate`):
+/// the Library Not Available screen says so, and Try Again reads the index
+/// afresh before writing it again. A write that fails because a custom data
+/// directory's folder is gone tells the library model, which checks the
+/// data directory and, finding it gone, stops saving. Package metadata
+/// writes are never held back: those that fail stay listed for a retry.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -69,9 +77,28 @@ enum LibraryPersistenceService {
     /// True while an unreadable index must be protected. Confined to saveQueue
     /// with the pending snapshot, so a suspension and a write never interleave.
     nonisolated(unsafe) private static var indexWritesSuspended = false
-    /// Whether a skipped write was logged during the current suspension, so
-    /// frequent position saves do not flood the debug log.
-    nonisolated(unsafe) private static var loggedSkippedIndexWrite = false
+    /// The holds a skipped write was logged for since each began, so
+    /// frequent position saves do not flood the debug log. Confined to
+    /// saveQueue.
+    nonisolated(unsafe) private static var loggedIndexWriteHolds: Set<IndexWriteHold> = []
+
+    /// Why library.json is not being written.
+    private enum IndexWriteHold {
+        /// The index on disk could not be read and is protected.
+        case unreadableIndex
+        /// The library model found the data directory unavailable (FR02).
+        case dataDirectoryUnavailable
+
+        /// The debug log's account of a write skipped for this hold.
+        var skippedWriteNote: String {
+            switch self {
+            case .unreadableIndex:
+                return "skipped writing the library index because it could not be read"
+            case .dataDirectoryUnavailable:
+                return "skipped writing the library index because the data directory isn't available"
+            }
+        }
+    }
     nonisolated(unsafe) private static var pendingBookInfos: [UUID: (book: Book, contentIndex: BookContentIndex?)] = [:]
     nonisolated(unsafe) private static var bookInfoGenerations: [UUID: UInt] = [:]
     /// The highest revision this process has written into each book's
@@ -122,10 +149,11 @@ enum LibraryPersistenceService {
     /// use saveBookInfo(for:in:) for that when a specific book changes.
     static func save(_ library: Library) {
         saveQueue.async {
-            // A snapshot taken while the index is protected is dropped, not
-            // kept for later: it must never be written, even after writes resume.
-            guard !indexWritesSuspended else {
-                noteSkippedIndexWrite()
+            // A snapshot taken while the index is protected, or while the
+            // data directory is unavailable, is dropped, not kept for later:
+            // it must never be written, even after writes resume.
+            if let hold = indexWriteHold() {
+                noteSkippedIndexWrite(hold)
                 return
             }
             pendingLibrary = library
@@ -142,12 +170,14 @@ enum LibraryPersistenceService {
 
     /// Persist the newest pending snapshot before application termination.
     /// The synchronous barrier also waits for any write already in progress.
-    /// While index writes are suspended only package metadata is flushed, so
-    /// quitting leaves an unreadable index exactly as it was.
+    /// While index writes are suspended, or the data directory is
+    /// unavailable, only package metadata is flushed, so quitting leaves an
+    /// unreadable index exactly as it was, and writes nothing where the
+    /// library isn't.
     static func flushPendingSave() {
         saveQueue.sync {
             saveGeneration &+= 1
-            guard !indexWritesSuspended else {
+            guard indexWriteHold() == nil else {
                 pendingLibrary = nil
                 return
             }
@@ -171,8 +201,8 @@ enum LibraryPersistenceService {
     /// A failure is reported with a retry of this snapshot, and the library
     /// then counts as unsaved until an index write succeeds.
     private static func write(_ library: Library) {
-        guard !indexWritesSuspended else {
-            noteSkippedIndexWrite()
+        if let hold = indexWriteHold() {
+            noteSkippedIndexWrite(hold)
             return
         }
         do {
@@ -182,6 +212,7 @@ enum LibraryPersistenceService {
             failureCenter.recordFailure(.libraryIndex, path: libraryFileURL.path, error: error) { failureID in
                 retryIndexWrite(library, failureID: failureID)
             }
+            reportIfDataDirectoryVanished()
         }
     }
 
@@ -202,8 +233,8 @@ enum LibraryPersistenceService {
     /// false while index writes are suspended.
     private static func writeIndexNow(_ library: Library) throws -> Bool {
         try saveQueue.sync { () throws -> Bool in
-            guard !indexWritesSuspended else {
-                noteSkippedIndexWrite()
+            if let hold = indexWriteHold() {
+                noteSkippedIndexWrite(hold)
                 return false
             }
             pendingLibrary = nil
@@ -233,6 +264,8 @@ enum LibraryPersistenceService {
         }
         try encodeAndWrite(library, to: libraryFileURL)
         failureCenter.recordSuccess(.libraryIndex)
+        // Writing again: a later hold is logged afresh.
+        loggedIndexWriteHolds.remove(.dataDirectoryUnavailable)
     }
 
     /// Runs `body` while no library index or package record write is under
@@ -444,7 +477,20 @@ enum LibraryPersistenceService {
             ) { failureID in
                 retryBookInfoWrite(book, contentIndex: contentIndex, failureID: failureID)
             }
+            reportIfDataDirectoryVanished()
         }
+    }
+
+    /// Tells the library model when a write failed because a custom data
+    /// directory's folder is gone, as when its drive was unplugged or its
+    /// cloud service signed out (FR02): the model checks the data directory
+    /// again and, finding it unavailable, stops saving and shows the Library
+    /// Not Available screen. A missing default location is not reported:
+    /// the next index write creates it again, as on a first launch.
+    private static func reportIfDataDirectoryVanished() {
+        let root = TextMouthPaths.root
+        guard !TextMouthPaths.isDefaultLocation(root), isMissing(root) else { return }
+        DataDirectoryEvents.reportMissingFolder(root)
     }
 
     /// Writes `book`'s record again for a retry of the failed write
@@ -705,7 +751,7 @@ enum LibraryPersistenceService {
     /// that just failed to load.
     private static func suspendIndexWrites(after failure: LibraryIndexReadFailure) {
         indexWritesSuspended = true
-        loggedSkippedIndexWrite = false
+        loggedIndexWriteHolds.remove(.unreadableIndex)
         pendingLibrary = nil
         saveGeneration &+= 1
         logIndexEvent(
@@ -763,12 +809,21 @@ enum LibraryPersistenceService {
         saveGeneration &+= 1
     }
 
-    /// Must run on saveQueue. Logs only the first skipped write of each
-    /// suspension; later ones would repeat it every few seconds of reading.
-    private static func noteSkippedIndexWrite() {
-        guard !loggedSkippedIndexWrite else { return }
-        loggedSkippedIndexWrite = true
-        logIndexEvent("skipped writing the library index because it could not be read")
+    /// Why library.json may not be written now: its unreadable index is
+    /// protected, or the library model found the data directory in use
+    /// unavailable (FR02). Nil when it may be written. Must run on saveQueue.
+    private static func indexWriteHold() -> IndexWriteHold? {
+        if indexWritesSuspended { return .unreadableIndex }
+        if TextMouthPaths.isDataDirectoryUnavailable { return .dataDirectoryUnavailable }
+        return nil
+    }
+
+    /// Must run on saveQueue. Logs only the first write skipped for `hold`
+    /// since it began; later ones would repeat it every few seconds of
+    /// reading.
+    private static func noteSkippedIndexWrite(_ hold: IndexWriteHold) {
+        guard loggedIndexWriteHolds.insert(hold).inserted else { return }
+        logIndexEvent(hold.skippedWriteNote)
     }
 
     /// Records a library index recovery event in the console and the debug log.

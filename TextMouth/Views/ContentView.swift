@@ -28,30 +28,42 @@ struct LibraryWindowView: View {
         // the router with this window's way of taking app-wide actions.
         let openReaderWindow = openWindow
         ZStack {
-            LibraryView(
-                currentFolderPath: $currentFolderPath,
-                category: $category,
-                showFileImporter: $showFileImporter,
-                showTextInput: $showTextInput,
-                onOpenBook: { book in
-                    openWindow(id: "book-reader", value: book.id)
-                }
-            )
-
-            // Import progress overlay, whose Cancel button stops ZIP imports
-            if libraryViewModel.isImporting {
-                Self.importProgressOverlay(for: libraryViewModel)
-            }
-
-            // Text extraction progress overlay (shown on startup or re-extraction)
-            if libraryViewModel.isExtracting {
-                ProgressOverlay(
-                    title: "Extracting Text",
-                    current: libraryViewModel.extractionProgressCurrent,
-                    total: libraryViewModel.extractionProgressTotal,
-                    message: libraryViewModel.extractionProgressMessage,
-                    itemNoun: "books extracted"
+            // While the data directory can't be used, the whole window says
+            // why, with Try Again and Quit, in place of the library (FR02).
+            if let unavailability = libraryViewModel.dataDirectoryUnavailability {
+                DataDirectoryUnavailableView(
+                    unavailability: unavailability,
+                    notice: libraryViewModel.dataDirectoryRefusalNotice,
+                    onAnnounce: { libraryViewModel.announceDataDirectoryUnavailability(from: hostWindow) },
+                    onTryAgain: { libraryViewModel.retryDataDirectory() },
+                    onQuit: { NSApplication.shared.terminate(nil) }
                 )
+            } else {
+                LibraryView(
+                    currentFolderPath: $currentFolderPath,
+                    category: $category,
+                    showFileImporter: $showFileImporter,
+                    showTextInput: $showTextInput,
+                    onOpenBook: { book in
+                        openWindow(id: "book-reader", value: book.id)
+                    }
+                )
+
+                // Import progress overlay, whose Cancel button stops ZIP imports
+                if libraryViewModel.isImporting {
+                    Self.importProgressOverlay(for: libraryViewModel)
+                }
+
+                // Text extraction progress overlay (shown on startup or re-extraction)
+                if libraryViewModel.isExtracting {
+                    ProgressOverlay(
+                        title: "Extracting Text",
+                        current: libraryViewModel.extractionProgressCurrent,
+                        total: libraryViewModel.extractionProgressTotal,
+                        message: libraryViewModel.extractionProgressMessage,
+                        itemNoun: "books extracted"
+                    )
+                }
             }
         }
         .background(WindowAccessor(onWindowFound: { window in
@@ -179,6 +191,11 @@ struct LibraryWindowView: View {
     /// sorts with, so the title agrees with the order and the Sort menu from
     /// the first frame (TODO A06).
     private var windowTitle: String {
+        // VoiceOver names the window by its title when moving between
+        // windows, so it says why the library isn't shown (FR02).
+        guard libraryViewModel.dataDirectoryUnavailability == nil else {
+            return DataDirectoryUnavailableText.title
+        }
         let location = LibraryLocation(category: category, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
     }
@@ -232,6 +249,14 @@ struct LibraryWindowView: View {
     /// reader, Settings, or another Library window may be key, and the panel
     /// must appear where the user and VoiceOver are.
     private func takeGlobalAction(_ action: GlobalAction, openingReadersWith openReaderWindow: OpenWindowAction) {
+        // Nothing is added to the library or opened from it while it can't
+        // be used (FR02): the window comes forward and says so instead.
+        if libraryViewModel.dataDirectoryUnavailability != nil,
+           let refusal = DataDirectoryUnavailableText.refusal(of: action) {
+            bringToFront()
+            libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
+            return
+        }
         switch action {
         case .openBookFile:
             bringToFront()

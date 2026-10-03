@@ -8,10 +8,6 @@ import Foundation
 /// process's sandbox under hosted tests.
 enum TextMouthPaths {
 
-    /// Preferences key for the custom data directory path. Every release has
-    /// used it, so a location chosen earlier keeps loading.
-    private static let customPathKey = "textMouthDataDirectory"
-
     /// Name of the data directory inside a home directory.
     static let dataDirectoryName = ".TextMouth"
 
@@ -32,11 +28,41 @@ enum TextMouthPaths {
     /// The data directory a process with `runtime` starts with: the custom
     /// location when one is in use (see `customRootPath(for:)`), otherwise
     /// the default location in the runtime's home.
+    ///
+    /// The storage generation's first root comes from here
+    /// (`StorageBoundary.shared`), so this is where a custom location that
+    /// moved is found again, before anything reads or writes the data
+    /// directory (FR02): when its path is missing but its bookmark leads to
+    /// a folder holding this library under another path, as after a rename
+    /// or a remount under another name, that folder is the data directory,
+    /// and the preferences name it from now on. Whether the library there
+    /// can be used is the library model's launch check.
     static func root(for runtime: TextMouthRuntime) -> URL {
-        if let customPath = customRootPath(for: runtime) {
-            return URL(fileURLWithPath: customPath)
+        guard let customPath = customRootPath(for: runtime) else {
+            return defaultRoot(in: runtime.homeDirectory)
         }
-        return defaultRoot(in: runtime.homeDirectory)
+        let named = URL(fileURLWithPath: customPath)
+        let check = DataDirectoryCheck.of(root: named, preferences: runtime.preferences, runtime: runtime)
+        guard let relocated = check.relocatedLibrary()?.folder else { return named }
+        let line = recordRelocation(from: named, to: relocated, in: runtime.preferences)
+        // Logged on a later turn of the main queue: a log line names paths
+        // relative to the data directory, and the storage generation that
+        // knows the data directory may be resolving its root right now.
+        DispatchQueue.main.async {
+            DiagnosticLog.event(.storage, line)
+        }
+        return relocated
+    }
+
+    /// Makes `newRoot`, where the bookmark found the data directory last
+    /// named `oldRoot`, the data directory the preferences name, with a
+    /// fresh bookmark of it (FR02). Returns the debug log line saying so,
+    /// for the caller to write when it safely can.
+    static func recordRelocation(from oldRoot: URL, to newRoot: URL, in preferences: UserDefaults) -> String {
+        DataDirectoryPreferences.customPath.write(newRoot.path, to: preferences)
+        DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: newRoot), to: preferences)
+        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark "
+            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now"
     }
 
     /// The active data directory of this process: the root of the current
@@ -48,16 +74,24 @@ enum TextMouthPaths {
     }
 
     /// Set a custom data directory path. Pass nil to reset to default.
+    ///
+    /// Beside the path it records a bookmark of the folder, which finds the
+    /// folder again after it is renamed or its drive mounts under another
+    /// name, and the identity of the library the folder holds, so a folder
+    /// that only has the right name is never taken for this library (FR02).
+    /// A custom location always exists before it is set: a move publishes
+    /// its copy first, and choosing a library points at an existing one. A
+    /// folder holding no identity yet leaves none expected; the library
+    /// model records it when the library opens.
     /// - Parameters:
     ///   - url: The new data directory, or nil for the default location.
     ///   - preferences: The store holding the setting: this process's
     ///     preferences unless a test passes its own.
     static func setCustomRoot(_ url: URL?, in preferences: UserDefaults = TextMouthRuntime.current.preferences) {
-        if let url = url {
-            preferences.set(url.path, forKey: customPathKey)
-        } else {
-            preferences.removeObject(forKey: customPathKey)
-        }
+        DataDirectoryPreferences.customPath.write(url?.path, to: preferences)
+        DataDirectoryPreferences.bookmark.write(url.flatMap(DataDirectoryPreferences.makeBookmark), to: preferences)
+        let identity = DataDirectoryPreferences.identity(in: url ?? defaultRoot)
+        DataDirectoryPreferences.expectedIdentity.write(identity?.id, to: preferences)
     }
 
     /// The currently configured path as a string (for display)
@@ -83,7 +117,7 @@ enum TextMouthPaths {
     /// takes the root elsewhere, until the test puts it back.
     private static func customRootPath(for runtime: TextMouthRuntime) -> String? {
         guard !runtime.isHostedTest,
-              let path = runtime.preferences.string(forKey: customPathKey),
+              let path = DataDirectoryPreferences.customPath.read(from: runtime.preferences),
               !path.isEmpty else {
             return nil
         }
@@ -92,12 +126,20 @@ enum TextMouthPaths {
 
     // MARK: - Subdirectories
 
+    /// The name of the folder of books inside the data directory.
+    static let libraryFolderName = "Library"
+
     static var libraryDir: URL {
-        root.appendingPathComponent("Library", isDirectory: true)
+        root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
+    /// The diagnostic logs' folder: this Mac's ~/Library/Logs/TextMouth
+    /// (`MachineLocalPaths.logs`), never the data directory (FR02), so
+    /// logging works while the data directory is missing and the logs
+    /// never sync to the cloud. Logs written into the data directory's own
+    /// Logs folder by earlier releases stay there.
     static var logsDir: URL {
-        root.appendingPathComponent("Logs", isDirectory: true)
+        MachineLocalPaths.logs
     }
 
     static var configFile: URL {
@@ -177,25 +219,105 @@ enum TextMouthPaths {
 
     // MARK: - Directory Setup
 
-    /// Create the full directory structure. Safe to call multiple times.
+    /// Creates the data directory's folders where that is safe; every writer
+    /// of the data directory's own files calls it first. Safe to call any
+    /// number of times.
+    ///
+    /// - The default location is created when missing, with its folders, as
+    ///   on a first launch, and the library created there is given its
+    ///   identity at once (`LibraryIdentity`).
+    /// - A custom location is never created, nor any folder above it (FR02).
+    ///   It always exists before it is set: a move publishes its folder
+    ///   first, and choosing a library points at an existing one. A missing
+    ///   one is an unplugged drive, a signed-out cloud service, or a folder
+    ///   that was removed, and creating it would make a new, empty library
+    ///   in its place. Only folders inside it are created.
+    /// - Nothing is created while the library model has found the data
+    ///   directory unavailable (`DataDirectoryGate`).
+    /// - Throws: `DataDirectoryUnavailableError` when the data directory
+    ///   can't be written into now, or the file system's error.
     static func ensureDirectoryStructure() throws {
-        let fm = FileManager.default
-        let dirs = [root, libraryDir, logsDir]
-        for dir in dirs {
-            if !fm.fileExists(atPath: dir.path) {
-                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-            }
-        }
+        let root = self.root
+        try ensureDirectoryStructure(at: root, isDefaultLocation: isDefaultLocation(root))
     }
 
-    /// Create a library subfolder on disk
+    /// `ensureDirectoryStructure()` for the data directory at `root`, which
+    /// is the default location when `isDefaultLocation`: separate so tests
+    /// can lay out folders of their own.
+    static func ensureDirectoryStructure(at root: URL, isDefaultLocation: Bool) throws {
+        let fileManager = FileManager.default
+        if isDefaultLocation {
+            guard !DataDirectoryGate.isClosed(root) else { throw DataDirectoryUnavailableError(root: root) }
+            if !fileManager.fileExists(atPath: root.path) {
+                try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+                // A new library: it is given its identity as it is created.
+                _ = try? LibraryIdentity.adopt(in: root)
+            }
+        } else {
+            try requireExistingDataDirectory(root)
+        }
+        // The data directory's own folder of books, directly inside it.
+        try createFolders([libraryFolderName], inside: root)
+    }
+
+    /// Creates the library subfolder `folderPath`, with any folder above it
+    /// inside the data directory, which must exist already (FR02): nothing
+    /// is created outside it, and nothing while the library model has found
+    /// it unavailable.
+    /// - Throws: `DataDirectoryUnavailableError` when the data directory is
+    ///   missing or unavailable, or the file system's error.
     static func ensureLibrarySubfolder(_ folderPath: String) throws {
         guard BookFolder.isValidLibraryPath(folderPath) else {
             throw CocoaError(.fileWriteInvalidFileName)
         }
         guard !folderPath.isEmpty else { return }
-        let dir = libraryDir.appendingPathComponent(folderPath, isDirectory: true)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let root = self.root
+        try requireExistingDataDirectory(root)
+        let components = folderPath.split(separator: "/").map(String.init)
+        try createFolders([libraryFolderName] + components, inside: root)
+    }
+
+    /// Creates the folders named by `components`, each inside the one
+    /// before, inside the existing folder `base`, one level at a time: a
+    /// `base` that vanishes meanwhile, as an unplugged drive does, makes
+    /// this fail instead of reappearing, with nothing created above it. A
+    /// folder already there, or made by another writer first, is kept; a
+    /// file with a folder's name fails with the file system's reason.
+    private static func createFolders(_ components: [String], inside base: URL) throws {
+        var folder = base
+        for component in components {
+            folder.appendPathComponent(component, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+            } catch CocoaError.fileWriteFileExists where isExistingFolder(folder) {
+                // Already there.
+            }
+        }
+    }
+
+    /// Whether a folder, or a link to one, is at `url`.
+    private static func isExistingFolder(_ url: URL) -> Bool {
+        var isFolder: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue
+    }
+
+    /// Whether the data directory at `root` is the default location.
+    static func isDefaultLocation(_ root: URL) -> Bool {
+        root.standardizedFileURL.path == defaultRoot.standardizedFileURL.path
+    }
+
+    /// Whether the data directory in use is one the library model found
+    /// unavailable, so nothing may be read from it or written into it (FR02).
+    static var isDataDirectoryUnavailable: Bool {
+        DataDirectoryGate.isClosed(root)
+    }
+
+    /// Throws unless the data directory at `root` is an existing folder whose
+    /// gate is open: the condition for creating anything inside it.
+    private static func requireExistingDataDirectory(_ root: URL) throws {
+        guard !DataDirectoryGate.isClosed(root), isExistingFolder(root) else {
+            throw DataDirectoryUnavailableError(root: root)
+        }
     }
 
     /// Renames a library folder's directory to another spelling of the same
@@ -407,7 +529,7 @@ enum TextMouthPaths {
     private static func appendNow(_ data: Data, to logFile: URL) {
         do {
             guard FileManager.default.fileExists(atPath: logFile.path) else {
-                try data.write(to: logFile)
+                try createLogFile(logFile, holding: data)
                 return
             }
             let handle = try FileHandle(forWritingTo: logFile)
@@ -423,6 +545,19 @@ enum TextMouthPaths {
         } catch {
             // Intentionally dropped: see above.
         }
+    }
+
+    /// Starts the log file at `logFile` with `data`. This Mac's logs folder
+    /// is made first when it is missing, as on the first launch after the
+    /// logs left the data directory (FR02); no other folder is ever made
+    /// for a log, so a line never brings back a data directory that is gone.
+    private static func createLogFile(_ logFile: URL, holding data: Data) throws {
+        let folder = logFile.deletingLastPathComponent()
+        if folder.standardizedFileURL.path == logsDir.standardizedFileURL.path,
+           !FileManager.default.fileExists(atPath: folder.path) {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        try data.write(to: logFile)
     }
 
     /// Keep the full log as its one `.previous` generation and let the caller

@@ -74,11 +74,44 @@ extension LibraryViewModel {
         case .missing:
             library = Library()
         case .unreadable(let failure):
-            library = Library()
-            indexRecovery = LibraryIndexRecovery(failure: failure)
-            showIndexRecoveryOptions = true
+            beginIndexRecovery(failure)
         }
         migrateOldBooksIfNeeded()
+    }
+
+    /// Reads library.json again once the data directory is back after it was
+    /// lost while TextMouth ran (FR02). The index on disk is authoritative,
+    /// as at a launch; the reading progress and moved packages of this
+    /// session are carried into it (`carryingRecoverySessionState`), and
+    /// then the repair, a save, and the maintenance that waited all run.
+    /// An index gone meanwhile leaves this session's library, saved as the
+    /// new index, as a fresh start would; one that can't be read enters
+    /// recovery, as at launch. When the index was already unreadable before
+    /// the loss, recovery's own Try Again reads it.
+    func reloadLibraryAfterDataDirectoryReturned() {
+        guard indexRecovery == nil else {
+            retryLibraryIndex()
+            return
+        }
+        switch LibraryPersistenceService.load() {
+        case .loaded(let loaded):
+            library = Self.carryingRecoverySessionState(from: library, into: loaded)
+            resumeStartupWork()
+        case .missing:
+            resumeStartupWork()
+        case .unreadable(let failure):
+            beginIndexRecovery(failure)
+            migrateOldBooksIfNeeded()
+        }
+    }
+
+    /// Enters recovery for an index that exists but can't be read: the
+    /// library shown starts empty, to be rebuilt from disk by the repair,
+    /// and the recovery options are presented.
+    private func beginIndexRecovery(_ failure: LibraryIndexReadFailure) {
+        library = Library()
+        indexRecovery = LibraryIndexRecovery(failure: failure)
+        showIndexRecoveryOptions = true
     }
 
     /// Builds the provisional library shown while the index cannot be read:
@@ -152,8 +185,13 @@ extension LibraryViewModel {
     /// Throws while the index cannot be read. Data-directory maintenance
     /// (Rebuild Directory, Reset to Default, Change Location) reconciles or
     /// copies the library index, so it would act on, or write out, the
-    /// provisional library; it waits until recovery ends.
+    /// provisional library; it waits until recovery ends. While the data
+    /// directory can't be used at all (FR02), there is no index to read and
+    /// nothing to copy or rebuild, so it says that instead.
     func ensureLibraryIndexIsReadable() throws {
+        if dataDirectoryUnavailability != nil {
+            throw DataDirectoryUnavailableError(root: TextMouthPaths.root)
+        }
         if indexRecovery != nil {
             throw LibraryIndexRecoveryError.indexUnreadable
         }

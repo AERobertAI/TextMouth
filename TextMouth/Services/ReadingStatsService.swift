@@ -26,6 +26,14 @@ final class ReadingStatsService: ObservableObject {
     /// The statistics file to use in place of the data directory's, for tests.
     private let customFileURL: URL?
 
+    /// Whether `stats` only stand in for reading_stats.json, left unread
+    /// because the library model found the data directory unavailable when
+    /// this service was made (FR02); the file is read once the library is
+    /// back, so the empty stand-ins are never saved over it.
+    private(set) var statsAwaitDataDirectory = false
+    /// Hears when the data directory is available again.
+    private var availabilitySubscription: AnyCancellable?
+
     /// reading_stats.json: the file this service was created for, or else the
     /// one in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.readingStatsFile }
@@ -105,10 +113,32 @@ final class ReadingStatsService: ObservableObject {
         customFileURL = fileURL
         self.checkpointInterval = checkpointInterval
         self.userCalendar = userCalendar
-        // `self.fileURL` is the resolved location, not the optional parameter.
-        stats = Self.load(from: self.fileURL)
+        if fileURL == nil {
+            // Nothing is read from a data directory the library model found
+            // unavailable (FR02): fresh statistics stand in until it is back.
+            statsAwaitDataDirectory = TextMouthPaths.isDataDirectoryUnavailable
+            availabilitySubscription = NotificationCenter.default
+                .publisher(for: .dataDirectoryDidBecomeAvailable)
+                .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
+        }
+        if !statsAwaitDataDirectory {
+            // `self.fileURL` is the resolved location, not the optional parameter.
+            stats = Self.load(from: self.fileURL)
+        }
         migrateDayKeysIfNeeded(at: Date())
         startCheckpointTimer()
+    }
+
+    /// Reads reading_stats.json once the data directory is back, when the
+    /// statistics in use only stood in for it (FR02). No book opens while
+    /// the library is unavailable, so nothing was credited to the stand-ins.
+    func dataDirectoryBecameAvailable() {
+        guard statsAwaitDataDirectory, !TextMouthPaths.isDataDirectoryUnavailable else { return }
+        statsAwaitDataDirectory = false
+        stats = Self.load(from: fileURL)
+        migrateDayKeysIfNeeded(at: Date())
+        PersistenceFailureCenter.shared.withdraw(.statistics)
+        DiagnosticLog.event(.statistics, "READING_STATS_FILE: read the statistics now that the library is available")
     }
 
     /// Rewrites the day keys of statistics saved before TODO C06, which

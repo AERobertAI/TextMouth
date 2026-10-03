@@ -146,15 +146,16 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertTrue(actions.rearm)
     }
 
-    func testExternalDataPathRequestsMigrationWithoutImmediatelySwitchingRoot() {
+    /// An outside edit naming an existing, empty folder still asks the
+    /// library to move there; one naming a location this Mac doesn't have is
+    /// ignored instead (FR02, `DataDirectoryVerificationTests`).
+    func testExternalDataPathRequestsMigrationWithoutImmediatelySwitchingRoot() throws {
         let notificationCenter = NotificationCenter()
         let viewModel = SettingsViewModel(
             notificationCenter: notificationCenter,
             initializeServices: false
         )
-        let requestedPath = FileManager.default.temporaryDirectory
-            .appendingPathComponent("TextMouth-External-Request-\(UUID().uuidString)")
-            .path
+        let requestedPath = try makeSandboxDirectory("TextMouth-External-Request").path
         var config = ConfigService.AppConfig()
         config.dataDirectoryPath = requestedPath
         let originalRoot = TextMouthPaths.root

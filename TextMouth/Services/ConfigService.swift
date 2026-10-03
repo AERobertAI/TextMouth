@@ -57,6 +57,21 @@ final class ConfigService: ObservableObject {
     /// in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.configFile }
 
+    /// Whether config.json can't be used now (FR02): this service follows
+    /// the data directory's file, and the library model found the data
+    /// directory unavailable. Nothing is read from it or written into it then.
+    private var isFileUnavailable: Bool {
+        customFileURL == nil && TextMouthPaths.isDataDirectoryUnavailable
+    }
+
+    /// Whether config.json was left unread or unsaved because the data
+    /// directory was unavailable, so it is reconciled once it is back
+    /// (`dataDirectoryBecameAvailable()`).
+    private var skippedFileWhileUnavailable = false
+
+    /// Hears when the data directory is available again.
+    private var availabilitySubscription: AnyCancellable?
+
     /// The file-system calls this service makes, replaceable so tests can
     /// count them.
     struct FileOperations {
@@ -433,12 +448,18 @@ final class ConfigService: ObservableObject {
             /// config.json.
             /// - `textMouthDataDirectory`: the data directory's location, the
             ///   store's copy of `dataDirectoryPath`.
+            /// - `textMouthDataDirectoryBookmark` and `textMouthLibraryIdentity`:
+            ///   a bookmark of that folder, and the identity of the library
+            ///   this Mac expects in it (`DataDirectoryPreferences`, FR02).
+            /// - `textMouthSessionMacID`: the ID naming this Mac's lease in a
+            ///   library other Macs can open (`LibrarySessionLease`, FR02).
             /// - `sleepTimer.lastUsedDuration`: the last sleep timer started,
             ///   which restarting the timer reuses: state, not a setting.
             /// - `NSQuitAlwaysKeepsWindows`: window restoration, which
             ///   TextMouth turns off at every launch. AppKit keeps this Mac's
             ///   window positions in the store too, and they stay there.
-            static let localStoreKeys = ["textMouthDataDirectory", "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
+            static let localStoreKeys = DataDirectoryPreferences.keys
+                + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
@@ -466,6 +487,11 @@ final class ConfigService: ObservableObject {
         self.fileOperations = fileOperations
         self.coalescingDelay = coalescingDelay
         loadFromDisk()
+        if fileURL == nil {
+            availabilitySubscription = NotificationCenter.default
+                .publisher(for: .dataDirectoryDidBecomeAvailable)
+                .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
+        }
     }
 
     /// Starts following config.json for edits made outside TextMouth. Launch
@@ -485,7 +511,28 @@ final class ConfigService: ObservableObject {
         pendingEvents = []
         rearmRetry?.cancel()
         rearmRetry = nil
+        availabilitySubscription = nil
         disarm()
+    }
+
+    /// Follows config.json again once the data directory is back (FR02).
+    /// When this service left the file unread or unsaved meanwhile, the file
+    /// is first reconciled as an edit found on disk: each setting changed
+    /// here meanwhile keeps its new value, every other one takes the file's,
+    /// and the result is published for the settings model to apply, then
+    /// saved. The settings in use when the file was first skipped stand for
+    /// what it last held. A watcher that lost the file while the library was
+    /// away attaches to it again, and checks it, so an edit saved elsewhere
+    /// meanwhile is applied too; one still attached is left as it is.
+    func dataDirectoryBecameAvailable() {
+        guard !isFileUnavailable else { return }
+        if skippedFileWhileUnavailable {
+            skippedFileWhileUnavailable = false
+            saveToDisk()
+        }
+        if watchedFile == nil {
+            rearmWatcher()
+        }
     }
 
     // MARK: - Persistence
@@ -500,6 +547,18 @@ final class ConfigService: ObservableObject {
     /// file writes nothing. The bytes become `lastHandledContents`, which is
     /// how the watcher recognizes the events of this save as TextMouth's own.
     func saveToDisk() {
+        // Nothing is written where the library isn't (FR02). The preferences
+        // hold every setting meanwhile, so this is no failure; the settings
+        // in use now stand for what the file last held, unless an agreement
+        // with the file already says, and the file is reconciled when the
+        // data directory is back.
+        guard !isFileUnavailable else {
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
+            skippedFileWhileUnavailable = true
+            return
+        }
         let onDisk = readFileContents()
         if let onDisk, onDisk != lastHandledContents {
             mergeUnhandledEdit(onDisk)
@@ -568,6 +627,14 @@ final class ConfigService: ObservableObject {
     /// only defaults, skipped applying the file, and saved the preferences
     /// over it before the file's own values arrived.
     private func loadFromDisk() {
+        // Nothing is read from a data directory the library model found
+        // unavailable, which may hold another library's settings (FR02): the
+        // file is reconciled once the library is back.
+        guard !isFileUnavailable else {
+            loadedFile = .missing
+            skippedFileWhileUnavailable = true
+            return
+        }
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             loadedFile = .missing
             return
@@ -742,6 +809,9 @@ final class ConfigService: ObservableObject {
     /// has neither written nor seen. The watcher calls this once a burst of
     /// events settles; tests call it directly.
     func handleFileEvent(_ event: DispatchSource.FileSystemEvent) {
+        // A file in a data directory found unavailable is not this library's
+        // settings to apply (FR02); it is reconciled when the library is back.
+        guard !isFileUnavailable else { return }
         let contents = readFileContents()
         let actions = Self.watcherActions(
             for: event,
@@ -796,6 +866,12 @@ final class ConfigService: ObservableObject {
     /// next save.
     private func rearmWatcher() {
         guard isWatching else { return }
+        // Nothing in a data directory found unavailable is watched (FR02);
+        // reconciling the file when the library is back rearms the watcher.
+        guard !isFileUnavailable else {
+            disarm()
+            return
+        }
         if armWatcher() {
             rearmRetry?.cancel()
             rearmRetry = nil
@@ -832,6 +908,7 @@ final class ConfigService: ObservableObject {
     /// is what keeps the moment between two watched files covered.
     @discardableResult
     private func armWatcher() -> Bool {
+        guard !isFileUnavailable else { return false }
         // Identify the file before opening it. A replacement in between makes
         // the next rearm see a different file and open it again: one open too
         // many at worst, never an edit missed.
