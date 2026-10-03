@@ -25,7 +25,7 @@ README.md covers building, testing, the files in the data directory, and keeping
   - Services: everything that owns a file, a queue, or a system resource.
   - ViewModels: LibraryViewModel and ReaderViewModel, each split into extensions by topic, plus SettingsViewModel, BookSearchModel, and LibraryBookUpdates.
   - Views: the SwiftUI views of the library, the reader, and settings, plus VoiceOverFocus.swift, which places VoiceOver's focus in new windows and sheets.
-- Concurrency: the view models, the window router, the settings mirror, the sleep timer, the statistics, and the books' cloud states run on the main actor. Disk work runs on queues that each own their work: serial queues for the library index and for package records (LibraryPersistenceService), for imports (SerialImportQueue), and for logs (TextMouthPaths), and at most two workers for cache updates (TextCacheUpdateQueue). Each import, text extraction, and book analysis on those queues runs through StorageBoundary.perform, which a data-directory move holds back and waits for, so none runs across the move's publication; the move then copies the data directory off the main actor, while every Library window's sheet keeps the library from changing. Work that can wait on a drive or the network never runs on the main thread. The list's cloud refreshes and commands call the cloud services from detached tasks, and work that holds its thread for as long as it takes runs on a global dispatch queue (ReaderViewModel.offMain, OffMainWork) rather than on one of Swift's cooperative threads: the reader's requests to the book storage and its reads of a book, the check of a folder chosen for the library, and a move's copy. A read that must never download runs inside DatalessFiles.withoutDownloading, which leaves dataless files in the cloud for its own thread only. The app target builds in the Swift 5 language mode with minimal concurrency checking; the coding agents' test runs turn on complete checking.
+- Concurrency: the view models, the window router, the settings mirror, the sleep timer, the statistics, and the books' cloud states run on the main actor. Disk work runs on queues that each own their work: serial queues for the library index and for package records (LibraryPersistenceService), for imports (SerialImportQueue), and for logs (TextMouthPaths), and at most two workers for cache updates (TextCacheUpdateQueue). Each import, text extraction, and book analysis on those queues runs through StorageBoundary.perform, which a data-directory move holds back and waits for, so none runs across the move's publication; the move then copies the data directory off the main actor, while every Library window's sheet keeps the library from changing. Work that can wait on a drive or the network never runs on the main thread. The list's cloud refreshes and commands call the cloud services from detached tasks, and work that holds its thread for as long as it takes runs on a global dispatch queue (ReaderViewModel.offMain, OffMainWork) rather than on one of Swift's cooperative threads: the reader's requests to the book storage and its reads of a book, the check of a folder chosen for the library, and a move's copy. A read that must never download runs inside DatalessFiles.withoutDownloading, which leaves dataless files in the cloud for its own thread only. Every target builds in the Swift 5 language mode with complete concurrency checking, set once in project.yml, and `make check` fails on any Swift warning; UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (25 and 13).
 
 ## Launch
 
@@ -148,6 +148,8 @@ CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, at th
   - How others observe it: a pass that skipped any book writes one MAINTENANCE_SKIPPED_IN_CLOUD line, and Redo Text Extraction also says how many in Storage settings' status line (textReextractionOutcome(skippedInCloud:)). A skipped book is caught up the next time its files are on this Mac, and a reader that downloads a book rebuilds its outdated cache as it loads.
   - Files: Services/MaintenanceFileAccess.swift, ViewModels/LibraryViewModel+Migration.swift, Services/FileImportService.swift, Services/TextCacheUpdateQueue.swift, Services/BookContentAnalysisService.swift, Models/TextCacheFingerprint.swift.
 
+- Progress within a file: a download listens through PublishedFileProgress (Services/PublishedFileProgress.swift, Progress.addSubscriber) to each file still to come and folds the parts a sync service publishes into BookDownloadProgress (completedBytes by size, partialFiles by files), in whole percent per file, never going back, forgotten once the file is here; a growing part keeps a stall away.
+
 ### Preferences
 
 - The preferences store.
@@ -211,6 +213,8 @@ CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, at th
   - Who may write it: a reader whose book ends with Continue to Next Book finds the next book with LibraryViewModel.nextBookInFolder(after:), which follows the folder's manual order as the list shows it (ManualBookOrder.orderedBooks), announces it, leaves a request for it, and posts continueToNextBook. LibraryWindowRouter then opens that book's reader, or brings it forward.
   - How others observe it: the next book's reader claims the request when it finishes loading, or at once when it was already open and loaded, and starts playing. A reader that cannot load its book discards the request.
   - Files: Services/ReaderAutoplayRequests.swift, ViewModels/ReaderViewModel+Playback.swift, ViewModels/LibraryViewModel+SortAndOrder.swift, Services/LibraryWindowRouter.swift.
+
+- Download progress: a published part of the one file left gives the reader's download bar its percentage and its 25, 50, and 75 percent milestones.
 
 ### Media playback
 
@@ -282,6 +286,8 @@ CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, at th
   - How others observe it: each Library window's ImportDecisionPresenter watches the queue, and exactly one window asks the question at its front (ImportDecisionQueue.askingWindow): the window its import started in while that is open, or else the first open Library window, the question waiting while none is open. That window shows ImportDecisionSheet, whose words, the screen's and VoiceOver's alike, come from ImportDecisionWording, with a title that gives the question's place when there is more than one, as in "Duplicate Book Found, 2 of 5". The choice that removes nothing comes first; Return and Escape press the marked choices, and Replace Existing and deleting an original file are never on a key. A question that appears while the user is in another window waits without taking focus or being announced. A book whose import asked to open it, as one opened from Finder does, opens through LibraryViewModel.readerOpener once it is in the library and its questions are answered.
   - Files: Models/ImportDecision.swift, Models/ImportDecisionQueue.swift, ViewModels/LibraryViewModel+Duplicates.swift, ViewModels/LibraryViewModel+Import.swift, Views/Library/ImportDecisionPresenter.swift, Views/Library/ImportDecisionSheet.swift, Views/ContentView.swift.
 
+- During a move: answerImportDecision refuses every answer while dataDirectoryMove is set (DataDirectoryMoveWording.importAnswerRefusal, shown in the sheet and spoken); the question stays until the move ends, since a window asking one when a move begins keeps that sheet instead of the move's.
+
 ### Logs
 
 - The diagnostic logs.
@@ -295,6 +301,8 @@ CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, at th
     - Package records: BOOK_RECORD_IN_CLOUD, once for each book whose saves go to library.json alone while its record is only in the cloud.
     - The data directory: DATA_DIRECTORY_FOUND, DATA_DIRECTORY_AVAILABLE, DATA_DIRECTORY_UNAVAILABLE, DATA_DIRECTORY_UNMOUNTED, DATA_DIRECTORY_LOST, DATA_DIRECTORY_MOVE, DATA_DIRECTORY_SWITCH, LIBRARY_IDENTITY, LIBRARY_SESSION, SUBSTITUTIONS_FILE, and READING_STATS_FILE.
   - Files: Services/DiagnosticLog.swift, Services/TextMouthPaths.swift, Models/CloudStorageContract.swift, TextMouthProductionTests/LogContentPolicyTests.swift.
+
+- Source scans: LogContentPolicyTests and UncheckedConcurrencyPolicyTests read the app's sources through AppSourceFile (TextMouthProductionTests/SourceScanTestSupport.swift).
 
 ### The hosted-test sandbox
 
