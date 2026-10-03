@@ -1124,13 +1124,15 @@ extension ReaderViewModel {
         return speech
     }
 
-    /// Prepare the speech of the chapter the cursor is in off the main actor
-    /// once a text book has loaded, so that Play finds it kept instead of
-    /// preparing it on the main thread, where the developer's rules take
+    /// Prepare the speech of the chapter Play will start in off the main
+    /// actor once a text book has loaded, so that Play finds it kept instead
+    /// of preparing it on the main thread, where the developer's rules take
     /// 155 ms for a chapter of 744,000 UTF-16 units and 4 s for a book of
-    /// one 20 MB chapter in the Release app. Nothing is prepared for an
-    /// audiobook, by a closed reader, or when the speech is already kept or
-    /// being prepared.
+    /// one 20 MB chapter in the Release app. That chapter is the cursor's,
+    /// or, when the cursor's chapter holds no words at all, as a cover page
+    /// does, the next chapter that does, which Play passes on to. Nothing is
+    /// prepared for an audiobook, by a closed reader, or when the speech is
+    /// already kept or being prepared.
     ///
     /// The speech is kept only while the chapter is still prepared from the
     /// same inputs when it is ready (`finishPreparingInBackground(_:)`): a
@@ -1139,8 +1141,12 @@ extension ReaderViewModel {
     /// chapter from the settings in force, as it always did. So does Play
     /// pressed before the preparation ends.
     func prepareOpenedChapterSpeech() {
-        guard !hasClosed, !isAudioBook,
-              let inputs = speechInputs(forChapterAt: currentChapterIndex),
+        guard !hasClosed, !isAudioBook, let content else { return }
+        let chapters = content.chapters
+        let chapterIndex = Self.nextSpeakableChapterIndex(from: currentChapterIndex, chapterCount: chapters.count) {
+            Self.hasSpeakableText(chapters[$0].text)
+        } ?? currentChapterIndex
+        guard let inputs = speechInputs(forChapterAt: chapterIndex),
               !chapterSpeechCache.isKeptOrPreparing(inputs) else { return }
         prepareInBackground(inputs, forLookAhead: false)
     }

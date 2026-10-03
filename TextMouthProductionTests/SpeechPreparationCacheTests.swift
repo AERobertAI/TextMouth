@@ -323,6 +323,32 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
+    /// A book that opens at a chapter without words, as an EPUB opens at its
+    /// cover page, has the speech of the next chapter with words prepared
+    /// instead, since Play passes on to it: at Play only the empty chapter,
+    /// which takes no time, is prepared.
+    func testABookOpeningAtACoverPageHasItsFirstWordsPrepared() throws {
+        var prose = BenchmarkProse(seed: 53)
+        let cover = Chapter(title: "Cover", text: "")
+        let long = Chapter(title: "Long", text: prose.text(utf16Length: SpeechRenderCoordinator.maximumTextLength + 20_000))
+        try withReader(chapters: [cover, long, Self.chapters[2]]) { reader, _ in
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+
+            try showLoaded(reader, atChapter: 0)
+
+            XCTAssertTrue(reader.chapterSpeechCache.isPreparingInBackground(inputs), "the chapter after the cover")
+            XCTAssertTrue(
+                waitUntil(timeout: Self.backgroundPreparationTimeout) { !reader.chapterSpeechCache.isPreparingInBackground(inputs) },
+                "the speech never arrived"
+            )
+            let start = try XCTUnwrap(reader.speechStartFromCursor())
+
+            XCTAssertEqual(start.speech.chapterIndex, 1)
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "only the empty cover was prepared at Play")
+            assertSameSpeech(start.speech, try legacyPreparedSpeech(reader, chapterIndex: 1))
+        }
+    }
+
     /// Nothing is prepared again for a chapter whose speech is already kept,
     /// and a closed reader prepares nothing.
     func testTheOpenedChapterIsNotPreparedTwice() throws {
