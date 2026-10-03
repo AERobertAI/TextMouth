@@ -67,6 +67,7 @@ fastlane/test_output
 
 # Claude Code
 .claude/
+.claude/agent-bbs/
 !CLAUDE.md
 
 # Comparison analysis (not part of the app)
