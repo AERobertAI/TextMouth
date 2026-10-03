@@ -133,13 +133,19 @@ struct BenchmarkProse: RandomNumberGenerator {
 
 // MARK: - Measuring
 
+/// Whether the large benchmarks were asked for: `TEXTMOUTH_LARGE_BENCHMARKS`
+/// is set in the test runner's environment (pass
+/// `TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS=1` to xcodebuild). They time
+/// the old algorithms at sizes too slow to run with every suite.
+var largeBenchmarksRequested: Bool {
+    ProcessInfo.processInfo.environment["TEXTMOUTH_LARGE_BENCHMARKS"] != nil
+}
+
 /// The chapter lengths a benchmark times, in UTF-16 units: `standard`, which
-/// keeps the suite quick, plus `large` when `TEXTMOUTH_LARGE_BENCHMARKS` is
-/// set in the test runner's environment (pass
-/// `TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS=1` to xcodebuild).
+/// keeps the suite quick, plus `large` when the large benchmarks were asked
+/// for.
 func benchmarkSizes(_ standard: [Int], large: [Int]) -> [Int] {
-    let wantsLarge = ProcessInfo.processInfo.environment["TEXTMOUTH_LARGE_BENCHMARKS"] != nil
-    return wantsLarge ? standard + large : standard
+    largeBenchmarksRequested ? standard + large : standard
 }
 
 /// `text` copied into new storage.

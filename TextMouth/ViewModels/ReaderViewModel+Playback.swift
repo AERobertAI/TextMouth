@@ -1792,85 +1792,140 @@ extension ReaderViewModel {
     /// otherwise give blank lines, such as those left in front of a skipped
     /// section, a speakable "." and stop a silent chapter from being passed
     /// over.
-    static func applyPunctuationPauses(
+    ///
+    /// The text is read one character at a time from the start. At each
+    /// character the level's pauses are tried in order, and the first whose
+    /// pattern the characters there spell exactly is replaced; otherwise the
+    /// character is kept. The text between pauses is copied in pieces, and a
+    /// UTF-16 offset is measured only where a pause is added, so the work
+    /// grows with the text's length. Locating every character by its UTF-16
+    /// offset, and measuring the growing result after every pause, made the
+    /// work grow with the square of its length on non-ASCII text (PERF05:
+    /// 1.9 to 3.1 s for 500K characters).
+    ///
+    /// Pure, so speech can be prepared off the main actor.
+    nonisolated static func applyPunctuationPauses(
         _ text: String,
         level: Double
     ) -> (text: String, offsetMap: OffsetMap) {
         guard level > 0, hasSpeakableText(text) else { return (text, .identity) }
-
-        // Build the set of (pattern, replacement) pairs.
-        // Each replacement is the full string that replaces the pattern.
-        // The extra characters (replacement.count - pattern.count) create the pause.
-        var replacements: [(pattern: String, replacement: String)] = []
-
-        // Level 1+: Extra pause after sentence-ending punctuation
-        // ". " → ".. " (period repeated for TTS pause), same for ! and ?
-        if level >= 1 {
-            replacements.append((pattern: ". ", replacement: ".. "))
-            replacements.append((pattern: "! ", replacement: "!. "))
-            replacements.append((pattern: "? ", replacement: "?. "))
+        let pauses = PunctuationPause.pauses(atLevel: level)
+        // Every pattern begins with one of a few ASCII bytes, so a character
+        // beginning with any other byte is passed over at once.
+        var beginsAPause = [Bool](repeating: false, count: 128)
+        for pause in pauses {
+            beginsAPause[Int(pause.pattern[0])] = true
         }
 
-        // Level 2+: Extra pause after commas
-        // ", " → ",, " (comma repeated for TTS pause)
-        if level >= 2 {
-            replacements.append((pattern: ", ", replacement: ",, "))
-        }
-
-        // Level 3: Extra pause at paragraph breaks
-        // "\n\n" → "\n\n.\n\n" (extra sentence break at paragraph boundary)
-        if level >= 3 {
-            replacements.append((pattern: "\n\n", replacement: "\n\n.\n\n"))
-        }
-
-        // Scan through text, matching patterns and tracking insertions.
-        // At each position, check if any pattern matches. If so, emit the
-        // full replacement and record the offset delta for the extra characters.
-        var result = ""
-        result.reserveCapacity(text.count + text.count / 10) // estimate ~10% growth
-        var sourcePos = 0
-        var cumulativeDelta = 0
+        let utf8 = text.utf8
+        var paused = ""
+        paused.reserveCapacity(text.utf8.count + text.utf8.count / 10)
         var points: [(targetPos: Int, cumulativeDelta: Int)] = []
+        // The text before `copiedUpTo` is in `paused` already, pauses and
+        // all; `copiedLength` is its length in `text`, in UTF-16 units, and
+        // `addedLength` how much longer the pauses made it.
+        var copiedUpTo = text.startIndex
+        var copiedLength = 0
+        var addedLength = 0
+        var index = text.startIndex
 
-        while sourcePos < text.utf16Length {
-            var matched = false
-
-            for (pattern, replacement) in replacements {
-                // Check if pattern matches at current source position
-                let patternLen = pattern.utf16Length
-                if sourcePos + patternLen > text.utf16Length { continue }
-
-                let startIdx = text.index(atUTF16Offset: sourcePos)
-                let endIdx = text.index(atUTF16Offset: sourcePos + patternLen)
-                if text[startIdx..<endIdx] == pattern {
-                    // Emit the full replacement string
-                    result += replacement
-
-                    // Record the offset delta at the target position after the replacement.
-                    // The delta is negative because the target text is longer (extra chars inserted).
-                    let extraChars = replacement.utf16Length - patternLen
-                    cumulativeDelta -= extraChars
-                    let targetPosAfter = result.utf16Length
-                    points.append((targetPos: targetPosAfter, cumulativeDelta: cumulativeDelta))
-
-                    sourcePos += patternLen
-                    matched = true
-                    break
-                }
+        while index < text.endIndex {
+            let byte = utf8[index]
+            guard byte < 0x80, beginsAPause[Int(byte)],
+                  let (pause, patternEnd) = firstPause(of: pauses, in: text, at: index) else {
+                index = text.index(after: index)
+                continue
             }
-
-            if !matched {
-                // No pattern matched — copy one character as-is
-                let idx = text.index(atUTF16Offset: sourcePos)
-                let character = text[idx]
-                result.append(character)
-                sourcePos += String(character).utf16Length
-            }
+            paused += text[copiedUpTo..<index]
+            paused += pause.replacement
+            copiedLength += text.utf16.distance(from: copiedUpTo, to: patternEnd)
+            addedLength += pause.addedLength
+            // From here on, an offset in the paused text less the length
+            // the pauses added is the offset in `text`.
+            points.append((targetPos: copiedLength + addedLength, cumulativeDelta: -addedLength))
+            copiedUpTo = patternEnd
+            index = patternEnd
         }
 
-        if points.isEmpty {
-            return (text, .identity)
+        guard !points.isEmpty else { return (text, .identity) }
+        paused += text[copiedUpTo...]
+        return (paused, OffsetMap(points: points))
+    }
+
+    /// The first of `pauses` whose pattern the characters at `index` in
+    /// `text` spell exactly, and where its pattern ends; nil when none does.
+    private nonisolated static func firstPause(
+        of pauses: [PunctuationPause],
+        in text: String,
+        at index: String.Index
+    ) -> (pause: PunctuationPause, patternEnd: String.Index)? {
+        for pause in pauses {
+            if let patternEnd = pause.patternEnd(in: text, at: index) {
+                return (pause, patternEnd)
+            }
         }
-        return (result, OffsetMap(points: points))
+        return nil
+    }
+
+    /// One pause mark the punctuation pauses add: a pattern of punctuation
+    /// and spacing, and the text that replaces it, which repeats a mark so
+    /// the voice pauses longer there.
+    struct PunctuationPause {
+        /// The characters replaced, each a single ASCII character, as bytes.
+        let pattern: [UInt8]
+        /// The text put in their place.
+        let replacement: String
+        /// How many UTF-16 units longer the replacement is than the pattern.
+        let addedLength: Int
+
+        /// A pause that replaces `pattern`, ASCII characters only, with
+        /// `replacement`.
+        init(replacing pattern: String, with replacement: String) {
+            self.pattern = Array(pattern.utf8)
+            self.replacement = replacement
+            addedLength = replacement.utf16.count - pattern.utf16.count
+        }
+
+        /// The pauses `level` adds, in the order they are tried at each
+        /// character. Level 1 and up repeats the mark after a sentence's
+        /// end (". " becomes ".. ", and "!" and "?" are followed by a
+        /// period), level 2 and up after a comma, and level 3 adds a
+        /// sentence of its own at each paragraph break.
+        static func pauses(atLevel level: Double) -> [PunctuationPause] {
+            var pauses: [PunctuationPause] = []
+            if level >= 1 {
+                pauses.append(PunctuationPause(replacing: ". ", with: ".. "))
+                pauses.append(PunctuationPause(replacing: "! ", with: "!. "))
+                pauses.append(PunctuationPause(replacing: "? ", with: "?. "))
+            }
+            if level >= 2 {
+                pauses.append(PunctuationPause(replacing: ", ", with: ",, "))
+            }
+            if level >= 3 {
+                pauses.append(PunctuationPause(replacing: "\n\n", with: "\n\n.\n\n"))
+            }
+            return pauses
+        }
+
+        /// Where this pause's pattern ends in `text` when the characters
+        /// beginning at `index`, a character boundary, spell it exactly; nil
+        /// otherwise.
+        ///
+        /// Each byte of the pattern must be a whole character, as the
+        /// pattern's characters compare with the text's: a period, space, or
+        /// line break that a combining mark follows is another character,
+        /// and gets no pause.
+        func patternEnd(in text: String, at index: String.Index) -> String.Index? {
+            let utf8 = text.utf8
+            var position = index
+            for byte in pattern {
+                guard position < text.endIndex, utf8[position] == byte else { return nil }
+                let next = text.index(after: position)
+                // The character here is this one byte and nothing more.
+                guard utf8.distance(from: position, to: next) == 1 else { return nil }
+                position = next
+            }
+            return position
+        }
     }
 }

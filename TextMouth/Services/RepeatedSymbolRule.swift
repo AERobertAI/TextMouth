@@ -201,62 +201,89 @@ struct RepeatedSymbolRule: Equatable, Sendable {
     /// Every run in `text` of a symbol in `symbols` that has at least
     /// `minimumCount` symbols, in text order. A shorter run is passed over
     /// whole, so none of its symbols starts another run.
+    ///
+    /// The text is read one character at a time. A character whose first
+    /// scalar is an ASCII byte that begins no symbol, as nearly every
+    /// character of a book's text is, is passed over without being compared
+    /// with the symbols (`asciiBytesBeginningSymbols(_:)`), and UTF-16
+    /// offsets are measured only for the runs kept. Comparing every
+    /// character with the set cost 341 ms for a chapter of 5.2 million
+    /// UTF-16 units on every preparation (PERF05).
     static func runs(in text: String, of symbols: Set<Character>, minimumCount: Int) -> [Run] {
+        let beginsASymbol = asciiBytesBeginningSymbols(symbols)
+        let utf8 = text.utf8
         var runs: [Run] = []
+        // The text before `measured` is `measuredLength` UTF-16 units long.
+        var measured = text.startIndex
+        var measuredLength = 0
         var index = text.startIndex
-        var offset = 0
         while index < text.endIndex {
+            let firstByte = utf8[index]
+            if firstByte < 0x80, !beginsASymbol[Int(firstByte)] {
+                index = text.index(after: index)
+                continue
+            }
             let symbol = text[index]
             let symbolEnd = text.index(after: index)
-            let symbolLength = symbol.utf16.count
             guard symbols.contains(symbol) else {
                 index = symbolEnd
-                offset += symbolLength
                 continue
             }
             // Extend the run over each further copy of the symbol, written
             // straight after the last one or after a single space.
             var count = 1
             var runEnd = symbolEnd
-            var runEndOffset = offset + symbolLength
-            while let copy = nextCopy(of: symbol, in: text, at: runEnd) {
+            while let copyEnd = nextCopy(of: symbol, in: text, at: runEnd) {
                 count += 1
-                runEnd = copy.end
-                runEndOffset += copy.utf16Length
+                runEnd = copyEnd
             }
             if count >= max(minimumCount, 2) {
-                runs.append(Run(
-                    symbol: symbol,
-                    count: count,
-                    range: index..<runEnd,
-                    utf16Range: offset..<runEndOffset
-                ))
+                let start = measuredLength + text.utf16.distance(from: measured, to: index)
+                let end = start + text.utf16.distance(from: index, to: runEnd)
+                runs.append(Run(symbol: symbol, count: count, range: index..<runEnd, utf16Range: start..<end))
+                measured = runEnd
+                measuredLength = end
             }
             index = runEnd
-            offset = runEndOffset
         }
         return runs
     }
 
+    /// For each ASCII byte, whether a character whose first scalar is that
+    /// byte can be one of `symbols`.
+    ///
+    /// Characters compare by canonical equivalence, so a character equals a
+    /// symbol only when their canonical decompositions are the same, and
+    /// those begin with the same scalar. An ASCII scalar decomposes to itself
+    /// and always stays first, so a character beginning with an ASCII byte
+    /// can equal a symbol only when the symbol's decomposition begins with
+    /// that byte: "=" begins "≠" as well as "=" itself, and ";" begins the
+    /// Greek question mark.
+    private static func asciiBytesBeginningSymbols(_ symbols: Set<Character>) -> [Bool] {
+        var begins = [Bool](repeating: false, count: 128)
+        for symbol in symbols {
+            guard let first = String(symbol).decomposedStringWithCanonicalMapping.unicodeScalars.first,
+                  first.isASCII else { continue }
+            begins[Int(first.value)] = true
+        }
+        return begins
+    }
+
     /// The end of the next copy of `symbol` when one begins at `start`,
-    /// directly or after a single space, with the UTF-16 length of the space
-    /// and the copy; nil when the run ends at `start`.
+    /// directly or after a single space; nil when the run ends at `start`.
     private static func nextCopy(
         of symbol: Character,
         in text: String,
         at start: String.Index
-    ) -> (end: String.Index, utf16Length: Int)? {
+    ) -> String.Index? {
         guard start < text.endIndex else { return nil }
         var position = start
-        var length = 0
         if isGap(text[position]) {
-            length += text[position].utf16.count
             position = text.index(after: position)
             guard position < text.endIndex else { return nil }
         }
         guard text[position] == symbol else { return nil }
-        length += text[position].utf16.count
-        return (text.index(after: position), length)
+        return text.index(after: position)
     }
 
     /// Whether `character` may stand between two symbols of one run: a
