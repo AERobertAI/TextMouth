@@ -139,6 +139,28 @@ final class CloudStorageContractTests: XCTestCase {
         XCTAssertEqual(progress.percent, 100)
     }
 
+    /// By files, the parts reported of files still arriving count as parts
+    /// of a file: one file of two here and the other 40 percent here is 70
+    /// percent. By size those parts are bytes, so `partialFiles` plays no
+    /// part.
+    func testPartsOfFilesStillArrivingCountByFiles() {
+        let byFiles = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0, partialFiles: 0.4)
+        let bySize = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 700, totalBytes: 1_000, partialFiles: 0.9)
+
+        XCTAssertEqual(byFiles.fractionCompleted, 0.7, accuracy: 1e-9)
+        XCTAssertEqual(byFiles.percent, 70)
+        XCTAssertEqual(bySize.percent, 70)
+    }
+
+    /// A file reported whole a moment before it is on this Mac leaves the
+    /// percent at 99 by files, as it does by size.
+    func testAFileReportedWholeIsNotDoneUntilItIsHere() {
+        let progress = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0, partialFiles: 1)
+
+        XCTAssertEqual(progress.fractionCompleted, 1)
+        XCTAssertEqual(progress.percent, 99)
+    }
+
     // MARK: - Book States
 
     /// The note the list shows and the note VoiceOver speaks, for every

@@ -184,7 +184,9 @@ enum ReaderCloudWording {
 
     /// Whether a download with `progress` shows no percentage: nothing has
     /// been reported yet, or a single file is all that is left and nothing
-    /// counted so far, so a percentage would sit at 0 until the end.
+    /// counted so far, so a percentage would sit at 0 until the end. A sync
+    /// service that reports a part of that file gives the download its
+    /// percentage from 1 percent on.
     static func showsNoPercentage(_ progress: BookDownloadProgress?) -> Bool {
         guard let progress else { return true }
         return progress.totalFiles - progress.completedFiles == 1 && progress.percent == 0

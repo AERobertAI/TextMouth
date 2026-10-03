@@ -463,6 +463,57 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(try scene.folder.entries(), Set(scene.model.library.books.map(\.tmbDirectoryName)))
     }
 
+    /// While the library moves, no question of any kind is answered: each
+    /// answer is refused, saying why, changes nothing, and leaves its
+    /// question asked. A Library window that showed a question as the move
+    /// began keeps showing it, since a window shows one sheet at a time, so
+    /// its buttons can still be pressed. Once the move ends, every question
+    /// is answered as usual.
+    func testNoQuestionIsAnsweredWhileTheLibraryMoves() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let shelf = try writeArchive("Chart Shelf", titles: ["Charts of Shoals", "Dredging Logs"], in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.askEachTime)
+        scene.model.importFiles(urls: [atlas.copy, shelf], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let books = scene.model.library.books.map(\.id)
+        let packages = try scene.folder.entries()
+
+        // A duplicate: neither copy is touched.
+        let duplicateAnswers = whileTheLibraryMoves(scene.model) {
+            [ImportDecisionAnswer.keepBoth, .replaceExisting, .cancel].map { answer in
+                scene.model.answerCurrentImportDecision(answer)
+            }
+        }
+        XCTAssertEqual(duplicateAnswers, Array(repeating: Self.moveRefusal, count: 3))
+        XCTAssertEqual(waitingQuestions(of: scene.model).first, "duplicate: Atlas of Tides")
+        XCTAssertEqual(scene.model.library.books.map(\.id), books)
+        XCTAssertEqual(try scene.folder.entries(), packages, "an answer changed the library's folder")
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
+
+        // An original file: it stays where it is.
+        XCTAssertEqual(waitingQuestions(of: scene.model).first, "original: Atlas of Tides.txt")
+        let deletion = whileTheLibraryMoves(scene.model) { scene.model.answerCurrentImportDecision(.deleteOriginal) }
+        XCTAssertEqual(deletion, Self.moveRefusal)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path), "the original was deleted during the move")
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.cancel).succeeded)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.cancel).succeeded, "the archive's own original")
+
+        // A ZIP archive's books: no folder is made, and the books stay put.
+        XCTAssertEqual(waitingQuestions(of: scene.model), ["folder: Chart Shelf.zip"])
+        let folder = whileTheLibraryMoves(scene.model) {
+            scene.model.answerCurrentImportDecision(.createFolder(named: "Charts"))
+        }
+        XCTAssertEqual(folder, Self.moveRefusal)
+        XCTAssertTrue(scene.model.library.folders.isEmpty, "a folder was made during the move")
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.createFolder(named: "Charts")).succeeded)
+
+        let charts = BookFolder(name: "Charts", parentPath: scene.folder.path).fullPath
+        XCTAssertEqual(titles(in: charts, of: scene.model), ["Charts of Shoals", "Dredging Logs"])
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+    }
+
     // MARK: - The Window That Asks
 
     /// Every import path records the Library window it started in, so that
@@ -579,5 +630,17 @@ final class ImportDecisionFlowTests: XCTestCase {
     /// The titles of `model`'s books in the library folder `path`.
     private func titles(in path: String, of model: LibraryViewModel) -> Set<String> {
         Set(model.library.books.filter { $0.folderPath == path }.map(\.title))
+    }
+
+    /// What every answer gets while the library moves.
+    private static let moveRefusal = OperationOutcome.failure(DataDirectoryMoveWording.importAnswerRefusal)
+
+    /// Runs `body` while `model` has a data-directory move under way, as the
+    /// move sets one for as long as it runs, and returns what `body`
+    /// returns. Nothing is copied: only the answers are under test.
+    private func whileTheLibraryMoves<Value>(_ model: LibraryViewModel, _ body: () -> Value) -> Value {
+        model.dataDirectoryMove = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Spare Disk/TextMouth"))
+        defer { model.dataDirectoryMove = nil }
+        return body()
     }
 }

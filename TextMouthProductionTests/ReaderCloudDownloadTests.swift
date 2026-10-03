@@ -207,6 +207,31 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertNil(reader.cloudSession.quietAnnouncementTask, "The announcements outlived the download")
     }
 
+    /// The one file left shows no percentage until its sync service reports
+    /// a part of it, as a large audiobook's file can; from then on the bar
+    /// shows the percentage, and VoiceOver hears the milestone the part
+    /// reaches.
+    func testAPartOfTheOneFileLeftGivesTheDownloadItsPercentage() throws {
+        let cloud = try makeCloudReaders("Cloud Part of a File")
+        let book = try makeTextBook("Quay Notes", in: cloud)
+        let nothingYet = Self.progress(0, of: 1, bytes: 0, of: 312_000_000)
+        let partway = Self.progress(0, of: 1, bytes: 187_200_000, of: 312_000_000)
+        cloud.storage.setState(.inCloud, of: book.id)
+        cloud.storage.scriptDownload(of: book.id, steps: [nothingYet, partway], holdsOpen: true)
+        let mark = announcementMark()
+
+        let reader = cloud.open(book)
+        waitFor("the part reported") { reader.shownDownload?.progress == partway }
+
+        let shown = try XCTUnwrap(reader.shownDownload)
+        XCTAssertEqual(ReaderCloudWording.fraction(of: shown) ?? 0, 0.6, accuracy: 1e-9)
+        XCTAssertEqual(ReaderCloudWording.progressValue(of: shown, elapsed: 0, spoken: true), "0 of 1 file, 60 percent")
+        XCTAssertEqual(announcements(since: mark), ["Downloading Quay Notes from iCloud Drive.", "50 percent downloaded."])
+
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitForReaderToLoad(reader)
+    }
+
     // MARK: - Cancel
 
     /// Cancel stops waiting for the download, which the storage sees as the
@@ -1143,6 +1168,26 @@ final class ReaderCloudWordingTests: XCTestCase {
 
         let lastOfThree = Self.download(progress: BookDownloadProgress(completedFiles: 2, totalFiles: 3, completedBytes: 400, totalBytes: 1000))
         XCTAssertFalse(ReaderCloudWording.showsNoPercentage(lastOfThree.progress))
+    }
+
+    /// A part of the one file left, reported by its sync service, gives the
+    /// bar its percentage in the words of any other, "0 of 1 file, 40%"
+    /// shown and "0 of 1 file, 40 percent" spoken, whether progress goes by
+    /// size or by files. A part under 1 percent gives none yet.
+    func testAPartOfTheOneFileLeftGivesThePercentage() {
+        let parts = [
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 124_800_000, totalBytes: 312_000_000),
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.4),
+        ]
+
+        for progress in parts {
+            let download = Self.download(progress: progress)
+            XCTAssertEqual(ReaderCloudWording.fraction(of: download) ?? 0, 0.4, accuracy: 1e-9, "\(progress)")
+            XCTAssertEqual(ReaderCloudWording.progressValue(of: download, elapsed: 65, spoken: false), "0 of 1 file, 40%")
+            XCTAssertEqual(ReaderCloudWording.progressValue(of: download, elapsed: 65, spoken: true), "0 of 1 file, 40 percent")
+        }
+        let tinyPart = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.005)
+        XCTAssertTrue(ReaderCloudWording.showsNoPercentage(tinyPart))
     }
 
     /// Before the first report, the download is starting, with the time

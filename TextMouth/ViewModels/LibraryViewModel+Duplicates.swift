@@ -162,12 +162,24 @@ extension LibraryViewModel {
     ///   choices. An answer to a question no longer being asked, such as a
     ///   second press of a button whose question was just settled, does
     ///   nothing and succeeds, so it can never land on the next question.
+    ///   An answer given while the library moves is refused, and the
+    ///   question waits for one once the move ends.
     @discardableResult
     func answerImportDecision(_ id: ImportDecision.ID, with answer: ImportDecisionAnswer) -> OperationOutcome {
         guard let decision = importDecisions.current,
               decision.id == id,
               answer.fits(decision.kind) else {
             return .success(nil)
+        }
+        // No answer acts while the library moves. A window shows one sheet
+        // at a time, so a Library window already asking this question when
+        // the move began keeps asking it instead of showing the move, and
+        // its answer would change the library as it is copied: Replace
+        // Existing, for one, would delete the library's copy from the old
+        // data directory after the copy took it, leaving a stray package in
+        // the new one. The question stays, to be answered once the move ends.
+        guard dataDirectoryMove == nil else {
+            return .failure(DataDirectoryMoveWording.importAnswerRefusal)
         }
         switch decision.kind {
         case .duplicate(let duplicate):

@@ -203,7 +203,7 @@ final class LogContentPolicyTests: XCTestCase {
     /// literals, the event lines built before they are logged, are held to
     /// the same rules but may name a book's title.
     func testNoLogCallWritesBookTextRulesTitlesOrAbsolutePaths() throws {
-        let sources = try Self.appSources()
+        let sources = try AppSourceFile.all()
         let calls = sources.flatMap { LogCallScanner.calls(in: $0.text, file: $0.name) }
 
         // A scanner that found nothing would pass without checking anything.
@@ -299,7 +299,7 @@ final class LogContentPolicyTests: XCTestCase {
     /// renamed. EPUB's incomplete-content tag is built from the book's
     /// format, so its parts are checked instead.
     func testEventTagsAreUnchangedInTheSource() throws {
-        let code = try Self.appSources()
+        let code = try AppSourceFile.all()
             .map { LogCallScanner.withoutCommentLines($0.text) }
             .joined(separator: "\n")
 
@@ -338,7 +338,7 @@ final class LogContentPolicyTests: XCTestCase {
     /// Every line goes through `DiagnosticLog`, the one place that applies
     /// the policy: no other file calls the writer beneath it.
     func testOnlyThePolicyCallsTheWriter() throws {
-        let writingDirectly = try Self.appSources().filter { source in
+        let writingDirectly = try AppSourceFile.all().filter { source in
             LogCallScanner.calls(in: source.text, file: source.name)
                 .contains { $0.function == "TextMouthPaths.appendLog" }
         }.map(\.name)
@@ -352,25 +352,6 @@ final class LogContentPolicyTests: XCTestCase {
                     + "`DiagnosticLog.trace(.playback, line)` for routine chatter, in the category that fits."
             )
         }
-    }
-
-    // MARK: - Helpers
-
-    /// The app's Swift sources, read from the repository these tests were
-    /// built from: each file's name and text.
-    private static func appSources() throws -> [(name: String, text: String)] {
-        let appFolder = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("TextMouth", isDirectory: true)
-        let files = try XCTUnwrap(FileManager.default.enumerator(at: appFolder, includingPropertiesForKeys: nil))
-        var sources: [(name: String, text: String)] = []
-        for case let file as URL in files where file.pathExtension == "swift" {
-            sources.append((file.lastPathComponent, try String(contentsOf: file, encoding: .utf8)))
-        }
-        // Too few files would mean the folder moved and nothing was checked.
-        XCTAssertGreaterThan(sources.count, 50, "Swift files found in \(appFolder.path)")
-        return sources.sorted { $0.name < $1.name }
     }
 }
 

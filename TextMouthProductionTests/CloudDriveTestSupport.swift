@@ -424,20 +424,18 @@ struct CloudDriveDownloadRecord: Sendable {
 
 // MARK: - Progress Other Processes Publish
 
-/// Listens for the progress the system publishes for files, through
-/// `Progress.addSubscriber(forFileURL:withPublishingHandler:)`, for question
-/// 2: does an app without an iCloud entitlement hear of a sync service's
-/// downloads?
+/// Listens for the progress the system publishes for files, through the
+/// app's own listener (`PublishedFileProgress`), for question 2: does an
+/// app without an iCloud entitlement hear of a sync service's downloads?
+/// What it hears is what a book's download folds into its progress.
 ///
-/// `@unchecked Sendable`: the system calls the handlers on queues of its
-/// own, so every stored property is read and written only under `lock`.
+/// `@unchecked Sendable`: the system reports on threads of its own, so
+/// every stored property is read and written only under `lock`.
 final class PublishedProgressRecorder: @unchecked Sendable {
     /// Guards every property below.
     private let lock = NSLock()
-    /// The subscriptions, removed by `stop()`.
-    private var subscribers: [Any] = []
-    /// The observations of published progress, ended by `stop()`.
-    private var observations: [NSKeyValueObservation] = []
+    /// The listening, one for each file, stopped by `stop()`.
+    private var listeners: [PublishedFileProgress] = []
     /// Every fraction published for each file, by file name, in the order
     /// heard.
     private var fractions: [String: [Double]] = [:]
@@ -446,30 +444,20 @@ final class PublishedProgressRecorder: @unchecked Sendable {
     func subscribe(to files: [URL]) {
         for file in files {
             let name = file.lastPathComponent
-            let subscriber = Progress.addSubscriber(forFileURL: file) { [self] progress in
-                note(progress.fractionCompleted, for: name)
-                // Later fractions of the same progress arrive as changes.
-                let observation = progress.observe(\.fractionCompleted) { [self] progress, _ in
-                    note(progress.fractionCompleted, for: name)
-                }
-                lock.withLock { observations.append(observation) }
-                return nil
+            let listening = PublishedFileProgress.listen(to: file) { [self] fraction in
+                note(fraction, for: name)
             }
-            lock.withLock { subscribers.append(subscriber) }
+            lock.withLock { listeners.append(listening) }
         }
     }
 
     /// Stops listening.
     func stop() {
-        let (subscribers, observations) = lock.withLock { () -> ([Any], [NSKeyValueObservation]) in
-            defer {
-                self.subscribers = []
-                self.observations = []
-            }
-            return (self.subscribers, self.observations)
+        let listeners = lock.withLock { () -> [PublishedFileProgress] in
+            defer { self.listeners = [] }
+            return self.listeners
         }
-        subscribers.forEach(Progress.removeSubscriber)
-        observations.forEach { $0.invalidate() }
+        listeners.forEach { $0.stop() }
     }
 
     /// What was heard for `files`, in words: for each file that heard

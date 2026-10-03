@@ -76,9 +76,8 @@ enum StorageWork: Sendable, CaseIterable {
 /// publishes, and then lets the held work go on under the new generation.
 ///
 /// `@unchecked Sendable`: every stored property is guarded by `condition`,
-/// which is never held while calling out, so nothing reached from here,
-/// such as a log line that names a path inside the data directory, can
-/// wait for it.
+/// a lock never held while calling out, so nothing reached from here, such
+/// as a log line naming a path in the data directory, can wait for it.
 final class StorageBoundary: @unchecked Sendable {
     /// The boundary of this process, starting at the data directory its
     /// runtime names (`TextMouthPaths.root(for:)`).

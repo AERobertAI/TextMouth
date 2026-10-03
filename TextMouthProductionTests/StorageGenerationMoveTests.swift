@@ -249,6 +249,63 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept.filePath))
     }
 
+    /// A duplicate question already asked when a move begins can't be
+    /// answered while the library is copied. Replace Existing would delete
+    /// the library's copy from the old data directory after the copy took
+    /// it, so the moved library would keep a stray package of the replaced
+    /// book, for adoption to bring back once no other copy of it is listed.
+    /// The answer is refused, saying why, and the question stays asked; once
+    /// the move ends, the same answer replaces the moved copy and leaves
+    /// nothing of it behind.
+    func testReplaceAnsweredWhileTheLibraryIsCopiedWaitsForTheMoveToEnd() async throws {
+        keepDeletionsOutOfTheTrash()
+        useAfterImportingBehavior(.keepOriginal)
+        let world = try makeIntegrationWorld("Storage Move Replace")
+        let model = world.library
+        let source = try makeTextSource(named: "Tide Table Errata.txt")
+        let existing = try world.importBook(from: source)
+        model.importSingleFileAsync(from: source, toFolder: world.folder.path)
+        await waitFor(model.$importDecisions, "the duplicate question was asked") { $0.current != nil }
+        let question = try XCTUnwrap(model.importDecisions.current)
+        let questionID = question.id
+        let destination = try makeDataDirectoryMoveDestination("ReplaceDuringMove")
+        let duringCopy = AnswerDuringCopy()
+        let observer = DataDirectoryCopyObserver(
+            report: { progress in
+                // Every item is copied and nothing is published yet: the
+                // moment an answer would leave the most behind.
+                guard progress.isComplete else { return }
+                DispatchQueue.main.sync {
+                    MainActor.assumeIsolated {
+                        guard duringCopy.outcome == nil else { return }
+                        duringCopy.outcome = model.answerImportDecision(questionID, with: .replaceExisting)
+                        duringCopy.questionStillAsked = model.importDecisions.current?.id == questionID
+                    }
+                }
+            },
+            isCancelled: { false }
+        )
+
+        let move = await DataDirectoryMigrator.$copyObserver.withValue(observer) {
+            await model.moveDataDirectoryReturningOutcome(to: destination)
+        }
+        let answerAfterMove = model.answerImportDecision(questionID, with: .replaceExisting)
+
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        XCTAssertEqual(duringCopy.outcome, .failure(DataDirectoryMoveWording.importAnswerRefusal))
+        XCTAssertEqual(duringCopy.questionStillAsked, true, "the refused answer settled the question")
+        XCTAssertTrue(answerAfterMove.succeeded, answerAfterMove.failureMessage ?? "")
+        XCTAssertNil(model.importDecisions.current)
+        XCTAssertFalse(model.library.books.contains { $0.id == existing.id }, "Replace kept the library's copy")
+        let replacement = try XCTUnwrap(model.library.books.first { $0.id == question.bookID })
+        XCTAssertTrue(replacement.filePath.hasPrefix(destination.path + "/"), "The new copy is not in the moved data directory")
+        XCTAssertEqual(
+            Self.entries(of: Self.folder(world.folder.path, under: destination)),
+            [replacement.tmbDirectoryName],
+            "The moved library folder holds more than the new copy's package"
+        )
+    }
+
     // MARK: - Removal and the Move
 
     /// A book removed, with its package deleted, while the move waits for
@@ -500,6 +557,16 @@ final class StorageGenerationMoveTests: XCTestCase {
 private final class AddingBook {
     /// Whether the library already listed the book; nil until it was added.
     var foundAlreadyListed: Bool?
+}
+
+/// What answering an import question during a move's copy gave, on the
+/// main actor.
+@MainActor
+private final class AnswerDuringCopy {
+    /// What the answer did; nil until the copy was complete.
+    var outcome: OperationOutcome?
+    /// Whether the question was still being asked after the answer.
+    var questionStillAsked: Bool?
 }
 
 /// Answers true exactly once, to whichever thread asks first.

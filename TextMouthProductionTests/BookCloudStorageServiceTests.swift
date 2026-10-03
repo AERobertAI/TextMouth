@@ -7,18 +7,24 @@ import XCTest
 /// state of their files comes from a scripted sync service
 /// (`FakeCloudItemStatusProvider`), so no real cloud drive is used. A
 /// download's waits between checks are scripted too: each wait plays one
-/// step of a test's script, so no real time passes.
+/// step of a test's script, so no real time passes. So is the progress the
+/// sync service publishes for a file (`ScriptedPublisher`), which a test
+/// publishes from its script.
 final class BookCloudStorageServiceTests: XCTestCase {
     /// The scripted sync service: each file's state and each folder's
     /// location by path.
     private var items: FakeCloudItemStatusProvider!
     /// The event lines the storage wrote.
     private var events: EventRecorder!
+    /// The progress the scripted sync service publishes for files, which
+    /// publishes nothing unless a test says so.
+    private var publisher: ScriptedPublisher!
 
     override func setUp() {
         super.setUp()
         items = FakeCloudItemStatusProvider()
         events = EventRecorder()
+        publisher = ScriptedPublisher()
     }
 
     // MARK: - Where the Library Lives
@@ -596,6 +602,200 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(items.downloadRequests.count, 1)
     }
 
+    // MARK: - Progress Within a File
+
+    /// The part of a file still to come that the sync service publishes
+    /// counts toward the progress, by size: a book whose 900-byte file is
+    /// still to come, beside a 100-byte record already here, moves as that
+    /// file does, and the download stops listening once it ends.
+    func testAPublishedPartOfAFileCountsBySize() async throws {
+        let book = try makePackage(["audio.m4b", "bookInfo.json"])
+        let items = self.items!
+        let publisher = self.publisher!
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.downloaded, bytes: 100), of: book["bookInfo.json"])
+        let polls = ScriptedPolls([
+            {
+                items.setStatus(managed(.downloading, bytes: 900), of: book["audio.m4b"])
+                publisher.publish(0.4, of: book["audio.m4b"])
+            },
+            { publisher.publish(0.6, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"]) },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps, [
+            BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 100, totalBytes: 1_000),
+            BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 460, totalBytes: 1_000),
+            BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 640, totalBytes: 1_000),
+            BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 1_000, totalBytes: 1_000),
+        ])
+        XCTAssertEqual(steps.map(\.percent), [10, 46, 64, 100])
+        XCTAssertEqual(publisher.filesListenedTo, paths([book["audio.m4b"]]), "listened to a file already here")
+        XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
+    }
+
+    /// By files, as when the file still to come reports no size, its
+    /// published part counts as that part of one file.
+    func testAPublishedPartOfAFileCountsByFiles() async throws {
+        let book = try makePackage(["audio.m4b", "content.md"])
+        let items = self.items!
+        let publisher = self.publisher!
+        items.setStatus(managed(.notDownloaded, bytes: 0), of: book["audio.m4b"])
+        items.setStatus(managed(.downloaded, bytes: 100), of: book["content.md"])
+        let polls = ScriptedPolls([
+            { publisher.publish(0.5, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"]) },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps, [
+            BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0),
+            BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0, partialFiles: 0.5),
+            BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 0, totalBytes: 0),
+        ])
+        XCTAssertEqual(steps.map(\.percent), [50, 75, 100])
+    }
+
+    /// A download listens to each file still to come, those found later in
+    /// a folder that arrives included, and to no file already here.
+    func testADownloadListensToEachFileStillToCome() async throws {
+        let book = try makePackage(["bookInfo.json", "content.md", "parts/0001.mp3"])
+        let items = self.items!
+        items.setStatus(managed(.downloaded, bytes: 10), of: book["bookInfo.json"])
+        items.setStatus(managed(.notDownloaded, bytes: 10), of: book["content.md"])
+        items.setStatus(managed(.notDownloaded, bytes: 10), of: book["parts/0001.mp3"])
+        let partsFolder = book.package.url.appendingPathComponent("parts", isDirectory: true)
+        let listable = SharedFlag(false)
+        let polls = ScriptedPolls([
+            { listable.set(true) },
+            {
+                items.setStatus(managed(.downloaded, bytes: 10), of: book["content.md"])
+                items.setStatus(managed(.downloaded, bytes: 10), of: book["parts/0001.mp3"])
+            },
+        ])
+        let storage = makeStorage(sleep: { try await polls.sleep($0) }, readFolder: { folder in
+            if !listable.isOn && samePath(folder, partsFolder) { throw downloadRefusal }
+            return try BookCloudStorageService.readFolder(folder)
+        })
+
+        _ = try await collect(storage.download(book.package))
+
+        XCTAssertEqual(publisher.filesListenedTo, paths([book["content.md"], book["parts/0001.mp3"]]))
+        XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
+    }
+
+    /// Every listening stops when the download fails, and when its
+    /// iteration ends before the download does.
+    func testListeningStopsWhenTheDownloadFailsOrIsStopped() async throws {
+        let book = try makePackage(["content.md"])
+        items.setStatus(managed(.notDownloaded), of: book["content.md"])
+        let polls = ScriptedPolls()
+
+        _ = await download(
+            makeStorage(sleep: { try await polls.sleep($0) }, stallLimit: .seconds(1)).download(book.package),
+            failsWith: .stalled(seconds: 1)
+        )
+        XCTAssertEqual(publisher.filesListenedTo.count, 1)
+        XCTAssertEqual(publisher.listeningCount, 0, "a failed download kept listening")
+
+        let held = HeldPolls()
+        for try await _ in makeStorage(sleep: { try await held.sleep($0) }).download(book.package) {
+            break
+        }
+        await fulfillment(of: [publisher.expectationThatListeningEnds()], timeout: 10)
+        XCTAssertEqual(publisher.filesListenedTo.count, 2)
+    }
+
+    /// A part published lower than one heard before, as when the sync
+    /// service starts the file's download again, never takes the progress
+    /// back; a file published whole counts 99 percent until it is here.
+    func testAPublishedPartNeverTakesTheProgressBack() async throws {
+        let book = try makePackage(["audio.m4b"])
+        let items = self.items!
+        let publisher = self.publisher!
+        items.setStatus(managed(.notDownloaded, bytes: 1_000), of: book["audio.m4b"])
+        let polls = ScriptedPolls([
+            { publisher.publish(0.6, of: book["audio.m4b"]) },
+            { publisher.publish(0.2, of: book["audio.m4b"]) },
+            { publisher.publish(1, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 1_000), of: book["audio.m4b"]) },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.percent), [0, 60, 99, 100])
+    }
+
+    /// A part is counted in whole percent of its file, so a part that grows
+    /// within one percent, as it may at every check of a long download,
+    /// reports nothing new.
+    func testAPublishedPartCountsInWholePercent() async throws {
+        let book = try makePackage(["audio.m4b"])
+        let items = self.items!
+        let publisher = self.publisher!
+        items.setStatus(managed(.notDownloaded, bytes: 1_000), of: book["audio.m4b"])
+        let polls = ScriptedPolls([
+            { publisher.publish(0.401, of: book["audio.m4b"]) },
+            { publisher.publish(0.409, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 1_000), of: book["audio.m4b"]) },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.completedBytes), [0, 400, 1_000])
+    }
+
+    /// A part heard of a file is forgotten once the file is here, so a file
+    /// that then goes back to the cloud counts from nothing again.
+    func testAFileBackInTheCloudCountsFromNothingAgain() async throws {
+        let book = try makePackage(["audio.m4b", "cover.jpg"])
+        let items = self.items!
+        let publisher = self.publisher!
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.notDownloaded, bytes: 100), of: book["cover.jpg"])
+        let polls = ScriptedPolls([
+            { publisher.publish(0.5, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"]) },
+            { items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"]) },
+            { publisher.publish(0.2, of: book["audio.m4b"]) },
+            {
+                items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"])
+                items.setStatus(managed(.downloaded, bytes: 100), of: book["cover.jpg"])
+            },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.percent), [0, 45, 90, 0, 18, 100])
+    }
+
+    /// A part that keeps growing keeps a stall away, even while the sync
+    /// service reports the file as not being downloaded: the four quiet
+    /// checks that make a two-second stall never come.
+    func testAGrowingPublishedPartKeepsAStallAway() async throws {
+        let book = try makePackage(["audio.m4b"])
+        let items = self.items!
+        let publisher = self.publisher!
+        let audio = book["audio.m4b"]
+        items.setStatus(managed(.notDownloaded, bytes: 1_000), of: audio)
+        var script: [@Sendable () -> Void] = []
+        for tenth in 1...6 {
+            script.append { publisher.publish(Double(tenth) / 10, of: audio) }
+        }
+        script.append { items.setStatus(managed(.downloaded, bytes: 1_000), of: audio) }
+        let polls = ScriptedPolls(script)
+
+        let steps = try await collect(
+            makeStorage(sleep: { try await polls.sleep($0) }, stallLimit: .seconds(2)).download(book.package)
+        )
+
+        XCTAssertEqual(polls.sleeps, 7)
+        XCTAssertEqual(steps.map(\.percent), [0, 10, 20, 30, 40, 50, 60, 100])
+    }
+
     // MARK: - Removing a Download
 
     /// While any file has changes waiting to upload, the removal is refused
@@ -715,8 +915,9 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Storage on the scripted sync service, writing its events to
-    /// `events`. A test that never waits gets a sleep that fails it.
+    /// Storage on the scripted sync service, writing its events to `events`
+    /// and listening to `publisher`. A test that never waits gets a sleep
+    /// that fails it.
     private func makeStorage(
         reachability: NetworkReachability = .online,
         sleep: @escaping BookCloudStorageService.Sleep = { _ in XCTFail("this download never waits") },
@@ -724,13 +925,15 @@ final class BookCloudStorageServiceTests: XCTestCase {
         readFolder: @escaping BookCloudStorageService.FolderReader = { try BookCloudStorageService.readFolder($0) }
     ) -> BookCloudStorageService {
         let events = self.events!
+        let publisher = self.publisher!
         return BookCloudStorageService(
             items: items,
             reachability: reachability,
             sleep: sleep,
             stallLimit: stallLimit,
             readFolder: readFolder,
-            logEvent: { events.record($0) }
+            logEvent: { events.record($0) },
+            listenForProgress: { file, hear in publisher.listen(to: file, hearing: hear) }
         )
     }
 
@@ -910,6 +1113,95 @@ private final class SharedFlag: @unchecked Sendable {
     /// Turns the flag on or off.
     func set(_ on: Bool) {
         lock.withLock { value = on }
+    }
+}
+
+// MARK: - Published Progress
+
+/// The progress a sync service publishes for files, scripted by a test: a
+/// download listens to it as it would to the system's
+/// (`BookCloudStorageService.ProgressListener`), and a fraction the test
+/// publishes for a file reaches each of the file's listeners at once. It
+/// records which files were listened to, and which listenings are still
+/// going.
+private final class ScriptedPublisher: @unchecked Sendable {
+    /// One listening still going.
+    private struct Listener {
+        /// The standardized path of the file it listens to.
+        let path: String
+        /// How it hears a fraction.
+        let hear: @Sendable (Double) -> Void
+    }
+
+    /// Guards every variable below: downloads listen and stop from their
+    /// own threads, and tests publish from theirs.
+    private let lock = NSLock()
+    /// The listenings still going, by the number each got.
+    private var listeners: [Int: Listener] = [:]
+    /// The number the next listening gets.
+    private var nextNumber = 0
+    /// The standardized path of each file listened to, in the order the
+    /// listening began.
+    private var listenedPaths: [String] = []
+    /// Expectations met once no listening is left.
+    private var waitingForTheEnd: [XCTestExpectation] = []
+
+    /// Listens to `file`, handing each fraction published for it to `hear`,
+    /// until the returned closure is called.
+    func listen(to file: URL, hearing hear: @escaping @Sendable (Double) -> Void) -> @Sendable () -> Void {
+        let path = file.standardizedFileURL.path
+        let number = lock.withLock { () -> Int in
+            defer { nextNumber += 1 }
+            listeners[nextNumber] = Listener(path: path, hear: hear)
+            listenedPaths.append(path)
+            return nextNumber
+        }
+        return { [weak self] in self?.stopListening(number) }
+    }
+
+    /// Publishes `fraction` of `file` to each of its listeners.
+    func publish(_ fraction: Double, of file: URL) {
+        let path = file.standardizedFileURL.path
+        // Each hears it outside the lock, so a listener may do anything.
+        let hearing = lock.withLock { listeners.values.filter { $0.path == path }.map(\.hear) }
+        for hear in hearing {
+            hear(fraction)
+        }
+    }
+
+    /// The standardized paths of the files listened to, in order.
+    var filesListenedTo: [String] {
+        lock.withLock { listenedPaths }
+    }
+
+    /// How many listenings are still going.
+    var listeningCount: Int {
+        lock.withLock { listeners.count }
+    }
+
+    /// An expectation met once no listening is left, or at once when none
+    /// is.
+    func expectationThatListeningEnds() -> XCTestExpectation {
+        let expectation = XCTestExpectation(description: "every listening ended")
+        lock.withLock {
+            if listeners.isEmpty {
+                expectation.fulfill()
+            } else {
+                waitingForTheEnd.append(expectation)
+            }
+        }
+        return expectation
+    }
+
+    /// Ends the listening numbered `number`, meeting the expectations that
+    /// wait for the last to end.
+    private func stopListening(_ number: Int) {
+        lock.withLock {
+            listeners[number] = nil
+            guard listeners.isEmpty else { return }
+            waitingForTheEnd.forEach { $0.fulfill() }
+            waitingForTheEnd.removeAll()
+        }
     }
 }
 
