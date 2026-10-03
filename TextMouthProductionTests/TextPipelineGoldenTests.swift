@@ -255,12 +255,6 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     // MARK: - Word Counts (PERF21)
 
-    /// The word count as it was counted before PERF21: the pieces a split
-    /// at every whitespace Character leaves.
-    private static func wordCountBefore(_ text: String) -> Int {
-        text.split(whereSeparator: { $0.isWhitespace }).count
-    }
-
     /// Every chapter counts the words the split it replaces counted: on the
     /// review's edge strings, five thousand random strings built from pieces
     /// whose neighbors decide where Characters begin, the review's prose,
@@ -279,7 +273,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(chapters.count, books.count)
         for text in texts + chapters {
             XCTAssertEqual(
-                Chapter(text: text).wordCount, Self.wordCountBefore(text),
+                Chapter(text: text).wordCount, TextPipelineBefore.wordCount(text),
                 text.unicodeScalars.prefix(40).map { String($0.value, radix: 16) }.joined(separator: " ")
             )
         }
@@ -352,47 +346,6 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     // MARK: - Opening content.md (PERF22)
 
-    /// The chapter split as it was before PERF22: every line copied into an
-    /// array, and each chapter's lines joined again and trimmed.
-    private static func splitChaptersBefore(_ markdown: String) -> [(title: String, content: String)] {
-        let prefix = "<!-- chapter: "
-        let suffix = " -->"
-        let lines = markdown.components(separatedBy: "\n")
-        var sections: [(title: String, content: String)] = []
-        var currentTitle = ""
-        var currentLines: [String] = []
-        var foundMarker = false
-        for line in lines {
-            if line.hasPrefix(prefix) && line.hasSuffix(suffix) {
-                if foundMarker {
-                    let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !content.isEmpty {
-                        sections.append((title: currentTitle, content: content))
-                    }
-                }
-                let titleStart = line.index(line.startIndex, offsetBy: prefix.count)
-                let titleEnd = line.index(line.endIndex, offsetBy: -suffix.count)
-                var title = String(line[titleStart..<titleEnd])
-                if title.contains("<!--") {
-                    title = title.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: "", options: .regularExpression)
-                        .trimmingCharacters(in: .whitespaces)
-                }
-                currentTitle = title
-                currentLines = []
-                foundMarker = true
-            } else {
-                currentLines.append(line)
-            }
-        }
-        if foundMarker {
-            let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-            if !content.isEmpty {
-                sections.append((title: currentTitle, content: content))
-            }
-        }
-        return sections
-    }
-
     /// Cached Markdown that puts the chapter split's every rule to the
     /// test: markers first, last, alone, and in a row; marker lookalikes
     /// that are not whole marker lines (a leading space, words after, a CR
@@ -436,7 +389,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
         for markdown in documents {
             let split = MarkdownCacheService.splitChapters(markdown)
-            let before = Self.splitChaptersBefore(markdown)
+            let before = TextPipelineBefore.splitChapters(markdown)
             XCTAssertEqual(split.map(\.title), before.map(\.title), markdown.debugDescription)
             XCTAssertEqual(split.map(\.content), before.map(\.content), markdown.debugDescription)
         }
@@ -453,22 +406,6 @@ final class TextPipelineGoldenTests: XCTestCase {
     }
 
     // MARK: - Markdown Literals and Plain-Text Headings (PERF23)
-
-    /// `MarkdownLiteral.escaped` as it was before PERF23: a scalar at a time.
-    private static func escapedBefore(_ text: String) -> String {
-        var result = String.UnicodeScalarView()
-        for scalar in text.unicodeScalars {
-            if MarkdownLiteral.isASCIIPunctuation(scalar) {
-                result.append("\\")
-                result.append(scalar)
-            } else if scalar == "\u{FEFF}" {
-                result.append(contentsOf: "&#xFEFF;".unicodeScalars)
-            } else {
-                result.append(scalar)
-            }
-        }
-        return String(result)
-    }
 
     /// Every scalar of the Basic Multilingual Plane, and every 97th of the
     /// planes above it, in one string.
@@ -493,7 +430,7 @@ final class TextPipelineGoldenTests: XCTestCase {
     /// Escaping writes exactly what escaping a scalar at a time wrote.
     func testEscapingMatchesTheScalarLoopItReplaces() throws {
         for text in try plainTextComparisonInputs() {
-            XCTAssertEqual(MarkdownLiteral.escaped(text), Self.escapedBefore(text), text.debugDescription.prefix(80).description)
+            XCTAssertEqual(MarkdownLiteral.escaped(text), TextPipelineBefore.escaped(text), text.debugDescription.prefix(80).description)
         }
     }
 
@@ -524,72 +461,6 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
     }
 
-    /// The plain-text line analysis as it was before PERF23
-    /// (`PlainTextParser.blocks(in:)` with its heading rules).
-    private enum PlainTextBefore {
-        static func blocks(in text: String) -> [PlainTextParser.Block] {
-            let lines = TextFileDecoder.normalizingLineEndings(text)
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-            let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
-            var blocks: [PlainTextParser.Block] = []
-            var paragraph: [String] = []
-            var consumedUnderline: Int?
-            func endParagraph() {
-                guard !paragraph.isEmpty else { return }
-                blocks.append(.paragraph(lines: paragraph))
-                paragraph = []
-            }
-            for (index, line) in lines.enumerated() {
-                if index == consumedUnderline { continue }
-                if !underlines.contains(index), let heading = heading(at: index, in: lines, underlines: underlines) {
-                    endParagraph()
-                    blocks.append(.heading(level: heading.level, text: readable(heading.label)))
-                    if heading.isUnderlined { consumedUnderline = index + 1 }
-                } else if line.isEmpty {
-                    endParagraph()
-                } else {
-                    paragraph.append(readable(line))
-                }
-            }
-            endParagraph()
-            return blocks
-        }
-
-        static func heading(at index: Int, in lines: [String], underlines: Set<Int>) -> (level: Int, label: String, isUnderlined: Bool)? {
-            let line = lines[index]
-            if line.hasPrefix("#") {
-                let level = line.prefix(while: { $0 == "#" }).count
-                if level <= 6 {
-                    let label = String(line.dropFirst(level))
-                        .trimmingCharacters(in: .whitespaces)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-                        .trimmingCharacters(in: .whitespaces)
-                    if !label.isEmpty { return (level, label, false) }
-                }
-            }
-            if !line.isEmpty && underlines.contains(index + 1) {
-                return (lines[index + 1].hasPrefix("=") ? 1 : 2, line, true)
-            }
-            if line.count >= 3 && line.count <= 80
-                && line.uppercased() == line
-                && line.rangeOfCharacter(from: .letters) != nil
-                && line.filter({ $0.isLetter }).count >= 3 {
-                return (2, line, false)
-            }
-            return nil
-        }
-
-        static func isSetextUnderline(_ line: String) -> Bool {
-            line.count >= 3 && (line.allSatisfy({ $0 == "=" }) || line.allSatisfy({ $0 == "-" }))
-        }
-
-        static func readable(_ line: String) -> String {
-            guard line.unicodeScalars.contains("\u{0}") else { return line }
-            return String(String.UnicodeScalarView(line.unicodeScalars.map { $0 == "\u{0}" ? "\u{FFFD}" : $0 }))
-        }
-    }
-
     /// The line analysis finds the headings and paragraphs it found before:
     /// on every plain-text comparison input, on the plain-text fixture the
     /// parser tests share, and on five hundred documents of lines chosen to
@@ -598,31 +469,11 @@ final class TextPipelineGoldenTests: XCTestCase {
         var texts = try plainTextComparisonInputs() + Self.headingTestDocuments(count: 500, seed: 2_323)
         texts.append(PlainTextFixture.combined)
         for text in texts {
-            XCTAssertEqual(PlainTextParser.blocks(in: text), PlainTextBefore.blocks(in: text), text.debugDescription.prefix(80).description)
+            XCTAssertEqual(PlainTextParser.blocks(in: text), TextPipelineBefore.PlainText.blocks(in: text), text.debugDescription.prefix(80).description)
         }
     }
 
     // MARK: - Markdown Whitespace (PERF25)
-
-    /// `ParserUtilities.normalizeMarkdownWhitespace` as it was before
-    /// PERF25: a regular expression for every line.
-    private static func normalizedWhitespaceBefore(_ text: String) -> String {
-        let lines = text.components(separatedBy: "\n").map {
-            $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
-        }
-        var result: [String] = []
-        var blankCount = 0
-        for line in lines {
-            if line.isEmpty {
-                blankCount += 1
-                if blankCount <= 2 { result.append(line) }
-            } else {
-                blankCount = 0
-                result.append(line)
-            }
-        }
-        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-    }
 
     /// Normalizing whitespace writes exactly what the regular expression
     /// wrote: for a line ending in each scalar of the Basic Multilingual
@@ -642,7 +493,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         texts.append(Fixtures.markdownWithTables(bytes: 131_072))
         for text in texts {
             XCTAssertEqual(
-                ParserUtilities.normalizeMarkdownWhitespace(text), Self.normalizedWhitespaceBefore(text),
+                ParserUtilities.normalizeMarkdownWhitespace(text), TextPipelineBefore.normalizedWhitespace(text),
                 text.debugDescription.prefix(80).description
             )
         }

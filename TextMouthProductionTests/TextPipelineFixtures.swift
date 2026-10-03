@@ -689,6 +689,164 @@ enum TextPipelineFixtures {
     }
 }
 
+// MARK: - The Code Each Change Replaced
+
+/// The text pipeline's code as it was before each performance change
+/// (PERF21 to PERF25 in TODO-2026-09-04.md), kept verbatim so the golden
+/// tests can require today's code to give the same output on any input,
+/// and the benchmarks can time the old and the new code side by side, in
+/// one run, where a busy machine slows both alike.
+enum TextPipelineBefore {
+    /// The word count as it was counted before PERF21: the pieces a split
+    /// at every whitespace Character leaves.
+    static func wordCount(_ text: String) -> Int {
+        text.split(whereSeparator: { $0.isWhitespace }).count
+    }
+
+    /// The chapter split as it was before PERF22: every line copied into an
+    /// array, and each chapter's lines joined again and trimmed.
+    static func splitChapters(_ markdown: String) -> [(title: String, content: String)] {
+        let prefix = "<!-- chapter: "
+        let suffix = " -->"
+        let lines = markdown.components(separatedBy: "\n")
+        var sections: [(title: String, content: String)] = []
+        var currentTitle = ""
+        var currentLines: [String] = []
+        var foundMarker = false
+        for line in lines {
+            if line.hasPrefix(prefix) && line.hasSuffix(suffix) {
+                if foundMarker {
+                    let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !content.isEmpty {
+                        sections.append((title: currentTitle, content: content))
+                    }
+                }
+                let titleStart = line.index(line.startIndex, offsetBy: prefix.count)
+                let titleEnd = line.index(line.endIndex, offsetBy: -suffix.count)
+                var title = String(line[titleStart..<titleEnd])
+                if title.contains("<!--") {
+                    title = title.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: "", options: .regularExpression)
+                        .trimmingCharacters(in: .whitespaces)
+                }
+                currentTitle = title
+                currentLines = []
+                foundMarker = true
+            } else {
+                currentLines.append(line)
+            }
+        }
+        if foundMarker {
+            let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !content.isEmpty {
+                sections.append((title: currentTitle, content: content))
+            }
+        }
+        return sections
+    }
+
+    /// `MarkdownLiteral.escaped` as it was before PERF23: a scalar at a time.
+    static func escaped(_ text: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            if MarkdownLiteral.isASCIIPunctuation(scalar) {
+                result.append("\\")
+                result.append(scalar)
+            } else if scalar == "\u{FEFF}" {
+                result.append(contentsOf: "&#xFEFF;".unicodeScalars)
+            } else {
+                result.append(scalar)
+            }
+        }
+        return String(result)
+    }
+
+    /// The plain-text line analysis as it was before PERF23
+    /// (`PlainTextParser.blocks(in:)` with its heading rules).
+    enum PlainText {
+        static func blocks(in text: String) -> [PlainTextParser.Block] {
+            let lines = TextFileDecoder.normalizingLineEndings(text)
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+            let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
+            var blocks: [PlainTextParser.Block] = []
+            var paragraph: [String] = []
+            var consumedUnderline: Int?
+            func endParagraph() {
+                guard !paragraph.isEmpty else { return }
+                blocks.append(.paragraph(lines: paragraph))
+                paragraph = []
+            }
+            for (index, line) in lines.enumerated() {
+                if index == consumedUnderline { continue }
+                if !underlines.contains(index), let heading = heading(at: index, in: lines, underlines: underlines) {
+                    endParagraph()
+                    blocks.append(.heading(level: heading.level, text: readable(heading.label)))
+                    if heading.isUnderlined { consumedUnderline = index + 1 }
+                } else if line.isEmpty {
+                    endParagraph()
+                } else {
+                    paragraph.append(readable(line))
+                }
+            }
+            endParagraph()
+            return blocks
+        }
+
+        static func heading(at index: Int, in lines: [String], underlines: Set<Int>) -> (level: Int, label: String, isUnderlined: Bool)? {
+            let line = lines[index]
+            if line.hasPrefix("#") {
+                let level = line.prefix(while: { $0 == "#" }).count
+                if level <= 6 {
+                    let label = String(line.dropFirst(level))
+                        .trimmingCharacters(in: .whitespaces)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                        .trimmingCharacters(in: .whitespaces)
+                    if !label.isEmpty { return (level, label, false) }
+                }
+            }
+            if !line.isEmpty && underlines.contains(index + 1) {
+                return (lines[index + 1].hasPrefix("=") ? 1 : 2, line, true)
+            }
+            if line.count >= 3 && line.count <= 80
+                && line.uppercased() == line
+                && line.rangeOfCharacter(from: .letters) != nil
+                && line.filter({ $0.isLetter }).count >= 3 {
+                return (2, line, false)
+            }
+            return nil
+        }
+
+        static func isSetextUnderline(_ line: String) -> Bool {
+            line.count >= 3 && (line.allSatisfy({ $0 == "=" }) || line.allSatisfy({ $0 == "-" }))
+        }
+
+        static func readable(_ line: String) -> String {
+            guard line.unicodeScalars.contains("\u{0}") else { return line }
+            return String(String.UnicodeScalarView(line.unicodeScalars.map { $0 == "\u{0}" ? "\u{FFFD}" : $0 }))
+        }
+    }
+
+    /// `ParserUtilities.normalizeMarkdownWhitespace` as it was before
+    /// PERF25: a regular expression for every line.
+    static func normalizedWhitespace(_ text: String) -> String {
+        let lines = text.components(separatedBy: "\n").map {
+            $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
+        }
+        var result: [String] = []
+        var blankCount = 0
+        for line in lines {
+            if line.isEmpty {
+                blankCount += 1
+                if blankCount <= 2 { result.append(line) }
+            } else {
+                blankCount = 0
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 /// Samples the bytes malloc holds live every half millisecond, on a thread
 /// of its own, while a measured run goes on, keeping the highest.
 ///
