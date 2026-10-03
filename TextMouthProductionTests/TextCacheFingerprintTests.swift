@@ -44,13 +44,32 @@ final class TextCacheFingerprintTests: XCTestCase {
     /// The recorded stamp compared with the file's stamp now: the same, a
     /// new modification time only, another size, or no file to examine.
     func testComparisonTellsWhatChanged() {
-        let recorded = FileFingerprint(stamp: FileStamp(byteCount: 10, modificationTimeNanoseconds: 5), digest: "d")
-        let redated = FileStamp(byteCount: 10, modificationTimeNanoseconds: 6)
+        let recorded = FileFingerprint(stamp: FileStamp(byteCount: 10, modificationTimeNanoseconds: 5_000), digest: "d")
+        let redated = FileStamp(byteCount: 10, modificationTimeNanoseconds: 6_000)
 
         XCTAssertEqual(recorded.comparison(with: recorded.stamp), .same)
         XCTAssertEqual(recorded.comparison(with: redated), .redated(redated))
-        XCTAssertEqual(recorded.comparison(with: FileStamp(byteCount: 11, modificationTimeNanoseconds: 5)), .resized)
+        XCTAssertEqual(recorded.comparison(with: FileStamp(byteCount: 11, modificationTimeNanoseconds: 5_000)), .resized)
         XCTAssertEqual(recorded.comparison(with: nil), .unexamined)
+    }
+
+    /// Modification times are compared to the microsecond, both truncated
+    /// to whole microseconds. Dropbox gives back a file it downloads again
+    /// with its time moved below the microsecond (these are the times it
+    /// gave one file, board #355): that file has not changed. A time in
+    /// another microsecond has.
+    func testTimesDifferingOnlyBelowTheMicrosecondAreTheSame() {
+        let recorded = FileFingerprint(
+            stamp: FileStamp(byteCount: 10, modificationTimeNanoseconds: 1_791_021_241_432_087_777),
+            digest: "d"
+        )
+        let downloadedAgain = FileStamp(byteCount: 10, modificationTimeNanoseconds: 1_791_021_241_432_087_659)
+        let nextMicrosecond = FileStamp(byteCount: 10, modificationTimeNanoseconds: 1_791_021_241_432_088_000)
+        let lastMicrosecond = FileStamp(byteCount: 10, modificationTimeNanoseconds: 1_791_021_241_432_086_999)
+
+        XCTAssertEqual(recorded.comparison(with: downloadedAgain), .same)
+        XCTAssertEqual(recorded.comparison(with: nextMicrosecond), .redated(nextMicrosecond))
+        XCTAssertEqual(recorded.comparison(with: lastMicrosecond), .redated(lastMicrosecond))
     }
 
     /// A fingerprint taken of a file stamps it and digests its bytes.
@@ -100,6 +119,21 @@ final class TextCacheFingerprintTests: XCTestCase {
         restamped.source = FileFingerprint(stamp: try XCTUnwrap(FileStamp(of: files.source)), digest: files.recorded.source.digest)
         XCTAssertEqual(verification, .current(restamped))
         XCTAssertEqual(counter.fileCount, 1)
+    }
+
+    /// A source given back with its time moved below the microsecond, as a
+    /// sync service gives back a file it downloaded again, is verified by
+    /// its stamp alone: nothing is read, and the recorded fingerprint stands.
+    func testSourceRedatedBelowTheMicrosecondIsVerifiedWithoutReadingIt() throws {
+        let files = try makeCacheFiles()
+        let original = files.recorded.source.modificationTimeNanoseconds
+        // One nanosecond away, within the same microsecond.
+        try setModificationTime(of: files.source, nanoseconds: original % 1_000 == 0 ? original + 1 : original - 1)
+        XCTAssertNotEqual(FileStamp(of: files.source)?.modificationTimeNanoseconds, original)
+        let counter = CountingFingerprintHasher()
+
+        XCTAssertEqual(try files.verify(with: counter.hasher), .current(files.recorded))
+        XCTAssertEqual(counter.count, 0)
     }
 
     /// A source of the same size with other bytes and a new modification

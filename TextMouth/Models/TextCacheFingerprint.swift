@@ -14,6 +14,8 @@ import Foundation
 /// and when its content last changed. A file whose stamp is unchanged is
 /// taken to hold the same bytes; only a stamp that differs, or a check that
 /// fails for another reason, leads to reading the file for its digest.
+/// Stamps keep the time to the nanosecond, but compare it to the
+/// microsecond (`hasSameModificationTime(as:)`).
 struct FileStamp: Hashable, Sendable {
     /// The file's size in bytes.
     var byteCount: Int64
@@ -25,6 +27,25 @@ struct FileStamp: Hashable, Sendable {
     init(byteCount: Int64, modificationTimeNanoseconds: Int64) {
         self.byteCount = byteCount
         self.modificationTimeNanoseconds = modificationTimeNanoseconds
+    }
+
+    /// Whether `other` has the same modification time as this stamp, to the
+    /// microsecond: both times truncated to whole microseconds are equal.
+    ///
+    /// A sync service can give a file back with its time moved below the
+    /// microsecond. Dropbox keeps times as float64 seconds, so a file it
+    /// evicts and downloads again comes back up to about 120 ns from the
+    /// time it had (board #355); compared to the nanosecond, every such file
+    /// looked rewritten and was read for its digest. A move that crosses a
+    /// microsecond still reads as a new time, which costs one digest read
+    /// and changes nothing else.
+    func hasSameModificationTime(as other: FileStamp) -> Bool {
+        Self.wholeMicroseconds(modificationTimeNanoseconds) == Self.wholeMicroseconds(other.modificationTimeNanoseconds)
+    }
+
+    /// `nanoseconds` truncated to whole microseconds.
+    private static func wholeMicroseconds(_ nanoseconds: Int64) -> Int64 {
+        nanoseconds / 1_000
     }
 
     /// The stamp of the regular file at `url`, following symbolic links as
@@ -58,7 +79,8 @@ struct FileStamp: Hashable, Sendable {
 
 /// How a file's stamp now compares with the one its fingerprint recorded.
 enum FileStampComparison: Equatable {
-    /// The same size and modification time: the recorded bytes, taken on trust.
+    /// The same size and modification time, the time to the microsecond: the
+    /// recorded bytes, taken on trust.
     case same
     /// The same size with another modification time, now `stamp`. The file
     /// was rewritten or touched; only its digest can tell whether its bytes
@@ -110,11 +132,12 @@ struct FileFingerprint: Codable, Hashable, Sendable {
     }
 
     /// How `current`, the file's stamp now (nil when it could not be taken),
-    /// compares with the stamp recorded here.
+    /// compares with the stamp recorded here, the times to the microsecond
+    /// (`FileStamp.hasSameModificationTime(as:)`).
     func comparison(with current: FileStamp?) -> FileStampComparison {
         guard let current else { return .unexamined }
         if current.byteCount != byteCount { return .resized }
-        if current.modificationTimeNanoseconds != modificationTimeNanoseconds { return .redated(current) }
+        if !current.hasSameModificationTime(as: stamp) { return .redated(current) }
         return .same
     }
 
