@@ -97,15 +97,17 @@ struct BookmarkPanelView: View {
             // Keyboard focus follows each request once SwiftUI has drawn its
             // target: after an add or an edit the list itself comes back, and
             // on opening the sheet is still presenting. A newer request
-            // cancels one still waiting. VoiceOver follows through the
-            // target's own `RequestedVoiceOverFocus`, so the two land on the
-            // same control. The list scrolls to the target even when keyboard
-            // focus cannot go there (keyboard navigation off), so the new or
-            // nearest bookmark is in view.
+            // cancels one still waiting, and none is applied once the user
+            // has left the list to add or edit, where the note field has
+            // focus. VoiceOver follows through the target's own
+            // `RequestedVoiceOverFocus`, so the two land on the same control.
+            // The list scrolls to the target even when keyboard focus cannot
+            // go there (keyboard navigation off), so the new or nearest
+            // bookmark is in view.
             .task(id: focusRequest) {
                 guard let target = focusRequest.target else { return }
                 try? await Task.sleep(for: Self.keyboardFocusDelay)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, mode == .list else { return }
                 focusedControl = target
                 scroll(list, toShow: target)
             }
@@ -417,8 +419,8 @@ extension BookmarkPanelView {
 
     /// How long VoiceOver waits before moving after an add, edit, or delete.
     /// The panel is already on screen, so this waits only for the redrawn
-    /// rows, and is short so that it cannot pull VoiceOver back after the
-    /// user has moved on.
+    /// rows, and is short so that VoiceOver moves before the user is likely
+    /// to have moved on, rather than pulling them back afterwards.
     static let restoringVoiceOverDelay: TimeInterval = 0.3
 
     /// How long keyboard focus waits before moving to a requested control:

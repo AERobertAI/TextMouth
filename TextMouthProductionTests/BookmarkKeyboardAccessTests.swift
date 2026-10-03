@@ -467,6 +467,32 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
     }
 
+    /// A focus request still waiting when the user opens a note for editing
+    /// leaves keyboard focus in the note field, not on a row that is no
+    /// longer shown.
+    func testAWaitingFocusRequestLeavesTheNoteFieldAlone() throws {
+        try XCTSkipUnless(NSApp.isFullKeyboardAccessEnabled, Self.keyboardNavigationOff)
+        let reader = try makeNavigableReader()
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            letKeyboardFocusSettle(in: hostingView)
+            // Delete asks for focus on the next row; Edit Note follows at
+            // once, before that request has moved keyboard focus.
+            try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView)).performClick(nil)
+            try XCTUnwrap(renderedButton(.editNote, row: 0, in: hostingView)).performClick(nil)
+
+            let editing = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return noteFields(in: hostingView).first?.currentEditor() != nil
+            }
+            try XCTSkipUnless(editing, "The offscreen note field never took keyboard focus")
+            letKeyboardFocusSettle(in: hostingView)
+
+            XCTAssertNotNil(noteFields(in: hostingView).first?.currentEditor(), "The note field keeps keyboard focus")
+        }
+    }
+
     /// After the middle of three bookmarks is deleted, keyboard focus is on
     /// the next one: Return goes to it.
     func testAfterDeletingTheMiddleBookmarkReturnGoesToTheNextOne() throws {
