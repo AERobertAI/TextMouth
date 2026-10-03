@@ -486,10 +486,13 @@ final class PersistenceCostTests: XCTestCase {
 
     // MARK: - Files
 
+    // Shared with PerformanceBaselineTests, which measures a checkpoint's
+    // bytes against its baseline the same way.
+
     /// The files a reading checkpoint of `book` can rewrite: library.json,
     /// the checkpoint journal beside it, and the book's package record, with
     /// every file beside the record that holds part of it.
-    private static func checkpointFiles(of book: Book) -> [URL] {
+    static func checkpointFiles(of book: Book) -> [URL] {
         let package = book.tmbDirectory
         let names = (try? FileManager.default.contentsOfDirectory(atPath: package.path)) ?? []
         let recordFiles = names.filter { $0.hasSuffix(".json") }.sorted().map { package.appendingPathComponent($0) }
@@ -498,7 +501,7 @@ final class PersistenceCostTests: XCTestCase {
 
     /// Which file is at `url` now: its inode, which an atomic write replaces,
     /// with its size and modification time; nil when nothing is there.
-    private static func identity(of url: URL) -> [String]? {
+    static func identity(of url: URL) -> [String]? {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) else { return nil }
         return [
             "\(attributes[.systemFileNumber] ?? "")",
@@ -508,7 +511,7 @@ final class PersistenceCostTests: XCTestCase {
     }
 
     /// The size of the file at `url` in bytes, or 0 when nothing is there.
-    private static func size(of url: URL) -> Int {
+    static func size(of url: URL) -> Int {
         ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? NSNumber)?.intValue ?? 0
     }
 

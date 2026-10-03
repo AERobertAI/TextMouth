@@ -1,0 +1,162 @@
+[
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000001",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Mr.",
+    "pattern" : "\\bMr\\.",
+    "replacement" : "Mister",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000002",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Mrs.",
+    "pattern" : "\\bMrs\\.",
+    "replacement" : "Missus",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000003",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Dr.",
+    "pattern" : "\\bDr\\.",
+    "replacement" : "Doctor",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000004",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Prof.",
+    "pattern" : "\\bProf\\.",
+    "replacement" : "Professor",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000005",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "St.",
+    "pattern" : "\\bSt\\.",
+    "replacement" : "Saint",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000006",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "vs.",
+    "pattern" : "\\bvs\\.",
+    "replacement" : "versus",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000007",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "etc.",
+    "pattern" : "\\betc\\.",
+    "replacement" : "etcetera",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000008",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "e.g.",
+    "pattern" : "\\be\\.g\\.",
+    "replacement" : "for example",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000009",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "i.e.",
+    "pattern" : "\\bi\\.e\\.",
+    "replacement" : "that is",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000010",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Skip URLs",
+    "pattern" : "https?://\\S+",
+    "replacement" : "link",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000011",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Skip emails",
+    "pattern" : "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+    "replacement" : "email address",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000012",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Skip footnote brackets",
+    "pattern" : "\\[\\d+\\]",
+    "replacement" : "",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000013",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Skip footnote parens",
+    "pattern" : "\\(see note \\d+\\)",
+    "replacement" : "",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000014",
+    "isEnabled" : true,
+    "isRegex" : false,
+    "name" : "Em dash to pause",
+    "pattern" : "—",
+    "replacement" : " — ",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000015",
+    "isEnabled" : true,
+    "isRegex" : true,
+    "name" : "Collapse whitespace",
+    "pattern" : "[ \\t]{3,}",
+    "replacement" : "  ",
+    "wholeWord" : false
+  },
+  {
+    "caseSensitive" : false,
+    "id" : "5EED0016-0000-4000-8000-000000000016",
+    "isEnabled" : true,
+    "isRegex" : false,
+    "name" : "| OCR error to I",
+    "pattern" : " | ",
+    "replacement" : " I ",
+    "wholeWord" : false
+  }
+]

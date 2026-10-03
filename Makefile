@@ -27,6 +27,12 @@ PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.r
 # compiled code earlier builds left there.
 TEST_DERIVED_DATA =
 
+# Set to 1, as `make check` sets it, to have the performance baselines tests
+# (PerformanceBaselineTests) measure even on a busy Mac rather than skip.
+# The runner hands it to xcodebuild as TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT,
+# which reaches the test host without its TEST_RUNNER_ prefix.
+PERFORMANCE_STRICT =
+
 # Package resolution uses the same derived data folder as `make build`, so the
 # build reuses the package checkouts that resolution creates.
 RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
@@ -34,7 +40,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest open xcode help
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest perf-baselines open xcode help
 
 ## Default: build the app
 all: build
@@ -52,7 +58,8 @@ help:
 	@echo "  make uninstall  - Remove from /Applications"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make check-selftest - Test the gate script in seconds, without building"
+	@echo "  make check-selftest - Test the gate and baseline-recording scripts in seconds, without building"
+	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
 	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
@@ -135,10 +142,12 @@ uninstall:
 	@echo "==> Removed."
 
 ## Run tests against the real application through the hosted test runner,
-## building in TEST_DERIVED_DATA when it names a folder
+## building in TEST_DERIVED_DATA when it names a folder, with the performance
+## baselines tests strict when PERFORMANCE_STRICT is 1
 test:
 	@echo "==> Running hosted production tests..."
-	@cd TextMouthTests && TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" swift run 2>&1
+	@cd TextMouthTests && TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" \
+		$(if $(filter 1,$(PERFORMANCE_STRICT)),TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1) swift run 2>&1
 	@echo ""
 
 ## Run the reproducibility gate: regenerate the project, verify the package
@@ -148,9 +157,18 @@ test:
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
 
-## Test the gate script itself: dry runs and stubbed build tools, no building
+## Test the gate script and the performance baselines' recording script
+## themselves: dry runs and stubbed build tools, no building
 check-selftest:
 	@Scripts/check-selftest.sh
+	@Scripts/perf-baselines-selftest.sh
+
+## Rewrite TextMouthProductionTests/performance-baselines.json from a fresh
+## run of PerformanceBaselineTests, which waits for a quiet Mac, printing
+## each old and new number; for after a deliberate change. Builds in
+## TEST_DERIVED_DATA when it names a folder.
+perf-baselines: generate
+	@TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" Scripts/perf-baselines.sh
 
 ## Open the project in Xcode
 xcode: generate

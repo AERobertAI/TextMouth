@@ -10,7 +10,8 @@
 # the stubs, which imitate passing and failing Makefile targets. No case can
 # start a real build: the gate reaches build tools only through PATH, every
 # build tool on that PATH is a stub, and the stubs for tools the gate must
-# never call directly fail loudly.
+# never call directly fail loudly. Two cases run the Makefile's own test
+# target, whose swift command is then a stub that records what it was handed.
 #
 # Usage: Scripts/check-selftest.sh   (or: make check-selftest)
 #
@@ -39,6 +40,7 @@ readonly FIXTURES="$WORK/fixtures"            # Package.resolved variants and te
 readonly CLAUDE_TMP="$WORK/claude-tmp"        # stands in for /tmp/claude-<uid>
 readonly SESSION="selftest-session"           # stands in for a Claude Code session id
 readonly SESSION_SLOT="$CLAUDE_TMP/-selftest-project/$SESSION/scratchpad/build-slot.sh"
+readonly SWIFT_RECORDER="$WORK/swift-recorder" # a swift that records, for the Makefile cases
 
 first_identity=""  # identity of the committed file's first pin
 first_version=""   # that pin's version, as the gate prints it
@@ -115,6 +117,20 @@ echo "stub: Scripts/check.sh must not run $(basename "$0") directly" >&2
 exit 97
 STUB
   done
+
+  # A swift for the cases that run the Makefile's test target: it records
+  # its arguments and the variables that target hands the test runner, with
+  # "(unset)" for one it did not set.
+  mkdir -p "$SWIFT_RECORDER"
+  cat > "$SWIFT_RECORDER/swift" <<'STUB'
+#!/bin/bash
+# Recording swift for check-selftest.sh's Makefile cases.
+echo "swift $* in $(basename "$PWD")" >> "$STUB_LOG"
+echo "TEXTMOUTH_TEST_DERIVED_DATA=${TEXTMOUTH_TEST_DERIVED_DATA-(unset)}" >> "$STUB_LOG"
+echo "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=${TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT-(unset)}" >> "$STUB_LOG"
+exit 0
+STUB
+  chmod +x "$SWIFT_RECORDER/swift"
 
   cat > "$SLOT_STUB" <<'STUB'
 #!/bin/bash
@@ -217,6 +233,20 @@ write_fixtures() {
     printf '\t Executed 3 tests, with 0 failures (0 unexpected) in 0.020 (0.021) seconds\n'
     printf '** TEST SUCCEEDED **\n'
   } > "$FIXTURES/tests-warning.log"
+
+  # A passing run whose performance tests printed every kind of line: the
+  # gate repeats each warning and skip once, and nothing else.
+  {
+    printf "Test Case '-[PerformanceBaselineTests testLaunch]' started.\n"
+    printf 'PERFORMANCE: launch: median 120.000 milliseconds of 120.000 (load 1.00 on 8 cores)\n'
+    printf 'PERFORMANCE WARNING: launch: 182.000 milliseconds, 1.52 times its baseline of 120.000 milliseconds; the test fails above twice its baseline.\n'
+    printf 'PERFORMANCE NOTE: open.audiobook: 4.000 milliseconds, 0.40 times its baseline of 10.000 milliseconds; make perf-baselines would tighten the check.\n'
+    printf 'PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12, and this Mac is a VirtualMac2,1\n'
+    printf 'PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12, and this Mac is a VirtualMac2,1\n'
+    printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
+    printf '\t Executed 3 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.020 (0.021) seconds\n'
+    printf '** TEST SUCCEEDED **\n'
+  } > "$FIXTURES/tests-performance.log"
 
   printf '** TEST SUCCEEDED **\n' > "$FIXTURES/tests-without-totals.log"
   {
@@ -356,7 +386,8 @@ dry_run_cases() {
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData"
+  expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
+  expect_report "would repeat the performance tests' warnings and skips from build/check/test.log"
   expect_report "would require no Swift warnings in build/check/test.log"
   expect_report "pins match Package.resolved: "
   expect_report "$first_identity $first_version"
@@ -548,7 +579,8 @@ real_run_cases() {
   expect_commands "make generate" \
     "slot make resolve-packages" "make resolve-packages" \
     "slot make build" "make build" \
-    "slot make test TEST_DERIVED_DATA=build/DerivedData" "make test TEST_DERIVED_DATA=build/DerivedData"
+    "slot make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1" \
+    "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
@@ -602,7 +634,7 @@ real_run_cases() {
   expect_status 0
   # The make stub would have recorded finding an earlier build.
   expect_commands "make generate" "make resolve-packages" "make build" \
-    "make test TEST_DERIVED_DATA=build/DerivedData"
+    "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "removed the compiled code of earlier builds, so every source compiles: build/DerivedData/Build and TextMouthTests/.build"
   expect_absent build/DerivedData/Build
   expect_absent TextMouthTests/.build
@@ -651,9 +683,22 @@ real_run_cases() {
   run_gate STUB_BUILD_WRITES="$FIXTURES/revision-drift.resolved"
   expect_status 1
   expect_commands "make generate" "make resolve-packages" "make build" \
-    "make test TEST_DERIVED_DATA=build/DerivedData"
+    "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "revision 000000000000"
   expect_verdict "check: FAILED: Package.resolved changed during the build or tests"
+  end_case
+
+  begin_case "the gate repeats the performance tests' warnings and skips, once each, and still passes"
+  run_gate STUB_TEST_OUTPUT="$FIXTURES/tests-performance.log"
+  expect_status 0
+  expect_report "check:   PERFORMANCE WARNING: launch: 182.000 milliseconds, 1.52 times its baseline"
+  expect_report "check:   PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12"
+  if [[ $(grep -c -F 'PERFORMANCE SKIPPED:' <<<"$output") -ne 1 ]]; then
+    problem "the skip was not repeated exactly once"
+  fi
+  refute_report "PERFORMANCE NOTE:"
+  refute_report "PERFORMANCE: launch"
+  expect_verdict "check: PASSED"
   end_case
 
   begin_case "a test run without XCTest totals fails the gate"
@@ -670,6 +715,39 @@ real_run_cases() {
   end_case
 }
 
+# run_make_test [make arguments...]: runs the Makefile's own test target in
+# the case's sandbox, with the recording swift first on PATH and no
+# strictness from the caller's environment, storing the report in $output
+# and the exit status in $status.
+run_make_test() {
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  mkdir -p "$sandbox/TextMouthTests"
+  output=$(cd "$sandbox" && env -u TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT \
+      PATH="$SWIFT_RECORDER:$PATH" STUB_LOG="$stub_log" \
+      "$REAL_MAKE" -s test "$@" 2>&1)
+  status=$?
+}
+
+# makefile_cases: the Makefile's test target, which the gate runs, hands its
+# options to the hosted test runner as the variables the runner reads.
+makefile_cases() {
+  begin_case "make test PERFORMANCE_STRICT=1 has the performance tests measure on a busy Mac"
+  run_make_test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1
+  expect_status 0
+  expect_commands "swift run in TextMouthTests" \
+    "TEXTMOUTH_TEST_DERIVED_DATA=build/DerivedData" \
+    "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1"
+  end_case
+
+  begin_case "make test without PERFORMANCE_STRICT leaves the performance tests free to skip"
+  run_make_test
+  expect_status 0
+  expect_commands "swift run in TextMouthTests" \
+    "TEXTMOUTH_TEST_DERIVED_DATA=" \
+    "TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=(unset)"
+  end_case
+}
+
 # main: runs every case and prints the totals; succeeds only when all pass.
 main() {
   write_stubs
@@ -678,6 +756,7 @@ main() {
   refusal_cases
   build_slot_cases
   real_run_cases
+  makefile_cases
   printf '%d passed, %d failed\n' "$passed" "$failed"
   (( failed == 0 ))
 }

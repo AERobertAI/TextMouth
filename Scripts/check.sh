@@ -11,7 +11,12 @@
 #      the build reports no Swift warning;
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
-#      reports no Swift warning either;
+#      reports no Swift warning either. The performance baselines tests run
+#      strictly (PERFORMANCE_STRICT=1): a busy Mac does not skip them, so a
+#      number more than twice its baseline fails the gate. The gate repeats
+#      each of their warnings (a number at 1.5 times its baseline or more)
+#      and why they skipped, if they did, as on a Mac other than the one the
+#      baselines were recorded on; neither fails it;
 # and finally confirms that no step changed the pins. It fails on any
 # generation, resolution, compile, or test error, on any Swift warning, and
 # when the test run reports no executed tests.
@@ -475,6 +480,21 @@ report_tests() {
   fail "the hosted test run executed no tests"
 }
 
+# report_performance: repeats what the performance baselines tests said
+# beyond passing, once each: every number at 1.5 times its baseline or more
+# (a line beginning "PERFORMANCE WARNING:"), and every reason they skipped
+# ("PERFORMANCE SKIPPED:"). Neither fails the gate: a number more than twice
+# its baseline has already failed the test step.
+report_performance() {
+  local log="$LOG_DIR/test.log" lines
+  if (( dry_run )); then
+    detail "would repeat the performance tests' warnings and skips from $log"
+    return 0
+  fi
+  lines=$(grep -E '^PERFORMANCE (WARNING|SKIPPED):' "$log" 2>/dev/null | awk '!seen[$0]++')
+  detail_lines "" "$lines"
+}
+
 # main <arguments...>: runs the gate.
 main() {
   parse_arguments "$@"
@@ -526,8 +546,9 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
 
   begin_step 4 "run the hosted XCTest suite"
-  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" || step_failed test $?
+  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" PERFORMANCE_STRICT=1 || step_failed test $?
   report_tests
+  report_performance
   require_no_swift_warnings "$LOG_DIR/test.log"
 
   # No later step may re-resolve packages behind the gate's back.
