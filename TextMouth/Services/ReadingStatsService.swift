@@ -439,15 +439,6 @@ final class ReadingStatsService: ObservableObject {
         RunLoop.main.add(timer, forMode: .common)
         checkpointTimer = timer
     }
-
-    /// Prune daily entries older than 90 days to keep the file small
-    func pruneOldEntries() {
-        let calendar = Calendar.current
-        guard let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()) else { return }
-        let cutoffKey = Self.dateKey(cutoff)
-        stats.dailyListeningSeconds = stats.dailyListeningSeconds.filter { $0.key >= cutoffKey }
-        save()
-    }
 }
 
 // MARK: - Data Model
