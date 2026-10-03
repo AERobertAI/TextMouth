@@ -4,7 +4,8 @@ import XCTest
 @testable import TextMouth
 
 /// Keyboard- and VoiceOver-operable bookmarks (TODO A04): the reader
-/// operations the bookmarks panel builds on.
+/// operations the bookmarks panel builds on, and the hosted windows its
+/// rendered tests rely on.
 @MainActor
 final class BookmarkKeyboardAccessTests: XCTestCase {
     // MARK: - Reader operations
@@ -45,6 +46,26 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
 
         XCTAssertNil(added)
+    }
+
+    // MARK: - Hosted test windows
+
+    /// The panel asks for VoiceOver focus, so the window hosting it in a
+    /// test must never be taken for a sheet, which the request would bring
+    /// forward and make key: the window is titled, and it stays hidden after
+    /// the request runs.
+    func testHostedWindowStaysHiddenWhenVoiceOverFocusIsRequested() {
+        let target = Button("Target") {}
+            .modifier(InitialVoiceOverFocusModifier(isTarget: true, delay: 0.05))
+
+        withHostedView(target, until: { _ in true }) { hostingView in
+            let window = hostingView.window
+            XCTAssertEqual(window?.title.isEmpty, false, "An untitled window is taken for a sheet")
+            // Give the request time to run.
+            _ = waitUntil(timeout: 0.5) { false }
+            XCTAssertEqual(window?.isVisible, false)
+            XCTAssertEqual(window?.isKeyWindow, false)
+        }
     }
 
     // MARK: - Helpers
