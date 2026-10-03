@@ -2129,45 +2129,13 @@ enum FileImportService {
         let folderPath = relativePath
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 
-        // Build the Book from bookInfo.json metadata and state
+        // Build the Book from bookInfo.json metadata and state, every field
+        // the record holds included, its text cache's fingerprints too.
         let book = Book(
-            id: info.metadata.bookID,
-            title: info.metadata.title,
-            author: info.metadata.author,
-            format: info.metadata.format,
+            record: info,
             filePath: bookFile.path,
-            md5Hash: info.metadata.md5Hash,
             folderPath: folderPath,
-            dateAdded: info.metadata.dateAdded,
-            lastOpened: info.metadata.lastOpened,
-            readingPosition: info.state.readingPosition,
-            bookmarks: info.bookmarks,
-            totalWordCount: info.state.totalWordCount,
-            totalCharacterCount: info.state.totalCharacterCount,
-            tmbDirectoryName: url.lastPathComponent,
-            sourceFilePath: info.metadata.sourceFilePath,
-            lastPlaybackStarted: info.state.lastPlaybackStarted,
-            lastPlaybackStopped: info.state.lastPlaybackStopped,
-            localVoiceID: info.state.localVoiceID,
-            localWPM: info.state.localWPM,
-            localPitch: info.state.localPitch,
-            skippedHeadingIDs: info.state.skippedHeadingIDs,
-            localEndOfBookBehavior: info.state.localEndOfBookBehavior,
-            localSkipForwardUnit: info.state.localSkipForwardUnit,
-            localSkipBackwardUnit: info.state.localSkipBackwardUnit,
-            manualSortOrder: info.state.manualSortOrder,
-            audioDuration: info.state.audioDuration,
-            audioAlbum: info.metadata.audioAlbum,
-            audioGenre: info.metadata.audioGenre,
-            audioYear: info.metadata.audioYear,
-            epubPublisher: info.metadata.publisher,
-            epubPublicationDate: info.metadata.publicationDate,
-            epubISBN: info.metadata.isbn,
-            epubLanguage: info.metadata.language,
-            epubIdentifier: info.metadata.epubIdentifier,
-            epubVersion: info.metadata.epubVersion,
-            cacheFormatVersion: info.state.cacheFormatVersion,
-            contentIndexVersion: info.state.contentIndexVersion
+            tmbDirectoryName: url.lastPathComponent
         )
         return (book, info.metadata.folderPath)
     }

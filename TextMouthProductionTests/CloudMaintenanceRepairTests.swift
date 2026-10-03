@@ -168,6 +168,21 @@ final class CloudMaintenanceRepairTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount(skipLine(.startupRepair, count: 4)), skipLinesBefore + 1)
     }
 
+    /// An adopted orphan keeps every field its record holds, its text
+    /// cache's fingerprints included, so a later load verifies its cache by
+    /// size and date instead of reading the whole source to fingerprint it
+    /// again.
+    @MainActor
+    func testAdoptedOrphanKeepsItsTextCacheFingerprint() throws {
+        let orphan = try commitCache(of: makePackagedBook(title: "Fingerprinted Orphan"))
+        let recorded = try XCTUnwrap(BookInfo.load(from: orphan.tmbDirectory).state.textCacheFingerprint)
+        let model = makeModel(with: [])
+
+        model.migrateOldBooksIfNeeded(access: cloud.access)
+
+        XCTAssertEqual(model.bookByID(orphan.id)?.textCacheFingerprint, recorded)
+    }
+
     // MARK: - Retired and Legacy Books
 
     /// A book whose removal marker is in the cloud keeps its row, since a
