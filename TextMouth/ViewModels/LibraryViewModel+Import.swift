@@ -47,13 +47,14 @@ extension LibraryViewModel {
         }
     }
 
-    /// What the item `url`, chosen in the Open panel or dropped on
-    /// TextMouth, is imported from, each source one book: a folder whose top
-    /// level holds several DAISY books' package files gives each of those
-    /// files; any other item is imported as itself. A folder holding one
-    /// DAISY book is imported as that book's package with every file it
-    /// needs, and a folder holding none is refused, saying why
-    /// (`FileImportService.importFileWithReport`) (TODO I02).
+    /// What the item `url`, chosen with Import DAISY Folder… or in the
+    /// Open Book... panel, or opened from Finder, is imported from, each
+    /// source one book: a folder whose top level holds several DAISY
+    /// books' package files gives each of those files; any other item is
+    /// imported as itself. A folder holding one DAISY book is imported as
+    /// that book's package with every file it needs, and a folder holding
+    /// none is refused, saying why (`FileImportService.importFileWithReport`)
+    /// (TODO I02).
     nonisolated static func importSources(for url: URL) -> [URL] {
         let packageFiles = DAISYParser.packageEntryPoints(in: url)
         return packageFiles.count > 1 ? packageFiles : [url]
@@ -64,6 +65,38 @@ extension LibraryViewModel {
     private func importBooks(in item: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
         for source in Self.importSources(for: item) {
             importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport)
+        }
+    }
+
+    // MARK: - Import DAISY Folder…
+
+    /// The panel the Import DAISY Folder… command presents (TODO I02): it
+    /// chooses folders, several at once, and no files, since a DAISY book
+    /// kept as loose files is imported by its folder. Here Return on a
+    /// folder chooses it; the standard Open Book... panel offers files only,
+    /// so Return on a folder there keeps opening the folder. A TextMouth
+    /// package counts as a file, so it cannot be chosen here.
+    static func makeDAISYFolderPanel() -> NSOpenPanel {
+        let panel = NSOpenPanel()
+        panel.title = "Import DAISY Folder"
+        panel.message = "Choose the folder of each DAISY book to import: the folder that holds its ncc.html or .opf file."
+        panel.prompt = "Import"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.canCreateDirectories = false
+        return panel
+    }
+
+    /// Imports the folders chosen with Import DAISY Folder… into the library
+    /// folder `folderPath`, each as the book or books it holds: a folder
+    /// holding one DAISY book as that book with every file it needs, a
+    /// folder holding several books' package files as each of them, and a
+    /// folder holding none is refused through the library's alert, which
+    /// says why (TODO I02).
+    func importDAISYFolders(_ folders: [URL], toFolder folderPath: String) {
+        for folder in folders {
+            importBooks(in: folder, toFolder: folderPath)
         }
     }
 

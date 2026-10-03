@@ -185,6 +185,12 @@ struct LibraryWindowView: View {
                 showFileImporter = true
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .importDAISYFolder)) { _ in
+            // One Library window presents the panel, as for Open Book...
+            if shouldHandleGlobalLibraryAction {
+                presentDAISYFolderPanel()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .openBookWindow)) { notification in
             // Finder imports complete while a reader may be key. The shared
             // router selects one existing Library as the openWindow host.
@@ -322,6 +328,25 @@ struct LibraryWindowView: View {
     /// a reader or another non-Library window has focus.
     private var shouldHandleGlobalLibraryAction: Bool {
         libraryWindowRouter.shouldHandleGlobalAction(in: hostWindow)
+    }
+
+    /// Presents the folder-only panel of Library > Import DAISY Folder… as a
+    /// sheet on this Library window (on its own while the window is not yet
+    /// known), and imports the folders chosen into the folder being viewed
+    /// (TODO I02).
+    private func presentDAISYFolderPanel() {
+        let panel = LibraryViewModel.makeDAISYFolderPanel()
+        let destination = currentFolderPath
+        let viewModel = libraryViewModel
+        let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK else { return }
+            viewModel.importDAISYFolders(panel.urls, toFolder: destination)
+        }
+        if let hostWindow {
+            panel.beginSheetModal(for: hostWindow, completionHandler: importChosenFolders)
+        } else {
+            panel.begin(completionHandler: importChosenFolders)
+        }
     }
 }
 

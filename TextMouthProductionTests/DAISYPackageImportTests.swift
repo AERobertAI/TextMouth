@@ -496,19 +496,19 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(LibraryViewModel.importSources(for: epub), [epub])
     }
 
-    /// DAISY books' folders chosen in the Open panel import into the folder
-    /// being viewed, each book with every file it needs: one folder as its
-    /// one book, a folder of two package files as two books. No folder is
-    /// deleted, and no reader window opens.
+    /// DAISY books' folders chosen with Import DAISY Folder… import into the
+    /// folder being viewed, each book with every file it needs: one folder
+    /// as its one book, a folder of two package files as two books. No
+    /// folder is deleted, and no reader window opens.
     @MainActor
-    func testFoldersChosenInTheOpenPanelImportTheirBooks() throws {
+    func testFoldersChosenWithImportDAISYFolderImportTheirBooks() throws {
         let navigationFolder = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sources)
         let twoBooks = try Fixtures.writeFolder(Fixtures.twoBooksFolder, named: "Two Books", in: sources)
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library()
 
         withImportDeleteBehavior(.deleteAfterImport) {
-            model.importFiles(urls: [navigationFolder, twoBooks], toFolder: folderPath)
+            model.importDAISYFolders([navigationFolder, twoBooks], toFolder: folderPath)
             XCTAssertTrue(
                 eventually(within: 60) { model.library.books.count == 3 || model.showError },
                 "the imports never finished"
@@ -527,16 +527,16 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: twoBooks.appendingPathComponent("almanac.opf").path))
     }
 
-    /// A folder holding no DAISY book chosen in the Open panel is refused
-    /// through the library's alert, which says what is wrong, and nothing
-    /// is added.
+    /// A folder holding no DAISY book chosen with Import DAISY Folder… is
+    /// refused through the library's alert, which says what is wrong, and
+    /// nothing is added.
     @MainActor
-    func testFolderWithoutABookChosenInTheOpenPanelSaysWhy() throws {
+    func testFolderWithoutABookChosenWithImportDAISYFolderSaysWhy() throws {
         let notes = try Fixtures.writeFolder(["notes.txt": "Nothing to read here."], named: "Harbor Notes", in: sources)
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library()
 
-        model.importFiles(urls: [notes], toFolder: folderPath)
+        model.importDAISYFolders([notes], toFolder: folderPath)
 
         XCTAssertTrue(eventually(within: 20) { model.showError }, "the import never reported its failure")
         XCTAssertEqual(
@@ -546,6 +546,79 @@ final class DAISYPackageImportTests: XCTestCase {
         )
         XCTAssertTrue(model.library.books.isEmpty)
         XCTAssertEqual(try folderEntries(), [])
+    }
+
+    // MARK: - Import DAISY Folder…
+
+    /// The running app's Library menu offers Import DAISY Folder… as an
+    /// ordinary menu item, enabled, with Command-Shift-O, which neither the
+    /// app's other menu items nor its default key bindings use. The item is
+    /// only read, never chosen: choosing it would present a real panel.
+    /// Skipped when this run's menu bar has no Library menu at all.
+    @MainActor
+    func testLibraryMenuOffersImportDAISYFolder() throws {
+        guard let libraryMenu = NSApp.mainMenu?.items.first(where: { $0.title == "Library" })?.submenu else {
+            throw XCTSkip("This run's menu bar has no Library menu")
+        }
+        // Brings the items up to date, as the menu does before it opens.
+        libraryMenu.delegate?.menuNeedsUpdate?(libraryMenu)
+
+        let item = try XCTUnwrap(
+            libraryMenu.items.first { $0.title == "Import DAISY Folder…" },
+            "The Library menu holds \(libraryMenu.items.map(\.title))"
+        )
+        XCTAssertTrue(item.isEnabled)
+        XCTAssertTrue(
+            Self.answersCommandShiftO(item),
+            "key \(item.keyEquivalent), modifiers \(item.keyEquivalentModifierMask.rawValue)"
+        )
+
+        // The shortcut is the command's alone.
+        let otherItems = Self.allItems(of: NSApp.mainMenu).filter { $0 !== item && Self.answersCommandShiftO($0) }
+        XCTAssertEqual(otherItems.map(\.title), [])
+        XCTAssertFalse(
+            ShortcutAction.defaultBindings.values.joined().contains(KeyBinding(key: "o", command: true, shift: true))
+        )
+    }
+
+    /// Whether `item` answers Command-Shift-O. A shortcut can be stored as
+    /// "o" with the Shift modifier, or as the shifted "O".
+    @MainActor
+    private static func answersCommandShiftO(_ item: NSMenuItem) -> Bool {
+        let modifiers = item.keyEquivalentModifierMask
+        return item.keyEquivalent.lowercased() == "o"
+            && modifiers.contains(.command)
+            && (modifiers.contains(.shift) || item.keyEquivalent == "O")
+            && !modifiers.contains(.option)
+            && !modifiers.contains(.control)
+    }
+
+    /// Every item of `menu` and of the menus inside it, each menu brought up
+    /// to date first, as it is before it opens.
+    @MainActor
+    private static func allItems(of menu: NSMenu?) -> [NSMenuItem] {
+        guard let menu else { return [] }
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu.items.flatMap { [$0] + allItems(of: $0.submenu) }
+    }
+
+    /// The command's panel chooses folders, several at once, and no files,
+    /// with a title, message, and button that say what it does. The panel
+    /// is only built here, never presented.
+    @MainActor
+    func testImportDAISYFolderPanelChoosesSeveralFoldersAndNoFiles() {
+        let panel = LibraryViewModel.makeDAISYFolderPanel()
+
+        XCTAssertTrue(panel.canChooseDirectories)
+        XCTAssertFalse(panel.canChooseFiles)
+        XCTAssertTrue(panel.allowsMultipleSelection)
+        XCTAssertFalse(panel.canCreateDirectories)
+        XCTAssertEqual(panel.title, "Import DAISY Folder")
+        XCTAssertEqual(panel.prompt, "Import")
+        XCTAssertEqual(
+            panel.message,
+            "Choose the folder of each DAISY book to import: the folder that holds its ncc.html or .opf file."
+        )
     }
 
     // MARK: - The Book's Own Package
