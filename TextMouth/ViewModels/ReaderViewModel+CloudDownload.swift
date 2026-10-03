@@ -837,7 +837,7 @@ extension ReaderViewModel {
             return "offline"
         case .stalled(let seconds):
             return "stalled for \(seconds) seconds"
-        case .provider(let message):
+        case .provider(let message), .removalFailed(let message):
             return "the sync service said: \(message)"
         case .notUploaded:
             return "changes not uploaded"

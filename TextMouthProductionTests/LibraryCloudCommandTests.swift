@@ -332,6 +332,25 @@ final class LibraryCloudCommandTests: XCTestCase {
         XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
     }
 
+    /// A removal the sync service fails is said and shown as a download
+    /// that could not be removed, naming the service, never as a book that
+    /// could not download; the book keeps its download.
+    func testRemoveDownloadTheServiceFailsSaysTheRemovalFailed() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.fake.failRemoval(of: book.id, with: .removalFailed("The file is locked."))
+        let explanation = "iCloud Drive couldn't remove the book's download: The file is locked."
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+    }
+
     /// For a selection, the books that can go are removed, and one summary
     /// says what was removed, where it stays, and which stayed and why.
     func testRemovingASelectionSaysOneSummary() async {

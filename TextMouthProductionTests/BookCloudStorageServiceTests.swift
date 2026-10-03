@@ -628,7 +628,8 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(events.recorded, ["CLOUD_DOWNLOAD_REMOVED: \(book.package.url.lastPathComponent): 2 of 4 files"])
     }
 
-    /// A removal the sync service refuses fails with its words.
+    /// A removal the sync service refuses fails as a removal, never as a
+    /// download, with the service's words.
     func testARefusedRemovalFailsWithTheServicesWords() throws {
         let book = try makePackage(["content.md"])
         items.setStatus(managed(.downloaded), of: book["content.md"])
@@ -641,9 +642,12 @@ final class BookCloudStorageServiceTests: XCTestCase {
         )
 
         XCTAssertThrowsError(try storage.removeDownload(of: book.package)) { error in
-            XCTAssertEqual(error as? BookCloudError, .provider(refusal.localizedDescription))
+            XCTAssertEqual(error as? BookCloudError, .removalFailed(refusal.localizedDescription))
         }
-        XCTAssertEqual(events.tags, ["CLOUD_DOWNLOAD_REMOVAL_FAILED"])
+        XCTAssertEqual(events.recorded, [
+            "CLOUD_DOWNLOAD_REMOVAL_FAILED: \(book.package.url.lastPathComponent): "
+                + "the sync service said: \(refusal.localizedDescription)",
+        ])
     }
 
     /// A package not on this Mac has no download to remove.

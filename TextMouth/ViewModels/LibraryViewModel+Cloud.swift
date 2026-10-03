@@ -606,7 +606,9 @@ final class LibraryCloudCommands {
                     try storage.removeDownload(of: package)
                     return nil
                 } catch {
-                    return (error as? BookCloudError) ?? .provider(error.localizedDescription)
+                    // Any other error is the removal's failure too, never a
+                    // download's, which `.provider` would say.
+                    return (error as? BookCloudError) ?? .removalFailed(error.localizedDescription)
                 }
             }
         }.value

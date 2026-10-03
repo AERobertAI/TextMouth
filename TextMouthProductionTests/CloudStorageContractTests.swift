@@ -191,6 +191,10 @@ final class CloudStorageContractTests: XCTestCase {
             "The book is open, so its download can't be removed. Close it first."
         )
         XCTAssertEqual(
+            BookCloudError.removalFailed("The file is locked.").explanation(in: drive),
+            "Google Drive couldn't remove the book's download: The file is locked."
+        )
+        XCTAssertEqual(
             BookCloudError.packageMissing.explanation(in: drive),
             "The book's files aren't on this Mac yet. Google Drive may still be syncing them."
         )
@@ -229,6 +233,10 @@ final class CloudStorageContractTests: XCTestCase {
         XCTAssertEqual(
             BookCloudError.bookIsOpen.explanation(in: nil),
             "The book is open, so its download can't be removed. Close it first."
+        )
+        XCTAssertEqual(
+            BookCloudError.removalFailed("Access denied.").explanation(in: nil),
+            "The cloud service couldn't remove the book's download: Access denied."
         )
         XCTAssertEqual(
             BookCloudError.packageMissing.explanation(in: nil),

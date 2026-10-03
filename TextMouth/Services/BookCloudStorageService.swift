@@ -279,7 +279,7 @@ final class BookCloudStorageService: BookCloudStorage {
     /// Removes the local copies of `package`'s downloaded files, keeping
     /// them in the cloud. Refuses with `BookCloudError.notUploaded`, before
     /// removing anything, while any file has changes waiting to upload;
-    /// throws `.provider` when the sync service refuses a removal, and
+    /// throws `.removalFailed` when the sync service refuses a removal, and
     /// `.packageMissing` when the package is not on this Mac.
     func removeDownload(of package: BookPackage) throws {
         let name = Self.logName(of: package)
@@ -293,7 +293,7 @@ final class BookCloudStorageService: BookCloudStorage {
                 do {
                     try items.removeLocalCopy(of: file.url)
                 } catch {
-                    throw BookCloudError.provider(error.localizedDescription)
+                    throw BookCloudError.removalFailed(error.localizedDescription)
                 }
             }
             logEvent("CLOUD_DOWNLOAD_REMOVED: \(name): \(downloaded.count) of \(survey.files.count) files")
@@ -529,7 +529,7 @@ private extension BookCloudError {
         switch self {
         case .offline: return "this Mac is offline"
         case .stalled(let seconds): return "nothing arrived for \(seconds) seconds"
-        case .provider(let message): return "the sync service said: \(message)"
+        case .provider(let message), .removalFailed(let message): return "the sync service said: \(message)"
         case .notUploaded: return "changes are waiting to upload"
         case .bookIsOpen: return "the book is open"
         case .packageMissing: return "the package is not on this Mac"
