@@ -172,6 +172,23 @@ final class PersistenceFailureCenterTests: XCTestCase {
         XCTAssertEqual(recorder.announcements.map(\.priority), [.high, .high])
     }
 
+    /// Subsystems that start to fail together, as a full disk stops them,
+    /// are announced in one announcement, so none cuts another short, and
+    /// where to act is said once.
+    func testSubsystemsThatFailTogetherAreAnnouncedTogether() {
+        let recorder = recordingAnnouncements {
+            center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused()) { _ in }
+            center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused())
+            center.publish()
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Library changes could not be saved: The volume is read-only. "
+                + "Settings could not be saved: The volume is read-only. "
+                + "Retry is at the top of the Library window."
+        ])
+    }
+
     /// Dismiss hides a row while its subsystem keeps failing, without
     /// saving anything; once the subsystem clears, its next failure is
     /// shown and announced again.

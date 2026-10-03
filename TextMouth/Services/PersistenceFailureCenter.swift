@@ -262,10 +262,19 @@ struct PersistenceBannerRow: Identifiable, Equatable {
     /// What VoiceOver says when the row first appears: its text, then where
     /// to act on it, since the listener may be in another window.
     var announcement: String {
-        let action = canRetry
+        Self.announcement(for: [self]) ?? text
+    }
+
+    /// One announcement for `rows` that appeared together, such as every
+    /// subsystem a full disk stops at once: each row's text, then where to
+    /// act, said once. One announcement, because each high-priority one
+    /// would cut the one before it short. Nil when there are no rows.
+    static func announcement(for rows: [PersistenceBannerRow]) -> String? {
+        guard !rows.isEmpty else { return nil }
+        let action = rows.contains(where: \.canRetry)
             ? "Retry is at the top of the Library window."
             : "Details are at the top of the Library window."
-        return "\(text) \(action)"
+        return (rows.map(\.text) + [action]).joined(separator: " ")
     }
 
     /// The rows for `failures`, one for each subsystem among them, in
@@ -531,8 +540,9 @@ final class PersistenceFailureCenter: ObservableObject {
 
     /// Brings the published failures up to date with the ledger, forgets the
     /// dismissal of every subsystem that has no failure left, and announces
-    /// each subsystem that has started to fail since the last publish.
-    /// Reports schedule this on the main queue; tests call it directly.
+    /// the subsystems that have started to fail since the last publish, in
+    /// one announcement. Reports schedule this on the main queue; tests call
+    /// it directly.
     func publish() {
         ledger.releasePublishClaim()
         let current = ledger.snapshot()
@@ -544,8 +554,9 @@ final class PersistenceFailureCenter: ObservableObject {
             dismissedSubsystems = stillDismissed
         }
         failures = current
-        for row in PersistenceBannerRow.rows(for: current) where newlyFailing.contains(row.subsystem) {
-            VoiceOverAnnouncer.announce(row.announcement)
+        let appeared = PersistenceBannerRow.rows(for: current).filter { newlyFailing.contains($0.subsystem) }
+        if let announcement = PersistenceBannerRow.announcement(for: appeared) {
+            VoiceOverAnnouncer.announce(announcement)
         }
     }
 

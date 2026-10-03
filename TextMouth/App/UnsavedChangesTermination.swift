@@ -100,10 +100,11 @@ final class UnsavedChangesTerminationGuard {
     }
 
     /// Answers a request to quit: flushes, then quits unless changes are
-    /// left unsaved. Then this request is cancelled and the prompt is shown
-    /// once AppKit has the answer, since a modal alert run inside its
-    /// question would hold up the quit event. A request that arrives while
-    /// the prompt is on its way or showing is cancelled without another.
+    /// left unsaved. If they are, this request is cancelled and the prompt
+    /// is shown once AppKit has the answer, since a modal alert run inside
+    /// its question would hold up the quit event. A request that arrives
+    /// while the prompt is on its way or showing is cancelled without
+    /// another prompt.
     func reply() -> NSApplication.TerminateReply {
         guard !isPrompting else { return .terminateCancel }
         flush()
