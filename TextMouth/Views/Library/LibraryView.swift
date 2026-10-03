@@ -716,7 +716,13 @@ struct LibraryView: View {
         .sheet(isPresented: $showTextInput) {
             TextInputView(
                 onAdd: { title, author, text in
-                    libraryViewModel.createBookFromText(title: title, author: author, text: text, toFolder: currentFolderPath)
+                    libraryViewModel.createBookFromText(
+                        title: title,
+                        author: author,
+                        text: text,
+                        toFolder: currentFolderPath,
+                        from: ImportOrigin(window: hostWindow)
+                    )
                     showTextInput = false
                 },
                 onCancel: { showTextInput = false }

@@ -91,7 +91,11 @@ struct LibraryWindowView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                libraryViewModel.importFiles(urls: urls, toFolder: currentFolderPath)
+                libraryViewModel.importFiles(
+                    urls: urls,
+                    toFolder: currentFolderPath,
+                    from: ImportOrigin(window: hostWindow)
+                )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
                 libraryViewModel.showError = true
@@ -129,7 +133,8 @@ struct LibraryWindowView: View {
         }
         // Import questions: replace or keep a duplicate, delete an original
         // file, put a ZIP archive's books in a folder. They wait in one queue
-        // and are asked one at a time (TODO I01).
+        // and are asked one at a time, each in the window its import started
+        // in (TODO I01).
         .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
         // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
         // items opened from Finder, opening a book's reader, and Continue to
@@ -244,7 +249,7 @@ struct LibraryWindowView: View {
             // shows one for them, or the router opened one. The import's
             // progress and questions appear there, and each book imported
             // opens afterwards.
-            libraryViewModel.importAndOpenFiles(urls: items)
+            libraryViewModel.importAndOpenFiles(urls: items, from: ImportOrigin(window: hostWindow))
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             // Opens the book's reader window, or brings it forward when it
             // is already open.
@@ -269,10 +274,11 @@ struct LibraryWindowView: View {
     private func presentDAISYFolderPanel() {
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
+        let origin = ImportOrigin(window: hostWindow)
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }
-            viewModel.importDAISYFolders(panel.urls, toFolder: destination)
+            viewModel.importDAISYFolders(panel.urls, toFolder: destination, from: origin)
         }
         if let hostWindow {
             panel.beginSheetModal(for: hostWindow, completionHandler: importChosenFolders)

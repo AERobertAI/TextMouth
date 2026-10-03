@@ -463,6 +463,30 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(try scene.folder.entries(), Set(scene.model.library.books.map(\.tmbDirectoryName)))
     }
 
+    // MARK: - The Window That Asks
+
+    /// Every import path records the Library window it started in, so that
+    /// window asks its questions: Open Book... and New from Text....
+    func testImportsRecordTheWindowTheyStartedIn() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let notes = "Coil the line clockwise, and hang it where it can dry."
+        let existingText = try FileImportService.importText(
+            notes, title: "Deck Notes", author: "", fileName: "Deck Notes.txt", toFolder: scene.folder.path
+        ).book
+        scene.model.library = Library(books: [atlas.existing, existingText])
+        useAfterImportingBehavior(.keepOriginal)
+        let window = ImportOrigin(windowNumber: 4242)
+
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path, from: window)
+        scene.model.createBookFromText(
+            title: "Deck Notes", author: "", text: notes, toFolder: scene.folder.path, from: window
+        )
+        drainImports(of: scene.model)
+
+        XCTAssertEqual(scene.model.importDecisions.waiting.map(\.request.origin), [window, window])
+    }
+
     // MARK: - Fixtures
 
     /// What one test imports from and into.

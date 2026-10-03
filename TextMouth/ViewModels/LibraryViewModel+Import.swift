@@ -55,18 +55,21 @@ final class SerialImportQueue: @unchecked Sendable {
 extension LibraryViewModel {
 
     /// Imports the items opened from Finder and opens each book once it is
-    /// in the library and its questions are answered (TODO I01). The Library
-    /// window the router chooses for the items calls this (TODO A05).
-    func importAndOpenFiles(urls: [URL]) {
+    /// in the library and its questions are answered. The Library window the
+    /// router chooses for the items calls this (TODO A05), and asks their
+    /// questions (TODO I01).
+    ///
+    /// - Parameter origin: The Library window importing the items.
+    func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
 
             if ext == "tmb" {
                 openTMBPackage(from: url)
             } else if ext == "zip" {
-                importZipAsync(from: url, toFolder: "")
+                importZipAsync(from: url, toFolder: "", origin: origin)
             } else {
-                importBooks(in: url, toFolder: "", openAfterImport: true)
+                importBooks(in: url, toFolder: "", origin: origin, openAfterImport: true)
             }
         }
     }
@@ -84,19 +87,30 @@ extension LibraryViewModel {
         return packageFiles.count > 1 ? packageFiles : [url]
     }
 
-    /// Imports `item`, one item chosen or opened, as the book or books it
-    /// holds (`importSources(for:)`), each on the import queue.
-    private func importBooks(in item: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
+    /// Imports `item`, one item chosen or opened in the Library window
+    /// `origin`, as the book or books it holds (`importSources(for:)`), each
+    /// on the import queue.
+    private func importBooks(
+        in item: URL,
+        toFolder folderPath: String,
+        origin: ImportOrigin?,
+        openAfterImport: Bool = false
+    ) {
         for source in Self.importSources(for: item) {
-            importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport)
+            importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport, origin: origin)
         }
     }
 
-    /// The request for an import queued now: it joins the batch of every
-    /// import queued so far, which the overlay's Cancel stops along with the
-    /// batch's questions (TODO I05, I01).
-    private func importRequest(opensAfterImport: Bool = false) -> ImportRequest {
-        ImportRequest(opensAfterImport: opensAfterImport, batch: importOperationQueue.currentCancellation)
+    /// The request for an import queued now from the Library window
+    /// `origin`: it joins the batch of every import queued so far, which the
+    /// overlay's Cancel stops along with the batch's questions (TODO I05,
+    /// I01).
+    private func importRequest(from origin: ImportOrigin?, opensAfterImport: Bool = false) -> ImportRequest {
+        ImportRequest(
+            origin: origin,
+            opensAfterImport: opensAfterImport,
+            batch: importOperationQueue.currentCancellation
+        )
     }
 
     // MARK: - Import DAISY Folder…
@@ -124,10 +138,11 @@ extension LibraryViewModel {
     /// holding one DAISY book as that book with every file it needs, a
     /// folder holding several books' package files as each of them, and a
     /// folder holding none is refused through the library's alert, which
-    /// says why (TODO I02).
-    func importDAISYFolders(_ folders: [URL], toFolder folderPath: String) {
+    /// says why (TODO I02). The Library window `origin` that presented the
+    /// panel asks the imports' questions (TODO I01).
+    func importDAISYFolders(_ folders: [URL], toFolder folderPath: String, from origin: ImportOrigin? = nil) {
         for folder in folders {
-            importBooks(in: folder, toFolder: folderPath)
+            importBooks(in: folder, toFolder: folderPath, origin: origin)
         }
     }
 
@@ -266,9 +281,10 @@ extension LibraryViewModel {
 
     /// Import a zip file asynchronously with progress tracking. The import
     /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
-    /// stops it while it waits as well as while it runs (TODO I05).
-    func importZipAsync(from url: URL, toFolder folderPath: String) {
-        let request = importRequest()
+    /// stops it while it waits as well as while it runs (TODO I05). The
+    /// Library window `origin` that started it asks its questions (TODO I01).
+    func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
+        let request = importRequest(from: origin)
         let cancellation = request.batch
         importOperationQueue.enqueue { [weak self] in
             guard let self = self else { return }
@@ -347,12 +363,17 @@ extension LibraryViewModel {
         }
     }
 
-    /// Imports one file on the import queue, and with `openAfterImport`
-    /// opens its book once the book is in the library and its questions are
-    /// answered (TODO I01). Other files import meanwhile; their questions
-    /// wait their turn.
-    func importSingleFileAsync(from url: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
-        let request = importRequest(opensAfterImport: openAfterImport)
+    /// Imports one file on the import queue, as the Library window `origin`
+    /// asked, and with `openAfterImport` opens its book once the book is in
+    /// the library and its questions are answered (TODO I01). Other files
+    /// import meanwhile; their questions wait their turn.
+    func importSingleFileAsync(
+        from url: URL,
+        toFolder folderPath: String,
+        openAfterImport: Bool = false,
+        origin: ImportOrigin? = nil
+    ) {
+        let request = importRequest(from: origin, opensAfterImport: openAfterImport)
         importOperationQueue.enqueue { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
@@ -468,11 +489,18 @@ extension LibraryViewModel {
 
     /// Create a new book from user-entered text (paste/type). The package is
     /// staged and published like every import's, so a failure leaves nothing
-    /// in the library and is told through the same alert.
-    func createBookFromText(title: String, author: String, text: String, toFolder folderPath: String = "") {
+    /// in the library and is told through the same alert. The Library window
+    /// `origin` asks the duplicate question, if one arises (TODO I01).
+    func createBookFromText(
+        title: String,
+        author: String,
+        text: String,
+        toFolder folderPath: String = "",
+        from origin: ImportOrigin? = nil
+    ) {
         let bookTitle = TextImportPolicy.resolvedTitle(title)
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
-        let request = importRequest()
+        let request = importRequest(from: origin)
         importOperationQueue.enqueue { [weak self] in
             guard let self else { return }
             do {
@@ -496,13 +524,15 @@ extension LibraryViewModel {
 
     /// Import one or more files from URLs into the specified folder. A
     /// DAISY book's folder is imported as that book (`importSources(for:)`).
-    func importFiles(urls: [URL], toFolder folderPath: String = "") {
+    /// The Library window `origin` that chose them asks their questions
+    /// (TODO I01).
+    func importFiles(urls: [URL], toFolder folderPath: String = "", from origin: ImportOrigin? = nil) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
             if ext == "zip" {
-                importZipAsync(from: url, toFolder: folderPath)
+                importZipAsync(from: url, toFolder: folderPath, origin: origin)
             } else {
-                importBooks(in: url, toFolder: folderPath)
+                importBooks(in: url, toFolder: folderPath, origin: origin)
             }
         }
     }
