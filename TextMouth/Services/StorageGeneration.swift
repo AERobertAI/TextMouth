@@ -31,6 +31,33 @@ extension StorageGeneration: Equatable {
     }
 }
 
+/// A kind of work that writes into the data directory, which a
+/// data-directory move waits for, and names while it waits (TODO S04).
+enum StorageWork: Sendable, CaseIterable {
+    /// One import from the import queue, from choosing where its package
+    /// goes to adding its book to the library.
+    case importing
+    /// Writing a book's text cache: startup maintenance, Redo Text
+    /// Extraction, or a reader rebuilding a stale cache.
+    case textExtraction
+    /// Analyzing a book for its statistics and index, in the background
+    /// pass that follows the text caches.
+    case contentAnalysis
+
+    /// What a move's status line says while it waits for this work, as the
+    /// screen shows it and VoiceOver reads it.
+    var waitingMessage: String {
+        switch self {
+        case .importing:
+            return "Waiting for the current import to finish..."
+        case .textExtraction:
+            return "Waiting for text extraction to finish..."
+        case .contentAnalysis:
+            return "Waiting for book analysis to finish..."
+        }
+    }
+}
+
 /// Where the data directory is now, and the boundary between data-directory
 /// moves and the work that writes into the data directory (TODO S04).
 ///
@@ -42,6 +69,11 @@ extension StorageGeneration: Equatable {
 /// preferences name; a process hosting tests always starts in its sandbox,
 /// and only a move a test publishes, into a folder of its own, takes it
 /// elsewhere until the test puts it back.
+///
+/// Work that writes into the data directory runs through `perform(_:...)`,
+/// which keeps it from running across a publication: a move holds new work
+/// back (`holdWork()`), waits for the work already under way, copies and
+/// publishes, and then lets the held work go on under the new generation.
 ///
 /// `@unchecked Sendable`: every stored property is guarded by `condition`,
 /// which is never held while calling out, so nothing reached from here,
@@ -59,6 +91,20 @@ final class StorageBoundary: @unchecked Sendable {
     /// Every earlier generation, oldest first, so a path captured under any
     /// of them can be moved under the current root.
     private var earlierGenerations: [StorageGeneration] = []
+    /// The work under way on background threads, by ticket.
+    private var workUnderWay: [Int: StorageWork] = [:]
+    /// The ticket the next piece of work gets.
+    private var nextTicket = 0
+    /// How many pieces of work have finished, so a waiting move can tell
+    /// whether any finished since it last looked.
+    private var finishedWorkCount = 0
+    /// Moves waiting for a piece of work to finish.
+    private var finishWaiters: [CheckedContinuation<Void, Never>] = []
+    /// Whether a move holds new work back.
+    private var holdsWork = false
+    /// The key of this boundary's work depth in each thread's dictionary:
+    /// how deep that thread is inside work it is performing here.
+    private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
 
     /// A boundary whose first generation is the data directory at `root`.
     init(root: URL) {
@@ -160,5 +206,181 @@ final class StorageBoundary: @unchecked Sendable {
             }
         }
         return nil
+    }
+
+    // MARK: - Work
+
+    /// Runs `body`, a piece of `work` that writes into the data directory,
+    /// with the generation it runs under, and returns what it returns.
+    ///
+    /// While a data-directory move holds work (`holdWork()`), work started
+    /// on a background thread first tells `whileHeld`, then waits until the
+    /// move publishes or gives up, and runs under the generation current
+    /// then. A move waits for the work under way before it copies anything,
+    /// so no piece of work runs across a publication.
+    ///
+    /// Two kinds of work run at once, unrecorded. Work on the main thread:
+    /// a move copies and publishes on the main actor too, so such work can
+    /// never run across that, and waiting there would stall the very work
+    /// a move waits for, such as an import adding its book to the library.
+    /// And work started inside other work on the same thread, such as the
+    /// text extraction an import does: it is part of that work.
+    func perform<Result>(
+        _ work: StorageWork,
+        whileHeld: (() -> Void)? = nil,
+        _ body: (StorageGeneration) throws -> Result
+    ) rethrows -> Result {
+        if Thread.isMainThread || workDepth > 0 {
+            return try body(current)
+        }
+        let (ticket, generation) = begin(work, whileHeld: whileHeld)
+        workDepth += 1
+        defer {
+            workDepth -= 1
+            finish(ticket)
+        }
+        return try body(generation)
+    }
+
+    /// How deep the current thread is inside work it performs here.
+    private var workDepth: Int {
+        get { Thread.current.threadDictionary[workDepthKey] as? Int ?? 0 }
+        set { Thread.current.threadDictionary[workDepthKey] = newValue }
+    }
+
+    /// Records `work` as under way, once no move holds work back, and
+    /// returns its ticket and the generation it runs under. A move holding
+    /// work makes it tell `whileHeld`, outside the lock, and wait.
+    private func begin(_ work: StorageWork, whileHeld: (() -> Void)?) -> (ticket: Int, generation: StorageGeneration) {
+        condition.lock()
+        if holdsWork, let whileHeld {
+            condition.unlock()
+            whileHeld()
+            condition.lock()
+        }
+        while holdsWork {
+            condition.wait()
+        }
+        let ticket = nextTicket
+        nextTicket += 1
+        workUnderWay[ticket] = work
+        let generation = self.generation
+        condition.unlock()
+        return (ticket, generation)
+    }
+
+    /// Records the work `ticket` as finished, and resumes every move
+    /// waiting for a piece of work to finish.
+    private func finish(_ ticket: Int) {
+        condition.lock()
+        workUnderWay[ticket] = nil
+        finishedWorkCount += 1
+        let waiters = finishWaiters
+        finishWaiters.removeAll()
+        condition.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
+    }
+
+    // MARK: - Holding Work for a Move
+
+    /// Holds new work back for a data-directory move, until the hold is
+    /// released; nil while another move holds it. The move then waits for
+    /// the work already under way (`StorageWorkHold.waitForWorkUnderWay`)
+    /// before it copies anything, and releases the hold once it has
+    /// published, or given up.
+    func holdWork() -> StorageWorkHold? {
+        condition.lock()
+        defer { condition.unlock() }
+        guard !holdsWork else { return nil }
+        holdsWork = true
+        return StorageWorkHold(boundary: self)
+    }
+
+    /// Lets the held work go on, under the generation current now.
+    fileprivate func releaseWork() {
+        condition.lock()
+        holdsWork = false
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    /// The first kind of work under way, in the order of
+    /// `StorageWork.allCases`, with how many pieces had finished when it
+    /// looked; nil when no work is under way.
+    fileprivate func firstWorkUnderWay() -> (work: StorageWork, finished: Int)? {
+        condition.lock()
+        defer { condition.unlock() }
+        let kinds = Set(workUnderWay.values)
+        guard let first = StorageWork.allCases.first(where: kinds.contains) else { return nil }
+        return (first, finishedWorkCount)
+    }
+
+    /// Returns once a piece of work finishes after `seen` pieces had, or at
+    /// once when one already has.
+    fileprivate func workFinished(after seen: Int) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            condition.lock()
+            guard finishedWorkCount == seen else {
+                condition.unlock()
+                continuation.resume()
+                return
+            }
+            finishWaiters.append(continuation)
+            condition.unlock()
+        }
+    }
+}
+
+/// A data-directory move's hold on the work that writes into the data
+/// directory (TODO S04). While it lasts, new work started on a background
+/// thread waits (`StorageBoundary.perform`); `waitForWorkUnderWay` waits
+/// for the work already running. Releasing it lets the held work go on,
+/// under whatever generation is current then.
+///
+/// `@unchecked Sendable`: its one variable is guarded by `lock`.
+final class StorageWorkHold: @unchecked Sendable {
+    /// The boundary whose work is held.
+    private let boundary: StorageBoundary
+    /// Guards `isReleased`.
+    private let lock = NSLock()
+    /// Whether the hold was released.
+    private var isReleased = false
+
+    /// A hold on `boundary`'s work, which `StorageBoundary.holdWork()` makes.
+    fileprivate init(boundary: StorageBoundary) {
+        self.boundary = boundary
+    }
+
+    /// A hold that is never released explicitly still lets the work go on.
+    deinit {
+        release()
+    }
+
+    /// Returns once no work is under way, telling `report` each kind of
+    /// work it waits for, in turn: an import first when several kinds are
+    /// under way. Work started meanwhile is held, so the wait ends.
+    @MainActor
+    func waitForWorkUnderWay(reporting report: (StorageWork) -> Void) async {
+        var reported: StorageWork?
+        while let underWay = boundary.firstWorkUnderWay() {
+            if underWay.work != reported {
+                report(underWay.work)
+                reported = underWay.work
+            }
+            await boundary.workFinished(after: underWay.finished)
+        }
+    }
+
+    /// Lets the held work go on. Releasing a hold again does nothing.
+    func release() {
+        lock.lock()
+        let wasReleased = isReleased
+        isReleased = true
+        lock.unlock()
+        if !wasReleased {
+            boundary.releaseWork()
+        }
     }
 }
