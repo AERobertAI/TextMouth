@@ -94,7 +94,7 @@ extension EPUBParser {
     /// - Throws: `EPUBParserError.noReadableChapters` with the report when
     ///   no chapter holds text, since an empty book is not a reading.
     static func preparedChapters(
-        archive: Archive,
+        archive: IndexedArchive,
         opfPath: String,
         opfData: OPFData
     ) throws -> (chapters: [PreparedChapter], report: ExtractionReport) {
@@ -192,13 +192,13 @@ extension EPUBParser {
     /// order can name a destination in it that the conversion did not know,
     /// and `finishedMarkdown` converts such a document again.
     private static func readSpineDocument(
-        archive: Archive,
+        archive: IndexedArchive,
         path: String,
         number: Int,
         navigation: inout NavigationTargets
     ) -> SpineRead {
         guard let entry = archive[path] else { return .omitted(.missingMember) }
-        guard let html = try? text(of: entry, in: archive) else { return .omitted(.unreadableMember) }
+        guard let html = try? text(of: entry, in: archive.archive) else { return .omitted(.unreadableMember) }
         let readingFlow = PublicationSemantics.ReadingFlow(source: html)
         let doc: Document
         let title: String
@@ -244,11 +244,11 @@ extension EPUBParser {
     private static func finishedMarkdown(
         of document: SpineDocument,
         targets: [NavigationTarget],
-        archive: Archive
+        archive: IndexedArchive
     ) throws -> String {
         guard fragmentCount(of: targets) > document.convertedFragmentCount,
               let entry = archive[document.path],
-              let html = try? text(of: entry, in: archive) else {
+              let html = try? text(of: entry, in: archive.archive) else {
             return try document.conversion.get()
         }
         return try HTMLToMarkdownConverter.convert(
@@ -307,7 +307,7 @@ extension EPUBParser {
     /// Only table-of-contents semantics are chapter navigation: the EPUB 3 TOC
     /// nav, the NCX navMap, and the legacy guide's TOC. Page lists (including
     /// the NCX pageList) and landmarks are never read.
-    private static func readNavigation(archive: Archive, opfPath: String, opfData: OPFData) -> [NavigationTarget] {
+    private static func readNavigation(archive: IndexedArchive, opfPath: String, opfData: OPFData) -> [NavigationTarget] {
         var result: [NavigationTarget] = []
         // A guide reference to a navigation document read here would only find
         // the same TOC again, next to that document's page list and landmarks.

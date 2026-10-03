@@ -93,15 +93,19 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// budget: the DAISY audio converter carries on past an audio file it
     /// cannot copy, so the import learns of the refusal from the budget.
     let budget: ArchiveBudget?
+    /// The archive's entries by path, read once: a book's every navigation,
+    /// SMIL, text, and audio file is looked up by path (PERF20).
+    private let index: IndexedArchive
 
     /// A provider of `archive`'s files, read within `budget` when given.
     init(archive: Archive, budget: ArchiveBudget? = nil) {
         self.archive = archive
         self.budget = budget
+        index = IndexedArchive(archive)
     }
 
     func listFiles() -> [String] {
-        archive.compactMap { entry in
+        index.entries.compactMap { entry in
             // Skip directories
             guard entry.type == .file else { return nil }
             return entry.path
@@ -115,7 +119,7 @@ class ArchiveFileProvider: DAISYFileProvider {
     ///   more than `ArchiveEntryLimits.current` allows or, within a budget,
     ///   more than the archive records for it.
     func readFile(at path: String) throws -> Data {
-        guard let entry = archive[path] ?? caseInsensitiveFile(at: path) else {
+        guard let entry = index[path] ?? index.file(matchingCaseInsensitively: path) else {
             throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
         do {
@@ -125,12 +129,6 @@ class ArchiveFileProvider: DAISYFileProvider {
             budget?.record(damage)
             throw damage
         }
-    }
-
-    /// The first file entry whose path matches `path` without regard to case.
-    private func caseInsensitiveFile(at path: String) -> Entry? {
-        let lowerPath = path.lowercased()
-        return archive.first { $0.type == .file && $0.path.lowercased() == lowerPath }
     }
 }
 

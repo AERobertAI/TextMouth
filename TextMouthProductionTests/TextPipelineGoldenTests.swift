@@ -299,6 +299,34 @@ final class TextPipelineGoldenTests: XCTestCase {
         TestZIPEntry("caf\u{E9}.html", Data("composed".utf8)),
     ]
 
+    /// An indexed archive lists every entry in the archive's order, and
+    /// finds each path, exactly and without regard to case, as the archive's
+    /// own lookups find it: in the archive above, in every archive among
+    /// TestData's books, and in the generated EPUBs. Every path is tried as
+    /// written, in capitals, and in small letters, with paths no entry has.
+    func testIndexedArchiveFindsEveryPathAsTheArchiveDoes() throws {
+        typealias Fixtures = TextPipelineFixtures
+        var urls = try ["alice.epub", "alice.docx", "test_book.docx", "daisy202_test.zip", "hyperion_daisy.zip",
+                        "lathe_of_heaven_daisy.zip", "wipo-treaty-d202-text-only.zip"].map { try requireFile($0) }
+        urls.append(try Fixtures.writeEPUB(Self.lookupEntries, named: "lookups.zip", for: self))
+        urls.append(try Fixtures.writeEPUB(Fixtures.navigationEPUB(), named: "navigation.epub", for: self))
+        urls.append(try Fixtures.writeEPUB(Fixtures.ncxEPUB(), named: "ncx.epub", for: self))
+        for url in urls {
+            let archive = try Archive(url: url, accessMode: .read)
+            let index = IndexedArchive(archive)
+            XCTAssertEqual(index.entries, Array(archive), url.lastPathComponent)
+            let paths = index.entries.map(\.path)
+            var probes = paths + ["", "missing", "/"]
+            probes += paths.map { $0.uppercased() }
+            probes += paths.map { $0.lowercased() }
+            for path in probes {
+                XCTAssertEqual(index[path], archive[path], "\(url.lastPathComponent): \(path)")
+                let firstFile = archive.first { $0.type == .file && $0.path.lowercased() == path.lowercased() }
+                XCTAssertEqual(index.file(matchingCaseInsensitively: path), firstFile, "\(url.lastPathComponent): \(path)")
+            }
+        }
+    }
+
     /// A DAISY book's files are found as the archive finds them: the first
     /// entry at a path wins (paths compare as Swift compares strings, so an
     /// accented letter written either way is one path), and a path no entry

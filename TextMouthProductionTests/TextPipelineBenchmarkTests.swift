@@ -82,6 +82,10 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         try benchmark("PERF20", "Archive subscript for each of \(paths.count) members", repetitions: 1) {
             paths.reduce(0) { found, path in found + (archive[path] == nil ? 0 : 1) }
         }
+        try benchmark("PERF20", "IndexedArchive built, then each of \(paths.count) members looked up", repetitions: 3) {
+            let index = IndexedArchive(archive)
+            return paths.reduce(0) { found, path in found + (index[path] == nil ? 0 : 1) }
+        }
         let docx = try requireFile("alice.docx")
         try benchmark("PERF20", "DOCXParser.extractMarkdown, alice.docx", repetitions: 5) {
             try DOCXParser.extractMarkdown(from: docx)

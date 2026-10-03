@@ -123,6 +123,71 @@ extension Archive {
     }
 }
 
+// MARK: - Finding Entries
+
+/// An archive with its entries indexed by path, read from its central
+/// directory once.
+///
+/// ZIPFoundation finds an entry by path (`archive[path]`) by reading the
+/// central directory from its start, a record and a local header at a time,
+/// until a path matches. A reader that looks up every member of a book so
+/// reads records in proportion to its members times its entries: 2.1
+/// million for one EPUB of 2,204 entries, two thirds of the time it took to
+/// prepare (PERF20). Readers that look up more than a member or two read
+/// the entries once into this index instead; one that looks up only a
+/// member or two, such as reading an EPUB's metadata, is quicker without.
+///
+/// Lookups answer exactly as the archive does for an archive opened without
+/// a path encoding, as every reader opens one: by each entry's own `path`,
+/// compared as Swift compares strings, the first entry at a path winning,
+/// as `first(where:)` finds it.
+struct IndexedArchive {
+    /// The archive itself, which reads the entries' bytes.
+    let archive: Archive
+    /// Every entry, in the order the archive's central directory lists them.
+    let entries: [Entry]
+    /// The first entry at each path.
+    private let entriesByPath: [String: Entry]
+    /// The first file entry at each path, lowercased.
+    private let filesByLowercasedPath: [String: Entry]
+
+    /// `archive` with its entries read into the index.
+    init(_ archive: Archive) {
+        var entries: [Entry] = []
+        var entriesByPath: [String: Entry] = [:]
+        var filesByLowercasedPath: [String: Entry] = [:]
+        for entry in archive {
+            entries.append(entry)
+            let path = entry.path
+            if entriesByPath[path] == nil {
+                entriesByPath[path] = entry
+            }
+            if entry.type == .file {
+                let lowercased = path.lowercased()
+                if filesByLowercasedPath[lowercased] == nil {
+                    filesByLowercasedPath[lowercased] = entry
+                }
+            }
+        }
+        self.archive = archive
+        self.entries = entries
+        self.entriesByPath = entriesByPath
+        self.filesByLowercasedPath = filesByLowercasedPath
+    }
+
+    /// The first entry at exactly `path`, as `archive[path]` finds it.
+    subscript(path: String) -> Entry? {
+        entriesByPath[path]
+    }
+
+    /// The first file entry whose path matches `path` without regard to
+    /// case, as `archive.first { $0.type == .file && $0.path.lowercased()
+    /// == path.lowercased() }` finds it.
+    func file(matchingCaseInsensitively path: String) -> Entry? {
+        filesByLowercasedPath[path.lowercased()]
+    }
+}
+
 // MARK: - Reading
 
 /// The one way TextMouth takes an entry's bytes out of a ZIP archive,

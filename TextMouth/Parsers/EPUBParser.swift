@@ -80,7 +80,9 @@ enum EPUBParser {
     ///   archive, or lacks a readable container or package document, and
     ///   `.noReadableChapters` when no chapter holds text.
     static func prepareBook(url: URL) throws -> PreparedBook {
-        let archive = try openArchive(at: url)
+        // Every document the book holds is looked up, so its archive's
+        // entries are read into an index once (PERF20).
+        let archive = IndexedArchive(try openArchive(at: url))
 
         // Step 1: Read container.xml to find OPF path
         let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
@@ -395,7 +397,19 @@ enum EPUBParser {
     /// - Throws: `EPUBParserError.missingContainer` or `.invalidOPF` when no
     ///   member is at `path`, and `.damagedFile` when it cannot be decoded.
     static func extractString(archive: Archive, path: String) throws -> String {
-        guard let entry = archive[path] else {
+        try extractString(entry: archive[path], at: path, in: archive)
+    }
+
+    /// The text of the member at `path` of an archive whose entries are
+    /// indexed, found in its index (see `extractString(archive:path:)`).
+    static func extractString(archive: IndexedArchive, path: String) throws -> String {
+        try extractString(entry: archive[path], at: path, in: archive.archive)
+    }
+
+    /// The text of `entry`, the member at `path` of `archive`, or nil when
+    /// the archive has no member there.
+    private static func extractString(entry: Entry?, at path: String, in archive: Archive) throws -> String {
+        guard let entry else {
             if path == "META-INF/container.xml" {
                 throw EPUBParserError.missingContainer
             }
