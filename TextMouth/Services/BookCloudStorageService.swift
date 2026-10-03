@@ -4,7 +4,7 @@ import os
 // MARK: - Book Cloud Storage (FR02)
 
 /// Cloud state, downloads, and removals of whole books (FR02), built on the
-/// file-level `CloudItemStatusProviding`.
+/// file-level `SyncFlagReporting`.
 ///
 /// A book is its .tmb package folder (or, for an old book, its own file),
 /// and its state is the state of every file inside. Listing a package and
@@ -12,11 +12,21 @@ import os
 /// so they never wait on the network; they can still wait on the file
 /// system, so call every method off the main thread.
 ///
-/// A download asks the sync service for each missing file, then checks the
+/// Each look at a package decides once which items the sync service syncs.
+/// iCloud Drive syncs a package as one item: the package carries the sync
+/// flags and its files none, and the service refuses a download or a
+/// removal asked for one of those files as for an item that doesn't exist.
+/// Then the package's own flags say whether the book's changes have
+/// uploaded and whether it is downloading, and the package is what a
+/// download asks for and a removal removes. Google Drive and Dropbox sync
+/// each file, and every file carries its own flags (their package folders
+/// carry flags too), so each file counts on its own (`Survey.packageItem`).
+///
+/// A download asks the sync service for each missing item, then checks the
 /// package every half second, reporting progress as files arrive, until
 /// every file is on this Mac or it gives up: at once when this Mac is
-/// offline, when a file reports a download error, when the package
-/// disappears, or after a minute with no file arriving and none being
+/// offline, when an item reports a download error, when the package
+/// disappears, or after a minute with nothing arriving and nothing being
 /// downloaded. Meanwhile it listens for the progress the sync service
 /// publishes for each file still to come (`PublishedFileProgress`): a part
 /// of a file it publishes counts toward the progress, by size or by files,
@@ -66,12 +76,16 @@ final class BookCloudStorageService: BookCloudStorage {
         var foldersInCloud: [URL] = []
     }
 
-    /// One file of a package and its cloud state.
+    /// One item of a book, a file or the package folder itself, and its
+    /// cloud state.
     struct FileStatus: Equatable, Sendable {
-        /// Where the file is.
+        /// Where the item is.
         let url: URL
         /// Its cloud state when it was read.
         let status: CloudItemStatus
+        /// Whether it carried sync flags of its own when it was read
+        /// (`FlaggedItemStatus`).
+        let carriesSyncFlags: Bool
     }
 
     // MARK: Settings
@@ -85,8 +99,9 @@ final class BookCloudStorageService: BookCloudStorage {
 
     // MARK: Dependencies
 
-    /// The state of single files, and requests to the sync service.
-    private let items: any CloudItemStatusProviding
+    /// The state of single items, the package and its files, whether each
+    /// carries sync flags of its own, and requests to the sync service.
+    private let items: any SyncFlagReporting
     /// Whether this Mac is online.
     private let reachability: NetworkReachability
     /// The wait between two checks of a download's files.
@@ -107,7 +122,7 @@ final class BookCloudStorageService: BookCloudStorage {
     /// go (the debug log, as storage events), and how a download listens
     /// for the progress published for a file (`PublishedFileProgress`).
     init(
-        items: any CloudItemStatusProviding,
+        items: any SyncFlagReporting,
         reachability: NetworkReachability = .system,
         sleep: @escaping Sleep = { try await Task.sleep(for: $0) },
         stallLimit: Duration = BookCloudStorageService.defaultStallLimit,
@@ -210,9 +225,10 @@ final class BookCloudStorageService: BookCloudStorage {
             var heard = parts.percents
             var current = survey.progress(bySize: bySize, parts: heard)
             let service = items.location(of: package.url).provider?.displayName ?? "the sync service"
+            let asOneItem = survey.packageItem == nil ? "" : ", which syncs the package as one item"
             logEvent(
                 "CLOUD_DOWNLOAD_STARTED: \(name): \(current.totalFiles - current.completedFiles) of "
-                    + "\(current.totalFiles) files to come from \(service)"
+                    + "\(current.totalFiles) files to come from \(service)\(asOneItem)"
             )
             var requested = Set<URL>()
             try request(survey, of: bookID, requested: &requested)
@@ -339,27 +355,29 @@ final class BookCloudStorageService: BookCloudStorage {
 
     // MARK: Removing a Download
 
-    /// Removes the local copies of `package`'s downloaded files, keeping
-    /// them in the cloud. Refuses with `BookCloudError.notUploaded`, before
-    /// removing anything, while any file has changes waiting to upload;
-    /// throws `.removalFailed` when the sync service refuses a removal, and
-    /// `.packageMissing` when the package is not on this Mac.
+    /// Removes the local copies of `package`'s downloaded items, keeping
+    /// them in the cloud: the package as one item when the sync service
+    /// syncs it so, and otherwise each downloaded file. Refuses with
+    /// `BookCloudError.notUploaded`, before removing anything, while any of
+    /// those items has changes waiting to upload; throws `.removalFailed`
+    /// when the sync service refuses a removal, and `.packageMissing` when
+    /// the package is not on this Mac.
     func removeDownload(of package: BookPackage) throws {
         let name = Self.logName(of: package)
         do {
             let survey = try self.survey(of: package)
-            guard survey.files.allSatisfy(\.status.isUploaded) else {
+            guard survey.isUploaded else {
                 throw BookCloudError.notUploaded
             }
-            let downloaded = survey.files.filter { $0.status.state == .downloaded }
-            for file in downloaded {
+            let removing = survey.itemsToRemove
+            for item in removing {
                 do {
-                    try items.removeLocalCopy(of: file.url)
+                    try items.removeLocalCopy(of: item)
                 } catch {
                     throw BookCloudError.removalFailed(error.localizedDescription)
                 }
             }
-            logEvent("CLOUD_DOWNLOAD_REMOVED: \(name): \(downloaded.count) of \(survey.files.count) files")
+            logEvent("CLOUD_DOWNLOAD_REMOVED: \(name): \(survey.removalWords(removing: removing))")
         } catch let error as BookCloudError {
             logEvent("CLOUD_DOWNLOAD_REMOVAL_FAILED: \(name): \(error.logDescription)")
             throw error
@@ -368,19 +386,52 @@ final class BookCloudStorageService: BookCloudStorage {
 
     // MARK: Surveying a Package
 
-    /// A package's listing and the state of each of its files, read at one
-    /// moment, with what follows from them.
+    /// A package's listing, the state of each of its files, and the
+    /// package folder's own state, read at one moment, with what follows
+    /// from them.
     struct Survey: Equatable, Sendable {
         /// What the package holds.
         var listing: PackageListing
         /// Each listed file's state, in the listing's order.
         var files: [FileStatus]
+        /// The package folder's own state, for a book with a package; nil
+        /// for an old book that is its own file.
+        var package: FileStatus?
 
-        /// The book's state: in the cloud when any file, or any folder, is
-        /// only in the cloud; otherwise downloading when any file is being
-        /// downloaded; otherwise downloaded.
+        /// The package, when the sync service syncs it as one item: the
+        /// package carries sync flags of its own and none of its listed
+        /// files does, as on iCloud Drive (none is listed while the whole
+        /// package is only in the cloud). Nil when the service syncs each
+        /// file on its own, as Google Drive and Dropbox do: their files
+        /// carry flags, as their package folders do too.
+        var packageItem: FileStatus? {
+            guard let package, package.carriesSyncFlags, !files.contains(where: \.carriesSyncFlags) else { return nil }
+            return package
+        }
+
+        /// The items the sync service syncs: the package as one item, or
+        /// each file on its own. Their flags say what has uploaded and what
+        /// is downloading, and they are what a download asks for and a
+        /// removal removes.
+        var syncedItems: [FileStatus] {
+            packageItem.map { [$0] } ?? files
+        }
+
+        /// The book's state: downloading while the sync service downloads a
+        /// package it syncs as one item, whose folder stays only in the
+        /// cloud until the whole package arrives; otherwise in the cloud
+        /// when any file or folder, or such a package, is only in the cloud;
+        /// otherwise downloading when any item is being downloaded;
+        /// otherwise downloaded.
         var bookState: BookCloudState {
-            if !listing.foldersInCloud.isEmpty || files.contains(where: { $0.status.state == .notDownloaded }) {
+            let packageItemState = packageItem?.status.state
+            if packageItemState == .downloading {
+                return .downloading(progress(bySize: sizesAreKnown))
+            }
+            let onlyInCloud = !listing.foldersInCloud.isEmpty
+                || files.contains { $0.status.state == .notDownloaded }
+                || packageItemState == .notDownloaded
+            if onlyInCloud {
                 return .inCloud
             }
             if isDownloading {
@@ -396,24 +447,56 @@ final class BookCloudStorageService: BookCloudStorage {
             listing.foldersInCloud.isEmpty && files.allSatisfy { $0.status.state.isOnThisMac || $0.status.state == .missing }
         }
 
-        /// Whether the sync service is downloading any file now.
+        /// Whether the sync service is downloading any item it syncs now.
         var isDownloading: Bool {
-            files.contains { $0.status.state == .downloading }
+            syncedItems.contains { $0.status.state == .downloading }
         }
 
-        /// What to ask the sync service for: every folder still in the
-        /// cloud, then every file not downloaded and not being downloaded.
+        /// Whether every item the sync service syncs has uploaded its
+        /// changes, by that item's own flag: the package's, when the service
+        /// syncs the package as one item, and never an upload flag its files
+        /// leave out, which counts as uploaded.
+        var isUploaded: Bool {
+            syncedItems.allSatisfy(\.status.isUploaded)
+        }
+
+        /// What to ask the sync service for. A package it syncs as one item
+        /// is asked for whole, while anything of it is still in the cloud and
+        /// the service is not downloading it already: it refuses a request
+        /// for a file inside. Otherwise every folder still in the cloud,
+        /// then every file not downloaded and not being downloaded.
         var itemsToRequest: [URL] {
-            listing.foldersInCloud + files.filter { $0.status.state == .notDownloaded }.map(\.url)
+            if let packageItem {
+                return isComplete || packageItem.status.state == .downloading ? [] : [packageItem.url]
+            }
+            return listing.foldersInCloud + files.filter { $0.status.state == .notDownloaded }.map(\.url)
         }
 
-        /// The download errors reported by files still only in the cloud.
-        /// A file being downloaded, or already here, may still carry an
-        /// error from an earlier attempt, which no longer matters.
+        /// What a removal removes: each item the sync service syncs whose
+        /// content is on this Mac.
+        var itemsToRemove: [URL] {
+            syncedItems.filter { $0.status.state == .downloaded }.map(\.url)
+        }
+
+        /// The removal of `removing` in an event line's words: how many of
+        /// the book's files lose their local copies, and, for a package the
+        /// sync service syncs as one item, that they go as one.
+        func removalWords(removing: [URL]) -> String {
+            guard packageItem != nil else {
+                return "\(removing.count) of \(files.count) files"
+            }
+            let removed = removing.isEmpty ? 0 : files.filter { $0.status.state.isOnThisMac }.count
+            return "\(removed) of \(files.count) files, as one package"
+        }
+
+        /// The download errors reported by the items the sync service syncs
+        /// that are still only in the cloud. An item being downloaded, or
+        /// already here, may still carry an error from an earlier attempt,
+        /// which no longer matters.
         var downloadErrors: [(url: URL, message: String)] {
-            files.compactMap { file in
-                guard file.status.state == .notDownloaded, let message = file.status.downloadError else { return nil }
-                return (file.url, message)
+            syncedItems.compactMap { item in
+                guard item.status.state == .notDownloaded, let message = item.status.downloadError else { return nil }
+                return (item.url, message)
             }
         }
 
@@ -510,10 +593,25 @@ final class BookCloudStorageService: BookCloudStorage {
         }
     }
 
-    /// Lists `package` and reads the state of each of its files.
-    private func survey(of package: BookPackage) throws -> Survey {
+    /// Lists `package`, and reads the state of each of its files and, for a
+    /// package folder, of the folder itself, each with whether it carries
+    /// sync flags of its own, from which the survey tells whether the sync
+    /// service syncs the package as one item (`Survey.packageItem`). The
+    /// real-drive tests use it to act on the items the app acts on.
+    func survey(of package: BookPackage) throws -> Survey {
         let listing = try listing(of: package)
-        return Survey(listing: listing, files: listing.files.map { FileStatus(url: $0, status: items.status(of: $0)) })
+        return Survey(
+            listing: listing,
+            files: listing.files.map(fileStatus(of:)),
+            package: package.isPackage ? fileStatus(of: package.url) : nil
+        )
+    }
+
+    /// The state of the item at `item`, with whether it carries sync flags
+    /// of its own, from one read.
+    private func fileStatus(of item: URL) -> FileStatus {
+        let read = items.flaggedStatus(of: item)
+        return FileStatus(url: item, status: read.status, carriesSyncFlags: read.carriesSyncFlags)
     }
 
     /// What `package` holds, listed inside `withoutDownloading`, so a folder
@@ -621,8 +719,9 @@ extension CloudServices {
     /// directory is in their sandbox on the startup disk, so their libraries
     /// still read as local.
     static func installSystemServices() {
-        itemStatus = UbiquitousItemStatusProvider()
-        bookStorage = BookCloudStorageService(items: itemStatus)
+        let items = UbiquitousItemStatusProvider()
+        itemStatus = items
+        bookStorage = BookCloudStorageService(items: items)
     }
 }
 
