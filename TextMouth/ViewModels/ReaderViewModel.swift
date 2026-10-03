@@ -486,12 +486,12 @@ final class ReaderViewModel: ObservableObject {
         speechService.onUtteranceFinished = { [weak self] in
             guard let self = self else { return }
             let expectedGeneration = self.chapterPlaybackGeneration
-            self.debugLog("onUtteranceFinished: chapter=\(self.currentChapterIndex) offset=\(self.currentCharacterOffset) gen=\(expectedGeneration)")
+            DiagnosticLog.trace(.playback, "onUtteranceFinished: chapter=\(self.currentChapterIndex) offset=\(self.currentCharacterOffset) gen=\(expectedGeneration)")
 
             // If a navigation happened since this chapter started playing,
             // ignore this stale completion — the new chapter is already set up.
             guard expectedGeneration == self.chapterPlaybackGeneration else {
-                self.debugLog("ignoring stale onUtteranceFinished (gen \(expectedGeneration) != \(self.chapterPlaybackGeneration))")
+                DiagnosticLog.trace(.playback, "ignoring stale onUtteranceFinished (gen \(expectedGeneration) != \(self.chapterPlaybackGeneration))")
                 return
             }
 
@@ -502,12 +502,12 @@ final class ReaderViewModel: ObservableObject {
             // chapters that are empty, entirely inside skipped sections, or
             // deleted by substitutions, exactly as starting playback does.
             guard let speech = self.nextSpeakableChapterSpeech(from: self.currentChapterIndex + 1) else {
-                self.debugLog("no more speakable chapters, book ended")
+                DiagnosticLog.trace(.playback, "no more speakable chapters, book ended")
                 self.handleEndOfBook()
                 return
             }
             let nextIndex = speech.chapterIndex
-            self.debugLog("advancing to chapter \(nextIndex) (from \(self.currentChapterIndex))")
+            DiagnosticLog.trace(.playback, "advancing to chapter \(nextIndex) (from \(self.currentChapterIndex))")
             self.currentChapterIndex = nextIndex
             self.currentCharacterOffset = 0
 
@@ -520,7 +520,7 @@ final class ReaderViewModel: ObservableObject {
             // rule, the punctuation pauses, or the skipped sections changed is
             // discarded instead, and the chapter starts from its current text.
             if let preEngine = self.takeLookAheadEngine(for: speech) {
-                self.debugLog("using pre-rendered engine for chapter \(nextIndex)")
+                DiagnosticLog.trace(.playback, "using pre-rendered engine for chapter \(nextIndex)")
                 // The prepared speech's map covers every pipeline stage
                 self.currentTransformation = speech.transformation
                 self.currentOffsetMap = speech.offsetMap
@@ -1232,15 +1232,6 @@ final class ReaderViewModel: ObservableObject {
             libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
         }
         lastLivePositionPublish = now
-    }
-
-    // MARK: - Debug Logging
-
-    /// Append a timestamped message to the debug log file.
-    /// Dispatched to a background queue so FileHandle I/O doesn't
-    /// block the main thread during playback callbacks.
-    func debugLog(_ msg: String) {
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: msg)
     }
 
     /// Perform actor-isolated window teardown explicitly. Swift deinitializers

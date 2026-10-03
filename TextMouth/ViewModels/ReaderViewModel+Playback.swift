@@ -92,7 +92,7 @@ extension ReaderViewModel {
                 title: book.title, author: book.author, isPlaying: true
             )
         } else {
-            debugLog("audio resume rejected by backend; reloading current chapter")
+            DiagnosticLog.event(.playback, "PLAYBACK_RESUME_REJECTED: audio resume rejected by backend; reloading current chapter")
             audioPlaybackService.stop()
             playAudioChapter()
         }
@@ -128,7 +128,7 @@ extension ReaderViewModel {
                 title: book.title, author: book.author, isPlaying: true
             )
         } else {
-            debugLog("speech resume rejected by backend; restarting current chapter at cursor")
+            DiagnosticLog.event(.playback, "PLAYBACK_RESUME_REJECTED: speech resume rejected by backend; restarting current chapter at cursor")
             speechService.stop()
             speakCurrentChapter()
             if speechService.isSpeaking && !speechService.isPaused {
@@ -166,7 +166,7 @@ extension ReaderViewModel {
     /// attached to the old, now-silent output device.
     func invalidatePlaybackBackendForAudioRouteChange() {
         restartPlaybackBackendOnNextResume = true
-        debugLog("audio route changed; next resume will cold-start playback backend")
+        DiagnosticLog.trace(.playback, "audio route changed; next resume will cold-start playback backend")
     }
 
     /// Stop TextMouth's current media session and release Now Playing /
@@ -207,7 +207,7 @@ extension ReaderViewModel {
             return
         }
 
-        debugLog("togglePlayPause called, isSpeaking=\(speechService.isSpeaking) isPaused=\(speechService.isPaused)")
+        DiagnosticLog.trace(.playback, "togglePlayPause called, isSpeaking=\(speechService.isSpeaking) isPaused=\(speechService.isPaused)")
         if speechService.isPaused {
             resumeSpeechPlayback()
         } else if speechService.isSpeaking {
@@ -357,11 +357,11 @@ extension ReaderViewModel {
     func startSpeaking(_ start: SpeechStart) {
         let speech = start.speech
         if speech.chapterIndex != currentChapterIndex {
-            debugLog("passing over silent text from chapter \(currentChapterIndex) to \(speech.chapterIndex)")
+            DiagnosticLog.trace(.playback, "passing over silent text from chapter \(currentChapterIndex) to \(speech.chapterIndex)")
             currentChapterIndex = speech.chapterIndex
             currentCharacterOffset = 0
         }
-        debugLog("startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
+        DiagnosticLog.trace(.playback, "startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
 
         currentTransformation = speech.transformation
         currentOffsetMap = speech.offsetMap
@@ -376,7 +376,7 @@ extension ReaderViewModel {
     /// cursor stays where it is, and the end-of-book behavior decides what
     /// happens next.
     private func endBookWithNothingLeftToSpeak() {
-        debugLog("nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
+        DiagnosticLog.trace(.playback, "nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
         handleEndOfBook()
     }
 
@@ -428,7 +428,7 @@ extension ReaderViewModel {
         // Keep look-ahead rendering under the same safety limit as the current
         // chapter. Oversized chapters remain playable through direct chunking.
         guard chapterText.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
-            debugLog("preRender: skipped oversized chapter \(nextIdx) (\(chapterText.utf16Length) UTF-16 units)")
+            DiagnosticLog.trace(.playback, "preRender: skipped oversized chapter \(nextIdx) (\(chapterText.utf16Length) UTF-16 units)")
             return
         }
 
@@ -471,7 +471,7 @@ extension ReaderViewModel {
         // A render the reader has since replaced or discarded keeps nothing.
         guard chosenLookAheadChapter(renderedBy: render.engine) != nil else { return }
         guard succeeded else {
-            debugLog("preRender: chapter \(render.chapterIndex) did not render, or playback moved on; nothing looked ahead to")
+            DiagnosticLog.trace(.playback, "preRender: chapter \(render.chapterIndex) did not render, or playback moved on; nothing looked ahead to")
             lookAhead = nil
             return
         }
@@ -479,11 +479,11 @@ extension ReaderViewModel {
         // a setting changed while the render ran makes the signatures differ.
         let current = currentRenderSignature(forChapterAt: render.chapterIndex)
         guard let rendered = render.engine.renderedSignature, rendered == current else {
-            debugLog("preRender: dropped chapter \(render.chapterIndex), rendered from inputs that changed while it ran (rendered \(render.engine.renderedSignature?.description ?? "nothing"), now \(current?.description ?? "no chapter"))")
+            DiagnosticLog.trace(.playback, "preRender: dropped chapter \(render.chapterIndex), rendered from inputs that changed while it ran (rendered \(render.engine.renderedSignature?.description ?? "nothing"), now \(current?.description ?? "no chapter"))")
             lookAhead = nil
             return
         }
-        debugLog("preRender: chapter \(render.chapterIndex) ready (\(rendered))")
+        DiagnosticLog.trace(.playback, "preRender: chapter \(render.chapterIndex) ready (\(rendered))")
     }
 
     /// Forget the look-ahead. A render still in progress is abandoned: the
@@ -522,7 +522,7 @@ extension ReaderViewModel {
             self.lookAhead = nil
             return lookAhead.engine
         }
-        debugLog("preRender: not using the look-ahead for chapter \(speech.chapterIndex): \(reason)")
+        DiagnosticLog.trace(.playback, "preRender: not using the look-ahead for chapter \(speech.chapterIndex): \(reason)")
         discardLookAhead()
         return nil
     }
@@ -557,7 +557,7 @@ extension ReaderViewModel {
            renderRequest(for: next).signature == lookAhead.signature {
             return
         }
-        debugLog("preRender: speech settings changed; choosing the chapter to render ahead again")
+        DiagnosticLog.trace(.playback, "preRender: speech settings changed; choosing the chapter to render ahead again")
         preRenderNextChapter()
     }
 
@@ -970,7 +970,11 @@ extension ReaderViewModel {
     private func handleAudioPlaybackFailure(_ failure: AudioPlaybackFailure) {
         guard !hasClosed else { return }
         let errorDescription = failure.underlyingError.map { "\($0.domain) \($0.code)" } ?? "none"
-        debugLog("audio playback failed: reason=\(failure.reason) file=\(failure.fileName) error=\(errorDescription)")
+        DiagnosticLog.event(
+            .playback,
+            "AUDIO_PLAYBACK_FAILED: reason=\(failure.reason) file=\(DiagnosticLog.loggablePath(failure.url)) "
+                + "error=\(errorDescription)"
+        )
 
         // The service has already halted and released its player. A
         // failure only ever comes from a file the reader loaded to play,
@@ -1080,7 +1084,7 @@ extension ReaderViewModel {
         // by substitutions) would reach its end again at once, forever, so
         // it stops instead.
         if behavior == .loop, !isAudioBook, nextSpeakableChapterSpeech(from: 0) == nil {
-            debugLog("end of book: nothing speakable to loop to; stopping")
+            DiagnosticLog.trace(.playback, "end of book: nothing speakable to loop to; stopping")
             behavior = .stop
         }
 
@@ -1107,7 +1111,7 @@ extension ReaderViewModel {
                 if sleepTimerEndsListeningHere {
                     // The next book would play on past this book's sleep
                     // timer, which can pause only the book that set it.
-                    debugLog("end of book: this book's sleep timer is in effect; not starting the next book")
+                    DiagnosticLog.trace(.playback, "end of book: this book's sleep timer is in effect; not starting the next book")
                     finishListening(
                         announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
                     )
@@ -1196,7 +1200,7 @@ extension ReaderViewModel {
     func claimAutoplayRequest() {
         guard !hasClosed, !isLoading,
               autoplayRequests.consume(for: book.id) != nil else { return }
-        debugLog("continue to next book: starting this book")
+        DiagnosticLog.trace(.playback, "continue to next book: starting this book")
         cancelWhereAmIIfActive()
         playOrResume()
     }
@@ -1205,7 +1209,7 @@ extension ReaderViewModel {
     /// loaded, so that the request cannot start it later.
     func discardAutoplayRequest() {
         guard autoplayRequests.consume(for: book.id) != nil else { return }
-        debugLog("continue to next book: this book could not be loaded; request dropped")
+        DiagnosticLog.trace(.playback, "continue to next book: this book could not be loaded; request dropped")
     }
 
     /// Whether this book's own sleep timer ends listening with this book,
@@ -1509,7 +1513,7 @@ extension ReaderViewModel {
                 now: now,
                 threshold: settingsViewModel.rewindSmartThreshold
             ) {
-                debugLog("rewindOnResume: smart mode skip, elapsed=\(Int(elapsed))s < threshold=\(Int(settingsViewModel.rewindSmartThreshold))s")
+                DiagnosticLog.trace(.playback, "rewindOnResume: smart mode skip, elapsed=\(Int(elapsed))s < threshold=\(Int(settingsViewModel.rewindSmartThreshold))s")
                 return
             }
         }
@@ -1526,14 +1530,14 @@ extension ReaderViewModel {
         case .sentence:
             let newOffset = findSentenceStart(in: text, before: offset)
             if newOffset < offset {
-                debugLog("rewindOnResume: sentence rewind \(offset) -> \(newOffset)")
+                DiagnosticLog.trace(.playback, "rewindOnResume: sentence rewind \(offset) -> \(newOffset)")
                 currentCharacterOffset = newOffset
                 seekSpeechService(toOriginalOffset: newOffset)
             }
         case .paragraph:
             let newOffset = findParagraphStart(in: text, before: offset)
             if newOffset < offset {
-                debugLog("rewindOnResume: paragraph rewind \(offset) -> \(newOffset)")
+                DiagnosticLog.trace(.playback, "rewindOnResume: paragraph rewind \(offset) -> \(newOffset)")
                 currentCharacterOffset = newOffset
                 seekSpeechService(toOriginalOffset: newOffset)
             }
@@ -1541,7 +1545,7 @@ extension ReaderViewModel {
             if let heading = currentHeadingAtPosition() {
                 let headingOffset = heading.chapterIndex == currentChapterIndex ? heading.characterOffset : 0
                 if headingOffset < offset {
-                    debugLog("rewindOnResume: heading rewind \(offset) -> \(headingOffset)")
+                    DiagnosticLog.trace(.playback, "rewindOnResume: heading rewind \(offset) -> \(headingOffset)")
                     currentCharacterOffset = headingOffset
                     seekSpeechService(toOriginalOffset: headingOffset)
                 }
