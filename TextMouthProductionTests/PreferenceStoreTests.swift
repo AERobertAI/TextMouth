@@ -150,4 +150,39 @@ final class PreferenceStoreTests: XCTestCase {
         store.removeObject(forKey: "soundEffectsVolume")
         XCTAssertEqual(SoundEffectService.volumePreference.read(from: store), 0.5, "nothing stored")
     }
+
+    // MARK: - Text Substitutions
+
+    /// The substitution switch written to the store by someone else takes
+    /// effect in the service at once and is published once, which is what
+    /// open readers re-prepare their speech on; nothing is written back.
+    func testSubstitutionSwitchFollowsChangesMadeInItsStore() {
+        let store = makeSandboxedPreferences("substitutions-follow")
+        let substitutions = TextSubstitutionService(rules: [], isEnabled: true, preferences: store)
+        var publications = 0
+        let subscription = substitutions.objectWillChange.sink { publications += 1 }
+
+        TextSubstitutionService.enabledPreference.write(false, to: store)
+        XCTAssertFalse(substitutions.isEnabled)
+        XCTAssertEqual(publications, 1)
+
+        store.removeObject(forKey: "substitutionsEnabled")
+        XCTAssertTrue(substitutions.isEnabled, "on until the user turns it off")
+        XCTAssertNil(store.object(forKey: "substitutionsEnabled"), "nothing written back")
+        subscription.cancel()
+    }
+
+    /// The app's shared service follows this process's preferences, which
+    /// the settings model applies config.json to.
+    func testSharedSubstitutionServiceFollowsThisProcessPreferences() {
+        let key = TextSubstitutionService.enabledPreference.key
+        preservePreferences([key])
+        let shared = TextSubstitutionService.shared
+        let wasEnabled = shared.isEnabled
+        defer { TextSubstitutionService.enabledPreference.write(wasEnabled, to: TextMouthRuntime.current.preferences) }
+
+        TextSubstitutionService.enabledPreference.write(!wasEnabled, to: TextMouthRuntime.current.preferences)
+
+        XCTAssertEqual(shared.isEnabled, !wasEnabled)
+    }
 }
