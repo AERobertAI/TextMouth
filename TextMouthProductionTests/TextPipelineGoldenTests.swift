@@ -602,6 +602,52 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
     }
 
+    // MARK: - Markdown Whitespace (PERF25)
+
+    /// `ParserUtilities.normalizeMarkdownWhitespace` as it was before
+    /// PERF25: a regular expression for every line.
+    private static func normalizedWhitespaceBefore(_ text: String) -> String {
+        let lines = text.components(separatedBy: "\n").map {
+            $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
+        }
+        var result: [String] = []
+        var blankCount = 0
+        for line in lines {
+            if line.isEmpty {
+                blankCount += 1
+                if blankCount <= 2 { result.append(line) }
+            } else {
+                blankCount = 0
+                result.append(line)
+            }
+        }
+        return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Normalizing whitespace writes exactly what the regular expression
+    /// wrote: for a line ending in each scalar of the Basic Multilingual
+    /// Plane and every 97th above it, alone, doubled, and after a space; for
+    /// runs of mixed whitespace and blank lines; and for the other
+    /// plain-text inputs, the review's Markdown with tables among them.
+    func testWhitespaceNormalizationMatchesTheExpressionItReplaces() throws {
+        typealias Fixtures = TextPipelineFixtures
+        let scalars = Self.manyScalars.unicodeScalars.filter { $0 != "\n" }
+        var texts = [scalars.map { "a\($0)\n\($0)\($0)\nb \($0)\n\($0)" }.joined(separator: "\n")]
+        let whitespace = [" ", "\t", "\u{0B}", "\u{0C}", "\r", "\u{85}", "\u{A0}", "\u{2028}", "\u{2029}", "\u{3000}", "\u{200B}", "\n", "\n\n", "x"]
+        var random = SeededGenerator(state: 25)
+        for _ in 0..<2_000 {
+            texts.append((0..<Int(random.next() % 24)).map { _ in whitespace[Int(random.next() % UInt64(whitespace.count))] }.joined())
+        }
+        texts += try plainTextComparisonInputs()
+        texts.append(Fixtures.markdownWithTables(bytes: 131_072))
+        for text in texts {
+            XCTAssertEqual(
+                ParserUtilities.normalizeMarkdownWhitespace(text), Self.normalizedWhitespaceBefore(text),
+                text.debugDescription.prefix(80).description
+            )
+        }
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the

@@ -154,6 +154,19 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF25: Markdown Whitespace
+
+    /// Normalizing the whitespace of 1 MB and 5 MB of Markdown, as DOCX and
+    /// DAISY conversion finish theirs.
+    func testPERF25WhitespaceNormalization() throws {
+        for megabytes in [1, 5] {
+            let markdown = TextPipelineFixtures.markdownWithTables(bytes: megabytes * 1_048_576)
+            try benchmark("PERF25", "ParserUtilities.normalizeMarkdownWhitespace, \(megabytes) MB", repetitions: 3) {
+                ParserUtilities.normalizeMarkdownWhitespace(markdown)
+            }
+        }
+    }
+
     // MARK: - Measuring
 
     /// Run `body` `repetitions` times, then once more under a heap sampler,
