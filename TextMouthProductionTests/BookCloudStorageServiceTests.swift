@@ -1,3 +1,4 @@
+import Darwin
 import XCTest
 @testable import TextMouth
 
@@ -180,6 +181,21 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
         XCTAssertEqual(paths(listing.files), paths([book["a.txt"], book["b.txt"], book["cachedAudio/0001.caf"]]))
         XCTAssertEqual(listing.foldersInCloud, [])
+    }
+
+    /// A package is listed with dataless files left in the cloud, folders
+    /// within it included, so a listing never downloads anything.
+    func testAPackageIsListedWithoutDownloading() throws {
+        let book = try makePackage(["cachedAudio/0001.caf", "content.md"])
+        let policies = DatalessPolicyRecorder()
+        let storage = makeStorage(readFolder: { folder in
+            policies.record()
+            return try BookCloudStorageService.readFolder(folder)
+        })
+
+        _ = try storage.listing(of: book.package)
+
+        XCTAssertEqual(policies.recorded, [IOPOL_MATERIALIZE_DATALESS_FILES_OFF, IOPOL_MATERIALIZE_DATALESS_FILES_OFF])
     }
 
     /// Errors that say nothing is at a path are recognized, wrapped or not.

@@ -340,7 +340,7 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
 
     /// Every read happens with dataless files left in the cloud.
     func testEveryReadLeavesDatalessFilesInTheCloud() throws {
-        let policies = PolicyRecorder()
+        let policies = DatalessPolicyRecorder()
         let provider = UbiquitousItemStatusProvider(
             readMetadata: { url, keys in
                 policies.record()
@@ -489,8 +489,9 @@ private final class URLRecorder: @unchecked Sendable {
     }
 }
 
-/// The calling thread's dataless-file policy at each read.
-private final class PolicyRecorder: @unchecked Sendable {
+/// The calling thread's dataless-file policy at each read, for the cloud
+/// service tests that check a read never downloads.
+final class DatalessPolicyRecorder: @unchecked Sendable {
     /// Guards `policies`.
     private let lock = NSLock()
     /// The policies, in order.
