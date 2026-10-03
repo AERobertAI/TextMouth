@@ -427,7 +427,7 @@ private final class GateHarness: @unchecked Sendable {
     }
 }
 
-// MARK: - Tracing in the Hosted App
+// MARK: - Logging in the Hosted App
 
 /// The hidden trace preference as the runtime's preferences store held it
 /// before a test changed it, to put back when the test ends.
@@ -463,5 +463,19 @@ extension XCTestCase {
         let saved = SavedTracePreference()
         addTeardownBlock { saved.restore() }
         DiagnosticLog.TraceSwitch.preference.write(isOn, to: TextMouthRuntime.current.preferences)
+    }
+
+    /// The lines written to the log `file` while `body` runs, waiting first
+    /// for every queued write. A log rotated meanwhile starts a new file
+    /// holding only new lines.
+    func logLines(in file: DiagnosticLog.File, writtenDuring body: () throws -> Void) rethrows -> [String] {
+        let log = file.url
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        try body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 }

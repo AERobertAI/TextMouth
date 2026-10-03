@@ -408,12 +408,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     private var settingsCancellables = Set<AnyCancellable>()
 
-    /// Log transition events (mode switches, render status) to the
-    /// transition log file. Dispatched to a background queue so
-    /// FileHandle I/O doesn't block the main thread during playback.
-    private func transitionLog(_ msg: String) {
-        let logFile = TextMouthPaths.logsDir.appendingPathComponent("textmouth_transition.log")
-        TextMouthPaths.appendLog(to: logFile, message: msg)
+    /// Records a playback-mode transition in speech's own log
+    /// (`DiagnosticLog.File.speechTransitions`). An anomaly, such as a
+    /// failed render or resume, a watchdog recovery, or an unexpected
+    /// cancellation, is an event and always written; the routine start and
+    /// finish of chunks, renders, and mode switches are trace, written only
+    /// while tracing is on. Lines hold offsets and lengths, never the text.
+    private func transitionLog(_ level: DiagnosticLog.Level, _ message: @autoclosure () -> String) {
+        DiagnosticLog.log(level, .playback, message(), in: .speechTransitions)
     }
 
     /// Preferences store holding the global speed, pitch, and voice. The app
@@ -514,7 +516,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // text, so keeping that buffer would let seek/resume play audio from
         // the previous chapter when the new text is too large to render.
         if audioEngine.discardRenderedAudio() {
-            transitionLog("RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
+            transitionLog(.trace, "RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
         }
         currentText = text
 
@@ -534,7 +536,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // transitions to loop or stutter. Direct mode chunking handles
         // arbitrarily long texts on its own.
         guard text.utf16Length <= SpeechRenderCoordinator.maximumTextLength else {
-            transitionLog("RENDER_SKIP: text too large (\(text.utf16Length) UTF-16 units > \(SpeechRenderCoordinator.maximumTextLength)), staying in direct mode")
+            transitionLog(.trace, "RENDER_SKIP: text too large (\(text.utf16Length) UTF-16 units > \(SpeechRenderCoordinator.maximumTextLength)), staying in direct mode")
             return
         }
 
@@ -549,9 +551,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             guard self.renderGeneration == myGeneration else { return }
 
             if success {
-                self.transitionLog("RENDER_READY: engine rendered \(text.utf16Length) UTF-16 units, direct mode still active=\(self.usingDirectMode)")
+                self.transitionLog(.trace, "RENDER_READY: engine rendered \(text.utf16Length) UTF-16 units, direct mode still active=\(self.usingDirectMode)")
             } else {
-                self.transitionLog("RENDER_FAILED: engine render failed, staying in direct mode")
+                self.transitionLog(.event, "RENDER_FAILED: engine render failed, staying in direct mode")
             }
             // Engine is now ready. While its audio still matches this text
             // in the current voice (renderedAudioMatchesSpeech), it is used when:
@@ -581,7 +583,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             directModeBaseOffset = normalizedStartOffset
             directModeChunkEnd = text.utf16Offset(of: endIdx)
             directModeChunked = true
-            transitionLog("CHUNK_START: offset=\(normalizedStartOffset) len=\(speakText.utf16Length) end=\(directModeChunkEnd) totalText=\(text.utf16Length)")
+            transitionLog(.trace, "CHUNK_START: offset=\(normalizedStartOffset) len=\(speakText.utf16Length) end=\(directModeChunkEnd) totalText=\(text.utf16Length)")
         } else if normalizedStartOffset > 0 {
             speakText = String(text[startIdx...])
             directModeBaseOffset = normalizedStartOffset
@@ -673,14 +675,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
               usingDirectMode,
               isSpeaking,
               !isPaused else {
-            transitionLog("DIRECT_WATCHDOG_CANCELLED: playback state changed before recovery")
+            transitionLog(.trace, "DIRECT_WATCHDOG_CANCELLED: playback state changed before recovery")
             return
         }
 
         let reportedOffset = currentWordRange?.location ?? directModeBaseOffset
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
         if renderedAudioMatchesSpeech {
-            transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
+            transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
             stopDirectSynthesizer()
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
@@ -692,7 +694,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 // A rendered buffer can survive an engine-start failure. Fall
                 // back to direct speech rather than leaving the logical state
                 // active with a second silent backend.
-                transitionLog("DIRECT_WATCHDOG_ENGINE_FAILED: rendered audio did not start; restarting direct speech at offset=\(safeOffset)")
+                transitionLog(.event, "DIRECT_WATCHDOG_ENGINE_FAILED: rendered audio did not start; restarting direct speech at offset=\(safeOffset)")
                 audioEngine.stop()
                 speakDirect(currentText, fromCharOffset: safeOffset)
             }
@@ -709,13 +711,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
            unconfirmedChunkUnits >= 0,
            unconfirmedChunkUnits <= 200 {
             let nextOffset = directModeChunkEnd
-            transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle near chunk end; continuing at offset=\(nextOffset) lastReportedOffset=\(safeOffset)")
+            transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle near chunk end; continuing at offset=\(nextOffset) lastReportedOffset=\(safeOffset)")
             stopDirectSynthesizer()
             speakDirect(currentText, fromCharOffset: nextOffset)
             return
         }
 
-        transitionLog("DIRECT_WATCHDOG_RECOVERY: synthesizer idle before confirmed finish; restarting direct speech at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
+        transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle before confirmed finish; restarting direct speech at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
         stopDirectSynthesizer()
         speakDirect(currentText, fromCharOffset: safeOffset)
     }
@@ -761,7 +763,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             )
 
             if renderedAudioMatchesSpeech {
-                transitionLog("SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
+                transitionLog(.trace, "SLEEP_FADE_SWITCH: direct→engine at offset=\(offset)")
                 stopDirectSynthesizer()
                 usingDirectMode = false
                 audioEngine.setSpeed(wpm: wordsPerMinute)
@@ -772,7 +774,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 } else {
                     // Preserve an audible fade when a retained render cannot
                     // restart, for example after a device-route transition.
-                    transitionLog("SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
+                    transitionLog(.event, "SLEEP_FADE_ENGINE_FAILED: using direct utterance fade at offset=\(offset)")
                     audioEngine.stop()
                     prepareDirectSleepFade(
                         fromUTF16Offset: offset,
@@ -840,6 +842,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // policy sees a live direct session until the fade is stopped.
         liveDirectUtterance = finalUtterance
         transitionLog(
+            .trace,
             "SLEEP_FADE_DIRECT_STARTED: offset=\(directFadeStartOffset) segments=\(utterances.count) "
                 + "plannedEnd=\(directModeChunkEnd) duration=\(duration)"
         )
@@ -859,7 +862,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             min(currentWordRange?.location ?? directFadeStartOffset, currentText.utf16Length)
         )
         let shouldRestart = isSpeaking && !isPaused
-        transitionLog("SLEEP_FADE_CANCELLED: offset=\(offset) restart=\(shouldRestart)")
+        transitionLog(.trace, "SLEEP_FADE_CANCELLED: offset=\(offset) restart=\(shouldRestart)")
         stopDirectSynthesizer()
         if shouldRestart {
             speakDirect(currentText, fromCharOffset: offset)
@@ -948,7 +951,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         var resumed: Bool
         switch action {
         case .switchToEngine(let resumeOffset), .startRenderedEngine(let resumeOffset):
-            transitionLog("RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
+            transitionLog(.trace, "RESUME_SWITCH: starting rendered engine at offset=\(resumeOffset)")
             stopDirectSynthesizer()
             usingDirectMode = false
             audioEngine.setSpeed(wpm: wordsPerMinute)
@@ -965,10 +968,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // continue. If restart fails, restart direct speech below.
             resumed = audioEngine.resume()
             if resumed {
-                transitionLog("ENGINE_RESUME: resumed at offset=\(resumeOffset)")
+                transitionLog(.trace, "ENGINE_RESUME: resumed at offset=\(resumeOffset)")
                 startPositionTracking()
             } else {
                 transitionLog(
+                    .event,
                     "ENGINE_RESUME_FAILED: falling back to direct speech at offset=\(resumeOffset)"
                 )
                 audioEngine.stop()
@@ -980,20 +984,21 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 resumed = true
             } else {
                 transitionLog(
+                    .event,
                     "DIRECT_RESUME_FAILED: restarting utterance at offset=\(resumeOffset)"
                 )
                 resumed = restartDirectSpeech(at: resumeOffset)
             }
 
         case .restartDirect(let resumeOffset):
-            transitionLog("DIRECT_RESUME_RECOVERY: restarting utterance at offset=\(resumeOffset)")
+            transitionLog(.trace, "DIRECT_RESUME_RECOVERY: restarting utterance at offset=\(resumeOffset)")
             resumed = restartDirectSpeech(at: resumeOffset)
 
         case .alreadyPlaying:
             resumed = true
 
         case .unavailable:
-            transitionLog("RESUME_UNAVAILABLE: no rendered audio, live utterance, or text")
+            transitionLog(.event, "RESUME_UNAVAILABLE: no rendered audio, live utterance, or text")
             resumed = false
         }
 
@@ -1075,7 +1080,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             self?.handleEngineFinished()
         }
 
-        transitionLog("PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
+        transitionLog(.trace, "PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
     }
 
     // MARK: - Seeking
@@ -1102,7 +1107,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             if isPaused {
                 pendingDirectSeekOffset = offset
             } else if renderedAudioMatchesSpeech {
-                transitionLog("SEEK_SWITCH: direct→engine at offset=\(offset)")
+                transitionLog(.trace, "SEEK_SWITCH: direct→engine at offset=\(offset)")
                 usingDirectMode = false
                 audioEngine.setSpeed(wpm: wordsPerMinute)
                 audioEngine.setPitch(multiplier: pitchMultiplier)
@@ -1230,7 +1235,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func handleEngineFinished() {
-        transitionLog("ENGINE_FINISHED: audio fully played back, advancing chapter")
+        transitionLog(.trace, "ENGINE_FINISHED: audio fully played back, advancing chapter")
         stopPositionTracking()
         isSpeaking = false
         isPaused = false
@@ -1351,17 +1356,20 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             let utteranceID = ObjectIdentifier(utterance)
             if self.isDirectSleepFadeActive,
                let fadeOffset = self.directFadeOffsets[utteranceID] {
-                self.transitionLog("SLEEP_FADE_DIRECT_SEGMENT_STARTED: offset=\(fadeOffset)")
+                self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_STARTED: offset=\(fadeOffset)")
                 self.isSpeaking = true
                 self.isPaused = false
                 return
             }
             guard Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance),
                   self.usingDirectMode else {
-                self.transitionLog("DIRECT_START_IGNORED: stale utterance or direct mode inactive")
+                self.transitionLog(.trace, "DIRECT_START_IGNORED: stale utterance or direct mode inactive")
                 return
             }
-            self.transitionLog("DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizer.isSpeaking)")
+            // Read before logging: the message is built lazily, and must not
+            // capture the synthesizer.
+            let synthesizerIsSpeaking = synthesizer.isSpeaking
+            self.transitionLog(.trace, "DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizerIsSpeaking)")
             self.isSpeaking = true
             self.isPaused = false
             self.startDirectPlaybackWatchdog(for: utterance)
@@ -1379,7 +1387,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 self.currentWordRange = NSRange(location: endOffset, length: 0)
                 if self.directFadeFinalUtteranceID == finishedUtteranceID {
                     self.liveDirectUtterance = nil
-                    self.transitionLog("SLEEP_FADE_DIRECT_QUEUE_FINISHED: offset=\(endOffset)")
+                    self.transitionLog(.trace, "SLEEP_FADE_DIRECT_QUEUE_FINISHED: offset=\(endOffset)")
                     switch DirectSpeechFadePlanner.completionAction(
                         queueEndOffset: endOffset,
                         textUTF16Length: self.currentText.utf16Length
@@ -1417,15 +1425,19 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else {
                 let liveDescription = self.liveDirectUtterance
                     .map { String(describing: ObjectIdentifier($0)) } ?? "nil"
-                self.transitionLog("DIRECT_FINISH_IGNORED: utterance mismatch finished=\(finishedUtteranceID) live=\(liveDescription) directMode=\(self.usingDirectMode) synthSpeaking=\(synthesizer.isSpeaking) synthPaused=\(synthesizer.isPaused)")
+                // Read before logging: the message is built lazily, and must
+                // not capture the synthesizer.
+                let synthesizerIsSpeaking = synthesizer.isSpeaking
+                let synthesizerIsPaused = synthesizer.isPaused
+                self.transitionLog(.trace, "DIRECT_FINISH_IGNORED: utterance mismatch finished=\(finishedUtteranceID) live=\(liveDescription) directMode=\(self.usingDirectMode) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
                 return
             }
             guard self.usingDirectMode else {
-                self.transitionLog("DIRECT_FINISH_IGNORED: matching utterance but direct mode inactive finished=\(finishedUtteranceID)")
+                self.transitionLog(.trace, "DIRECT_FINISH_IGNORED: matching utterance but direct mode inactive finished=\(finishedUtteranceID)")
                 return
             }
 
-            self.transitionLog("DIRECT_FINISH_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) chunked=\(self.directModeChunked)")
+            self.transitionLog(.trace, "DIRECT_FINISH_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) chunked=\(self.directModeChunked)")
             self.stopDirectPlaybackWatchdog()
 
             // This utterance has finished naturally — clear the marker so
@@ -1439,7 +1451,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 if nextOffset < self.currentText.utf16Length {
                     // speakDirect assigns a fresh `liveDirectUtterance`
                     // for the new chunk.
-                    self.transitionLog("CHUNK_CONTINUE: next chunk at offset \(nextOffset)")
+                    self.transitionLog(.trace, "CHUNK_CONTINUE: next chunk at offset \(nextOffset)")
                     self.speakDirect(self.currentText, fromCharOffset: nextOffset)
                     return
                 }
@@ -1460,7 +1472,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             guard let self else { return }
             if self.isDirectSleepFadeActive,
                self.directFadeOffsets[cancelledUtteranceID] != nil {
-                self.transitionLog("SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
+                self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
                 return
             }
             let isCurrent = self.liveDirectUtterance.map(ObjectIdentifier.init) == cancelledUtteranceID
@@ -1468,9 +1480,13 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 // Do not advance or restart directly from the callback. The
                 // watchdog verifies that the synthesizer remains idle before
                 // choosing a content-preserving recovery offset.
-                self.transitionLog("DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app expected playback; watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizer.isSpeaking) synthPaused=\(synthesizer.isPaused)")
+                // Read before logging: the message is built lazily, and must
+                // not capture the synthesizer.
+                let synthesizerIsSpeaking = synthesizer.isSpeaking
+                let synthesizerIsPaused = synthesizer.isPaused
+                self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app expected playback; watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
             } else {
-                self.transitionLog("DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
+                self.transitionLog(.trace, "DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
             }
         }
     }
@@ -1485,7 +1501,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             }
             guard self.usingDirectMode,
                   Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
-                self.transitionLog("DIRECT_PAUSE_IGNORED: stale utterance or direct mode inactive")
+                self.transitionLog(.trace, "DIRECT_PAUSE_IGNORED: stale utterance or direct mode inactive")
                 return
             }
             self.isPaused = true
@@ -1502,7 +1518,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             }
             guard self.usingDirectMode,
                   Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
-                self.transitionLog("DIRECT_CONTINUE_IGNORED: stale utterance or direct mode inactive")
+                self.transitionLog(.trace, "DIRECT_CONTINUE_IGNORED: stale utterance or direct mode inactive")
                 return
             }
             self.isPaused = false
