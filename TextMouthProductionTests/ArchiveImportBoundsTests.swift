@@ -454,6 +454,28 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(try folderEntries(), Set(model.library.books.map(\.tmbDirectoryName)))
     }
 
+    // MARK: - Startup
+
+    /// At startup the library removes, in the background, the extraction
+    /// directory an interrupted import of a process no longer running left
+    /// in the data directory, with everything in it, and logs the removal.
+    @MainActor
+    func testStartupRemovesLeftoverExtractionDirectories() throws {
+        let leftover = try makeLeftoverExtraction()
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let logLine = "ARCHIVE_EXTRACTION_REMOVED: \(leftover.path): left by an interrupted import"
+
+        _ = LibraryViewModel()
+
+        XCTAssertTrue(
+            eventually(within: 20) {
+                !FileManager.default.fileExists(atPath: leftover.path) && debugLogLines(containing: logLine).count == 1
+            },
+            "the leftover extraction was not removed and logged"
+        )
+    }
+
     // MARK: - Audio Archives
 
     /// An audio archive past its budget is refused before anything is
@@ -653,6 +675,24 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(try? Data(contentsOf: source), bytes, "the source must be untouched", file: file, line: line)
         XCTAssertEqual(leftoverExtractionDirectories(), [], "left extracted", file: file, line: line)
         return failure
+    }
+
+    /// An extraction directory holding a book, as an interrupted import of a
+    /// process that has since exited leaves it in the data directory.
+    private func makeLeftoverExtraction() throws -> URL {
+        let stopped = Process()
+        stopped.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+        try stopped.run()
+        stopped.waitUntilExit()
+        let leftover = ArchiveExtractionDirectory.defaultParent.appendingPathComponent(
+            "\(ArchiveExtractionDirectory.namePrefix)\(stopped.processIdentifier)-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        let archiveFolder = leftover.appendingPathComponent("archive", isDirectory: true)
+        try FileManager.default.createDirectory(at: archiveFolder, withIntermediateDirectories: true)
+        try Self.notes("rope").write(to: archiveFolder.appendingPathComponent("Rope Splicing.txt"))
+        addTeardownBlock { try? FileManager.default.removeItem(at: leftover) }
+        return leftover
     }
 
     /// Waits until every import `model` has queued so far has run, and lets

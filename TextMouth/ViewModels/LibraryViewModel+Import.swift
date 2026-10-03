@@ -224,6 +224,18 @@ extension LibraryViewModel {
         return hasAudio && !hasNonAudio
     }
 
+    /// Removes, off the main thread, the extraction directories that ZIP
+    /// imports interrupted by a crash or a forced quit left in the data
+    /// directory (TODO I05), which can hold gigabytes nothing else removes.
+    /// Startup calls it once; a directory an import of this process is
+    /// using, or another running copy of TextMouth's, is never removed
+    /// (`ArchiveExtractionDirectory.removeLeftovers`).
+    func removeLeftoverArchiveExtractions() {
+        DispatchQueue.global(qos: .utility).async {
+            ArchiveExtractionDirectory.removeLeftovers()
+        }
+    }
+
     /// Stops the ZIP imports under way and those waiting behind them (TODO
     /// I05): a running batch stops before its next entry or book, keeps the
     /// books it already imported, and its summary says where it stopped; a
