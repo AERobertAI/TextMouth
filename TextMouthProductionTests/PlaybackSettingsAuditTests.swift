@@ -362,17 +362,17 @@ final class PlaybackSettingsAuditTests: XCTestCase {
 
     /// Only text books offer speech controls. The text sheet is checked too,
     /// proving the harness can see voice and WPM controls when they exist.
-    func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() {
+    func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() throws {
         let text = makeReader(format: .txt)
         defer { text.close() }
-        withHostedControls(BookVoicePickerView(viewModel: text)) { controls in
+        try withHostedControls(BookVoicePickerView(viewModel: text)) { controls in
             XCTAssertTrue(controls.contains { $0.label == "Select voice for this book" })
             XCTAssertTrue(controls.contains { $0.valueDescription.hasSuffix("words per minute") })
         }
 
         let audio = makeReader(format: .audio)
         defer { audio.close() }
-        withHostedControls(BookVoicePickerView(viewModel: audio)) { controls in
+        try withHostedControls(BookVoicePickerView(viewModel: audio)) { controls in
             let spoken = controls.map { "\($0.label) \($0.valueDescription)".lowercased() }
             for speechTerm in ["words per minute", "voice", "pitch"] {
                 XCTAssertFalse(spoken.contains { $0.contains(speechTerm) }, speechTerm)
