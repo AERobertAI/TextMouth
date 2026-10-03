@@ -775,7 +775,7 @@ test("Skipped headings: chapter text excludes skipped heading content") {
 // ---- Sleep Timer + Heading Boundary ----
 print("\n--- Integration: Sleep Timer + Heading Boundary ---")
 
-test("Sleep timer: end-of-heading fires on second heading boundary") {
+test("Sleep timer: end-of-heading ends at its owner's first heading end") {
 #if canImport(TextMouth)
     // Never exercise the production singleton in hosted tests: its reset
     // helper clears persisted timer history. A disposable defaults suite keeps
@@ -789,46 +789,29 @@ test("Sleep timer: end-of-heading fires on second heading boundary") {
     }
 
     let ownerID = UUID()
-    var expired = false
+    var expiryCallbacks = 0
     timer.start(duration: .endOfHeading, ownerID: ownerID) {
-        expired = true
+        expiryCallbacks += 1
     }
 
-    timer.notifyHeadingBoundary(by: ownerID)
-    try assertTrue(timer.isActive, "First boundary should leave timer active")
-    try assertTrue(!expired, "Should NOT expire on first boundary")
-
-    timer.notifyHeadingBoundary(by: ownerID)
-    try assertTrue(expired, "Should expire on second heading boundary")
-    try assertTrue(!timer.isActive, "Expired timer should become inactive")
+    // Finding #787: another reader's heading end changes nothing, and the
+    // owner's first one ends the timer; the owner stops playback there and
+    // says so itself, so the expiry callback never runs.
+    try assertTrue(!timer.expireAtHeadingEnd(by: UUID()), "Another reader's heading end should not end the timer")
+    try assertTrue(timer.isActive, "Another reader's heading end should leave the timer active")
+    try assertTrue(timer.expireAtHeadingEnd(by: ownerID), "The owner's first heading end should end the timer")
+    try assertTrue(!timer.isActive, "The ended timer should be inactive")
+    try assertTrue(!timer.expireAtHeadingEnd(by: ownerID), "An ended timer should not end again")
+    try assertEqual(expiryCallbacks, 0)
 #else
-    // Simulate SleepTimerService behavior for endOfHeading mode
-    var endOfHeadingTriggered = false
-    var expired = false
-
-    // Start timer in endOfHeading mode
+    // Simulate SleepTimerService behavior for endOfHeading mode: the owner's
+    // first heading end ends the timer.
+    var isActive = true
     let duration = SleepTimerDuration.endOfHeading
-
-    // First heading boundary → sets flag but doesn't expire
     if case .endOfHeading = duration {
-        if endOfHeadingTriggered {
-            expired = true
-        } else {
-            endOfHeadingTriggered = true
-        }
+        isActive = false
     }
-    try assertTrue(endOfHeadingTriggered, "First boundary should set flag")
-    try assertTrue(!expired, "Should NOT expire on first boundary")
-
-    // Second heading boundary → expires
-    if case .endOfHeading = duration {
-        if endOfHeadingTriggered {
-            expired = true
-        } else {
-            endOfHeadingTriggered = true
-        }
-    }
-    try assertTrue(expired, "Should expire on second heading boundary")
+    try assertTrue(!isActive, "Should end at the first heading end")
 #endif
 }
 

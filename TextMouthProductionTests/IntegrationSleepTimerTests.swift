@@ -422,6 +422,321 @@ final class IntegrationSleepTimerTests: XCTestCase {
         }
     }
 
+    // MARK: - Stopping Where a Heading Ends (finding #787)
+
+    /// Finding #787: speech crossing from one heading into the next within a
+    /// chapter stops there, once, as the reader's view of the cursor learns
+    /// which heading the cursor is in. Speech has run a moment past the next
+    /// heading's start by then, so the cursor goes back to it, saved, for
+    /// Play to begin that heading from its first word. Before the repair
+    /// playback crossing a heading told the timer nothing, so it never
+    /// stopped a book playing on its own.
+    func testEndOfHeadingTimerStopsSpeechWhereTheHeadingEndsWithinAChapter() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let harbour = harbourChapter()
+        try withSpeechReader("Sleep Timer Heading End Speech", chapters: [harbour.chapter]) { speech in
+            let reader = speech.reader
+            reader.startSleepTimer(duration: .endOfHeading)
+            // The first word of the Tides section after its heading.
+            let wordAfterTheHeading = harbour.tidesOffset + "Tides\n\n".utf16.count
+
+            var spokeOn = true
+            let recorder = recordingAnnouncements {
+                reader.play()
+                // The speech service reports that word about to be spoken, in
+                // the speech's own offsets, and the reader's next refresh of
+                // its view of the cursor comes; a later one finds nothing to do.
+                let spokenOffset = reader.currentOffsetMap?.toModified(wordAfterTheHeading) ?? wordAfterTheHeading
+                reader.speechService.onWordSpoken?(NSRange(location: spokenOffset, length: 3), "The")
+                reader.stopForSleepTimerIfPlaybackReachedHeadingEnd()
+                spokeOn = reader.speechService.isSpeaking
+                reader.speechService.stop()
+                reader.stopForSleepTimerIfPlaybackReachedHeadingEnd()
+            }
+
+            XCTAssertFalse(spokeOn, "Speech went on into the next heading")
+            XCTAssertEqual(
+                recorder.announcements,
+                [VoiceOverAnnouncement(message: "Sleep timer expired at the end of the heading. Playback paused.", priority: .high)]
+            )
+            XCTAssertFalse(timer.isActive, "The timer is still in effect")
+            XCTAssertEqual(timer.lastUsedDuration, .endOfHeading)
+            XCTAssertEqual(reader.currentChapterIndex, 0)
+            XCTAssertEqual(reader.currentCharacterOffset, harbour.tidesOffset, "The cursor is not at the next heading")
+            try assertSavedPlace(of: speech.book, in: speech.world, chapter: 0, offset: harbour.tidesOffset)
+        }
+    }
+
+    /// Finding #787: a jump that stays within the heading the timer waits for
+    /// ends nothing: back to that heading's own start, or on to its next
+    /// sentence. A jump out of it, to the next heading, ends the timer at
+    /// once, the first time; the listener hears the next heading's name, then
+    /// that the timer ended, after it rather than over it. Before the repair
+    /// a jump to the next heading only armed the timer, and a second ended it.
+    func testAJumpWithinTheHeadingKeepsTheTimerAndAJumpOutEndsItOnce() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let harbour = harbourChapter()
+        try withSpeechReader("Sleep Timer Heading Jumps", chapters: [harbour.chapter]) { speech in
+            let reader = speech.reader
+            // Well inside the Moorings section, past the grace a jump back to
+            // a heading allows.
+            let insideMoorings = harbour.tidesOffset - "checked.\n\n".utf16.count
+            reader.navigateTo(chapterIndex: 0, characterOffset: insideMoorings)
+            reader.startSleepTimer(duration: .endOfHeading)
+
+            var keptWithinTheHeading = false
+            let recorder = recordingAnnouncements {
+                reader.previousHeading()
+                XCTAssertEqual(reader.currentCharacterOffset, 0, "The jump back did not reach the heading's start")
+                reader.nextSentence()
+                keptWithinTheHeading = timer.isActive
+
+                reader.nextHeading()
+                XCTAssertFalse(timer.isActive, "The jump out of the heading did not end the timer")
+                // The timer's end is said on the main queue's next turn.
+                XCTAssertTrue(
+                    waitUntil(timeout: 2) { reader.lastAnnouncement != "Heading: Tides" },
+                    "The timer's end was not said"
+                )
+                // No later heading to jump to: nothing more is said.
+                reader.nextHeading()
+            }
+
+            XCTAssertTrue(keptWithinTheHeading, "A jump within the heading ended the timer")
+            XCTAssertEqual(
+                recorder.announcements,
+                [
+                    VoiceOverAnnouncement(message: "Heading: Moorings", priority: .high),
+                    VoiceOverAnnouncement(message: "Next sentence", priority: .high),
+                    VoiceOverAnnouncement(message: "Heading: Tides", priority: .high),
+                    VoiceOverAnnouncement(
+                        message: "Sleep timer expired at the end of the heading. Playback paused.",
+                        priority: .medium
+                    ),
+                ]
+            )
+            XCTAssertEqual(reader.currentCharacterOffset, harbour.tidesOffset, "The cursor is not where the jump went")
+        }
+    }
+
+    /// Finding #787, while an audiobook plays: a jump back to the start of
+    /// the heading the timer waits for plays on, the timer in effect; a jump
+    /// out of it, to the next heading, stops playback where the jump went,
+    /// once, and the cursor waits there, saved.
+    func testAJumpOutOfTheHeadingStopsAnAudiobookWhereTheJumpWent() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Heading Jump Audio")
+        world.settings.sleepFadeOutDuration = 0
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [5, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        defer { reader.stop() }
+
+        let recorder = recordingAnnouncements {
+            reader.startSleepTimer(duration: .endOfHeading)
+            reader.play()
+            // Past the grace a jump back to a heading allows: a second and a
+            // half of the chapter, at ten characters a second.
+            XCTAssertTrue(eventually(within: 5) { reader.currentCharacterOffset > 15 }, "The first chapter did not play on")
+            reader.previousHeading()
+            XCTAssertTrue(service.isPlaying, "The jump back to the heading's start stopped playback")
+            XCTAssertTrue(timer.isActive, "The jump back to the heading's start ended the timer")
+
+            reader.nextHeading()
+            XCTAssertFalse(service.isPlaying, "The next heading played")
+            XCTAssertFalse(timer.isActive, "The jump out of the heading did not end the timer")
+            // The timer's end is said on the main queue's next turn.
+            spinMainRunLoop(for: 0.2)
+        }
+
+        XCTAssertEqual(recorder.announcements.count, 3, "\(recorder.announcements)")
+        XCTAssertEqual(
+            recorder.announcements.last,
+            VoiceOverAnnouncement(message: "Sleep timer expired at the end of the heading. Playback paused.", priority: .medium)
+        )
+        XCTAssertFalse(reader.isCurrentlyPlaying, "The reader shows the next heading playing")
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        try assertSavedPlace(of: book, in: world, chapter: 1, offset: 0)
+    }
+
+    /// Finding #787: an audiobook's chapters are its headings, so a timer
+    /// set for the end of the heading stops the audiobook where its chapter
+    /// ends, before the next chapter starts, once, as the Stop At section's
+    /// End of chapter does; the next chapter's file is never named to follow.
+    /// The cursor waits, saved, at the beginning of the next chapter, where
+    /// Play starts it.
+    func testEndOfHeadingTimerStopsAnAudiobookWhereItsChapterEnds() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Heading End Audio")
+        world.settings.sleepFadeOutDuration = 0
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [0.6, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        let firstChapterFile = reader.audioChapterFiles.prefix(1).map(resolvedPath)
+        defer { reader.stop() }
+
+        let recorder = recordingAnnouncements {
+            reader.startSleepTimer(duration: .endOfHeading)
+            reader.play()
+            XCTAssertTrue(service.isPlaying, "The first chapter did not play")
+            XCTAssertEqual(service.queuedFilePaths, firstChapterFile, "The next chapter's file was named to follow")
+            XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "The first heading never ended")
+            XCTAssertFalse(service.isPlaying, "The next heading played")
+            XCTAssertFalse(
+                eventually(within: 1) { service.isPlaying || reader.isCurrentlyPlaying },
+                "Playback started again after the heading's end"
+            )
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Sleep timer expired at the end of the heading. Playback paused."]
+        )
+        XCTAssertFalse(timer.isActive, "The timer is still in effect")
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        try assertSavedPlace(of: book, in: world, chapter: 1, offset: 0)
+    }
+
+    /// Finding #787, for a text book whose chapters begin with their
+    /// headings: speech stops where the chapter ends when the next chapter
+    /// begins the next heading, white space before it or not, and goes on
+    /// when the next chapter has no heading of its own, so the heading goes
+    /// on through it.
+    func testEndOfHeadingTimerStopsSpeechWhereTheChapterEndsOnlyWhenTheHeadingDoes() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let opening = Chapter(
+            title: "Bollard",
+            text: "Bollard\n\nThe bollard is noted here.",
+            headings: [Heading(level: 1, text: "Bollard")]
+        )
+        let cases: [(name: String, next: Chapter, stops: Bool)] = [
+            ("a chapter opening with its heading", Chapter(
+                title: "Capstan",
+                text: "Capstan\n\nThe capstan is noted here.",
+                headings: [Heading(level: 1, text: "Capstan")]
+            ), true),
+            ("a chapter whose heading follows a blank line", Chapter(
+                title: "Davit",
+                text: "\n\nDavit\n\nThe davit is noted here.",
+                headings: [Heading(level: 1, text: "Davit", characterOffset: 2)]
+            ), true),
+            ("a chapter with no heading of its own", Chapter(title: "", text: "The cleat is noted here."), false),
+        ]
+        for (number, nextChapter) in cases.enumerated() {
+            try withSpeechReader("Sleep Timer Heading Chapter End \(number)", chapters: [opening, nextChapter.next]) { speech in
+                let reader = speech.reader
+                reader.startSleepTimer(duration: .endOfHeading)
+                let endOfFirstChapter = try startSpeakingSilently(reader)
+
+                var spokeOn = false
+                let recorder = recordingAnnouncements {
+                    spokeOn = endSpeechSilently(endOfFirstChapter, of: reader)
+                }
+
+                XCTAssertEqual(spokeOn, !nextChapter.stops, nextChapter.name)
+                XCTAssertEqual(timer.isActive, !nextChapter.stops, nextChapter.name)
+                XCTAssertEqual(
+                    recorder.announcements.map(\.message),
+                    nextChapter.stops ? ["Sleep timer expired at the end of the heading. Playback paused."] : [],
+                    nextChapter.name
+                )
+                XCTAssertEqual(reader.currentChapterIndex, 1, nextChapter.name)
+                XCTAssertEqual(reader.currentCharacterOffset, 0, nextChapter.name)
+            }
+        }
+    }
+
+    /// Finding #787: the last heading ends with the book, so a timer set for
+    /// the end of the heading in the last one stops playback where the book
+    /// ends, and the book does not start again, as one set for the end of
+    /// the book would not let it.
+    func testEndOfHeadingTimerInTheLastHeadingStopsWhereTheBookEnds() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let harbour = harbourChapter()
+        try withSpeechReader("Sleep Timer Heading Book End", endOfBook: .loop, chapters: [harbour.chapter]) { speech in
+            let reader = speech.reader
+            reader.navigateTo(chapterIndex: 0, characterOffset: harbour.tidesOffset)
+            reader.startSleepTimer(duration: .endOfHeading)
+            let endOfTheBook = try startSpeakingSilently(reader)
+
+            var spokeOn = false
+            let recorder = recordingAnnouncements {
+                spokeOn = endSpeechSilently(endOfTheBook, of: reader)
+            }
+
+            XCTAssertFalse(spokeOn, "The book started again")
+            XCTAssertEqual(
+                recorder.announcements.map(\.message),
+                ["Finished: Quay Notes. Not restarted because of the sleep timer."]
+            )
+            XCTAssertFalse(timer.isActive, "The timer is still in effect")
+        }
+    }
+
+    /// Finding #787: a timer for the end of the heading set while the book
+    /// still loads, before its headings are known, waits once they are for
+    /// the end of the heading the cursor is in, rather than for the end of
+    /// the book.
+    func testAHeadingTimerSetWhileTheBookLoadsWaitsForItsHeadingOnceLoaded() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let harbour = harbourChapter()
+        try withSpeechReader("Sleep Timer Heading While Loading", chapters: [harbour.chapter]) { speech in
+            let reader = speech.reader
+            let book = try XCTUnwrap(reader.content)
+            reader.content = nil
+            reader.startSleepTimer(duration: .endOfHeading)
+
+            reader.showLoadedContent(
+                ReaderViewModel.LoadedContent(
+                    content: book,
+                    index: book.contentIndex,
+                    audioFiles: nil,
+                    audioSegments: nil,
+                    fileMetadata: nil,
+                    audioTags: nil,
+                    shouldPersistContentIndex: false,
+                    cacheFormatVersion: nil
+                ),
+                readFrom: speech.book.filePath
+            )
+            reader.navigateTo(chapterIndex: 0, characterOffset: harbour.tidesOffset)
+
+            XCTAssertFalse(timer.isActive, "The heading's end did not end the timer")
+        }
+    }
+
+    /// Whether a heading has begun by the time a chapter says anything: it
+    /// begins in an earlier chapter, or in this one with nothing but white
+    /// space before it; not when it begins in a later chapter, or after
+    /// words of this one.
+    func testAHeadingHasBegunWhereNothingIsSaidBeforeIt() {
+        let text = "\n \nTides\n\nThe tides are noted here."
+        let cases: [(name: String, heading: Heading, begun: Bool)] = [
+            ("in an earlier chapter", Heading(level: 1, text: "Moorings", chapterIndex: 2, characterOffset: 40), true),
+            ("at the chapter's start", Heading(level: 1, text: "Tides", chapterIndex: 3, characterOffset: 0), true),
+            ("after white space alone", Heading(level: 1, text: "Tides", chapterIndex: 3, characterOffset: 3), true),
+            ("after words", Heading(level: 2, text: "Tide Tables", chapterIndex: 3, characterOffset: 12), false),
+            ("in a later chapter", Heading(level: 1, text: "Quays", chapterIndex: 4, characterOffset: 0), false),
+        ]
+        for heading in cases {
+            XCTAssertEqual(
+                ReaderViewModel.headingHasBegun(heading.heading, atStartOfChapter: 3, text: text),
+                heading.begun,
+                heading.name
+            )
+        }
+    }
+
     // MARK: - Two Readers of One Book
 
     /// The timer belongs to the reader that set it, not to its book (TODO
@@ -594,7 +909,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
     private struct SpeechWorld {
         /// The world the reader belongs to.
         let world: IntegrationWorld
-        /// The reader, loaded with three short chapters.
+        /// The reader, loaded with the test's chapters.
         let reader: ReaderViewModel
         /// The book the reader reads.
         let book: Book
@@ -602,8 +917,9 @@ final class IntegrationSleepTimerTests: XCTestCase {
         let nextBook: Book
     }
 
-    /// Run `body` with a reader of a text book of three short chapters, in a
-    /// world of its own whose folder holds another book after it.
+    /// Run `body` with a reader of a text book of `chapters`, three short
+    /// ones with no headings unless the test gives its own, in a world of
+    /// its own whose folder holds another book after it.
     ///
     /// The reader's content is given to it directly: the book names a file
     /// that is not there, so the reader's own load fails before the content
@@ -616,10 +932,14 @@ final class IntegrationSleepTimerTests: XCTestCase {
     ///   - label: Names the world's folder, config, and preferences.
     ///   - endOfBook: What the book does when its last chapter ends.
     ///   - fadeSeconds: The sleep timer's fade-out setting.
+    ///   - chapters: The book's chapters.
     private func withSpeechReader(
         _ label: String,
         endOfBook: EndOfBookBehavior = .stop,
         fadeSeconds: TimeInterval = 0,
+        chapters: [Chapter] = ["Bollard", "Capstan", "Davit"].map {
+            Chapter(title: $0, text: "The \($0.lowercased()) is noted here.")
+        },
         _ body: (SpeechWorld) throws -> Void
     ) throws {
         let world = try makeIntegrationWorld(label)
@@ -629,14 +949,24 @@ final class IntegrationSleepTimerTests: XCTestCase {
         let reader = world.openReader(for: book, renderScheduler: HeldRenderQueue())
         waitForReaderToLoad(reader)
         reader.errorMessage = nil
-        reader.content = DocumentContent(
-            title: book.title,
-            author: "Test Author",
-            chapters: ["Bollard", "Capstan", "Davit"].map {
-                Chapter(title: $0, text: "The \($0.lowercased()) is noted here.")
-            }
-        )
+        reader.content = DocumentContent(title: book.title, author: "Test Author", chapters: chapters)
         try body(SpeechWorld(world: world, reader: reader, book: book, nextBook: nextBook))
+    }
+
+    /// A chapter with two headings, Moorings at its start and Tides further
+    /// on, and where Tides begins.
+    private func harbourChapter() -> (chapter: Chapter, tidesOffset: Int) {
+        let text = "Moorings\n\nThe moorings are noted here. Each one is checked.\n\nTides\n\nThe tides are noted here."
+        let tidesOffset = (text as NSString).range(of: "Tides").location
+        let chapter = Chapter(
+            title: "Harbour",
+            text: text,
+            headings: [
+                Heading(level: 1, text: "Moorings"),
+                Heading(level: 1, text: "Tides", characterOffset: tidesOffset),
+            ]
+        )
+        return (chapter, tidesOffset)
     }
 
     /// A text book titled `title`, listed in `world`'s folder, whose file is

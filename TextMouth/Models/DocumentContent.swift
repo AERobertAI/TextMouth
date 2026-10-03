@@ -305,6 +305,10 @@ struct HeadingSweep {
 /// minutes of listening, or a place the book reaches.
 enum SleepTimerDuration: Hashable {
     case minutes(Int)
+    /// The end of the heading current where the timer was set: where the
+    /// next heading begins, or the end of the book after the last heading
+    /// (finding #787). The reader that set it finds that place, and stops
+    /// playback when its cursor gets there.
     case endOfHeading
     /// The end of the chapter playing, before the next chapter starts. It
     /// took the place of the timer once called End of document, which a
@@ -339,19 +343,26 @@ enum SleepTimerDuration: Hashable {
     /// Whether a timer set for this stops playback where a chapter ends,
     /// before anything after that chapter plays (TODO P01). End of chapter
     /// stops at the end of whichever chapter is playing, the book's last
-    /// included; End of book only at the end of the book's last chapter; a
-    /// timer counting minutes, or waiting for a heading's end, stops at no
-    /// chapter's end.
+    /// included; End of heading where the heading it waits for ends there
+    /// too, as when the next chapter begins with the next heading, and where
+    /// the book ends, which ends every heading (finding #787); End of book
+    /// only at the end of the book's last chapter; a timer counting minutes
+    /// stops at no chapter's end.
     ///
-    /// - Parameter endingTheBook: Whether the chapter ending is the book's
-    ///   last, with nothing after it to play, so that its end is the book's.
-    func stopsPlaybackAtChapterEnd(endingTheBook: Bool) -> Bool {
+    /// - Parameters:
+    ///   - endingTheHeading: Whether the heading an End of heading timer
+    ///     waits for ends where the chapter does.
+    ///   - endingTheBook: Whether the chapter ending is the book's last, with
+    ///     nothing after it to play, so that its end is the book's.
+    func stopsPlaybackAtChapterEnd(endingTheHeading: Bool, endingTheBook: Bool) -> Bool {
         switch self {
         case .endOfChapter:
             return true
+        case .endOfHeading:
+            return endingTheHeading || endingTheBook
         case .endOfBook:
             return endingTheBook
-        case .minutes, .endOfHeading:
+        case .minutes:
             return false
         }
     }

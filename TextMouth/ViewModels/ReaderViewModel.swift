@@ -114,6 +114,13 @@ final class ReaderViewModel: ObservableObject {
     /// Owner-scoped calls pass `readerID`, so another window's playback, even
     /// of the same book, never affects the timer this reader set.
     let sleepTimerService = SleepTimerService.shared
+    /// Where the heading this reader's End of heading sleep timer waits for
+    /// ends: the next heading after the cursor as the timer was set, whose
+    /// start stops playback (finding #787). Nil when no heading follows, so
+    /// that the heading ends with the book, and when this reader set no such
+    /// timer; read only while that timer is this reader's and in effect.
+    /// Accessed from the Playback extension.
+    var sleepTimerNextHeading: Heading?
     /// Every reader window receives a unique media owner, even when two
     /// windows happen to show the same book.
     lazy var nowPlayingService = NowPlayingSession(
@@ -967,6 +974,12 @@ final class ReaderViewModel: ObservableObject {
                 currentCharacterOffset = 0
             }
         }
+        // This reader's sleep timer for the end of the heading waits for the
+        // end of the heading the cursor is in, as the headings are now: one
+        // set while the book loaded found no headings yet (finding #787).
+        if sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) {
+            sleepTimerNextHeading = headingAfterCursor
+        }
 
         isLoading = false
 
@@ -1087,6 +1100,11 @@ final class ReaderViewModel: ObservableObject {
             chapterIndex: snapshot.chapterIndex,
             offset: snapshot.offset
         )
+        // The reader header has just learned the heading the cursor is in,
+        // and an End of heading sleep timer learns here, at this pace rather
+        // than with every spoken word, whether playback has left its heading
+        // (finding #787).
+        stopForSleepTimerIfPlaybackReachedHeadingEnd()
 
         if pendingPlaybackUIRefresh != nil {
             schedulePlaybackUIRefresh()
