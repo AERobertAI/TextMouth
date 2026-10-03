@@ -81,7 +81,18 @@ extension ReaderViewModel {
            let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
             speechService.currentVoice = voice
         }
-        refreshLookAhead()
+        // Speed and pitch are applied as the audio plays, so only a voice
+        // other than the one the next chapter renders in makes the look-ahead
+        // stale: each speed or pitch step in Settings, which every playing
+        // reader hears, leaves a look-ahead in the voice in effect alone
+        // (PERF02). The global voice may have changed before this runs, so
+        // the look-ahead's own voice is what is compared.
+        let lookAheadVoiceIsCurrent = lookAhead.map {
+            $0.signature.voiceIdentifier == speechService.currentVoice?.identifier
+        } ?? false
+        if !lookAheadVoiceIsCurrent {
+            refreshLookAhead()
+        }
     }
 
     /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
@@ -176,28 +187,12 @@ extension ReaderViewModel {
         libraryViewModel.updateSkippedHeadings(bookID: book.id, skippedIDs: ids)
         refreshLookAhead()
     }
-
-    /// Remove text under skipped headings from a chapter's text.
-    /// Returns the filtered text and an OffsetMap tracking which characters were removed,
-    /// so downstream offset conversions can map back to original-text positions.
-    func filterSkippedSections(chapterIndex: Int, text: String) -> (text: String, offsetMap: OffsetMap) {
-        // Most books skip nothing, and then the text is unchanged.
-        let skippedIDs = skippedHeadingIDs
-        guard content != nil, !skippedIDs.isEmpty else { return (text, .identity) }
-        // `headings` always equals `content.allHeadings`. Reading it avoids
-        // rebuilding every heading of the book for each chapter, which adds
-        // up when playback passes over many silent chapters in a row.
-        let chapterHeadings = headings.filter { $0.chapterIndex == chapterIndex }
-        return SkippedSectionFilter.apply(
-            text: text,
-            headings: chapterHeadings,
-            skippedIDs: skippedIDs
-        )
-    }
 }
 
 /// Removes excluded heading ranges while preserving the source/filtered offset
-/// relationship required by seeking and playback highlighting.
+/// relationship required by seeking and playback highlighting. Speech
+/// preparation applies it to each chapter with the chapter's own headings
+/// (`ChapterSpeechInputs.prepare()`).
 enum SkippedSectionFilter {
     static func apply(
         text: String,

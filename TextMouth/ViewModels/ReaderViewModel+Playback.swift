@@ -246,6 +246,11 @@ extension ReaderViewModel {
             // releases its rendered audio instead of holding it while idle.
             discardLookAhead()
         }
+        // A closed reader, which `close()` stops, keeps no prepared speech:
+        // SwiftUI may keep the closed window, and its reader, alive (PERF27).
+        if hasClosed {
+            chapterSpeechCache.removeAll()
+        }
         finishStopping(wasActive: wasActive, wasSleepTimerFading: wasSleepTimerFading)
     }
 
@@ -480,7 +485,8 @@ extension ReaderViewModel {
     /// voice in effect, for an instant start; audio rendered before the
     /// voice, a substitution rule, the punctuation pauses, or the skipped
     /// sections changed is discarded, and the chapter is spoken from its
-    /// current text.
+    /// current text. The speech the look-ahead chose is carried here, so a
+    /// chapter whose inputs did not change is not prepared again.
     private func speechDidFinish(_ play: ChapterPlay) {
         DiagnosticLog.trace(.playback, "speech finished: chapter=\(play.chapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
         guard endsPlayUnderWay(play, reportedBy: "speech") else { return }
@@ -550,6 +556,11 @@ extension ReaderViewModel {
     /// Pre-render the next speakable chapter's audio in the background so
     /// the chapter transition is instant. Chapters with nothing to say are
     /// passed over exactly as the utterance-finished path passes over them.
+    ///
+    /// The chapter's speech is carried to the moment it begins, so the
+    /// chapter's end prepares nothing. A long chapter whose speech is not
+    /// prepared yet is prepared off the main actor first, and this runs
+    /// again once it is ready (PERF02).
     func preRenderNextChapter() {
         // Forget any earlier look-ahead before choosing a new one. The next
         // speakable chapter changes when sections are skipped, so an old
@@ -557,7 +568,9 @@ extension ReaderViewModel {
         discardLookAhead()
 
         // Render exactly the text playback will speak for that chapter.
-        guard let speech = nextSpeakableChapterSpeech(from: currentChapterIndex + 1) else { return }
+        let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
+        guard case .found(let speech) = search else { return }
+        chapterSpeechCache.lookAheadSpeech = speech
         let nextIdx = speech.chapterIndex
         let chapterText = speech.text
 
@@ -611,8 +624,9 @@ extension ReaderViewModel {
             lookAhead = nil
             return
         }
-        // Prepare the chapter's speech again from the settings in effect now:
-        // a setting changed while the render ran makes the signatures differ.
+        // The chapter's speech from the settings in effect now, prepared again
+        // only if one of them changed: a setting changed while the render ran
+        // makes the signatures differ.
         let current = currentRenderSignature(forChapterAt: render.chapterIndex)
         guard let rendered = render.engine.renderedSignature, rendered == current else {
             DiagnosticLog.trace(.playback, "preRender: dropped chapter \(render.chapterIndex), rendered from inputs that changed while it ran (rendered \(render.engine.renderedSignature?.description ?? "nothing"), now \(current?.description ?? "no chapter"))")
@@ -624,10 +638,13 @@ extension ReaderViewModel {
 
     /// Forget the look-ahead. A render still in progress is abandoned: the
     /// synthesizer may run on to the end of the text, but the audio is never
-    /// installed in the engine, and nothing keeps or plays it.
+    /// installed in the engine, and nothing keeps or plays it. The speech it
+    /// carried, and any preparation it waited for, are forgotten with it;
+    /// that speech stays among the recently prepared chapters.
     func discardLookAhead() {
         lookAhead?.engine.cancelRender()
         lookAhead = nil
+        chapterSpeechCache.forgetLookAhead()
     }
 
     /// Take the look-ahead's engine to play `speech`, the chapter that is
@@ -685,12 +702,20 @@ extension ReaderViewModel {
     /// as the audio plays.
     ///
     /// Nothing happens unless a text book's speech is playing or paused.
+    /// Speech already prepared from the current settings is not prepared
+    /// again, and a long chapter is prepared off the main actor.
     func refreshLookAhead() {
         guard isSpeechSessionActive else { return }
         if let lookAhead,
-           let next = nextSpeakableChapterSpeech(from: currentChapterIndex + 1),
+           case .found(let next) = searchForSpeakableChapter(
+               from: currentChapterIndex + 1,
+               preparingLongChapters: .inBackground
+           ),
            next.chapterIndex == lookAhead.chapterIndex,
            renderRequest(for: next).signature == lookAhead.signature {
+            // The same speech, perhaps from inputs that changed without
+            // changing it: carry it as prepared from the inputs now.
+            chapterSpeechCache.lookAheadSpeech = next
             return
         }
         DiagnosticLog.trace(.playback, "preRender: speech settings changed; choosing the chapter to render ahead again")
@@ -731,10 +756,11 @@ extension ReaderViewModel {
     // MARK: - Chapter Speech
 
     /// One chapter as the speech engine hears it, with the map back to the
-    /// chapter's original text.
-    struct ChapterSpeech {
-        /// Index of the chapter this speech was prepared from.
-        let chapterIndex: Int
+    /// chapter's original text and what it was prepared from.
+    struct ChapterSpeech: Sendable {
+        /// Everything this speech was prepared from; while they stay the
+        /// same, so does the speech (`ChapterSpeechCache`).
+        let inputs: ChapterSpeechInputs
         /// Result of the text substitutions, the pipeline's last stage.
         let transformation: TextTransformation
         /// Offsets through every stage (skipped sections, repeated symbols,
@@ -742,37 +768,99 @@ extension ReaderViewModel {
         /// text.
         let offsetMap: ComposedOffsetMap
 
+        /// Index of the chapter this speech was prepared from.
+        var chapterIndex: Int { inputs.chapterIndex }
         /// The exact text handed to the speech engine.
         var text: String { transformation.modifiedText }
     }
 
     /// Run one chapter through the playback text pipeline: remove skipped
     /// sections, rewrite runs of a repeated symbol, add punctuation pauses,
-    /// then apply text substitutions. Speaking a chapter and pre-rendering
-    /// the next one both use this, so look-ahead audio always matches what
-    /// playback would speak. Every setting is read as the chapter is
-    /// prepared, so a change applies from the next chapter spoken.
+    /// then apply text substitutions (`ChapterSpeechInputs.prepare()`).
+    /// Speaking a chapter and pre-rendering the next one both use this, so
+    /// look-ahead audio always matches what playback would speak. Every
+    /// setting is read as the chapter is asked for, so a change applies from
+    /// the next chapter spoken.
+    ///
+    /// A chapter is prepared once while everything it is prepared from stays
+    /// the same, and its speech is used again until any of it changes
+    /// (PERF02).
     ///
     /// - Returns: Nil when no content is loaded or the index is out of range.
     func preparedSpeech(forChapterAt chapterIndex: Int) -> ChapterSpeech? {
+        speechInputs(forChapterAt: chapterIndex).map { preparedSpeech(for: $0) }
+    }
+
+    /// What chapter `chapterIndex`'s speech is prepared from now: its text,
+    /// its skipped sections, and the repeated-symbol, punctuation pause, and
+    /// substitution settings in force. Nil when no content is loaded or the
+    /// index is out of range.
+    func speechInputs(forChapterAt chapterIndex: Int) -> ChapterSpeechInputs? {
         guard let content, content.chapters.indices.contains(chapterIndex) else { return nil }
-        // Each stage reports how it shifted character offsets; composing the
-        // stages converts between original chapter text and spoken text.
-        let (filteredText, filterMap) = filterSkippedSections(
+        // Most books skip nothing, and then no heading shapes the speech.
+        // `headings` always equals `content.allHeadings`; reading it avoids
+        // rebuilding every heading of the book for each chapter.
+        let skippedIDs = skippedHeadingIDs
+        let chapterHeadings = skippedIDs.isEmpty ? [] : headings.filter { $0.chapterIndex == chapterIndex }
+        return ChapterSpeechInputs(
             chapterIndex: chapterIndex,
-            text: content.chapters[chapterIndex].text
+            text: content.chapters[chapterIndex].text,
+            chapterHeadings: chapterHeadings,
+            bookSkippedHeadingIDs: skippedIDs,
+            repeatedSymbolRule: substitutionService.repeatedSymbolRule,
+            punctuationPauseLevel: settingsViewModel.punctuationPauseLevel,
+            substitutions: substitutionService.substitutionPass
         )
-        // Repeated symbols are rewritten before the pauses are added: the
-        // pause marks are periods and commas, which would lengthen runs of
-        // those symbols, and the substitution rules then see the counts.
-        let (symbolText, symbolMap) = substitutionService.repeatedSymbolRule.apply(to: filteredText)
-        let (pausedText, pauseMap) = applyPunctuationPauses(symbolText)
-        let transformation = substitutionService.transform(pausedText)
-        return ChapterSpeech(
-            chapterIndex: chapterIndex,
-            transformation: transformation,
-            offsetMap: ComposedOffsetMap(stages: [filterMap, symbolMap, pauseMap] + transformation.offsetMap.stages)
+    }
+
+    /// The speech `inputs` describe: the speech kept for exactly those
+    /// inputs, or else speech prepared now, which is kept.
+    func preparedSpeech(for inputs: ChapterSpeechInputs) -> ChapterSpeech {
+        chapterSpeechCache.speech(for: inputs) ?? prepareAndKeep(inputs)
+    }
+
+    /// Speech prepared now from `inputs`, on the main actor, and kept.
+    private func prepareAndKeep(_ inputs: ChapterSpeechInputs) -> ChapterSpeech {
+        let speech = inputs.prepare()
+        chapterSpeechCache.keep(speech)
+        return speech
+    }
+
+    /// Prepare a long chapter's speech off the main actor for the look-ahead,
+    /// which waits for it, and choose the chapter to render ahead again once
+    /// the speech is ready. A preparation of the same inputs already under
+    /// way is not started again.
+    private func prepareInBackground(_ inputs: ChapterSpeechInputs) {
+        chapterSpeechCache.awaitedByLookAhead = inputs
+        guard chapterSpeechCache.beginPreparingInBackground(inputs) else { return }
+        DiagnosticLog.trace(
+            .playback,
+            "preRender: preparing chapter \(inputs.chapterIndex) (\(inputs.text.utf16Length) UTF-16 units) off the main thread"
         )
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let speech = inputs.prepare()
+            DispatchQueue.main.async { [weak self] in
+                self?.finishPreparingInBackground(speech)
+            }
+        }
+    }
+
+    /// Keep speech prepared in the background while its chapter is still
+    /// prepared from the same inputs, and, when the look-ahead waited for it,
+    /// choose the chapter to render ahead again, now without waiting. A
+    /// closed reader keeps nothing.
+    private func finishPreparingInBackground(_ speech: ChapterSpeech) {
+        chapterSpeechCache.endPreparingInBackground(speech.inputs)
+        guard !hasClosed else { return }
+        if speechInputs(forChapterAt: speech.chapterIndex) == speech.inputs {
+            chapterSpeechCache.keep(speech)
+        }
+        guard chapterSpeechCache.awaitedByLookAhead == speech.inputs else { return }
+        chapterSpeechCache.awaitedByLookAhead = nil
+        DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) prepared off the main thread")
+        if isSpeechSessionActive {
+            preRenderNextChapter()
+        }
     }
 
     // MARK: - Speakable Chapters
@@ -816,19 +904,63 @@ extension ReaderViewModel {
     /// silent: empty, entirely inside skipped sections, or deleted by
     /// substitutions.
     func nextSpeakableChapterSpeech(from start: Int) -> ChapterSpeech? {
-        guard let content else { return nil }
-        // The search stops at the first chapter whose speech qualifies, so
-        // the speech prepared last belongs to that chapter. Keeping it spares
-        // the chosen chapter a second trip through the text pipeline.
-        var lastPrepared: ChapterSpeech?
-        let index = Self.nextSpeakableChapterIndex(
-            from: start,
-            chapterCount: content.chapters.count
-        ) { chapterIndex in
-            lastPrepared = preparedSpeech(forChapterAt: chapterIndex)
-            return lastPrepared.map { Self.hasSpeakableText($0.text) } ?? false
+        if case .found(let speech) = searchForSpeakableChapter(from: start, preparingLongChapters: .now) {
+            return speech
         }
-        return index == nil ? nil : lastPrepared
+        return nil
+    }
+
+    /// When a search for the next speakable chapter prepares a long chapter
+    /// whose speech is not kept yet.
+    enum LongChapterPreparation {
+        /// At once, on the main actor, for a caller that needs the answer
+        /// now: Play, a chapter's end, and the end of the book.
+        case now
+        /// In the background, ending the search until it is ready: the
+        /// look-ahead, which waits for it rather than hold the main thread.
+        case inBackground
+    }
+
+    /// What a search for the next speakable chapter found.
+    enum SpeakableChapterSearch {
+        /// The speech of the first chapter with anything to say.
+        case found(ChapterSpeech)
+        /// No chapter from where the search began has anything to say.
+        case noneLeft
+        /// A long chapter is being prepared in the background before the
+        /// search can go on.
+        case preparingInBackground
+    }
+
+    /// Search for the first chapter at or after `start` with anything to
+    /// say, as `nextSpeakableChapterSpeech(from:)` does, preparing a long
+    /// chapter whose speech is not kept yet as `preparingLongChapters` says.
+    private func searchForSpeakableChapter(
+        from start: Int,
+        preparingLongChapters: LongChapterPreparation
+    ) -> SpeakableChapterSearch {
+        guard let content else { return .noneLeft }
+        var result = SpeakableChapterSearch.noneLeft
+        // The search stops at the first chapter this accepts: the first with
+        // anything to say, or a long one left to be prepared in the
+        // background, and `result` says which.
+        _ = Self.nextSpeakableChapterIndex(from: start, chapterCount: content.chapters.count) { chapterIndex in
+            guard let inputs = speechInputs(forChapterAt: chapterIndex) else { return false }
+            let speech: ChapterSpeech
+            if let kept = chapterSpeechCache.speech(for: inputs) {
+                speech = kept
+            } else if preparingLongChapters == .inBackground, inputs.isLong {
+                prepareInBackground(inputs)
+                result = .preparingInBackground
+                return true
+            } else {
+                speech = prepareAndKeep(inputs)
+            }
+            guard Self.hasSpeakableText(speech.text) else { return false }
+            result = .found(speech)
+            return true
+        }
+        return result
     }
 
     // MARK: - Audio Book Playback
@@ -1779,13 +1911,10 @@ extension ReaderViewModel {
     // MARK: - Punctuation Pauses
 
     /// Insert extra pause characters at punctuation to slow down dense text.
-    /// Returns the paused text and an OffsetMap tracking where insertions occurred.
-    /// Level 0 = off, 1 = subtle (periods), 2 = moderate (periods + commas), 3 = heavy (+ paragraph breaks)
-    func applyPunctuationPauses(_ text: String) -> (text: String, offsetMap: OffsetMap) {
-        Self.applyPunctuationPauses(text, level: settingsViewModel.punctuationPauseLevel)
-    }
-
-    /// Insert pause marks into `text` at `level` (see the instance method).
+    /// Returns the paused text and an OffsetMap tracking where insertions
+    /// occurred. Level 0 = off, 1 = subtle (periods), 2 = moderate (periods +
+    /// commas), 3 = heavy (+ paragraph breaks); speech preparation uses the
+    /// level in Settings (`ChapterSpeechInputs.punctuationPauseLevel`).
     ///
     /// Text with nothing to speak is returned unchanged at every level. The
     /// heavy level turns each blank-line break into "\n\n.\n\n", which would
