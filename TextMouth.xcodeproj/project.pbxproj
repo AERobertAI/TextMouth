@@ -372,6 +372,7 @@
 		DAC45C620EA5F70B7DC6ADEE /* IntegrationPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0883E61578DEC85C4755504D /* IntegrationPersistenceTests.swift */; };
 		DACE67445872E3BDCF2B0EA5 /* UbiquitousItemStatusProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8E1221F44EA40DD89EBA41 /* UbiquitousItemStatusProviderTests.swift */; };
 		DD4863CA25F6DC2250144FF3 /* LibraryIndexRecoveryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492741CFD0544147DBB07CA2 /* LibraryIndexRecoveryViews.swift */; };
+		DDCA01075DB335BF911AD722 /* SourceScanTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */; };
 		DE5AFE41E9957A8D90626A9F /* PersistenceFailureTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FFF66F8F657601DF2292FD /* PersistenceFailureTestSupport.swift */; };
 		DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FF44399DABAB9713EDFA69 /* SoundEffectService.swift */; };
 		DF39FF689EE6E38D4242F6C2 /* MarkdownCacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA69A477A9ADFEFFB5474907 /* MarkdownCacheService.swift */; };
@@ -823,6 +824,7 @@
 		E1BC24CFB8D5D6AB68DF3C1A /* DOCXParser+SAXParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+SAXParser.swift"; sourceTree = "<group>"; };
 		E510D30600D0156FC7172655 /* LibraryFolderAdoptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFolderAdoptionTests.swift; sourceTree = "<group>"; };
 		E53F87BFBFCC0A79CB40B570 /* ArchiveBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveBudget.swift; sourceTree = "<group>"; };
+		E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceScanTestSupport.swift; sourceTree = "<group>"; };
 		E5F0DBC05BF762A3EFAC11AE /* HostedTestObservers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedTestObservers.swift; sourceTree = "<group>"; };
 		E6FA29359F70363F11224810 /* LibraryViewModel+Bookmarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+Bookmarks.swift"; sourceTree = "<group>"; };
 		E827731A2A08A947B65B4B20 /* DataDirectoryConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryConfigTests.swift; sourceTree = "<group>"; };
@@ -1337,6 +1339,7 @@
 				C6FA3B998AF8CD5F49B11F5F /* SettingsPolicyTests.swift */,
 				EA8B2A35F817C3A526671647 /* SharedPackageMigrationTests.swift */,
 				B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */,
+				E5899A498521BA0A311E7758 /* SourceScanTestSupport.swift */,
 				8B8B245B85B737CAE677926E /* SpeakableChapterAdvanceTests.swift */,
 				450BAF2FF4A918E6A9B7A8C1 /* SpeechRenderCoordinatorTests.swift */,
 				418C2AE765E5276500769A9E /* StagedImportTests.swift */,
@@ -1725,6 +1728,7 @@
 				FD48A10395F0AD42587AF86C /* SettingsPolicyTests.swift in Sources */,
 				E29FE4702BCCA8BF09C90A35 /* SharedPackageMigrationTests.swift in Sources */,
 				D8F3E731356EE743DB4469C4 /* SleepTimerServiceTests.swift in Sources */,
+				DDCA01075DB335BF911AD722 /* SourceScanTestSupport.swift in Sources */,
 				F78C72E27B73CE0E723EF169 /* SpeakableChapterAdvanceTests.swift in Sources */,
 				0E09E888CCAF8E370815D0E6 /* SpeechRenderCoordinatorTests.swift in Sources */,
 				7BB36FE7FE4A2827C7AF961F /* StagedImportTests.swift in Sources */,
