@@ -100,6 +100,20 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(aacDuration, 1, accuracy: 0.01)
     }
 
+    /// A file whose audio track ends before the file does, as when an
+    /// audiobook's cover art or chapter titles outlast its audio, is
+    /// measured whole but checked over the samples that track holds: the
+    /// file's last second, which the track never reaches, is no evidence
+    /// that its audio breaks off.
+    func testProbeChecksAnAudioTrackOverItsOwnSamples() async throws {
+        let file = folder.appendingPathComponent("two tracks.mov")
+        try await AudioTestFixtures.writeTwoAudioTracks(to: file, first: 1, second: 3)
+
+        let outcome = await AudioMediaProbe.duration(of: file)
+
+        XCTAssertEqual(outcome, .success(3))
+    }
+
     /// A plain text file named like an MP3 cannot be opened as audio.
     func testProbeRefusesTextNamedAsAudio() async throws {
         let file = folder.appendingPathComponent("note.mp3")

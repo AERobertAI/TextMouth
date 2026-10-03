@@ -11,9 +11,10 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
     /// (a text file named "03.mp3"), or its header is damaged or describes
     /// audio in a form the Mac cannot decode.
     case cannotOpen
-    /// The file opens, but holds no audio that can be played: no audio
-    /// track the Mac can decode, or no samples at all, as a WAVE file cut
-    /// off right after its header has none.
+    /// The file opens, but holds no audio that can be played: AVFoundation
+    /// says it cannot be played, it has no audio track the Mac can decode,
+    /// or it has no samples at all, as a WAVE file cut off right after its
+    /// header has none.
     case noAudio
     /// The opening of the file's audio cannot be decoded.
     case cannotDecode
@@ -55,9 +56,12 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
 ///    off after its header opens, plays, and decodes, with no samples.
 /// 5. When `isReadable` ("whether an AVAssetReader can be used" to extract
 ///    its samples), the first half second and the final second of that
-///    track decode. A truncated MPEG-4 file (.m4a, .m4b) still opens with
-///    its full duration, playable and decodable, because its index comes
-///    first; only decoding its end fails. An asset that cannot be read
+///    track decode, measured over the track's own time range, so another
+///    track that runs longer (an audiobook's cover art or chapter titles)
+///    cannot leave the final second without audio. A truncated MPEG-4
+///    file (.m4a, .m4b) still opens with its full duration, playable and
+///    decodable, because its index comes first and still lists every
+///    sample; only decoding its end fails. An asset that cannot be read
 ///    this way, as with some protected content that `AVPlayer` may still
 ///    play, skips this check rather than being refused.
 ///
@@ -100,51 +104,62 @@ enum AudioMediaProbe {
             return .failure(.cannotOpen)
         }
 
-        guard isPlayable, let track = await firstDecodableAudioTrack(of: asset) else {
+        guard isPlayable, let audio = await firstDecodableAudioTrack(of: asset) else {
             return .failure(.noAudio)
         }
         let seconds = CMTimeGetSeconds(duration)
         guard seconds.isFinite, seconds > 0 else { return .failure(.noAudio) }
 
-        if isReadable, let problem = decodingProblem(of: track, in: asset, lasting: seconds) {
-            return .failure(problem)
+        if isReadable {
+            // The span the track's samples cover, by its index; the whole
+            // asset when the track reports no usable span.
+            let start = CMTimeGetSeconds(audio.timeRange.start)
+            let end = CMTimeGetSeconds(audio.timeRange.end)
+            let span = start.isFinite && end.isFinite && end > start ? start...end : 0...seconds
+            if let problem = decodingProblem(of: audio.track, in: asset, over: span) {
+                return .failure(problem)
+            }
         }
         return .success(seconds)
     }
 
-    /// The first audio track of `asset` that the Mac can decode, or nil
-    /// when it has none.
-    private static func firstDecodableAudioTrack(of asset: AVURLAsset) async -> AVAssetTrack? {
+    /// The first audio track of `asset` that the Mac can decode, with the
+    /// time range its index says its samples cover, or nil when it has none.
+    private static func firstDecodableAudioTrack(
+        of asset: AVURLAsset
+    ) async -> (track: AVAssetTrack, timeRange: CMTimeRange)? {
         guard let tracks = try? await asset.loadTracks(withMediaType: .audio) else { return nil }
         for track in tracks {
-            if (try? await track.load(.isDecodable)) == true {
-                return track
+            guard let (isDecodable, timeRange) = try? await track.load(.isDecodable, .timeRange) else { continue }
+            if isDecodable {
+                return (track, timeRange)
             }
         }
         return nil
     }
 
-    /// Why `track` fails to decode, checked at its opening and over its
-    /// final second, or nil when both decode. `seconds` is the asset's
-    /// duration.
+    /// Why `track` fails to decode, checked at the opening of `span` (the
+    /// seconds its samples cover) and over its final second, or nil when
+    /// both decode.
     ///
     /// Decoding blocks the calling thread for a few milliseconds (a second
     /// and a half of audio, decoded far faster than real time).
     private static func decodingProblem(
         of track: AVAssetTrack,
         in asset: AVAsset,
-        lasting seconds: TimeInterval
+        over span: ClosedRange<TimeInterval>
     ) -> AudioMediaProblem? {
+        let length = span.upperBound - span.lowerBound
         let opening = CMTimeRange(
-            start: .zero,
-            duration: CMTime(seconds: min(openingCheckDuration, seconds), preferredTimescale: 600)
+            start: CMTime(seconds: span.lowerBound, preferredTimescale: 600),
+            duration: CMTime(seconds: min(openingCheckDuration, length), preferredTimescale: 600)
         )
         guard decodesSamples(of: track, in: asset, within: opening) else { return .cannotDecode }
 
         // From one second before the declared end to whatever end the
         // file really has.
         let ending = CMTimeRange(
-            start: CMTime(seconds: max(0, seconds - endingCheckDuration), preferredTimescale: 600),
+            start: CMTime(seconds: max(span.lowerBound, span.upperBound - endingCheckDuration), preferredTimescale: 600),
             duration: .positiveInfinity
         )
         guard decodesSamples(of: track, in: asset, within: ending) else { return .endsEarly }

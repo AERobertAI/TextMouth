@@ -42,6 +42,51 @@ enum AudioTestFixtures {
         ])
     }
 
+    /// Write a QuickTime movie holding two tracks of silent 16-bit PCM
+    /// audio, the first lasting `first` seconds and the second `second`
+    /// seconds, so the file lasts as long as its longer track. An
+    /// audiobook whose cover art or chapter titles outlast its audio has
+    /// this shape when `first` is the shorter: its first audio track ends
+    /// before the file does.
+    static func writeTwoAudioTracks(to url: URL, first: TimeInterval, second: TimeInterval) async throws {
+        let sources = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: sources) }
+
+        // Each track is copied whole from a WAVE file of its own length.
+        // The composition only refers to those files' assets, so they are
+        // kept until the export has read them.
+        let composition = AVMutableComposition()
+        var sourceAssets: [AVURLAsset] = []
+        for (number, seconds) in [first, second].enumerated() {
+            let source = sources.appendingPathComponent("track \(number).wav")
+            try writeSilence(to: source, duration: seconds)
+            let sourceAsset = AVURLAsset(url: source)
+            sourceAssets.append(sourceAsset)
+            let sourceTracks = try await sourceAsset.loadTracks(withMediaType: .audio)
+            let sourceTrack = try XCTUnwrap(sourceTracks.first)
+            let track = try XCTUnwrap(composition.addMutableTrack(
+                withMediaType: .audio,
+                preferredTrackID: kCMPersistentTrackID_Invalid
+            ))
+            try track.insertTimeRange(try await sourceTrack.load(.timeRange), of: sourceTrack, at: .zero)
+        }
+
+        // Passthrough keeps the samples as they are.
+        try createFolder(for: url)
+        let export = try XCTUnwrap(AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough))
+        if #available(macOS 15, *) {
+            try await export.export(to: url, as: .mov)
+        } else {
+            export.outputURL = url
+            export.outputFileType = .mov
+            await export.export()
+            if let error = export.error {
+                throw error
+            }
+        }
+        withExtendedLifetime(sourceAssets) {}
+    }
+
     /// Write `duration` seconds of 16-bit mono silence to `url`, stored as
     /// `encoding` describes (`AVAudioFile` settings), or as the samples are
     /// (linear PCM) when it is nil.
