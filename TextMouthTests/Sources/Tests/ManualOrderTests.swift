@@ -30,6 +30,7 @@ func simulateCanMove(library: Library, bookID: UUID, direction: Int, folderPath:
     )
 }
 
+@MainActor
 func runManualOrderTests() {
     print("\n--- Manual Order Tests ---")
 

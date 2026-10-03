@@ -162,6 +162,7 @@ struct TestOffsetMap {
 }
 #endif
 
+@MainActor
 func runTextSubstitutionTests() {
 print("\n--- Text Substitution: Rule Model ---")
 

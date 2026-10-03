@@ -41,6 +41,7 @@ func testSections(ofFragments fragments: [String], in smil: String) throws -> [[
 }
 #endif
 
+@MainActor
 func runDAISYAudioTests() {
 print("\n--- DAISY Audio Tests ---")
 
