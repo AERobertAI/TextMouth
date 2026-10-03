@@ -124,7 +124,7 @@ struct MiscellaneousSettingsView: View {
     private var formattedWindow: String {
         let value = settingsViewModel.restartTimerGestureWindow
         if value == floor(value) {
-            return "\(Int(value)) \(Int(value) == 1 ? "second" : "seconds")"
+            return CountWording.phrase(Int(value), singular: "second", plural: "seconds")
         }
         return String(format: "%.1f seconds", value)
     }

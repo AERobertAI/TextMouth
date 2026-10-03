@@ -136,20 +136,16 @@ struct ReadingStatsTileWording: Equatable {
         )
     }
 
-    /// A count, shown as its count phrase ("1 day", "3 days") and spoken as
-    /// `spoken` places that same phrase in a sentence.
+    /// A count, shown as its count phrase ("1 day", "3 days", from
+    /// `CountWording`) and spoken as `spoken` places that same phrase in a
+    /// sentence.
     static func count(
         _ count: Int,
         singular: String,
         plural: String,
         spoken: (String) -> String
     ) -> ReadingStatsTileWording {
-        let phrase = countPhrase(count, singular: singular, plural: plural)
+        let phrase = CountWording.phrase(count, singular: singular, plural: plural)
         return ReadingStatsTileWording(value: phrase, accessibilityLabel: spoken(phrase))
-    }
-
-    /// `count` and the noun for that many: "0 days", "1 day", "2 days".
-    static func countPhrase(_ count: Int, singular: String, plural: String) -> String {
-        "\(count) \(count == 1 ? singular : plural)"
     }
 }

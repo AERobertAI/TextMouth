@@ -228,7 +228,7 @@ struct HeadingNavigatorView: View {
         }
         .frame(width: 550, height: 500)
         .navigationTitle("Headings: \(viewModel.book.title)")
-        .accessibilityLabel("Headings, \(headingItems.count) \(headingItems.count == 1 ? "heading" : "headings")")
+        .accessibilityLabel("Headings, \(CountWording.phrase(headingItems.count, singular: "heading", plural: "headings"))")
         .onAppear {
             rebuildHeadingItems()
             currentHeadingID = computedCurrentHeadingID()
