@@ -1,4 +1,6 @@
 import AVFoundation
+import Darwin
+import os
 import XCTest
 @testable import TextMouth
 
@@ -567,5 +569,203 @@ final class AudioEngineBehaviorTests: XCTestCase {
             try AudioTestFixtures.writeSilence(to: url)
         }
         return SilentTracks(directory: directory, urls: urls)
+    }
+
+    // MARK: - Memory Benchmark
+
+    /// The environment variable that asks for the rendered speech benchmark.
+    private static let renderBenchmarkVariable = "TEXTMOUTH_RENDER_BENCHMARK"
+
+    /// What rendered speech costs in memory and main-thread time (TODO
+    /// PERF04): rendering a 40,000-unit chapter, the 90th percentile of the
+    /// developer's library, then starting it halfway through, as a resume
+    /// or a seek from direct speech does, and seeking within it while it
+    /// plays. One line beginning `PERF04_BENCHMARK` carries the numbers as
+    /// JSON, so runs before and after a change can be compared.
+    ///
+    /// Opt-in, since the system's synthesizer takes about half a minute to
+    /// render the chapter: set TEXTMOUTH_RENDER_BENCHMARK=1, or for
+    /// xcodebuild TEST_RUNNER_TEXTMOUTH_RENDER_BENCHMARK=1, which it hands
+    /// to the test host without its prefix. Nothing is heard: the render
+    /// goes through `write()`, which plays nothing, and the engine plays at
+    /// volume 0. The render's completion only sets a flag the test polls,
+    /// so one arriving after a timeout can do no harm.
+    @MainActor
+    func testRenderedSpeechMemoryBenchmark() throws {
+        guard ProcessInfo.processInfo.environment[Self.renderBenchmarkVariable] == "1" else {
+            throw XCTSkip(
+                "Set \(Self.renderBenchmarkVariable)=1 (for xcodebuild, TEST_RUNNER_\(Self.renderBenchmarkVariable)=1) "
+                    + "to measure a 40,000-unit render"
+            )
+        }
+        let text = Self.benchmarkProse(utf16Length: 40_000)
+        let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.compact.en-US.Samantha")
+            ?? AVSpeechSynthesisVoice(language: "en-US")
+        let engine = AudioEngineService()
+        engine.setVolume(0)
+        defer { engine.discardRenderedAudio() }
+
+        // The render: its highest memory, sampled while the render queue
+        // works, and what it keeps once installed.
+        let beforeRender = ProcessMemory.now()
+        let peak = OSAllocatedUnfairLock(initialState: beforeRender)
+        let sampler = Timer.scheduledTimer(withTimeInterval: 0.005, repeats: true) { _ in
+            let now = ProcessMemory.now()
+            peak.withLock { $0 = $0.highest(with: now) }
+        }
+        // Whether the render succeeded, once its completion has run.
+        let outcome = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        let (finished, renderMilliseconds) = Self.timed {
+            engine.render(SpeechRenderRequest(text: text, voice: voice)) { success in
+                outcome.withLock { $0 = success }
+            }
+            return eventually(within: 300) { outcome.withLock { $0 } != nil }
+        }
+        sampler.invalidate()
+        spinMainRunLoop(for: 0.5)
+        let afterRender = ProcessMemory.now()
+        let renderPeak = peak.withLock { $0 }.highest(with: afterRender)
+        XCTAssertTrue(finished, "The render did not finish in time")
+        XCTAssertEqual(outcome.withLock { $0 }, true, "The system synthesizer did not render the benchmark text")
+        XCTAssertTrue(engine.hasRenderedAudio)
+
+        // Starting halfway through the chapter, then seeking while it plays.
+        let (_, playMilliseconds) = Self.timed { engine.play(fromCharOffset: 20_000) }
+        let afterPlay = ProcessMemory.now()
+        XCTAssertTrue(engine.isPlaying, "The rendered chapter did not start")
+        spinMainRunLoop(for: 0.3)
+        let beforeSeek = ProcessMemory.now()
+        let (_, seekMilliseconds) = Self.timed { engine.seek(toCharOffset: 30_000) }
+        let afterSeek = ProcessMemory.now()
+        spinMainRunLoop(for: 0.3)
+        let settledAfterSeek = ProcessMemory.now()
+        let scheduledBytesAfterSeek = engine.scheduledSegmentAudioByteCount
+        engine.stop()
+
+        let renderedBytes = engine.renderedAudioByteCount
+        let renderedSeconds = engine.renderedDuration
+        engine.discardRenderedAudio()
+        spinMainRunLoop(for: 0.5)
+        let afterDiscard = ProcessMemory.now()
+
+        let report: [String: Any] = [
+            "textUTF16": text.utf16.count,
+            "renderMilliseconds": Self.rounded(renderMilliseconds),
+            "renderedSeconds": Self.rounded(renderedSeconds),
+            "renderedAudioMB": Self.megabytes(Int64(renderedBytes)),
+            "renderedBytesPerUTF16Unit": Self.rounded(Double(renderedBytes) / Double(text.utf16.count)),
+            "renderPeakMallocMB": Self.megabytes(renderPeak.mallocInUse - beforeRender.mallocInUse),
+            "renderPeakFootprintMB": Self.megabytes(renderPeak.footprint - beforeRender.footprint),
+            "renderKeptMallocMB": Self.megabytes(afterRender.mallocInUse - beforeRender.mallocInUse),
+            "renderKeptFootprintMB": Self.megabytes(afterRender.footprint - beforeRender.footprint),
+            "renderKeptResidentMB": Self.megabytes(afterRender.resident - beforeRender.resident),
+            "playFromMiddleMilliseconds": Self.rounded(playMilliseconds),
+            "playFromMiddleMallocMB": Self.megabytes(afterPlay.mallocInUse - afterRender.mallocInUse),
+            "seekMilliseconds": Self.rounded(seekMilliseconds),
+            "seekMallocMB": Self.megabytes(afterSeek.mallocInUse - beforeSeek.mallocInUse),
+            "playingAfterSeekMallocMB": Self.megabytes(settledAfterSeek.mallocInUse - beforeRender.mallocInUse),
+            "playingAfterSeekFootprintMB": Self.megabytes(settledAfterSeek.footprint - beforeRender.footprint),
+            "scheduledAudioMBAfterSeek": Self.megabytes(Int64(scheduledBytesAfterSeek)),
+            "afterDiscardMallocMB": Self.megabytes(afterDiscard.mallocInUse - beforeRender.mallocInUse),
+        ]
+        let json = try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        print("PERF04_BENCHMARK \(String(decoding: json, as: UTF8.self))")
+    }
+
+    /// `length` UTF-16 units of plain prose, the same in every run:
+    /// sentences of everyday words, which the synthesizer speaks at an
+    /// ordinary pace. Every character is ASCII, one unit each.
+    private static func benchmarkProse(utf16Length length: Int) -> String {
+        let words = [
+            "the", "parcel", "came", "on", "a", "wet", "tuesday", "and", "nobody", "in", "flat",
+            "could", "read", "its", "smudged", "address", "so", "it", "waited", "by", "kettle",
+            "until", "evening", "when", "someone", "finally", "cut", "string", "with", "bread",
+            "knife", "found", "inside", "three", "postcards", "from", "harbour", "town", "nobody",
+            "remembered", "visiting", "each", "signed", "different", "name",
+        ]
+        // A fixed linear congruential sequence: the same prose every run.
+        var state: UInt64 = 2_026
+        func nextIndex(below bound: Int) -> Int {
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return Int((state >> 33) % UInt64(bound))
+        }
+        var text = ""
+        while text.utf8.count < length {
+            let sentence = (0..<(6 + nextIndex(below: 12))).map { _ in words[nextIndex(below: words.count)] }
+            text += sentence.joined(separator: " ").capitalizedFirstLetter + ". "
+        }
+        return String(text.prefix(length))
+    }
+
+    /// Runs `body`, returning its result and how many milliseconds it took.
+    private static func timed<T>(_ body: () throws -> T) rethrows -> (T, Double) {
+        let start = ContinuousClock.now
+        let value = try body()
+        let elapsed = start.duration(to: .now)
+        let milliseconds = Double(elapsed.components.seconds) * 1_000
+            + Double(elapsed.components.attoseconds) / 1e15
+        return (value, milliseconds)
+    }
+
+    /// `bytes` in megabytes, to one decimal place.
+    private static func megabytes(_ bytes: Int64) -> Double {
+        rounded(Double(bytes) / 1_048_576, places: 1)
+    }
+
+    /// `value` to `places` decimal places, for a report a person reads.
+    private static func rounded(_ value: Double, places: Int = 2) -> Double {
+        let scale = pow(10, Double(places))
+        return (value * scale).rounded() / scale
+    }
+}
+
+/// The process's memory, three ways: what the program has allocated with
+/// malloc and not freed, across every zone; the physical footprint, which
+/// Activity Monitor shows as Memory and by which memory pressure is
+/// judged; and the resident size.
+private struct ProcessMemory: Sendable {
+    /// Bytes allocated with malloc and not yet freed.
+    let mallocInUse: Int64
+    /// The physical footprint, in bytes.
+    let footprint: Int64
+    /// The resident size, in bytes.
+    let resident: Int64
+
+    /// The memory now. A figure the kernel does not give is 0.
+    static func now() -> ProcessMemory {
+        var statistics = malloc_statistics_t()
+        // A nil zone sums every zone's statistics.
+        malloc_zone_statistics(nil, &statistics)
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(
+            MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size
+        )
+        let result = withUnsafeMutablePointer(to: &info) { pointer in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { rebound in
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), rebound, &count)
+            }
+        }
+        let succeeded = result == KERN_SUCCESS
+        return ProcessMemory(
+            mallocInUse: Int64(statistics.size_in_use),
+            footprint: succeeded ? Int64(info.phys_footprint) : 0,
+            resident: succeeded ? Int64(info.resident_size) : 0
+        )
+    }
+
+    /// The higher of each figure here and in `other`: a running peak.
+    func highest(with other: ProcessMemory) -> ProcessMemory {
+        ProcessMemory(
+            mallocInUse: max(mallocInUse, other.mallocInUse),
+            footprint: max(footprint, other.footprint),
+            resident: max(resident, other.resident)
+        )
+    }
+}
+
+private extension String {
+    /// The string with its first letter in upper case, the rest unchanged.
+    var capitalizedFirstLetter: String {
+        prefix(1).uppercased() + dropFirst()
     }
 }
