@@ -45,23 +45,55 @@ enum LibraryBookSorter {
         return total
     }
 
+    /// What one book is sorted by, read from it once per sort rather than at
+    /// every comparison (TODO PERF10): comparing two books then unwraps no
+    /// optional and makes no string, where the comparator used to make both
+    /// books' ID strings afresh at every tie.
+    struct SortKeys {
+        let title: String
+        let author: String
+        let dateAdded: Date
+        /// When the book was last opened; the distant past if never.
+        let lastOpened: Date
+        /// Its place in its folder's manual order; after every placed book
+        /// (`Int.max`) if it has none.
+        let manualOrder: Int
+        /// Its ID as a string: the last tie-breaker.
+        let idString: String
+        /// Its size on disk, for File Size; 0 when it was not measured.
+        let fileSize: Int
+
+        /// The keys of `book`, whose size on disk is `fileSize`.
+        init(_ book: Book, fileSize: Int = 0) {
+            title = book.title
+            author = book.author
+            dateAdded = book.dateAdded
+            lastOpened = book.lastOpened ?? .distantPast
+            manualOrder = book.manualSortOrder ?? Int.max
+            idString = book.id.uuidString
+            self.fileSize = fileSize
+        }
+    }
+
+    /// `books` in the order `field` and `ascending` give them. Each book's
+    /// keys are read once, and positions rather than whole books are moved
+    /// while sorting.
+    /// - Parameter fileSizes: Each book's size on disk, by ID, for File
+    ///   Size; a book missing from it counts as 0 bytes.
     static func sorted(
         _ books: [Book],
         by field: LibrarySortField,
         ascending: Bool,
         fileSizes: [UUID: Int] = [:]
     ) -> [Book] {
-        books.sorted {
-            areInIncreasingOrder(
-                $0,
-                $1,
-                by: field,
-                ascending: ascending,
-                fileSizes: fileSizes
-            )
-        }
+        let keys = books.map { SortKeys($0, fileSize: fileSizes[$0.id] ?? 0) }
+        return keys.indices
+            .sorted { areInIncreasingOrder(keys[$0], keys[$1], by: field, ascending: ascending) }
+            .map { books[$0] }
     }
 
+    /// Whether `first` sorts before `second`, by their keys as
+    /// `areInIncreasingOrder(_:_:by:ascending:)` for keys compares them.
     static func areInIncreasingOrder(
         _ first: Book,
         _ second: Book,
@@ -69,7 +101,24 @@ enum LibraryBookSorter {
         ascending: Bool,
         fileSizes: [UUID: Int] = [:]
     ) -> Bool {
-        let primary = comparison(first, second, by: field, fileSizes: fileSizes)
+        areInIncreasingOrder(
+            SortKeys(first, fileSize: fileSizes[first.id] ?? 0),
+            SortKeys(second, fileSize: fileSizes[second.id] ?? 0),
+            by: field,
+            ascending: ascending
+        )
+    }
+
+    /// The strict order every library list uses: `field` in the chosen
+    /// direction, then the title (ascending, ignoring case, in the user's
+    /// locale), then the ID string, so no two books ever compare equal.
+    static func areInIncreasingOrder(
+        _ first: SortKeys,
+        _ second: SortKeys,
+        by field: LibrarySortField,
+        ascending: Bool
+    ) -> Bool {
+        let primary = comparison(first, second, by: field)
         if primary != .orderedSame {
             return ascending ? primary == .orderedAscending : primary == .orderedDescending
         }
@@ -79,14 +128,14 @@ enum LibraryBookSorter {
             return titleComparison == .orderedAscending
         }
 
-        return first.id.uuidString < second.id.uuidString
+        return first.idString < second.idString
     }
 
+    /// How two books compare by `field` alone.
     private static func comparison(
-        _ first: Book,
-        _ second: Book,
-        by field: LibrarySortField,
-        fileSizes: [UUID: Int]
+        _ first: SortKeys,
+        _ second: SortKeys,
+        by field: LibrarySortField
     ) -> ComparisonResult {
         switch field {
         case .title:
@@ -96,14 +145,15 @@ enum LibraryBookSorter {
         case .dateAdded:
             return compare(first.dateAdded, second.dateAdded)
         case .lastOpened:
-            return compare(first.lastOpened ?? .distantPast, second.lastOpened ?? .distantPast)
+            return compare(first.lastOpened, second.lastOpened)
         case .fileSize:
-            return compare(fileSizes[first.id] ?? 0, fileSizes[second.id] ?? 0)
+            return compare(first.fileSize, second.fileSize)
         case .manual:
-            return compare(first.manualSortOrder ?? Int.max, second.manualSortOrder ?? Int.max)
+            return compare(first.manualOrder, second.manualOrder)
         }
     }
 
+    /// How two comparable values compare, as a `ComparisonResult`.
     private static func compare<T: Comparable>(_ first: T, _ second: T) -> ComparisonResult {
         if first < second { return .orderedAscending }
         if first > second { return .orderedDescending }

@@ -23,8 +23,13 @@ final class LibraryModelBenchmarkTests: XCTestCase {
     /// import button's focus check read them as the search narrows them
     /// (`filteredBooks`). Each read that filters and sorts the library
     /// builds a list of its own, so the lists built in the body pass after
-    /// an update are that update's derivations, whether or not the update
-    /// changed any list.
+    /// an update count that update's derivations.
+    ///
+    /// Before PERF10 every read derived: 8 lists per update, a reading
+    /// position's included (Debug: Date Added 6.7 ms, Title 86.6 ms, Author
+    /// 83.7 ms, File Size 295.5 ms per update). Now the model keeps each
+    /// list: a reading position refreshes the kept list's values without
+    /// deriving it, and a moved book derives it once.
     func testListDerivationsPerLibraryUpdate() throws {
         let filesFolder = try LibraryBenchmarkFixture.makeFilesFolder(for: self)
         let model = LibraryViewModel(initializeServices: false)
@@ -40,16 +45,23 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             )
             let sortName = model.sortState(at: allItems).titleFragment
 
+            // Read once, so the sort just chosen is derived and kept.
+            _ = Self.bodyPassReads(of: model, at: allItems)
+
             // A reading position: a change no list depends on.
             LibraryBenchmarkFixture.moveReadingPosition(in: model)
+            var derivations = model.listCache.derivationCount
             let positionLists = Self.listsBuilt(by: Self.bodyPassReads(of: model, at: allItems))
+            let positionDerivations = model.listCache.derivationCount - derivations
             let positionTime = LibraryBenchmarkClock.medianMilliseconds(runs: 5) {
                 LibraryBenchmarkFixture.moveReadingPosition(in: model)
                 _ = Self.bodyPassReads(of: model, at: allItems)
             }
             // A book moved to another folder: a change the lists follow.
             LibraryBenchmarkFixture.moveOneBook(in: model)
+            derivations = model.listCache.derivationCount
             let membershipLists = Self.listsBuilt(by: Self.bodyPassReads(of: model, at: allItems))
+            let membershipDerivations = model.listCache.derivationCount - derivations
             let membershipTime = LibraryBenchmarkClock.medianMilliseconds(runs: 5) {
                 LibraryBenchmarkFixture.moveOneBook(in: model)
                 _ = Self.bodyPassReads(of: model, at: allItems)
@@ -58,23 +70,36 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             LibraryBenchmarkClock.report(
                 "PERF10 All Items by \(sortName), a reading position update",
                 positionTime,
-                note: "\(positionLists) lists built by \(Self.readsPerBodyPass) reads"
+                note: "\(positionLists) list built by \(Self.readsPerBodyPass) reads, \(positionDerivations) derivations"
             )
             LibraryBenchmarkClock.report(
                 "PERF10 All Items by \(sortName), a book moved",
                 membershipTime,
-                note: "\(membershipLists) lists built by \(Self.readsPerBodyPass) reads"
+                note: "\(membershipLists) list built by \(Self.readsPerBodyPass) reads, \(membershipDerivations) derivation"
             )
-            // Today every read filters and sorts the whole library again.
-            XCTAssertEqual(positionLists, Self.readsPerBodyPass, sortName)
-            XCTAssertEqual(membershipLists, Self.readsPerBodyPass, sortName)
+            // One list per update, shared by every read: a position only
+            // refreshes the kept list's values; a moved book derives it once.
+            XCTAssertEqual(positionLists, 1, sortName)
+            XCTAssertEqual(positionDerivations, 0, sortName)
+            XCTAssertEqual(membershipLists, 1, sortName)
+            XCTAssertEqual(membershipDerivations, 1, sortName)
         }
 
-        // The cost of one derivation, File Size measuring every package.
+        // A derivation by File Size once its sizes are kept, and a read.
+        let oneDerivation = LibraryBenchmarkClock.medianMilliseconds(runs: 9) {
+            LibraryBenchmarkFixture.moveOneBook(in: model)
+            _ = Self.unsearchedRead(of: model, at: allItems)
+        }
         let oneRead = LibraryBenchmarkClock.medianMilliseconds(runs: 9) {
             _ = Self.unsearchedRead(of: model, at: allItems)
         }
-        LibraryBenchmarkClock.report("PERF10 one read of All Items by File Size Descending", oneRead)
+        LibraryBenchmarkClock.report("PERF10 one derivation of All Items by File Size Descending", oneDerivation)
+        LibraryBenchmarkClock.report("PERF10 one kept read of All Items by File Size Descending", oneRead)
+        XCTAssertEqual(
+            model.listCache.fileMeasurementCount,
+            model.library.books.count,
+            "every package was measured once, however many derivations followed"
+        )
     }
 
     // MARK: - Reading the List as LibraryView Does
@@ -94,19 +119,13 @@ final class LibraryModelBenchmarkTests: XCTestCase {
     /// The books LibraryView shows at `location` before a search narrows
     /// them, read as its `displayedBooks` reads them.
     static func unsearchedRead(of model: LibraryViewModel, at location: LibraryLocation) -> [Book] {
-        model.sortedBooks(
-            model.booksForCategory(location.category, folderPath: location.folderPath),
-            by: model.sortState(at: location)
-        )
+        model.displayedBooks(at: location)
     }
 
     /// The books LibraryView shows at `location` narrowed by `search`, read
     /// as its `filteredBooks` reads them.
     static func searchedRead(of model: LibraryViewModel, at location: LibraryLocation, search: String) -> [Book] {
-        let books = unsearchedRead(of: model, at: location)
-        guard !search.isEmpty else { return books }
-        let query = search.lowercased()
-        return books.filter { $0.title.lowercased().contains(query) || $0.author.lowercased().contains(query) }
+        model.displayedBooks(at: location, matching: search)
     }
 
     /// One body pass's reads, in LibraryView's mix: four of the books shown
