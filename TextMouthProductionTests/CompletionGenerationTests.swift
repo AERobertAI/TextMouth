@@ -375,27 +375,28 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(events.finishedCount, 1)
     }
 
-    // MARK: - The Speech Service's Finished Utterances
+    // MARK: - The Speech Service's Synthesizer Callbacks
 
-    /// A finished utterance held for the main queue keeps its identity its
-    /// own: however many utterances are made and released meanwhile, none
-    /// takes its identifier, and it is released only with its holder.
-    func testAHeldFinishedUtteranceKeepsItsIdentityItsOwn() {
-        var finished: FinishedUtterance?
+    /// An utterance a synthesizer callback holds for the main queue keeps its
+    /// identity its own: however many utterances are made and released
+    /// meanwhile, none takes its identifier, and it is released only with
+    /// its holder.
+    func testAHeldReportedUtteranceKeepsItsIdentityItsOwn() {
+        var reported: ReportedUtterance?
         weak var heldUtterance: AVSpeechUtterance?
         autoreleasepool {
-            finished = FinishedUtterance(utterance: AVSpeechUtterance(string: "Mooring lines are fast."))
-            heldUtterance = finished?.utterance
+            reported = ReportedUtterance(utterance: AVSpeechUtterance(string: "Mooring lines are fast."))
+            heldUtterance = reported?.utterance
         }
-        let finishedID = try? XCTUnwrap(finished?.id)
+        let reportedID = try? XCTUnwrap(reported?.id)
 
         let laterIDs = autoreleasepool {
             (0..<500).map { _ in ObjectIdentifier(AVSpeechUtterance(string: "Cast off.")) }
         }
 
         XCTAssertNotNil(heldUtterance, "The held utterance was released")
-        XCTAssertFalse(laterIDs.contains { $0 == finishedID }, "A later utterance took the held one's identity")
-        autoreleasepool { finished = nil }
+        XCTAssertFalse(laterIDs.contains { $0 == reportedID }, "A later utterance took the held one's identity")
+        autoreleasepool { reported = nil }
         XCTAssertNil(heldUtterance, "The utterance outlived its holder")
     }
 
@@ -411,8 +412,6 @@ final class CompletionGenerationTests: XCTestCase {
 
         XCTAssertEqual(finishedCount, 0)
     }
-
-    // MARK: - The Speech Service's Other Synthesizer Callbacks
 
     /// A word reported for the utterance speaking moves the cursor to the
     /// word's place in the whole text, counted from where that utterance

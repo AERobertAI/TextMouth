@@ -76,14 +76,18 @@ enum SpeechResumePolicy {
 }
 
 /// An utterance a synthesizer callback hands over to the main queue, kept
-/// alive until it is compared there with the live utterance.
+/// alive until it is compared there with the live utterance. Every
+/// callback that reaches the main queue (a word, a start, a pause, a
+/// continue, a finish, and a cancel) hands its utterance over this way,
+/// never by capturing the utterance itself, which is not `Sendable`.
 ///
 /// An `ObjectIdentifier` alone is only an address: once its utterance is
 /// released, the next utterance made can take the same address and the
-/// same identifier. Holding the utterance keeps its address its own.
+/// same identifier. Holding the utterance keeps its address its own, so a
+/// callback for a stopped utterance is never taken for the live one's.
 /// `@unchecked Sendable` because the utterance is only held, and its
 /// identity read, never changed.
-struct FinishedUtterance: @unchecked Sendable {
+struct ReportedUtterance: @unchecked Sendable {
     /// The utterance the synthesizer reported on.
     let utterance: AVSpeechUtterance
 
@@ -1308,6 +1312,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
 // MARK: - AVSpeechSynthesizerDelegate (direct mode fallback)
 
+/// The synthesizer's callbacks are handled on the main queue. Two rules keep
+/// what reaches it `Sendable`: each callback hands its utterance over as a
+/// `ReportedUtterance`, and the main queue reads the synthesizer's state
+/// from `directSynth`, the one synthesizer this service is the delegate
+/// of, never from the callback's own `synthesizer`.
 extension SpeechService: AVSpeechSynthesizerDelegate {
 
     nonisolated static func isLiveDirectUtterance(
@@ -1356,9 +1365,11 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         // exactly the symptom that makes seeks feel like they jumped
         // to a random place.
         guard usingDirectMode else { return }
-        let utteranceID = ObjectIdentifier(utterance)
+        // Held for the main queue, as every callback's utterance is, so its
+        // identity is still its own when it is checked again there.
+        let spoken = ReportedUtterance(utterance: utterance)
         let baseOffset: Int
-        if isDirectSleepFadeActive, let fadeOffset = directFadeOffsets[utteranceID] {
+        if isDirectSleepFadeActive, let fadeOffset = directFadeOffsets[spoken.id] {
             baseOffset = fadeOffset
         } else {
             guard Self.isLiveDirectUtterance(utterance, liveUtterance: liveDirectUtterance) else { return }
@@ -1368,9 +1379,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             let isCurrentFadeSegment = self.isDirectSleepFadeActive
-                && self.directFadeOffsets[utteranceID] != nil
+                && self.directFadeOffsets[spoken.id] != nil
             let isCurrentNormalUtterance = Self.isLiveDirectUtterance(
-                utterance,
+                spoken.utterance,
                 liveUtterance: self.liveDirectUtterance
             )
             guard self.usingDirectMode,
@@ -1383,28 +1394,28 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        // Held for the main queue (`ReportedUtterance`).
+        let started = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            let utteranceID = ObjectIdentifier(utterance)
             if self.isDirectSleepFadeActive,
-               let fadeOffset = self.directFadeOffsets[utteranceID] {
+               let fadeOffset = self.directFadeOffsets[started.id] {
                 self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_STARTED: offset=\(fadeOffset)")
                 self.isSpeaking = true
                 self.isPaused = false
                 return
             }
-            guard Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance),
+            guard Self.isLiveDirectUtterance(started.utterance, liveUtterance: self.liveDirectUtterance),
                   self.usingDirectMode else {
                 self.transitionLog(.trace, "DIRECT_START_IGNORED: stale utterance or direct mode inactive")
                 return
             }
-            // Read before logging: the message is built lazily, and must not
-            // capture the synthesizer.
-            let synthesizerIsSpeaking = synthesizer.isSpeaking
+            // Read before logging: the message is built lazily.
+            let synthesizerIsSpeaking = self.directSynth.isSpeaking
             self.transitionLog(.trace, "DIRECT_START_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) synthSpeaking=\(synthesizerIsSpeaking)")
             self.isSpeaking = true
             self.isPaused = false
-            self.startDirectPlaybackWatchdog(for: utterance)
+            self.startDirectPlaybackWatchdog(for: started.utterance)
         }
     }
 
@@ -1414,7 +1425,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         // seek made in the meantime releases it and starts another utterance,
         // which could otherwise be made at its address and take this finish
         // for its own, ending the chapter just as it restarted.
-        let finished = FinishedUtterance(utterance: utterance)
+        let finished = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let finishedUtteranceID = finished.id
@@ -1463,10 +1474,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             guard self.liveDirectUtterance.map(ObjectIdentifier.init) == finishedUtteranceID else {
                 let liveDescription = self.liveDirectUtterance
                     .map { String(describing: ObjectIdentifier($0)) } ?? "nil"
-                // Read before logging: the message is built lazily, and must
-                // not capture the synthesizer.
-                let synthesizerIsSpeaking = synthesizer.isSpeaking
-                let synthesizerIsPaused = synthesizer.isPaused
+                // Read before logging: the message is built lazily.
+                let synthesizerIsSpeaking = self.directSynth.isSpeaking
+                let synthesizerIsPaused = self.directSynth.isPaused
                 self.transitionLog(.trace, "DIRECT_FINISH_IGNORED: utterance mismatch finished=\(finishedUtteranceID) live=\(liveDescription) directMode=\(self.usingDirectMode) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
                 return
             }
@@ -1505,23 +1515,24 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        let cancelledUtteranceID = ObjectIdentifier(utterance)
+        // Held for the main queue (`ReportedUtterance`), so a cancel of a
+        // stopped utterance is never taken for one of the live utterance.
+        let cancelled = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.isDirectSleepFadeActive,
-               self.directFadeOffsets[cancelledUtteranceID] != nil {
+               self.directFadeOffsets[cancelled.id] != nil {
                 self.transitionLog(.trace, "SLEEP_FADE_DIRECT_SEGMENT_CANCELLED: expected timer cleanup")
                 return
             }
-            let isCurrent = self.liveDirectUtterance.map(ObjectIdentifier.init) == cancelledUtteranceID
+            let isCurrent = Self.isLiveDirectUtterance(cancelled.utterance, liveUtterance: self.liveDirectUtterance)
             if isCurrent, self.usingDirectMode, self.isSpeaking, !self.isPaused {
                 // Do not advance or restart directly from the callback. The
                 // watchdog verifies that the synthesizer remains idle before
                 // choosing a content-preserving recovery offset.
-                // Read before logging: the message is built lazily, and must
-                // not capture the synthesizer.
-                let synthesizerIsSpeaking = synthesizer.isSpeaking
-                let synthesizerIsPaused = synthesizer.isPaused
+                // Read before logging: the message is built lazily.
+                let synthesizerIsSpeaking = self.directSynth.isSpeaking
+                let synthesizerIsPaused = self.directSynth.isPaused
                 self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app expected playback; watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
             } else {
                 self.transitionLog(.trace, "DIRECT_CANCEL_EXPECTED: stale or deliberately stopped utterance cancelled current=\(isCurrent) directMode=\(self.usingDirectMode) appSpeaking=\(self.isSpeaking) appPaused=\(self.isPaused)")
@@ -1530,15 +1541,17 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
+        // Held for the main queue (`ReportedUtterance`).
+        let paused = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.isDirectSleepFadeActive,
-               self.directFadeOffsets[ObjectIdentifier(utterance)] != nil {
+               self.directFadeOffsets[paused.id] != nil {
                 self.isPaused = true
                 return
             }
             guard self.usingDirectMode,
-                  Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
+                  Self.isLiveDirectUtterance(paused.utterance, liveUtterance: self.liveDirectUtterance) else {
                 self.transitionLog(.trace, "DIRECT_PAUSE_IGNORED: stale utterance or direct mode inactive")
                 return
             }
@@ -1547,15 +1560,17 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didContinue utterance: AVSpeechUtterance) {
+        // Held for the main queue (`ReportedUtterance`).
+        let continued = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.isDirectSleepFadeActive,
-               self.directFadeOffsets[ObjectIdentifier(utterance)] != nil {
+               self.directFadeOffsets[continued.id] != nil {
                 self.isPaused = false
                 return
             }
             guard self.usingDirectMode,
-                  Self.isLiveDirectUtterance(utterance, liveUtterance: self.liveDirectUtterance) else {
+                  Self.isLiveDirectUtterance(continued.utterance, liveUtterance: self.liveDirectUtterance) else {
                 self.transitionLog(.trace, "DIRECT_CONTINUE_IGNORED: stale utterance or direct mode inactive")
                 return
             }
