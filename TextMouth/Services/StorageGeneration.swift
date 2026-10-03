@@ -56,6 +56,9 @@ final class StorageBoundary: @unchecked Sendable {
     private let condition = NSCondition()
     /// The generation in use.
     private var generation: StorageGeneration
+    /// Every earlier generation, oldest first, so a path captured under any
+    /// of them can be moved under the current root.
+    private var earlierGenerations: [StorageGeneration] = []
 
     /// A boundary whose first generation is the data directory at `root`.
     init(root: URL) {
@@ -81,7 +84,81 @@ final class StorageBoundary: @unchecked Sendable {
         let location = DataDirectoryLocation(root)
         condition.lock()
         defer { condition.unlock() }
+        earlierGenerations.append(generation)
         generation = StorageGeneration(number: generation.number + 1, root: root, location: location)
         return generation
+    }
+
+    /// The current generation and the earlier ones, read together.
+    private func generations() -> (current: StorageGeneration, earlier: [StorageGeneration]) {
+        condition.lock()
+        defer { condition.unlock() }
+        return (generation, earlierGenerations)
+    }
+
+    // MARK: - Paths Captured Earlier
+
+    /// `path` at its place under the current root, when it was captured
+    /// under an earlier generation: a path inside an earlier generation's
+    /// data directory, and not inside the current one, moves to the same
+    /// place in the current one, taken from the most recent such
+    /// generation. Any other path, and every path until a move has
+    /// published, is returned as it is.
+    ///
+    /// Work that captured paths before a move published, such as a library
+    /// snapshot waiting for its save or a book a batch queued, passes them
+    /// through here before it reads or writes anything, so it never writes
+    /// under the old root or recreates it (TODO S04).
+    func rebasedToCurrent(_ path: String) -> String {
+        let (current, earlier) = generations()
+        return Self.rebase(path, to: current, from: earlier) ?? path
+    }
+
+    /// `book` with its file path at its place under the current root, when
+    /// it was captured under an earlier generation (see
+    /// `rebasedToCurrent(_:)` for a path). Nothing else about it changes:
+    /// its package is named by its folder and package name, which do not
+    /// depend on the root.
+    func rebasedToCurrent(_ book: Book) -> Book {
+        let (current, earlier) = generations()
+        guard let moved = Self.rebase(book.filePath, to: current, from: earlier) else { return book }
+        var rebased = book
+        rebased.filePath = moved
+        return rebased
+    }
+
+    /// Moves every book path in `library` captured under an earlier
+    /// generation to its place under the current root (see
+    /// `rebasedToCurrent(_:)` for a path).
+    /// - Returns: How many books' paths moved.
+    @discardableResult
+    func rebaseToCurrent(_ library: inout Library) -> Int {
+        let (current, earlier) = generations()
+        var moved = 0
+        for index in library.books.indices {
+            if let path = Self.rebase(library.books[index].filePath, to: current, from: earlier) {
+                library.books[index].filePath = path
+                moved += 1
+            }
+        }
+        return moved
+    }
+
+    /// `path` moved from the most recent of `earlier` that holds it to the
+    /// same place under `current`, spelled as the migrator spells the books
+    /// it moves; nil when `path` is inside `current`'s data directory or
+    /// inside none of `earlier`.
+    private static func rebase(
+        _ path: String,
+        to current: StorageGeneration,
+        from earlier: [StorageGeneration]
+    ) -> String? {
+        guard !earlier.isEmpty, !current.location.contains(path) else { return nil }
+        for generation in earlier.reversed() {
+            if let moved = generation.location.relocating(path, to: current.location.named) {
+                return moved
+            }
+        }
+        return nil
     }
 }

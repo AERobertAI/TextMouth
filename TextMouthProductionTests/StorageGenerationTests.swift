@@ -113,4 +113,99 @@ final class StorageGenerationTests: XCTestCase {
         XCTAssertTrue(linked.contains("/Volumes/Archive/.TextMouth/library.json"))
         XCTAssertFalse(linked.contains("/Volumes/Archive/.TextMouthOld/library.json"))
     }
+
+    // MARK: - Paths Captured Before a Move
+
+    /// Until a move publishes, every path is kept as it is: there is no
+    /// earlier data directory for it to have been captured in.
+    func testPathsAreKeptUntilAMovePublishes() throws {
+        let root = try makeSandboxDirectory("RebaseNoMove")
+        let boundary = StorageBoundary(root: root)
+        let inside = root.appendingPathComponent("Library/A.tmb/a.txt").path
+
+        XCTAssertEqual(boundary.rebasedToCurrent(inside), inside)
+        XCTAssertEqual(boundary.rebasedToCurrent("/Users/reader/Books/a.txt"), "/Users/reader/Books/a.txt")
+    }
+
+    /// After a move, a path captured in the old data directory moves to the
+    /// same place in the new one; a path already in the new one, or outside
+    /// both, is kept.
+    func testAPathCapturedBeforeAMoveMovesToTheNewDataDirectory() throws {
+        let old = try makeSandboxDirectory("RebaseOld")
+        let new = try makeSandboxDirectory("RebaseNew")
+        let boundary = StorageBoundary(root: old)
+        boundary.publish(root: new)
+
+        XCTAssertEqual(
+            boundary.rebasedToCurrent(old.appendingPathComponent("Library/Shelf/A.tmb/a.txt").path),
+            new.appendingPathComponent("Library/Shelf/A.tmb/a.txt").path
+        )
+        let alreadyThere = new.appendingPathComponent("Library/B.tmb/b.txt").path
+        XCTAssertEqual(boundary.rebasedToCurrent(alreadyThere), alreadyThere)
+        XCTAssertEqual(boundary.rebasedToCurrent("/Users/reader/Books/a.txt"), "/Users/reader/Books/a.txt")
+    }
+
+    /// A path spelled through the folder an old data directory's link led to
+    /// moves too.
+    func testAPathSpelledThroughTheOldLinkMovesToo() throws {
+        let scratch = try makeSandboxDirectory("RebaseLink")
+        let real = scratch.appendingPathComponent("Archive", isDirectory: true)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        let link = scratch.appendingPathComponent("Data", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+        let new = scratch.appendingPathComponent("New", isDirectory: true)
+        let boundary = StorageBoundary(root: link)
+        boundary.publish(root: new)
+
+        let throughLink = real.resolvingSymlinksInPath().appendingPathComponent("Library/A.tmb/a.txt").path
+        XCTAssertEqual(boundary.rebasedToCurrent(throughLink), new.appendingPathComponent("Library/A.tmb/a.txt").path)
+    }
+
+    /// Moving away and back: a path captured in the folder moved away to
+    /// returns to the first one, and a path in the first one is kept.
+    func testAPathFollowsTheDataDirectoryBack() throws {
+        let first = try makeSandboxDirectory("RebaseFirst")
+        let second = try makeSandboxDirectory("RebaseSecond")
+        let boundary = StorageBoundary(root: first)
+        boundary.publish(root: second)
+        boundary.publish(root: first)
+
+        XCTAssertEqual(
+            boundary.rebasedToCurrent(second.appendingPathComponent("Library/A.tmb/a.txt").path),
+            first.appendingPathComponent("Library/A.tmb/a.txt").path
+        )
+        let inFirst = first.appendingPathComponent("Library/B.tmb/b.txt").path
+        XCTAssertEqual(boundary.rebasedToCurrent(inFirst), inFirst)
+    }
+
+    /// A book captured before a move gets its file path in the new data
+    /// directory and keeps everything else; a library's books move
+    /// together, and the count says how many did.
+    func testBooksAndALibraryCapturedBeforeAMoveMove() throws {
+        let old = try makeSandboxDirectory("RebaseLibraryOld")
+        let new = try makeSandboxDirectory("RebaseLibraryNew")
+        let boundary = StorageBoundary(root: old)
+        let inOld = Book(
+            title: "Harbor Pilot Notes",
+            format: .txt,
+            filePath: old.appendingPathComponent("Library/Shelf/A.tmb/a.txt").path,
+            md5Hash: "a",
+            folderPath: "Shelf",
+            tmbDirectoryName: "A.tmb"
+        )
+        let elsewhere = Book(title: "Loose Notes", format: .txt, filePath: "/Users/reader/Books/b.txt", md5Hash: "b")
+        var library = Library()
+        library.books = [inOld, elsewhere]
+        boundary.publish(root: new)
+
+        let rebased = boundary.rebasedToCurrent(inOld)
+        let moved = boundary.rebaseToCurrent(&library)
+
+        XCTAssertEqual(rebased.filePath, new.appendingPathComponent("Library/Shelf/A.tmb/a.txt").path)
+        var expected = inOld
+        expected.filePath = rebased.filePath
+        XCTAssertEqual(rebased, expected, "only the file path changes")
+        XCTAssertEqual(moved, 1)
+        XCTAssertEqual(library.books.map(\.filePath), [rebased.filePath, elsewhere.filePath])
+    }
 }
