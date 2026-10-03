@@ -133,6 +133,27 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF23: Escaping and Plain-Text Headings
+
+    /// Escaping 20 MB of prose as Markdown literals, and dividing it, and
+    /// TestData's Pride and Prejudice, into headings and paragraphs.
+    func testPERF23EscapingAndHeadings() throws {
+        let text = TextPipelineFixtures.plainText(bytes: 20 * 1_048_576)
+        try benchmark("PERF23", "MarkdownLiteral.escaped, 20 MB", repetitions: 2) {
+            MarkdownLiteral.escaped(text)
+        }
+        try benchmark("PERF23", "PlainTextParser.blocks, 20 MB", repetitions: 2) {
+            PlainTextParser.blocks(in: text)
+        }
+        try benchmark("PERF23", "PlainTextParser.markdown, 20 MB", repetitions: 1) {
+            PlainTextParser.markdown(text: text)
+        }
+        let pride = try TextFileDecoder.readText(at: try requireFile("pride.txt"), format: .txt)
+        try benchmark("PERF23", "PlainTextParser.blocks, pride.txt", repetitions: 5) {
+            PlainTextParser.blocks(in: pride)
+        }
+    }
+
     // MARK: - Measuring
 
     /// Run `body` `repetitions` times, then once more under a heap sampler,

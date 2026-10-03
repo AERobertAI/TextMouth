@@ -452,6 +452,156 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertEqual(sections.map(\.content), ["Words.", "More."])
     }
 
+    // MARK: - Markdown Literals and Plain-Text Headings (PERF23)
+
+    /// `MarkdownLiteral.escaped` as it was before PERF23: a scalar at a time.
+    private static func escapedBefore(_ text: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            if MarkdownLiteral.isASCIIPunctuation(scalar) {
+                result.append("\\")
+                result.append(scalar)
+            } else if scalar == "\u{FEFF}" {
+                result.append(contentsOf: "&#xFEFF;".unicodeScalars)
+            } else {
+                result.append(scalar)
+            }
+        }
+        return String(result)
+    }
+
+    /// Every scalar of the Basic Multilingual Plane, and every 97th of the
+    /// planes above it, in one string.
+    private static let manyScalars: String = {
+        let values = Array(UInt32(0)...0xFFFF) + Array(stride(from: UInt32(0x10000), through: 0x10FFFF, by: 97))
+        return String(String.UnicodeScalarView(values.compactMap(Unicode.Scalar.init)))
+    }()
+
+    /// The texts the plain-text comparisons read: the review's edge strings,
+    /// random strings of tricky pieces, its prose, every scalar above, and
+    /// TestData's Pride and Prejudice and Markdown sample.
+    private func plainTextComparisonInputs() throws -> [String] {
+        typealias Fixtures = TextPipelineFixtures
+        var texts = Fixtures.edgeTexts + Fixtures.randomTrickyTexts(count: 3_000, seed: 23)
+        texts.append(Fixtures.plainText(bytes: 131_072))
+        texts.append(Self.manyScalars)
+        texts.append(try TextFileDecoder.readText(at: try requireFile("pride.txt"), format: .txt))
+        texts.append(try TextFileDecoder.readText(at: try requireFile("sample.md"), format: .markdown))
+        return texts
+    }
+
+    /// Escaping writes exactly what escaping a scalar at a time wrote.
+    func testEscapingMatchesTheScalarLoopItReplaces() throws {
+        for text in try plainTextComparisonInputs() {
+            XCTAssertEqual(MarkdownLiteral.escaped(text), Self.escapedBefore(text), text.debugDescription.prefix(80).description)
+        }
+    }
+
+    /// Lines whose capitals, small letters, and line endings put the
+    /// plain-text heading rules to the test, a few hundred random ones per
+    /// document: all-caps lines with and without other scripts, lines that
+    /// uppercasing changes only outside ASCII, titlecase digraphs,
+    /// ligatures, sharp s, dotted and dotless i, Greek, Cherokee, Roman
+    /// numerals, combining marks, ATX and setext syntax, and lines either
+    /// side of 3 and 80 Characters.
+    private static func headingTestDocuments(count: Int, seed: UInt64) -> [String] {
+        let lines = [
+            "CHAPTER ONE", "Chapter one", "chapter one", "\u{C9}COLE", "\u{E9}cole", "STRASSE", "stra\u{DF}e",
+            "\u{1E9E}AUS", "\u{1C5}OKTOR", "\u{1C4}OKTOR", "\u{FB01}NAL", "\u{3A3}\u{39F}\u{3A6}\u{399}\u{391}",
+            "\u{3C3}\u{3BF}\u{3C6}\u{3B9}\u{3B1}", "\u{130}STANBUL", "\u{131}stanbul", "\u{13A0}\u{13A1}\u{13A2}",
+            "\u{AB70}\u{AB71}\u{AB72}", "\u{216B} ROMAN", "\u{217B} roman", "CAFE\u{301}", "cafe\u{301}",
+            "\u{65E5}\u{672C}\u{8A9E}", "ABC 123 def", "123 ABC", "A B C", "AB", "ABC", "MIXED case LINE",
+            "# Heading #", "###", "####### seven", "## ", "===", "---", "--", "=====", "-----", "", "   ", "\t",
+            String(repeating: "A", count: 80), String(repeating: "A", count: 81), "A\u{0}BC", "\u{0}",
+            "PART \u{2160}: THE \u{C6}THER", "ONE\u{2028}TWO", "x", "plain prose of an ordinary line",
+        ]
+        let separators = ["\n", "\n", "\n", "\r\n", "\r", "\u{2028}", "\u{85}", "\n\n"]
+        var random = SeededGenerator(state: seed)
+        return (0..<count).map { _ in
+            (0..<Int(random.next() % 300)).map { _ in
+                lines[Int(random.next() % UInt64(lines.count))] + separators[Int(random.next() % UInt64(separators.count))]
+            }.joined()
+        }
+    }
+
+    /// The plain-text line analysis as it was before PERF23
+    /// (`PlainTextParser.blocks(in:)` with its heading rules).
+    private enum PlainTextBefore {
+        static func blocks(in text: String) -> [PlainTextParser.Block] {
+            let lines = TextFileDecoder.normalizingLineEndings(text)
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+            let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
+            var blocks: [PlainTextParser.Block] = []
+            var paragraph: [String] = []
+            var consumedUnderline: Int?
+            func endParagraph() {
+                guard !paragraph.isEmpty else { return }
+                blocks.append(.paragraph(lines: paragraph))
+                paragraph = []
+            }
+            for (index, line) in lines.enumerated() {
+                if index == consumedUnderline { continue }
+                if !underlines.contains(index), let heading = heading(at: index, in: lines, underlines: underlines) {
+                    endParagraph()
+                    blocks.append(.heading(level: heading.level, text: readable(heading.label)))
+                    if heading.isUnderlined { consumedUnderline = index + 1 }
+                } else if line.isEmpty {
+                    endParagraph()
+                } else {
+                    paragraph.append(readable(line))
+                }
+            }
+            endParagraph()
+            return blocks
+        }
+
+        static func heading(at index: Int, in lines: [String], underlines: Set<Int>) -> (level: Int, label: String, isUnderlined: Bool)? {
+            let line = lines[index]
+            if line.hasPrefix("#") {
+                let level = line.prefix(while: { $0 == "#" }).count
+                if level <= 6 {
+                    let label = String(line.dropFirst(level))
+                        .trimmingCharacters(in: .whitespaces)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                        .trimmingCharacters(in: .whitespaces)
+                    if !label.isEmpty { return (level, label, false) }
+                }
+            }
+            if !line.isEmpty && underlines.contains(index + 1) {
+                return (lines[index + 1].hasPrefix("=") ? 1 : 2, line, true)
+            }
+            if line.count >= 3 && line.count <= 80
+                && line.uppercased() == line
+                && line.rangeOfCharacter(from: .letters) != nil
+                && line.filter({ $0.isLetter }).count >= 3 {
+                return (2, line, false)
+            }
+            return nil
+        }
+
+        static func isSetextUnderline(_ line: String) -> Bool {
+            line.count >= 3 && (line.allSatisfy({ $0 == "=" }) || line.allSatisfy({ $0 == "-" }))
+        }
+
+        static func readable(_ line: String) -> String {
+            guard line.unicodeScalars.contains("\u{0}") else { return line }
+            return String(String.UnicodeScalarView(line.unicodeScalars.map { $0 == "\u{0}" ? "\u{FFFD}" : $0 }))
+        }
+    }
+
+    /// The line analysis finds the headings and paragraphs it found before:
+    /// on every plain-text comparison input, on the plain-text fixture the
+    /// parser tests share, and on five hundred documents of lines chosen to
+    /// test the heading rules.
+    func testPlainTextBlocksMatchTheAnalysisTheyReplace() throws {
+        var texts = try plainTextComparisonInputs() + Self.headingTestDocuments(count: 500, seed: 2_323)
+        texts.append(PlainTextFixture.combined)
+        for text in texts {
+            XCTAssertEqual(PlainTextParser.blocks(in: text), PlainTextBefore.blocks(in: text), text.debugDescription.prefix(80).description)
+        }
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the
