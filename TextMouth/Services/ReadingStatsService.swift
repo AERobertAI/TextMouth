@@ -264,8 +264,16 @@ final class ReadingStatsService: ObservableObject {
         stats.totalListeningSeconds + uncreditedSessionTime(at: now)
     }
 
+    /// Books finished in the current year.
     var booksFinishedThisYear: Int {
-        let year = Calendar.current.component(.year, from: Date())
+        booksFinishedThisYear(at: Date())
+    }
+
+    /// Books finished in the year containing `now`, in the system's
+    /// calendar, so a display can read this at the same instant as the
+    /// listening times.
+    func booksFinishedThisYear(at now: Date) -> Int {
+        let year = Calendar.current.component(.year, from: now)
         return stats.finishedBooks.filter {
             Calendar.current.component(.year, from: $0.dateFinished) == year
         }.count

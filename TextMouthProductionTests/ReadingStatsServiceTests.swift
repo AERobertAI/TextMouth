@@ -403,6 +403,25 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(service.stats.totalListeningSeconds, 135)
     }
 
+    /// Books Finished This Year counts the books finished in the year
+    /// containing the instant asked about, from its first moment on, so the
+    /// Stats pane can read it at the same instant as every other figure.
+    @MainActor
+    func testBooksFinishedThisYearCountsTheYearContainingTheInstant() throws {
+        let service = makeService()
+        let calendar = Calendar.current
+        let sameDayLastYear = try XCTUnwrap(calendar.date(byAdding: .year, value: -1, to: noon))
+        let startOfYear = try XCTUnwrap(calendar.date(from: calendar.dateComponents([.era, .year], from: noon)))
+        service.stats.finishedBooks = [sameDayLastYear, startOfYear, noon - 3_600].map { date in
+            FinishedBookEntry(bookID: UUID().uuidString, title: "Finished \(date)", dateFinished: date)
+        }
+
+        XCTAssertEqual(service.booksFinishedThisYear(at: noon), 2)
+        XCTAssertEqual(service.booksFinishedThisYear(at: startOfYear), 2)
+        XCTAssertEqual(service.booksFinishedThisYear(at: startOfYear - 1), 1, "The last second of the year before")
+        XCTAssertEqual(service.booksFinishedThisYear(at: sameDayLastYear), 1)
+    }
+
     // MARK: - Helpers
 
     /// A service over this test's file, checkpointing every
