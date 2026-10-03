@@ -445,6 +445,38 @@ final class ContinueToNextBookTests: XCTestCase {
         XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
     }
 
+    // MARK: - Counting starts
+
+    /// The start counter the tests above rely on counts every Play, even
+    /// one over a reader already playing, so a second start cannot pass
+    /// unnoticed, and never a pause. A paused audio book stays "playing but
+    /// paused" and claims the Playing state again as it pauses; an
+    /// audio-route change that paused the next book mid-test once made the
+    /// counter report two starts for one.
+    func testStartCounterCountsEveryPlayButNoPause() throws {
+        let book = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [book])
+        let reader = makeReader(for: book, in: world)
+        waitUntilLoaded(reader)
+        let starts = countPlaybackStarts(of: reader)
+
+        reader.play()
+        XCTAssertEqual(starts(), 1)
+
+        // An output-route change pauses the book, as CoreAudio can at any
+        // moment of a hosted test; the book still claims to be playing.
+        reader.pauseForAudioRouteChange()
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        XCTAssertEqual(starts(), 1, "A pause was counted as a start")
+
+        // Play starts the audio again each time it is asked: once over the
+        // paused book, and once more over the book now playing.
+        reader.play()
+        reader.play()
+        XCTAssertEqual(starts(), 3, "A Play went uncounted")
+    }
+
     // MARK: - Fixtures
 
     /// A test's private surroundings: the library holding its books,
@@ -564,16 +596,28 @@ final class ContinueToNextBookTests: XCTestCase {
         wait(for: [loaded], timeout: 10)
     }
 
-    /// Count every time `reader` claims the Playing state from now on. Play
-    /// claims it each time it starts audio, even over a reader already
-    /// playing, so a second start would be counted.
+    /// Count every time `reader` starts playing from now on. Play claims the
+    /// Playing state each time it starts audio, even over a reader already
+    /// playing, so a second start is counted. Pausing claims it as well,
+    /// since a paused audio book stays "playing but paused", but such a
+    /// claim is not a start: an audio-route change can pause a book at any
+    /// moment of a hosted test.
+    ///
+    /// A plain count of changes from not playing to playing would miss a
+    /// second Play over a reader already playing, which is the double start
+    /// these tests look for.
     ///
     /// - Returns: A function reading the count so far.
     private func countPlaybackStarts(of reader: ReaderViewModel) -> () -> Int {
         var starts = 0
         reader.$isCurrentlyPlaying
             .dropFirst()
-            .filter { $0 }
+            // Play starts the audio service and pause pauses it before
+            // either claims the Playing state, so the service's own paused
+            // flag tells a start from a pause as the claim is published.
+            .filter { [weak reader] isPlaying in
+                isPlaying && reader?.audioPlaybackService.isPaused == false
+            }
             .sink { _ in starts += 1 }
             .store(in: &subscriptions)
         return { starts }

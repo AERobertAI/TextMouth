@@ -375,6 +375,37 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         }
     }
 
+    // MARK: - Playback settings steppers
+
+    /// VoiceOver hears each stepper in the Playback settings by its label,
+    /// once, with its value in words. A stepper's own title is spoken before
+    /// its accessibility label even when hidden, so a hidden "Seconds" would
+    /// be heard as "Seconds, Minimum pause threshold".
+    func testPlaybackSettingsSteppersSpeakTheirLabelsOnce() throws {
+        let settings = try makeIsolatedSettings()
+        // The pause threshold's stepper shows only for a smart rewind.
+        settings.rewindOnResumeUnit = .sentence
+        settings.rewindSmartMode = true
+        settings.rewindSmartThreshold = 30
+        settings.sleepFadeOutDuration = 3
+
+        // A window tall enough to lay out every section at once.
+        withHostedView(
+            PlaybackSettingsView().environmentObject(settings),
+            size: NSSize(width: 600, height: 1600),
+            until: { steppers(in: $0).count == 2 }
+        ) { hostingView in
+            let found = steppers(in: hostingView)
+            XCTAssertEqual(found.map(\.label), ["Minimum pause threshold", "Fade out duration"])
+            XCTAssertEqual(found.map(\.valueDescription), ["30 seconds", "3 seconds"])
+        }
+    }
+
+    /// The steppers VoiceOver finds in `view`, in the order it reads them.
+    private func steppers(in view: NSView) -> [AccessibleControl] {
+        accessibleControls(in: view).filter { $0.role == .incrementor }
+    }
+
     // MARK: - Keeping audio multipliers out of speech WPM
 
     /// Opening an audio book must not push its saved multiplier into the

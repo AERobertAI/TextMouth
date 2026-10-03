@@ -15,6 +15,12 @@ import XCTest
 /// derived from content.md, not in content.md itself: no cache rebuild is
 /// needed. An index saved from the old reading no longer matches the text,
 /// so the next load replaces it.
+///
+/// A DAISY 3 (DTBook) table reaches the reader as the same paragraphs, but
+/// through its content.md: the DTBook converter writes each row as a
+/// paragraph of its cells' words, with no Markdown table syntax. It used to
+/// write `| cell | cell |` rows with no delimiter row, which the reader took
+/// for one paragraph and read with its bars.
 final class MarkdownTableReadingTests: XCTestCase {
 
     // MARK: - Rows and Cells
@@ -137,11 +143,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// rows as paragraphs, the same cells as words, an empty cell adding
     /// nothing, and the same separation from the paragraphs around it.
     func testATableReadsAsTheSameTableInHTMLReads() throws {
-        let html = "<p>Barometer notes.</p><table>"
-            + "<tr><th>Reading (hPa)</th><th>Trend</th></tr>"
-            + "<tr><td>1013-1023</td><td>Steady</td></tr>"
-            + "<tr><td></td><td>Falling</td></tr>"
-            + "</table><p>Check twice daily.</p>"
         let markdown = """
         Barometer notes.
 
@@ -153,10 +154,86 @@ final class MarkdownTableReadingTests: XCTestCase {
         Check twice daily.
         """
 
-        let fromHTML = try read(HTMLToMarkdownConverter.convert(html))
+        let fromHTML = try read(HTMLToMarkdownConverter.convert(Self.barometerHTML))
 
-        XCTAssertEqual(fromHTML, "Barometer notes.\n\nReading (hPa) Trend\n\n1013-1023 Steady\n\nFalling\n\nCheck twice daily.")
+        XCTAssertEqual(fromHTML, Self.barometerReading)
         XCTAssertEqual(try read(markdown), fromHTML)
+    }
+
+    // MARK: - DAISY 3 (DTBook) Tables
+
+    /// A DTBook table reads exactly as the same table in HTML reads, from a
+    /// file laid out as DTBook files are, with line breaks and indentation
+    /// between its rows and cells: each row a paragraph of its cells' words,
+    /// an empty cell adding nothing, and the table apart from the paragraphs
+    /// around it. No Markdown table syntax reaches content.md.
+    func testADTBookTableReadsAsTheSameTableInHTMLReads() throws {
+        let markdown = try dtbookMarkdown(body: """
+            <p>Barometer notes.</p>
+            <table>
+              <tr>
+                <th>Reading (hPa)</th>
+                <th>Trend</th>
+              </tr>
+              <tr>
+                <td>1013-1023</td>
+                <td>Steady</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>Falling</td>
+              </tr>
+            </table>
+            <p>Check twice daily.</p>
+            """)
+
+        XCTAssertFalse(markdown.contains("|"), markdown)
+        XCTAssertEqual(try read(markdown), Self.barometerReading)
+        XCTAssertEqual(try read(markdown), try read(HTMLToMarkdownConverter.convert(Self.barometerHTML)))
+    }
+
+    /// A DTBook table's caption is a paragraph of its own before its rows.
+    /// A cell's words are read without their formatting, and words that
+    /// would begin Markdown structure where a row begins its line (a
+    /// heading's number sign, a list's number or dash, a quotation's angle
+    /// bracket) are read as written.
+    func testDTBookCaptionsAndCellWordsReadAsWritten() throws {
+        let markdown = try dtbookMarkdown(body: """
+            <table>
+              <caption>Sailings</caption>
+              <tr><td># of crossings</td><td><strong>12</strong></td></tr>
+              <tr><td>1.</td><td>Harbour <em>to</em> island</td></tr>
+              <tr><td>- 5%</td><td>&gt; noon</td></tr>
+            </table>
+            """)
+
+        XCTAssertEqual(try read(markdown), "Sailings\n\n# of crossings 12\n\n1. Harbour to island\n\n- 5% > noon")
+    }
+
+    /// A table in a DTBook cell is a block of its own, as in HTML: its rows
+    /// are paragraphs between the words of the row holding it, which come
+    /// before and after it in reading order.
+    func testADTBookTableInACellReadsBetweenTheWordsOfItsRow() throws {
+        let markdown = try dtbookMarkdown(body: """
+            <table>
+              <tr>
+                <td>Ferry</td>
+                <td>
+                  <table>
+                    <tr><td>Monday</td><td>9:00</td></tr>
+                    <tr><td>Friday</td><td>17:30</td></tr>
+                  </table>
+                </td>
+                <td>Weather permitting</td>
+              </tr>
+            </table>
+            """)
+        let html = "<table><tr><td>Ferry</td><td><table>"
+            + "<tr><td>Monday</td><td>9:00</td></tr><tr><td>Friday</td><td>17:30</td></tr>"
+            + "</table></td><td>Weather permitting</td></tr></table>"
+
+        XCTAssertEqual(try read(markdown), "Ferry\n\nMonday 9:00\n\nFriday 17:30\n\nWeather permitting")
+        XCTAssertEqual(try read(markdown), try read(HTMLToMarkdownConverter.convert(html)))
     }
 
     // MARK: - Through the Cache
@@ -192,6 +269,43 @@ final class MarkdownTableReadingTests: XCTestCase {
         Below 993 Very low Severe storm, seek shelter
 
         Chapter 3: Communication
+        """), reading)
+    }
+
+    /// A DAISY 3 book's table, imported and read through its cache as the
+    /// reader reads it, is heard row by row between the paragraph before it
+    /// and the section heading after it, and its content.md holds the rows
+    /// as paragraphs, with no bars.
+    func testDAISY3BookTableIsReadRowByRowThroughItsCache() throws {
+        let fixtures = DAISYPackageFixtures.self
+        let original = fixtures.packageBook["content/timetables.xml", default: ""]
+        let paragraph = "<p>The first ferry leaves the north pier at ten past six.</p>"
+        let dtbook = original.replacingOccurrences(
+            of: paragraph,
+            with: paragraph + "\n<table>\n<tr><th>Pier</th><th>Departs</th></tr>\n"
+                + "<tr><td>North</td><td>6:10</td></tr>\n</table>"
+        )
+        XCTAssertNotEqual(dtbook, original, "the table was not added")
+        let folder = try fixtures.writeFolder(
+            fixtures.files(fixtures.packageBook, changing: ["content/timetables.xml": dtbook]),
+            named: "Ferry Timetables",
+            in: makeSandboxDirectory("dtbook-tables")
+        )
+        let book = try importBook(folder.appendingPathComponent("book.opf"))
+
+        let chapters = try BookContentAnalysisService.load(book: book).content.chapters
+        let cache = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+
+        XCTAssertFalse(cache.contains("|"), cache)
+        let reading = chapters.map(\.text).joined(separator: "\n\n")
+        XCTAssertTrue(reading.contains("""
+        The first ferry leaves the north pier at ten past six.
+
+        Pier Departs
+
+        North 6:10
+
+        The Evening Return
         """), reading)
     }
 
@@ -232,9 +346,33 @@ final class MarkdownTableReadingTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// The cross-format barometer table in HTML, between a paragraph before
+    /// it and one after it; its last row's first cell is empty.
+    private static let barometerHTML = "<p>Barometer notes.</p><table>"
+        + "<tr><th>Reading (hPa)</th><th>Trend</th></tr>"
+        + "<tr><td>1013-1023</td><td>Steady</td></tr>"
+        + "<tr><td></td><td>Falling</td></tr>"
+        + "</table><p>Check twice daily.</p>"
+
+    /// How the barometer table reads, whatever format it arrives in.
+    private static let barometerReading =
+        "Barometer notes.\n\nReading (hPa) Trend\n\n1013-1023 Steady\n\nFalling\n\nCheck twice daily."
+
     /// The reading text of `markdown` as one chapter.
     private func read(_ markdown: String) throws -> String {
         try MarkdownDocParser.parseChapter(markdown: markdown).text
+    }
+
+    /// The Markdown the DAISY 3 converter writes for a DTBook file whose one
+    /// section holds `body`, failing the test if it finds the file damaged.
+    private func dtbookMarkdown(body: String) throws -> String {
+        try convertDTBookSnippet("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <dtbook xmlns="http://www.daisy.org/z3986/2005/dtbook/" version="2005-3">
+            <book><bodymatter><level1>
+            \(body)
+            </level1></bodymatter></book></dtbook>
+            """)
     }
 
     /// Where `needle` first begins in `text`, in UTF-16 code units, the

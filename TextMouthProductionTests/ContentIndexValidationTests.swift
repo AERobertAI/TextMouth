@@ -859,15 +859,14 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
-    /// A heading renamed in place would be announced by its old label.
+    /// A heading renamed in place would be announced by its old label. The
+    /// reason reaches the debug log, so it says where the labels first
+    /// differ and how long each is, never what either says.
     func testIndexIsMisalignedWithARelabeledHeading() {
         var chapters = textChapters()
         chapters[1].headings[1].text = "Fifth"
 
-        XCTAssertEqual(
-            textIndex().alignmentFailure(with: chapters),
-            #"chapters[1].headings[1].text is "Five", but the reading text has "Fifth""#
-        )
+        XCTAssertEqual(textIndex().alignmentFailure(with: chapters), Self.relabeledHeadingReason)
     }
 
     /// A heading at another level would sit at the wrong depth of the outline.
@@ -922,7 +921,7 @@ final class ContentIndexValidationTests: XCTestCase {
         chapters[1].headings[1].text = "Fifth"
         XCTAssertEqual(
             textIndex().alignmentFailure(with: chapters, countingWords: false),
-            #"chapters[1].headings[1].text is "Five", but the reading text has "Fifth""#
+            Self.relabeledHeadingReason
         )
     }
 
@@ -1274,6 +1273,12 @@ final class ContentIndexValidationTests: XCTestCase {
             ]),
         ]
     }
+
+    /// Why `textIndex()` cannot describe `textChapters()` once the reading
+    /// text relabels the heading "Five" as "Fifth": the labels first differ
+    /// at their third UTF-16 unit, and are four and five units long.
+    private static let relabeledHeadingReason =
+        "chapters[1].headings[1].text differs from the reading text's label at UTF-16 offset 2 (lengths 4 and 5)"
 
     /// The index the builder makes for `textChapters()` as an EPUB.
     private func textIndex() -> BookContentIndex {
