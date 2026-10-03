@@ -292,9 +292,7 @@ extension LibraryViewModel {
 
     /// Check if a ZIP file contains audio files (for audio book ZIP import).
     nonisolated static func isAudioZip(url: URL) -> Bool {
-        // Naming the path encoding selects ZIPFoundation's throwing initializer;
-        // an archive that cannot be opened is still nil.
-        guard let archive = try? Archive(url: url, accessMode: .read, pathEncoding: nil) else { return false }
+        guard let archive = Archive.openedForReading(at: url) else { return false }
         let audioExtensions = Set(BookFormat.audio.fileExtensions)
         var hasAudio = false
         var hasNonAudio = false
@@ -358,7 +356,7 @@ extension LibraryViewModel {
             do {
                 if DAISYParser.isDAISYZip(url: url) {
                     let imported: ImportedBook
-                    if let archive = try? Archive(url: url, accessMode: .read, pathEncoding: nil),
+                    if let archive = Archive.openedForReading(at: url),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
                         imported = try FileImportService.importDAISYAudioZipWithReport(from: url, toFolder: folderPath)
                     } else {
