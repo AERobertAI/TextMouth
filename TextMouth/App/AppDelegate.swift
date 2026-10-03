@@ -10,11 +10,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Starts routing app-wide actions (TODO A05) before Finder can hand
     /// over a book at launch. SwiftUI opens the first Library window itself,
     /// so an action that arrives before that window registers waits for it
-    /// instead of opening a second.
+    /// instead of opening a second. Later, an action no open window can take
+    /// opens a Library window through SwiftUI's main scene.
     func applicationWillFinishLaunching(_ notification: Notification) {
         let router = LibraryWindowRouter.shared
+        router.openLibraryWindow = Self.openLibraryWindowThroughSwiftUI
         router.expectLibraryWindow()
         router.listen(to: .default)
+    }
+
+    /// Opens a new Library window the way AppKit asks SwiftUI for one when
+    /// the app is reopened with no window: SwiftUI's own application
+    /// delegate, which forwards to this one, answers
+    /// `applicationOpenUntitledFile(_:)` by opening a window of the app's
+    /// main scene, the Library. In the running app this opens exactly one
+    /// Library window, which registers with the router at once, whether a
+    /// Library window, only readers, or no window at all is open.
+    ///
+    /// This delegate must never implement `applicationOpenUntitledFile(_:)`
+    /// itself: SwiftUI would hand the call here instead of opening a window.
+    ///
+    /// Other ways fall short (tried in the running app, TODO A05). No
+    /// responder answers `newWindow:`, so sending it does nothing. A reader
+    /// window's `openWindow` cannot name the Library scene, which has no
+    /// identifier, and exists only while a reader is open. A reopen event
+    /// opens a window only while no window at all is visible. File > New >
+    /// New Window works, but only by finding the menu item by its title.
+    ///
+    /// - Returns: Whether SwiftUI opened a Library window.
+    static func openLibraryWindowThroughSwiftUI() -> Bool {
+        NSApp.delegate?.applicationOpenUntitledFile?(NSApp) ?? false
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

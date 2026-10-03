@@ -595,6 +595,75 @@ final class LibraryWindowRouterTests: XCTestCase {
     func testTheAppRoutesActionsPostedOnTheDefaultCenter() {
         XCTAssertTrue(LibraryWindowRouter.shared.listenedCenter === NotificationCenter.default)
     }
+
+    /// The app delegate gives the shared router SwiftUI's way of opening a
+    /// Library window, and in the running app it opens exactly one, shown
+    /// and registered with the router. The window is closed again before
+    /// the test ends.
+    func testTheAppOpensExactlyOneRegisteredLibraryWindow() {
+        let router = LibraryWindowRouter.shared
+        let registeredBefore = router.registeredLibraryWindows
+        let shownBefore = Self.shownLibraryWindows()
+        /// The Library windows registered since the test began.
+        func newlyRegistered() -> [NSWindow] {
+            router.registeredLibraryWindows.filter { window in !registeredBefore.contains { $0 === window } }
+        }
+        defer { closeLibraryWindows(except: shownBefore, registeredBefore: registeredBefore) }
+
+        XCTAssertTrue(router.openLibraryWindow())
+
+        XCTAssertTrue(waitUntil(timeout: 5) { !newlyRegistered().isEmpty }, "No Library window registered")
+        let opened = newlyRegistered()
+        XCTAssertEqual(opened.count, 1)
+        XCTAssertEqual(Self.shownLibraryWindows().count, shownBefore.count + 1)
+        if let window = opened.first {
+            XCTAssertTrue(window.isVisible)
+            XCTAssertEqual(MenuVisibilityManager.detectWindowType(for: window), .library)
+        }
+    }
+
+    /// A Library window that closes unregisters, and registers again when
+    /// it is shown again, as it is when SwiftUI shows it for a book opened
+    /// from Finder. The window is closed again before the test ends.
+    func testALibraryWindowShownAgainRegistersAgain() throws {
+        let router = LibraryWindowRouter.shared
+        let registeredBefore = router.registeredLibraryWindows
+        let shownBefore = Self.shownLibraryWindows()
+        defer { closeLibraryWindows(except: shownBefore, registeredBefore: registeredBefore) }
+        XCTAssertTrue(router.openLibraryWindow())
+        XCTAssertTrue(waitUntil(timeout: 5) { router.registeredLibraryWindows.count > registeredBefore.count })
+        let window = try XCTUnwrap(router.registeredLibraryWindows.first { candidate in
+            !registeredBefore.contains { $0 === candidate }
+        })
+
+        window.close()
+        XCTAssertTrue(waitUntil(timeout: 5) { !router.registeredLibraryWindows.contains { $0 === window } })
+        window.orderFront(nil)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { router.registeredLibraryWindows.contains { $0 === window } },
+            "The Library window shown again did not register again"
+        )
+    }
+
+    /// The app's Library windows on screen or minimized.
+    private static func shownLibraryWindows() -> [NSWindow] {
+        NSApp.windows.filter { window in
+            (window.isVisible || window.isMiniaturized)
+                && MenuVisibilityManager.detectWindowType(for: window) == .library
+        }
+    }
+
+    /// Closes every Library window on screen that is not one of `shown`,
+    /// and waits until the router has let go of all but `registeredBefore`.
+    private func closeLibraryWindows(except shown: [NSWindow], registeredBefore: [NSWindow]) {
+        for window in Self.shownLibraryWindows() where !shown.contains(where: { $0 === window }) {
+            window.close()
+        }
+        XCTAssertTrue(waitUntil(timeout: 5) {
+            LibraryWindowRouter.shared.registeredLibraryWindows.count == registeredBefore.count
+        }, "A Library window the test opened is still registered")
+    }
 }
 
 /// Which window a routing test makes key.
