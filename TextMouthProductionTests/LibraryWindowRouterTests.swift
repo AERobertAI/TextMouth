@@ -275,4 +275,92 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertFalse(router.openReaderWindow(for: UUID(), keyWindow: reader))
         XCTAssertEqual(calls, 0)
     }
+
+    /// The reader window another reader opens through: the key window when
+    /// it is a reader, otherwise the newest reader, and none when no reader
+    /// is open.
+    func testReaderSelectionPrefersTheKeyReaderThenTheNewest() {
+        let olderReader = makeWindow()
+        let newerReader = makeWindow()
+        let otherWindow = makeWindow()
+        let readers = [olderReader, newerReader]
+
+        XCTAssertTrue(LibraryWindowRouter.selectedReaderWindow(from: readers, keyWindow: olderReader) === olderReader)
+        XCTAssertTrue(LibraryWindowRouter.selectedReaderWindow(from: readers, keyWindow: nil) === newerReader)
+        XCTAssertTrue(LibraryWindowRouter.selectedReaderWindow(from: readers, keyWindow: otherWindow) === newerReader)
+        XCTAssertNil(LibraryWindowRouter.selectedReaderWindow(from: [], keyWindow: otherWindow))
+    }
+
+    // MARK: - Who takes an app-wide action (TODO A05)
+
+    /// Only the actions that open a book's reader name a book; the rest
+    /// need a Library window.
+    func testOnlyActionsThatOpenAReaderNameABook() {
+        let book = UUID()
+
+        XCTAssertEqual(GlobalAction.openBookWindow(book).bookToOpen, book)
+        XCTAssertEqual(GlobalAction.continueToNextBook(book).bookToOpen, book)
+        XCTAssertNil(GlobalAction.openBookFile.bookToOpen)
+        XCTAssertNil(GlobalAction.importDAISYFolder.bookToOpen)
+    }
+
+    /// Who takes each kind of app-wide action in every window arrangement
+    /// TODO A05 names: a cold launch with no window yet, every window
+    /// closed while the app runs, only readers open, one Library window,
+    /// and several Library windows with and without a key one.
+    ///
+    /// A registered Library window takes everything whenever there is one.
+    /// Without one, a reader window opens a book's reader, and everything
+    /// else waits for a new Library window.
+    func testWhoTakesEachActionInEveryWindowArrangement() {
+        let firstLibrary = makeWindow()
+        let secondLibrary = makeWindow()
+        let olderReader = makeWindow()
+        let newerReader = makeWindow()
+        // Settings, or any other window that is neither Library nor reader.
+        let otherWindow = makeWindow()
+        let book = UUID()
+        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .importDAISYFolder]
+        let actionsOpeningAReader: [GlobalAction] = [.openBookWindow(book), .continueToNextBook(book)]
+
+        let arrangements: [(
+            name: String,
+            libraries: [NSWindow],
+            readers: [NSWindow],
+            keyWindow: NSWindow?,
+            libraryActionHandler: GlobalActionHandler,
+            readerActionHandler: GlobalActionHandler
+        )] = [
+            ("cold launch, no window yet", [], [], nil, .newLibraryWindow, .newLibraryWindow),
+            ("every window closed, app running", [], [], nil, .newLibraryWindow, .newLibraryWindow),
+            ("every Library and reader closed, Settings key", [], [], otherWindow, .newLibraryWindow, .newLibraryWindow),
+            ("only readers, one key", [], [olderReader, newerReader], olderReader, .newLibraryWindow, .readerWindow(olderReader)),
+            ("only readers, none key", [], [olderReader, newerReader], nil, .newLibraryWindow, .readerWindow(newerReader)),
+            ("only readers, Settings key", [], [olderReader, newerReader], otherWindow, .newLibraryWindow, .readerWindow(newerReader)),
+            ("one Library, none key", [firstLibrary], [], nil, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+            ("one Library, it key", [firstLibrary], [olderReader], firstLibrary, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+            ("one Library, reader key", [firstLibrary], [olderReader], olderReader, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+            ("several Libraries, second key", [firstLibrary, secondLibrary], [olderReader], secondLibrary, .libraryWindow(secondLibrary), .libraryWindow(secondLibrary)),
+            ("several Libraries, none key", [firstLibrary, secondLibrary], [olderReader], nil, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+            ("several Libraries, reader key", [firstLibrary, secondLibrary], [olderReader], olderReader, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+            ("several Libraries, Settings key", [firstLibrary, secondLibrary], [], otherWindow, .libraryWindow(firstLibrary), .libraryWindow(firstLibrary)),
+        ]
+
+        for arrangement in arrangements {
+            for (actions, expected) in [
+                (actionsNeedingALibrary, arrangement.libraryActionHandler),
+                (actionsOpeningAReader, arrangement.readerActionHandler),
+            ] {
+                for action in actions {
+                    let handler = LibraryWindowRouter.handler(
+                        for: action,
+                        keyWindow: arrangement.keyWindow,
+                        registeredLibraryWindows: arrangement.libraries,
+                        readerWindows: arrangement.readers
+                    )
+                    XCTAssertEqual(handler, expected, "\(arrangement.name): \(action)")
+                }
+            }
+        }
+    }
 }

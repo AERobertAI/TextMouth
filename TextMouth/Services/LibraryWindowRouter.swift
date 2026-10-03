@@ -8,6 +8,10 @@ import Combine
 /// It also keeps each open reader window's way of opening another reader,
 /// which the app delegate uses to open the next book's reader for Continue
 /// to Next Book when no Library window is open to do it.
+///
+/// Who takes each app-wide action, in every window arrangement, is decided
+/// by `handler(for:keyWindow:registeredLibraryWindows:readerWindows:)`
+/// (TODO A05).
 @MainActor
 final class LibraryWindowRouter: ObservableObject {
     /// Shared registry used by both SwiftUI views and the AppKit delegate.
@@ -174,9 +178,115 @@ final class LibraryWindowRouter: ObservableObject {
     @discardableResult
     func openReaderWindow(for bookID: UUID, keyWindow: NSWindow?) -> Bool {
         readerWindowOpeners.removeAll { $0.window == nil }
-        let keyReader = readerWindowOpeners.first { $0.window === keyWindow }
-        guard let opener = keyReader ?? readerWindowOpeners.last else { return false }
+        let readerWindows = readerWindowOpeners.compactMap(\.window)
+        guard let chosen = Self.selectedReaderWindow(from: readerWindows, keyWindow: keyWindow),
+              let opener = readerWindowOpeners.first(where: { $0.window === chosen }) else {
+            return false
+        }
         opener.openReader(bookID)
         return true
     }
+
+    /// Pure choice of the reader window another reader opens through: the
+    /// key window when it is one of `readerWindows`, otherwise the one
+    /// registered most recently, the last of them.
+    static func selectedReaderWindow(
+        from readerWindows: [NSWindow],
+        keyWindow: NSWindow?
+    ) -> NSWindow? {
+        if let keyWindow,
+           readerWindows.contains(where: { $0 === keyWindow }) {
+            return keyWindow
+        }
+        return readerWindows.last
+    }
+
+    // MARK: - App-Wide Actions (TODO A05)
+
+    /// Pure decision of who takes `action`, given the windows open now.
+    /// Every arrangement is decided here, so each is tested without opening
+    /// a window:
+    ///
+    /// 1. A registered Library window takes every action whenever there is
+    ///    one: the key window when it is one of them, otherwise the first
+    ///    registered, even while a reader or Settings is key
+    ///    (`selectedWindow(from:keyWindow:)`).
+    /// 2. With no Library window, an action that only opens a book's reader
+    ///    goes to a registered reader window, which opens it through the
+    ///    action it lent the router (`selectedReaderWindow(from:keyWindow:)`).
+    /// 3. Otherwise no open window can take it, as on a cold launch, while
+    ///    only readers are open (for an action that needs a Library window),
+    ///    or with every window closed and the app still running: a new
+    ///    Library window opens and takes the action once it has registered.
+    ///
+    /// - Parameters:
+    ///   - action: The app-wide action to take.
+    ///   - keyWindow: The window currently receiving keystrokes, if any.
+    ///   - registeredLibraryWindows: The registered Library windows, in the
+    ///     order they registered.
+    ///   - readerWindows: The registered reader windows, in the order they
+    ///     registered.
+    static func handler(
+        for action: GlobalAction,
+        keyWindow: NSWindow?,
+        registeredLibraryWindows: [NSWindow],
+        readerWindows: [NSWindow]
+    ) -> GlobalActionHandler {
+        if let library = selectedWindow(from: registeredLibraryWindows, keyWindow: keyWindow) {
+            return .libraryWindow(library)
+        }
+        if action.bookToOpen != nil,
+           let reader = selectedReaderWindow(from: readerWindows, keyWindow: keyWindow) {
+            return .readerWindow(reader)
+        }
+        return .newLibraryWindow
+    }
+}
+
+// MARK: - App-Wide Action Vocabulary
+
+/// An action the app takes as a whole, asked for by a menu command, a
+/// keyboard shortcut, or a finished book, whichever window is key, or with
+/// no window open at all (TODO A05). The router decides who takes each one
+/// (`LibraryWindowRouter.handler(for:keyWindow:registeredLibraryWindows:readerWindows:)`),
+/// so it is taken exactly once whatever windows exist.
+enum GlobalAction: Equatable {
+    /// File > Open Book...: a Library window presents the Open panel.
+    case openBookFile
+    /// Library > Import DAISY Folder…: a Library window presents the
+    /// folder-only panel (TODO I02).
+    case importDAISYFolder
+    /// Open a book's reader window, or bring it forward when it is already
+    /// open: a book just imported, or a package from Finder the library
+    /// already lists.
+    case openBookWindow(UUID)
+    /// Continue to Next Book: open the reader window of the book after the
+    /// one that finished, which then starts playing (`ReaderAutoplayRequests`).
+    case continueToNextBook(UUID)
+
+    /// The book whose reader window this action opens, or nil for an action
+    /// that needs a Library window. An action that only opens a reader can
+    /// be taken by any window that lent the router a way to open readers:
+    /// a reader window as well as a Library window.
+    var bookToOpen: UUID? {
+        switch self {
+        case .openBookWindow(let bookID), .continueToNextBook(let bookID):
+            return bookID
+        case .openBookFile, .importDAISYFolder:
+            return nil
+        }
+    }
+}
+
+/// Who takes an app-wide action. Windows compare by identity, the equality
+/// `NSObject` gives them.
+enum GlobalActionHandler: Equatable {
+    /// This registered Library window takes the action.
+    case libraryWindow(NSWindow)
+    /// This registered reader window opens the book's reader through the
+    /// action it lent the router. Only for an action that opens a reader.
+    case readerWindow(NSWindow)
+    /// No open window can take the action: a Library window opens first,
+    /// and takes the action once it has registered.
+    case newLibraryWindow
 }
