@@ -266,21 +266,45 @@ extension LibraryViewModel {
         library.subfolders(of: path)
     }
 
+    /// The books a Library window shows at `location`: its category's or
+    /// folder's books in the order of the sort it shows (`sortState(at:)`),
+    /// narrowed to those whose title or author contains `search`, ignoring
+    /// case. An empty search narrows nothing.
+    ///
+    /// Each list is derived once and kept until a book is added, removed,
+    /// or moved, or a field it is sorted or searched by changes (TODO
+    /// PERF10, `LibraryListCache`); any other change, such as a reading
+    /// position, reaches the books it returns without sorting them again.
+    /// So a window may read it as often as it draws.
+    func displayedBooks(at location: LibraryLocation, matching search: String = "") -> [Book] {
+        let sort = sortState(at: location)
+        let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "")
+        let books = listCache.books(for: unsearched, in: library) {
+            sortedBooks(booksForCategory(location.category, folderPath: location.folderPath), by: sort)
+        }
+        guard !search.isEmpty else { return books }
+        let query = search.lowercased()
+        let searched = LibraryListCache.Key(location: location, sort: sort, search: query)
+        return listCache.books(for: searched, in: library) {
+            books.filter { $0.title.lowercased().contains(query) || $0.author.lowercased().contains(query) }
+        }
+    }
+
+    /// How many books are in the folder `path` and every folder below it,
+    /// as `Library.totalBooksInFolderTree` counts them, from counts kept for
+    /// every folder until a book is added, removed, or moved (TODO PERF10).
+    func bookCount(inFolderTree path: String) -> Int {
+        listCache.bookCount(inFolderTree: path, in: library)
+    }
+
     /// Sort books as `sort` orders them (TODO A06): the comparator the
     /// location's sort derives, which keeps manual order in the order the
-    /// user arranged.
+    /// user arranged. A File Size sort reads each book's size measured once
+    /// and kept until its file changes (TODO PERF10); no other sort reads
+    /// the disk.
     func sortedBooks(_ books: [Book], by sort: LibrarySortState) -> [Book] {
-        // Pre-compute file sizes to avoid O(N log N) disk I/O in the sort comparator
-        var sizeCache: [UUID: Int] = [:]
-        if sort.field == .fileSize {
-            for book in books {
-                sizeCache[book.id] = LibraryBookSorter.recursiveFileSize(
-                    at: URL(fileURLWithPath: book.filePath)
-                )
-            }
-        }
-
-        return sort.sorted(books, fileSizes: sizeCache)
+        let sizes = sort.field == .fileSize ? listCache.fileSizes(of: books) : [:]
+        return sort.sorted(books, fileSizes: sizes)
     }
 
     /// Return books matching the given library category within a folder path

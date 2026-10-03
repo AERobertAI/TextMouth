@@ -246,16 +246,16 @@ struct LibraryView: View {
                 )
             }
 
-            // Total time remaining bar (refreshTick forces periodic re-evaluation),
-            // with how many of the books shown are in the cloud (FR02)
-            let _ = libraryViewModel.refreshTick
+            // Total time remaining bar, with how many of the books shown are
+            // in the cloud (FR02)
             let summarizedBooks = displayedBooks
             TimeRemainingBar(
                 books: summarizedBooks,
                 wpm: settingsViewModel.wordsPerMinute,
                 booksInCloud: cloudStates.countInTheCloud(summarizedBooks),
                 focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
-                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
+                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary,
+                livePositions: libraryViewModel.livePositions
             )
 
             // Main list with native selection
@@ -270,7 +270,7 @@ struct LibraryView: View {
                                 } label: {
                                     FolderRow(
                                         folder: folder,
-                                        bookCount: libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)
+                                        bookCount: libraryViewModel.bookCount(inFolderTree: folder.fullPath)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -308,8 +308,6 @@ struct LibraryView: View {
 
                 // Books section
                 Section {
-                    // Reference refreshTick so the list re-evaluates when the timer fires
-                    let _ = libraryViewModel.refreshTick
                     bookRows
                 } header: {
                     Text("Books (\(filteredBooks.count))")
@@ -325,7 +323,7 @@ struct LibraryView: View {
             .accessibilityRotor("Folders") {
                 ForEach(libraryViewModel.subfoldersOf(currentFolderPath)) { folder in
                     AccessibilityRotorEntry(
-                        "\(folder.name), \(libraryViewModel.library.totalBooksInFolderTree(folder.fullPath)) books",
+                        "\(folder.name), \(libraryViewModel.bookCount(inFolderTree: folder.fullPath)) books",
                         id: folder.id
                     )
                 }
@@ -774,7 +772,7 @@ struct LibraryView: View {
         return FolderRemovalWording(
             mode: removalPreferences.deletionMode,
             folderName: folder?.name ?? "",
-            bookCount: folder.map { libraryViewModel.library.totalBooksInFolderTree($0.fullPath) } ?? 0
+            bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0
         )
     }
 
@@ -833,7 +831,8 @@ struct LibraryView: View {
             isEditSelected: editSelection.contains(book.id),
             cloudState: cloudStates.listedState(of: book.id),
             cloudCommands: cloudCommands,
-            performCloudCommand: performCloudCommand
+            performCloudCommand: performCloudCommand,
+            livePosition: libraryViewModel.livePositions.entry(for: book.id)
         )
         .tag(book.id)
         .accessibilityAction(.default) {
@@ -1051,11 +1050,11 @@ struct LibraryView: View {
         announceToVoiceOver(shown.changeAnnouncement)
     }
 
+    /// The books shown here before a search narrows them, in the sort the
+    /// location shows: derived once by the model and kept until a change
+    /// the list depends on (TODO PERF10).
     private var displayedBooks: [Book] {
-        libraryViewModel.sortedBooks(
-            libraryViewModel.booksForCategory(category, folderPath: currentFolderPath),
-            by: sort
-        )
+        libraryViewModel.displayedBooks(at: location)
     }
 
     private var preferredLibraryFocusTarget: LibraryFocusTarget? {
@@ -1136,14 +1135,10 @@ struct LibraryView: View {
         VoiceOverAnnouncer.announce(message, from: hostWindow)
     }
 
+    /// The books shown here as the search narrows them (title or author
+    /// contains it, ignoring case), kept by the model like `displayedBooks`.
     private var filteredBooks: [Book] {
-        let books = displayedBooks
-        if searchText.isEmpty { return books }
-        let query = searchText.lowercased()
-        return books.filter {
-            $0.title.lowercased().contains(query) ||
-            $0.author.lowercased().contains(query)
-        }
+        libraryViewModel.displayedBooks(at: location, matching: searchText)
     }
 
     private func navigateUp() {

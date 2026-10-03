@@ -62,7 +62,7 @@ final class CloudMaintenanceCacheBatchTests: CloudMaintenanceTestCase {
         XCTAssertEqual(contents(of: MarkdownCacheService.cacheURL(for: cachedInCloud)), oldCache)
         XCTAssertEqual(model.bookByID(recordInCloud.id)?.cacheFormatVersion, "3.0.3")
         XCTAssertNil(contents(of: MarkdownCacheService.cacheURL(for: recordInCloud)))
-        XCTAssertEqual(model.extractionProgressCurrent, 3)
+        XCTAssertEqual(model.textExtraction.current, 3)
         XCTAssertEqual(logLineCount(skipLine(.textCacheUpdate, count: 2)), skipLinesBefore + 1)
     }
 
@@ -83,7 +83,8 @@ final class CloudMaintenanceCacheBatchTests: CloudMaintenanceTestCase {
         let skipLinesBefore = logLineCount(skipLine(.textReextraction, count: 1))
         let model = makeModel(with: [sourceInCloud, cacheInCloud])
         let finished = expectation(description: "Redo Text Extraction finished")
-        let subscription = model.$isExtracting.dropFirst().filter { !$0 }.prefix(1).sink { _ in finished.fulfill() }
+        let subscription = model.textExtraction.$isExtracting.dropFirst().filter { !$0 }.prefix(1)
+            .sink { _ in finished.fulfill() }
         defer { subscription.cancel() }
 
         model.redoAllTextExtraction(access: cloud.access)
@@ -124,10 +125,10 @@ final class CloudMaintenanceCacheBatchTests: CloudMaintenanceTestCase {
         XCTAssertEqual(allHere, .success(nil))
         XCTAssertEqual(StorageStatus.finished(.success(nil)).message, "Done.")
 
-        model.isExtracting = true
+        model.textExtraction.begin("Updating text cache", total: 1)
         let refused = await model.redoAllTextExtractionReturningOutcome()
         XCTAssertNil(refused)
-        model.isExtracting = false
+        model.textExtraction.end()
     }
 
     /// Redo Text Extraction's words for the books it left in the cloud agree

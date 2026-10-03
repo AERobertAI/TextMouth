@@ -44,19 +44,35 @@ enum LibraryCategory: String, CaseIterable, Codable {
 /// Per-window navigation state (folder path, category, search) lives in the views.
 @MainActor
 final class LibraryViewModel: ObservableObject {
-    /// Every change is offered to `bookUpdates`, which keeps the readers
-    /// with a book open up to date with its row (TODO P10).
+    /// Every change is offered first to `listCache`, so no Library window
+    /// reads a list derived from the library before it (TODO PERF10), then
+    /// to `bookUpdates`, which keeps the readers with a book open up to date
+    /// with its row (TODO P10).
     @Published var library = Library() {
-        didSet { bookUpdates.libraryDidChange(library) }
+        didSet {
+            listCache.libraryDidChange(from: oldValue, to: library)
+            bookUpdates.libraryDidChange(library)
+        }
     }
+    /// The lists Library windows show, each derived once and kept until a
+    /// change it depends on (TODO PERF10); read through
+    /// `displayedBooks(at:matching:)` and `bookCount(inFolderTree:)`.
+    let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// Where readers are between checkpoints (TODO PERF11), which the rows
+    /// and the summary bar show: `updateLiveReadingPosition` reports there
+    /// instead of changing the library, so a playing reader no longer
+    /// publishes this model once a second.
+    let livePositions = LiveReadingPositions()
     @Published var errorMessage: String?
     @Published var showError = false
-    /// Book IDs currently open in a reader window
-    @Published var openBookIDs: Set<UUID> = []
-    /// Incremented periodically to force library views to refresh time estimates
-    @Published var refreshTick: UInt = 0
+    /// Book IDs currently open in a reader window. A book that leaves it
+    /// drops its live position (TODO PERF11): its reader saved its position
+    /// to the library as it closed, and the row shows that one again.
+    @Published var openBookIDs: Set<UUID> = [] {
+        didSet { livePositions.keepOnly(openBookIDs) }
+    }
 
     /// The questions imports are waiting to ask, one at a time and in the
     /// order they arose (TODO I01): whether to replace or keep a duplicate,
@@ -95,11 +111,21 @@ final class LibraryViewModel: ObservableObject {
         NotificationCenter.default.post(name: .openBookWindow, object: bookID)
     }
 
-    /// Text extraction progress tracking (for startup cache generation and re-extraction)
-    @Published var isExtracting = false
-    @Published var extractionProgressCurrent = 0
-    @Published var extractionProgressTotal = 0
-    @Published var extractionProgressMessage = ""
+    /// The text extraction batch's progress (startup cache generation and
+    /// re-extraction), an object of its own so that each finished book
+    /// redraws only the views showing it, never this model's observers
+    /// (TODO PERF12).
+    let textExtraction = TextExtractionProgress()
+    /// Whether a text extraction batch runs; a second is refused meanwhile.
+    var isExtracting: Bool {
+        textExtraction.isExtracting
+    }
+    /// Finished books' analysis summaries, on their way to `library`
+    /// together: in one change and one save at most every half second, at
+    /// the end of each pass, and at quit (TODO PERF12).
+    private(set) lazy var analysisSummaries = ContentAnalysisSummaryBuffer { [weak self] summaries in
+        self?.applyAnalysisSummaries(summaries)
+    }
 
     /// Set while library.json exists but cannot be read. The library shown is
     /// then provisional and index writes are suspended. Only the recovery
@@ -142,8 +168,6 @@ final class LibraryViewModel: ObservableObject {
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
-    /// Owns the main-run-loop timer through a handle that can cancel from any thread.
-    var refreshTimer: LibraryRefreshTimer?
     /// Shared config service used across extension files. Reached when
     /// first needed rather than when the model is made, so config.json is
     /// never read before the launch check has found the library (FR02).
@@ -198,16 +222,9 @@ final class LibraryViewModel: ObservableObject {
                 self.importProgressMessage = ""
             }
         }
-        startRefreshTimer()
         updateContentCachesAndStatistics()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
-    }
-
-    deinit {
-        // Background analysis can release the final reference. The handle moves
-        // timer cleanup to its owning thread without capturing this dying model.
-        refreshTimer?.invalidate()
     }
 
     // MARK: - Book Update Helpers
@@ -472,29 +489,6 @@ extension LibraryViewModel {
         // resumes it.
         dataDirectoryEnvironment.sessionLease?.pause()
         DiagnosticLog.event(.storage, "DATA_DIRECTORY_LOST: stopped saving until the library is back")
-    }
-}
-
-/// Keeps a Timer on the main run loop while allowing its owner to die on a worker
-/// queue. Global-actor isolation makes this handle Sendable; the Timer itself is
-/// accessed only on the thread where it was scheduled.
-@MainActor
-final class LibraryRefreshTimer {
-    let timer: Timer
-
-    /// Wrap a timer that was created on the main actor.
-    init(timer: Timer) {
-        self.timer = timer
-    }
-
-    /// Cancel immediately on the main thread, or keep just this handle alive until
-    /// the main queue can cancel. Repeated cancellation is safe for Foundation timers.
-    nonisolated func invalidate() {
-        if Thread.isMainThread {
-            MainActor.assumeIsolated { timer.invalidate() }
-        } else {
-            DispatchQueue.main.async { self.timer.invalidate() }
-        }
     }
 }
 

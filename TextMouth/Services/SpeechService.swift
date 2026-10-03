@@ -512,14 +512,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     // MARK: - Voice Management
 
-    static func availableVoices(language: String? = nil) -> [AVSpeechSynthesisVoice] {
-        var voices = AVSpeechSynthesisVoice.speechVoices()
-        voices = voices.filter { !$0.voiceTraits.contains(.isNoveltyVoice) }
-        if let lang = language {
-            voices = voices.filter { $0.language.hasPrefix(lang) }
-        }
-        return voices.sorted { $0.name < $1.name }
-    }
+    // The voices offered are listed once and shared by `VoiceCatalog`
+    // (TODO PERF07), never here.
 
     func selectVoice(_ voice: AVSpeechSynthesisVoice) {
         currentVoice = voice

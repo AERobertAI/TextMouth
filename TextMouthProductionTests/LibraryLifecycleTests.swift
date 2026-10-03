@@ -1,61 +1,57 @@
 import XCTest
 @testable import TextMouth
 
-/// Cover the release paths used by background library analysis and normal UI teardown.
+/// Cover the release paths used by background library analysis and normal UI
+/// teardown. The model kept a refresh timer, which these tests once watched;
+/// the timer is gone (TODO PERF29), and the model must still be freed
+/// wherever its last reference is dropped, with nothing it made keeping it
+/// alive.
 final class LibraryLifecycleTests: XCTestCase {
-    /// Reproduce the crash report's final release on a utility queue. Retaining the
-    /// timer separately also proves cleanup happens, rather than merely avoiding a trap.
+    /// Reproduce the crash report's final release on a utility queue, after
+    /// the model has used what it keeps for its Library windows: the list
+    /// cache and the live positions.
     @MainActor
-    func testBackgroundFinalReleaseInvalidatesTimerOnMainThread() async throws {
+    func testBackgroundFinalReleaseFreesTheModel() async throws {
         var model: LibraryViewModel? = LibraryViewModel(initializeServices: false)
-        model?.startRefreshTimer()
-        let timer = try XCTUnwrap(model?.refreshTimer?.timer)
+        Self.useWhatTheModelKeeps(try XCTUnwrap(model))
         weak var releasedModel = model
         let backgroundOwner = BackgroundOwner(try XCTUnwrap(model))
         model = nil
-        XCTAssertTrue(timer.isValid)
+        XCTAssertNotNil(releasedModel, "the worker holds the last reference")
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             DispatchQueue.global(qos: .utility).async {
                 backgroundOwner.release()
-                // Deinit enqueues timer invalidation before this main-queue marker.
-                // Resuming here makes the assertions deterministic without sleeps.
+                // Resuming from the main queue, after the release, makes the
+                // assertion deterministic without sleeps.
                 DispatchQueue.main.async { continuation.resume() }
             }
         }
 
         XCTAssertNil(releasedModel)
-        XCTAssertFalse(timer.isValid)
     }
 
-    /// Ordinary teardown should cancel synchronously without an extra timer tick.
+    /// Ordinary teardown on the main thread frees the model at once.
     @MainActor
-    func testMainThreadFinalReleaseInvalidatesTimerImmediately() throws {
+    func testMainThreadFinalReleaseFreesTheModel() throws {
         var model: LibraryViewModel? = LibraryViewModel(initializeServices: false)
-        model?.startRefreshTimer()
-        let timer = try XCTUnwrap(model?.refreshTimer?.timer)
+        Self.useWhatTheModelKeeps(try XCTUnwrap(model))
         weak var releasedModel = model
 
         model = nil
 
         XCTAssertNil(releasedModel)
-        XCTAssertFalse(timer.isValid)
     }
 
-    /// Restarting refresh must leave only the replacement timer active, with the
-    /// same callback behavior used to update library time estimates.
+    /// Fills the model's list cache and live positions, as a Library window
+    /// showing a playing book does.
     @MainActor
-    func testRestartCancelsPreviousTimerAndReplacementRefreshesLibrary() throws {
-        let model = LibraryViewModel(initializeServices: false)
-        model.startRefreshTimer()
-        let previousTimer = try XCTUnwrap(model.refreshTimer?.timer)
-        model.startRefreshTimer()
-        let replacementTimer = try XCTUnwrap(model.refreshTimer?.timer)
-
-        XCTAssertFalse(previousTimer.isValid)
-        XCTAssertTrue(replacementTimer.isValid)
-        replacementTimer.fire()
-        XCTAssertEqual(model.refreshTick, 1)
+    private static func useWhatTheModelKeeps(_ model: LibraryViewModel) {
+        let book = Book(title: "Kept", format: .txt, filePath: "/tmp/kept.txt", md5Hash: "kept")
+        model.library = Library(books: [book])
+        _ = model.displayedBooks(at: LibraryLocation(category: .allItems, folderPath: ""), matching: "kept")
+        _ = model.bookCount(inFolderTree: "")
+        model.updateLiveReadingPosition(bookID: book.id, position: ReadingPosition(characterOffset: 3))
     }
 }
 

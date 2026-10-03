@@ -74,6 +74,10 @@ struct TimeRemainingBar: View {
     /// unlike List section headers in this view hierarchy.
     var focusIdentifier: String? = nil
     var shouldTriggerFocus = false
+    /// Where readers are between checkpoints (TODO PERF11): the bar adds up
+    /// the time left from them and redraws as they move, while the list
+    /// around it does not. The inert store, the default, holds none.
+    @ObservedObject var livePositions: LiveReadingPositions = .inert
 
     var body: some View {
         let (time, known, unknown) = computeTimeRemaining()
@@ -123,12 +127,15 @@ struct TimeRemainingBar: View {
         }
     }
 
+    /// The time left in `books` at `wpm`, each from its reader's live
+    /// position while that is newer than the library's, with how many books
+    /// have a known and an unknown time left.
     private func computeTimeRemaining() -> (TimeInterval, Int, Int) {
         var total: TimeInterval = 0
         var known = 0
         var unknown = 0
         for book in books {
-            if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
+            if let remaining = livePositions.applied(to: book).estimatedTimeRemaining(wpm: wpm) {
                 total += remaining
                 known += 1
             } else {
@@ -247,6 +254,17 @@ struct BookRow: View {
     var cloudCommands: [LibraryCloudCommand] = []
     /// Runs one of `cloudCommands`.
     var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
+    /// The book's live position while a reader plays it (TODO PERF11). The
+    /// row observes this one entry, so it redraws when its own book's
+    /// reader moves and no other row does. The inert entry, the default,
+    /// holds none.
+    @ObservedObject var livePosition: LiveReadingPosition = .inert
+
+    /// The book as the row shows its progress and time left: with its
+    /// reader's live position while that is newer than the library's.
+    private var shownBook: Book {
+        livePosition.applied(to: book)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -295,13 +313,13 @@ struct BookRow: View {
 
                     Spacer()
 
-                    if let progress = Self.progressText(for: book) {
+                    if let progress = Self.progressText(for: shownBook) {
                         Text(progress.visible)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
 
-                    if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
+                    if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
                         Text("\(TimeFormatting.format(remaining)) left")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -353,10 +371,10 @@ struct BookRow: View {
             parts.append(cloudNote)
         }
         let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
-        if let progress = Self.spokenProgress(for: book, besideDownloadPercentage: besideDownloadPercentage) {
+        if let progress = Self.spokenProgress(for: shownBook, besideDownloadPercentage: besideDownloadPercentage) {
             parts.append(progress)
         }
-        if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
+        if let remaining = shownBook.estimatedTimeRemaining(wpm: wpm) {
             parts.append("\(TimeFormatting.spoken(remaining)) remaining")
         }
         parts.append(book.format.displayName)

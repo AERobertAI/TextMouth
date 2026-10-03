@@ -9,31 +9,8 @@ private func releaseBatchParserMemory() {
     _ = malloc_zone_pressure_relief(nil, 0)
 }
 
-/// Small value retained until the main actor publishes a completed book: the
-/// analysis fields its package records. The full chapter/heading index is
-/// already on disk and can be released after each book instead of pinning
-/// parser allocation regions for the entire migration.
-private struct ContentAnalysisSummary: Sendable {
-    let bookID: UUID
-    let fields: Book.ContentAnalysisFields
-
-    /// The analysis fields of `committed`, the book as its package records
-    /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`).
-    init(committed: Book) {
-        bookID = committed.id
-        fields = committed.contentAnalysisFields
-    }
-
-    /// Gives `book`, the library row, the committed analysis fields and
-    /// nothing else. The row keeps its own reading state, settings, and
-    /// metadata, which are at least as new as its package's.
-    func apply(to book: inout Book) {
-        book.contentAnalysisFields = fields
-    }
-}
-
 /// Extension for data migration, directory management, content cache extraction,
-/// statistics calculation, and periodic refresh timing.
+/// statistics calculation, and time estimation.
 extension LibraryViewModel {
 
     /// Migrate any books still using old storage paths to .tmb packages,
@@ -333,11 +310,13 @@ extension LibraryViewModel {
             let boundary = StorageBoundary.shared
             let skips = CloudSkips(.statistics)
             defer {
-                // Once the pass ends, however it ends. The completion is
-                // queued behind every update the pass sent the main queue.
+                // Once the pass ends, however it ends. Queued behind every
+                // summary the pass sent the main queue: the summaries still
+                // waiting reach the library, then the completion runs.
                 skips.log()
-                if let completion {
-                    DispatchQueue.main.async { completion() }
+                DispatchQueue.main.async { [weak self] in
+                    self?.analysisSummaries.flush()
+                    completion?()
                 }
             }
             for listedBook in booksNeedingStats {
@@ -350,12 +329,10 @@ extension LibraryViewModel {
                         guard let summary = Self.commitStatistics(of: book, access: access, skips: skips) else {
                             return true
                         }
+                        // The book's record holds its analysis now; its row
+                        // waits to change with others' (TODO PERF12).
                         DispatchQueue.main.async {
-                            guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
-                                return
-                            }
-                            summary.apply(to: &self.library.books[index])
-                            self.save()
+                            self.analysisSummaries.add(summary)
                         }
                         return true
                     }
@@ -558,13 +535,18 @@ extension LibraryViewModel {
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
-    /// book and publishing each durable checkpoint before advancing progress.
-    /// Bounded utility workers keep memory and CPU available for reading.
+    /// book and committing each book's analysis to its package record before
+    /// advancing progress. Bounded utility workers keep memory and CPU
+    /// available for reading. The finished books' summaries reach the library
+    /// rows together (`analysisSummaries`, TODO PERF12), and the progress has
+    /// an object of its own (`textExtraction`), so a batch no longer
+    /// re-renders every Library window's list once per book.
     /// `access` is how each book's files are reached (FR02): a book whose
     /// files are in the cloud counts toward the progress, is left as it is,
     /// and is counted in the batch's one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
-    /// `completion` is told, on the main actor once every book is done, how
-    /// many books the batch left in the cloud.
+    /// `completion` is told, on the main actor once every book is done and
+    /// every summary has reached the library, how many books the batch left
+    /// in the cloud.
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
@@ -576,22 +558,17 @@ extension LibraryViewModel {
             return
         }
 
-        isExtracting = true
-        extractionProgressTotal = books.count
-        extractionProgressCurrent = 0
-        let activity = force ? "Re-extracting text" : "Updating text cache"
-        extractionProgressMessage = "\(activity): 0 of \(books.count)..."
+        textExtraction.begin(force ? "Re-extracting text" : "Updating text cache", total: books.count)
 
         let updateProgress: @MainActor @Sendable (ContentAnalysisSummary?) -> Void = { [weak self] summary in
             guard let self else { return }
-            if let summary, let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) {
-                summary.apply(to: &self.library.books[index])
-                // Debounced library saves can be flushed at quit. A crash before
-                // this update is recovered from the package checkpoint next time.
-                self.save()
+            if let summary {
+                // The package record already holds the analysis, so a crash
+                // before the summary reaches the row loses nothing: the next
+                // launch's batch recovers it from the record.
+                self.analysisSummaries.add(summary)
             }
-            self.extractionProgressCurrent += 1
-            self.extractionProgressMessage = "\(activity): \(self.extractionProgressCurrent) of \(books.count)..."
+            self.textExtraction.advance()
         }
 
         let skips = CloudSkips(force ? .textReextraction : .textCacheUpdate)
@@ -610,10 +587,11 @@ extension LibraryViewModel {
             skips.log()
             let skippedInCloud = skips.count
             // Each worker enqueues its progress before returning, so this final
-            // main-queue block follows all completed-book notifications.
+            // main-queue block follows all completed-book notifications: the
+            // summaries still waiting reach the library before the batch ends.
             DispatchQueue.main.async { [weak self] in
-                self?.isExtracting = false
-                self?.extractionProgressMessage = ""
+                self?.analysisSummaries.flush()
+                self?.textExtraction.end()
                 completion?(skippedInCloud)
             }
         })
@@ -1225,20 +1203,6 @@ extension LibraryViewModel {
         }
         relauncher.quit()
         return .success("Opening the library in \(folder.path)…")
-    }
-
-    // MARK: - Refresh Timer
-
-    /// Start the periodic refresh timer that bumps refreshTick for time estimate updates
-    func startRefreshTimer() {
-        // Defensive invalidate-before-assign so a second call doesn't leak
-        // a Timer (two copies firing every 10s — visible as accelerated
-        // refreshTick updates and double the wakeups).
-        refreshTimer?.invalidate()
-        let timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshTick &+= 1 }
-        }
-        refreshTimer = LibraryRefreshTimer(timer: timer)
     }
 
     // MARK: - Time Estimation

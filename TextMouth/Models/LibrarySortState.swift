@@ -248,7 +248,8 @@ extension LibrarySortState {
     /// The books in this sort's order: the one comparator every library list
     /// uses. Manual order is always ascending, because it has no direction.
     /// File sizes come from `fileSizes`, which `LibraryViewModel.sortedBooks`
-    /// measures once per sort rather than once per comparison.
+    /// takes from sizes measured once per book and kept until its file
+    /// changes (`LibraryListCache`), never once per comparison.
     func sorted(_ books: [Book], fileSizes: [UUID: Int] = [:]) -> [Book] {
         LibraryBookSorter.sorted(books, by: field, ascending: isAscending, fileSizes: fileSizes)
     }
