@@ -166,22 +166,15 @@ enum DataDirectoryMigrator {
         guard !LibraryPersistenceService.areIndexWritesSuspended else {
             throw LibraryIndexRecoveryError.indexUnreadable
         }
-        let sourceLocation = DataDirectoryLocation(oldRoot, fileManager: fileManager)
-        let destinationLocation = DataDirectoryLocation(newRoot, fileManager: fileManager)
+        let source = DataDirectoryLocation(oldRoot, fileManager: fileManager)
+        let destination = DataDirectoryLocation(newRoot, fileManager: fileManager)
         // Compare real folders before copying: a selected symlink can
         // otherwise disguise a child directory and stage a copy inside itself.
-        if let overlap = DataDirectoryOverlap(source: sourceLocation, destination: destinationLocation) {
-            throw DataDirectoryMigrationError.invalidRelationship(
-                overlap,
-                source: sourceLocation,
-                destination: destinationLocation
-            )
+        if let overlap = DataDirectoryOverlap(source: source, destination: destination) {
+            throw DataDirectoryMigrationError.invalidRelationship(overlap, source: source, destination: destination)
         }
-        let source = sourceLocation.named
-        let destination = destinationLocation.named
-        let sourcePath = source.path
-        let destinationPath = destination.path
-        guard fileManager.fileExists(atPath: sourcePath) else {
+        let destinationPath = destination.named.path
+        guard fileManager.fileExists(atPath: source.real.path) else {
             throw DataDirectoryMigrationError.missingSource
         }
         if fileManager.fileExists(atPath: destinationPath) {
@@ -189,15 +182,24 @@ enum DataDirectoryMigrator {
             guard contents.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
         }
 
-        let staging = destination.deletingLastPathComponent()
+        let staging = destination.named.deletingLastPathComponent()
             .appendingPathComponent(".TextMouth-migration-\(UUID().uuidString)", isDirectory: true)
         defer { try? fileManager.removeItem(at: staging) }
-        try fileManager.copyItem(at: source, to: staging)
+        // Copy the folder the data directory leads to. Copying a link copies
+        // only the link, so the package records and library.json written
+        // below would land in the data directory itself, and publication
+        // would leave a second name for it instead of a copy (TODO S10).
+        try fileManager.copyItem(at: source.real, to: staging)
 
+        // A book's path spells the data directory as the preferences name
+        // it, or, when that name is a link, perhaps as the folder it leads to.
+        let sourcePaths = source.named.path == source.real.path
+            ? [source.named.path]
+            : [source.named.path, source.real.path]
         var migratedLibrary = library
         for index in migratedLibrary.books.indices {
             let oldPath = migratedLibrary.books[index].filePath
-            if oldPath == sourcePath || oldPath.hasPrefix(sourcePath + "/") {
+            if let sourcePath = sourcePaths.first(where: { oldPath == $0 || oldPath.hasPrefix($0 + "/") }) {
                 migratedLibrary.books[index].filePath = destinationPath + String(oldPath.dropFirst(sourcePath.count))
             }
 
@@ -232,9 +234,9 @@ enum DataDirectoryMigrator {
         }
 
         if fileManager.fileExists(atPath: destinationPath) {
-            try fileManager.removeItem(at: destination)
+            try fileManager.removeItem(at: destination.named)
         }
-        try fileManager.moveItem(at: staging, to: destination)
+        try fileManager.moveItem(at: staging, to: destination.named)
         return migratedLibrary
     }
 }

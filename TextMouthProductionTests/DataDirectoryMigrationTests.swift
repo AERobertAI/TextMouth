@@ -192,7 +192,52 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    // MARK: - Linked Locations (S10)
+
+    /// Acceptance (TODO S10): a data directory that is a link to a folder
+    /// elsewhere is copied from that folder, never as the link. The new
+    /// location holds a real copy whose books, named through the link or
+    /// through the folder, all moved; the folder keeps its library.json,
+    /// package records, and books byte for byte, and the link is untouched.
+    func testLinkedDataDirectoryIsCopiedFromTheFolderItLeadsTo() throws {
+        let base = try makeMigrationBase()
+        let folder = base.appendingPathComponent("Elsewhere/Data", isDirectory: true)
+        let home = base.appendingPathComponent("Home", isDirectory: true)
+        let link = home.appendingPathComponent(".TextMouth")
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
+        // One book named through the link, as the app names them, and one
+        // named through the folder it leads to.
+        let library = Library(books: try makeLibrary(at: link).books + makeLibrary(at: folder).books)
+        try LibraryIndexSandbox.encoded(library).write(to: folder.appendingPathComponent("library.json"))
+        let folderBefore = try snapshot(of: folder)
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: link, to: destination, library: library)
+
+        XCTAssertThrowsError(
+            try FileManager.default.destinationOfSymbolicLink(atPath: destination.path),
+            "the new location is a real folder, not another link to the data"
+        )
+        XCTAssertEqual(try snapshot(of: folder), folderBefore, "the folder the link leads to is unchanged")
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: link.path), folder.path)
+        XCTAssertEqual(migrated.books.count, 2)
+        for book in migrated.books {
+            XCTAssertTrue(book.filePath.hasPrefix(destination.path + "/Library/"), book.filePath)
+            XCTAssertEqual(try String(contentsOfFile: book.filePath, encoding: .utf8), "migration")
+        }
+        XCTAssertEqual(try publishedLibrary(in: destination).books.map(\.filePath), migrated.books.map(\.filePath))
+    }
+
     // MARK: - Fixtures
+
+    /// The library index published in the data directory at `root`.
+    private func publishedLibrary(in root: URL) throws -> Library {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Library.self, from: Data(contentsOf: root.appendingPathComponent("library.json")))
+    }
 
     /// A new, empty folder in the temporary directory for one test's
     /// locations, removed when the test ends.
