@@ -57,15 +57,35 @@ enum TextPipelineFixtures {
 
     // MARK: - Repository Fixtures
 
-    /// The fixture files in TestData whose text every reading path takes
-    /// from the parsers changed by PERF18 to PERF25, sorted by name. PDFs
-    /// are left out: their text comes from PDFKit and Vision, which change
-    /// with macOS, and none of those changes touch them.
-    static func testDataBooks() throws -> [URL] {
-        let folder = try requireFile("sample.md").deletingLastPathComponent()
-        return try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
-            .filter { BookFormat.detect(from: $0) != nil && $0.pathExtension.lowercased() != "pdf" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    /// TestData's books whose output the golden tests record, by file name:
+    /// every book the repository holds except its PDFs, whose text comes
+    /// from PDFKit and Vision, which change with macOS, and which none of
+    /// PERF18 to PERF25 touch. They are named rather than found in the
+    /// folder, which holds more in some checkouts than in others, so every
+    /// checkout compares the same books with the same records.
+    static let testDataBookNames = [
+        "alice.docx", "alice.epub", "daisy202_test.zip", "frankenstein.html", "hyperion_daisy.zip",
+        "lathe_of_heaven_daisy.zip", "pride.txt", "sample.md", "test_book.docx", "wipo-treaty-d202-text-only.zip",
+    ]
+
+    /// The large DAISY audio books some checkouts keep in TestData beside
+    /// its own books, downloaded separately and ignored by git, so most
+    /// checkouts lack them. Their output is recorded too, and compared
+    /// wherever they are present.
+    static let optionalTestDataBookNames = ["are-you-ready-d3-audio.zip", "fire-safety-d202-audio.zip"]
+
+    /// TestData's recorded books with their files: every one of
+    /// `testDataBookNames`, and those of `optionalTestDataBookNames` that
+    /// this checkout holds.
+    /// - Throws: `TestError.fileNotFound` when one of `testDataBookNames`
+    ///   is missing.
+    static func testDataBooks() throws -> [(name: String, url: URL)] {
+        let required = try testDataBookNames.map { (name: $0, url: try requireFile($0)) }
+        let optional = optionalTestDataBookNames.compactMap { name -> (name: String, url: URL)? in
+            let url = URL(fileURLWithPath: testFilePath(name))
+            return FileManager.default.fileExists(atPath: url.path) ? (name, url) : nil
+        }
+        return required + optional
     }
 
     // MARK: - Synthetic Prose
