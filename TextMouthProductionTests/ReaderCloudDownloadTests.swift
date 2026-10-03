@@ -693,6 +693,21 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(announcements(since: mark), ["Sleep timer expired. Playback paused."])
     }
 
+    /// Play/Pause while a chapter's files download pauses the reader, which
+    /// shows Playing meanwhile, rather than asking it to play again: the
+    /// reader stops waiting, and the download's end plays nothing.
+    func testPlayPauseDuringAChaptersDownloadPausesTheReader() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Play Pause", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+
+        reader.togglePlayPause()
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
+    }
+
     /// The library moves the package of a book whose chapter's files are
     /// downloading: the reader stops waiting before anything moves, since
     /// the download reads the package's files and plays them once they are

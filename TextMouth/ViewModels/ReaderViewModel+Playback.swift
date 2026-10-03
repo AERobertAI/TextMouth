@@ -199,7 +199,9 @@ extension ReaderViewModel {
         if isAudioBook {
             if audioPlaybackService.isPaused {
                 resumeAudioPlayback()
-            } else if audioPlaybackService.isPlaying {
+            } else if audioPlaybackService.isPlaying || isWaitingForChapterDownload {
+                // A reader waiting for its chapter's files to download
+                // (FR02) shows Playing, so Play/Pause pauses it too.
                 pause()
             } else {
                 play()
