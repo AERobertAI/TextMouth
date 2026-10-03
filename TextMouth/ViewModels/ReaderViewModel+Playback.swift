@@ -1271,7 +1271,8 @@ extension ReaderViewModel {
                     ? self.audioPlaybackService.isPaused
                     : self.speechService.isPaused
                 let backend = self.isAudioBook ? "audiobook" : "speech"
-                SleepTimerService.appendDiagnosticLog(
+                SleepTimerService.log(
+                    .event,
                     "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
                         + "playing=\(wasPlaying) paused=\(wasPaused)"
                 )
@@ -1289,7 +1290,8 @@ extension ReaderViewModel {
                 let isPausedAfterPause = self.isAudioBook
                     ? self.audioPlaybackService.isPaused
                     : self.speechService.isPaused
-                SleepTimerService.appendDiagnosticLog(
+                SleepTimerService.log(
+                    .event,
                     "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
                         + "paused=\(isPausedAfterPause)"
                 )
@@ -1353,21 +1355,24 @@ extension ReaderViewModel {
         let bookToken = String(book.id.uuidString.prefix(8))
         if sleepTimerService.isActive {
             // Existing timer running — same as Reset Timer.
-            SleepTimerService.appendDiagnosticLog(
+            SleepTimerService.log(
+                .event,
                 "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(sleepTimerService.remainingSeconds)"
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer reset.")
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
-            SleepTimerService.appendDiagnosticLog(
+            SleepTimerService.log(
+                .event,
                 "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.displayName)"
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
             announceToVoiceOver("Timer restarted: \(last.displayName).")
         } else {
             // First-ever press — nothing to repeat.
-            SleepTimerService.appendDiagnosticLog(
+            SleepTimerService.log(
+                .event,
                 "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
             )
             announceToVoiceOver("No previous sleep timer to restart.")

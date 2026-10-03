@@ -714,20 +714,23 @@ final class ReaderViewModel: ObservableObject {
                 let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
                 let lastOwnerToken = self.sleepTimerService.lastOwnerID
                     .map { String($0.uuidString.prefix(8)) } ?? "none"
-                SleepTimerService.appendDiagnosticLog(
+                SleepTimerService.log(
+                    .event,
                     "RESTART_ROUTE_RECEIVED book=\(bookToken) sourceWindow=\(hasSourceWindow) "
                         + "lastOwner=\(lastOwnerToken)"
                 )
                 if notification.userInfo?["sourceWindow"] != nil {
                     guard self.isTargetedNotification(notification) else {
-                        SleepTimerService.appendDiagnosticLog(
+                        SleepTimerService.log(
+                            .event,
                             "RESTART_ROUTE_REJECTED book=\(bookToken) reason=source-window-mismatch"
                         )
                         return
                     }
                 } else if let lastOwner = self.sleepTimerService.lastOwnerID {
                     guard lastOwner == self.book.id else {
-                        SleepTimerService.appendDiagnosticLog(
+                        SleepTimerService.log(
+                            .event,
                             "RESTART_ROUTE_REJECTED book=\(bookToken) reason=last-owner-mismatch"
                         )
                         return
@@ -739,13 +742,15 @@ final class ReaderViewModel: ObservableObject {
                           || self.hostWindow?.isKeyWindow == true
                           || self.hostWindow?.isMainWindow == true
                     else {
-                        SleepTimerService.appendDiagnosticLog(
+                        SleepTimerService.log(
+                            .event,
                             "RESTART_ROUTE_REJECTED book=\(bookToken) reason=no-focused-window"
                         )
                         return
                     }
                 }
-                SleepTimerService.appendDiagnosticLog(
+                SleepTimerService.log(
+                    .event,
                     "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(self.sleepTimerService.isActive)"
                 )
                 self.restartOrStartLastSleepTimer()

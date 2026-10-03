@@ -109,12 +109,13 @@ final class SleepTimerService: ObservableObject {
         loadLastUsedDuration()
     }
 
-    /// Append a structured event to the dedicated timer log. This is also
-    /// available to shortcut routing and playback code so one file contains
-    /// the complete path from input event through expiration handling.
-    nonisolated static func appendDiagnosticLog(_ message: String) {
-        let logFile = TextMouthPaths.logsDir.appendingPathComponent("textmouth_timer.log")
-        TextMouthPaths.appendLog(to: logFile, message: message)
+    /// Record a line in the timer's own log (`DiagnosticLog.File.sleepTimer`).
+    /// Shortcut routing and playback code use it too, so one file holds the
+    /// complete path from an input event through expiry handling. Every line
+    /// is an event, always written, except the countdown's progress ticks,
+    /// which are trace.
+    nonisolated static func log(_ level: DiagnosticLog.Level, _ message: @autoclosure () -> String) {
+        DiagnosticLog.log(level, .playback, message(), in: .sleepTimer)
     }
 
     /// Short owner tokens make multi-window routing diagnosable without
@@ -123,12 +124,13 @@ final class SleepTimerService: ObservableObject {
         ownerID.map { String($0.uuidString.prefix(8)) } ?? "none"
     }
 
-    /// Record an event together with the state needed to reconstruct timer
-    /// behavior after the fact.
-    private func timerLog(_ event: String) {
-        let durationLabel = duration?.displayName ?? "none"
-        Self.appendDiagnosticLog(
-            "\(event) active=\(isActive) duration=\(durationLabel) "
+    /// Record `event` at `level` together with the state needed to
+    /// reconstruct timer behavior after the fact. The state is described
+    /// only when the line is written.
+    private func timerLog(_ level: DiagnosticLog.Level, _ event: String) {
+        Self.log(
+            level,
+            "\(event) active=\(isActive) duration=\(duration?.displayName ?? "none") "
                 + "remaining=\(remainingSeconds) fading=\(isFadingOut) "
                 + "countdownPaused=\(isCountdownPausedByPlayback) "
                 + "owner=\(Self.ownerToken(ownerID)) generation=\(generation)"
@@ -142,7 +144,7 @@ final class SleepTimerService: ObservableObject {
     /// app was relaunched mid-timer.
     private func loadLastUsedDuration() {
         guard let data = userDefaults.data(forKey: Self.lastUsedDurationKey) else {
-            timerLog("RESTORE_LAST_DURATION result=missing")
+            timerLog(.event, "RESTORE_LAST_DURATION result=missing")
             return
         }
         // Encoded as JSON for forward-compatibility — adding new
@@ -152,9 +154,9 @@ final class SleepTimerService: ObservableObject {
         if let decoded = try? JSONDecoder().decode(PersistedDuration.self, from: data) {
             lastUsedDuration = decoded.toModel()
             let restoredLabel = lastUsedDuration?.displayName ?? "invalid"
-            timerLog("RESTORE_LAST_DURATION result=decoded value=\(restoredLabel)")
+            timerLog(.event, "RESTORE_LAST_DURATION result=decoded value=\(restoredLabel)")
         } else {
-            timerLog("RESTORE_LAST_DURATION result=decode-failed bytes=\(data.count)")
+            timerLog(.event, "RESTORE_LAST_DURATION result=decode-failed bytes=\(data.count)")
         }
     }
 
@@ -166,9 +168,9 @@ final class SleepTimerService: ObservableObject {
         let model = PersistedDuration(from: duration)
         if let data = try? JSONEncoder().encode(model) {
             userDefaults.set(data, forKey: Self.lastUsedDurationKey)
-            timerLog("PERSIST_LAST_DURATION result=saved value=\(duration.displayName)")
+            timerLog(.event, "PERSIST_LAST_DURATION result=saved value=\(duration.displayName)")
         } else {
-            timerLog("PERSIST_LAST_DURATION result=encode-failed value=\(duration.displayName)")
+            timerLog(.event, "PERSIST_LAST_DURATION result=encode-failed value=\(duration.displayName)")
         }
     }
 
@@ -262,15 +264,15 @@ final class SleepTimerService: ObservableObject {
         switch duration {
         case .minutes(let minutes):
             remainingSeconds = minutes * 60
-            timerLog("START kind=minutes requestedMinutes=\(minutes) fadeSeconds=\(fadeOutDuration)")
+            timerLog(.event, "START kind=minutes requestedMinutes=\(minutes) fadeSeconds=\(fadeOutDuration)")
             startCountdown()
         case .endOfHeading:
             remainingSeconds = 0
             endOfHeadingTriggered = false
-            timerLog("START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
+            timerLog(.event, "START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
         case .endOfDocument:
             remainingSeconds = 0
-            timerLog("START kind=end-of-document fadeSeconds=\(fadeOutDuration)")
+            timerLog(.event, "START kind=end-of-document fadeSeconds=\(fadeOutDuration)")
         }
     }
 
@@ -282,11 +284,11 @@ final class SleepTimerService: ObservableObject {
     func restart(fadeOutDuration: TimeInterval? = nil) {
         guard let current = duration,
               let onExpire = onTimerExpired else {
-            timerLog("RESTART_IGNORED reason=missing-current-duration-or-expiry-handler")
+            timerLog(.event, "RESTART_IGNORED reason=missing-current-duration-or-expiry-handler")
             return
         }
         let fadeOverrideLabel = fadeOutDuration.map { String($0) } ?? "none"
-        timerLog("RESTART_REQUESTED overrideFadeSeconds=\(fadeOverrideLabel)")
+        timerLog(.event, "RESTART_REQUESTED overrideFadeSeconds=\(fadeOverrideLabel)")
         // Capture the existing callbacks/owner so start() can re-install
         // them after the implicit stop() inside it clears them.
         let owner = ownerID
@@ -329,7 +331,7 @@ final class SleepTimerService: ObservableObject {
         onTimerExpired = nil
         onFadeStep = nil
         onFadeCancelled = nil
-        timerLog("STOP reason=\(reason) \(previousSummary)")
+        timerLog(.event, "STOP reason=\(reason) \(previousSummary)")
         fadeCancellation?()
     }
 
@@ -341,7 +343,7 @@ final class SleepTimerService: ObservableObject {
         let pending = pendingFadeCompletion
         pendingFadeCompletion = false
         if pending {
-            timerLog("FADE_COMPLETION_CONSUMED")
+            timerLog(.event, "FADE_COMPLETION_CONSUMED")
         }
         return pending
     }
@@ -361,25 +363,25 @@ final class SleepTimerService: ObservableObject {
         // keep the dedicated timer log focused on actual timer sessions.
         guard isActive else { return }
         guard self.ownerID == callerID else {
-            timerLog("COUNTDOWN_PAUSE_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_PAUSE_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
             return
         }
         guard case .minutes = duration else {
-            timerLog("COUNTDOWN_PAUSE_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_PAUSE_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
             return
         }
         guard !isFadingOut else {
-            timerLog("COUNTDOWN_PAUSE_IGNORED reason=fade-in-progress caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_PAUSE_IGNORED reason=fade-in-progress caller=\(Self.ownerToken(callerID))")
             return
         }
         guard let activeTimer = timer else {
-            timerLog("COUNTDOWN_PAUSE_IGNORED reason=countdown-not-armed caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_PAUSE_IGNORED reason=countdown-not-armed caller=\(Self.ownerToken(callerID))")
             return
         }
         activeTimer.invalidate()
         timer = nil
         isCountdownPausedByPlayback = true
-        timerLog("COUNTDOWN_PAUSED caller=\(Self.ownerToken(callerID))")
+        timerLog(.event, "COUNTDOWN_PAUSED caller=\(Self.ownerToken(callerID))")
     }
 
     /// Resume a previously-paused countdown with its preserved remaining
@@ -390,19 +392,19 @@ final class SleepTimerService: ObservableObject {
         // event and should not obscure the sessions under investigation.
         guard isActive else { return }
         guard self.ownerID == callerID else {
-            timerLog("COUNTDOWN_RESUME_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_RESUME_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
             return
         }
         guard isCountdownPausedByPlayback else {
-            timerLog("COUNTDOWN_RESUME_IGNORED reason=not-paused caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_RESUME_IGNORED reason=not-paused caller=\(Self.ownerToken(callerID))")
             return
         }
         guard case .minutes = duration else {
-            timerLog("COUNTDOWN_RESUME_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "COUNTDOWN_RESUME_IGNORED reason=non-minute-duration caller=\(Self.ownerToken(callerID))")
             return
         }
         isCountdownPausedByPlayback = false
-        timerLog("COUNTDOWN_RESUMED caller=\(Self.ownerToken(callerID))")
+        timerLog(.event, "COUNTDOWN_RESUMED caller=\(Self.ownerToken(callerID))")
         startCountdown()
     }
 
@@ -411,15 +413,15 @@ final class SleepTimerService: ObservableObject {
     func notifyHeadingBoundary(by callerID: UUID) {
         guard isActive, case .endOfHeading = duration else { return }
         guard self.ownerID == callerID else {
-            timerLog("HEADING_BOUNDARY_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "HEADING_BOUNDARY_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
             return
         }
         if endOfHeadingTriggered {
-            timerLog("HEADING_BOUNDARY_EXPIRING caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "HEADING_BOUNDARY_EXPIRING caller=\(Self.ownerToken(callerID))")
             expire()
         } else {
             endOfHeadingTriggered = true
-            timerLog("HEADING_BOUNDARY_ARMED caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "HEADING_BOUNDARY_ARMED caller=\(Self.ownerToken(callerID))")
         }
     }
 
@@ -428,10 +430,10 @@ final class SleepTimerService: ObservableObject {
     func notifyDocumentEnd(by callerID: UUID) {
         guard isActive, case .endOfDocument = duration else { return }
         guard self.ownerID == callerID else {
-            timerLog("DOCUMENT_END_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
+            timerLog(.event, "DOCUMENT_END_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
             return
         }
-        timerLog("DOCUMENT_END_EXPIRING caller=\(Self.ownerToken(callerID))")
+        timerLog(.event, "DOCUMENT_END_EXPIRING caller=\(Self.ownerToken(callerID))")
         expire()
     }
 
@@ -449,7 +451,7 @@ final class SleepTimerService: ObservableObject {
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
-        timerLog("COUNTDOWN_ARMED")
+        timerLog(.event, "COUNTDOWN_ARMED")
     }
 
     /// Applies one tick from the currently armed countdown. Keeping the state
@@ -463,7 +465,7 @@ final class SleepTimerService: ObservableObject {
         // Minute boundaries and the final ten seconds provide enough detail
         // to prove that a countdown remained live without writing every tick.
         if remainingSeconds % 60 == 0 || remainingSeconds <= 10 {
-            timerLog("COUNTDOWN_PROGRESS")
+            timerLog(.trace, "COUNTDOWN_PROGRESS")
         }
         announceIfMilestone()
         if remainingSeconds <= 0 {
@@ -473,21 +475,21 @@ final class SleepTimerService: ObservableObject {
 
     private func expire() {
         guard isActive else {
-            timerLog("EXPIRE_IGNORED reason=inactive")
+            timerLog(.event, "EXPIRE_IGNORED reason=inactive")
             return
         }
         timer?.invalidate()
         timer = nil
-        timerLog("EXPIRE_REACHED_ZERO fadeSeconds=\(fadeOutDuration)")
+        timerLog(.event, "EXPIRE_REACHED_ZERO fadeSeconds=\(fadeOutDuration)")
 
         if fadeOutDuration > 0 && !isFadingOut {
             startFadeOut()
         } else if !isFadingOut {
             isActive = false
-            timerLog("EXPIRY_CALLBACK_BEGIN mode=instant")
+            timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=instant")
             onTimerExpired?()
         } else {
-            timerLog("EXPIRE_IGNORED reason=fade-already-running")
+            timerLog(.event, "EXPIRE_IGNORED reason=fade-already-running")
         }
     }
 
@@ -501,7 +503,7 @@ final class SleepTimerService: ObservableObject {
         let totalSteps = Self.fadeStepCount(duration: fadeOutDuration)
         let stepInterval = fadeOutDuration / Double(totalSteps)
         var currentStep = 0
-        timerLog("FADE_STARTED steps=\(totalSteps) stepInterval=\(stepInterval)")
+        timerLog(.event, "FADE_STARTED steps=\(totalSteps) stepInterval=\(stepInterval)")
 
         let ft = Timer(timeInterval: stepInterval, repeats: true) { [weak self] timer in
             nonisolated(unsafe) let callbackTimer = timer
@@ -521,8 +523,8 @@ final class SleepTimerService: ObservableObject {
                     self.pendingFadeCompletion = true
                     self.isFadingOut = false
                     self.isActive = false
-                    self.timerLog("FADE_COMPLETED finalVolume=\(volume)")
-                    self.timerLog("EXPIRY_CALLBACK_BEGIN mode=fade")
+                    self.timerLog(.event, "FADE_COMPLETED finalVolume=\(volume)")
+                    self.timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=fade")
                     self.onTimerExpired?()
                 }
             }
