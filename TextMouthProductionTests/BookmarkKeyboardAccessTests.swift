@@ -8,10 +8,11 @@ import XCTest
 /// after each operation, its commands, and the panel as AppKit draws it.
 ///
 /// SwiftUI builds accessibility elements, and with them the labels, only
-/// for a connected assistive app, and an offscreen window takes neither
-/// keyboard focus nor keys. So the rendered tests read what AppKit draws:
-/// each row's Edit Note and Delete buttons, and the trigger view behind the
-/// one control the panel has asked VoiceOver to move to.
+/// for a connected assistive app. So the rendered tests read what AppKit
+/// draws: each row's Edit Note and Delete buttons, and the trigger view
+/// behind the one control the panel has asked VoiceOver to move to. Where
+/// keyboard navigation is on (buttons take keyboard focus only then), they
+/// also press keys in the offscreen panel and check where the reader went.
 @MainActor
 final class BookmarkKeyboardAccessTests: XCTestCase {
     // MARK: - Reader operations
@@ -401,7 +402,50 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         )
     }
 
-    // MARK: - Rendered focus requests
+    // MARK: - Rendered keyboard focus
+
+    /// Opening the panel gives the nearest bookmark's row keyboard focus, and
+    /// Return or Space there goes to that bookmark.
+    func testReturnOrSpaceGoesToTheFocusedBookmark() throws {
+        try XCTSkipUnless(NSApp.isFullKeyboardAccessEnabled, Self.keyboardNavigationOff)
+
+        for key in [KeyEquivalent.return, .space] {
+            // Opens on bookmark 2, at unit 2, offset 10.
+            let reader = try makeNavigableReader(position: ReadingPosition(chapterIndex: 1, characterOffset: 12))
+            defer { reader.close() }
+
+            try withRenderedPanel(for: reader) { hostingView in
+                letKeyboardFocusSettle(in: hostingView)
+                press(key, in: hostingView)
+
+                let wentThere = waitUntil {
+                    reader.currentChapterIndex == 1 && reader.currentCharacterOffset == 10
+                }
+                XCTAssertTrue(wentThere, "\(key == .return ? "Return" : "Space") goes to bookmark 2")
+            }
+        }
+    }
+
+    /// After the middle of three bookmarks is deleted, keyboard focus is on
+    /// the next one: Return goes to it.
+    func testAfterDeletingTheMiddleBookmarkReturnGoesToTheNextOne() throws {
+        try XCTSkipUnless(NSApp.isFullKeyboardAccessEnabled, Self.keyboardNavigationOff)
+        let reader = try makeNavigableReader()
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView)).performClick(nil)
+            XCTAssertTrue(waitUntil { reader.bookmarks.count == 2 })
+            letKeyboardFocusSettle(in: hostingView)
+
+            press(.return, in: hostingView)
+
+            let wentThere = waitUntil {
+                reader.currentChapterIndex == 2 && reader.currentCharacterOffset == 10
+            }
+            XCTAssertTrue(wentThere, "Return goes to the bookmark that followed the deleted one")
+        }
+    }
 
     /// The rendered panel opens with VoiceOver focus requested on the row of
     /// the bookmark nearest the reading position.
@@ -689,27 +733,52 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     /// with a key pressed in a window, so that the button with that keyboard
     /// shortcut can take it. Returns whether anything did.
     private func pressKeyEquivalent(_ key: KeyEquivalent, in hostingView: NSView) -> Bool {
+        guard let window = hostingView.window, let event = keyDown(key, in: window) else { return false }
+        return window.performKeyEquivalent(with: event)
+    }
+
+    /// Press `key` in the panel's window, which hands it to the control
+    /// with keyboard focus.
+    private func press(_ key: KeyEquivalent, in hostingView: NSView) {
+        guard let window = hostingView.window, let event = keyDown(key, in: window) else {
+            return XCTFail("No key-down event for \(key.character.unicodeScalars.map(\.value))")
+        }
+        window.sendEvent(event)
+    }
+
+    /// A key-down event for `key` in `window`, as the keyboard sends it; nil
+    /// for a key these tests never press.
+    private func keyDown(_ key: KeyEquivalent, in window: NSWindow) -> NSEvent? {
         // Virtual key codes of the keys these tests press.
         let keyCodes: [Character: UInt16] = [
             KeyEquivalent.return.character: 36,
             KeyEquivalent.escape.character: 53,
+            KeyEquivalent.space.character: 49,
         ]
+        guard let keyCode = keyCodes[key.character] else { return nil }
         let characters = String(key.character)
-        guard let window = hostingView.window,
-              let keyCode = keyCodes[key.character],
-              let event = NSEvent.keyEvent(
-                  with: .keyDown,
-                  location: .zero,
-                  modifierFlags: [],
-                  timestamp: ProcessInfo.processInfo.systemUptime,
-                  windowNumber: window.windowNumber,
-                  context: nil,
-                  characters: characters,
-                  charactersIgnoringModifiers: characters,
-                  isARepeat: false,
-                  keyCode: keyCode
-              ) else { return false }
-        return window.performKeyEquivalent(with: event)
+        return NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            characters: characters,
+            charactersIgnoringModifiers: characters,
+            isARepeat: false,
+            keyCode: keyCode
+        )
+    }
+
+    /// Wait for the panel to move keyboard focus to its latest request. It
+    /// waits `BookmarkPanelView.keyboardFocusDelay` for SwiftUI to draw the
+    /// target, so this waits comfortably longer.
+    private func letKeyboardFocusSettle(in hostingView: NSView) {
+        _ = waitUntil(timeout: 0.6) {
+            hostingView.layoutSubtreeIfNeeded()
+            return false
+        }
     }
 
     /// The editable text fields AppKit drew: the note field while adding or
@@ -726,6 +795,30 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         return match + (node.accessibilityChildren() ?? []).flatMap {
             accessibilityElements(labelled: label, in: $0)
         }
+    }
+
+    /// Why the keyboard tests skip on a Mac with keyboard navigation off.
+    private static let keyboardNavigationOff =
+        "Buttons take keyboard focus only with Keyboard navigation on in System Settings"
+
+    /// A reader at `position` holding three bookmarks, one in each of its
+    /// three content units at offset 10, with that content loaded so the
+    /// reader can go to them. Skips when going to a bookmark would start
+    /// playback, which no test may do.
+    private func makeNavigableReader(position: ReadingPosition? = nil) throws -> ReaderViewModel {
+        let reader = makeReader(bookmarks: makeBookmarks(count: 3), position: position)
+        guard !reader.settingsViewModel.autoPlayOnNavigate else {
+            reader.close()
+            throw XCTSkip("Going to a bookmark would start playback")
+        }
+        reader.content = DocumentContent(
+            title: "Bookmark Focus",
+            author: "Tester",
+            chapters: (1...3).map { unit in
+                Chapter(title: "Unit \(unit)", text: "The words of unit \(unit), long enough to hold a bookmark.")
+            }
+        )
+        return reader
     }
 
     /// A reader for a book holding `bookmarks`, opened at `position`.
