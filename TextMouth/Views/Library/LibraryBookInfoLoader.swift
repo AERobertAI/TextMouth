@@ -31,7 +31,10 @@ enum LibraryBookInfo {
 /// book whose file is only in the cloud (FR02): for that book it shows the
 /// metadata the library keeps. Tests replace each read.
 struct LibraryBookInfoReader: Sendable {
-    /// Whether the file at a URL is only in the cloud.
+    /// Whether the item at a URL is dataless. It is asked only of an item
+    /// that a look made with downloading switched off has found
+    /// (`LocalBookFiles.availability(of:isDataless:)`), so asking never
+    /// brings anything down from the cloud.
     var isDataless: @Sendable (URL) -> Bool
     /// Reads the metadata of the EPUB file at a URL.
     var readEPUBMetadata: @Sendable (URL) throws -> EPUBMetadata
@@ -49,16 +52,19 @@ struct LibraryBookInfoReader: Sendable {
         readAudioMetadata: { await AudioPlaybackService.extractFullMetadata(from: $0) }
     )
 
-    /// What Book Info shows for `book`, with every read of its file made off
-    /// the main thread. The library's own edits are laid over what the file
-    /// says, as the editors expect.
+    /// What Book Info shows for `book`, with every look at its files and
+    /// every read of them made off the main thread. The library's own edits
+    /// are laid over what the file says, as the editors expect.
     @MainActor
     func info(for book: Book) async -> LibraryBookInfo {
         let file = book.bookFileURL
+        let cloudChecked = Self.cloudCheckedItems(of: book)
         let reader = self
         switch book.format {
         case .epub:
-            let read = await Task.detached(priority: .userInitiated) { reader.readEPUB(at: file) }.value
+            let read = await Task.detached(priority: .userInitiated) {
+                reader.readEPUB(at: file, unlessInCloud: cloudChecked)
+            }.value
             switch read {
             case .metadata(let metadata):
                 return .epub(book.mergingEditableEPUBMetadata(metadata), isCloudOnly: false)
@@ -68,7 +74,7 @@ struct LibraryBookInfoReader: Sendable {
                 return .simple
             }
         case .audio:
-            let isCloudOnly = await Task.detached(priority: .userInitiated) { reader.isDataless(file) }.value
+            let isCloudOnly = await Task.detached(priority: .userInitiated) { reader.isAnyInCloud(cloudChecked) }.value
             if isCloudOnly {
                 return .audio(book.storedAudioMetadata, isCloudOnly: true)
             }
@@ -89,17 +95,43 @@ struct LibraryBookInfoReader: Sendable {
         case unreadable
     }
 
+    /// The items that decide whether `book`'s file is only in the cloud, in
+    /// the order they are looked at: the package holding the file, when the
+    /// book has one, and then the file. iCloud Drive evicts a package as one
+    /// item, leaving the package's folder dataless, and a look at the file
+    /// inside it with downloading allowed brings the whole book back down
+    /// (board #624); a sync service that syncs each file evicts the file on
+    /// its own. A file outside its package, as an old book's can be, is
+    /// judged by itself alone.
+    private static func cloudCheckedItems(of book: Book) -> [URL] {
+        let file = book.bookFileURL
+        let package = BookPackage(book)
+        guard package.isPackage, MaintenanceFileAccess.isItem(file, inside: package.url) else { return [file] }
+        return [package.url, file]
+    }
+
+    /// Whether any of `items` is only in the cloud, each looked at with one
+    /// lstat(2) made with downloading switched off, as the reader looks at a
+    /// chapter's files (`LocalBookFiles.availability(of:isDataless:)`): a
+    /// look through a folder only in the cloud is refused at once and counts
+    /// as in the cloud, and nothing is ever brought down to answer. Looks on
+    /// the calling thread, which must not be the main thread.
+    private func isAnyInCloud(_ items: [URL]) -> Bool {
+        items.contains { LocalBookFiles.availability(of: $0, isDataless: isDataless) == .inCloud }
+    }
+
     /// Reads the metadata of the EPUB at `file` on the calling thread,
-    /// unless the file is only in the cloud. A file evicted after the check
-    /// counts as only in the cloud too.
-    private func readEPUB(at file: URL) -> EPUBRead {
-        if isDataless(file) {
+    /// unless any of `cloudChecked` (`cloudCheckedItems(of:)`) is only in the
+    /// cloud. A file evicted after the check counts as only in the cloud
+    /// too.
+    private func readEPUB(at file: URL, unlessInCloud cloudChecked: [URL]) -> EPUBRead {
+        if isAnyInCloud(cloudChecked) {
             return .onlyInCloud
         }
         do {
             return .metadata(try readEPUBMetadata(file))
         } catch {
-            return DatalessFiles.isDownloadRefusal(error) || isDataless(file) ? .onlyInCloud : .unreadable
+            return DatalessFiles.isDownloadRefusal(error) || isAnyInCloud(cloudChecked) ? .onlyInCloud : .unreadable
         }
     }
 }
