@@ -42,9 +42,7 @@ extension LibraryViewModel {
             } else if ext == "zip" {
                 importZipAsync(from: url, toFolder: "")
             } else {
-                for source in Self.importSources(for: url) {
-                    importSingleFileAsync(from: source, toFolder: "", openAfterImport: true)
-                }
+                importBooks(in: url, toFolder: "", openAfterImport: true)
             }
         }
     }
@@ -59,6 +57,14 @@ extension LibraryViewModel {
     nonisolated static func importSources(for url: URL) -> [URL] {
         let packageFiles = DAISYParser.packageEntryPoints(in: url)
         return packageFiles.count > 1 ? packageFiles : [url]
+    }
+
+    /// Imports `item`, one item chosen or opened, as the book or books it
+    /// holds (`importSources(for:)`), each on the import queue.
+    private func importBooks(in item: URL, toFolder folderPath: String, openAfterImport: Bool = false) {
+        for source in Self.importSources(for: item) {
+            importSingleFileAsync(from: source, toFolder: folderPath, openAfterImport: openAfterImport)
+        }
     }
 
     // MARK: - TMB Package Opening
@@ -344,9 +350,7 @@ extension LibraryViewModel {
             if ext == "zip" {
                 importZipAsync(from: url, toFolder: folderPath)
             } else {
-                for source in Self.importSources(for: url) {
-                    importSingleFileAsync(from: source, toFolder: folderPath)
-                }
+                importBooks(in: url, toFolder: folderPath)
             }
         }
     }
