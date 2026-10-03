@@ -68,6 +68,8 @@ TextMouth was measured against a library the size of its developer's on October 
   - Each substitution rule, the punctuation pauses, and the repeated symbols are applied in one pass through a chapter, so even a chapter as long as a whole book starts without a pause that grew with its length.
   - Each chapter's speech is prepared once, and used again for as long as everything it was prepared from stays the same: the chapter's text, its skipped sections, the substitution rules, the repeated-symbol settings, and the punctuation pause level. Changing the speed or pitch prepares nothing again, and the next chapter starts with the speech prepared for it while the chapter before it played.
   - A coming chapter too long to render ahead has its speech prepared in the background meanwhile.
+- Audiobooks:
+  - In an audiobook whose chapters are files of their own, each chapter follows the one before without the short silence of starting the player again. Where playback may have to stop or wait, it does so as before: at the book's last chapter, while this book's sleep timer is set for the end of the document, and before a chapter whose file is only in the cloud, which downloads first.
 - Memory:
   - The audio rendered for a chapter takes half the memory it did, and far less while it is being made. It is handed to the player a few seconds at a time, so a seek within the chapter prepares only the few seconds it is about to play.
   - macOS keeps a closed window for the rest of the session. A closed reader window now lets go of its book's text, headings, and audio, and a closed Library window stops drawing its list until it is shown again.
