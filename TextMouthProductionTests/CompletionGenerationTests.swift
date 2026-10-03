@@ -407,13 +407,166 @@ final class CompletionGenerationTests: XCTestCase {
         speech.onUtteranceFinished = { finishedCount += 1 }
 
         speech.speechSynthesizer(AVSpeechSynthesizer(), didFinish: AVSpeechUtterance(string: "Already stopped."))
-        // The finish is handled on the main queue; a block queued after it
-        // runs only once it has been.
-        var handled = false
-        DispatchQueue.main.async { handled = true }
-        XCTAssertTrue(eventually { handled }, "The finish was never handled")
+        handleQueuedCallbacks()
 
         XCTAssertEqual(finishedCount, 0)
+    }
+
+    // MARK: - The Speech Service's Other Synthesizer Callbacks
+
+    /// A word reported for the utterance speaking moves the cursor to the
+    /// word's place in the whole text, counted from where that utterance
+    /// starts. A word reported for another utterance, such as one a seek
+    /// stopped, moves nothing, and neither does a word of the utterance
+    /// speaking when a seek replaces it before the word is handled.
+    func testAWordMovesTheCursorOnlyForTheUtteranceSpeaking() {
+        let live = AVSpeechUtterance(string: "Mooring lines are fast.")
+        let speech = makeDirectSpeech(speaking: live, from: 100)
+        defer { speech.stop() }
+        var words: [String] = []
+        speech.onWordSpoken = { _, word in words.append(word) }
+
+        speech.speechSynthesizer(
+            AVSpeechSynthesizer(),
+            willSpeakRangeOfSpeechString: NSRange(location: 0, length: 4),
+            utterance: AVSpeechUtterance(string: "Cast off.")
+        )
+        handleQueuedCallbacks()
+        XCTAssertEqual(words, [])
+        XCTAssertNil(speech.currentWordRange)
+
+        speech.speechSynthesizer(
+            AVSpeechSynthesizer(),
+            willSpeakRangeOfSpeechString: NSRange(location: 8, length: 5),
+            utterance: live
+        )
+        handleQueuedCallbacks()
+        XCTAssertEqual(words, ["lines"])
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 108, length: 5))
+
+        speech.speechSynthesizer(
+            AVSpeechSynthesizer(),
+            willSpeakRangeOfSpeechString: NSRange(location: 18, length: 4),
+            utterance: live
+        )
+        speech._adoptLiveDirectUtteranceForTesting(AVSpeechUtterance(string: "Fenders out."), baseOffset: 300)
+        handleQueuedCallbacks()
+        XCTAssertEqual(words, ["lines"])
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 108, length: 5))
+    }
+
+    /// The start of the utterance speaking marks speech as playing and not
+    /// paused; the start of another utterance changes nothing.
+    func testAStartCountsOnlyForTheUtteranceSpeaking() {
+        let live = AVSpeechUtterance(string: "Mooring lines are fast.")
+        let speech = makeDirectSpeech(speaking: live)
+        // Stopped at once: a started utterance arms the direct-speech
+        // watchdog, which would look at the idle synthesizer in a second.
+        defer { speech.stop() }
+        speech.isSpeaking = false
+        speech.isPaused = true
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didStart: AVSpeechUtterance(string: "Cast off."))
+        handleQueuedCallbacks()
+        XCTAssertFalse(speech.isSpeaking)
+        XCTAssertTrue(speech.isPaused)
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didStart: live)
+        handleQueuedCallbacks()
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+    }
+
+    /// A pause of the utterance speaking marks speech as paused; a pause of
+    /// another utterance changes nothing.
+    func testAPauseCountsOnlyForTheUtteranceSpeaking() {
+        let live = AVSpeechUtterance(string: "Mooring lines are fast.")
+        let speech = makeDirectSpeech(speaking: live)
+        defer { speech.stop() }
+        speech.isSpeaking = true
+        speech.isPaused = false
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didPause: AVSpeechUtterance(string: "Cast off."))
+        handleQueuedCallbacks()
+        XCTAssertFalse(speech.isPaused)
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didPause: live)
+        handleQueuedCallbacks()
+        XCTAssertTrue(speech.isPaused)
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
+    /// The utterance speaking, continued after a pause, marks speech as no
+    /// longer paused; another utterance continuing changes nothing.
+    func testAContinueCountsOnlyForTheUtteranceSpeaking() {
+        let live = AVSpeechUtterance(string: "Mooring lines are fast.")
+        let speech = makeDirectSpeech(speaking: live)
+        defer { speech.stop() }
+        speech.isSpeaking = true
+        speech.isPaused = true
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didContinue: AVSpeechUtterance(string: "Cast off."))
+        handleQueuedCallbacks()
+        XCTAssertTrue(speech.isPaused)
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didContinue: live)
+        handleQueuedCallbacks()
+        XCTAssertFalse(speech.isPaused)
+        XCTAssertTrue(speech.isSpeaking)
+    }
+
+    /// The utterance speaking, cancelled while speech should be playing, is
+    /// logged as an unexpected cancel, which the direct-speech watchdog looks
+    /// into; another utterance's cancel, such as one a seek stopped, is
+    /// expected. Neither ends the chapter or changes whether speech plays.
+    func testACancelIsUnexpectedOnlyForTheUtteranceSpeaking() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        // The expected cancel is a trace line.
+        setAppTracing(true)
+        let live = AVSpeechUtterance(string: "Mooring lines are fast.")
+        let speech = makeDirectSpeech(speaking: live)
+        defer { speech.stop() }
+        var finishedCount = 0
+        speech.onUtteranceFinished = { finishedCount += 1 }
+        speech.isSpeaking = true
+        speech.isPaused = false
+
+        let staleLines = logLines(in: .speechTransitions) {
+            speech.speechSynthesizer(AVSpeechSynthesizer(), didCancel: AVSpeechUtterance(string: "Cast off."))
+            handleQueuedCallbacks()
+        }
+        let liveLines = logLines(in: .speechTransitions) {
+            speech.speechSynthesizer(AVSpeechSynthesizer(), didCancel: live)
+            handleQueuedCallbacks()
+        }
+
+        XCTAssertTrue(
+            staleLines.contains { $0.contains("DIRECT_CANCEL_EXPECTED:") && $0.contains("current=false") },
+            "\(staleLines)"
+        )
+        XCTAssertFalse(staleLines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED") }, "\(staleLines)")
+        XCTAssertTrue(liveLines.contains { $0.contains("DIRECT_CANCEL_UNEXPECTED:") }, "\(liveLines)")
+        XCTAssertEqual(finishedCount, 0)
+        XCTAssertTrue(speech.isSpeaking)
+        XCTAssertFalse(speech.isPaused)
+    }
+
+    /// A speech service with preferences of its own, speaking `live` directly
+    /// from `baseOffset` of its text as far as its callbacks can tell, though
+    /// nothing is heard (`_adoptLiveDirectUtteranceForTesting`).
+    private func makeDirectSpeech(speaking live: AVSpeechUtterance, from baseOffset: Int = 0) -> SpeechService {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("synthesizer-callbacks"))
+        speech._adoptLiveDirectUtteranceForTesting(live, baseOffset: baseOffset)
+        return speech
+    }
+
+    /// Returns once the main queue has run every block queued on it so far:
+    /// the speech service handles each of the synthesizer's callbacks there,
+    /// and a block queued after a callback runs only once it has been.
+    private func handleQueuedCallbacks(file: StaticString = #filePath, line: UInt = #line) {
+        var handled = false
+        DispatchQueue.main.async { handled = true }
+        XCTAssertTrue(eventually { handled }, "The callbacks were never handled", file: file, line: line)
     }
 
     // MARK: - End Notice Policy

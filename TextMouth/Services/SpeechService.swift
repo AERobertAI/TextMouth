@@ -1285,6 +1285,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return 0.5
     }
 
+    // MARK: - Test Support
+
+    /// Makes `utterance` the live direct utterance, as `speakDirect` does
+    /// just before it hands one to the synthesizer, without handing it over,
+    /// so hosted tests can deliver the synthesizer's callbacks for it, and
+    /// for utterances that are not live, without a sound. Speech counts as
+    /// direct, and the ranges the synthesizer reports for `utterance` count
+    /// from `baseOffset`. The text being spoken is left as it was, empty for
+    /// a new service, so even a recovery by the direct-speech watchdog,
+    /// which a started utterance arms, would speak nothing.
+    func _adoptLiveDirectUtteranceForTesting(_ utterance: AVSpeechUtterance, baseOffset: Int = 0) {
+        usingDirectMode = true
+        directModeBaseOffset = baseOffset
+        liveDirectUtterance = utterance
+    }
+
     deinit {
         stop()
     }
