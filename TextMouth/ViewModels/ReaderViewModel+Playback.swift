@@ -276,7 +276,8 @@ extension ReaderViewModel {
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
         } else {
-            speechService.audioEngine.restoreVolume()
+            // Speech that never made its engine has no volume to restore.
+            speechService.restoreEngineVolume()
         }
         // Cancel the timer after playback is stopped. Its fade-cancellation
         // callback can now restore volume without briefly restarting direct

@@ -462,7 +462,32 @@ enum VoiceWarmUp {
 /// reading any of it (see the delegate extension), its timers run on the
 /// main run loop, and the position queue works only on a copy of the text.
 final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
-    let audioEngine = AudioEngineService()
+    /// The engine that renders speech and plays the rendered audio, made the
+    /// first time speech needs one: its first render, or the first chapter
+    /// it plays from audio rendered ahead (PERF08). The first engine of a
+    /// session cost 142 ms, and 2.5 s with the audio system cold, which every
+    /// reader paid as it opened, even an audiobook's, which never speaks a
+    /// chapter. Nil until then: whatever only asks about the engine reads
+    /// this, and never makes one.
+    private var madeAudioEngine: AudioEngineService?
+
+    /// The speech engine, made now if speech has not needed one yet. Only
+    /// what needs an engine reads this: a render, rendered playback, and the
+    /// tests.
+    var audioEngine: AudioEngineService {
+        if let madeAudioEngine { return madeAudioEngine }
+        let engine = AudioEngineService()
+        engine.onPlaybackFinished = { [weak self] in
+            self?.handleEngineFinished()
+        }
+        madeAudioEngine = engine
+        return engine
+    }
+
+    /// Whether speech has made its engine yet (`audioEngine`).
+    var hasAudioEngine: Bool {
+        madeAudioEngine != nil
+    }
 
     /// Fallback direct synthesizer
     private let directSynth = AVSpeechSynthesizer()
@@ -511,8 +536,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
             // persist global defaults; per-book overrides must stay local.
-            if !usingDirectMode && audioEngine.isPlaying {
-                audioEngine.setSpeed(wpm: wordsPerMinute)
+            if !usingDirectMode, let engine = madeAudioEngine, engine.isPlaying {
+                engine.setSpeed(wpm: wordsPerMinute)
             }
         }
     }
@@ -520,8 +545,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var pitchMultiplier: Double = 1.0 {
         didSet {
             // Applying a book's pitch must not overwrite the global setting.
-            if !usingDirectMode && (audioEngine.isPlaying || audioEngine.isPaused) {
-                audioEngine.setPitch(multiplier: pitchMultiplier)
+            if !usingDirectMode, let engine = madeAudioEngine, engine.isPlaying || engine.isPaused {
+                engine.setPitch(multiplier: pitchMultiplier)
             }
         }
     }
@@ -529,8 +554,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var onWordSpoken: ((NSRange, String) -> Void)?
     var onUtteranceFinished: (() -> Void)?
 
-    /// The full text currently being spoken
-    private var currentText: String = ""
+    /// The full text currently being spoken, kept after a stop for a later
+    /// seek or resume until `releaseSpeech()`. Readable outside this class
+    /// so tests can tell that it was let go.
+    private(set) var currentText: String = ""
 
     /// Whether the engine holds audio rendered from exactly the text being
     /// spoken, in the voice chosen now.
@@ -544,7 +571,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// ends, since switching mid-playback is never seamless.
     private var renderedAudioMatchesSpeech: Bool {
         // Most direct speech has no rendered audio yet; skip hashing the text.
-        guard let rendered = audioEngine.renderedSignature else { return false }
+        guard let rendered = madeAudioEngine?.renderedSignature else { return false }
         return rendered == SpeechRenderSignature(text: currentText, voiceIdentifier: currentVoice?.identifier)
     }
 
@@ -640,10 +667,6 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         NotificationCenter.default.publisher(for: .speechSettingsChanged)
             .sink { [weak self] _ in self?.reloadSettings() }
             .store(in: &settingsCancellables)
-
-        audioEngine.onPlaybackFinished = { [weak self] in
-            self?.handleEngineFinished()
-        }
     }
 
     /// Re-reads the global speech defaults after Settings changes them,
@@ -705,7 +728,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // buffer for ordinary pause/resume flows. This call begins unrelated
         // text, so keeping that buffer would let seek/resume play audio from
         // the previous chapter when the new text is too large to render.
-        if audioEngine.discardRenderedAudio() {
+        if madeAudioEngine?.discardRenderedAudio() == true {
             transitionLog(.trace, "RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
         }
         currentText = text
@@ -1028,7 +1051,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         }
 
         if !usingDirectMode {
-            audioEngine.setVolume(volume)
+            madeAudioEngine?.setVolume(volume)
         }
     }
 
@@ -1086,7 +1109,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// Restore normal-volume direct speech when a running fade is cancelled.
     /// Rendered playback only needs its mixer volume restored.
     func cancelSleepTimerFade() {
-        audioEngine.restoreVolume()
+        madeAudioEngine?.restoreVolume()
         guard isDirectSleepFadeActive else { return }
 
         let offset = max(
@@ -1123,8 +1146,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // later resume recreates normal-volume speech at this cursor.
         } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
-        } else if audioEngine.isPlaying {
-            audioEngine.pause()
+        } else if let engine = madeAudioEngine, engine.isPlaying {
+            engine.pause()
         }
         // Always set isPaused — even if engine hasn't started yet (still rendering)
         // The render completion checks isPaused before starting playback
@@ -1139,7 +1162,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// final full-volume tail.
     func pauseForSleepTimerFadeCompletion() {
         defer {
-            audioEngine.restoreVolume()
+            madeAudioEngine?.restoreVolume()
         }
 
         guard isSpeaking && !isPaused else { return }
@@ -1148,8 +1171,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // The helper stopped the fade queue before engine volume is reset.
         } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
-        } else if audioEngine.isPlaying || audioEngine.isPaused {
-            let offset = audioEngine.stopAfterFadePreservingPosition()
+        } else if let engine = madeAudioEngine, engine.isPlaying || engine.isPaused {
+            let offset = engine.stopAfterFadePreservingPosition()
             currentWordRange = NSRange(location: offset, length: 0)
         }
 
@@ -1164,7 +1187,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     func resume() -> Bool {
         guard isPaused else { return false }
 
-        let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
+        let offset = currentWordRange?.location ?? madeAudioEngine?.currentCharOffset() ?? 0
         let action = SpeechResumePolicy.action(
             usingDirectMode: usingDirectMode,
             pendingDirectSeekOffset: pendingDirectSeekOffset,
@@ -1172,8 +1195,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // audio is never switched to. A paused engine resumes its own
             // audio whatever this says.
             engineHasRenderedAudio: renderedAudioMatchesSpeech,
-            engineIsPaused: audioEngine.isPaused,
-            engineIsPlaying: audioEngine.isPlaying,
+            engineIsPaused: madeAudioEngine?.isPaused ?? false,
+            engineIsPlaying: madeAudioEngine?.isPlaying ?? false,
             directSynthIsPaused: directSynth.isPaused,
             currentOffset: offset,
             hasText: !currentText.isEmpty
@@ -1268,8 +1291,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopDirectSynthesizer()
         // Cancel any in-progress background render so it doesn't compete
         // with the next direct-mode TTS for system resources
-        audioEngine.cancelRender()
-        audioEngine.stop()
+        madeAudioEngine?.cancelRender()
+        madeAudioEngine?.stop()
         isSpeaking = false
         isPaused = false
         currentWordRange = nil
@@ -1285,6 +1308,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return isSpeaking || isPaused
     }
 
+    /// Restore the speech engine's full volume after a sleep-timer fade;
+    /// speech that never made an engine has no volume to restore.
+    func restoreEngineVolume() {
+        madeAudioEngine?.restoreVolume()
+    }
+
+    /// Stop, then let go of what a stopped speech service keeps for a later
+    /// seek or resume: the text it was speaking and the engine's rendered
+    /// audio, without making an engine to do it. For a reader that has
+    /// closed, whose window SwiftUI may keep alive (PERF27).
+    func releaseSpeech() {
+        stop()
+        currentText = ""
+        madeAudioEngine?.discardRenderedAudio()
+    }
+
     /// Start playback using a pre-rendered AudioEngineService (for seamless chapter transitions).
     /// Swaps the pre-rendered engine in and starts playing immediately — no direct mode, no rendering delay.
     /// The caller has checked that `preEngine` holds audio rendered from exactly
@@ -1295,8 +1334,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         currentText = text
         renderGeneration += 1
 
-        // Swap the pre-rendered engine's buffers into our engine
-        // We can't swap the engine object itself since it's a let, so copy the rendered data
+        // Move the pre-rendered engine's audio into this service's engine,
+        // which is made now if speech has not needed one before, and which
+        // keeps its own volume, speed, and pitch.
         audioEngine.adoptRenderedAudio(from: preEngine)
 
         isSpeaking = true
@@ -1350,10 +1390,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 // before the voice changed: restart direct speech here.
                 speakDirect(currentText, fromCharOffset: offset)
             }
-        } else if audioEngine.hasRenderedAudio {
+        } else if let engine = madeAudioEngine, engine.hasRenderedAudio {
             // Rendered audio is the backend already: seek within it.
-            audioEngine.seek(toCharOffset: offset)
-            if audioEngine.isPlaying {
+            engine.seek(toCharOffset: offset)
+            if engine.isPlaying {
                 startPositionTracking()
             }
         }
@@ -1391,7 +1431,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         if usingDirectMode {
             return currentWordRange?.location ?? 0
         }
-        return audioEngine.currentCharOffset()
+        return madeAudioEngine?.currentCharOffset() ?? 0
     }
 
     /// Background queue for position tracking string operations.
@@ -1412,11 +1452,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopPositionTracking()
         let myGeneration = positionGeneration
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, !self.usingDirectMode,
-                  self.audioEngine.isPlaying || self.audioEngine.isPaused else { return }
+            guard let self = self, !self.usingDirectMode, let engine = self.madeAudioEngine,
+                  engine.isPlaying || engine.isPaused else { return }
             // currentCharOffset() reads the audio node's render time,
             // which is safe from the main thread (the timer's thread)
-            let offset = self.audioEngine.currentCharOffset()
+            let offset = engine.currentCharOffset()
             let range = NSRange(location: offset, length: 1)
             // Capture the text for background processing. The text
             // doesn't change during playback so this reference is safe.
