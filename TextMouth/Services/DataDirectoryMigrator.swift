@@ -101,6 +101,31 @@ extension DataDirectoryLocation {
         self.init(named: named, real: Self.resolve(named, fileManager: fileManager))
     }
 
+    /// Whether `path` is this location's folder or inside it, spelled under
+    /// its name or, when that name is a link, under the folder it leads to.
+    func contains(_ path: String) -> Bool {
+        spelling(of: path) != nil
+    }
+
+    /// `path` at the same place inside `destination`, when it is inside this
+    /// location (see `contains(_:)`); nil for a path anywhere else. A data
+    /// directory move gives each book this path in the copy, and work that
+    /// captured a path before a move publishes moves it the same way
+    /// (TODO S04).
+    func relocating(_ path: String, to destination: URL) -> String? {
+        guard let spelling = spelling(of: path) else { return nil }
+        return destination.path + String(path.dropFirst(spelling.count))
+    }
+
+    /// The spelling of this location that `path` starts with: its name, or
+    /// the real folder that name leads to. A book's path spells the data
+    /// directory as the preferences name it, or, when that name is a link,
+    /// perhaps as the folder it leads to.
+    private func spelling(of path: String) -> String? {
+        let spellings = named.path == real.path ? [named.path] : [named.path, real.path]
+        return spellings.first { path == $0 || path.hasPrefix($0 + "/") }
+    }
+
     /// Foundation does not reliably resolve a symlink ancestor when the final
     /// destination does not exist yet. Resolve its closest existing ancestor,
     /// then reattach the missing path components (TODO F20).
@@ -369,16 +394,10 @@ enum DataDirectoryMigrator {
         fileManager: FileManager
     ) throws -> Library {
         let destinationPath = destination.named.path
-        // A book's path spells the data directory as the preferences name
-        // it, or, when that name is a link, perhaps as the folder it leads to.
-        let sourcePaths = source.named.path == source.real.path
-            ? [source.named.path]
-            : [source.named.path, source.real.path]
         var migratedLibrary = library
         for index in migratedLibrary.books.indices {
-            let oldPath = migratedLibrary.books[index].filePath
-            if let sourcePath = sourcePaths.first(where: { oldPath == $0 || oldPath.hasPrefix($0 + "/") }) {
-                migratedLibrary.books[index].filePath = destinationPath + String(oldPath.dropFirst(sourcePath.count))
+            if let moved = source.relocating(migratedLibrary.books[index].filePath, to: destination.named) {
+                migratedLibrary.books[index].filePath = moved
             }
 
             let stagedBookPath = staging.path + String(

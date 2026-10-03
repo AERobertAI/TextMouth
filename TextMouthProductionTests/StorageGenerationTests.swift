@@ -85,4 +85,32 @@ final class StorageGenerationTests: XCTestCase {
         XCTAssertEqual(boundary.current, back)
         XCTAssertNotEqual(back, start, "returning to a root is a new generation")
     }
+
+    // MARK: - Relocating Paths
+
+    /// A path inside a location keeps its place inside the destination,
+    /// whether it spells the location by its name or by the folder a link
+    /// leads to; a path elsewhere, even one beginning with the same letters,
+    /// is not inside it and is not moved.
+    func testAPathKeepsItsPlaceInsideTheNewLocation() {
+        let linked = DataDirectoryLocation(
+            named: URL(fileURLWithPath: "/Users/reader/Data", isDirectory: true),
+            real: URL(fileURLWithPath: "/Volumes/Archive/.TextMouth", isDirectory: true)
+        )
+        let destination = URL(fileURLWithPath: "/Volumes/New/.TextMouth", isDirectory: true)
+
+        XCTAssertEqual(
+            linked.relocating("/Users/reader/Data/Library/Shelf/A.tmb/a.txt", to: destination),
+            "/Volumes/New/.TextMouth/Library/Shelf/A.tmb/a.txt"
+        )
+        XCTAssertEqual(
+            linked.relocating("/Volumes/Archive/.TextMouth/Library/A.tmb/a.txt", to: destination),
+            "/Volumes/New/.TextMouth/Library/A.tmb/a.txt"
+        )
+        XCTAssertEqual(linked.relocating("/Users/reader/Data", to: destination), "/Volumes/New/.TextMouth")
+        XCTAssertNil(linked.relocating("/Users/reader/Database/a.txt", to: destination))
+        XCTAssertNil(linked.relocating("/Users/reader/Books/a.txt", to: destination))
+        XCTAssertTrue(linked.contains("/Volumes/Archive/.TextMouth/library.json"))
+        XCTAssertFalse(linked.contains("/Volumes/Archive/.TextMouthOld/library.json"))
+    }
 }
