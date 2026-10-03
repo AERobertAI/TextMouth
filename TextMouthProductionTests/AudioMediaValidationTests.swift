@@ -468,8 +468,9 @@ final class AudioMediaValidationTests: XCTestCase {
     }
 
     /// Sections may overlap: a later heading can start inside an earlier
-    /// one, as the DAISY converter produces when navigation moves between
-    /// files. Both keep their own ranges.
+    /// one, as in books the DAISY converter made, before a heading could
+    /// play several clips, where navigation moves between files. Both keep
+    /// their own ranges.
     func testOverlappingSectionsInOneFileAreAccepted() async throws {
         try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
         try writeManifest(sections: [

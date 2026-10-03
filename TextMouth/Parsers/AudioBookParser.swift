@@ -356,11 +356,12 @@ enum AudioBookParser {
     ///   reading order never goes back within a file, so a section that
     ///   does was timed against other audio or names the wrong file, and
     ///   the listener would hear the book out of order. Sections may
-    ///   overlap, though: the DAISY converter ends a heading at the last
-    ///   clip of its file in its SMIL file when the next heading plays from
-    ///   another file, so a later heading in the first file can start
-    ///   inside it. Overlap repeats audio but never loses any, and refusing
-    ///   it would refuse such books. The later clips of a section are not
+    ///   overlap, though: books converted from DAISY before a heading could
+    ///   play several clips end a heading at the last clip of its file in
+    ///   its SMIL file when the next heading plays from another file, so a
+    ///   later heading in the first file can start inside it. Overlap
+    ///   repeats audio but never loses any, and refusing it would refuse
+    ///   such books. The later clips of a section are not
     ///   compared: a section may return to an earlier part of a file, as a
     ///   note recorded at the end of a file interrupts the text before it.
     private static func boundedSegments(
