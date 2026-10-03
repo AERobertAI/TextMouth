@@ -3,11 +3,12 @@ import XCTest
 
 /// A Word document keeps its structure in the reading TextMouth makes of it
 /// (TODO T05): list levels are matched by their identity, with their start
-/// values, restart rules, and per-instance overrides, and list items nest
-/// so that each is heard once, apart from the text around it, with no
-/// bullet or number read as a word. Each test builds a minimal DOCX package
-/// in memory and reads it through `DOCXParser`, the path every import
-/// takes, or parses one part with its production parser.
+/// values, restart rules, and per-instance overrides; list items nest so
+/// that each is heard once, apart from the text around it, with no bullet
+/// or number read as a word; and styles inherit heading levels through
+/// their `w:basedOn` chains. Each test builds a minimal DOCX package in
+/// memory and reads it through `DOCXParser`, the path every import takes,
+/// or parses one part with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -627,6 +628,132 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(reading.spoken, "Penultimate\n\nLast\n\nBeyond")
     }
 
+    // MARK: - Style Inheritance
+
+    /// Word's built-in heading styles as Word writes them: each names its
+    /// heading level and outline level, based on Normal.
+    private static let headingStyles = """
+    <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+    <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:outlineLvl w:val="0"/></w:pPr></w:style>
+    <w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:outlineLvl w:val="1"/></w:pPr></w:style>
+    <w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:outlineLvl w:val="2"/></w:pPr></w:style>
+    """
+
+    /// A custom style based on Heading 2, which says nothing about headings
+    /// itself, inherits Heading 2's level: its paragraphs are level-2
+    /// headings in the Markdown and in the heading list.
+    func testStyleBasedOnAHeadingIsAHeadingOfThatLevel() throws {
+        let reading = try read(body: [
+            Self.paragraph("Tyre Repair", style: "Heading1"),
+            Self.paragraph("Find the puncture", style: "RepairStep"),
+            Self.paragraph("Pump the tube and listen for the hiss."),
+            Self.paragraph("Patch the tube", style: "RepairStep")
+        ], styles: Self.headingStyles + """
+        <w:style w:type="paragraph" w:customStyle="1" w:styleId="RepairStep">
+        <w:name w:val="Repair Step"/><w:basedOn w:val="Heading2"/></w:style>
+        """)
+
+        XCTAssertEqual(reading.headings, ["1 Tyre Repair", "2 Find the puncture", "2 Patch the tube"])
+        XCTAssertTrue(reading.markdown.contains("\n## Find the puncture\n"), reading.markdown)
+        XCTAssertEqual(reading.spoken, """
+        Tyre Repair
+
+        Find the puncture
+
+        Pump the tube and listen for the hiss.
+
+        Patch the tube
+        """)
+    }
+
+    /// A chain of styles inherits from the nearest style that says whether
+    /// it is a heading, however the part orders the definitions; here every
+    /// style is defined before the style it is based on.
+    func testHeadingLevelsFollowChainsInAnyOrder() throws {
+        let styles = try Self.styles("""
+        <w:style w:type="paragraph" w:styleId="StepDetail"><w:name w:val="Step Detail"/><w:basedOn w:val="Step"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Step"><w:name w:val="Step"/><w:basedOn w:val="Phase"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Phase"><w:name w:val="Phase"/><w:basedOn w:val="Heading3"/></w:style>
+        """ + Self.headingStyles)
+
+        XCTAssertEqual(styles.headingLevels["Phase"], 3)
+        XCTAssertEqual(styles.headingLevels["Step"], 3)
+        XCTAssertEqual(styles.headingLevels["StepDetail"], 3)
+        XCTAssertNil(styles.headingLevels["Normal"])
+    }
+
+    /// What a style declares itself wins over what it would inherit: its own
+    /// outline level, including 9 (body text), and its own heading name.
+    func testOwnDeclarationWinsOverInheritance() throws {
+        let styles = try Self.styles(Self.headingStyles + """
+        <w:style w:type="paragraph" w:styleId="Aside"><w:name w:val="Aside"/><w:basedOn w:val="Heading1"/>
+        <w:pPr><w:outlineLvl w:val="9"/></w:pPr></w:style>
+        <w:style w:type="paragraph" w:styleId="PartTitle"><w:name w:val="Part Title"/><w:basedOn w:val="Heading1"/>
+        <w:pPr><w:outlineLvl w:val="1"/></w:pPr></w:style>
+        <w:style w:type="paragraph" w:styleId="Heading4"><w:name w:val="heading 4"/><w:basedOn w:val="Heading1"/></w:style>
+        """)
+
+        XCTAssertNil(styles.headingLevels["Aside"])
+        XCTAssertEqual(styles.headingLevels["PartTitle"], 2)
+        XCTAssertEqual(styles.headingLevels["Heading4"], 4)
+    }
+
+    /// A chain that loops back on itself, or reaches a style the part does
+    /// not define, gives no heading level and never hangs. A heading style
+    /// on the loop still gives its level to the styles based on it.
+    func testBasedOnLoopsAndMissingStylesEndInheritance() throws {
+        let styles = try Self.styles("""
+        <w:style w:type="paragraph" w:styleId="Left"><w:name w:val="Left"/><w:basedOn w:val="Right"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Right"><w:name w:val="Right"/><w:basedOn w:val="Left"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Mirror"><w:name w:val="Mirror"/><w:basedOn w:val="Mirror"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Orphan"><w:name w:val="Orphan"/><w:basedOn w:val="Missing"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Lean"><w:name w:val="Lean"/><w:basedOn w:val="Left"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Upper"><w:name w:val="Upper"/><w:basedOn w:val="Heading2"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Upper"/></w:style>
+        """)
+
+        for styleId in ["Left", "Right", "Mirror", "Orphan", "Lean"] {
+            XCTAssertNil(styles.headingLevels[styleId], styleId)
+        }
+        XCTAssertEqual(styles.headingLevels["Heading2"], 2)
+        XCTAssertEqual(styles.headingLevels["Upper"], 2)
+    }
+
+    /// A chain thousands of styles long resolves completely, every style on
+    /// it a heading of its root's level, without recursing once per style.
+    func testLongBasedOnChainResolves() throws {
+        let count = 5_000
+        let chain = (1...count).map { index in
+            "<w:style w:type=\"paragraph\" w:styleId=\"S\(index)\"><w:name w:val=\"S\(index)\"/>"
+                + "<w:basedOn w:val=\"S\(index - 1)\"/></w:style>"
+        }.joined(separator: "\n")
+        let styles = try Self.styles("""
+        <w:style w:type="paragraph" w:styleId="S0"><w:name w:val="S0"/><w:basedOn w:val="Heading3"/></w:style>
+        \(chain)
+        """ + Self.headingStyles)
+
+        XCTAssertEqual(styles.headingLevels["S\(count)"], 3)
+        XCTAssertEqual(styles.headingLevels.count, count + 4)
+    }
+
+    /// A style without an ID can be named by no paragraph. Its heading or
+    /// list role must not pass to the paragraphs that name no style.
+    func testStyleWithoutAnIDGivesNoRole() throws {
+        let reading = try read(body: [
+            Self.paragraph("An ordinary paragraph."),
+            Self.paragraph("Another one.")
+        ], styles: """
+        <w:style w:type="paragraph"><w:name w:val="heading 1"/></w:style>
+        <w:style w:type="paragraph" w:styleId=""><w:name w:val="List Bullet"/></w:style>
+        """)
+
+        XCTAssertEqual(reading.markdown, "An ordinary paragraph.\n\nAnother one.")
+        XCTAssertEqual(reading.headings, [])
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.
@@ -669,17 +796,44 @@ final class DOCXStructureTests: XCTestCase {
         try DOCXNumberingParser(data: Data(numberingPart(definitions).utf8), file: DOCXParser.Part.numbering).parse()
     }
 
+    /// A styles part holding the style definitions `definitions`.
+    private static func stylesPart(_ definitions: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:styles xmlns:w="\(wordNamespace)">
+        \(definitions)
+        </w:styles>
+        """
+    }
+
+    /// The styles `definitions` declares, read by the production parser.
+    private static func styles(_ definitions: String) throws -> DOCXStyles {
+        try DOCXStylesParser(data: Data(stylesPart(definitions).utf8), file: DOCXParser.Part.styles).parse()
+    }
+
+    /// What a reader gets from a document.
+    private struct Reading {
+        /// The Markdown TextMouth caches for it.
+        let markdown: String
+        /// The words a reader hears.
+        let spoken: String
+        /// Its headings as the heading list shows them: "level label".
+        let headings: [String]
+    }
+
     /// Read a package whose text part holds the paragraphs and tables in
-    /// `body`, with a numbering part holding `numbering` when it is given,
-    /// exactly as an import reads it. Returns the Markdown and the words a
-    /// reader hears for it; any damage report fails the test.
+    /// `body`, with a styles part holding `styles` and a numbering part
+    /// holding `numbering` when they are given, exactly as an import reads
+    /// it. Any damage report fails the test.
     private func read(
         body: [String],
+        styles: String? = nil,
         numbering: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws -> (markdown: String, spoken: String) {
+    ) throws -> Reading {
         var parts = [DOCXParser.Part.document: Self.documentPart(body)]
+        parts[DOCXParser.Part.styles] = styles.map(Self.stylesPart)
         parts[DOCXParser.Part.numbering] = numbering.map(Self.numberingPart)
         let docx = try makeTemporaryZip(prefix: "TextMouthDOCXStructure", entries: parts.mapValues { Data($0.utf8) })
         addTeardownBlock { try? FileManager.default.removeItem(at: docx) }
@@ -687,7 +841,11 @@ final class DOCXStructureTests: XCTestCase {
         let markdown = try DOCXParser.extractMarkdown(from: docx) { damage in
             XCTFail("Unexpected damage report: \(damage)", file: file, line: line)
         }
-        let spoken = try MarkdownDocParser.parse(markdown: markdown).chapters[0].text
-        return (markdown, spoken)
+        let chapter = try MarkdownDocParser.parse(markdown: markdown).chapters[0]
+        return Reading(
+            markdown: markdown,
+            spoken: chapter.text,
+            headings: chapter.headings.map { "\($0.level) \($0.text)" }
+        )
     }
 }
