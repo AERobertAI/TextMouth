@@ -181,6 +181,20 @@ enum TextMouthPaths {
         LogWriter.Environment.app.destination(for: location)
     }
 
+    /// The folder Storage settings' Show Logs in Finder opens under
+    /// `location`: the one lines go to now, this Mac's Logs folder made
+    /// first when it is missing, as before the first line written there. A
+    /// folder in the data directory is never made: the resolution names the
+    /// data directory's Logs folder only while it is there.
+    static func preparedLogsFolder(for location: LogLocation) -> URL {
+        let destination = logDestination(for: location)
+        if destination.reason.isThisMac {
+            // A folder that can't be made is reported when Finder can't open it.
+            try? LogWriter.makeThisMacsFolder(destination.folder)
+        }
+        return destination.folder
+    }
+
     /// The one resolution of the logs' folder (the user's decision of
     /// October 3), with everything it depends on given, so tests can give
     /// their own; every log line's folder is resolved here.

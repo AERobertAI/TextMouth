@@ -256,7 +256,7 @@ final class LogWriter: Sendable {
     /// is missing; a folder in the data directory never is.
     private func write(_ data: Data, to file: DiagnosticLog.File, in destination: LogDestination) throws {
         if destination.reason.isThisMac {
-            try Self.makeFolder(destination.folder)
+            try Self.makeThisMacsFolder(destination.folder)
         }
         let note = Self.locationNote(
             arrivingAt: destination,
@@ -306,8 +306,10 @@ final class LogWriter: Sendable {
     // MARK: - Files
 
     /// Makes `folder`, this Mac's Logs folder, with the folders above it,
-    /// when it is missing, as on the first line written there.
-    private static func makeFolder(_ folder: URL) throws {
+    /// when it is missing, as on the first line written there. It is the
+    /// only folder made for the logs: the data directory's Logs folder is
+    /// made with the data directory's other folders.
+    static func makeThisMacsFolder(_ folder: URL) throws {
         guard !FileManager.default.fileExists(atPath: folder.path) else { return }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
