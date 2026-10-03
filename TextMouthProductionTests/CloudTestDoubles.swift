@@ -9,15 +9,25 @@ import Foundation
 // `cloudcore`, so every branch holds the same file.
 
 /// A sync service scripted by a test (FR02): each folder's location and each
-/// file's status by path, with a record of what was asked of it.
-final class FakeCloudItemStatusProvider: CloudItemStatusProviding, @unchecked Sendable {
+/// item's status by path, whether that item carries sync flags of its own,
+/// and a record of what was asked of it.
+///
+/// An item scripted without sync flags of its own is one the service does
+/// not sync by itself, as iCloud Drive syncs each file inside a book's
+/// package only as part of the package: a request to download it or remove
+/// its local copy is refused as iCloud Drive refuses one, with "The file
+/// “…” doesn’t exist." (NSCocoaErrorDomain 4). An item with no status at
+/// all, such as a folder a test never scripts, takes every request.
+final class FakeCloudItemStatusProvider: SyncFlagReporting, @unchecked Sendable {
     /// Guards every stored property: tests and background work call in from
     /// any thread.
     private let lock = NSLock()
     /// Locations by standardized folder path; `.local` when absent.
     private var locations: [String: StorageLocation] = [:]
-    /// Statuses by standardized file path; `.missing` when absent.
+    /// Statuses by standardized path; `.missing` when absent.
     private var statuses: [String: CloudItemStatus] = [:]
+    /// The standardized paths whose status carries no sync flags of its own.
+    private var withoutSyncFlags: Set<String> = []
     /// What `requestDownload(of:)` throws, when anything.
     private var downloadFailure: Error?
     /// The files asked to download, in order.
@@ -34,9 +44,20 @@ final class FakeCloudItemStatusProvider: CloudItemStatusProviding, @unchecked Se
         lock.withLock { locations[folder.standardizedFileURL.path] = location }
     }
 
-    /// Sets the status of the file at `file`.
-    func setStatus(_ status: CloudItemStatus, of file: URL) {
-        lock.withLock { statuses[file.standardizedFileURL.path] = status }
+    /// Sets the status of the item at `file`, a file or a package folder,
+    /// which carries sync flags of its own unless `carriesSyncFlags` is
+    /// false: then the service syncs it only as part of a package, and
+    /// refuses every request for it.
+    func setStatus(_ status: CloudItemStatus, of file: URL, carriesSyncFlags: Bool = true) {
+        let path = file.standardizedFileURL.path
+        lock.withLock {
+            statuses[path] = status
+            if carriesSyncFlags {
+                withoutSyncFlags.remove(path)
+            } else {
+                withoutSyncFlags.insert(path)
+            }
+        }
     }
 
     /// Makes `requestDownload(of:)` throw `error`; nil lets it succeed again.
@@ -61,20 +82,48 @@ final class FakeCloudItemStatusProvider: CloudItemStatusProviding, @unchecked Se
 
     /// The scripted status of `file`.
     func status(of file: URL) -> CloudItemStatus {
-        lock.withLock { statuses[file.standardizedFileURL.path] ?? .missing }
+        flaggedStatus(of: file).status
     }
 
-    /// Records the request, then throws the scripted failure, if any.
+    /// The scripted status of `item`, which carries sync flags of its own
+    /// when it has a status scripted with them; an item with none scripted
+    /// is missing and carries none.
+    func flaggedStatus(of item: URL) -> FlaggedItemStatus {
+        let path = item.standardizedFileURL.path
+        return lock.withLock {
+            guard let status = statuses[path] else {
+                return FlaggedItemStatus(status: .missing, carriesSyncFlags: false)
+            }
+            return FlaggedItemStatus(status: status, carriesSyncFlags: !withoutSyncFlags.contains(path))
+        }
+    }
+
+    /// Records the request, then refuses one for an item the service syncs
+    /// only as part of a package, or throws the scripted failure, if any.
     func requestDownload(of file: URL) throws {
         try lock.withLock {
             requestedDownloads.append(file)
+            try refuseUnlessSyncedOnItsOwn(file)
             if let downloadFailure { throw downloadFailure }
         }
     }
 
-    /// Records the request.
+    /// Records the request, then refuses one for an item the service syncs
+    /// only as part of a package.
     func removeLocalCopy(of file: URL) throws {
-        lock.withLock { requestedRemovals.append(file) }
+        try lock.withLock {
+            requestedRemovals.append(file)
+            try refuseUnlessSyncedOnItsOwn(file)
+        }
+    }
+
+    /// Throws iCloud Drive's refusal of a request for an item inside a
+    /// package it syncs as one item: an item scripted without sync flags of
+    /// its own. Call it under `lock`.
+    private func refuseUnlessSyncedOnItsOwn(_ item: URL) throws {
+        let path = item.standardizedFileURL.path
+        guard withoutSyncFlags.contains(path) else { return }
+        throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: path])
     }
 }
 
