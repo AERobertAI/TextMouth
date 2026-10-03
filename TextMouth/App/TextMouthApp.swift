@@ -26,6 +26,9 @@ struct TextMouthApp: App {
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
                 .environmentObject(libraryWindowRouter)
+                // Lists the installed voices once the first window shows,
+                // off the main thread, rather than before it (TODO PERF07).
+                .onAppear { VoiceCatalog.shared.loadIfNeeded() }
         }
         .commands {
             // Keep "Open Book..." alongside the standard "New Window" (Cmd+N)

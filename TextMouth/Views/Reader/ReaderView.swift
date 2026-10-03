@@ -518,6 +518,9 @@ struct ReaderCloudMessageView: View {
 
 struct BookVoicePickerView: View {
     @ObservedObject var viewModel: ReaderViewModel
+    /// The installed voices, listed once and shared (TODO PERF07), observed
+    /// so the pickers fill as soon as the list arrives.
+    @ObservedObject private var voiceCatalog = VoiceCatalog.shared
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLanguage: String = ""
     @State private var previewSynthesizer = AVSpeechSynthesizer()
@@ -686,6 +689,8 @@ struct BookVoicePickerView: View {
             if let voice = viewModel.speechService.currentVoice {
                 selectedLanguage = String(voice.language.prefix(2))
             }
+            // Should the sheet come before the first Library window.
+            voiceCatalog.loadIfNeeded()
         }
     }
 
@@ -733,17 +738,16 @@ struct BookVoicePickerView: View {
         )
     }
 
+    /// The languages the Language picker offers: the shared catalog's, read
+    /// rather than listed each time the sheet draws (TODO PERF07).
     private var availableLanguages: [String] {
-        let voices = SpeechService.availableVoices()
-        let languages = Set(voices.map { String($0.language.prefix(2)) })
-        return languages.sorted()
+        voiceCatalog.languages
     }
 
+    /// The voices the Voice picker offers for the language chosen, every
+    /// voice when none is, from the shared catalog (TODO PERF07).
     private var filteredVoices: [AVSpeechSynthesisVoice] {
-        if selectedLanguage.isEmpty {
-            return SpeechService.availableVoices()
-        }
-        return SpeechService.availableVoices().filter { $0.language.hasPrefix(selectedLanguage) }
+        voiceCatalog.voices(forLanguage: selectedLanguage)
     }
 
     private func voiceQualityLabel(_ voice: AVSpeechSynthesisVoice) -> String {

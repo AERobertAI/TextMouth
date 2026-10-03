@@ -270,8 +270,17 @@ final class SettingsViewModel: ObservableObject {
         didSet { broadcastGestureChanges(); syncToConfig() }
     }
 
+    /// The voices the Voice picker offers: the shared catalog's voices for
+    /// the language chosen (TODO PERF07).
     @Published var availableVoices: [AVSpeechSynthesisVoice] = []
+    /// The languages the Language picker offers: the shared catalog's.
     @Published var availableLanguages: [String] = []
+    /// The installed voices, listed once off the main thread and shared
+    /// (TODO PERF07). This model only reads the list; it never lists voices
+    /// itself.
+    let voiceCatalog: VoiceCatalog
+    /// Offers the catalog's list again whenever it lists the voices.
+    private var voiceListSubscription: AnyCancellable?
     /// Changes whenever an option affecting the open playback bar changes.
     /// `PlaybackControlsView` observes this model directly, so incrementing the
     /// revision invalidates existing book windows without reopening them.
@@ -428,14 +437,18 @@ final class SettingsViewModel: ObservableObject {
     ///     own to start from known values, and services of their own on it.
     ///   - configService: The config.json mirror to keep in step with the
     ///     preferences. Tests pass one bound to a file of their own.
+    ///   - voiceCatalog: Where the voices offered come from: the shared
+    ///     catalog, unless a test passes its own.
     init(
         notificationCenter: NotificationCenter = .default,
         initializeServices: Bool = true,
         userDefaults: UserDefaults = TextMouthRuntime.current.preferences,
-        configService: ConfigService = .shared
+        configService: ConfigService = .shared,
+        voiceCatalog: VoiceCatalog = .shared
     ) {
         self.notificationCenter = notificationCenter
         self.configService = configService
+        self.voiceCatalog = voiceCatalog
         preferences = userDefaults
         // Bind every preference to `userDefaults` before anything reads one.
         // The keys are the ones every release has used, so saved preferences
@@ -488,11 +501,16 @@ final class SettingsViewModel: ObservableObject {
     /// `ConfigService` read the file when it was created, so its snapshot is
     /// complete before anything here runs. The file's values are applied
     /// first, as one snapshot, because the file is where settings can be
-    /// edited while TextMouth is closed. Voice discovery follows, so a default
-    /// voice is chosen only when neither the file nor the preferences name
-    /// one. No preference change in between is saved on its own: the
-    /// preferences are saved once at the end, which writes only when the
-    /// file's bytes change, so a launch on a consistent file writes nothing.
+    /// edited while TextMouth is closed. The voices offered follow, from the
+    /// shared catalog (TODO PERF07). A default voice is chosen only when
+    /// neither the file nor the preferences name one, which is only on the
+    /// first launch: that launch lists the voices at once, to choose it
+    /// before anything else runs, as every launch used to. Every other launch
+    /// lists none here; the catalog lists them off the main thread once the
+    /// first window shows, and they are offered when they arrive. No
+    /// preference change in between is saved on its own: the preferences are
+    /// saved once at the end, which writes only when the file's bytes change,
+    /// so a launch on a consistent file writes nothing.
     private func startConfigSync() {
         // Subscribe first: the save below merges in any edit that reached the
         // file since it was loaded, and publishes it for this model to apply.
@@ -501,8 +519,12 @@ final class SettingsViewModel: ObservableObject {
             if configService.hasExistingConfig {
                 applyConfigChanges(configService.config)
             }
+            if selectedVoiceID.isEmpty {
+                voiceCatalog.listNow()
+            }
             refreshVoices()
         }
+        observeVoiceCatalog()
         writePreferences(into: &configService.config)
         // A file that could not be read is someone's edit in progress. It
         // stays on disk to be corrected; the watcher applies the correction.
@@ -512,19 +534,27 @@ final class SettingsViewModel: ObservableObject {
         configService.startWatching()
     }
 
+    /// Offers the catalog's voices for the language chosen (every voice when
+    /// none is), with the catalog's languages, and chooses the first voice
+    /// offered when no voice is chosen yet. It reads the shared list rather
+    /// than listing voices (TODO PERF07), so a change of language costs a
+    /// filter, not a listing; before the catalog's first list arrives it
+    /// offers nothing.
     func refreshVoices() {
-        let allVoices = SpeechService.availableVoices()
-        let languages = Set(allVoices.map { String($0.language.prefix(2)) })
-        availableLanguages = languages.sorted()
-
-        if selectedLanguage.isEmpty {
-            availableVoices = allVoices
-        } else {
-            availableVoices = allVoices.filter { $0.language.hasPrefix(selectedLanguage) }
-        }
+        availableLanguages = voiceCatalog.languages
+        availableVoices = voiceCatalog.voices(forLanguage: selectedLanguage)
 
         if selectedVoiceID.isEmpty, let defaultVoice = availableVoices.first {
             selectedVoiceID = defaultVoice.identifier
+        }
+    }
+
+    /// Offers the catalog's list each time it lists the voices: when its
+    /// first list arrives after launch, and when the installed voices
+    /// change.
+    func observeVoiceCatalog() {
+        voiceListSubscription = voiceCatalog.didList.sink { [weak self] in
+            self?.refreshVoices()
         }
     }
 

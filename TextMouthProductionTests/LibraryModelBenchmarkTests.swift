@@ -1,4 +1,3 @@
-import AVFoundation
 import Combine
 import XCTest
 @testable import TextMouth
@@ -245,26 +244,51 @@ final class LibraryModelBenchmarkTests: XCTestCase {
 
     // MARK: - PERF07: The Voice List
 
-    /// What listing the voices costs. SettingsViewModel listed them on the
-    /// main thread at launch, before the first window (one call), and again
-    /// at every change of the voice language (one call); the reader's voice
-    /// sheet listed them twice each time its body ran, which is eight times
-    /// a second during playback. The system keeps no list of its own, so
-    /// every call enumerates every installed voice again.
-    func testVoiceListCost() {
-        let settings = SettingsViewModel(initializeServices: false)
+    /// What listing the voices costs, and where it happens.
+    ///
+    /// Before PERF07 Settings listed every installed voice on the main
+    /// thread at launch, before the first window (Debug: 70-92 ms, one
+    /// listing), and again at each change of the voice language (62-87 ms);
+    /// the reader's voice sheet listed them twice each time its body ran
+    /// (122-133 ms), eight times a second during playback. The system keeps
+    /// no list, so every call enumerated the voices again. Now `VoiceCatalog`
+    /// lists them once, off the main thread, after the first window shows,
+    /// and Settings and the sheet read its list.
+    func testVoiceListCost() async throws {
+        let catalog = VoiceCatalog(notificationCenter: NotificationCenter())
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: try isolatedDefaults(),
+            configService: ConfigService(fileURL: try makeConfigFileURL()),
+            voiceCatalog: catalog
+        )
+
+        // Launch: Settings reads the catalog, not yet listed, on the main
+        // thread; the catalog then lists the voices once, off it.
         let launch = LibraryBenchmarkClock.medianMilliseconds(runs: 1) { settings.refreshVoices() }
+        let clock = ContinuousClock()
+        let start = clock.now
+        catalog.loadIfNeeded()
+        await catalog.waitUntilListed()
+        let listing = clock.now - start
+        settings.selectedLanguage = "en"
         let languageChange = LibraryBenchmarkClock.medianMilliseconds(runs: 5) { settings.refreshVoices() }
         let sheetEvaluation = LibraryBenchmarkClock.medianMilliseconds(runs: 5) {
-            _ = SpeechService.availableVoices()
-            _ = SpeechService.availableVoices()
+            _ = catalog.languages
+            _ = catalog.voices(forLanguage: "en")
         }
 
-        LibraryBenchmarkClock.report("PERF07 launch, on the main thread", launch, note: "1 voice listing")
-        LibraryBenchmarkClock.report("PERF07 a voice-language change", languageChange, note: "1 voice listing")
-        LibraryBenchmarkClock.report("PERF07 one voice sheet evaluation", sheetEvaluation, note: "2 voice listings")
-        LibraryBenchmarkClock.report("PERF07 voices listed", count: settings.availableVoices.count)
-        XCTAssertFalse(SpeechService.availableVoices().isEmpty)
+        LibraryBenchmarkClock.report("PERF07 launch, on the main thread", launch, note: "no voice listing")
+        LibraryBenchmarkClock.report(
+            "PERF07 the one listing, off the main thread",
+            Double(listing.components.seconds) * 1_000 + Double(listing.components.attoseconds) / 1e15
+        )
+        LibraryBenchmarkClock.report("PERF07 a voice-language change", languageChange, note: "no voice listing")
+        LibraryBenchmarkClock.report("PERF07 one voice sheet evaluation", sheetEvaluation, note: "no voice listing")
+        LibraryBenchmarkClock.report("PERF07 voices offered in English", count: settings.availableVoices.count)
+        XCTAssertEqual(catalog.listingCount, 1, "the voices were listed more than once")
+        XCTAssertFalse(settings.availableVoices.isEmpty)
     }
 
     // MARK: - Reading the List as LibraryView Does

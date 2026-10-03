@@ -144,6 +144,9 @@ struct VoiceSettingsView: View {
             }
         }
         .padding()
+        // The pickers offer the shared voice list (TODO PERF07), which the
+        // first Library window has asked for; ask too, should this come first.
+        .onAppear { settingsViewModel.voiceCatalog.loadIfNeeded() }
     }
 
     private func previewVoice() {
