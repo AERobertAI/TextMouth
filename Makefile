@@ -21,6 +21,10 @@ BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 # so every checkout and CI run builds the same package versions.
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
+# Where `make test` builds the app and its tests, relative to the repository
+# root; empty means Xcode's default DerivedData folder.
+TEST_DERIVED_DATA =
+
 # Package resolution uses the same derived data folder as `make build`, so the
 # build reuses the package checkouts that resolution creates.
 RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
@@ -128,10 +132,11 @@ uninstall:
 	rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 	@echo "==> Removed."
 
-## Run tests against the real application through the hosted test runner
+## Run tests against the real application through the hosted test runner,
+## building in TEST_DERIVED_DATA when it names a folder
 test:
 	@echo "==> Running hosted production tests..."
-	@cd TextMouthTests && swift run 2>&1
+	@cd TextMouthTests && TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" swift run 2>&1
 	@echo ""
 
 ## Run the reproducibility gate: regenerate the project, verify the package
