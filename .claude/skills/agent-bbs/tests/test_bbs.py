@@ -922,6 +922,26 @@ class BuildSlotWrapperTests(BoardTestCase):
         self.assertFalse(dead.exists(), "a slot whose owner died is reclaimed")
 
 
+class TransactionTests(BoardTestCase):
+    """write_transaction, which every change to the board goes through."""
+
+    def test_an_error_rolls_the_whole_block_back(self) -> None:
+        self.register("alpha")
+        with contextlib.closing(bbs.open_board()) as conn:
+            with self.assertRaises(RuntimeError):
+                with bbs.write_transaction(conn):
+                    conn.execute("UPDATE agents SET role = 'changed'")
+                    raise RuntimeError("stop halfway")
+        self.assertEqual(self.ok_json("agents")[0]["role"], "alpha work")
+
+    def test_a_transaction_sqlite_already_ended_keeps_the_original_error(self) -> None:
+        with contextlib.closing(bbs.open_board()) as conn:
+            with self.assertRaisesRegex(RuntimeError, "the original error"):
+                with bbs.write_transaction(conn):
+                    conn.execute("ROLLBACK")  # as SQLite does by itself after some failures
+                    raise RuntimeError("the original error")
+
+
 class ConcurrencyTests(BoardTestCase):
     """Several processes using the board at the same moment."""
 

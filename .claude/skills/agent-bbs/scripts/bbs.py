@@ -771,7 +771,10 @@ def write_transaction(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
     try:
         yield conn
     except BaseException:
-        conn.execute("ROLLBACK")
+        # SQLite rolls some failures back by itself; a second ROLLBACK
+        # would then raise and hide the original error.
+        if conn.in_transaction:
+            conn.execute("ROLLBACK")
         raise
     conn.execute("COMMIT")
 
