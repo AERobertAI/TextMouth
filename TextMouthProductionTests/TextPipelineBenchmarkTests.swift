@@ -208,6 +208,18 @@ final class TextPipelineBenchmarkTests: XCTestCase {
                 let audio = try TextPipelineFixtures.temporaryFolder(for: self)
                 return try DAISYAudioConverter.convertToAudioBook(from: provider, version: .daisy202, toDirectory: audio)
             }
+            // The copy alone, as the converter made it before PERF24 and as
+            // it makes it now, side by side. Each run removes its copy, so
+            // no run is timed behind another's unwritten pages.
+            let copy = try TextPipelineFixtures.temporaryFolder(for: self).appendingPathComponent("track.mp3")
+            try benchmark("PERF24", "after: copyFile, 64 MB from a \(name)", repetitions: 3) {
+                try provider.copyFile(at: "track.mp3", to: copy)
+                try FileManager.default.removeItem(at: copy)
+            }
+            try benchmark("PERF24", "before: readFile, then write, 64 MB from a \(name)", repetitions: 3) {
+                try provider.readFile(at: "track.mp3").write(to: copy)
+                try FileManager.default.removeItem(at: copy)
+            }
         }
     }
 

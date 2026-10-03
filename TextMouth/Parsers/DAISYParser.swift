@@ -142,8 +142,8 @@ class ArchiveFileProvider: DAISYFileProvider {
         }
     }
 
-    /// Copy the file at `path` to `destination` a chunk at a time, held to
-    /// the bounds `readFile(at:)` holds it to, so an audio file of up to
+    /// Copy the file at `path` to `destination` a megabyte at a time, held
+    /// to the bounds `readFile(at:)` holds it to, so an audio file of up to
     /// 256 MB never sits whole in memory (PERF24). A copy that fails, the
     /// entry found too large partway included, leaves nothing behind.
     /// - Throws: as `readFile(at:)` throws, or the error writing threw.
@@ -155,16 +155,29 @@ class ArchiveFileProvider: DAISYFileProvider {
         do {
             let handle = try FileHandle(forWritingTo: destination)
             defer { try? handle.close() }
+            // The chunks ZIPFoundation hands over are 16 KB; a write for each
+            // took longer than reading the whole file into memory had, so
+            // they are gathered into batches of a megabyte first.
+            var batch = Data()
+            batch.reserveCapacity(Self.writeBatchSize)
             _ = try withinBounds(of: entry) {
                 try ArchiveEntryReader.stream(entry, in: archive, limit: nil, holdingToDeclaredSize: budget != nil) { chunk in
-                    try handle.write(contentsOf: chunk)
+                    batch.append(chunk)
+                    if batch.count >= Self.writeBatchSize {
+                        try handle.write(contentsOf: batch)
+                        batch.removeAll(keepingCapacity: true)
+                    }
                 }
             }
+            try handle.write(contentsOf: batch)
         } catch {
             try? FileManager.default.removeItem(at: destination)
             throw error
         }
     }
+
+    /// How many bytes of an entry `copyFile(at:to:)` gathers before writing.
+    private static let writeBatchSize = 1_048_576
 
     /// The entry of the file at `path`: the entry of exactly that path, or
     /// else the first file whose path matches it without regard to case.
