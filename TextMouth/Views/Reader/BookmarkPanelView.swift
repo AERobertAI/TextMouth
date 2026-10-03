@@ -36,6 +36,20 @@ enum BookmarkPanelOperation: Equatable {
     case delete(UUID)
 }
 
+/// The bookmarks panel: the book's bookmarks in the order they were added,
+/// each of which can be gone to, have its note edited, or be deleted, and a
+/// way to add a bookmark at the reading position.
+///
+/// Everything works from the keyboard, with VoiceOver, and from a braille
+/// display: every row is a button with its own Edit Note and Delete buttons,
+/// and offers all three commands as VoiceOver actions.
+///
+/// Focus follows the work. On opening, it goes to the bookmark nearest the
+/// reading position; after an Add, to the new bookmark; after an edit, back
+/// to the edited bookmark; after a delete, to the next bookmark, else the
+/// previous one, else the Add button. Keyboard focus and the VoiceOver
+/// cursor move together, and nothing extra is announced: the focused row's
+/// own label says where focus is.
 struct BookmarkPanelView: View {
     @ObservedObject var viewModel: ReaderViewModel
     @Environment(\.dismiss) private var dismiss
@@ -47,7 +61,12 @@ struct BookmarkPanelView: View {
     /// note field, the reading position moving during playback) neither
     /// re-sort the bookmarks nor look up their headings again.
     @State private var rows: [BookmarkRow] = []
-    @FocusState private var focusedBookmarkID: UUID?
+    /// The latest request to move focus, made when the panel opens and after
+    /// each add, edit, or delete; see `focusTarget(after:in:)`.
+    @State private var focusRequest = BookmarkPanelFocusRequest()
+    /// The list control with keyboard focus: a bookmark's row or the Add
+    /// button.
+    @FocusState private var focusedControl: BookmarkPanelFocusTarget?
     @FocusState private var noteFieldFocused: Bool
 
     var body: some View {
@@ -65,16 +84,24 @@ struct BookmarkPanelView: View {
         .navigationTitle(viewModel.book.title)
         .onAppear {
             rebuildRows()
-            guard let firstBookmark = sortedBookmarks.first else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                focusedBookmarkID = firstBookmark.id
-            }
+            requestFocus(Self.openingFocusTarget(for: viewModel), voiceOverDelay: Self.openingVoiceOverDelay)
         }
         .onChange(of: viewModel.bookmarks) { _, _ in
             rebuildRows()
         }
         .onChange(of: viewModel.headings) { _, _ in
             rebuildRows()
+        }
+        // Keyboard focus follows each request once SwiftUI has drawn its
+        // target: after an add or an edit the list itself comes back, and on
+        // opening the sheet is still presenting. A newer request cancels one
+        // still waiting. VoiceOver follows through the target's own
+        // `RequestedVoiceOverFocus`, so the two land on the same control.
+        .task(id: focusRequest) {
+            guard let target = focusRequest.target else { return }
+            try? await Task.sleep(for: Self.keyboardFocusDelay)
+            guard !Task.isCancelled else { return }
+            focusedControl = target
         }
     }
 
@@ -96,7 +123,13 @@ struct BookmarkPanelView: View {
                     Label("Add Bookmark", systemImage: "plus")
                 }
                 .accessibilityLabel("Add bookmark at current position")
-                .modifier(EmptyBookmarksFocusModifier(isEmpty: viewModel.bookmarks.isEmpty))
+                // Focus comes here when no bookmark is left to focus, and
+                // back here when an Add is cancelled.
+                .focused($focusedControl, equals: .addButton)
+                .modifier(RequestedVoiceOverFocus(
+                    isTarget: focusRequest.target == .addButton,
+                    request: focusRequest
+                ))
 
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
@@ -166,7 +199,7 @@ struct BookmarkPanelView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .focused($focusedBookmarkID, equals: bookmark.id)
+            .focused($focusedControl, equals: .bookmark(bookmark.id))
             // A focused button presses on Space by itself. Return, which
             // would otherwise look for a default button, goes to the
             // bookmark too; a held key does not repeat the navigation.
@@ -177,9 +210,9 @@ struct BookmarkPanelView: View {
             .accessibilityLabel(row.bookmarkAccessibilityLabel)
             .accessibilityHint(row.accessibilityHintText)
             .accessibilityActions { commandActions(for: bookmark) }
-            .modifier(InitialVoiceOverFocusModifier(
-                isTarget: bookmark.id == rows.first?.bookmark.id,
-                delay: 1.2
+            .modifier(RequestedVoiceOverFocus(
+                isTarget: focusRequest.target == .bookmark(bookmark.id),
+                request: focusRequest
             ))
 
             ForEach(BookmarkCommand.rowButtons, id: \.self) { command in
@@ -231,8 +264,22 @@ struct BookmarkPanelView: View {
             noteText = bookmark.label
             mode = .edit(bookmark)
         case .delete:
-            viewModel.removeBookmark(bookmark)
+            requestFocus(Self.delete(bookmark, from: viewModel))
         }
+    }
+
+    /// Ask for keyboard focus and the VoiceOver cursor to move to `target`.
+    /// VoiceOver moves after `voiceOverDelay`: by default the short delay
+    /// for a panel already on screen; opening the panel passes a longer one.
+    private func requestFocus(
+        _ target: BookmarkPanelFocusTarget,
+        voiceOverDelay: TimeInterval = Self.restoringVoiceOverDelay
+    ) {
+        focusRequest = BookmarkPanelFocusRequest(
+            target: target,
+            voiceOverDelay: voiceOverDelay,
+            serial: focusRequest.serial + 1
+        )
     }
 
     // MARK: - Add Bookmark (Inline)
@@ -253,15 +300,17 @@ struct BookmarkPanelView: View {
                 Button("Cancel") {
                     noteText = ""
                     mode = .list
+                    requestFocus(Self.focusTarget(after: .cancelAdd, in: viewModel))
                 }
                 .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
 
                 Button("Add") {
-                    viewModel.addBookmarkAtCurrentPosition(label: noteText)
+                    let target = Self.add(note: noteText, to: viewModel)
                     noteText = ""
                     mode = .list
+                    requestFocus(target)
                 }
                 .keyboardShortcut(.return, modifiers: [])
             }
@@ -288,14 +337,16 @@ struct BookmarkPanelView: View {
             HStack {
                 Button("Cancel") {
                     mode = .list
+                    requestFocus(Self.focusTarget(after: .edit(bookmark.id), in: viewModel))
                 }
                 .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
 
                 Button("Save") {
-                    viewModel.updateBookmarkLabel(bookmark, label: noteText)
+                    let target = Self.saveNote(noteText, for: bookmark, in: viewModel)
                     mode = .list
+                    requestFocus(target)
                 }
                 .keyboardShortcut(.return, modifiers: [])
             }
@@ -308,10 +359,6 @@ struct BookmarkPanelView: View {
 }
 
 extension BookmarkPanelView {
-    var sortedBookmarks: [Bookmark] {
-        Self.listOrder(of: viewModel.bookmarks)
-    }
-
     /// Row for `bookmark`, located by the heading that contains it. Both the
     /// list and the Bookmarks rotor build rows here so they always agree.
     func bookmarkRow(for bookmark: Bookmark) -> BookmarkRow {
@@ -321,6 +368,70 @@ extension BookmarkPanelView {
     /// Rebuild the list's rows from the reader's bookmarks, in list order.
     private func rebuildRows() {
         rows = Self.listOrder(of: viewModel.bookmarks).map(bookmarkRow(for:))
+    }
+}
+
+// MARK: - Operations
+
+extension BookmarkPanelView {
+    /// How long VoiceOver waits before moving into the panel when it opens:
+    /// the sheet must finish presenting first.
+    static let openingVoiceOverDelay: TimeInterval = 1.2
+
+    /// How long VoiceOver waits before moving after an add, edit, or delete.
+    /// The panel is already on screen, so this waits only for the redrawn
+    /// rows, and is short so that it cannot pull VoiceOver back after the
+    /// user has moved on.
+    static let restoringVoiceOverDelay: TimeInterval = 0.3
+
+    /// How long keyboard focus waits before moving to a requested control:
+    /// time for SwiftUI to draw it, and on opening for the sheet to present.
+    static let keyboardFocusDelay: Duration = .milliseconds(150)
+
+    /// Where focus goes after `operation`, among the bookmarks `viewModel`
+    /// holds now.
+    static func focusTarget(
+        after operation: BookmarkPanelOperation,
+        in viewModel: ReaderViewModel
+    ) -> BookmarkPanelFocusTarget {
+        focusTarget(after: operation, in: listOrder(of: viewModel.bookmarks))
+    }
+
+    /// Where focus goes when the panel opens on `viewModel`: the bookmark
+    /// nearest its reading position, or the Add button when it has none.
+    static func openingFocusTarget(for viewModel: ReaderViewModel) -> BookmarkPanelFocusTarget {
+        let opening = BookmarkPanelOperation.open(
+            chapterIndex: viewModel.currentChapterIndex,
+            characterOffset: viewModel.currentCharacterOffset
+        )
+        return focusTarget(after: opening, in: viewModel)
+    }
+
+    /// Add a bookmark with `note` at `viewModel`'s reading position, and
+    /// return where focus goes: to the new bookmark.
+    static func add(note: String, to viewModel: ReaderViewModel) -> BookmarkPanelFocusTarget {
+        let added = viewModel.addBookmarkAtCurrentPosition(label: note)
+        return focusTarget(after: .add(added?.id), in: viewModel)
+    }
+
+    /// Save `note` as `bookmark`'s note, and return where focus goes: back to
+    /// that bookmark.
+    static func saveNote(
+        _ note: String,
+        for bookmark: Bookmark,
+        in viewModel: ReaderViewModel
+    ) -> BookmarkPanelFocusTarget {
+        viewModel.updateBookmarkLabel(bookmark, label: note)
+        return focusTarget(after: .edit(bookmark.id), in: viewModel)
+    }
+
+    /// Delete `bookmark`, and return where focus goes: to the bookmark
+    /// listed after it, else the one before it, else the Add button.
+    static func delete(_ bookmark: Bookmark, from viewModel: ReaderViewModel) -> BookmarkPanelFocusTarget {
+        // Decided first, while the list still shows the bookmark's neighbors.
+        let target = focusTarget(after: .delete(bookmark.id), in: viewModel)
+        viewModel.removeBookmark(bookmark)
+        return target
     }
 }
 
@@ -527,16 +638,37 @@ struct BookmarkRow: View {
     }
 }
 
-private struct EmptyBookmarksFocusModifier: ViewModifier {
-    let isEmpty: Bool
+// MARK: - Focus requests
+
+/// A request to move keyboard focus and the VoiceOver cursor in the
+/// bookmarks panel, made when it opens and after each add, edit, or delete.
+private struct BookmarkPanelFocusRequest: Equatable {
+    /// The control to focus; nil until the panel makes its first request.
+    var target: BookmarkPanelFocusTarget?
+    /// How long VoiceOver waits before moving to `target`.
+    var voiceOverDelay: TimeInterval = 0
+    /// Numbers the requests, so that asking again for the control already
+    /// asked for is still a new request.
+    var serial = 0
+}
+
+/// Points the panel's latest focus request at one control for VoiceOver.
+///
+/// `InitialVoiceOverFocusModifier` moves VoiceOver once, when its trigger
+/// view first enters the window. So the control a request targets takes the
+/// request's number as its identity, and a new request for the same control
+/// (the row below a deleted one, when that row was already the target, say)
+/// draws a fresh trigger that moves VoiceOver again. Every other control
+/// keeps one identity throughout.
+private struct RequestedVoiceOverFocus: ViewModifier {
+    /// Whether this control is the request's target.
+    let isTarget: Bool
+    /// The panel's latest request.
+    let request: BookmarkPanelFocusRequest
 
     func body(content: Content) -> some View {
-        if isEmpty {
-            content
-                .accessibilityIdentifier(voiceOverFocusID)
-                .background(VoiceOverFocus(delay: 1.2))
-        } else {
-            content
-        }
+        content
+            .modifier(InitialVoiceOverFocusModifier(isTarget: isTarget, delay: request.voiceOverDelay))
+            .id(isTarget ? request.serial : 0)
     }
 }

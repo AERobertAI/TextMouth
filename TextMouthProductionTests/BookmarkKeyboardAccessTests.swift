@@ -5,7 +5,13 @@ import XCTest
 
 /// Keyboard- and VoiceOver-operable bookmarks (TODO A04): the reader
 /// operations the bookmarks panel builds on, where the panel sends focus
-/// after each operation, and the hosted windows its rendered tests rely on.
+/// after each operation, its commands, and the panel as AppKit draws it.
+///
+/// SwiftUI builds accessibility elements, and with them the labels, only
+/// for a connected assistive app, and an offscreen window takes neither
+/// keyboard focus nor keys. So the rendered tests read what AppKit draws:
+/// each row's Edit Note and Delete buttons, and the trigger view behind the
+/// one control the panel has asked VoiceOver to move to.
 @MainActor
 final class BookmarkKeyboardAccessTests: XCTestCase {
     // MARK: - Reader operations
@@ -327,6 +333,193 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
     }
 
+    // MARK: - Focus after panel operations
+
+    /// Deleting the middle of three bookmarks sends focus to the next one,
+    /// now listed second.
+    func testDeletingTheMiddleOfThreeBookmarksFocusesTheNextOne() {
+        let bookmarks = makeBookmarks(count: 3)
+        let reader = makeReader(bookmarks: bookmarks)
+        defer { reader.close() }
+
+        let target = BookmarkPanelView.delete(bookmarks[1], from: reader)
+
+        XCTAssertEqual(target, .bookmark(bookmarks[2].id))
+        XCTAssertEqual(reader.bookmarks.map(\.id), [bookmarks[0].id, bookmarks[2].id])
+    }
+
+    /// Opening the panel targets the bookmark nearest the reader's position,
+    /// and the Add button in a book without bookmarks.
+    func testOpeningTargetsTheBookmarkNearestTheReadingPosition() {
+        let bookmarks = outOfBookOrderBookmarks()
+        let reader = makeReader(
+            bookmarks: bookmarks,
+            position: ReadingPosition(chapterIndex: 1, characterOffset: 30)
+        )
+        defer { reader.close() }
+        let unmarked = makeReader()
+        defer { unmarked.close() }
+
+        XCTAssertEqual(BookmarkPanelView.openingFocusTarget(for: reader), .bookmark(bookmarks[2].id))
+        XCTAssertEqual(BookmarkPanelView.openingFocusTarget(for: unmarked), .addButton)
+    }
+
+    /// Adding a bookmark from the panel sends focus to the new bookmark.
+    func testAddingFromThePanelFocusesTheNewBookmark() throws {
+        let reader = makeReader(
+            bookmarks: makeBookmarks(count: 2),
+            position: ReadingPosition(chapterIndex: 4, characterOffset: 2)
+        )
+        defer { reader.close() }
+
+        var target: BookmarkPanelFocusTarget?
+        recordingAnnouncements {
+            target = BookmarkPanelView.add(note: "Fork in the road", to: reader)
+        }
+
+        let added = try XCTUnwrap(reader.bookmarks.first { $0.label == "Fork in the road" })
+        XCTAssertEqual(target, .bookmark(added.id))
+    }
+
+    /// Saving a note keeps focus on the edited bookmark, and the list keeps
+    /// its order, so focus cannot land on another row; cancelling the edit
+    /// returns focus there too.
+    func testFinishingAnEditKeepsFocusOnTheEditedBookmark() {
+        let bookmarks = makeBookmarks(count: 3)
+        let reader = makeReader(bookmarks: bookmarks)
+        defer { reader.close() }
+
+        let saved = BookmarkPanelView.saveNote("Revised", for: bookmarks[1], in: reader)
+
+        XCTAssertEqual(saved, .bookmark(bookmarks[1].id))
+        XCTAssertEqual(reader.bookmarks.map(\.label), ["", "Revised", ""])
+        XCTAssertEqual(BookmarkPanelView.listOrder(of: reader.bookmarks).map(\.id), bookmarks.map(\.id))
+        XCTAssertEqual(
+            BookmarkPanelView.focusTarget(after: .edit(bookmarks[1].id), in: reader),
+            .bookmark(bookmarks[1].id),
+            "Cancelling the edit"
+        )
+    }
+
+    // MARK: - Rendered focus requests
+
+    /// The rendered panel opens with VoiceOver focus requested on the row of
+    /// the bookmark nearest the reading position.
+    func testRenderedPanelOpensOnTheBookmarkNearestTheReadingPosition() throws {
+        let reader = makeReader(
+            bookmarks: makeBookmarks(count: 3),
+            position: ReadingPosition(chapterIndex: 1, characterOffset: 40)
+        )
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertTrue(waitUntil { focusTargetRows(in: hostingView) == [1] }, "\(focusTargetRows(in: hostingView))")
+        }
+    }
+
+    /// A rendered panel without bookmarks opens with VoiceOver focus
+    /// requested outside the list: on the Add button, the only control
+    /// besides the rows that asks for it.
+    func testRenderedPanelWithoutBookmarksOpensOnTheAddButton() throws {
+        let reader = makeReader()
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertEqual(focusTargetRows(in: hostingView), [nil])
+        }
+    }
+
+    /// Deleting the middle row with its rendered Delete button moves the
+    /// VoiceOver focus request to the next bookmark, which has moved up into
+    /// the second row.
+    func testDeletingTheMiddleRowMovesVoiceOverFocusToTheNextBookmark() throws {
+        let reader = makeReader(bookmarks: makeBookmarks(count: 3))
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertEqual(focusTargetRows(in: hostingView), [0])
+
+            try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView)).performClick(nil)
+
+            let moved = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return renderedRowButtons(in: hostingView).count == 2 && focusTargetRows(in: hostingView) == [1]
+            }
+            XCTAssertTrue(moved, "\(focusTargetRows(in: hostingView))")
+        }
+    }
+
+    /// Deleting the row above the targeted one targets that row again, and
+    /// VoiceOver is asked to move afresh: the spent request is not reused.
+    func testDeletingTheRowAboveTheTargetAsksVoiceOverToMoveAgain() throws {
+        // Opens on bookmark 2, in the second row.
+        let reader = makeReader(
+            bookmarks: makeBookmarks(count: 3),
+            position: ReadingPosition(chapterIndex: 1, characterOffset: 10)
+        )
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertTrue(waitUntil { focusTargetRows(in: hostingView) == [1] })
+            let opening = focusTriggers(in: hostingView).map(ObjectIdentifier.init)
+
+            try XCTUnwrap(renderedButton(.delete, row: 0, in: hostingView)).performClick(nil)
+
+            let moved = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return renderedRowButtons(in: hostingView).count == 2 && focusTargetRows(in: hostingView) == [0]
+            }
+            XCTAssertTrue(moved, "\(focusTargetRows(in: hostingView))")
+            XCTAssertNotEqual(focusTriggers(in: hostingView).map(ObjectIdentifier.init), opening)
+        }
+    }
+
+    /// Deleting the only bookmark moves the VoiceOver focus request to the
+    /// Add button.
+    func testDeletingTheOnlyBookmarkMovesVoiceOverFocusToTheAddButton() throws {
+        let reader = makeReader(bookmarks: makeBookmarks(count: 1))
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            try XCTUnwrap(renderedButton(.delete, row: 0, in: hostingView)).performClick(nil)
+
+            let moved = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return reader.bookmarks.isEmpty && focusTargetRows(in: hostingView) == [nil]
+            }
+            XCTAssertTrue(moved, "\(focusTargetRows(in: hostingView))")
+        }
+    }
+
+    /// Saving or cancelling an edit (Return or Escape in the note editor)
+    /// brings the list back with VoiceOver focus requested on the edited
+    /// bookmark's row.
+    func testFinishingAnEditReturnsVoiceOverFocusToTheEditedRow() throws {
+        // Opens on the first row.
+        let reader = makeReader(bookmarks: makeBookmarks(count: 3))
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            for key in [KeyEquivalent.escape, .return] {
+                try XCTUnwrap(renderedButton(.editNote, row: 2, in: hostingView)).performClick(nil)
+                XCTAssertTrue(waitUntil {
+                    hostingView.layoutSubtreeIfNeeded()
+                    return noteFields(in: hostingView).count == 1
+                })
+
+                guard pressKeyEquivalent(key, in: hostingView) else {
+                    throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+                }
+
+                let returned = waitUntil {
+                    hostingView.layoutSubtreeIfNeeded()
+                    return focusTargetRows(in: hostingView) == [2]
+                }
+                XCTAssertTrue(returned, "After \(key == .escape ? "Cancel" : "Save"): \(focusTargetRows(in: hostingView))")
+            }
+        }
+    }
+
     /// Changing one bookmark's note, and any other reader update, redraws
     /// the list without re-creating its rows. A re-created row would ask for
     /// VoiceOver focus again and pull VoiceOver back to it, so the request
@@ -440,6 +633,50 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
               let index = BookmarkCommand.rowButtons.firstIndex(of: command),
               rows[row].indices.contains(index) else { return nil }
         return rows[row][index]
+    }
+
+    /// For each VoiceOver focus request in the panel, the row (counted from
+    /// zero at the top) it lies behind, or nil for a request outside the
+    /// list. The trigger view lies behind the row's own button, level with
+    /// the buttons beside it.
+    private func focusTargetRows(in hostingView: NSView) -> [Int?] {
+        let rows = renderedRowButtons(in: hostingView)
+        return focusTriggers(in: hostingView).map { trigger in
+            let area = trigger.convert(trigger.bounds, to: nil)
+            return rows.firstIndex { buttons in
+                buttons.contains { button in
+                    let center = button.convert(button.bounds, to: nil).midY
+                    return area.minY <= center && center <= area.maxY
+                }
+            }
+        }
+    }
+
+    /// Offer `key` to the panel's window as a key equivalent, as AppKit does
+    /// with a key pressed in a window, so that the button with that keyboard
+    /// shortcut can take it. Returns whether anything did.
+    private func pressKeyEquivalent(_ key: KeyEquivalent, in hostingView: NSView) -> Bool {
+        // Virtual key codes of the keys these tests press.
+        let keyCodes: [Character: UInt16] = [
+            KeyEquivalent.return.character: 36,
+            KeyEquivalent.escape.character: 53,
+        ]
+        let characters = String(key.character)
+        guard let window = hostingView.window,
+              let keyCode = keyCodes[key.character],
+              let event = NSEvent.keyEvent(
+                  with: .keyDown,
+                  location: .zero,
+                  modifierFlags: [],
+                  timestamp: ProcessInfo.processInfo.systemUptime,
+                  windowNumber: window.windowNumber,
+                  context: nil,
+                  characters: characters,
+                  charactersIgnoringModifiers: characters,
+                  isARepeat: false,
+                  keyCode: keyCode
+              ) else { return false }
+        return window.performKeyEquivalent(with: event)
     }
 
     /// The editable text fields AppKit drew: the note field while adding or
