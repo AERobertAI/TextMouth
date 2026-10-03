@@ -200,17 +200,17 @@ final class IntegrationSleepTimerTests: XCTestCase {
                 let endOfLastChapter = try startSpeakingSilently(reader)
 
                 var spokeOn = false
+                var askedForTheNextBook = false
                 let recorder = recordingAnnouncements {
                     spokeOn = endSpeechSilently(endOfLastChapter, of: reader)
-                    // Long enough for the next book to have been asked for.
-                    spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+                    askedForTheNextBook = nextBookIsAskedFor(continued)
                 }
 
                 let behavior = outcome.behavior.rawValue
                 XCTAssertFalse(spokeOn, "\(behavior): the book was spoken again")
                 XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
                 XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
-                XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+                XCTAssertFalse(askedForTheNextBook, "\(behavior): the next book was asked for")
                 XCTAssertFalse(speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id), behavior)
                 XCTAssertEqual(reader.currentChapterIndex, outcome.chapterAfter, behavior)
             }
@@ -356,6 +356,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
             let continued = recordContinueRequests(in: world)
             defer { reader.stop() }
 
+            var askedForTheNextBook = false
             let recorder = recordingAnnouncements {
                 reader.startSleepTimer(duration: .endOfBook)
                 reader.play()
@@ -366,13 +367,12 @@ final class IntegrationSleepTimerTests: XCTestCase {
                     eventually(within: 10) { !reader.isCurrentlyPlaying && !service.isPlaying },
                     "\(behavior): the book never ended"
                 )
-                // Long enough for the next book to have been asked for.
-                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+                askedForTheNextBook = nextBookIsAskedFor(continued)
             }
 
             XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
             XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
-            XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+            XCTAssertFalse(askedForTheNextBook, "\(behavior): the next book was asked for")
             XCTAssertFalse(world.autoplayRequests.hasRequest(for: nextBook.id), behavior)
         }
     }
@@ -401,21 +401,21 @@ final class IntegrationSleepTimerTests: XCTestCase {
 
                 var spokeTheLastChapter = false
                 var spokeAfterTheBook = false
+                var askedForTheNextBook = false
                 let recorder = recordingAnnouncements {
                     spokeTheLastChapter = endSpeechSilently(endOfSecondChapter, of: reader)
                     XCTAssertEqual(reader.currentChapterIndex, 2, "\(behavior): the last chapter did not start")
                     if let endOfLastChapter = reader.speechService.onUtteranceFinished {
                         spokeAfterTheBook = endSpeechSilently(endOfLastChapter, of: reader)
                     }
-                    // Long enough for the next book to have been asked for.
-                    spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+                    askedForTheNextBook = nextBookIsAskedFor(continued)
                 }
 
                 XCTAssertTrue(spokeTheLastChapter, "\(behavior): the timer stopped speech before the last chapter")
                 XCTAssertFalse(spokeAfterTheBook, "\(behavior): the book was spoken again")
                 XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
                 XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
-                XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+                XCTAssertFalse(askedForTheNextBook, "\(behavior): the next book was asked for")
                 XCTAssertFalse(speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id), behavior)
                 XCTAssertEqual(reader.currentChapterIndex, outcome.chapterAfter, behavior)
             }
@@ -567,6 +567,14 @@ final class IntegrationSleepTimerTests: XCTestCase {
             samples.append(VolumeSample(secondsLeft: left / service.playbackSpeed, volume: service.intendedVolume))
         }
         return { samples }
+    }
+
+    /// Whether the next book is asked for, as `continued` records the
+    /// requests, within twice the time a finished book takes to ask for it:
+    /// a wait that ends as soon as one is asked for, and otherwise shows that
+    /// none was.
+    private func nextBookIsAskedFor(_ continued: () -> [Notification]) -> Bool {
+        eventually(within: ReaderViewModel.continueToNextBookDelay * 2) { !continued().isEmpty }
     }
 
     /// Record every `.continueToNextBook` posted in `world` from now on.
