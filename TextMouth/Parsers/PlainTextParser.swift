@@ -166,7 +166,16 @@ enum PlainTextParser {
             return HeadingLine(level: level, label: line, isUnderlined: true)
         }
 
-        // 3. Short all-caps lines, likely section headers.
+        // 3. Short all-caps lines, likely section headers. A line holding an
+        // ASCII small letter never is one, so most prose is turned away
+        // here, before its Characters are counted and an uppercase copy is
+        // made (PERF23). Uppercasing maps each scalar on its own, and no
+        // mapping leaves fewer base characters than it found, so the copy
+        // has more base characters than the line, or the same ones in the
+        // same places but for that letter's capital: never canonically equal.
+        if line.utf8.contains(where: { (0x61...0x7A).contains($0) }) {
+            return nil
+        }
         if line.count >= 3 && line.count <= 80
             && line.uppercased() == line
             && line.rangeOfCharacter(from: .letters) != nil

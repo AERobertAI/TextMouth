@@ -556,8 +556,9 @@ enum DAISYAudioConverter {
         let destPath = audioDir.appendingPathComponent(fileName)
         if !fm.fileExists(atPath: destPath.path) {
             do {
-                let audioData = try provider.readFile(at: sourcePath)
-                try audioData.write(to: destPath)
+                // Copied, never read whole: one audio file can hold hundreds
+                // of megabytes (PERF24).
+                try provider.copyFile(at: sourcePath, to: destPath)
             } catch {
                 print("Warning: Failed to copy audio file \(sourcePath): \(error.localizedDescription)")
             }
@@ -603,8 +604,7 @@ enum DAISYAudioConverter {
 
             if !fm.fileExists(atPath: destPath.path) {
                 do {
-                    let fileData = try provider.readFile(at: path)
-                    try fileData.write(to: destPath)
+                    try provider.copyFile(at: path, to: destPath)
                 } catch {
                     print("Warning: Failed to copy remaining audio file \(path): \(error.localizedDescription)")
                 }

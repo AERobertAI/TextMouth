@@ -11,28 +11,50 @@ enum HTMLToMarkdownConverter {
         stripDuplicateNavigation: Bool = false,
         headingTargets: [String: MarkdownHeadingAnnotation] = [:]
     ) throws -> String {
-        let doc = try SwiftSoup.parse(html)
+        try convert(
+            document: SwiftSoup.parse(html),
+            readingFlow: PublicationSemantics.ReadingFlow(source: html),
+            stripDuplicateNavigation: stripDuplicateNavigation,
+            headingTargets: headingTargets
+        )
+    }
 
-        let body = doc.body() ?? doc
+    /// Convert `document`, already parsed from markup whose reading-flow
+    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:)`
+    /// converts that markup, so a reader that has parsed a document for
+    /// other reasons need not parse it again. Removing duplicate navigation
+    /// changes `document`.
+    static func convert(
+        document: Document,
+        readingFlow: PublicationSemantics.ReadingFlow,
+        stripDuplicateNavigation: Bool = false,
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+    ) throws -> String {
+        let body = document.body() ?? document
         if stripDuplicateNavigation {
-            try removeDuplicateNavigation(from: body)
+            try removeDuplicateNavigation(from: body, readingFlow: readingFlow)
         }
 
         var result = ""
-        convertNode(body, into: &result, context: Context(headingTargets: headingTargets))
+        convertNode(body, into: &result, context: Context(headingTargets: headingTargets, readingFlow: readingFlow))
         return result.trimmingCharacters(in: writtenWhitespace)
     }
 
     /// Match EPUBParser's nav stripping: remove nav/TOC text only when the
     /// chapter has real heading elements outside nav, so nav-only headings
-    /// remain available for sparse documents.
-    static func removeDuplicateNavigation(from body: Element) throws {
+    /// remain available for sparse documents. `readingFlow` holds the rules
+    /// of the document `body` belongs to, when its markup is known.
+    static func removeDuplicateNavigation(
+        from body: Element,
+        readingFlow: PublicationSemantics.ReadingFlow = .unknownSource
+    ) throws {
         var allHeadingCount = 0
         var navHeadingCount = 0
         var navigationElements: [Element] = []
         collectNavigationDetails(
             from: body,
             insideNavigation: false,
+            readingFlow: readingFlow,
             allHeadingCount: &allHeadingCount,
             navHeadingCount: &navHeadingCount,
             navigationElements: &navigationElements
@@ -51,6 +73,7 @@ enum HTMLToMarkdownConverter {
     private static func collectNavigationDetails(
         from node: Node,
         insideNavigation: Bool,
+        readingFlow: PublicationSemantics.ReadingFlow,
         allHeadingCount: inout Int,
         navHeadingCount: inout Int,
         navigationElements: inout [Element]
@@ -59,7 +82,7 @@ enum HTMLToMarkdownConverter {
             // Hidden content, page lists, and landmarks are never converted,
             // so they neither count as headings nor need removing as navigation.
             guard let element = child as? Element,
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+                  !readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
             let isNavigation = insideNavigation || tag == "nav"
             if tag == "nav" {
@@ -77,6 +100,7 @@ enum HTMLToMarkdownConverter {
             collectNavigationDetails(
                 from: element,
                 insideNavigation: isNavigation,
+                readingFlow: readingFlow,
                 allHeadingCount: &allHeadingCount,
                 navHeadingCount: &navHeadingCount,
                 navigationElements: &navigationElements
@@ -90,6 +114,8 @@ enum HTMLToMarkdownConverter {
     private struct Context {
         /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
         var headingTargets: [String: MarkdownHeadingAnnotation]
+        /// Which elements of the document are outside its reading flow.
+        var readingFlow: PublicationSemantics.ReadingFlow
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
@@ -122,7 +148,7 @@ enum HTMLToMarkdownConverter {
         // Content outside the rendered reading flow (the hidden attribute, page
         // lists, and landmarks) contributes no words, headings, or destinations.
         guard tag != "script", tag != "style",
-              !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
+              !context.readingFlow.excludes(element) else { return }
 
         // Keep the element's words apart from its neighbors' exactly where the
         // direct reader does (HTMLReadingBoundary): a block is a paragraph of
@@ -147,7 +173,7 @@ enum HTMLToMarkdownConverter {
             // before the heading line, never inside the label: the Markdown
             // parser gives both the same offset and keeps the visible heading,
             // and a heading without visible text still keeps its destination.
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: false, into: &result)
             }
             // The heading line holds the label the direct reader gives it,
@@ -222,7 +248,7 @@ enum HTMLToMarkdownConverter {
         // and it always stands on a line of its own. Destinations inside the
         // block precede it rather than becoming words of the code.
         case "pre":
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: false, into: &result)
             }
             let code = HTMLReadingText.preformattedText(of: element)
@@ -235,7 +261,7 @@ enum HTMLToMarkdownConverter {
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
         case "code":
-            for annotation in headingAnnotations(inside: element, headingTargets: headingTargets) {
+            for annotation in headingAnnotations(inside: element, context: context) {
                 emit(annotation, inline: true, into: &result)
             }
             appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
@@ -321,20 +347,17 @@ enum HTMLToMarkdownConverter {
 
     /// Destinations carried by a heading's descendants, in document order.
     /// Content outside the reading flow is skipped exactly as conversion skips it.
-    private static func headingAnnotations(
-        inside heading: Element,
-        headingTargets: [String: MarkdownHeadingAnnotation]
-    ) -> [MarkdownHeadingAnnotation] {
-        guard !headingTargets.isEmpty else { return [] }
+    private static func headingAnnotations(inside heading: Element, context: Context) -> [MarkdownHeadingAnnotation] {
+        guard !context.headingTargets.isEmpty else { return [] }
         var annotations: [MarkdownHeadingAnnotation] = []
         for child in heading.getChildNodes() {
             guard let element = child as? Element,
-                  !PublicationSemantics.isExcludedFromReadingFlow(element) else { continue }
+                  !context.readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
-            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
+            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
                 annotations.append(annotation)
             }
-            annotations += headingAnnotations(inside: element, headingTargets: headingTargets)
+            annotations += headingAnnotations(inside: element, context: context)
         }
         return annotations
     }
@@ -356,7 +379,7 @@ enum HTMLToMarkdownConverter {
             }
             // A hidden item is not rendered: it must neither leave an empty
             // bullet nor take a number from the visible items that follow it.
-            guard !PublicationSemantics.isExcludedFromReadingFlow(item) else { continue }
+            guard !context.readingFlow.excludes(item) else { continue }
             appendBlock(between, to: &result)
             between = ""
             itemCount += 1
@@ -522,15 +545,33 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Inline Wrappers
 
+    /// Where an inline wrapper goes in the Markdown being built: the stretch
+    /// from `contentStart` to the end of the Markdown is the element's own
+    /// content, and the opener goes before `lower` and the closer before
+    /// `upper`, both within that stretch.
+    private struct InlineSpan {
+        var contentStart: String.Index
+        var lower: String.Index
+        var upper: String.Index
+    }
+
     /// Wrap the Markdown written since `start` (a UTF-8 offset into `result`)
     /// in `opener` and `closer`, leaving whitespace at either end outside.
     /// Words spanning lines (a block or line break inside the element) cannot
     /// form one inline span, and empty content needs no wrapper: both are
     /// left unwrapped, so only the words remain.
     private static func wrap(from start: Int, in result: inout String, opener: String, closer: String) {
+        guard let span = wrapSpan(from: start, in: result) else { return }
+        insert(opener, closer, around: span, in: &result)
+    }
+
+    /// Where `wrap` puts its opener and closer around the Markdown written
+    /// since `start`, or nil when it leaves the words unwrapped. Found here,
+    /// apart from the insertion, for the reason `insert` gives.
+    private static func wrapSpan(from start: Int, in result: String) -> InlineSpan? {
         let scalars = result.unicodeScalars
         let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
-        guard !scalars[contentStart...].contains("\n") else { return }
+        guard !scalars[contentStart...].contains("\n") else { return nil }
         var lower = contentStart
         var upper = scalars.endIndex
         while lower < upper, scalars[lower] == " " {
@@ -539,8 +580,8 @@ enum HTMLToMarkdownConverter {
         while upper > lower, scalars[scalars.index(before: upper)] == " " {
             upper = scalars.index(before: upper)
         }
-        guard lower < upper else { return }
-        insert(opener, at: lower, closer, at: upper, afterContentStart: contentStart, in: &result)
+        guard lower < upper else { return nil }
+        return InlineSpan(contentStart: contentStart, lower: lower, upper: upper)
     }
 
     /// Mark the Markdown written since `start` as emphasis with `delimiter`,
@@ -559,9 +600,17 @@ enum HTMLToMarkdownConverter {
     /// written right after a delimiter, with which it would merge into one
     /// run: this is what keeps emphasis beside emphasis apart.
     private static func emphasize(from start: Int, in result: inout String, delimiter: String) {
+        guard let span = emphasisSpan(from: start, in: result) else { return }
+        insert(delimiter, delimiter, around: span, in: &result)
+    }
+
+    /// Where `emphasize` puts its delimiters around the Markdown written
+    /// since `start`, or nil where CommonMark would not read them as a pair.
+    /// Found here, apart from the insertion, for the reason `insert` gives.
+    private static func emphasisSpan(from start: Int, in result: String) -> InlineSpan? {
         let scalars = result.unicodeScalars
         let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
-        guard !scalars[contentStart...].contains("\n") else { return }
+        guard !scalars[contentStart...].contains("\n") else { return nil }
         var lower = contentStart
         var upper = scalars.endIndex
         // Leave whitespace, escapes (a backslash and the ASCII punctuation it
@@ -588,13 +637,13 @@ enum HTMLToMarkdownConverter {
                 break
             }
         }
-        guard lower < upper else { return }
+        guard lower < upper else { return nil }
         let previous = lower > scalars.startIndex ? scalars[scalars.index(before: lower)] : nil
         let followsBoundary = previous.map { $0 == " " || $0 == "\n" || MarkdownLiteral.isASCIIPunctuation($0) } ?? true
         guard previous != "*",
               isFlankingSafe(scalars[lower]) || followsBoundary,
-              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return }
-        insert(delimiter, at: lower, delimiter, at: upper, afterContentStart: contentStart, in: &result)
+              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return nil }
+        return InlineSpan(contentStart: contentStart, lower: lower, upper: upper)
     }
 
     /// Letters, digits, and marks. CommonMark counts none of them as
@@ -631,24 +680,39 @@ enum HTMLToMarkdownConverter {
         return backslashes % 2 == 1
     }
 
-    /// Rewrite the Markdown from `contentStart` to the end of `result` with
-    /// `opener` inserted at `lower` and `closer` at `upper`. All three
-    /// indexes lie in that final stretch, so the work is proportional to the
-    /// wrapped content rather than to the chapter.
-    private static func insert(
-        _ opener: String, at lower: String.Index,
-        _ closer: String, at upper: String.Index,
-        afterContentStart contentStart: String.Index,
-        in result: inout String
-    ) {
-        let scalars = result.unicodeScalars
-        var wrapped = String.UnicodeScalarView()
-        wrapped.append(contentsOf: scalars[contentStart..<lower])
-        wrapped.append(contentsOf: opener.unicodeScalars)
-        wrapped.append(contentsOf: scalars[lower..<upper])
-        wrapped.append(contentsOf: closer.unicodeScalars)
-        wrapped.append(contentsOf: scalars[upper...])
-        result.unicodeScalars.replaceSubrange(contentStart..., with: wrapped)
+    /// Rewrite the Markdown from `span.contentStart` to the end of `result`
+    /// with `opener` inserted before `span.lower` and `closer` before
+    /// `span.upper`. All three indexes lie in that final stretch, so the
+    /// work is proportional to the wrapped content rather than to the
+    /// chapter, but only while `result` is the one reference to its storage
+    /// when the stretch is replaced. A view of `result` alive at that moment
+    /// (a `unicodeScalars` constant in this function or in its caller, as
+    /// there once were) shares the storage, so the standard library cannot
+    /// replace the stretch in place: it copies the whole Markdown converted
+    /// so far, scalar by scalar, and every emphasis and link then cost as
+    /// much as everything before it (PERF18). So the span is found by a
+    /// function that has returned, and the new stretch is built by another.
+    private static func insert(_ opener: String, _ closer: String, around span: InlineSpan, in result: inout String) {
+        let stretch = rewrapped(result, around: span, opener: opener, closer: closer)
+        result.unicodeScalars.replaceSubrange(span.contentStart..., with: stretch)
+    }
+
+    /// The stretch of `markdown` from `span.contentStart` to its end, with
+    /// `opener` before `span.lower` and `closer` before `span.upper`.
+    private static func rewrapped(
+        _ markdown: String,
+        around span: InlineSpan,
+        opener: String,
+        closer: String
+    ) -> String.UnicodeScalarView {
+        let scalars = markdown.unicodeScalars
+        var stretch = String.UnicodeScalarView()
+        stretch.append(contentsOf: scalars[span.contentStart..<span.lower])
+        stretch.append(contentsOf: opener.unicodeScalars)
+        stretch.append(contentsOf: scalars[span.lower..<span.upper])
+        stretch.append(contentsOf: closer.unicodeScalars)
+        stretch.append(contentsOf: scalars[span.upper...])
+        return stretch
     }
 
     /// The length of the longest run of `scalar` in `text`.

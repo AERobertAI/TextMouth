@@ -91,8 +91,53 @@ struct Chapter {
     /// Character ranges for each heading within this chapter's text
     var headingRanges: [(heading: Heading, range: Range<String.Index>)]
 
+    /// The number of words in `text`: runs of Characters that are not
+    /// whitespace (`Character.isWhitespace`), as
+    /// `text.split(whereSeparator: \.isWhitespace).count` counts them.
     var wordCount: Int {
-        text.split(whereSeparator: { $0.isWhitespace }).count
+        Self.wordCount(of: text)
+    }
+
+    /// The number of runs of Characters in `text` that are not whitespace,
+    /// counted without building a substring per word or reading every
+    /// Character whole (PERF21: 64 ms per MB of reading text before).
+    ///
+    /// An ASCII byte followed by another ASCII byte, or by the end, is a
+    /// whole Character: no ASCII scalar extends or prepends a grapheme
+    /// cluster, and the one pair that forms one, CR LF, is whitespace like
+    /// each of its halves. Such a byte is judged on its own: it is
+    /// whitespace when it is a space or one of tab, line feed, vertical
+    /// tab, form feed, and carriage return, the ASCII scalars with the
+    /// Unicode White_Space property. Every other Character is read whole
+    /// from its first byte, and is whitespace when its first scalar is, as
+    /// `Character.isWhitespace` decides. Each step starts on a Character
+    /// boundary, so the count is the one the split makes.
+    static func wordCount(of text: String) -> Int {
+        let bytes = text.utf8
+        var count = 0
+        var inWord = false
+        var index = bytes.startIndex
+        while index < bytes.endIndex {
+            let byte = bytes[index]
+            let next = bytes.index(after: index)
+            let isWhitespace: Bool
+            if byte < 0x80, next == bytes.endIndex || bytes[next] < 0x80 {
+                isWhitespace = byte == 0x20 || (0x09...0x0D).contains(byte)
+                // CR LF is one Character: step past both halves, so the
+                // next step starts on a boundary.
+                index = byte == 0x0D && next < bytes.endIndex && bytes[next] == 0x0A ? bytes.index(after: next) : next
+            } else {
+                isWhitespace = text[index].isWhitespace
+                index = text.index(after: index)
+            }
+            if isWhitespace {
+                inWord = false
+            } else if !inWord {
+                inWord = true
+                count += 1
+            }
+        }
+        return count
     }
 
     init(title: String = "", text: String = "", headings: [Heading] = [], headingRanges: [(heading: Heading, range: Range<String.Index>)] = []) {

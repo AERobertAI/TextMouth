@@ -123,6 +123,71 @@ extension Archive {
     }
 }
 
+// MARK: - Finding Entries
+
+/// An archive with its entries indexed by path, read from its central
+/// directory once.
+///
+/// ZIPFoundation finds an entry by path (`archive[path]`) by reading the
+/// central directory from its start, a record and a local header at a time,
+/// until a path matches. A reader that looks up every member of a book so
+/// reads records in proportion to its members times its entries: 2.1
+/// million for one EPUB of 2,204 entries, two thirds of the time it took to
+/// prepare (PERF20). Readers that look up more than a member or two read
+/// the entries once into this index instead; one that looks up only a
+/// member or two, such as reading an EPUB's metadata, is quicker without.
+///
+/// Lookups answer exactly as the archive does for an archive opened without
+/// a path encoding, as every reader opens one: by each entry's own `path`,
+/// compared as Swift compares strings, the first entry at a path winning,
+/// as `first(where:)` finds it.
+struct IndexedArchive {
+    /// The archive itself, which reads the entries' bytes.
+    let archive: Archive
+    /// Every entry, in the order the archive's central directory lists them.
+    let entries: [Entry]
+    /// The first entry at each path.
+    private let entriesByPath: [String: Entry]
+    /// The first file entry at each path, lowercased.
+    private let filesByLowercasedPath: [String: Entry]
+
+    /// `archive` with its entries read into the index.
+    init(_ archive: Archive) {
+        var entries: [Entry] = []
+        var entriesByPath: [String: Entry] = [:]
+        var filesByLowercasedPath: [String: Entry] = [:]
+        for entry in archive {
+            entries.append(entry)
+            let path = entry.path
+            if entriesByPath[path] == nil {
+                entriesByPath[path] = entry
+            }
+            if entry.type == .file {
+                let lowercased = path.lowercased()
+                if filesByLowercasedPath[lowercased] == nil {
+                    filesByLowercasedPath[lowercased] = entry
+                }
+            }
+        }
+        self.archive = archive
+        self.entries = entries
+        self.entriesByPath = entriesByPath
+        self.filesByLowercasedPath = filesByLowercasedPath
+    }
+
+    /// The first entry at exactly `path`, as `archive[path]` finds it.
+    subscript(path: String) -> Entry? {
+        entriesByPath[path]
+    }
+
+    /// The first file entry whose path matches `path` without regard to
+    /// case, as `archive.first { $0.type == .file && $0.path.lowercased()
+    /// == path.lowercased() }` finds it.
+    func file(matchingCaseInsensitively path: String) -> Entry? {
+        filesByLowercasedPath[path.lowercased()]
+    }
+}
+
 // MARK: - Reading
 
 /// The one way TextMouth takes an entry's bytes out of a ZIP archive,
@@ -152,6 +217,31 @@ enum ArchiveEntryReader {
         limit: Int64? = nil,
         holdingToDeclaredSize: Bool = false
     ) throws -> (data: Data, checksum: CRC32) {
+        var data = Data()
+        let checksum = try stream(entry, in: archive, limit: limit, holdingToDeclaredSize: holdingToDeclaredSize) { chunk in
+            // ZIPFoundation reuses each chunk's buffer, so its bytes are
+            // copied here rather than the chunk kept.
+            data.append(chunk)
+        }
+        return (data, checksum)
+    }
+
+    /// Streams `entry`'s bytes to `consume` as they come out of `archive`,
+    /// held to exactly the bounds `read(_:in:limit:holdingToDeclaredSize:)`
+    /// holds a read to, and returns the checksum of the bytes read: for a
+    /// reader that writes an entry out rather than holding it whole, as
+    /// DAISY audio conversion does (PERF24). `consume` must copy or write
+    /// each chunk before it returns: ZIPFoundation reuses its buffer.
+    /// - Throws: `ArchiveEntryOverflow` when the entry holds too much, any
+    ///   error `consume` throws, or ZIPFoundation's own error when the
+    ///   entry's data cannot be read.
+    static func stream(
+        _ entry: Entry,
+        in archive: Archive,
+        limit: Int64?,
+        holdingToDeclaredSize: Bool,
+        consume: (Data) throws -> Void
+    ) throws -> CRC32 {
         let limit = limit ?? ArchiveEntryLimits.current.limit(forEntryAt: entry.path)
         let declared = Int64(clamping: entry.uncompressedSize)
         guard declared <= limit else {
@@ -163,13 +253,7 @@ enum ArchiveEntryReader {
         let overflow: ArchiveEntryOverflow = holdingToDeclaredSize
             ? .pastDeclaredSize(path: entry.path, declared: declared)
             : .pastLimit(path: entry.path, limit: limit)
-        var data = Data()
-        let checksum = try stream(entry, in: archive, maximumBytes: maximumBytes, overflow: overflow) { chunk in
-            // ZIPFoundation reuses each chunk's buffer, so its bytes are
-            // copied here rather than the chunk kept.
-            data.append(chunk)
-        }
-        return (data, checksum)
+        return try stream(entry, in: archive, maximumBytes: maximumBytes, overflow: overflow, consume: consume)
     }
 
     /// Streams `entry`'s bytes to `consume` as they come out of `archive`,

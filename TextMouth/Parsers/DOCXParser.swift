@@ -83,7 +83,7 @@ enum DOCXParser {
         from url: URL,
         reportIncompleteContent: (DOCXParserError) -> Void = DOCXParser.logIncompleteContent
     ) throws -> String {
-        let archive = try openArchive(at: url)
+        let archive = IndexedArchive(try openArchive(at: url))
 
         // Parse styles first so we can identify heading paragraph styles
         let styles = try parseStyles(from: archive)
@@ -131,7 +131,7 @@ enum DOCXParser {
         from url: URL,
         reportDamagedMetadata: (DOCXParserError) -> Void = DOCXParser.logDamagedMetadata
     ) throws -> DOCXMetadata? {
-        guard let archive = try? openArchive(at: url) else { return nil }
+        guard let archive = (try? openArchive(at: url)).map(IndexedArchive.init) else { return nil }
 
         // Core properties live in docProps/core.xml
         guard let coreData = try? extractData(from: archive, path: Part.coreProperties) else {
@@ -156,10 +156,13 @@ enum DOCXParser {
     /// Exposed internally so regression tests validate the production style parser.
     /// - Throws: `DOCXParserError.malformedXML` when the styles part is damaged.
     static func readStyles(from url: URL) throws -> DOCXStyles {
-        try parseStyles(from: try openArchive(at: url))
+        try parseStyles(from: IndexedArchive(try openArchive(at: url)))
     }
 
     // MARK: - ZIP Extraction Helpers
+
+    // Each part is found in the package's entries, read once into an index
+    // when the package is opened (`IndexedArchive`, PERF20).
 
     /// Open the DOCX package at `url` for reading.
     /// - Throws: `DOCXParserError.fileNotFound` when no file is there, or
@@ -176,7 +179,7 @@ enum DOCXParser {
     }
 
     /// Extract raw data from a ZIP archive entry
-    private static func extractData(from archive: Archive, path: String) throws -> Data {
+    private static func extractData(from archive: IndexedArchive, path: String) throws -> Data {
         guard let data = try extractOptionalData(from: archive, path: path) else {
             throw DOCXParserError.missingEntry(path)
         }
@@ -190,10 +193,10 @@ enum DOCXParser {
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
     ///   more than `ArchiveEntryLimits.current` allows, or the archive's
     ///   error when the entry exists but cannot be unpacked.
-    private static func extractOptionalData(from archive: Archive, path: String) throws -> Data? {
+    private static func extractOptionalData(from archive: IndexedArchive, path: String) throws -> Data? {
         guard let entry = archive[path] else { return nil }
         do {
-            return try ArchiveEntryReader.read(entry, in: archive).data
+            return try ArchiveEntryReader.read(entry, in: archive.archive).data
         } catch let overflow as ArchiveEntryOverflow {
             throw DOCXParserError.malformedXML(file: path, reason: overflow.reason)
         }
@@ -208,7 +211,7 @@ enum DOCXParser {
     ///   present but damaged, or the archive's error when it cannot be unpacked.
     private static func parseOptionalPart<Content>(
         _ path: String,
-        in archive: Archive,
+        in archive: IndexedArchive,
         absent: Content,
         parse: (_ data: Data, _ path: String) throws -> Content
     ) throws -> Content {
@@ -217,21 +220,21 @@ enum DOCXParser {
     }
 
     /// Extract and parse the styles.xml to build a map of style IDs to heading levels
-    private static func parseStyles(from archive: Archive) throws -> DOCXStyles {
+    private static func parseStyles(from archive: IndexedArchive) throws -> DOCXStyles {
         try parseOptionalPart(Part.styles, in: archive, absent: DOCXStyles()) { data, path in
             try DOCXStylesParser(data: data, file: path).parse()
         }
     }
 
     /// Extract and parse numbering.xml for list definitions
-    private static func parseNumbering(from archive: Archive) throws -> DOCXNumbering {
+    private static func parseNumbering(from archive: IndexedArchive) throws -> DOCXNumbering {
         try parseOptionalPart(Part.numbering, in: archive, absent: DOCXNumbering()) { data, path in
             try DOCXNumberingParser(data: data, file: path).parse()
         }
     }
 
     /// Extract and parse document relationships for hyperlink targets
-    private static func parseRelationships(from archive: Archive) throws -> [String: String] {
+    private static func parseRelationships(from archive: IndexedArchive) throws -> [String: String] {
         try parseOptionalPart(Part.documentRelationships, in: archive, absent: [:]) { data, path in
             try DOCXRelationshipsParser(data: data, file: path).parse()
         }

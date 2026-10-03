@@ -17,19 +17,54 @@ extension EPUBParser {
         var heading: MarkdownHeadingAnnotation
     }
 
-    /// Keep source strings in spine order while inspecting navigation. DOMs
-    /// are short lived, avoiding retained SwiftSoup selector caches per book.
-    private struct SpineDocument {
-        var path: String
-        var html: String
-        var title: String
-        var number: Int
+    /// The book's navigation destinations, by the document each lies in,
+    /// gathered as the book is read: the navigation documents' first, then
+    /// each contents section's in reading order. Each destination (a
+    /// fragment of a document, or the document itself) is named once, by
+    /// the first name it is given; deduplicating destinations rather than
+    /// filenames keeps nested fragment links.
+    private struct NavigationTargets {
+        private var targetsByPath: [String: [NavigationTarget]] = [:]
+        private var seenFragmentsByPath: [String: Set<String>] = [:]
+
+        /// The destinations `targets` names.
+        init(_ targets: [NavigationTarget]) {
+            add(targets)
+        }
+
+        /// Add the destinations `targets` names that are not named already.
+        mutating func add(_ targets: [NavigationTarget]) {
+            for target in targets {
+                guard seenFragmentsByPath[target.path, default: []].insert(target.fragment).inserted else { continue }
+                targetsByPath[target.path, default: []].append(target)
+            }
+        }
+
+        /// The destinations in the document at `path`, in the order named.
+        func targets(in path: String) -> [NavigationTarget] {
+            targetsByPath[path] ?? []
+        }
     }
 
-    /// What reading one spine document produced: the document with the
-    /// destinations of any contents section inside it, or why it was left out.
+    /// One spine document as it was read, in spine order. Its DOM is gone:
+    /// the document was converted to Markdown from the DOM its contents scan
+    /// read, so it was parsed once (PERF19). DOMs stay short lived, so no
+    /// SwiftSoup selector caches pile up across a book.
+    private struct SpineDocument {
+        var path: String
+        var title: String
+        var number: Int
+        /// The Markdown converted while the document was read, with the
+        /// destinations named in it by then, or the conversion's error.
+        var conversion: Result<String, Error>
+        /// How many fragment destinations the conversion knew in it.
+        var convertedFragmentCount: Int
+    }
+
+    /// What reading one spine document produced: the document, or why it
+    /// was left out.
     private enum SpineRead {
-        case document(SpineDocument, contentsTargets: [NavigationTarget])
+        case document(SpineDocument)
         case omitted(ExtractionOmission.Reason)
     }
 
@@ -59,11 +94,12 @@ extension EPUBParser {
     /// - Throws: `EPUBParserError.noReadableChapters` with the report when
     ///   no chapter holds text, since an empty book is not a reading.
     static func preparedChapters(
-        archive: Archive,
+        archive: IndexedArchive,
         opfPath: String,
         opfData: OPFData
     ) throws -> (chapters: [PreparedChapter], report: ExtractionReport) {
-        var navigation = readNavigation(archive: archive, opfPath: opfPath, opfData: opfData)
+        // Prefer EPUB 3 navigation, then the declared NCX, then visible contents.
+        var navigation = NavigationTargets(readNavigation(archive: archive, opfPath: opfPath, opfData: opfData))
         var documents: [SpineDocument] = []
         var report = ExtractionReport(container: bookNameInMessages)
 
@@ -88,29 +124,22 @@ extension EPUBParser {
                 )
                 continue
             }
-            switch readSpineDocument(archive: archive, path: path, number: number) {
-            case .document(let document, let contentsTargets):
+            switch readSpineDocument(archive: archive, path: path, number: number, navigation: &navigation) {
+            case .document(let document):
                 documents.append(document)
-                navigation += contentsTargets
             case .omitted(let reason):
                 report.omissions.append(ExtractionOmission(chapterNumber: number, member: path, reason: reason))
             }
         }
 
-        // Prefer EPUB 3 navigation, then the declared NCX, then visible contents.
-        // Deduplicate destinations, not filenames: nested fragment links matter.
-        var targetsByPath: [String: [NavigationTarget]] = [:]
-        var seenFragmentsByPath: [String: Set<String>] = [:]
-        for target in navigation {
-            guard seenFragmentsByPath[target.path, default: []].insert(target.fragment).inserted else { continue }
-            targetsByPath[target.path, default: []].append(target)
-        }
-
         var chapters: [PreparedChapter] = []
         for document in documents {
             do {
-                let targets = targetsByPath[document.path] ?? []
-                guard let chapter = try preparedChapter(from: document, targets: targets, bookTitle: opfData.title) else {
+                let targets = navigation.targets(in: document.path)
+                let markdown = try finishedMarkdown(of: document, targets: targets, archive: archive)
+                guard let chapter = try preparedChapter(
+                    from: document, markdown: markdown, targets: targets, bookTitle: opfData.title
+                ) else {
                     report.blankChapterCount += 1
                     continue
                 }
@@ -152,48 +181,103 @@ extension EPUBParser {
     }
 
     /// Read the spine document at `path`, the `number`th in reading order,
-    /// with the destinations of any contents section inside it, or say why
-    /// it cannot be read: it is missing from the archive, its data cannot be
-    /// decoded, or its markup cannot be parsed.
-    private static func readSpineDocument(archive: Archive, path: String, number: Int) -> SpineRead {
+    /// adding the destinations of any contents section inside it to
+    /// `navigation`, and convert it with every destination `navigation`
+    /// then names in it; or say why it cannot be read: it is missing from
+    /// the archive, its data cannot be decoded, or its markup cannot be
+    /// parsed.
+    ///
+    /// The conversion reads the DOM the contents scan read, so each document
+    /// is parsed once (PERF19); only a contents section later in the reading
+    /// order can name a destination in it that the conversion did not know,
+    /// and `finishedMarkdown` converts such a document again.
+    private static func readSpineDocument(
+        archive: IndexedArchive,
+        path: String,
+        number: Int,
+        navigation: inout NavigationTargets
+    ) -> SpineRead {
         guard let entry = archive[path] else { return .omitted(.missingMember) }
-        guard let html = try? text(of: entry, in: archive) else { return .omitted(.unreadableMember) }
+        guard let html = try? text(of: entry, in: archive.archive) else { return .omitted(.unreadableMember) }
+        let readingFlow = PublicationSemantics.ReadingFlow(source: html)
+        let doc: Document
+        let title: String
         do {
-            let doc = try SwiftSoup.parse(html)
-            let title = try doc.title()
+            doc = try SwiftSoup.parse(html)
+            title = try doc.title()
 
             // Some converted EPUBs have an incomplete machine TOC but a full
             // linked contents section in the reading order (including Helliconia).
             // Only explicitly identified TOCs contribute labels, never prose links.
             // A contents section must also be rendered: page lists, landmarks,
-            // and hidden subtrees are never searched for one.
+            // and hidden subtrees are never searched for one. The scan comes
+            // first because conversion removes duplicate navigation.
             let body = doc.body() ?? doc
-            let contentsTargets = elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
-                .filter(isContentsContainer)
-                .flatMap { tocTargets(in: $0, relativeTo: path) }
-            return .document(
-                SpineDocument(path: path, html: html, title: title, number: number),
-                contentsTargets: contentsTargets
+            navigation.add(
+                elements(in: body, pruning: readingFlow.excludes)
+                    .filter(isContentsContainer)
+                    .flatMap { tocTargets(in: $0, relativeTo: path, readingFlow: readingFlow) }
             )
         } catch {
             return .omitted(.malformedMarkup)
         }
+        let targets = navigation.targets(in: path)
+        let conversion = Result {
+            try HTMLToMarkdownConverter.convert(
+                document: doc, readingFlow: readingFlow,
+                stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets)
+            )
+        }
+        return .document(SpineDocument(
+            path: path, title: title, number: number,
+            conversion: conversion, convertedFragmentCount: fragmentCount(of: targets)
+        ))
     }
 
-    /// Convert one spine document into a chapter whose headings keep their
+    /// The Markdown of `document` converted with all of `targets`, every
+    /// destination the book names in it: the conversion made as it was read
+    /// when that already knew each fragment destination, or else a new one.
+    /// A fragment destination named later only adds to the ones known, so
+    /// knowing as many means knowing the same. Should the document fail to
+    /// read again, the first conversion stands, without those destinations.
+    /// - Throws: the conversion's error, when the markup cannot be converted.
+    private static func finishedMarkdown(
+        of document: SpineDocument,
+        targets: [NavigationTarget],
+        archive: IndexedArchive
+    ) throws -> String {
+        guard fragmentCount(of: targets) > document.convertedFragmentCount,
+              let entry = archive[document.path],
+              let html = try? text(of: entry, in: archive.archive) else {
+            return try document.conversion.get()
+        }
+        return try HTMLToMarkdownConverter.convert(
+            html, stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets)
+        )
+    }
+
+    /// The destinations among `targets` that name a fragment of their
+    /// document, keyed by fragment, as conversion looks them up.
+    private static func headingTargets(among targets: [NavigationTarget]) -> [String: MarkdownHeadingAnnotation] {
+        Dictionary(uniqueKeysWithValues: targets.filter { !$0.fragment.isEmpty }.map { ($0.fragment, $0.heading) })
+    }
+
+    /// How many of `targets` name a fragment of their document.
+    private static func fragmentCount(of targets: [NavigationTarget]) -> Int {
+        targets.reduce(0) { $0 + ($1.fragment.isEmpty ? 0 : 1) }
+    }
+
+    /// Make one converted spine document a chapter whose headings keep their
     /// navigation labels and targets, or nil when it holds no text at all.
-    /// `bookTitle` is the package title, which never names a chapter.
+    /// `markdown` is the document converted with `targets`; `bookTitle` is
+    /// the package title, which never names a chapter.
     private static func preparedChapter(
         from document: SpineDocument,
+        markdown converted: String,
         targets: [NavigationTarget],
         bookTitle: String
     ) throws -> PreparedChapter? {
-        let headingTargets = Dictionary(uniqueKeysWithValues: targets.filter { !$0.fragment.isEmpty }.map {
-            ($0.fragment, $0.heading)
-        })
-        var markdown = try HTMLToMarkdownConverter.convert(
-            document.html, stripDuplicateNavigation: true, headingTargets: headingTargets
-        )
+        var markdown = converted
         guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
 
         let documentTitle = normalizedLabel(document.title)
@@ -223,7 +307,7 @@ extension EPUBParser {
     /// Only table-of-contents semantics are chapter navigation: the EPUB 3 TOC
     /// nav, the NCX navMap, and the legacy guide's TOC. Page lists (including
     /// the NCX pageList) and landmarks are never read.
-    private static func readNavigation(archive: Archive, opfPath: String, opfData: OPFData) -> [NavigationTarget] {
+    private static func readNavigation(archive: IndexedArchive, opfPath: String, opfData: OPFData) -> [NavigationTarget] {
         var result: [NavigationTarget] = []
         // A guide reference to a navigation document read here would only find
         // the same TOC again, next to that document's page list and landmarks.
@@ -234,8 +318,9 @@ extension EPUBParser {
             guard let html = try? extractString(archive: archive, path: path),
                   let doc = try? SwiftSoup.parse(html) else { continue }
             navigationDocumentPaths.insert(path)
+            let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for toc in tableOfContentsNavigations(in: doc) {
-                result += tocTargets(in: toc, relativeTo: path)
+                result += tocTargets(in: toc, relativeTo: path, readingFlow: readingFlow)
             }
         }
 
@@ -261,8 +346,9 @@ extension EPUBParser {
                   let html = try? extractString(archive: archive, path: path),
                   let doc = try? SwiftSoup.parse(html) else { continue }
             let fragment = ParserUtilities.splitFragment(href).fragment
-            for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment) {
-                result += tocTargets(in: container, relativeTo: path)
+            let readingFlow = PublicationSemantics.ReadingFlow(source: html)
+            for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment, readingFlow: readingFlow) {
+                result += tocTargets(in: container, relativeTo: path, readingFlow: readingFlow)
             }
         }
         return result
@@ -281,9 +367,14 @@ extension EPUBParser {
     /// identifies when that element is rendered; otherwise the document's
     /// semantic TOCs; and only for an older contents page that has neither,
     /// its body. `linkedTargets` still filters whichever container is chosen.
-    private static func guideTOCContainers(in body: Element, fragment: String) -> [Element] {
+    /// `readingFlow` holds the rules of the document `body` belongs to.
+    private static func guideTOCContainers(
+        in body: Element,
+        fragment: String,
+        readingFlow: PublicationSemantics.ReadingFlow
+    ) -> [Element] {
         if !fragment.isEmpty,
-           let target = elements(in: body, pruning: PublicationSemantics.isExcludedFromReadingFlow)
+           let target = elements(in: body, pruning: readingFlow.excludes)
             .first(where: { (try? $0.attr("id")) == fragment }) {
             return [target]
         }
@@ -294,8 +385,16 @@ extension EPUBParser {
     /// Collect one TOC container's destinations. A semantic TOC keeps its hidden
     /// branches: EPUB 3.3 (§7.5, example 54) hides them only from the rendered
     /// content flow, never from navigation interfaces such as the headings list.
-    private static func tocTargets(in container: Element, relativeTo path: String) -> [NavigationTarget] {
-        linkedTargets(in: container, relativeTo: path, insideTOC: PublicationSemantics.isTableOfContents(container))
+    /// `readingFlow` holds the rules of the document `container` belongs to.
+    private static func tocTargets(
+        in container: Element,
+        relativeTo path: String,
+        readingFlow: PublicationSemantics.ReadingFlow
+    ) -> [NavigationTarget] {
+        linkedTargets(
+            in: container, relativeTo: path,
+            insideTOC: PublicationSemantics.isTableOfContents(container), readingFlow: readingFlow
+        )
     }
 
     /// Traverse NCX children directly so labels stay with their own parent and
@@ -321,13 +420,14 @@ extension EPUBParser {
         in node: Node,
         relativeTo path: String,
         level: Int = 0,
-        insideTOC: Bool
+        insideTOC: Bool,
+        readingFlow: PublicationSemantics.ReadingFlow
     ) -> [NavigationTarget] {
         var result: [NavigationTarget] = []
         for element in node.getChildNodes().compactMap({ $0 as? Element }) {
             let withinTOC = insideTOC || PublicationSemantics.isTableOfContents(element)
             guard !PublicationSemantics.isSupplementaryNavigation(element),
-                  withinTOC || !PublicationSemantics.isHidden(element) else { continue }
+                  withinTOC || !readingFlow.isHidden(element) else { continue }
             let tag = element.tagName()
             if tag == "a", let href = try? element.attr("href"),
                let label = try? element.text(),
@@ -338,7 +438,8 @@ extension EPUBParser {
                 in: element,
                 relativeTo: path,
                 level: level + (tag == "ol" || tag == "ul" ? 1 : 0),
-                insideTOC: withinTOC
+                insideTOC: withinTOC,
+                readingFlow: readingFlow
             )
         }
         return result
