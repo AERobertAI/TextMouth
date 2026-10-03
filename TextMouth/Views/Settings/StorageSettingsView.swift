@@ -360,6 +360,10 @@ struct StorageSettingsView: View {
             } header: {
                 Text("Library Maintenance")
             }
+
+            // Where the diagnostic logs are written, where they are now, and
+            // a way to show them in Finder (the user's decision of October 3).
+            LogsSettingsSection()
         }
         .padding()
         .alert("Rebuild Directory", isPresented: $showRebuildConfirmation) {

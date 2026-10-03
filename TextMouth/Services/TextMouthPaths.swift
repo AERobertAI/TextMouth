@@ -133,13 +133,14 @@ enum TextMouthPaths {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
-    /// The diagnostic logs' folder: this Mac's ~/Library/Logs/TextMouth
-    /// (`MachineLocalPaths.logs`), never the data directory (FR02), so
-    /// logging works while the data directory is missing and the logs
-    /// never sync to the cloud. Logs written into the data directory's own
-    /// Logs folder by earlier releases stay there.
+    /// The name of the folder of logs inside the data directory.
+    static let logsFolderName = "Logs"
+
+    /// The folder the diagnostic logs are written to now (`logDestination`):
+    /// the data directory's Logs folder, or this Mac's
+    /// ~/Library/Logs/TextMouth.
     static var logsDir: URL {
-        MachineLocalPaths.logs
+        logDestination.folder
     }
 
     static var configFile: URL {
@@ -158,12 +159,85 @@ enum TextMouthPaths {
         root.appendingPathComponent("reading_stats.json")
     }
 
-    // MARK: - Debug Log
+    // MARK: - Where the Logs Go
 
     /// The main diagnostic log (`DiagnosticLog.File.debug`), which names
-    /// every log file.
+    /// every log file, in the folder lines go to now.
     static var debugLogFile: URL {
         DiagnosticLog.File.debug.url
+    }
+
+    /// Where the diagnostic logs are written now, and why there: under
+    /// Storage settings' choice, in the data directory in use, as the app's
+    /// log writer resolves it for every line (`LogWriter.Environment.app`).
+    static var logDestination: LogDestination {
+        LogWriter.Environment.app.destination
+    }
+
+    /// Where the logs would go under `location`, with the data directory in
+    /// use and this Mac's Logs folder as they are now: what Storage settings
+    /// show for the choice on screen.
+    static func logDestination(for location: LogLocation) -> LogDestination {
+        LogWriter.Environment.app.destination(for: location)
+    }
+
+    /// The folder Storage settings' Show Logs in Finder opens under
+    /// `location`: the one lines go to now, this Mac's Logs folder made
+    /// first when it is missing, as before the first line written there. A
+    /// folder in the data directory is never made: the resolution names the
+    /// data directory's Logs folder only while it is there.
+    static func preparedLogsFolder(for location: LogLocation) -> URL {
+        let destination = logDestination(for: location)
+        if destination.reason.isThisMac {
+            // A folder that can't be made is reported when Finder can't open it.
+            try? LogWriter.makeThisMacsFolder(destination.folder)
+        }
+        return destination.folder
+    }
+
+    /// The one resolution of the logs' folder (the user's decision of
+    /// October 3), with everything it depends on given, so tests can give
+    /// their own; every log line's folder is resolved here.
+    ///
+    /// - `machine`: this Mac's Logs folder, `thisMacsFolder`.
+    /// - `dataDirectory`: the Logs folder inside `dataDirectory`, while the
+    ///   library model has not found the data directory unavailable
+    ///   (`isUnavailable`) and that folder is there. Otherwise this Mac's
+    ///   Logs folder, with the reason, until the data directory's can take
+    ///   lines again. Nothing is made here: the data directory's Logs folder
+    ///   is made with its other folders (`ensureDirectoryStructure`), so a
+    ///   line never brings back a data directory that is gone (FR02).
+    ///
+    /// Reads metadata only, never downloading anything, since it runs for
+    /// every line and on the main thread for Storage settings.
+    static func logDestination(
+        for location: LogLocation,
+        dataDirectory: URL,
+        thisMacsFolder: URL,
+        isUnavailable: (URL) -> Bool
+    ) -> LogDestination {
+        guard location == .dataDirectory else {
+            return LogDestination(folder: thisMacsFolder, reason: .thisMac)
+        }
+        let fallback = { (why: LogFallback) in LogDestination(folder: thisMacsFolder, reason: .fallback(why)) }
+        guard !isUnavailable(dataDirectory) else {
+            return fallback(.libraryUnavailable)
+        }
+        let logs = dataDirectory.appendingPathComponent(logsFolderName, isDirectory: true)
+        switch DatalessFiles.withoutDownloading({ FolderState(of: logs) }) {
+        case .folder:
+            return LogDestination(folder: logs, reason: .dataDirectory)
+        case .missing:
+            // Either the Logs folder or the data directory itself is gone.
+            let isDataDirectoryThere = DatalessFiles.withoutDownloading { FolderState(of: dataDirectory).isFolder }
+            return fallback(isDataDirectoryThere ? .logsFolderMissing : .dataDirectoryMissing)
+        case .notAFolder:
+            return fallback(.logsFolderUnusable("it is a file, not a folder"))
+        case .unreadable(let reason):
+            return fallback(.logsFolderUnusable(reason))
+        case .onlyInCloud:
+            return fallback(.logsFolderUnusable("it is only in the cloud"))
+        }
     }
 
     // MARK: - TMB Package Helpers
@@ -256,8 +330,11 @@ enum TextMouthPaths {
         } else {
             try requireExistingDataDirectory(root)
         }
-        // The data directory's own folder of books, directly inside it.
-        try createFolders([libraryFolderName], inside: root)
+        // The data directory's own folders, each directly inside it: its
+        // books, and its logs, which the log writer never makes itself.
+        for name in [libraryFolderName, logsFolderName] {
+            try createFolders([name], inside: root)
+        }
     }
 
     /// Creates the library subfolder `folderPath`, with any folder above it
@@ -464,19 +541,7 @@ enum TextMouthPaths {
         oldAppSupportDir?.appendingPathComponent("library.json")
     }
 
-    // MARK: - Async Logging
-
-    /// Serial background queue for all log file writes. Logging uses
-    /// synchronous FileHandle I/O (seekToEnd, write(contentsOf:), close)
-    /// which blocks the calling thread. Without this queue, logging
-    /// during playback callbacks blocks the main thread and causes
-    /// UI freezes — especially when disk I/O is slow (Spotlight
-    /// indexing, Time Machine backup, etc.). One queue for every log
-    /// file also keeps lines from different writers from interleaving.
-    private static let logQueue = DispatchQueue(
-        label: "com.textmouth.logging",
-        qos: .utility
-    )
+    // MARK: - Writing Logs
 
     /// Size at which a log file is rotated. `DiagnosticLog` keeps routine
     /// chatter out unless tracing is on, but events accumulate for as long as
@@ -488,85 +553,22 @@ enum TextMouthPaths {
     /// e.g. `textmouth_debug.log.previous`.
     static let rotatedLogExtension = "previous"
 
-    /// Append a timestamped line to a log file on a background queue.
-    /// Safe to call from any thread including main — the actual I/O
-    /// is dispatched to logQueue so it never blocks the caller.
+    /// Appends a timestamped line to the log `file`, through the app's log
+    /// writer (`LogWriter.shared`), which resolves the log's folder as it
+    /// writes the line, on a queue of its own. Safe to call from any thread:
+    /// it never waits for the write.
     ///
     /// This is the writer beneath `DiagnosticLog`, which decides what a line
     /// may say and whether it is written at all; log through that, not here.
-    static func appendLog(to logFile: URL, message: String) {
-        let line = "\(Date()): \(message)\n"
-        guard let data = line.data(using: .utf8) else { return }
-        logQueue.async {
-            appendNow(data, to: currentLocation(of: logFile))
-        }
+    static func appendLog(to file: DiagnosticLog.File, message: String) {
+        LogWriter.shared.append(message, to: file)
     }
 
-    /// `logFile`, named when its line was queued, where it is now: a line
-    /// queued before a data-directory move published and written after it
-    /// goes to the same log in the new data directory, never into the old
-    /// one (TODO S04).
-    private static func currentLocation(of logFile: URL) -> URL {
-        let path = StorageBoundary.shared.rebasedToCurrent(logFile.path)
-        return path == logFile.path ? logFile : URL(fileURLWithPath: path, isDirectory: false)
-    }
-
-    /// Block until every log line queued so far has been written (or
-    /// dropped). Tests use this to observe log files deterministically.
+    /// Blocks until every log line queued so far has been written, or
+    /// dropped. A data-directory move calls this before it copies anything,
+    /// and tests before they read a log.
     static func flushLogs() {
-        logQueue.sync {}
-    }
-
-    /// Perform one append on the log queue.
-    ///
-    /// Logging is diagnostic only, so every failure is swallowed: a full disk,
-    /// an unwritable file, or a missing directory must never crash or stall
-    /// reading. The legacy `seekToEndOfFile`/`write(_:)` calls raised
-    /// Objective-C exceptions on such failures and took the whole app down
-    /// (observed with ENOSPC); the throwing FileHandle APIs report them as
-    /// errors instead. The end offset returned by `seekToEnd()` doubles as the
-    /// size check that decides whether to rotate before writing.
-    private static func appendNow(_ data: Data, to logFile: URL) {
-        do {
-            guard FileManager.default.fileExists(atPath: logFile.path) else {
-                try createLogFile(logFile, holding: data)
-                return
-            }
-            let handle = try FileHandle(forWritingTo: logFile)
-            let currentSize = try handle.seekToEnd()
-            if currentSize >= maxLogFileSize {
-                try handle.close()
-                rotate(logFile)
-                try data.write(to: logFile)
-            } else {
-                defer { try? handle.close() }
-                try handle.write(contentsOf: data)
-            }
-        } catch {
-            // Intentionally dropped: see above.
-        }
-    }
-
-    /// Starts the log file at `logFile` with `data`. This Mac's logs folder
-    /// is made first when it is missing, as on the first launch after the
-    /// logs left the data directory (FR02); no other folder is ever made
-    /// for a log, so a line never brings back a data directory that is gone.
-    private static func createLogFile(_ logFile: URL, holding data: Data) throws {
-        let folder = logFile.deletingLastPathComponent()
-        if folder.standardizedFileURL.path == logsDir.standardizedFileURL.path,
-           !FileManager.default.fileExists(atPath: folder.path) {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        }
-        try data.write(to: logFile)
-    }
-
-    /// Keep the full log as its one `.previous` generation and let the caller
-    /// start a fresh file, so a log never occupies more than two generations.
-    /// Failures leave the current file in place; the next append retries.
-    private static func rotate(_ logFile: URL) {
-        let rotated = logFile.appendingPathExtension(rotatedLogExtension)
-        try? FileManager.default.removeItem(at: rotated)
-        try? FileManager.default.moveItem(at: logFile, to: rotated)
+        LogWriter.shared.flush()
     }
 
     // MARK: - Private

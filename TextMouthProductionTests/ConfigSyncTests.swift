@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -761,6 +762,82 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "config.json keyboardShortcuts.Go Back: could not be read").isEmpty)
     }
 
+    // MARK: - Where the logs are written
+
+    /// The log location applied from config.json is stored where the log
+    /// writer reads it, and saved back as "dataDirectory" or "machine"; a
+    /// store holding none is saved with the default, so config.json always
+    /// shows the choice in force.
+    func testTheLogLocationIsAppliedAndSavedByItsName() throws {
+        let store = try isolatedDefaults()
+        let viewModel = makeIsolatedViewModel(store)
+        var standard = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &standard)
+        XCTAssertEqual(try jsonObject(standard)["logLocation"] as? String, "dataDirectory")
+
+        viewModel.applyConfigChanges(try decodeConfig(#"{"logLocation": "machine"}"#))
+
+        XCTAssertEqual(LogLocation.preference.read(from: store), .machine)
+        XCTAssertEqual(viewModel.logLocation, .machine)
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(try jsonObject(saved)["logLocation"] as? String, "machine")
+    }
+
+    /// A log location config.json holds that TextMouth can't use, another
+    /// word, another spelling, or not text at all, is repaired to "not
+    /// chosen" as the file is read and logged once; it, a missing one, a
+    /// null, and an empty one all leave the choice in force alone.
+    func testUnusableLogLocationsLeaveTheChoiceAlone() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let viewModel = makeIsolatedViewModel(store)
+        viewModel.logLocation = .machine
+        let unsupported = "cloud-\(UUID().uuidString)"
+
+        let unusable = try decodeConfig(#"{"logLocation": "\#(unsupported)"}"#)
+        XCTAssertEqual(unusable.logLocation, "")
+        XCTAssertEqual(try decodeConfig(#"{"logLocation": "Machine"}"#).logLocation, "")
+        XCTAssertEqual(try decodeConfig(#"{"logLocation": 7}"#).logLocation, "")
+        for config in [unusable, try decodeConfig("{}"), try decodeConfig(#"{"logLocation": null}"#),
+                       try decodeConfig(#"{"logLocation": ""}"#)] {
+            viewModel.applyConfigChanges(config)
+        }
+
+        XCTAssertEqual(LogLocation.preference.read(from: store), .machine)
+        XCTAssertEqual(debugLogLines(containing: unsupported).count, 1)
+    }
+
+    /// A choice made in Storage settings is stored where the log writer
+    /// reads it and saved to config.json at once; so is one made outside
+    /// the settings model, as `defaults write` makes one, which the model
+    /// also announces, so the picker shows it.
+    func testALogLocationChosenAnywhereIsSavedToConfigJSON() throws {
+        let store = try isolatedDefaults()
+        let url = try makeConfigFileURL()
+        let viewModel = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: store,
+            configService: ConfigService(fileURL: url)
+        )
+        var announcements = 0
+        let subscription = viewModel.objectWillChange.sink { announcements += 1 }
+        defer { subscription.cancel() }
+
+        viewModel.logLocation = .machine
+
+        XCTAssertEqual(store.string(forKey: "logLocation"), "machine")
+        XCTAssertEqual(try jsonObject(from: Data(contentsOf: url))["logLocation"] as? String, "machine")
+
+        let announcedBefore = announcements
+        LogLocation.preference.write(.dataDirectory, to: store)
+
+        XCTAssertEqual(try jsonObject(from: Data(contentsOf: url))["logLocation"] as? String, "dataDirectory")
+        XCTAssertGreaterThan(announcements, announcedBefore, "the settings model did not announce the change")
+        XCTAssertEqual(viewModel.logLocation, .dataDirectory)
+    }
+
     // MARK: - Portability
 
     /// Every portable preference survives config.json (TODO C04): each is
@@ -1050,6 +1127,8 @@ final class ConfigSyncTests: XCTestCase {
             "restartTimerGestureEnabled": true,
             "restartTimerGesturePattern": "togglePlayPause,nextTrack",
             "restartTimerGestureWindow": 3.5,
+            // Storage: where the log writer writes.
+            "logLocation": LogLocation.machine.rawValue,
         ]
     }
 

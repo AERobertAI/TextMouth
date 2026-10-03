@@ -25,8 +25,8 @@ enum RealUserAccount {
 struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
     /// The keys TextMouth itself saves outside its settings window: the ones
     /// a test exercising the data directory, sounds, substitutions, repeated
-    /// symbols, window restoration, the sleep timer, or shortcuts would
-    /// change if it reached the user's preferences.
+    /// symbols, window restoration, the sleep timer, shortcuts, or where the
+    /// logs are written would change if it reached the user's preferences.
     static let textMouthKeys = [
         "textMouthDataDirectory",
         "textMouthDataDirectoryBookmark",
@@ -41,7 +41,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "repeatedSymbolSet",
         "NSQuitAlwaysKeepsWindows",
         "sleepTimer.lastUsedDuration",
-        "customKeyboardBindings"
+        "customKeyboardBindings",
+        "logLocation"
     ]
 
     /// Each key's digest, or "absent" when the user has no value for it.

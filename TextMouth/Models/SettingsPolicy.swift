@@ -379,6 +379,13 @@ enum SettingsPolicy {
         admits: { RepeatedSymbolRule.canFormRuns($0) }
     )
 
+    // MARK: Logs
+
+    /// Where the diagnostic logs are written (Storage settings, Logs
+    /// picker): inside the data directory until the user picks this Mac's
+    /// Logs folder.
+    static let logLocation = EnumSettingRule(key: "logLocation", defaultValue: LogLocation.dataDirectory)
+
     // MARK: Keyed by enum cases
 
     /// The sound each playback event plays (Sounds settings pickers): one of

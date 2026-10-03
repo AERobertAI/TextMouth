@@ -545,11 +545,18 @@ enum MachineLocalPaths {
             .appendingPathComponent("Library/Application Support/com.textmouth.TextMouth", isDirectory: true)
     }
 
-    /// ~/Library/Logs/TextMouth: the diagnostic logs.
+    /// ~/Library/Logs/TextMouth: the diagnostic logs when Storage settings
+    /// put them on this Mac, and while the data directory can't take them
+    /// (`TextMouthPaths.logDestination`).
     static var logs: URL {
-        TextMouthRuntime.current.homeDirectory
-            .appendingPathComponent("Library/Logs/TextMouth", isDirectory: true)
+        TextMouthRuntime.current.homeDirectory.appendingPathComponent(logsInHome, isDirectory: true)
     }
+
+    /// How Storage settings, VoiceOver, and log lines name `logs`.
+    static let logsName = "~/" + logsInHome
+
+    /// Where `logs` is inside the home directory.
+    private static let logsInHome = "Library/Logs/TextMouth"
 
     /// Copies of the books open in readers, so an open audiobook keeps
     /// playing when the sync service removes its download or the network

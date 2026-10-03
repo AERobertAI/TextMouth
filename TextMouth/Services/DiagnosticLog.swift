@@ -2,10 +2,10 @@ import Foundation
 
 /// TextMouth's one policy for its diagnostic logs: what a line may say,
 /// which lines are written, and how many (TODO Q07). Log lines go through
-/// here, to `TextMouthPaths.appendLog`, which writes them without ever
-/// blocking or crashing the app and rotates each file at 2 MB into a single
-/// `.previous` generation. Nothing else calls that writer, as
-/// `LogContentPolicyTests` checks.
+/// here, to `TextMouthPaths.appendLog` and the log writer beneath it
+/// (`LogWriter`), which writes them without ever blocking or crashing the
+/// app and rotates each file at 2 MB into a single `.previous` generation.
+/// Nothing else calls that writer, as `LogContentPolicyTests` checks.
 ///
 /// ## What a line may contain
 ///
@@ -77,9 +77,10 @@ enum DiagnosticLog {
         case app
     }
 
-    /// The log files, all in this Mac's ~/Library/Logs/TextMouth, never in
-    /// the data directory (`TextMouthPaths.logsDir`, FR02). Each keeps at
-    /// most two generations: itself and one `.previous`.
+    /// The log files, all in one folder: the data directory's Logs folder,
+    /// or this Mac's ~/Library/Logs/TextMouth, as Storage settings choose
+    /// and the data directory allows (`TextMouthPaths.logDestination`). Each
+    /// keeps at most two generations: itself and one `.previous`.
     enum File: String, CaseIterable, Sendable {
         /// The main log: every line that has no log of its own below.
         case debug = "textmouth_debug.log"
@@ -90,7 +91,7 @@ enum DiagnosticLog {
         /// audio, and how each chunk of direct speech started and finished.
         case speechTransitions = "textmouth_transition.log"
 
-        /// Where the file is: in this Mac's logs folder.
+        /// Where the file is now: in the folder lines go to now.
         var url: URL {
             TextMouthPaths.logsDir.appendingPathComponent(rawValue)
         }
@@ -415,7 +416,7 @@ extension DiagnosticLog {
             traceLinesPerSecond: Int = DiagnosticLog.traceLinesPerSecond,
             reportInterval: TimeInterval = DiagnosticLog.suppressionReportInterval,
             write: @escaping @Sendable (_ line: String, _ file: File) -> Void = { line, file in
-                TextMouthPaths.appendLog(to: file.url, message: line)
+                TextMouthPaths.appendLog(to: file, message: line)
             },
             echo: @escaping @Sendable (_ line: String) -> Void = { print($0) }
         ) {

@@ -285,6 +285,10 @@ final class LogContentPolicyTests: XCTestCase {
         "READER_DOWNLOAD_STARTED", "READER_READ_REFUSED",
         "WORKING_COPIES_SWEPT", "WORKING_COPY_LEFT", "WORKING_COPY_MADE", "WORKING_COPY_REMOVED",
         "WORKING_COPY_SKIPPED", "MAINTENANCE_SKIPPED_IN_CLOUD",
+        // The logs themselves (the user's decision of October 3): lines changing place between the
+        // data directory's Logs folder and this Mac's, and a log started over because it could not
+        // be renamed to its older generation.
+        "LOG_LOCATION", "LOG_ROTATION",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
@@ -336,13 +340,19 @@ final class LogContentPolicyTests: XCTestCase {
     // MARK: - The Writer
 
     /// Every line goes through `DiagnosticLog`, the one place that applies
-    /// the policy: no other file calls the writer beneath it.
+    /// the policy: no other file calls the writer beneath it. And only
+    /// TextMouthPaths, where the logs' folder is resolved, hands lines to
+    /// the log writer itself.
     func testOnlyThePolicyCallsTheWriter() throws {
-        let writingDirectly = try AppSourceFile.all().filter { source in
-            LogCallScanner.calls(in: source.text, file: source.name)
-                .contains { $0.function == "TextMouthPaths.appendLog" }
-        }.map(\.name)
+        let sources = try AppSourceFile.all()
+        let callers = { (function: String) in
+            sources.filter { source in
+                LogCallScanner.calls(in: source.text, file: source.name).contains { $0.function == function }
+            }.map(\.name)
+        }
+        let writingDirectly = callers("TextMouthPaths.appendLog")
 
+        XCTAssertEqual(callers("LogWriter.shared.append"), ["TextMouthPaths.swift"], "a line went around TextMouthPaths")
         XCTAssertTrue(writingDirectly.contains("DiagnosticLog.swift"), "the policy writes through the writer")
         for file in writingDirectly where file != "DiagnosticLog.swift" {
             XCTFail(
@@ -388,6 +398,8 @@ private enum LogCallScanner {
         // The writer itself, which only the policy calls; a call anywhere
         // else is found, and `testOnlyThePolicyCallsTheWriter` fails it.
         LoggingFunction(name: "TextMouthPaths.appendLog", level: .event),
+        // The log writer beneath it, which only TextMouthPaths calls.
+        LoggingFunction(name: "LogWriter.shared.append", level: .event),
     ]
 
     /// One log call.

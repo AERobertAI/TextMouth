@@ -46,9 +46,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // The default data directory on a first launch. The logs are this
-        // Mac's own (FR02), so the line below is written whatever state the
-        // data directory is in.
+        // The default data directory on a first launch, and the data
+        // directory's folders, its Logs folder among them, so the line below
+        // goes there. While the library isn't available it goes to this
+        // Mac's Logs folder instead (TextMouthPaths.logDestination), so it is
+        // written whatever state the data directory is in.
         try? TextMouthPaths.ensureDirectoryStructure()
         Self.logBuildIdentity(.current)
 

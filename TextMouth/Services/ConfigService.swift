@@ -291,6 +291,11 @@ final class ConfigService: ObservableObject {
         /// leaves the action without one. TextMouth writes every action; an
         /// action the file leaves out keeps its shortcuts.
         var keyboardShortcuts: [String: [String]] = [:]
+        /// Where the diagnostic logs are written (`LogLocation`):
+        /// "dataDirectory", in the data directory's Logs folder, or
+        /// "machine", in this Mac's ~/Library/Logs/TextMouth. Empty keeps
+        /// the current choice.
+        var logLocation: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -371,6 +376,7 @@ final class ConfigService: ObservableObject {
             )
             repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
+            logLocation = fields.rawChoice(.logLocation, rule: SettingsPolicy.logLocation)
         }
 
         init() {}
@@ -428,6 +434,9 @@ final class ConfigService: ObservableObject {
                     "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",
                     "restartTimerGesturePattern", "restartTimerGestureWindow",
                 ])
+                // Storage: where the logs are written, which the log writer
+                // keeps. The tab's other choices config.json alone holds.
+                mirrored += sameNames(["logLocation"])
                 return mirrored
             }()
 

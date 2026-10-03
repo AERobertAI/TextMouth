@@ -561,9 +561,12 @@ struct DataDirectoryCheck {
     }
 }
 
-/// What is at a data directory's location, from one stat(2) that follows
-/// links, and an access(2) check of a folder found there.
-private enum FolderState {
+/// What is at a data directory's location, or at its Logs folder's
+/// (`TextMouthPaths.logDestination`), from one stat(2) that follows links,
+/// and an access(2) check of a folder found there. Run it with dataless
+/// files left in the cloud (`DatalessFiles.withoutDownloading`), so a folder
+/// only in the cloud is reported as such instead of being downloaded.
+enum FolderState {
     /// A folder TextMouth can list and read.
     case folder
     /// Nothing, or a link leading nowhere.
@@ -596,6 +599,14 @@ private enum FolderState {
             return access(path, R_OK | X_OK)
         }
         self = readable == 0 ? .folder : Self.failure(errno)
+    }
+
+    /// Whether a folder TextMouth can list and read is there.
+    var isFolder: Bool {
+        if case .folder = self {
+            return true
+        }
+        return false
     }
 
     /// The state a failed stat(2) or access(2), with `code`, reveals.
