@@ -407,20 +407,21 @@ enum AudioBookParser {
         /// The furthest any of them ran past the file's end, in seconds.
         var largestOvershoot: TimeInterval
 
-        /// Record the move in the console and the debug log, as the single
-        /// line `AUDIO_SEGMENT_CLAMPED: <book>: <file>: moved 2 sections'
-        /// ends back to the file's measured end of 600.000 s, from up to
-        /// 0.400 s past it`. A line break in the book's title or the file's
-        /// name becomes a space, so the entry stays on one line.
+        /// Record the move as an import event, in the console and the debug
+        /// log, as the single line `AUDIO_SEGMENT_CLAMPED: <book>: <file>:
+        /// moved 2 sections' ends back to the file's measured end of
+        /// 600.000 s, from up to 0.400 s past it`. A line break in the book's
+        /// title or the file's name becomes a space, so the entry stays on
+        /// one line.
         func log(bookTitle: String) {
             let ends = sectionCount == 1 ? "1 section's end" : "\(sectionCount) sections' ends"
             let distance = sectionCount == 1 ? "from" : "from up to"
-            let line = "\(AudioBookParser.clampLogTag): \(bookTitle): \(file): moved \(ends) back to "
-                + "the file's measured end of " + String(format: "%.3f", fileDuration) + " s, "
-                + "\(distance) " + String(format: "%.3f", largestOvershoot) + " s past it"
-            let singleLine = line.components(separatedBy: .newlines).joined(separator: " ")
-            print(singleLine)
-            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: singleLine)
+            DiagnosticLog.event(
+                .import,
+                "\(AudioBookParser.clampLogTag): \(bookTitle): \(file): moved \(ends) back to "
+                    + "the file's measured end of " + String(format: "%.3f", fileDuration) + " s, "
+                    + "\(distance) " + String(format: "%.3f", largestOvershoot) + " s past it"
+            )
         }
     }
 

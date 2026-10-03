@@ -120,12 +120,10 @@ extension RemovedFromLibraryMarker {
 
 extension RemovedFromLibraryMarker {
 
-    /// Records a Remove from Library Only event for `book` in the console and
-    /// the debug log, naming the book by the start of its ID.
+    /// Records a Remove from Library Only event for `book` as a storage
+    /// event, naming the book by the start of its ID.
     static func log(_ message: String, for book: Book) {
-        let line = "LIBRARY_REMOVAL: book \(book.id.uuidString.prefix(8)): \(message)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.storage, "LIBRARY_REMOVAL: book \(book.id.uuidString.prefix(8)): \(message)")
     }
 }
 

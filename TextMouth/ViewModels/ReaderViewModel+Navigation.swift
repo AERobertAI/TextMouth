@@ -121,7 +121,7 @@ extension ReaderViewModel {
             secondary: settingsViewModel.shiftSkipForwardUnit,
             useSecondary: useShiftUnit
         )
-        debugLog("skipForward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
+        DiagnosticLog.trace(.playback, "skipForward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
         performSkip(unit: unit, forward: true)
     }
 
@@ -136,7 +136,7 @@ extension ReaderViewModel {
             secondary: settingsViewModel.shiftSkipBackwardUnit,
             useSecondary: useShiftUnit
         )
-        debugLog("skipBackward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
+        DiagnosticLog.trace(.playback, "skipBackward called, unit=\(unit.rawValue) shift=\(useShiftUnit)")
         performSkip(unit: unit, forward: false)
     }
 
@@ -177,7 +177,7 @@ extension ReaderViewModel {
     /// Dispatch a skip action based on the skip unit type.
     /// Time-based units convert to word or character deltas; structural units delegate to heading/bookmark nav.
     func performSkip(unit: SkipUnit, forward: Bool) {
-        debugLog("performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
+        DiagnosticLog.trace(.playback, "performSkip unit=\(unit.rawValue) forward=\(forward) wpm=\(speechService.wordsPerMinute)")
         switch unit {
         case .sentence:
             if forward { nextSentence() } else { previousSentence() }
@@ -480,7 +480,7 @@ extension ReaderViewModel {
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 
-        debugLog("skipWords count=\(count) currentOffset=\(currentCharacterOffset) chapter=\(currentChapterIndex)")
+        DiagnosticLog.trace(.playback, "skipWords count=\(count) currentOffset=\(currentCharacterOffset) chapter=\(currentChapterIndex)")
 
         var chapIdx = currentChapterIndex
         var remainingWords = abs(count)
@@ -534,7 +534,7 @@ extension ReaderViewModel {
 
         let seeksInPlace = canSeekLoadedSpeech(toChapter: chapIdx, offset: charOffset, whilePlaying: wasPlaying)
 
-        debugLog("skipWords result -> chapter=\(chapIdx) offset=\(charOffset) seeksInPlace=\(seeksInPlace)")
+        DiagnosticLog.trace(.playback, "skipWords result -> chapter=\(chapIdx) offset=\(charOffset) seeksInPlace=\(seeksInPlace)")
 
         // Whether speech still plays after the skip. Restarting it ends the
         // book instead when nothing speakable remains from the new cursor.
@@ -589,7 +589,7 @@ extension ReaderViewModel {
             totalTime: totalTime
         ) else { return }
 
-        debugLog("skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(content.totalCharacterCount) charDelta=\(charDelta)")
+        DiagnosticLog.trace(.playback, "skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(content.totalCharacterCount) charDelta=\(charDelta)")
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 

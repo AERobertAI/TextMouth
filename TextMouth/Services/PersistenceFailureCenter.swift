@@ -446,7 +446,7 @@ final class PersistenceFailureCenter: ObservableObject {
             PersistenceFailure(id: id, subject: subject, path: path, error: error, date: Date(), retry: retry)
         }
         if !replaced {
-            Self.log("PERSISTENCE_FAILURE: \(failure.sentence) Path: \(path)")
+            Self.log("PERSISTENCE_FAILURE: \(failure.sentence) Path: \(DiagnosticLog.loggablePath(path))")
         }
         schedulePublish()
     }
@@ -600,12 +600,11 @@ final class PersistenceFailureCenter: ObservableObject {
         }
     }
 
-    /// Records `message` in the console and the debug log as one line: a
-    /// line break in a title or a path becomes a space.
+    /// Records `message` as a storage event: in the debug log and the
+    /// console, on one line, a line break in a title or a path becoming a
+    /// space.
     nonisolated private static func log(_ message: String) {
-        let line = message.components(separatedBy: .newlines).joined(separator: " ")
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.storage, message)
     }
 }
 

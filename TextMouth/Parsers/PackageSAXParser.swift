@@ -123,12 +123,10 @@ enum PackageDamage {
             + "Get a fresh copy of \(original), then import it again."
     }
 
-    /// Record damage the import worked around, as one line starting with
-    /// `tag` in the console and in the debug log. The import layer has no
-    /// warning channel yet, so this line is the only record of the damage.
+    /// Record damage the import worked around, as one import event starting
+    /// with `tag`, in the console and in the debug log. The import layer has
+    /// no warning channel yet, so this line is the only record of the damage.
     static func log(_ damage: Error, tag: String) {
-        let line = "\(tag): \(damage.localizedDescription)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.import, "\(tag): \(damage.localizedDescription)")
     }
 }

@@ -105,17 +105,56 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertTrue(text.hasSuffix(": appended\n"))
     }
 
+    /// The sleep timer's and speech's own logs keep their names and are
+    /// written through the same writer as the debug log, so each rotates
+    /// the same way: into exactly one `.previous` generation.
+    func testDedicatedLogsRotateThroughTheSharedWriter() throws {
+        XCTAssertEqual(DiagnosticLog.File.debug.url, TextMouthPaths.debugLogFile)
+        XCTAssertEqual(DiagnosticLog.File.sleepTimer.url.lastPathComponent, "textmouth_timer.log")
+        XCTAssertEqual(DiagnosticLog.File.speechTransitions.url.lastPathComponent, "textmouth_transition.log")
+        try TextMouthPaths.ensureDirectoryStructure()
+
+        for file in [DiagnosticLog.File.sleepTimer, .speechTransitions] {
+            let log = file.url
+            let previous = log.appendingPathExtension(TextMouthPaths.rotatedLogExtension)
+            defer {
+                // Leave the sandbox's log small again for the tests after this one.
+                try? FileManager.default.removeItem(at: log)
+                try? FileManager.default.removeItem(at: previous)
+            }
+            TextMouthPaths.flushLogs()
+            let filler = String(repeating: "z", count: Int(TextMouthPaths.maxLogFileSize))
+            try filler.write(to: log, atomically: true, encoding: .utf8)
+            let marker = "ROTATION_PROBE: \(UUID().uuidString)"
+
+            DiagnosticLog.event(.playback, marker, in: file)
+            TextMouthPaths.flushLogs()
+
+            XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), filler, file.rawValue)
+            XCTAssertTrue(try String(contentsOf: log, encoding: .utf8).hasSuffix(": \(marker)\n"), file.rawValue)
+        }
+    }
+
     /// VoiceOver focus diagnostics go through the shared writer into the
-    /// debug log, marked with their prefix, instead of a second private
-    /// writer that could interleave with, or crash independently of, it.
-    func testVoiceOverFocusLogWritesToTheSharedDebugLog() throws {
+    /// debug log, instead of a second private writer that could interleave
+    /// with, or crash independently of, it. A sheet writes dozens of them,
+    /// so they are trace: written, marked as focus lines, only while tracing
+    /// is on.
+    func testVoiceOverFocusLogWritesTraceLinesToTheSharedDebugLog() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
         try TextMouthPaths.ensureDirectoryStructure()
         let marker = "focus-check-\(UUID().uuidString)"
 
-        voiceOverFocusLog(marker)
-        TextMouthPaths.flushLogs()
+        setAppTracing(false)
+        voiceOverFocusLog("while off \(marker)")
+        setAppTracing(true)
+        voiceOverFocusLog("while on \(marker)")
 
-        let text = try String(contentsOf: TextMouthPaths.debugLogFile, encoding: .utf8)
-        XCTAssertTrue(text.contains(": \(voiceOverFocusLogPrefix): \(marker)\n"), "missing marker line")
+        let lines = debugLogLines(containing: marker)
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(lines.first?.hasSuffix(": TRACE focus: while on \(marker)") == true, "\(lines)")
     }
 }

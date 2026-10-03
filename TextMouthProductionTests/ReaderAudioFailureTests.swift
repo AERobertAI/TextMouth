@@ -357,6 +357,45 @@ final class ReaderAudioFailureTests: XCTestCase {
         )
     }
 
+    // MARK: - The Debug Log
+
+    /// The failure is an event in the debug log, naming the track by its
+    /// path inside the data directory, and is written whether or not
+    /// tracing is on; the reader's routine playback lines are trace, written
+    /// only while tracing is on (TODO Q07).
+    func testFailureIsLoggedAsAnEventAndRoutineLinesAsTrace() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
+        try withAudioBook(damage: Self.deleteSecondTrack) { reader, tracks in
+            let track = DiagnosticLog.loggablePath(tracks[1])
+            XCTAssertTrue(track.hasPrefix("Library/"), track)
+
+            setAppTracing(false)
+            let quiet = logLines(in: .debug) {
+                reader.invalidatePlaybackBackendForAudioRouteChange()
+                _ = recordingAnnouncements { reader.play() }
+            }
+            XCTAssertTrue(
+                quiet.contains { $0.contains(": AUDIO_PLAYBACK_FAILED: reason=fileMissing file=\(track) error=") },
+                "\(quiet)"
+            )
+            XCTAssertFalse(quiet.contains { $0.contains("audio route changed") }, "\(quiet)")
+
+            setAppTracing(true)
+            let traced = logLines(in: .debug) {
+                reader.invalidatePlaybackBackendForAudioRouteChange()
+            }
+            XCTAssertTrue(
+                traced.contains {
+                    $0.hasSuffix(": TRACE playback: audio route changed; next resume will cold-start playback backend")
+                },
+                "\(traced)"
+            )
+        }
+    }
+
     // MARK: - Checks
 
     /// Check that `reader` stopped as Stop stops it after its audio failed

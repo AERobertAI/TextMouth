@@ -141,14 +141,11 @@ enum TextFileDecoder {
         return decoded.text
     }
 
-    /// Record that `fileName` was read by the fallback, as one line. A line
-    /// break in the file name becomes a space, so the entry stays on the one
-    /// line that readers of the log expect.
+    /// Record that `fileName` was read by the fallback, as one import event.
+    /// A line break in the file name becomes a space, so the entry stays on
+    /// the one line that readers of the log expect.
     private static func logFallback(fileName: String, encoding: String.Encoding) {
-        let file = fileName.components(separatedBy: .newlines).joined(separator: " ")
-        let line = "\(fallbackLogTag): \(file): decoded as \(name(of: encoding))"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.import, "\(fallbackLogTag): \(fileName): decoded as \(name(of: encoding))")
     }
 
     // MARK: Decoding

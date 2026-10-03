@@ -213,7 +213,8 @@ final class KeyboardShortcutManager: ObservableObject {
                     }
                     if action == .restartSleepTimer {
                         let windowNumber = NSApp.keyWindow.map { String($0.windowNumber) } ?? "none"
-                        SleepTimerService.appendDiagnosticLog(
+                        SleepTimerService.log(
+                            .event,
                             "SHORTCUT_RECEIVED action=restart-sleep-timer binding=\(binding.displayString) "
                                 + "sourceWindow=\(windowNumber)"
                         )

@@ -144,9 +144,10 @@ final class ImportStaging {
             guard values?.isDirectory == true, values?.isSymbolicLink != true else { continue }
             if removeStagedPackage(at: leftover) {
                 removed += 1
-                let line = "IMPORT_STAGING_REMOVED: \(leftover.path): left by an interrupted import"
-                print(line)
-                TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+                DiagnosticLog.event(
+                    .import,
+                    "IMPORT_STAGING_REMOVED: \(DiagnosticLog.loggablePath(leftover)): left by an interrupted import"
+                )
             }
         }
         return removed
@@ -171,9 +172,11 @@ final class ImportStaging {
             try fileManager.removeItem(at: directory)
             return true
         } catch {
-            let line = "IMPORT_STAGING_LEFT: \(directory.path): could not be removed: \(error.localizedDescription)"
-            print(line)
-            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+            DiagnosticLog.event(
+                .import,
+                "IMPORT_STAGING_LEFT: \(DiagnosticLog.loggablePath(directory)): could not be removed: "
+                    + error.localizedDescription
+            )
             return false
         }
     }

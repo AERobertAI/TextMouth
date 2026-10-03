@@ -491,10 +491,14 @@ extension LibraryViewModel {
                 // only once the write has succeeded.
                 updated.md5Hash = try writer.write(metadata, URL(fileURLWithPath: updated.filePath))
             } catch {
-                TextMouthPaths.appendLog(
-                    to: TextMouthPaths.debugLogFile,
-                    message: "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
-                        + "file=\(updated.filePath): \(error)"
+                // The error's domain, code, and description, which names files
+                // by name; its full description would repeat absolute paths.
+                let failure = error as NSError
+                DiagnosticLog.event(
+                    .storage,
+                    "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
+                        + "file=\(DiagnosticLog.loggablePath(updated.filePath)): "
+                        + "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 )
                 return .failed(message: wording.writeFailed(reason: error.localizedDescription))
             }

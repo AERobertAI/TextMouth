@@ -304,8 +304,7 @@ extension FileImportService {
             }
         }
         if let line = report.logSummary {
-            print(line)
-            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+            DiagnosticLog.event(.storage, line)
         }
         return report
     }

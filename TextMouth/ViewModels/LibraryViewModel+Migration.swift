@@ -167,11 +167,10 @@ extension LibraryViewModel {
         return true
     }
 
-    /// Records a startup folder repair in the console and the debug log.
+    /// Records a startup folder repair as a storage event, in the debug log
+    /// and the console.
     private func logFolderRepair(_ message: String) {
-        let line = "FOLDER_REPAIR: \(message)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.storage, "FOLDER_REPAIR: \(message)")
     }
 
     /// Copies the data directory a sandboxed release of TextMouth left in its

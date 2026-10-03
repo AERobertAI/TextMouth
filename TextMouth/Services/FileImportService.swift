@@ -787,30 +787,28 @@ enum FileImportService {
         return try package.copyFiles(into: directory)
     }
 
-    /// Records in the console and the debug log what a DAISY package import
-    /// copies other than as the book's references list it: the files they
-    /// name that do not exist, and the whole folder, when the references
-    /// could not be read. Reading the copied book as the reader will then
-    /// decides whether the import succeeds.
+    /// Records as import events, in the console and the debug log, what a
+    /// DAISY package import copies other than as the book's references list
+    /// it: the files they name that do not exist, and the whole folder, when
+    /// the references could not be read. Reading the copied book as the
+    /// reader will then decides whether the import succeeds. The book's
+    /// folder is named by its name, and its files by their paths inside it,
+    /// never by where the folder is on disk.
     private static func logShortfalls(of package: DAISYPackageInventory) {
-        var lines: [String] = []
+        let folder = package.root.lastPathComponent
         if !package.missingPaths.isEmpty {
-            lines.append(
-                "DAISY_PACKAGE_MISSING: \(package.entryURL.path): refers to \(package.missingPaths.count) "
+            DiagnosticLog.event(
+                .import,
+                "DAISY_PACKAGE_MISSING: \(folder)/\(package.entryPath): refers to \(package.missingPaths.count) "
                     + "file(s) that do not exist: \(package.missingPaths.joined(separator: ", "))"
             )
         }
         if let reason = package.wholeFolderReason {
-            lines.append(
-                "DAISY_PACKAGE_WHOLE_FOLDER: \(package.root.path): copied every file, since the book's "
+            DiagnosticLog.event(
+                .import,
+                "DAISY_PACKAGE_WHOLE_FOLDER: \(folder): copied every file, since the book's "
                     + "files could not be listed: \(reason)"
             )
-        }
-        for line in lines {
-            // One line per entry, whatever the reason holds.
-            let entry = line.components(separatedBy: .newlines).joined(separator: " ")
-            print(entry)
-            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: entry)
         }
     }
 

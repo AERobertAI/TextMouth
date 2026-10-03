@@ -587,4 +587,45 @@ final class SleepTimerServiceTests: XCTestCase {
 
         XCTAssertFalse(service.consumePendingFadeCompletion())
     }
+
+    // MARK: - The Timer's Log
+
+    /// A timer's session events, such as its start and stop, are always
+    /// written to the timer's own log. The countdown's progress, written
+    /// every minute and through the last ten seconds, is trace: it appears
+    /// only while tracing is on (TODO Q07).
+    func testTimerLogKeepsSessionEventsAndTracesCountdownProgress() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
+        try TextMouthPaths.ensureDirectoryStructure()
+
+        setAppTracing(false)
+        let quiet = logLines(in: .sleepTimer) { runOneMinuteOfAFiveMinuteTimer() }
+        setAppTracing(true)
+        let traced = logLines(in: .sleepTimer) { runOneMinuteOfAFiveMinuteTimer() }
+
+        for lines in [quiet, traced] {
+            XCTAssertTrue(lines.contains { $0.contains(": START kind=minutes requestedMinutes=5 ") }, "\(lines)")
+            XCTAssertTrue(lines.contains { $0.contains(": STOP reason=requested ") }, "\(lines)")
+        }
+        XCTAssertFalse(quiet.contains { $0.contains("COUNTDOWN_PROGRESS") }, "\(quiet)")
+        XCTAssertTrue(
+            traced.contains {
+                $0.contains(": TRACE playback: COUNTDOWN_PROGRESS active=true ") && $0.contains(" remaining=240 ")
+            },
+            "\(traced)"
+        )
+    }
+
+    /// Start a five-minute timer, count down its first minute without
+    /// waiting for it, and stop it.
+    private func runOneMinuteOfAFiveMinuteTimer() {
+        start(.minutes(5))
+        for _ in 0..<60 {
+            service._advanceCountdownForTesting()
+        }
+        service.stop()
+    }
 }

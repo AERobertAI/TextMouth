@@ -128,8 +128,7 @@ final class ReadingStatsService: ObservableObject {
         migrated.dayKeyVersion = ListeningDays.keyVersion
         stats = migrated
         if let line = outcome.logLine {
-            print(line)
-            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+            DiagnosticLog.event(.statistics, line)
         }
         save()
     }
