@@ -9,6 +9,10 @@ import ZIPFoundation
 /// the import under way to finish, adding its book to the library, and
 /// holds the imports queued after it until the move has published, so they
 /// choose their destinations in the new data directory.
+///
+/// `@unchecked Sendable`: the queue and boundary are constants, and every
+/// variable is read and written only under `stateLock`, since the main
+/// thread and the import queue both reach them.
 final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
     /// Where each import runs as storage work.
@@ -20,7 +24,24 @@ final class SerialImportQueue: @unchecked Sendable {
     private var cancellation = ImportCancellation()
     /// Backs `stepObserver`; guarded by `stateLock`.
     private var storedStepObserver: (@Sendable (ImportStep, URL) throws -> Void)?
-    var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+    /// Backs `onActivityChanged`; guarded by `stateLock`.
+    private var storedActivityObserver: (@MainActor @Sendable (Int) -> Void)?
+
+    /// Told on the main queue how many imports are queued or running, each
+    /// time that number changes. It may be set at any time, from any thread:
+    /// the import queue reads it as each import finishes.
+    var onActivityChanged: (@MainActor @Sendable (Int) -> Void)? {
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return storedActivityObserver
+        }
+        set {
+            stateLock.lock()
+            storedActivityObserver = newValue
+            stateLock.unlock()
+        }
+    }
 
     /// A queue whose imports run as storage work of `boundary`: the app's,
     /// unless a test passes its own.
@@ -79,11 +100,15 @@ final class SerialImportQueue: @unchecked Sendable {
         }
     }
 
+    /// Changes the number of imports queued or running by `delta`, and tells
+    /// the activity observer the new number on the main queue.
     private func updateCount(by delta: Int) {
         stateLock.lock()
         activeCount += delta
         let count = activeCount
-        let callback = onActivityChanged
+        // The stored observer, not `onActivityChanged`, whose getter takes
+        // this same lock, which is already held.
+        let callback = storedActivityObserver
         stateLock.unlock()
         DispatchQueue.main.async { callback?(count) }
     }
