@@ -8,6 +8,7 @@ import XCTest
 final class TextMouthTestBundle: NSObject {
     override init() {
         super.init()
+        XCTestObservationCenter.shared.addTestObserver(ConfigSaveFlush.shared)
         XCTestObservationCenter.shared.addTestObserver(ReaderWindowLeakCheck.shared)
         XCTestObservationCenter.shared.addTestObserver(DataDirectoryLeakCheck.shared)
     }

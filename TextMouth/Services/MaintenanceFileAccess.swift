@@ -130,6 +130,7 @@ struct MaintenanceFileAccess: Sendable {
         var namedFiles: [URL] = []
         if files.contains(.record) {
             namedFiles.append(TextMouthPaths.bookInfoPath(in: package))
+            namedFiles.append(TextMouthPaths.contentIndexPath(in: package))
         }
         if files.contains(.textCache) {
             namedFiles.append(TextMouthPaths.contentMarkdownPath(in: package))
@@ -216,6 +217,14 @@ struct MaintenanceFileAccess: Sendable {
     /// dataless, up to the data directory (or, for an item outside it, up to
     /// the volume's root). An item missing from such a folder may only be
     /// missing from what this Mac knows of it.
+    ///
+    /// The walk ends at the first folder that is there and is not dataless
+    /// (PERF13): with dataless files left in the cloud, looking a folder up
+    /// through a dataless one is refused, so a folder found there lies in
+    /// none. For a file missing from its package, as a removal marker almost
+    /// always is, that is the package itself, one folder up, where the walk
+    /// used to ask every folder up to the data directory, for every book at
+    /// launch.
     private func hasDatalessFolder(above url: URL) -> Bool {
         let dataDirectory = TextMouthPaths.root.standardizedFileURL.path
         let stopsAtDataDirectory = Self.isItem(url, inside: TextMouthPaths.root)
@@ -225,12 +234,26 @@ struct MaintenanceFileAccess: Sendable {
                 if isDataless(folder) {
                     return true
                 }
+                if Self.hasItem(at: folder) {
+                    return false
+                }
                 if stopsAtDataDirectory && folder.path == dataDirectory {
                     return false
                 }
                 folder.deleteLastPathComponent()
             }
             return false
+        }
+    }
+
+    /// Whether something is at `url`, downloaded or not, asked of its
+    /// metadata alone with one lstat(2), which reads no content and follows
+    /// no link.
+    static func hasItem(at url: URL) -> Bool {
+        var status = stat()
+        return url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return false }
+            return lstat(path, &status) == 0
         }
     }
 
@@ -280,7 +303,8 @@ struct MaintainedFiles: OptionSet, Sendable {
     static let content = MaintainedFiles(rawValue: 1 << 0)
     /// The text cache, content.md.
     static let textCache = MaintainedFiles(rawValue: 1 << 1)
-    /// The book's record, bookInfo.json.
+    /// The book's record: bookInfo.json, and its content index beside it,
+    /// contentIndex.json (PERF15), which a pass reads with the record.
     static let record = MaintainedFiles(rawValue: 1 << 2)
     /// Everything a pass can read of a book.
     static let all: MaintainedFiles = [.content, .textCache, .record]

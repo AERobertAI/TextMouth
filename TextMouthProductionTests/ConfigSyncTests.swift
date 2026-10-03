@@ -809,17 +809,19 @@ final class ConfigSyncTests: XCTestCase {
     }
 
     /// A choice made in Storage settings is stored where the log writer
-    /// reads it and saved to config.json at once; so is one made outside
-    /// the settings model, as `defaults write` makes one, which the model
-    /// also announces, so the picker shows it.
+    /// reads it at once, and saved to config.json with the next save, which
+    /// waits for changes to pause (PERF17); so is one made outside the
+    /// settings model, as `defaults write` makes one, which the model also
+    /// announces, so the picker shows it.
     func testALogLocationChosenAnywhereIsSavedToConfigJSON() throws {
         let store = try isolatedDefaults()
         let url = try makeConfigFileURL()
+        let service = ConfigService(fileURL: url)
         let viewModel = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: store,
-            configService: ConfigService(fileURL: url)
+            configService: service
         )
         var announcements = 0
         let subscription = viewModel.objectWillChange.sink { announcements += 1 }
@@ -828,10 +830,13 @@ final class ConfigSyncTests: XCTestCase {
         viewModel.logLocation = .machine
 
         XCTAssertEqual(store.string(forKey: "logLocation"), "machine")
+        XCTAssertTrue(service.hasScheduledSave, "no save of config.json was asked for")
+        service.flushScheduledSave()
         XCTAssertEqual(try jsonObject(from: Data(contentsOf: url))["logLocation"] as? String, "machine")
 
         let announcedBefore = announcements
         LogLocation.preference.write(.dataDirectory, to: store)
+        service.flushScheduledSave()
 
         XCTAssertEqual(try jsonObject(from: Data(contentsOf: url))["logLocation"] as? String, "dataDirectory")
         XCTAssertGreaterThan(announcements, announcedBefore, "the settings model did not announce the change")
@@ -871,6 +876,8 @@ final class ConfigSyncTests: XCTestCase {
             userDefaults: original,
             configService: writer
         ).syncToConfig()
+        // The file follows once changes pause (PERF17); write it now.
+        writer.flushScheduledSave()
 
         // The stores reset: an empty preferences store, services following
         // it, and the file read afresh; then the file applied.

@@ -127,8 +127,8 @@ final class RetainedPackageImportTests: XCTestCase {
 
     /// A reinstatement that fails, while saving the record or while clearing
     /// the marker, leaves the package retired exactly as it was: the marker
-    /// stays, the record is put back (here: absent), the content stays, and
-    /// adoption still leaves the package out.
+    /// stays, the record and the content index beside it are put back (here:
+    /// absent), the content stays, and adoption still leaves the package out.
     @MainActor
     func testFailedReinstatementLeavesThePackageRetiredAsItWas() throws {
         let book = try makePackage(title: "Chain Wear")
@@ -144,6 +144,7 @@ final class RetainedPackageImportTests: XCTestCase {
 
             XCTAssertTrue(exists(marker(of: book)), "\(failingStep)")
             XCTAssertFalse(exists(record(of: book)), "\(failingStep)")
+            XCTAssertFalse(exists(TextMouthPaths.contentIndexPath(in: book.tmbDirectory)), "\(failingStep)")
             XCTAssertTrue(exists(URL(fileURLWithPath: book.filePath)), "\(failingStep)")
             XCTAssertFalse(adoptedFromLibraryDirectory().books.contains { $0.id == book.id }, "\(failingStep)")
         }

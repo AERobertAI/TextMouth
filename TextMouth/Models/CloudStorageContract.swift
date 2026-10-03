@@ -322,6 +322,11 @@ protocol BookCloudStorage: AnyObject, Sendable {
     func libraryLocation() -> StorageLocation
     /// The cloud state of `package`, read without downloading anything.
     func state(of package: BookPackage) -> BookCloudState
+    /// The cloud state of `package` in a library at `location`, which the
+    /// caller has just read with `libraryLocation()`: what `state(of:)`
+    /// says, without working out the location again for each package of a
+    /// refresh (PERF16).
+    func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState
     /// Downloads every file of `package`. The stream yields progress as files
     /// arrive, and as parts of them do where the sync service reports any,
     /// and finishes once every file is on this Mac; it throws a
@@ -334,6 +339,14 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// book waits to upload, and `.removalFailed` when the sync service
     /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
+}
+
+extension BookCloudStorage {
+    /// `state(of:)`, for storage that works out nothing from the location:
+    /// the local placeholder below, and the test doubles.
+    func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {
+        state(of: package)
+    }
 }
 
 /// The book storage used until `cloudcore` installs the real one: every book
@@ -459,7 +472,13 @@ final class BookCloudStates: ObservableObject {
     func refresh(_ packages: [BookPackage], using storage: any BookCloudStorage) async {
         let eventsBeforeReading = downloadEvents
         let (location, results) = await Task.detached(priority: .utility) {
-            (storage.libraryLocation(), packages.map { ($0.bookID, storage.state(of: $0)) })
+            () -> (StorageLocation, [(UUID, BookCloudState)]) in
+            // Where the library lives is read first, and once (PERF16): a
+            // library outside the cloud holds only local books, so none of
+            // its packages is read.
+            let location = storage.libraryLocation()
+            guard location.isCloud else { return (location, []) }
+            return (location, packages.map { ($0.bookID, storage.state(of: $0, in: location)) })
         }.value
         setLibraryLocation(location)
         guard location.isCloud else { return }

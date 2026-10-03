@@ -151,11 +151,14 @@ final class UnsavedChangesTerminationGuard {
     /// Writes what the termination path writes, without ending anything:
     /// the library index and every queued book record, then the statistics,
     /// whose open listening session is credited so far but stays open in
-    /// case the user stays. Settings and substitution rules are written as
-    /// they change, so nothing of theirs is pending. Each write's failure
-    /// reaches the failure center before this returns.
+    /// case the user stays, then the settings changed in the last moment,
+    /// whose config.json save waits for changes to pause (PERF17).
+    /// Substitution rules are written as they change, so nothing of theirs
+    /// is pending. Each write's failure reaches the failure center before
+    /// this returns.
     static func flushPendingWrites() {
         LibraryPersistenceService.flushPendingSave()
         ReadingStatsService.shared.flushPendingSaves()
+        ConfigService.shared.flushScheduledSave()
     }
 }

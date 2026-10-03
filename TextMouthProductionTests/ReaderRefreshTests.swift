@@ -47,13 +47,13 @@ final class ReaderRefreshTests: XCTestCase {
 
         // Move to Folder… moves the book into Shelf.
         let packageBeforeMove = try row(of: book, in: world.library).tmbDirectory
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: shelf.fullPath)
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: shelf.fullPath) }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         stale += staleFields(of: reader, in: world.library, after: "the move to Shelf")
 
         // Rename Folder… renames Shelf to Stacks, which moves the package again.
         let packageBeforeRename = try row(of: book, in: world.library).tmbDirectory
-        let rename = world.library.renameFolderReturningOutcome(shelf, to: "Stacks")
+        let rename = outcome { await world.library.renameFolderReturningOutcome(shelf, to: "Stacks") }
         XCTAssertTrue(rename.succeeded, rename.failureMessage ?? "")
         stale += staleFields(of: reader, in: world.library, after: "the folder rename")
 
@@ -112,7 +112,7 @@ final class ReaderRefreshTests: XCTestCase {
         reader.play()
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
 
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         var stale = staleFields(of: reader, in: world.library, after: "the move while playing")
 
@@ -211,7 +211,7 @@ final class ReaderRefreshTests: XCTestCase {
         reader.pause()
         XCTAssertTrue(reader.isCurrentlyPaused)
 
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         XCTAssertTrue(reader.isCurrentlyPaused, "The move ended the pause")
         XCTAssertTrue(reader.audioPlaybackService.isPaused, "The move started or stopped the player")
@@ -259,7 +259,7 @@ final class ReaderRefreshTests: XCTestCase {
         reader.play()
         XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "a.wav")
 
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
 
         let movedFolder = Self.standardizedPath(try row(of: book, in: world.library).filePath)
@@ -295,7 +295,7 @@ final class ReaderRefreshTests: XCTestCase {
 
         // Navigating saves the position, written half a second later.
         reader.navigateTo(chapterIndex: 2, characterOffset: 3)
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         LibraryPersistenceService.flushPendingSave()
 
@@ -399,7 +399,7 @@ final class ReaderRefreshTests: XCTestCase {
             trackDurations: [2, 2],
             savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
         )
-        let move = world.library.moveBooksReturningOutcome([created], toFolder: shelf.fullPath)
+        let move = outcome { await world.library.moveBooksReturningOutcome([created], toFolder: shelf.fullPath) }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         let book = try row(of: created, in: world.library)
         let reader = world.openReader(for: book)
@@ -425,7 +425,7 @@ final class ReaderRefreshTests: XCTestCase {
         defer { log.subscription?.cancel() }
 
         let rename = FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
-            world.library.renameFolderReturningOutcome(shelf, to: "Shelf")
+            outcome { await world.library.renameFolderReturningOutcome(shelf, to: "Shelf") }
         }
 
         XCTAssertTrue(rename.succeeded, rename.failureMessage ?? "")
@@ -509,7 +509,7 @@ final class ReaderRefreshTests: XCTestCase {
         var renamed = try row(of: book, in: world.library)
         renamed.title = Self.revisedTitle
         world.library.updateBookMetadata(renamed)
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
 
         XCTAssertEqual(reader.book.title, Self.revisedTitle)
@@ -557,7 +557,7 @@ final class ReaderRefreshTests: XCTestCase {
         let reader = world.openReader(for: book)
 
         XCTAssertTrue(reader.isLoading)
-        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf") }
         XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         waitForReaderToLoad(reader)
 
@@ -695,7 +695,8 @@ final class ReaderRefreshTests: XCTestCase {
     }
 
     /// What a reader's audio player held at the moment a package moved.
-    /// Main-actor isolated, as the transition's disk operations are.
+    /// Main-actor isolated, as the disk operations of
+    /// `commitLibraryTransition` run there.
     @MainActor
     private final class PlayerObservation {
         /// How many packages moved.
@@ -726,13 +727,17 @@ final class ReaderRefreshTests: XCTestCase {
     ) -> LibraryTransitionDisk {
         LibraryTransitionDisk(
             moveItem: { source, destination in
-                observation.moves += 1
-                observation.loadedURL = reader.audioPlaybackService.loadedURL
-                observation.isPlaying = reader.audioPlaybackService.isPlaying
-                if failing {
-                    throw CocoaError(.fileWriteNoPermission)
+                // `commitLibraryTransition` runs its disk work on the main
+                // actor, where the reader's player lives.
+                try MainActor.assumeIsolated {
+                    observation.moves += 1
+                    observation.loadedURL = reader.audioPlaybackService.loadedURL
+                    observation.isPlaying = reader.audioPlaybackService.isPlaying
+                    if failing {
+                        throw CocoaError(.fileWriteNoPermission)
+                    }
+                    try FileManager.default.moveItem(at: source, to: destination)
                 }
-                try FileManager.default.moveItem(at: source, to: destination)
             },
             writeRecord: { book in
                 try book.saveBookInfoThrowing()

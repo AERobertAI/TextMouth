@@ -333,8 +333,13 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint, fingerprint)
         XCTAssertFalse(LibraryViewModel.hasResizedTextCacheFile(row))
 
-        model.extractMissingContentCaches()
-        XCTAssertFalse(model.isExtracting, "a rebuilt cache is not queued again")
+        // The startup batch finds which books need it off the main thread
+        // (PERF13); asked directly, it finds none.
+        XCTAssertEqual(
+            LibraryViewModel.booksNeedingCacheUpdate(model.library.books, access: .live),
+            [],
+            "a rebuilt cache is not queued again"
+        )
         XCTAssertEqual(staleReports(for: book).count, 1)
     }
 
@@ -392,9 +397,11 @@ final class TextCacheVerificationTests: XCTestCase {
         let cacheStamps = books.map { FileStamp(of: MarkdownCacheService.cacheURL(for: $0)) }
         let model = makeModel(with: books)
 
-        model.extractMissingContentCaches()
+        // The startup batch finds which books need it off the main thread
+        // (PERF13); asked directly, it finds none.
+        let queued = LibraryViewModel.booksNeedingCacheUpdate(model.library.books, access: .live)
 
-        XCTAssertFalse(model.isExtracting)
+        XCTAssertEqual(queued, [])
         XCTAssertEqual(books.map { FileStamp(of: MarkdownCacheService.cacheURL(for: $0)) }, cacheStamps)
     }
 

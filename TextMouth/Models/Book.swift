@@ -592,19 +592,27 @@ struct Book: Identifiable, Codable, Hashable {
     /// Throwing variant used by filesystem transactions that must roll back if
     /// metadata cannot be committed alongside a package move. Writes over the
     /// record now in the package as `bookInfo(replacing:contentIndex:revisionFloor:)`
-    /// describes.
+    /// describes, reading bookInfo.json alone: the package keeps its content
+    /// index file unless `contentIndex` replaces it (PERF15).
     func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil) throws {
-        try bookInfo(replacing: storedBookInfo(), contentIndex: contentIndex).save(to: tmbDirectory)
+        try bookInfo(replacing: storedRecord(), contentIndex: contentIndex).saveRecord(to: tmbDirectory)
     }
 
-    /// The bookInfo.json now in this book's package, or nil when there is
-    /// none or it cannot be read.
+    /// The record now in this book's package, with its content index, or
+    /// nil when there is none or it cannot be read.
     func storedBookInfo() -> BookInfo? {
         try? BookInfo.load(from: tmbDirectory)
     }
 
-    /// The bookInfo.json this book writes over `stored`, the record now in
-    /// its package (nil when there is none or it cannot be read).
+    /// The record now in this book's package as a save that replaces it
+    /// finds it, without reading its content index (`StoredBookRecord`), or
+    /// nil when there is none or it cannot be read.
+    func storedRecord() -> StoredBookRecord? {
+        try? StoredBookRecord.read(from: tmbDirectory)
+    }
+
+    /// The record this book writes over `stored`, the record now in its
+    /// package (nil when there is none or it cannot be read).
     ///
     /// The content index and the analysis fields measured with it
     /// (`ContentAnalysisFields`) travel together. A write that carries
@@ -616,20 +624,26 @@ struct Book: Identifiable, Codable, Hashable {
     /// analysis nor be recorded beside an index they do not describe. Only
     /// when no index is stored does such a write record its own fields.
     ///
+    /// The result carries an index only when the write must put one in the
+    /// package's contentIndex.json (`BookInfo.saveRecord(to:)`): `contentIndex`,
+    /// or an index an older version kept inside the stored bookInfo.json,
+    /// which this write moves into its own file. An index already in its own
+    /// file is kept by writing nothing to it.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
     /// rising even when the stored record has lost its own.
-    func bookInfo(replacing stored: BookInfo?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
+    func bookInfo(replacing stored: StoredBookRecord?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
         var recorded = self
         var index = contentIndex
-        if index == nil, let stored, let storedIndex = stored.contentIndex {
-            index = storedIndex
-            recorded.contentAnalysisFields = stored.state.contentAnalysisFields
+        if index == nil, let stored, stored.keepsContentIndex {
+            index = stored.info.contentIndex
+            recorded.contentAnalysisFields = stored.info.state.contentAnalysisFields
         }
         var info = recorded.makeBookInfo()
         info.contentIndex = index
-        info.state.revision = BookState.revision(after: max(stored?.state.revision ?? 0, revisionFloor))
+        info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         return info
     }
 

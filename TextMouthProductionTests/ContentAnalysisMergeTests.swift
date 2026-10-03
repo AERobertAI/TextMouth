@@ -1,5 +1,6 @@
 import Combine
 import XCTest
+import os
 @testable import TextMouth
 
 /// A content analysis can run for minutes on a copy of its book taken when it
@@ -261,7 +262,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
         let model = makeModel(with: [original])
         let destination = "Analysis Merge Destination \(UUID().uuidString.prefix(8))"
         createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(destination, isDirectory: true))
-        model.moveBooks([original], toFolder: destination)
+        let move = outcome { await model.moveBooksReturningOutcome([original], toFolder: destination) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         let moved = try XCTUnwrap(model.bookByID(original.id))
         XCTAssertEqual(moved.folderPath, destination)
         model.persistReadingPosition(bookID: original.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 5))
@@ -335,13 +337,21 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// row's own saves still carry the old analysis fields. The row then
     /// takes only the committed analysis fields and keeps the user's
     /// changes, and the package keeps the analysis and takes the changes.
+    ///
+    /// The batch starts on the main thread once its books are found off it
+    /// (PERF13), so the test holds the main thread only once the batch is at
+    /// work on the book, held before it commits anything; released, the
+    /// batch commits while the main thread is held.
     @MainActor
     func testLibraryRowEqualsItsPackageAfterACacheBatch() async throws {
         let original = try makePackage(title: "Row After A Batch")
         let model = makeModel(with: [original])
         let finished = expectation(description: "The batch finished")
+        let held = holdCacheGeneration(of: original)
 
         model.extractMissingContentCaches { finished.fulfill() }
+        await fulfillment(of: [held.reached], timeout: 10)
+        held.gate.signal()
         waitForCommittedAnalysis(of: original)
         makeNewerWrites(to: original, through: model)
         await fulfillment(of: [finished], timeout: 10)
@@ -527,8 +537,9 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// still gets one above every revision written before it.
     func testRevisionFollowsTheHigherOfTheStoredRevisionAndTheFloor() {
         let book = Self.bookWithEveryFieldSet(seed: 4)
-        var stored = book.makeBookInfo()
-        stored.state.revision = 9
+        var storedInfo = book.makeBookInfo()
+        storedInfo.state.revision = 9
+        let stored = StoredBookRecord(info: storedInfo, keepsContentIndex: false)
 
         XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil).state.revision, 1)
         XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil, revisionFloor: 7).state.revision, 8)
@@ -666,6 +677,33 @@ final class ContentAnalysisMergeTests: XCTestCase {
         LibraryPersistenceService.saveBookInfo(for: replaced)
         LibraryPersistenceService.flushPendingSave()
         return replaced
+    }
+
+    /// Holds the first cache generation of `book` on the thread doing it,
+    /// once it has chosen where its content.md goes and before it commits
+    /// anything: `reached` is fulfilled there, and the generation goes on
+    /// once `gate` is signaled. The hold ends with the test at the latest.
+    private func holdCacheGeneration(of book: Book) -> (reached: XCTestExpectation, gate: DispatchSemaphore) {
+        let reached = expectation(description: "The batch is at work on the book")
+        let gate = DispatchSemaphore(value: 0)
+        let isClaimed = OSAllocatedUnfairLock(initialState: false)
+        let bookID = book.id
+        MarkdownCacheService.extractionObserver = { generated in
+            guard generated.id == bookID else { return }
+            // Only the first generation is held, so `reached` is fulfilled once.
+            let isFirst = isClaimed.withLock { claimed in
+                defer { claimed = true }
+                return !claimed
+            }
+            guard isFirst else { return }
+            reached.fulfill()
+            gate.wait()
+        }
+        addTeardownBlock {
+            MarkdownCacheService.extractionObserver = nil
+            gate.signal()
+        }
+        return (reached, gate)
     }
 
     /// A library model listing `books`, without the app's services.

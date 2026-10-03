@@ -25,8 +25,12 @@ struct LibraryIndexSandbox {
     let indexURL: URL
     /// The legacy Application Support index, isolated by `TextMouthPaths`.
     let legacyURL: URL
+    /// The reading checkpoint journal beside the index (PERF15), which a
+    /// test that stands for a crash leaves behind.
+    let checkpointJournalURL: URL
     private let originalIndex: Data?
     private let originalLegacy: Data?
+    private let originalCheckpointJournal: Data?
     private let legacyDirectoryExisted: Bool
     private let copiesBefore: Set<URL>
 
@@ -37,11 +41,14 @@ struct LibraryIndexSandbox {
         try TextMouthPaths.ensureDirectoryStructure()
         let indexURL = TextMouthPaths.libraryIndexFile
         let legacyURL = try XCTUnwrap(TextMouthPaths.oldLibraryFile)
+        let checkpointJournalURL = TextMouthPaths.readingCheckpointsFile
         return LibraryIndexSandbox(
             indexURL: indexURL,
             legacyURL: legacyURL,
+            checkpointJournalURL: checkpointJournalURL,
             originalIndex: try? Data(contentsOf: indexURL),
             originalLegacy: try? Data(contentsOf: legacyURL),
+            originalCheckpointJournal: try? Data(contentsOf: checkpointJournalURL),
             legacyDirectoryExisted: FileManager.default.fileExists(
                 atPath: legacyURL.deletingLastPathComponent().path
             ),
@@ -65,6 +72,7 @@ struct LibraryIndexSandbox {
         }
         Self.put(originalIndex, at: indexURL)
         Self.put(originalLegacy, at: legacyURL)
+        Self.put(originalCheckpointJournal, at: checkpointJournalURL)
         if !legacyDirectoryExisted {
             try? FileManager.default.removeItem(at: legacyURL.deletingLastPathComponent())
         }
@@ -149,10 +157,7 @@ struct LibraryIndexSandbox {
 
     /// `library` encoded exactly as `LibraryPersistenceService` writes it.
     static func encoded(_ library: Library) throws -> Data {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-        return try encoder.encode(library)
+        try LibraryPersistenceService.encodedIndex(library)
     }
 
     /// The bytes of `library`'s index damaged by `damage`. An unreadable
@@ -225,4 +230,31 @@ extension XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { elapsed.fulfill() }
         wait(for: [elapsed], timeout: 5)
     }
+
+    /// Runs `edit`, a library edit that awaits its packages' moves off the
+    /// main actor (PERF14), and returns its outcome once it is done, the
+    /// main run loop turning meanwhile, so a synchronous test, such as one
+    /// that waits for a reader the same way, can make the edit in one step.
+    @MainActor
+    func outcome(
+        of edit: @escaping @MainActor () async -> OperationOutcome,
+        timeout: TimeInterval = 30
+    ) -> OperationOutcome {
+        let box = OutcomeBox()
+        let finished = expectation(description: "The library edit finished")
+        Task { @MainActor in
+            box.outcome = await edit()
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: timeout)
+        return box.outcome ?? .failure("The library edit did not finish within \(Int(timeout)) seconds.")
+    }
+}
+
+/// Where `outcome(of:timeout:)` keeps an edit's outcome until the test reads
+/// it. Main-actor isolated: the edit and the test both run there.
+@MainActor
+private final class OutcomeBox {
+    /// The edit's outcome, once it is done.
+    var outcome: OperationOutcome?
 }

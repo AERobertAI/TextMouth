@@ -151,6 +151,14 @@ enum TextMouthPaths {
         root.appendingPathComponent("library.json")
     }
 
+    /// The books whose package records hold reading checkpoints newer than
+    /// library.json (PERF15): written while library.json waits to take a
+    /// checkpoint, removed once it has, and read at launch to take those
+    /// positions from the records after a crash.
+    static var readingCheckpointsFile: URL {
+        root.appendingPathComponent("reading-checkpoints.json")
+    }
+
     static var substitutionsFile: URL {
         root.appendingPathComponent("substitutions.json")
     }
@@ -269,6 +277,15 @@ enum TextMouthPaths {
     /// Path to bookInfo.json inside a .tmb package
     static func bookInfoPath(in tmbDir: URL) -> URL {
         tmbDir.appendingPathComponent("bookInfo.json")
+    }
+
+    /// Name of the file holding a package's content index (PERF15), beside
+    /// bookInfo.json, which no longer holds it. See `BookInfo`.
+    static let contentIndexFileName = "contentIndex.json"
+
+    /// Path to the content index inside a .tmb package
+    static func contentIndexPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(contentIndexFileName)
     }
 
     /// Name of the marker recording that a package's book was removed from

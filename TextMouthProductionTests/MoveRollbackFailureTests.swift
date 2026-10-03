@@ -21,18 +21,24 @@ final class MoveRollbackFailureTests: XCTestCase {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book], folders: [BookFolder(name: source)])
         let failing = FailureSwitch()
+        // `commitLibraryTransition` and the failure center's retries run
+        // these on the main actor, where the switch lives.
         let disk = LibraryTransitionDisk(
             moveItem: { from, to in
-                // Moving back home fails while the switch is on.
-                if to.standardizedFileURL.path == home.standardizedFileURL.path {
-                    try failing.throwIfOn()
+                try MainActor.assumeIsolated {
+                    // Moving back home fails while the switch is on.
+                    if to.standardizedFileURL.path == home.standardizedFileURL.path {
+                        try failing.throwIfOn()
+                    }
+                    try FileManager.default.moveItem(at: from, to: to)
                 }
-                try FileManager.default.moveItem(at: from, to: to)
             },
             writeRecord: { record in
-                // Writing the moved record fails, which starts the rollback.
-                if record.folderPath == destination { try failing.throwIfOn() }
-                try record.saveBookInfoThrowing()
+                try MainActor.assumeIsolated {
+                    // Writing the moved record fails, which starts the rollback.
+                    if record.folderPath == destination { try failing.throwIfOn() }
+                    try record.saveBookInfoThrowing()
+                }
             }
         )
 
@@ -78,12 +84,16 @@ final class MoveRollbackFailureTests: XCTestCase {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book], folders: [BookFolder(name: source)])
         let failing = FailureSwitch()
+        // `commitLibraryTransition` and the failure center's retries run
+        // these on the main actor, where the switch lives.
         let disk = LibraryTransitionDisk(
             moveItem: { try FileManager.default.moveItem(at: $0, to: $1) },
             writeRecord: { record in
-                // Restoring the record at home fails while the switch is on.
-                if record.folderPath == source { try failing.throwIfOn() }
-                try record.saveBookInfoThrowing()
+                try MainActor.assumeIsolated {
+                    // Restoring the record at home fails while the switch is on.
+                    if record.folderPath == source { try failing.throwIfOn() }
+                    try record.saveBookInfoThrowing()
+                }
             }
         )
 
@@ -124,7 +134,7 @@ final class MoveRollbackFailureTests: XCTestCase {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book], folders: [BookFolder(name: source)])
 
-        let outcome = model.moveBooksReturningOutcome([book], toFolder: destination)
+        let outcome = self.outcome { await model.moveBooksReturningOutcome([book], toFolder: destination) }
 
         XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
         XCTAssertFalse(center.hasUnsavedChanges)

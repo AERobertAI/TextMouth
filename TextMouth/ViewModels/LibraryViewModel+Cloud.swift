@@ -17,6 +17,15 @@ extension LibraryViewModel {
     var cloudPackages: [BookPackage] {
         library.books.map(BookPackage.init)
     }
+
+    /// The package of every book that `states` records as downloading
+    /// (PERF16): what a timed refresh reads while a book downloads. Making
+    /// them reads no file.
+    func cloudPackages(downloadingIn states: BookCloudStates) -> [BookPackage] {
+        library.books
+            .filter { states.state(of: $0.id)?.isDownloading == true }
+            .map(BookPackage.init)
+    }
 }
 
 // MARK: - Refresh Cadence
@@ -41,6 +50,34 @@ enum LibraryCloudRefreshCadence {
         guard libraryWindowIsVisible else { return nil }
         return states.contains(where: \.isDownloading) ? whileDownloading : whileVisible
     }
+
+    /// How many timed refreshes while a book downloads make up one that
+    /// reads every book: as many as fit in `whileVisible`, so the rest of
+    /// the list is read as often as when nothing downloads.
+    static var downloadingRefreshesPerFullRefresh: Int {
+        max(1, Int(whileVisible / whileDownloading))
+    }
+
+    /// Which books the `tick`th timed refresh of a timer waiting `interval`
+    /// reads, counting from 1 (PERF16). While a book downloads, only the
+    /// downloading books, which the list follows closely, except that every
+    /// `downloadingRefreshesPerFullRefresh`th one reads every book;
+    /// otherwise every book.
+    static func scope(ofTick tick: Int, waiting interval: Duration) -> LibraryCloudRefreshScope {
+        guard interval == whileDownloading else { return .everyBook }
+        return tick % downloadingRefreshesPerFullRefresh == 0 ? .everyBook : .downloadingBooks
+    }
+}
+
+/// Which books a cloud refresh reads (PERF16). The cases are ordered by
+/// how much they read, so the greater of two requests covers both.
+enum LibraryCloudRefreshScope: Comparable {
+    /// Only the books recorded as downloading: the timed refreshes while a
+    /// book downloads.
+    case downloadingBooks
+    /// Every book: what each event asks for, and what timed refreshes read
+    /// while nothing downloads.
+    case everyBook
 }
 
 // MARK: - Refresher
@@ -49,11 +86,14 @@ enum LibraryCloudRefreshCadence {
 ///
 /// It refreshes when a Library window appears, when the app becomes active
 /// while one is visible, after every change to where the library's books
-/// are, and as `LibraryCloudRefreshCadence` says while one is visible. Each
+/// are, and as `LibraryCloudRefreshCadence` says while one is visible:
+/// every book, except that the timed refreshes while a book downloads read
+/// only the downloading books (PERF16), and every book once a minute. Each
 /// refresh is one call to `BookCloudStates.refresh(_:using:)`, which reads
 /// off the main thread. Refreshes never overlap: a request made while one
-/// runs starts one more right after it, so the last refresh always reads
-/// after the last request.
+/// runs starts one more right after it, reading every book any of the
+/// requests asked for, so the last refresh always reads after the last
+/// request.
 @MainActor
 final class LibraryCloudRefresher {
     /// Waits for a duration, throwing when the waiting task is cancelled.
@@ -85,8 +125,9 @@ final class LibraryCloudRefresher {
     private var visibleWindows: Set<UUID> = []
     /// The refreshes running now, back to back, if any.
     private var refreshing: Task<Void, Never>?
-    /// Whether a refresh was requested while one ran.
-    private var refreshRequestedWhileRunning = false
+    /// What the refreshes requested while one ran asked to read, if any
+    /// was requested: the widest of their scopes.
+    private var scopeRequestedWhileRunning: LibraryCloudRefreshScope?
     /// The timer: it waits `timerInterval`, requests a refresh, and waits again.
     private var timer: Task<Void, Never>?
     /// What the refresher observes once a Library window has appeared: the
@@ -138,17 +179,18 @@ final class LibraryCloudRefresher {
 
     // MARK: Refreshing
 
-    /// Refreshes every book's cloud state now, or once more after the
+    /// Refreshes the cloud states of the books `scope` names (every book,
+    /// unless a timed refresh asks for less) now, or once more after the
     /// refresh that is running. Does nothing before a Library window has
     /// shown a library.
-    func requestRefresh() {
+    func requestRefresh(_ scope: LibraryCloudRefreshScope = .everyBook) {
         guard isEnabled, library != nil else { return }
         guard refreshing == nil else {
-            refreshRequestedWhileRunning = true
+            scopeRequestedWhileRunning = max(scopeRequestedWhileRunning ?? scope, scope)
             return
         }
         refreshing = Task { [weak self] in
-            await self?.refreshUntilCurrent()
+            await self?.refreshUntilCurrent(scope)
         }
     }
 
@@ -157,15 +199,27 @@ final class LibraryCloudRefresher {
         await refreshing?.value
     }
 
-    /// Refreshes back to back until no request is left, then lets the next
-    /// request start a new run.
-    private func refreshUntilCurrent() async {
-        repeat {
-            refreshRequestedWhileRunning = false
+    /// Refreshes `scope`, then back to back what was requested meanwhile,
+    /// until no request is left; then lets the next request start a new run.
+    private func refreshUntilCurrent(_ scope: LibraryCloudRefreshScope) async {
+        var next: LibraryCloudRefreshScope? = scope
+        while let scope = next {
+            scopeRequestedWhileRunning = nil
             guard let library else { break }
-            await states.refresh(library.cloudPackages, using: storage())
-        } while refreshRequestedWhileRunning
+            await states.refresh(packages(of: library, in: scope), using: storage())
+            next = scopeRequestedWhileRunning
+        }
         refreshing = nil
+    }
+
+    /// The packages a refresh of `scope` reads in `library`.
+    private func packages(of library: LibraryViewModel, in scope: LibraryCloudRefreshScope) -> [BookPackage] {
+        switch scope {
+        case .everyBook:
+            return library.cloudPackages
+        case .downloadingBooks:
+            return library.cloudPackages(downloadingIn: states)
+        }
     }
 
     // MARK: Observing
@@ -226,9 +280,10 @@ final class LibraryCloudRefresher {
     }
 
     /// A timer that requests a refresh after every `interval` until it is
-    /// cancelled.
+    /// cancelled, of the books the cadence says for each.
     private func startTimer(waiting interval: Duration) -> Task<Void, Never> {
         Task { [weak self, sleep] in
+            var tick = 0
             while true {
                 do {
                     try await sleep(interval)
@@ -236,7 +291,8 @@ final class LibraryCloudRefresher {
                     return // Cancelled: a new cadence, or no window to refresh.
                 }
                 guard !Task.isCancelled, let self else { return }
-                self.requestRefresh()
+                tick += 1
+                self.requestRefresh(LibraryCloudRefreshCadence.scope(ofTick: tick, waiting: interval))
             }
         }
     }

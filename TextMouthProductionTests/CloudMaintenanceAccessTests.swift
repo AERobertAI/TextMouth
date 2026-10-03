@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// How maintenance reaches a cloud library's files (FR02,
@@ -73,14 +74,47 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
         XCTAssertFalse(access.isInCloud(folderURL.appendingPathComponent("Missing.md")))
     }
 
+    /// A missing item whose nearest folders are missing too, below a folder
+    /// only the cloud can list, is in the cloud however many levels up that
+    /// folder is.
+    func testPresenceFindsAFolderInTheCloudSeveralLevelsUp() throws {
+        let shelf = folderURL.appendingPathComponent("Shelf", isDirectory: true)
+        try FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
+        cloud.markDataless(shelf)
+
+        let deep = shelf.appendingPathComponent("Unlisted.tmb/Deeper/removedFromLibrary.json")
+
+        XCTAssertEqual(cloud.access.presence(of: deep), .inCloud)
+    }
+
+    /// A file missing from a package that is there, as a removal marker
+    /// almost always is, is absent after one question about the package
+    /// (PERF13): a folder found with downloads off lies in no dataless
+    /// folder, so the folders above it are not asked about.
+    func testPresenceStopsAtThePackageAroundAMissingFile() throws {
+        let book = try makePackagedBook()
+        let asked = AskedItems()
+        let access = MaintenanceFileAccess(isDataless: { url in
+            asked.note(url)
+            return false
+        })
+
+        let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory)
+
+        XCTAssertEqual(access.presence(of: marker), .absent)
+        XCTAssertEqual(asked.paths, [FakeCloudFiles.key(book.tmbDirectory)])
+    }
+
     // MARK: - The Files a Pass Reads
 
     /// Each file a pass reads is found in the cloud: the package, the
-    /// record, the text cache, and the source; a pass that does not read
-    /// the text cache does not care where it is.
+    /// record and the content index beside it, the text cache, and the
+    /// source; a pass that does not read the text cache does not care where
+    /// it is.
     func testFileInCloudFindsEachFileAPassReads() throws {
         let book = try commitCache(of: makePackagedBook())
         let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let contentIndex = TextMouthPaths.contentIndexPath(in: book.tmbDirectory)
         let cache = MarkdownCacheService.cacheURL(for: book)
         let rereadingSources: MaintainedFiles = [.content, .record]
 
@@ -91,7 +125,7 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
         assertSameItem(cacheCloud.access.fileInCloud(of: book, reading: .all), cache)
         XCTAssertNil(cacheCloud.access.fileInCloud(of: book, reading: rereadingSources))
 
-        for file in [record, book.bookFileURL, book.tmbDirectory] {
+        for file in [record, contentIndex, book.bookFileURL, book.tmbDirectory] {
             let fileCloud = FakeCloudFiles()
             fileCloud.markDataless(file)
             assertSameItem(fileCloud.access.fileInCloud(of: book, reading: rereadingSources), file)
@@ -304,5 +338,23 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
     /// path is spelled.
     private func assertSameItem(_ found: URL?, _ expected: URL, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(found.map(FakeCloudFiles.key), FakeCloudFiles.key(expected), file: file, line: line)
+    }
+}
+
+/// The items an access was asked whether they are dataless, in order, by
+/// their keys (`FakeCloudFiles.key`). The list lives in an
+/// OSAllocatedUnfairLock: an access may be asked from any thread.
+private final class AskedItems: Sendable {
+    /// The keys asked about so far.
+    private let items = OSAllocatedUnfairLock(initialState: [String]())
+
+    /// Notes that the item at `url` was asked about.
+    func note(_ url: URL) {
+        items.withLock { $0.append(FakeCloudFiles.key(url)) }
+    }
+
+    /// The keys asked about so far, in order.
+    var paths: [String] {
+        items.withLock { $0 }
     }
 }

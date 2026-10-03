@@ -1,0 +1,592 @@
+import XCTest
+import os
+@testable import TextMouth
+
+/// Measures what the library's persistence costs at the moments the
+/// performance review of October 3 named (PERF13 to PERF17): a reading
+/// checkpoint, a folder rename, a launch, a config save, and a cloud
+/// refresh. Every figure is printed on one line beginning
+/// `PERSISTENCE_COST:`, so a test log can be searched for them. Assertions
+/// check the shape of a cost (which files are written, how many bytes, how
+/// many file-system calls), never a time, so a busy machine cannot fail
+/// them.
+final class PersistenceCostTests: XCTestCase {
+    /// The hosted test root's library index, put back after each test.
+    private var sandbox: LibraryIndexSandbox!
+    /// Folders this test created in the test root's library, removed after
+    /// it with every package inside.
+    private var createdDirectories: [URL] = []
+
+    override func setUpWithError() throws {
+        sandbox = try LibraryIndexSandbox.capture()
+        createdDirectories = []
+    }
+
+    override func tearDownWithError() throws {
+        // Optional: tear-down also runs when capturing failed in set-up.
+        // Restoring flushes pending saves, so none lands in a removed folder.
+        sandbox?.restore()
+        for directory in createdDirectories {
+            try? FileManager.default.removeItem(at: directory)
+        }
+    }
+
+    // MARK: - PERF15: A Reading Checkpoint
+
+    /// What one reading checkpoint writes, as the reader makes one every 30
+    /// seconds of playback: the library holds as many books as the user's
+    /// (643, about 690 KB of index), and the book being read has a record as
+    /// large as the user's largest (about 690 KB, most of it the content
+    /// index). Each checkpoint's line names every file it rewrote and its
+    /// size.
+    ///
+    /// Before PERF15 every checkpoint rewrote library.json and the whole
+    /// record, index included: 1,305,075 bytes. Now it writes the record
+    /// alone, under 4 KB, and the journal the first time; library.json takes
+    /// the checkpoints at their deadline, or when TextMouth quits.
+    @MainActor
+    func testReadingCheckpointCost() throws {
+        let book = try makePackagedBook(headingCount: 2_700)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Self.library(holding: book, besides: 642)
+        model.save()
+        LibraryPersistenceService.flushPendingSave()
+        let files = Self.checkpointFiles(of: book)
+        Self.report("PERF15 library.json holds \(model.library.books.count) books in \(Self.size(of: sandbox.indexURL)) bytes")
+
+        var bytesPerCheckpoint: [Int] = []
+        var rewroteIndex = false
+        for checkpoint in 1...3 {
+            let before = files.map(Self.identity(of:))
+            model.persistReadingPosition(
+                bookID: book.id,
+                position: ReadingPosition(chapterIndex: 1, characterOffset: 100 * checkpoint)
+            )
+            waitPastLibrarySaveDebounce()
+            let rewritten = zip(files, before).filter { Self.identity(of: $0.0) != $0.1 }.map(\.0)
+            let bytes = rewritten.map(Self.size(of:)).reduce(0, +)
+            bytesPerCheckpoint.append(bytes)
+            let names = rewritten.map { "\($0.lastPathComponent) (\(Self.size(of: $0)) bytes)" }
+            Self.report("PERF15 checkpoint \(checkpoint) rewrote \(names.joined(separator: ", ")): \(bytes) bytes")
+            XCTAssertFalse(rewritten.contains(TextMouthPaths.contentIndexPath(in: book.tmbDirectory)), "checkpoint \(checkpoint)")
+            rewroteIndex = rewroteIndex || rewritten.contains(TextMouthPaths.libraryIndexFile)
+        }
+        // A listening hour holds 120 checkpoints, one every 30 seconds, and
+        // library.json takes them once per checkpoint deadline.
+        let indexWritesPerHour = rewroteIndex ? 120 : 3_600 / LibraryPersistenceService.readingCheckpointDelay
+        let perHour = (Double(bytesPerCheckpoint.max() ?? 0) * 120
+            + (rewroteIndex ? 0 : indexWritesPerHour * Double(Self.size(of: sandbox.indexURL)))) / 1_000_000
+        Self.report(
+            "PERF15 checkpoints write about \(String(format: "%.1f", perHour)) MB per listening hour "
+                + "(library.json \(Int(indexWritesPerHour)) times)"
+        )
+        XCTAssertFalse(rewroteIndex, "a checkpoint rewrote library.json")
+        XCTAssertLessThan(bytesPerCheckpoint.max() ?? 0, 4_096, "a checkpoint wrote more than its record")
+
+        // Quitting writes the last checkpoint into library.json.
+        LibraryPersistenceService.flushPendingSave()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let saved = try decoder.decode(Library.self, from: Data(contentsOf: sandbox.indexURL))
+        XCTAssertEqual(saved.books.first { $0.id == book.id }?.readingPosition?.characterOffset, 300)
+    }
+
+    // MARK: - PERF14: A Folder Rename
+
+    /// How long renaming a folder of as many books as the user's largest
+    /// (Science Fiction, 527 books) holds the main thread, where VoiceOver
+    /// waits for the app's answers: every package moves and its record is
+    /// rewritten. A heartbeat on the main thread measures the longest time
+    /// it went without running.
+    ///
+    /// Before PERF14 the whole rename ran there: 611 ms, a 633 ms stall
+    /// (Debug). Now the packages move off the main actor, and VoiceOver
+    /// hears when they are done.
+    @MainActor
+    func testFolderRenameCost() async throws {
+        let folder = "Rename Cost \(UUID().uuidString.prefix(8))"
+        let renamed = "\(folder) Renamed"
+        for name in [folder, renamed] {
+            createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(name, isDirectory: true))
+        }
+        let books = try (0..<527).map { try makeShelvedBook(number: $0, in: folder) }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books, folders: [BookFolder(name: folder)])
+        let shelf = try XCTUnwrap(model.library.folders.first)
+
+        let announcementsBefore = VoiceOverAnnouncer.recordedAnnouncements.count
+        let heartbeat = MainThreadHeartbeat()
+        let clock = ContinuousClock()
+        let started = clock.now
+        let outcome = await model.renameFolderReturningOutcome(shelf, to: renamed)
+        let elapsed = clock.now - started
+        let longestStall = await heartbeat.stop()
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(model.library.books.filter { $0.folderPath == renamed }.count, books.count)
+        XCTAssertEqual(
+            VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message),
+            ["Done. Moved 527 books."]
+        )
+        Self.report(
+            "PERF14 renaming a folder of \(books.count) books took \(Self.milliseconds(elapsed)) ms; "
+                + "the main thread went \(Self.milliseconds(longestStall)) ms without running"
+        )
+    }
+
+    // MARK: - PERF13: Launch
+
+    /// What the startup repair and the text cache filter cost at launch, on
+    /// the main thread, for 200 books spread over folders about as the
+    /// user's 643 are (averaging 1.9 folders deep), each with a current,
+    /// fingerprinted text cache. The repair's file checks go through an
+    /// access that counts its lstat calls.
+    ///
+    /// Before PERF13: 1,183 lstat calls (5.9 a book) in 33.8 ms, the
+    /// removal-marker check walking every folder up to the data directory,
+    /// and 12.5 ms of main thread for the cache filter. Now the walk stops
+    /// at the package, and the filter runs off the main thread.
+    @MainActor
+    func testLaunchCost() async throws {
+        let top = "Launch Cost \(UUID().uuidString.prefix(8))"
+        createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(top, isDirectory: true))
+        // The test's books live in a folder of its own, so the user's 12
+        // books at the top of the library count as one folder deep.
+        let depths = Array(repeating: 1, count: 63) + Array(repeating: 2, count: 91) + Array(repeating: 3, count: 46)
+        let books = try depths.enumerated().map { number, depth -> Book in
+            let folder = ([top] + ["Shelf \(number % 4)", "Series \(number % 3)"].prefix(depth - 1))
+                .joined(separator: "/")
+            return try makeCachedBook(number: number, in: folder)
+        }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books)
+        let lstats = CallCounter()
+        let access = MaintenanceFileAccess(isDataless: { url in
+            lstats.increment()
+            return DatalessFiles.isDataless(url)
+        })
+        let clock = ContinuousClock()
+
+        let repairStarted = clock.now
+        model.migrateOldBooksIfNeeded(access: access)
+        let repair = clock.now - repairStarted
+        Self.report(
+            "PERF13 the startup repair of \(books.count) books made \(lstats.count) lstat calls "
+                + "(\(String(format: "%.1f", Double(lstats.count) / Double(books.count))) a book) "
+                + "in \(Self.milliseconds(repair)) ms on the main thread"
+        )
+
+        XCTAssertLessThanOrEqual(lstats.count, 3 * books.count, "the repair walks the folders above each package again")
+
+        let finished = expectation(description: "The text cache batch finished")
+        let mainThreadChecksBefore = lstats.onMainThread
+        let filterStarted = clock.now
+        model.extractMissingContentCaches(access: access) { finished.fulfill() }
+        let filterOnMain = clock.now - filterStarted
+        let mainThreadChecks = lstats.onMainThread - mainThreadChecksBefore
+        await fulfillment(of: [finished], timeout: 30)
+        Self.report(
+            "PERF13 the text cache filter of \(books.count) books held the main thread "
+                + "\(Self.milliseconds(filterOnMain)) ms"
+        )
+        XCTAssertEqual(mainThreadChecks, 0, "the text cache filter checked files on the main thread")
+        XCTAssertFalse(model.isExtracting, "a current cache was queued again")
+    }
+
+    // MARK: - PERF17: Settings Saves
+
+    /// How often config.json is written, and how long the main thread spends
+    /// on it, while the speed slider is dragged through twenty steps: each
+    /// step changes the preference, which saves config.json. The service is
+    /// bound to a file of the test's own, with its writes counted.
+    ///
+    /// Before PERF17 each step wrote the file on the main thread: 20 writes
+    /// in 26.0 ms. Now the file is written once the steps pause.
+    @MainActor
+    func testSettingsSaveCost() async throws {
+        let writes = CallCounter()
+        let configFile = try makeConfigFileURL()
+        let service = ConfigService(fileURL: configFile, fileOperations: ConfigService.FileOperations(
+            write: { data, url in
+                writes.increment()
+                try data.write(to: url, options: .atomic)
+            },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: makeSandboxedPreferences("settings-save-cost"),
+            configService: service
+        )
+        let clock = ContinuousClock()
+
+        let started = clock.now
+        for step in 1...20 {
+            settings.wordsPerMinute = 200 + Double(step * 5)
+        }
+        let drag = clock.now - started
+        let writesWhileDragging = writes.count
+        try await Task.sleep(for: .milliseconds(600))
+
+        Self.report(
+            "PERF17 dragging the speed slider through 20 steps wrote config.json \(writesWhileDragging) times "
+                + "as it moved and \(writes.count) in all, in \(Self.milliseconds(drag)) ms of main thread"
+        )
+        let saved = try ConfigService.decode(Data(contentsOf: configFile))
+        XCTAssertEqual(saved.wordsPerMinute, 300, "config.json does not hold the last speed")
+        XCTAssertEqual(writesWhileDragging, 0, "config.json was written while the slider moved")
+        XCTAssertEqual(writes.count, 1, "config.json was not written once, after the slider stopped")
+    }
+
+    // MARK: - PERF16: A Cloud Refresh
+
+    /// What one refresh of the library list's cloud states costs, as the list
+    /// makes one every minute while a Library window is visible, when the app
+    /// becomes active, after every add, move, or removal, and every 2 seconds
+    /// while a book downloads: the real book storage over the real item
+    /// provider, with the provider's location lookups counted
+    /// (`LocationCountingReads`), for as many packages as the user's
+    /// library holds (643). It is measured twice: in the test root, which is
+    /// local, as the user's library is; and with every location reported as
+    /// iCloud Drive once the real provider has looked it up, for a library
+    /// in the cloud. Those packages are not on disk, so each reads as
+    /// waiting for sync after one failed listing.
+    ///
+    /// Before PERF16 each refresh worked out where the library lives once,
+    /// and once more for every package: 644 location reads in either
+    /// library. Now a local library's refresh reads it once and stops, and a
+    /// cloud library's reads it once and passes it to every package's state.
+    @MainActor
+    func testCloudRefreshCost() async throws {
+        let packages = (0..<643).map { number in
+            BookPackage(
+                bookID: UUID(),
+                url: TextMouthPaths.libraryDir
+                    .appendingPathComponent("Synthetic Shelf \(number % 38)", isDirectory: true)
+                    .appendingPathComponent("Synthetic_Title_\(number)-Synthetic_Author-1774073441.tmb", isDirectory: true),
+                isPackage: true,
+                isAudio: false
+            )
+        }
+
+        for reportsCloud in [false, true] {
+            let items = LocationCountingReads(reportingCloud: reportsCloud)
+            let storage = BookCloudStorageService(items: items.provider)
+            let states = BookCloudStates()
+            let clock = ContinuousClock()
+            var durations: [Duration] = []
+            var readsPerRefresh: [Int] = []
+            for _ in 1...5 {
+                let readsBefore = items.count
+                let started = clock.now
+                await states.refresh(packages, using: storage)
+                durations.append(clock.now - started)
+                readsPerRefresh.append(items.count - readsBefore)
+            }
+
+            let median = durations.sorted()[durations.count / 2]
+            let library = reportsCloud ? "a library in the cloud" : "a local library"
+            Self.report(
+                "PERF16 a cloud refresh of \(packages.count) packages in \(library) read the library's location "
+                    + "\(readsPerRefresh.map(String.init).joined(separator: ", ")) times, "
+                    + "in \(Self.milliseconds(median)) ms (median of 5)"
+            )
+            if reportsCloud {
+                XCTAssertEqual(states.libraryLocation, .cloud(.iCloudDrive))
+                XCTAssertEqual(states.states.count, packages.count, "a package's state was not recorded")
+                XCTAssertTrue(states.states.values.allSatisfy { $0 == .waitingForSync })
+                XCTAssertEqual(readsPerRefresh, [1, 1, 1, 1, 1], "a cloud refresh looked the location up for a package")
+            } else {
+                XCTAssertEqual(states.libraryLocation, .local)
+                XCTAssertEqual(states.states, [:], "a local library recorded cloud states")
+                XCTAssertEqual(readsPerRefresh, [1, 1, 1, 1, 1], "a local library's refresh read more than its location")
+            }
+        }
+    }
+
+    // MARK: - Fixtures
+
+    /// A small Markdown book numbered `number`, in a package of its own in
+    /// the library folder `folder`, whose text cache is current and
+    /// fingerprinted, as every book's is once the startup batch has run.
+    private func makeCachedBook(number: Int, in folder: String) throws -> Book {
+        let packageName = "Launch_Book_\(number)-Cost_Fixture-1774073441.tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Launch Book \(number)\n\nA few words.".write(to: source, atomically: true, encoding: .utf8)
+        let cache = TextMouthPaths.contentMarkdownPath(in: package)
+        try "# Launch Book \(number)\n\nA few words.".write(to: cache, atomically: true, encoding: .utf8)
+        let fingerprint = TextCacheFingerprint(
+            source: try XCTUnwrap(FileFingerprint(of: source, hasher: .md5)),
+            cache: try XCTUnwrap(FileFingerprint(of: cache, hasher: .md5))
+        )
+        let book = Book(
+            title: "Launch Book \(number)",
+            author: "Cost Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: "launch-\(number)",
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+            contentIndexVersion: BookContentIndex.currentVersion,
+            textCacheFingerprint: fingerprint
+        )
+        try book.saveBookInfoThrowing()
+        return book
+    }
+
+    /// A small Markdown book numbered `number`, in a package of its own in
+    /// the library folder `folder`, with a record and a content index, as an
+    /// imported and analyzed book has.
+    private func makeShelvedBook(number: Int, in folder: String) throws -> Book {
+        let packageName = "Shelved_Book_\(number)-Cost_Fixture-1774073441.tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Shelved Book \(number)\n\nA few words.".write(to: source, atomically: true, encoding: .utf8)
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Shelved Book \(number)", text: "A few words.")],
+            format: .markdown
+        )
+        var book = Book(
+            title: "Shelved Book \(number)",
+            author: "Cost Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: "shelved-\(number)",
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+        book.applyContentAnalysis(index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
+        try book.saveBookInfoThrowing(contentIndex: index)
+        return book
+    }
+
+    /// A duration in milliseconds, rounded to a tenth.
+    private static func milliseconds(_ duration: Duration) -> String {
+        let components = duration.components
+        let value = Double(components.seconds) * 1_000 + Double(components.attoseconds) / 1e15
+        return String(format: "%.1f", value)
+    }
+
+    /// A Markdown book in a package of its own, in a folder this test
+    /// removes, whose record holds a content index of `headingCount`
+    /// headings: about 690 KB of record for 2,700, as large as the user's
+    /// largest.
+    private func makePackagedBook(headingCount: Int) throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let folder = "Persistence Cost \(UUID().uuidString.prefix(8))"
+        createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(folder, isDirectory: true))
+        let packageName = "PersistenceCost-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Opening\n\nThe words of a long collection.".write(to: source, atomically: true, encoding: .utf8)
+        let index = Self.contentIndex(headingCount: headingCount)
+        var book = Book(
+            title: "The Collected Works",
+            author: "Cost Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: try FileImportService.md5Hash(of: source),
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+        book.applyContentAnalysis(index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
+        try book.saveBookInfoThrowing(contentIndex: index)
+        return book
+    }
+
+    /// A text book's content index with `headingCount` headings spread over
+    /// chapters of twenty headings each, labeled as a long collection's are.
+    static func contentIndex(headingCount: Int) -> BookContentIndex {
+        let headingsPerChapter = 20
+        let chapterCount = max(1, (headingCount + headingsPerChapter - 1) / headingsPerChapter)
+        let charactersPerHeading = 2_000
+        var chapters: [BookContentChapterIndex] = []
+        var globalOffset = 0
+        for chapterIndex in 0..<chapterCount {
+            let start = globalOffset
+            let headings = (0..<headingsPerChapter).map { headingIndex -> BookContentHeadingIndex in
+                let local = headingIndex * charactersPerHeading
+                return BookContentHeadingIndex(
+                    id: "heading-\(chapterIndex)-\(headingIndex)",
+                    level: headingIndex == 0 ? 1 : 2,
+                    text: "Part \(chapterIndex + 1), Section \(headingIndex + 1): A Heading of Ordinary Length",
+                    characterOffset: local,
+                    globalCharacterOffset: start + local
+                )
+            }
+            let characterCount = headingsPerChapter * charactersPerHeading
+            chapters.append(BookContentChapterIndex(
+                chapterIndex: chapterIndex,
+                title: "Part \(chapterIndex + 1)",
+                startCharacterOffset: start,
+                characterCount: characterCount,
+                wordCount: characterCount / 6,
+                headings: headings,
+                audio: nil
+            ))
+            globalOffset += characterCount
+        }
+        return BookContentIndex(
+            version: BookContentIndex.currentVersion,
+            kind: .text,
+            format: .markdown,
+            generatedAt: Date(timeIntervalSince1970: 1_790_000_000),
+            totalWordCount: globalOffset / 6,
+            totalCharacterCount: globalOffset,
+            totalAudioDuration: nil,
+            audioLayout: nil,
+            chapters: chapters
+        )
+    }
+
+    /// A library of `book` and `others` more rows, each filled in as most of
+    /// the user's rows are (an imported, analyzed EPUB with a title of about
+    /// 20 characters, a path of about 180, and, for one book in seven, a
+    /// reading position), so the index is about as large as the user's:
+    /// about 1,080 bytes per book. The other rows have no package on disk;
+    /// only `book` is ever written to.
+    static func library(holding book: Book, besides others: Int) -> Library {
+        let root = TextMouthPaths.libraryDir.path
+        let rows = (0..<others).map { number -> Book in
+            let folder = "Synthetic Shelf \(number % 38)"
+            let title = "Synthetic Title \(number)"
+            let packageName = "Synthetic_Title_\(number)-Synthetic_Author-1774073441.tmb"
+            let isBeingRead = number % 7 == 0
+            return Book(
+                title: title,
+                author: "Synthetic Author \(number % 50)",
+                format: .epub,
+                filePath: "\(root)/\(folder)/\(packageName)/Synthetic_Title_\(number)-Synthetic_Author_Name.epub",
+                md5Hash: String(repeating: "0123456789abcdef", count: 2),
+                folderPath: folder,
+                dateAdded: Date(timeIntervalSince1970: 1_774_073_441),
+                lastOpened: isBeingRead ? Date(timeIntervalSince1970: 1_790_000_000) : nil,
+                readingPosition: isBeingRead
+                    ? ReadingPosition(chapterIndex: 3, characterOffset: 1_200, globalCharacterOffset: 45_000)
+                    : nil,
+                totalWordCount: 98_000,
+                totalCharacterCount: 560_000,
+                tmbDirectoryName: packageName,
+                sourceFilePath: "/Users/reader/Documents/Books To Import/\(title) - Synthetic Author.epub",
+                cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+                contentIndexVersion: BookContentIndex.currentVersion
+            )
+        }
+        return Library(books: [book] + rows)
+    }
+
+    // MARK: - Files
+
+    /// The files a reading checkpoint of `book` can rewrite: library.json,
+    /// the checkpoint journal beside it, and the book's package record, with
+    /// every file beside the record that holds part of it.
+    private static func checkpointFiles(of book: Book) -> [URL] {
+        let package = book.tmbDirectory
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: package.path)) ?? []
+        let recordFiles = names.filter { $0.hasSuffix(".json") }.sorted().map { package.appendingPathComponent($0) }
+        return [TextMouthPaths.libraryIndexFile, TextMouthPaths.readingCheckpointsFile] + recordFiles
+    }
+
+    /// Which file is at `url` now: its inode, which an atomic write replaces,
+    /// with its size and modification time; nil when nothing is there.
+    private static func identity(of url: URL) -> [String]? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) else { return nil }
+        return [
+            "\(attributes[.systemFileNumber] ?? "")",
+            "\(attributes[.size] ?? "")",
+            "\(attributes[.modificationDate] ?? "")",
+        ]
+    }
+
+    /// The size of the file at `url` in bytes, or 0 when nothing is there.
+    private static func size(of url: URL) -> Int {
+        ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? NSNumber)?.intValue ?? 0
+    }
+
+    /// Prints one measurement on a line of its own.
+    private static func report(_ line: String) {
+        print("PERSISTENCE_COST: \(line)")
+    }
+}
+
+// MARK: - Counting Calls
+
+/// Counts calls made from any thread, as a maintenance pass's file checks
+/// are, and how many came from the main thread. Its counts live in an
+/// OSAllocatedUnfairLock.
+private final class CallCounter: Sendable {
+    /// How many calls were counted, and how many on the main thread.
+    private let calls = OSAllocatedUnfairLock(initialState: (all: 0, onMainThread: 0))
+
+    /// Counts one call, made on the current thread.
+    func increment() {
+        let isMain = Thread.isMainThread
+        calls.withLock {
+            $0.all += 1
+            if isMain { $0.onMainThread += 1 }
+        }
+    }
+
+    /// How many calls were counted.
+    var count: Int {
+        calls.withLock { $0.all }
+    }
+
+    /// How many of them were made on the main thread.
+    var onMainThread: Int {
+        calls.withLock { $0.onMainThread }
+    }
+}
+
+// MARK: - Measuring the Main Thread
+
+/// Measures how long the main thread goes without running, as VoiceOver
+/// feels it: a timer on the main run loop beats every two milliseconds, and
+/// the longest time between two beats, or between the start and the first
+/// beat, is how long something held the main thread.
+@MainActor
+private final class MainThreadHeartbeat {
+    /// The clock the beats are timed by.
+    private let clock = ContinuousClock()
+    /// When the last beat came, or the measurement started.
+    private var lastBeat: ContinuousClock.Instant
+    /// The longest time between two beats so far.
+    private var longest: Duration = .zero
+    /// The timer that beats, until the measurement stops.
+    private var timer: Timer?
+
+    /// Starts beating now.
+    init() {
+        lastBeat = clock.now
+        timer = Timer.scheduledTimer(withTimeInterval: 0.002, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.beat() }
+        }
+    }
+
+    /// Notes a beat, and how long it came after the one before.
+    private func beat() {
+        let now = clock.now
+        longest = max(longest, now - lastBeat)
+        lastBeat = now
+    }
+
+    /// Lets the main thread run a little longer, so the beat after a stall
+    /// that just ended is counted, then stops and returns the longest time
+    /// the main thread went without running.
+    func stop() async -> Duration {
+        try? await Task.sleep(for: .milliseconds(30))
+        timer?.invalidate()
+        timer = nil
+        return longest
+    }
+}
+

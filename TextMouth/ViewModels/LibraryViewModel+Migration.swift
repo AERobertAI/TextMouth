@@ -53,6 +53,11 @@ extension LibraryViewModel {
         // repair below touches its package.
         if !removeRetiredBooks(access: access, skips: skips).isEmpty { needsSave = true }
 
+        // A crash can leave reading checkpoints that reached their books'
+        // records but not this index (PERF15). Their newer positions come
+        // next, so the repairs below and the save after them keep them.
+        if adoptNewerRecordedPositions(access: access, skips: skips) { needsSave = true }
+
         // Merge folder rows that name one directory on this volume before the
         // repairs below reason about where each book's package lives.
         if repairEquivalentFolderDuplicates() { needsSave = true }
@@ -111,6 +116,59 @@ extension LibraryViewModel {
         let retiredIDs = Set(retired.map(\.id))
         library.books.removeAll { retiredIDs.contains($0.id) }
         return retired
+    }
+
+    /// Gives each book that the checkpoint journal names the reading position
+    /// its package record holds, when that is newer than its row's (PERF15):
+    /// a reading checkpoint writes the record at once but library.json
+    /// within minutes, so a crash in between leaves the record ahead
+    /// (`LibraryPersistenceService.saveReadingCheckpoint`). The record's
+    /// last-opened date comes with it when that is newer too, as a
+    /// checkpoint sets both. Returns whether any row changed.
+    ///
+    /// Only bookInfo.json is read, with dataless files left in the cloud. A
+    /// book whose package or record is in the cloud keeps its row and is
+    /// counted in `skips`; a record that is missing, cannot be read, or
+    /// names another book changes nothing.
+    private func adoptNewerRecordedPositions(access: MaintenanceFileAccess, skips: CloudSkips) -> Bool {
+        let journaled = LibraryPersistenceService.booksWithCheckpointsAhead()
+        guard !journaled.isEmpty else { return false }
+        var adopted = 0
+        for index in library.books.indices where journaled.contains(library.books[index].id) {
+            let book = library.books[index]
+            guard !book.tmbDirectoryName.isEmpty else { continue }
+            let package = book.tmbDirectory
+            let recordURL = TextMouthPaths.bookInfoPath(in: package)
+            guard !access.isInCloud(package), !access.isInCloud(recordURL) else {
+                skips.record(book)
+                continue
+            }
+            let record: BookInfo
+            do {
+                record = try access.read(recordURL) { try StoredBookRecord.read(from: package) }.info
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                skips.record(book)
+                continue
+            } catch {
+                continue
+            }
+            guard record.metadata.bookID == book.id,
+                  let recorded = record.state.readingPosition,
+                  recorded.lastUpdated > (book.readingPosition?.lastUpdated ?? .distantPast) else { continue }
+            library.books[index].readingPosition = recorded
+            if let opened = record.metadata.lastOpened, opened > (book.lastOpened ?? .distantPast) {
+                library.books[index].lastOpened = opened
+            }
+            adopted += 1
+        }
+        guard adopted > 0 else { return false }
+        let books = CountWording.phrase(adopted, singular: "book", plural: "books")
+        DiagnosticLog.event(
+            .storage,
+            "LIBRARY_INDEX: took the reading positions of \(books) from their records, "
+                + "which held checkpoints saved after the index"
+        )
+        return true
     }
 
     /// Fixes stale file paths: when a book's file is not at its recorded
@@ -436,21 +494,42 @@ extension LibraryViewModel {
     ) {
         // A second scene/action must not launch the same library migration again.
         guard !isExtracting else { return }
-        // These checks stat every book's files with dataless files left in
-        // the cloud (FR02): one that would download a folder's listing fails
-        // at once instead of waiting on the network, and the book it could
-        // not check is listed, for the batch to find its files in the cloud.
-        let booksNeedingCache = DatalessFiles.withoutDownloading {
-            library.books.filter { book in
+        // Finding the books makes several stat calls for every text book,
+        // a fortieth of a second at launch for the user's library, so it
+        // runs off the main thread (PERF13), and the batch starts once it is
+        // done, unless another one has started meanwhile.
+        let books = library.books
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let booksNeedingCache = Self.booksNeedingCacheUpdate(books, access: access)
+            // The hop back takes its own weak reference, rather than sharing
+            // the variable this closure captured with code that runs on
+            // another thread.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, !self.isExtracting else { return }
+                self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
+                    completion?()
+                }
+            }
+        }
+    }
+
+    /// The text books of `books` whose caches the startup batch makes or
+    /// rebuilds: those with no cache, an outdated one, or a source or cache
+    /// of another size than when the cache was written. Run on any thread.
+    ///
+    /// The checks stat every book's files with dataless files left in the
+    /// cloud (FR02): one that would download a folder's listing fails at
+    /// once instead of waiting on the network, and the book it could not
+    /// check is listed, for the batch to find its files in the cloud.
+    nonisolated static func booksNeedingCacheUpdate(_ books: [Book], access: MaintenanceFileAccess) -> [Book] {
+        DatalessFiles.withoutDownloading {
+            books.filter { book in
                 guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
                 // Needs cache if missing or if the stored version is outdated
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-                return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
+                return hasResizedTextCacheFile(book, isDataless: access.isDataless)
             }
-        }
-        rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
-            completion?()
         }
     }
 
@@ -949,6 +1028,7 @@ extension LibraryViewModel {
             await waiting(nil)
         }
         LibraryPersistenceService.flushPendingSave()
+        configService.flushScheduledSave()
         TextMouthPaths.flushLogs()
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)
@@ -1171,6 +1251,7 @@ extension LibraryViewModel {
             return .failure(Self.switchFailureContext, DataDirectoryMigrationError.moveInProgress)
         }
         LibraryPersistenceService.flushPendingSave()
+        configService.flushScheduledSave()
         let unsaved = failureCenter.unsavedFailures()
         if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
             let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)

@@ -49,17 +49,23 @@ extension LibraryViewModel {
     /// The whole subtree is validated first: a refused removal explains the
     /// conflict and leaves both the library and the disk untouched. The
     /// folder's disk directory is removed after all contents have been moved out.
-    func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) {
-        presentFailure(of: removeFolderMovingContentsReturningOutcome(folder, toPath: destination))
+    /// Returns the task doing the work, whose packages move off the main
+    /// actor (PERF14); callers need not wait for it.
+    @discardableResult
+    func removeFolderMovingContents(_ folder: BookFolder, toPath destination: String) -> Task<Void, Never> {
+        Task {
+            presentFailure(of: await removeFolderMovingContentsReturningOutcome(folder, toPath: destination))
+        }
     }
 
     /// Removes a folder, moving its contents to `destination`, and returns
     /// what happened, presenting nothing. A refused removal changes nothing;
-    /// a removal whose packages cannot all move is rolled back.
+    /// a removal whose packages cannot all move is rolled back. The packages
+    /// move off the main actor (`performLibraryTransition`, PERF14).
     func removeFolderMovingContentsReturningOutcome(
         _ folder: BookFolder,
         toPath destination: String
-    ) -> OperationOutcome {
+    ) async -> OperationOutcome {
         var proposed = library
         do {
             try proposed.removeFolderThrowing(id: folder.id, movingContentsTo: destination)
@@ -74,7 +80,7 @@ extension LibraryViewModel {
             for proposedFolder in proposed.folders {
                 try TextMouthPaths.ensureLibrarySubfolder(proposedFolder.fullPath)
             }
-            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
+            try await performLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
             return .success(nil)
         } catch {
             return .failure("Could not relocate folder contents", error)
@@ -139,14 +145,20 @@ extension LibraryViewModel {
 
     /// Move a folder to a new parent, preserving its internal structure on
     /// disk. A refused move is explained with a message naming the conflict.
-    func moveFolder(_ folder: BookFolder, toParent newParentPath: String) {
-        presentFailure(of: moveFolderReturningOutcome(folder, toParent: newParentPath))
+    /// Returns the task doing the work, whose packages move off the main
+    /// actor (PERF14); callers need not wait for it.
+    @discardableResult
+    func moveFolder(_ folder: BookFolder, toParent newParentPath: String) -> Task<Void, Never> {
+        Task {
+            presentFailure(of: await moveFolderReturningOutcome(folder, toParent: newParentPath))
+        }
     }
 
     /// Moves a folder to a new parent and returns what happened, presenting
     /// nothing. A refused move changes nothing; a move whose packages cannot
-    /// all move is rolled back.
-    func moveFolderReturningOutcome(_ folder: BookFolder, toParent newParentPath: String) -> OperationOutcome {
+    /// all move is rolled back. The packages move off the main actor
+    /// (`performLibraryTransition`, PERF14).
+    func moveFolderReturningOutcome(_ folder: BookFolder, toParent newParentPath: String) async -> OperationOutcome {
         var proposed = library
         do {
             try proposed.moveFolderThrowing(id: folder.id, toParentPath: newParentPath)
@@ -154,7 +166,7 @@ extension LibraryViewModel {
             return Self.outcome(refusing: error, context: "Could not move \"\(folder.name)\"")
         }
         do {
-            try commitLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
+            try await performLibraryTransition(proposed, affectedBookIDs: bookIDsChangingFolder(in: proposed))
             return .success(nil)
         } catch {
             return .failure("Could not move folder", error)
@@ -163,14 +175,20 @@ extension LibraryViewModel {
 
     /// Rename a folder, updating disk directory and all book file paths. A
     /// refused name is explained with a message naming the conflict.
-    func renameFolder(_ folder: BookFolder, to newName: String) {
-        presentFailure(of: renameFolderReturningOutcome(folder, to: newName))
+    /// Returns the task doing the work, whose packages move off the main
+    /// actor (PERF14); callers need not wait for it.
+    @discardableResult
+    func renameFolder(_ folder: BookFolder, to newName: String) -> Task<Void, Never> {
+        Task {
+            presentFailure(of: await renameFolderReturningOutcome(folder, to: newName))
+        }
     }
 
     /// Renames a folder and returns what happened, presenting nothing. A
     /// refused name changes nothing; a rename whose directory or packages
-    /// cannot all move is rolled back, directory spelling included.
-    func renameFolderReturningOutcome(_ folder: BookFolder, to newName: String) -> OperationOutcome {
+    /// cannot all move is rolled back, directory spelling included. The
+    /// packages move off the main actor (`performLibraryTransition`, PERF14).
+    func renameFolderReturningOutcome(_ folder: BookFolder, to newName: String) async -> OperationOutcome {
         let equivalence = FolderPathEquivalence.library
         var proposed = library
         do {
@@ -201,7 +219,7 @@ extension LibraryViewModel {
             if respellsDirectory {
                 respelled = try TextMouthPaths.respellLibrarySubfolder(from: oldPath, to: newPath)
             }
-            try commitLibraryTransition(
+            try await performLibraryTransition(
                 proposed,
                 affectedBookIDs: affectedBookIDs,
                 equivalence: equivalence
@@ -255,8 +273,10 @@ extension LibraryViewModel {
         conflict == .unchanged ? .success(nil) : .failure(context, conflict)
     }
 
-    /// Legacy: remove folder, moving contents to parent
-    func removeFolder(_ folder: BookFolder) {
+    /// Legacy: remove folder, moving contents to parent. Returns the task
+    /// doing the work; callers need not wait for it.
+    @discardableResult
+    func removeFolder(_ folder: BookFolder) -> Task<Void, Never> {
         removeFolderMovingContents(folder, toPath: folder.parentPath)
     }
 

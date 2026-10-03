@@ -69,6 +69,26 @@ final class ConfigService: ObservableObject {
     /// (`dataDirectoryBecameAvailable()`).
     private var skippedFileWhileUnavailable = false
 
+    /// Whether config.json was found only in the cloud (FR02), so it was
+    /// neither read nor written, since reading it would download it first
+    /// and wait on the network. Said once in the debug log until the file is
+    /// on this Mac again; every save until then tries again.
+    private var isFileInCloud = false
+
+    // MARK: - Coalesced Saves
+
+    /// How long a save asked for with `scheduleSave()` waits for the next
+    /// change (PERF17).
+    private let saveDelay: Duration
+
+    /// The save delay TextMouth uses: long enough to span the steps of a
+    /// slider being dragged or a stepper being held, short enough that the
+    /// file follows a change within a moment.
+    nonisolated static let defaultSaveDelay: Duration = .milliseconds(250)
+
+    /// The save waiting for `saveDelay` to pass, if any.
+    private var scheduledSave: Task<Void, Never>?
+
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
 
@@ -82,6 +102,14 @@ final class ConfigService: ObservableObject {
         var openForEvents: @MainActor (_ path: String) -> Int32
         /// Closes a descriptor that `openForEvents` returned.
         var close: @MainActor (_ descriptor: Int32) -> Void
+        /// Reads the file at a URL with dataless files left in the cloud
+        /// (PERF17): a file only in the cloud throws the refusal
+        /// `DatalessFiles.isDownloadRefusal` recognizes instead of being
+        /// downloaded. Tests refuse reads with one of their own, since only
+        /// a sync service makes dataless files.
+        var read: @MainActor (_ url: URL) throws -> Data = { url in
+            try DatalessFiles.withoutDownloading { try Data(contentsOf: url) }
+        }
 
         /// The calls the app makes.
         static var system: FileOperations {
@@ -487,14 +515,18 @@ final class ConfigService: ObservableObject {
     ///   - fileOperations: The file-system calls to make; tests count them.
     ///   - coalescingDelay: How long a burst of file events must stay quiet
     ///     before the watcher reads the file.
+    ///   - saveDelay: How long a save asked for with `scheduleSave()` waits
+    ///     for the next change.
     init(
         fileURL: URL? = nil,
         fileOperations: FileOperations = .system,
-        coalescingDelay: Duration = .milliseconds(200)
+        coalescingDelay: Duration = .milliseconds(200),
+        saveDelay: Duration = ConfigService.defaultSaveDelay
     ) {
         customFileURL = fileURL
         self.fileOperations = fileOperations
         self.coalescingDelay = coalescingDelay
+        self.saveDelay = saveDelay
         loadFromDisk()
         if fileURL == nil {
             availabilitySubscription = NotificationCenter.default
@@ -510,10 +542,12 @@ final class ConfigService: ObservableObject {
         rearmWatcher()
     }
 
-    /// Stops following config.json: pending checks and searches are dropped,
-    /// and the watched file's descriptor is closed once its source is
-    /// cancelled. Events that arrive later are ignored.
+    /// Stops following config.json: a save waiting for its delay is written
+    /// first, pending checks and searches are dropped, and the watched file's
+    /// descriptor is closed once its source is cancelled. Events that arrive
+    /// later are ignored.
     func shutdown() {
+        flushScheduledSave()
         isWatching = false
         pendingCheck?.cancel()
         pendingCheck = nil
@@ -546,7 +580,37 @@ final class ConfigService: ObservableObject {
 
     // MARK: - Persistence
 
-    /// Makes config.json hold `config`.
+    /// Saves config.json once changes pause for `saveDelay` (PERF17): each
+    /// settings change asks for a save, and a burst of them, such as a
+    /// slider moved through its steps, writes the file once. `config` holds
+    /// every change at once; only the file waits. A save made meanwhile with
+    /// `saveToDisk()` writes it at once instead, and `flushScheduledSave()`
+    /// does when TextMouth quits or the data directory moves.
+    func scheduleSave() {
+        scheduledSave?.cancel()
+        scheduledSave = Task { [weak self, saveDelay] in
+            try? await Task.sleep(for: saveDelay)
+            guard !Task.isCancelled, let self else { return }
+            self.scheduledSave = nil
+            self.saveToDisk()
+        }
+    }
+
+    /// Writes a save that `scheduleSave()` left waiting, now, as TextMouth
+    /// quits, or before the data directory moves, so the file holds the
+    /// latest settings. Does nothing when no save waits.
+    func flushScheduledSave() {
+        guard hasScheduledSave else { return }
+        saveToDisk()
+    }
+
+    /// Whether a save asked for with `scheduleSave()` is waiting.
+    var hasScheduledSave: Bool {
+        scheduledSave != nil
+    }
+
+    /// Makes config.json hold `config`, at once; a save waiting for its delay
+    /// is no longer needed.
     ///
     /// An edit that reached the file since this process last wrote or read
     /// it, still waiting for the watcher's delay, is merged in first rather
@@ -555,7 +619,16 @@ final class ConfigService: ObservableObject {
     /// modification date and wake the watcher, so a launch on a consistent
     /// file writes nothing. The bytes become `lastHandledContents`, which is
     /// how the watcher recognizes the events of this save as TextMouth's own.
+    ///
+    /// The file is read with dataless files left in the cloud (FR02,
+    /// PERF17): one only in the cloud is neither read, which would wait on
+    /// the network here on the main thread, nor written over, which would
+    /// replace what another Mac saved. The preferences hold every setting
+    /// meanwhile, and a later save, once the file is on this Mac, merges it
+    /// as an edit found on disk.
     func saveToDisk() {
+        scheduledSave?.cancel()
+        scheduledSave = nil
         // Nothing is written where the library isn't (FR02). The preferences
         // hold every setting meanwhile, so this is no failure; the settings
         // in use now stand for what the file last held, unless an agreement
@@ -568,7 +641,23 @@ final class ConfigService: ObservableObject {
             skippedFileWhileUnavailable = true
             return
         }
-        let onDisk = readFileContents()
+        let onDisk: Data?
+        switch readFile() {
+        case .inCloud:
+            // The settings in use stand for what the file last held, unless
+            // an agreement with the file already says, so the save that finds
+            // it on this Mac again keeps the changes made meanwhile.
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
+            noteFileInCloud()
+            return
+        case .contents(let contents):
+            onDisk = contents
+        case .none:
+            onDisk = nil
+        }
+        isFileInCloud = false
         if let onDisk, onDisk != lastHandledContents {
             mergeUnhandledEdit(onDisk)
         }
@@ -615,10 +704,45 @@ final class ConfigService: ObservableObject {
         PersistenceFailureCenter.shared.recordSuccess(.configuration)
     }
 
-    /// config.json's current bytes, or nil when there is no file or it
-    /// cannot be read.
+    /// What a read of config.json found.
+    private enum FileRead {
+        /// The file's bytes.
+        case contents(Data)
+        /// No file, or one that cannot be read.
+        case none
+        /// A file only in the cloud (FR02), which was not read: reading it
+        /// would have downloaded it first.
+        case inCloud
+    }
+
+    /// config.json as it is now, read with dataless files left in the cloud,
+    /// so a read never waits on the network (PERF17).
+    private func readFile() -> FileRead {
+        do {
+            return .contents(try fileOperations.read(fileURL))
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return .inCloud
+        } catch {
+            return .none
+        }
+    }
+
+    /// config.json's current bytes, or nil when there is no file, it cannot
+    /// be read, or it is only in the cloud.
     private func readFileContents() -> Data? {
-        try? Data(contentsOf: fileURL)
+        guard case .contents(let contents) = readFile() else { return nil }
+        return contents
+    }
+
+    /// Notes that config.json is only in the cloud, so it is neither read
+    /// nor written now (FR02), which the debug log says once.
+    private func noteFileInCloud() {
+        guard !isFileInCloud else { return }
+        isFileInCloud = true
+        log(
+            "\(fileURL.lastPathComponent) is only in the cloud, so it is neither read nor written "
+                + "until it is on this Mac; the settings are kept meanwhile"
+        )
     }
 
     /// The exact bytes `saveToDisk()` writes for `config`: sorted, indented
@@ -649,7 +773,11 @@ final class ConfigService: ObservableObject {
             return
         }
         do {
-            let contents = try Data(contentsOf: fileURL)
+            // Read with dataless files left in the cloud (FR02, PERF17): a
+            // file only in the cloud is not this launch's to wait for. Its
+            // settings are not applied, the preferences stand, and the
+            // first save that finds the file on this Mac merges it.
+            let contents = try fileOperations.read(fileURL)
             lastHandledContents = contents
             let decoded = try Self.decode(contents)
             if decoded != config {
@@ -657,6 +785,11 @@ final class ConfigService: ObservableObject {
             }
             lastSyncedConfig = decoded
             loadedFile = .decoded
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            // Not loaded: the preferences stand until the file is on this
+            // Mac, and the saves until then leave it as it is.
+            loadedFile = .missing
+            noteFileInCloud()
         } catch {
             loadedFile = .unreadable
             logUnreadableFile(error)
@@ -676,6 +809,10 @@ final class ConfigService: ObservableObject {
     /// file that cannot be decoded changes nothing and stays on disk as it
     /// is, for whoever edited it to correct; the debug log says why, once,
     /// since the same bytes are not examined twice.
+    ///
+    /// Changes made here whose save is still waiting (PERF17) stand: the
+    /// edit is merged with them, as a save merges an edit it finds, rather
+    /// than replacing them, and the waiting save then writes both.
     private func applyExternalEdit(_ contents: Data) {
         lastHandledContents = contents
         let edited: AppConfig
@@ -685,8 +822,11 @@ final class ConfigService: ObservableObject {
             logUnreadableFile(error)
             return
         }
+        let applied = hasScheduledSave
+            ? Self.merging(ours: config, theirs: edited, base: lastSyncedConfig ?? config)
+            : edited
         lastSyncedConfig = edited
-        adopt(edited)
+        adopt(applied)
         // A value the file could not hold as written was repaired. Writing
         // the repaired snapshot once makes the file show the value in use;
         // the watcher recognizes that write as TextMouth's own. Otherwise the

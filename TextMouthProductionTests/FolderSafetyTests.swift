@@ -85,7 +85,7 @@ final class FolderSafetyTests: XCTestCase {
     }
 
     /// Renaming a tree must create empty descendants as well as book packages.
-    func testRenamingEmptyFolderTreeCreatesDestinationDirectories() throws {
+    func testRenamingEmptyFolderTreeCreatesDestinationDirectories() async throws {
         let name = "EmptyTree-\(UUID().uuidString)"
         let renamed = name + "-Renamed"
         let viewModel = LibraryViewModel()
@@ -99,7 +99,7 @@ final class FolderSafetyTests: XCTestCase {
         }
         let folder = try XCTUnwrap(viewModel.library.folders.first { $0.name == name })
 
-        viewModel.renameFolder(folder, to: renamed)
+        await viewModel.renameFolder(folder, to: renamed).value
 
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: TextMouthPaths.libraryDir.appendingPathComponent(renamed + "/Child").path
@@ -565,14 +565,14 @@ final class FolderSafetyTests: XCTestCase {
     /// Creating, renaming, or moving onto a name the volume treats as taken
     /// is refused with a message naming the existing folder and changes
     /// nothing. Rename and move used to fail silently.
-    func testRefusedCreateRenameAndMoveExplainTheConflict() throws {
+    func testRefusedCreateRenameAndMoveExplainTheConflict() async throws {
         let reports = "Reports-\(UUID().uuidString)"
         let archive = "Archive-\(UUID().uuidString)"
         defer { removeLibraryFolders([reports, archive]) }
         let sameFolderHint = " Names that differ only in capitalization or accent encoding "
             + "refer to the same folder on this disk."
 
-        try FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+        try await FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
             let viewModel = LibraryViewModel(initializeServices: false)
             viewModel.library = Library()
             viewModel.createFolder(name: reports, parentPath: "")
@@ -592,7 +592,7 @@ final class FolderSafetyTests: XCTestCase {
 
             viewModel.showError = false
             let archiveFolder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
-            viewModel.renameFolder(archiveFolder, to: reports.lowercased())
+            await viewModel.renameFolder(archiveFolder, to: reports.lowercased()).value
             XCTAssertTrue(viewModel.showError)
             XCTAssertEqual(
                 viewModel.errorMessage,
@@ -602,7 +602,7 @@ final class FolderSafetyTests: XCTestCase {
 
             viewModel.showError = false
             let quarter = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == "\(archive)/Q1" })
-            viewModel.moveFolder(quarter, toParent: reports)
+            await viewModel.moveFolder(quarter, toParent: reports).value
             XCTAssertTrue(viewModel.showError)
             XCTAssertEqual(
                 viewModel.errorMessage,
@@ -615,7 +615,7 @@ final class FolderSafetyTests: XCTestCase {
     }
 
     /// Renaming a folder to the name it already has stays a silent no-op.
-    func testRenamingToTheCurrentNameIsSilent() throws {
+    func testRenamingToTheCurrentNameIsSilent() async throws {
         let name = "Same-\(UUID().uuidString)"
         defer { removeLibraryFolders([name]) }
         let viewModel = LibraryViewModel(initializeServices: false)
@@ -623,7 +623,7 @@ final class FolderSafetyTests: XCTestCase {
         viewModel.createFolder(name: name, parentPath: "")
         let folder = try XCTUnwrap(viewModel.library.folders.first)
 
-        viewModel.renameFolder(folder, to: "  \(name)  ")
+        await viewModel.renameFolder(folder, to: "  \(name)  ").value
 
         XCTAssertFalse(viewModel.showError)
         XCTAssertEqual(viewModel.library.folders, [folder])

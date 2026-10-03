@@ -466,7 +466,7 @@ struct LibraryView: View {
                     library: libraryViewModel.library,
                     lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
                     onMove: { path in
-                        closingOnSuccess(libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)) {
+                        closingOnSuccess(await libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)) {
                             clearAllSelections()
                             showMoveSheet = false
                         }
@@ -634,8 +634,8 @@ struct LibraryView: View {
                     currentName: folder.name,
                     newName: $renameFolderText,
                     onRename: {
-                        editFolder(folder, closing: { showRenameFolderSheet = false }) {
-                            libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
+                        await editFolder(folder, closing: { showRenameFolderSheet = false }) {
+                            await libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
                         }
                     },
                     onCancel: {
@@ -651,8 +651,8 @@ struct LibraryView: View {
                     folder: folder,
                     library: libraryViewModel.library,
                     onMove: { newParent in
-                        editFolder(folder, closing: { showMoveFolderSheet = false }) {
-                            libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
+                        await editFolder(folder, closing: { showMoveFolderSheet = false }) {
+                            await libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
                         }
                     },
                     onCancel: { showMoveFolderSheet = false }
@@ -706,7 +706,7 @@ struct LibraryView: View {
                     folder: folder,
                     library: libraryViewModel.library,
                     onConfirm: { destination in
-                        closingOnSuccess(libraryViewModel.removeFolderMovingContentsReturningOutcome(
+                        closingOnSuccess(await libraryViewModel.removeFolderMovingContentsReturningOutcome(
                             folder,
                             toPath: destination
                         )) {
@@ -960,19 +960,20 @@ struct LibraryView: View {
     }
 
     /// Runs `edit`, a rename or move of `folder` from one of the folder
-    /// sheets, and finishes the sheet. After a success the sheet closes, and
-    /// a window showing the folder, or a folder inside it, follows it to its
-    /// new path; after a failure the folder shown stays as it was.
+    /// sheets, and finishes the sheet once its books' packages have moved
+    /// (PERF14). After a success the sheet closes, and a window showing the
+    /// folder, or a folder inside it, follows it to its new path; after a
+    /// failure the folder shown stays as it was.
     private func editFolder(
         _ folder: BookFolder,
         closing close: () -> Void,
-        _ edit: () -> OperationOutcome
-    ) -> OperationOutcome {
+        _ edit: () async -> OperationOutcome
+    ) async -> OperationOutcome {
         // Read the folder's path from the library on both sides of the edit:
         // the sheet's copy is from when it opened, and another window may
         // have moved the folder since.
         let pathBefore = libraryViewModel.library.folders.first { $0.id == folder.id }?.fullPath ?? folder.fullPath
-        let outcome = edit()
+        let outcome = await edit()
         let pathAfter = libraryViewModel.library.folders.first { $0.id == folder.id }?.fullPath
         let destination = FolderSheetNavigation.folderPath(
             showing: currentFolderPath,
