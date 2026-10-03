@@ -111,6 +111,28 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF22: Opening content.md
+
+    /// Reading a cached book's content.md into chapters: a 60-document
+    /// EPUB's, and a 20 MB single-chapter plain text's.
+    func testPERF22CacheParsing() throws {
+        let converted = try TextPipelineFixtures.writeEPUB(
+            TextPipelineFixtures.convertedBookEPUB(documents: 60, paragraphs: 40), named: "converted-60.epub", for: self
+        )
+        let book = try TextPipelineFixtures.imported(converted, for: self)
+        let epubMarkdown = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+        try benchmark("PERF22", "parseMultiChapterMarkdown, 60-chapter EPUB cache") {
+            MarkdownCacheService.parseMultiChapterMarkdown(epubMarkdown, bookTitle: "T", bookAuthor: "A")
+        }
+        try benchmark("PERF22", "BookContentAnalysisService.load, 60-chapter EPUB") {
+            try BookContentAnalysisService.load(book: book)
+        }
+        let text = PlainTextParser.markdown(text: TextPipelineFixtures.plainText(bytes: 20 * 1_048_576))
+        try benchmark("PERF22", "parseMultiChapterMarkdown, 20 MB plain-text cache", repetitions: 1) {
+            MarkdownCacheService.parseMultiChapterMarkdown(text, bookTitle: "T", bookAuthor: "A")
+        }
+    }
+
     // MARK: - Measuring
 
     /// Run `body` `repetitions` times, then once more under a heap sampler,
