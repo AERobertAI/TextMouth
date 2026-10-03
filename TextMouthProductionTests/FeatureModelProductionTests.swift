@@ -285,7 +285,11 @@ final class FeatureModelProductionTests: XCTestCase {
     }
 
     func testReadingStatsDateKeyUsesYearMonthDay() {
-        let date = Calendar.current.date(
+        // Built in the Gregorian calendar that day keys always use, so the
+        // test holds on a Mac set to any other calendar.
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .current
+        let date = gregorian.date(
             from: DateComponents(year: 2026, month: 3, day: 20, hour: 12)
         )!
         XCTAssertEqual(ReadingStatsService.dateKey(date), "2026-03-20")
