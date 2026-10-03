@@ -183,6 +183,31 @@ final class DataDirectoryCopyTests: XCTestCase {
         XCTAssertEqual(try contents(of: source), sourceBefore)
     }
 
+    /// Cancel pressed while the last item was copied, which can be a large
+    /// book, still stops the move before anything is published.
+    func testCancelDuringTheLastItemStillStopsTheMove() throws {
+        let base = try makeSandboxDirectory("CopyCancelLast")
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let library = try makeLayeredLibrary(at: source)
+        let itemCount = try DataDirectoryCopyPlan(of: source).items.count
+        let reports = CopyReports(cancellingAfterItems: itemCount)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.$copyObserver.withValue(reports.observer()) {
+                try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+            }
+        ) { error in
+            guard case DataDirectoryMigrationError.cancelled = error else {
+                return XCTFail("Expected the cancellation, received \(error)")
+            }
+        }
+
+        XCTAssertEqual(reports.all.last?.isComplete, true, "every item was copied before the Cancel was seen")
+        XCTAssertEqual(stagingLeft(in: base), [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
     /// A move cancelled before its copy began copies nothing at all.
     func testCancelBeforeTheFirstItemCopiesNothing() throws {
         let base = try makeSandboxDirectory("CopyCancelFirst")

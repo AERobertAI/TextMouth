@@ -403,8 +403,8 @@ enum DataDirectoryMigrator {
     ///
     /// The observer bound for this copy (`copyObserver`), when there is one,
     /// hears how far it has got before the first item and after each one,
-    /// on this thread, and is asked before each item whether the move was
-    /// cancelled, which stops the copy with
+    /// on this thread, and is asked before each item, and once more after
+    /// the last, whether the move was cancelled, which stops the copy with
     /// `DataDirectoryMigrationError.cancelled`. The caller deletes whatever
     /// was copied by then, as it deletes any copy it does not publish.
     ///
@@ -437,6 +437,9 @@ enum DataDirectoryMigrator {
             progress.copiedItems += 1
             observer?.report(progress)
         }
+        // A Cancel pressed while the last item was copied, which can be a
+        // large book, still stops the move before anything is published.
+        try stopIfCancelled(observer)
 
         // Deepest first, and the data directory's own folder last: a folder's
         // dates are set once nothing more goes into it.
@@ -677,7 +680,8 @@ struct DataDirectoryCopyObserver: Sendable {
     /// Hears how far the copy has got: once before its first item, then
     /// after each item.
     let report: @Sendable (DataDirectoryCopyProgress) -> Void
-    /// Whether the move was cancelled, asked before each item.
+    /// Whether the move was cancelled, asked before each item and once more
+    /// after the last.
     let isCancelled: @Sendable () -> Bool
 }
 
