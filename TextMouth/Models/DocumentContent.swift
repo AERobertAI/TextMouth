@@ -301,23 +301,65 @@ struct HeadingSweep {
     }
 }
 
+/// What a sleep timer waits for before it pauses playback: a number of
+/// minutes of listening, or a place the book reaches.
 enum SleepTimerDuration: Hashable {
     case minutes(Int)
     case endOfHeading
-    case endOfDocument
+    /// The end of the chapter playing, before the next chapter starts. It
+    /// took the place of the timer once called End of document, which a
+    /// saved preference may still name (`SleepTimerService`).
+    case endOfChapter
+    /// The end of the book: the end of its last chapter, before the book
+    /// starts again or the next book starts, whatever its end-of-book
+    /// behavior.
+    case endOfBook
 
     var displayName: String {
         switch self {
         case .minutes(let m): return "\(m) minutes"
         case .endOfHeading: return "End of heading"
-        case .endOfDocument: return "End of document"
+        case .endOfChapter: return "End of chapter"
+        case .endOfBook: return "End of book"
+        }
+    }
+
+    /// What a timer set for a place in the book does, as VoiceOver reads it
+    /// after "Sleep timer:" ("stops at the end of this chapter"); nil for a
+    /// timer counting minutes, which is read as the time it has left.
+    var spokenStop: String? {
+        switch self {
+        case .minutes: return nil
+        case .endOfHeading: return "set for the end of the heading"
+        case .endOfChapter: return "stops at the end of this chapter"
+        case .endOfBook: return "stops at the end of the book"
+        }
+    }
+
+    /// Whether a timer set for this stops playback where a chapter ends,
+    /// before anything after that chapter plays (TODO P01). End of chapter
+    /// stops at the end of whichever chapter is playing, the book's last
+    /// included; End of book only at the end of the book's last chapter; a
+    /// timer counting minutes, or waiting for a heading's end, stops at no
+    /// chapter's end.
+    ///
+    /// - Parameter endingTheBook: Whether the chapter ending is the book's
+    ///   last, with nothing after it to play, so that its end is the book's.
+    func stopsPlaybackAtChapterEnd(endingTheBook: Bool) -> Bool {
+        switch self {
+        case .endOfChapter:
+            return true
+        case .endOfBook:
+            return endingTheBook
+        case .minutes, .endOfHeading:
+            return false
         }
     }
 
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),
-        .endOfHeading, .endOfDocument
+        .endOfHeading, .endOfChapter, .endOfBook
     ]
 }
 

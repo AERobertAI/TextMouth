@@ -126,7 +126,9 @@ struct PlaybackControlsView: View {
                         .foregroundColor(.orange)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Sleep timer: \(viewModel.sleepTimerService.formattedRemaining) remaining")
+                // "Sleep timer: 4:59 remaining", or where a timer set for
+                // a place in the book stops playback.
+                .accessibilityLabel(viewModel.sleepTimerService.spokenLabel)
             }
         }
         .padding()

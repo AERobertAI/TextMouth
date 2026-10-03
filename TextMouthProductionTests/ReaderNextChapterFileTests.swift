@@ -9,7 +9,7 @@ import XCTest
 /// playing, so the player plays on into it with no quarter-second gap. The
 /// reader names none where playback may have to stop or wait at the
 /// chapter's end: at the last chapter, while this book's sleep timer is set
-/// for the end of the document, and before a file only in the cloud (see
+/// for the end of the chapter, and before a file only in the cloud (see
 /// `ReaderCloudDownloadTests`). However a chapter ends, the reader moves on
 /// from it once, and its cursor never runs back within a chapter.
 ///
@@ -89,12 +89,14 @@ final class ReaderNextChapterFileTests: XCTestCase {
         XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, files[1], "The player moved past the last file")
     }
 
-    /// While this book's sleep timer is set for the end of the document,
+    /// While this book's sleep timer is set for the end of the chapter,
     /// which expires as every audiobook chapter ends, no file is named to
     /// follow the chapter playing, so playback stops at its end. Setting such
     /// a timer while a chapter plays withdraws the file named; cancelling it,
-    /// or setting a timer that counts minutes instead, names it again.
-    func testAnEndOfDocumentSleepTimerNamesNoFileToFollow() throws {
+    /// or setting a timer that counts minutes instead, names it again, and so
+    /// does a timer set for the end of the book, which lets every chapter but
+    /// the last roll on into the next.
+    func testAnEndOfChapterSleepTimerNamesNoFileToFollow() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("Next Chapter File Timer")
         let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [5, 5])
@@ -104,45 +106,27 @@ final class ReaderNextChapterFileTests: XCTestCase {
         let files = reader.audioChapterFiles.map(resolvedPath)
         defer { reader.stop() }
 
-        reader.startSleepTimer(duration: .endOfDocument)
+        reader.startSleepTimer(duration: .endOfChapter)
         reader.play()
         XCTAssertTrue(service.isPlaying, "The first chapter did not play")
-        XCTAssertEqual(service.queuedFilePaths, [files[0]], "A file was named to follow under an end-of-document timer")
+        XCTAssertEqual(service.queuedFilePaths, [files[0]], "A file was named to follow under an end-of-chapter timer")
 
         reader.cancelSleepTimer()
         XCTAssertEqual(service.queuedFilePaths, files, "Cancelling the timer did not name the next chapter's file")
 
-        reader.startSleepTimer(duration: .endOfDocument)
+        reader.startSleepTimer(duration: .endOfChapter)
         XCTAssertEqual(service.queuedFilePaths, [files[0]], "Setting the timer as the chapter played kept the file named")
 
         reader.startSleepTimer(duration: .minutes(30))
         XCTAssertEqual(service.queuedFilePaths, files, "A timer counting minutes kept the next chapter's file from following")
-    }
 
-    /// Only this book's own sleep timer, set for the end of the document and
-    /// still in effect, keeps the next chapter's file from following: a timer
-    /// of another book's, one that has expired, and one set for the end of a
-    /// heading or for some minutes never stop playback at a chapter's end.
-    func testOnlyThisBooksEndOfDocumentTimerStopsAtTheChaptersEnd() {
-        let cases: [(name: String, ownTimer: Bool, active: Bool, duration: SleepTimerDuration?, stops: Bool)] = [
-            ("this book's, at the end of the document", true, true, .endOfDocument, true),
-            ("another book's, at the end of the document", false, true, .endOfDocument, false),
-            ("this book's, expired at the end of the document", true, false, .endOfDocument, false),
-            ("this book's, at the end of a heading", true, true, .endOfHeading, false),
-            ("this book's, counting minutes", true, true, .minutes(30), false),
-            ("none", false, false, nil, false),
-        ]
-        for timer in cases {
-            XCTAssertEqual(
-                ReaderViewModel.sleepTimerStopsAtChapterEnd(
-                    timerBelongsToThisBook: timer.ownTimer,
-                    timerIsActive: timer.active,
-                    timerDuration: timer.duration
-                ),
-                timer.stops,
-                timer.name
-            )
-        }
+        reader.startSleepTimer(duration: .endOfChapter)
+        reader.startSleepTimer(duration: .endOfBook)
+        XCTAssertEqual(
+            service.queuedFilePaths,
+            files,
+            "A timer for the end of the book kept the next chapter's file from following"
+        )
     }
 }
 

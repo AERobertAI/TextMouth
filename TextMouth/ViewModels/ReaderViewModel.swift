@@ -105,14 +105,19 @@ final class ReaderViewModel: ObservableObject {
     @Published var currentWPM: Double = 200
 
     let speechService = SpeechService()
+    /// This reader's own identity, which no other reader shares, not even
+    /// one showing the same book: the owner of the sleep timer it sets and of
+    /// its Now Playing session, so that a timer, or a media command, belongs
+    /// to the window it came from (TODO P01).
+    let readerID = UUID()
     /// Shared singleton — there is exactly one sleep timer in the app.
-    /// Owner-scoped pause/resume calls pass `book.id` so other windows'
-    /// playback events don't accidentally affect this book's timer.
+    /// Owner-scoped calls pass `readerID`, so another window's playback, even
+    /// of the same book, never affects the timer this reader set.
     let sleepTimerService = SleepTimerService.shared
     /// Every reader window receives a unique media owner, even when two
     /// windows happen to show the same book.
     lazy var nowPlayingService = NowPlayingSession(
-        ownerID: UUID(),
+        ownerID: readerID,
         diagnosticLabel: "book-\(book.id.uuidString.prefix(8))"
     )
     /// Text substitution rules applied to every chapter before it is spoken:
@@ -710,20 +715,22 @@ final class ReaderViewModel: ObservableObject {
         //   don't belong to a window. AirPods presses also commonly
         //   arrive when the app is backgrounded (no key window). The
         //   right reader to respond is whichever one most recently
-        //   owned a timer — the user is restarting THAT timer.
+        //   owned a timer — the user is restarting THAT timer. Only
+        //   that reader responds, not another window of the same book.
         //   Falls back to the focused window when no prior timer
-        //   exists yet (first-ever press).
+        //   exists yet (first-ever press), or its reader has closed.
         nc.publisher(for: .restartSleepTimer)
             .sink { [weak self] notification in
                 guard let self = self else { return }
                 let bookToken = String(self.book.id.uuidString.prefix(8))
+                let readerToken = String(self.readerID.uuidString.prefix(8))
                 let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
                 let lastOwnerToken = self.sleepTimerService.lastOwnerID
                     .map { String($0.uuidString.prefix(8)) } ?? "none"
                 SleepTimerService.log(
                     .event,
-                    "RESTART_ROUTE_RECEIVED book=\(bookToken) sourceWindow=\(hasSourceWindow) "
-                        + "lastOwner=\(lastOwnerToken)"
+                    "RESTART_ROUTE_RECEIVED book=\(bookToken) reader=\(readerToken) "
+                        + "sourceWindow=\(hasSourceWindow) lastOwner=\(lastOwnerToken)"
                 )
                 if notification.userInfo?["sourceWindow"] != nil {
                     guard self.isTargetedNotification(notification) else {
@@ -734,7 +741,7 @@ final class ReaderViewModel: ObservableObject {
                         return
                     }
                 } else if let lastOwner = self.sleepTimerService.lastOwnerID {
-                    guard lastOwner == self.book.id else {
+                    guard lastOwner == self.readerID else {
                         SleepTimerService.log(
                             .event,
                             "RESTART_ROUTE_REJECTED book=\(bookToken) reason=last-owner-mismatch"
@@ -1346,15 +1353,18 @@ final class ReaderViewModel: ObservableObject {
         whereAmISynth.stopSpeaking(at: .immediate)
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()
-        // Stop the shared sleep timer iff this book owned it. With the
+        // Stop the shared sleep timer iff this reader owned it. With the
         // singleton service, the timer would otherwise keep ticking
         // after our window closed — its callbacks captured `self`
         // weakly so they'd no-op, but the wall-clock countdown would
         // still run pointlessly until expiration. Owner check keeps us
-        // from cancelling a timer Book B started after Book A closed.
-        if sleepTimerService.ownerID == book.id {
+        // from cancelling a timer another window started, even one of
+        // the same book. A media gesture restarting the timer then goes
+        // to the focused reader rather than to this closed one.
+        if sleepTimerService.ownerID == readerID {
             sleepTimerService.stop()
         }
+        sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).
         removeWorkingCopy()

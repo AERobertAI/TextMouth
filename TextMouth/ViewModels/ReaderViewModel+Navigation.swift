@@ -217,7 +217,7 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[nextIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            sleepTimerService.notifyHeadingBoundary(by: book.id)
+            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -234,7 +234,7 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[prevIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            sleepTimerService.notifyHeadingBoundary(by: book.id)
+            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -720,7 +720,7 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            sleepTimerService.notifyHeadingBoundary(by: book.id)
+            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -737,7 +737,7 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            sleepTimerService.notifyHeadingBoundary(by: book.id)
+            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }

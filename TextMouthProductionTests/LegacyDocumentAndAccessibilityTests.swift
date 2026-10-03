@@ -112,8 +112,9 @@ final class LegacyDocumentContentModelTests: XCTestCase {
     func testSleepTimerDurationNamesAndPresetsComeFromProductionModel() {
         XCTAssertEqual(SleepTimerDuration.minutes(10).displayName, "10 minutes")
         XCTAssertEqual(SleepTimerDuration.endOfHeading.displayName, "End of heading")
-        XCTAssertEqual(SleepTimerDuration.endOfDocument.displayName, "End of document")
-        XCTAssertEqual(SleepTimerDuration.presets.count, 7)
+        XCTAssertEqual(SleepTimerDuration.endOfChapter.displayName, "End of chapter")
+        XCTAssertEqual(SleepTimerDuration.endOfBook.displayName, "End of book")
+        XCTAssertEqual(SleepTimerDuration.presets.count, 8)
     }
 
     func testGlobalLocationRoundTripsAcrossChapters() {

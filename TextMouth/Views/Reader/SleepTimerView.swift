@@ -1,15 +1,20 @@
 import SwiftUI
 
-/// The unified sleep-timer sheet. One sheet, two sections:
+/// The unified sleep-timer sheet. One sheet, three sections:
 ///
 /// 1. **New Timer** — always shown. Tapping a preset starts (or restarts)
 ///    the timer with that duration. If a timer is already running, the
 ///    underlying `SleepTimerService.start(...)` call replaces it — the
 ///    user's mental model is "set the timer to X minutes", not
 ///    "start a fresh timer if and only if none is running".
-/// 2. **Current Timer** — visible only while a timer is running. Shows
-///    the remaining time and exposes Reset (restart with the same
-///    duration) and Cancel buttons.
+/// 2. **Stop At** — always shown. End of chapter and End of book set a
+///    timer that stops playback where the book reaches that place, for
+///    text and audio alike, replacing any timer as a preset does (TODO
+///    P01).
+/// 3. **Current Timer** — visible only while a timer is running, above the
+///    others. Shows the remaining time, or the place the timer stops at,
+///    and exposes Reset (restart with the same duration) and Cancel
+///    buttons.
 ///
 /// ## Why merged
 /// Previously the active and idle states were separate views with
@@ -85,6 +90,10 @@ struct SleepTimerView: View {
             // New timer section — always visible
             newTimerSection
 
+            Divider()
+
+            // Stop At section — always visible
+            stopAtSection
         }
         .padding()
         .frame(width: 320)
@@ -115,10 +124,11 @@ struct SleepTimerView: View {
 
     // MARK: - Current Timer Section
 
-    /// Shown while `sleepTimerService.isActive`. Heading, remaining time,
-    /// Reset and Cancel buttons. The Reset/Cancel actions go through the
-    /// view-model wrappers so they always touch the shared service via
-    /// the same code path the timer sheet uses to arm a timer.
+    /// Shown while `sleepTimerService.isActive`. Heading, remaining time
+    /// or the place the timer stops at, Reset and Cancel buttons. The
+    /// Reset/Cancel actions go through the view-model wrappers so they
+    /// always touch the shared service via the same code path the timer
+    /// sheet uses to arm a timer.
     private var currentTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Current Timer")
@@ -132,16 +142,14 @@ struct SleepTimerView: View {
                     .accessibilityHidden(true)
                 Text(sleepTimerService.formattedRemaining)
                     .font(.system(.title3, design: .monospaced))
-                    .accessibilityLabel("\(sleepTimerService.formattedRemaining) remaining")
+                    .accessibilityLabel(sleepTimerService.spokenLabel)
             }
 
             HStack(spacing: 12) {
                 Button("Reset Timer") {
                     shouldRequestInitialFocus = false
                     viewModel.restartSleepTimer(startPlaybackIfNeeded: true)
-                    viewModel.announceToVoiceOver(
-                        "Timer reset. \(sleepTimerService.formattedRemaining) remaining."
-                    )
+                    viewModel.announceToVoiceOver(Self.resetAnnouncement(status: sleepTimerService.spokenStatus))
                     if autoClose {
                         closeSheet()
                     }
@@ -161,8 +169,8 @@ struct SleepTimerView: View {
     // MARK: - New Timer Section
 
     /// Always visible. Lists preset durations + a custom-minutes field +
-    /// the heading-end / document-end options. Selecting any of these
-    /// calls `viewModel.startSleepTimer(duration:startPlaybackIfNeeded:)`
+    /// the heading-end option. Selecting any of these calls
+    /// `viewModel.startSleepTimer(duration:startPlaybackIfNeeded:)`
     /// which ALWAYS replaces any timer already running — the sheet's UI
     /// for "set a new timer" is the same whether or not one is currently
     /// running.
@@ -229,11 +237,39 @@ struct SleepTimerView: View {
                 setNewTimer(.endOfHeading)
             }
             .accessibilityLabel("Stop at end of current heading and start playing")
+        }
+    }
 
-            Button("End of document") {
-                setNewTimer(.endOfDocument)
+    // MARK: - Stop At Section
+
+    /// Always visible. Timers that stop playback where the book reaches a
+    /// place rather than after some minutes, for text and audio alike (TODO
+    /// P01): the end of the chapter playing, or the end of the book, even
+    /// where Continue to Next Book would start the next book. Like a
+    /// preset, each replaces any timer running and starts playback. The End
+    /// of book hint says what the timer adds to what this book does at its
+    /// end on its own.
+    private var stopAtSection: some View {
+        let endOfBookHint = Self.endOfBookHint(for: viewModel.effectiveEndOfBookBehavior)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(Self.stopAtHeading)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
+
+            Button(Self.endOfChapterTitle) {
+                setNewTimer(.endOfChapter)
             }
-            .accessibilityLabel("Stop at end of document and start playing")
+            .accessibilityLabel(Self.endOfChapterLabel)
+            .accessibilityHint(Self.endOfChapterHint)
+            .help(Self.endOfChapterHint)
+
+            Button(Self.endOfBookTitle) {
+                setNewTimer(.endOfBook)
+            }
+            .accessibilityLabel(Self.endOfBookLabel)
+            .accessibilityHint(endOfBookHint)
+            .help(endOfBookHint)
         }
     }
 
@@ -248,10 +284,55 @@ struct SleepTimerView: View {
         viewModel.startSleepTimer(duration: duration, startPlaybackIfNeeded: true)
         // Announce so VoiceOver users know the timer was set even if
         // the sheet auto-dismisses immediately.
-        viewModel.announceToVoiceOver("Timer set for \(duration.displayName).")
+        viewModel.announceToVoiceOver(Self.announcement(forSetting: duration))
         if autoClose {
             closeSheet()
         }
+    }
+
+    // MARK: - Wording
+
+    /// The heading of the section of timers that stop at a place.
+    nonisolated static let stopAtHeading = "Stop At"
+    /// The End of chapter button's title.
+    nonisolated static let endOfChapterTitle = "End of chapter"
+    /// What VoiceOver reads for the End of chapter button.
+    nonisolated static let endOfChapterLabel = "Stop at the end of this chapter and start playing"
+    /// What the End of chapter button does, for VoiceOver and as its help.
+    nonisolated static let endOfChapterHint =
+        "Pauses playback when the chapter playing now ends, before the next chapter starts."
+    /// The End of book button's title.
+    nonisolated static let endOfBookTitle = "End of book"
+    /// What VoiceOver reads for the End of book button.
+    nonisolated static let endOfBookLabel = "Stop at the end of the book and start playing"
+
+    /// What the End of book button does, for VoiceOver and as its help, for
+    /// a book whose end-of-book behavior is `behavior`: it pauses playback
+    /// before Continue to Next Book or Loop to Start would go on, and it says
+    /// so when the book stops at its end on its own anyway.
+    nonisolated static func endOfBookHint(for behavior: EndOfBookBehavior) -> String {
+        switch behavior {
+        case .continueNext:
+            return "Pauses playback when this book ends, before Continue to Next Book starts the next book."
+        case .loop:
+            return "Pauses playback when this book ends, before Loop to Start plays it again."
+        case .stop:
+            return "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
+        }
+    }
+
+    /// What VoiceOver announces as a timer is set for `duration`: where a
+    /// timer for a place stops playback ("Sleep timer: stops at the end of
+    /// this chapter."), or the minutes a timer counts.
+    nonisolated static func announcement(forSetting duration: SleepTimerDuration) -> String {
+        guard let stop = duration.spokenStop else { return "Timer set for \(duration.displayName)." }
+        return "Sleep timer: \(stop)."
+    }
+
+    /// What VoiceOver announces as Reset Timer restarts the timer, whose
+    /// state `status` gives as `SleepTimerService.spokenStatus` reads it.
+    nonisolated static func resetAnnouncement(status: String) -> String {
+        "Timer reset: \(status)."
     }
 
     /// Centralize every close path so buttons, Escape, auto-close, and the
