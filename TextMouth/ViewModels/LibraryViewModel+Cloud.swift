@@ -369,11 +369,20 @@ extension BookDownloadProgress {
     static let notStarted = BookDownloadProgress(completedFiles: 0, totalFiles: 0, completedBytes: 0, totalBytes: 0)
 }
 
+/// Remove Download's refusal as the Library window that asked shows it, in
+/// an alert; VoiceOver hears the same words announced.
+struct LibraryCloudRefusal: Equatable {
+    /// The alert's title.
+    let title: String
+    /// What was and wasn't removed, and why.
+    let message: String
+}
+
 /// Runs the library list's cloud commands for a book or a selection (FR02).
 /// It records what it learns in `BookCloudStates`, announces through
 /// `VoiceOverAnnouncer` from the window that asked, and logs each command's
-/// start and end, with every failure. Files are read and changed off the
-/// main thread, by the book storage.
+/// start and end, with every failure and refusal. Files are read and
+/// changed off the main thread, by the book storage.
 @MainActor
 final class LibraryCloudCommands {
     /// The commands every Library window runs.
@@ -386,18 +395,25 @@ final class LibraryCloudCommands {
     private let states: BookCloudStates
     /// The book storage, looked up when each command runs.
     private let storage: @MainActor () -> any BookCloudStorage
+    /// Asks for a refresh once a removal has recorded its states, so that a
+    /// refresh which read the files before the removal can't leave its
+    /// older reading behind.
+    private let refreshAfterRemoval: @MainActor () -> Void
 
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
     ///   - states: The store to record into.
     ///   - storage: The book storage to act through, looked up when each
     ///     command runs, so a storage installed later is used.
+    ///   - refreshAfterRemoval: Asks for a refresh after a removal.
     init(
         states: BookCloudStates = .shared,
-        storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage }
+        storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
+        refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() }
     ) {
         self.states = states
         self.storage = storage
+        self.refreshAfterRemoval = refreshAfterRemoval
     }
 
     // MARK: Download Now
@@ -512,5 +528,77 @@ final class LibraryCloudCommands {
             states.record(.downloadFailed(explanation), for: bookID)
         }
         return ending
+    }
+
+    // MARK: Remove Download
+
+    /// Removes the downloads of `books` (Remove Download), keeping the books
+    /// in the cloud, records them as in the cloud, and announces what
+    /// happened from `window`.
+    ///
+    /// Only downloaded books take part. A book open in a reader is refused
+    /// at once, without asking the storage (`BookCloudError.bookIsOpen`),
+    /// and the storage refuses a book with changes not uploaded yet
+    /// (`.notUploaded`); a refused book keeps its download. Nothing is
+    /// deleted from the cloud, so nothing asks first. The removals read and
+    /// change files, so they run off the main thread.
+    /// - Returns: The refusal for `window` to show when any book keeps its
+    ///   download; nil when every download was removed, or none could be.
+    @discardableResult
+    func removeDownloads(of books: [Book], in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
+        let targets = books.filter { states.listedState(of: $0.id)?.canRemoveDownload == true }
+        guard !targets.isEmpty else { return nil }
+        let provider = states.libraryLocation.provider
+        let storage = storage()
+        // Each book's package, or nil for a book open in a reader.
+        let packages = targets.map { library.openBookIDs.contains($0.id) ? nil : BookPackage($0) }
+        DiagnosticLog.event(
+            .storage,
+            "CLOUD_REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
+        )
+
+        let failures = await Task.detached(priority: .userInitiated) {
+            packages.map { package -> BookCloudError? in
+                guard let package else { return .bookIsOpen }
+                do {
+                    try storage.removeDownload(of: package)
+                    return nil
+                } catch {
+                    return (error as? BookCloudError) ?? .provider(error.localizedDescription)
+                }
+            }
+        }.value
+
+        var removed: [String] = []
+        var refused: [(title: String, explanation: String)] = []
+        for (book, failure) in zip(targets, failures) {
+            if let failure {
+                let explanation = failure.explanation(in: provider)
+                refused.append((title: book.title, explanation: explanation))
+                DiagnosticLog.event(.storage, "CLOUD_REMOVE_DOWNLOAD_REFUSED: \(book.title): \(explanation)")
+            } else {
+                removed.append(book.title)
+                states.record(.inCloud, for: book.id)
+            }
+        }
+        if !removed.isEmpty {
+            refreshAfterRemoval()
+        }
+        DiagnosticLog.event(
+            .storage,
+            "CLOUD_REMOVE_DOWNLOAD_FINISHED: \(removed.count) removed, \(refused.count) refused"
+        )
+
+        guard let message = LibraryCloudWording.removalFinished(
+            removed: removed,
+            refused: refused,
+            provider: provider
+        ) else { return nil }
+        VoiceOverAnnouncer.announce(message, from: window)
+        guard !refused.isEmpty else { return nil }
+        return LibraryCloudRefusal(
+            title: LibraryCloudWording.removalRefusedTitle(refusedCount: refused.count),
+            message: message
+        )
     }
 }

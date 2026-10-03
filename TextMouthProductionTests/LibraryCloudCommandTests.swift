@@ -268,6 +268,111 @@ final class LibraryCloudCommandTests: XCTestCase {
         XCTAssertTrue(fixture.commands.booksDownloading.isEmpty)
     }
 
+    // MARK: - Remove Download
+
+    /// Remove Download removes the book's local copy, records it in the
+    /// cloud, asks for a refresh, and says where the book stays.
+    func testRemoveDownloadSaysWhereTheBookStays() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertNil(refusal)
+        XCTAssertEqual(said, ["Removed the download of Moby-Dick. It stays in iCloud Drive."])
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [book.id])
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud)
+        XCTAssertEqual(fixture.refreshRequests.count, 1)
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0, "the removal runs off the main thread")
+    }
+
+    /// A book open in a reader still offers Remove Download, which refuses
+    /// without asking the storage, says why, and shows the same words.
+    func testRemoveDownloadRefusesAnOpenBook() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.model.openBookIDs = [book.id]
+        let explanation = BookCloudError.bookIsOpen.explanation(in: .iCloudDrive)
+
+        XCTAssertEqual(
+            LibraryCloudCommand.commands(for: [book], isSelection: false, states: fixture.states).map(\.kind),
+            [.removeDownload, .showInFinder]
+        )
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+        XCTAssertEqual(fixture.refreshRequests.count, 0, "nothing changed")
+    }
+
+    /// A book whose changes are not uploaded yet keeps its download, and the
+    /// storage's refusal is said and shown, naming the service.
+    func testRemoveDownloadRefusesChangesNotUploaded() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.fake.failRemoval(of: book.id, with: .notUploaded)
+        let explanation = BookCloudError.notUploaded.explanation(in: .iCloudDrive)
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [explanation])
+        XCTAssertTrue(explanation.contains("iCloud Drive"), explanation)
+        XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+    }
+
+    /// For a selection, the books that can go are removed, and one summary
+    /// says what was removed, where it stays, and which stayed and why.
+    func testRemovingASelectionSaysOneSummary() async {
+        let books = [
+            cloudTestBook("Moby-Dick"),
+            cloudTestBook("Emma", author: "Jane Austen"),
+            cloudTestBook("Cranford", author: "Elizabeth Gaskell"),
+        ]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map {
+            ($0.id, BookCloudState.downloaded)
+        }))
+        fixture.model.openBookIDs = [books[1].id]
+        let open = BookCloudError.bookIsOpen.explanation(in: .iCloudDrive)
+        let expected = "Removed the downloads of 2 books. They stay in iCloud Drive. "
+            + "The download of Emma wasn't removed. " + open
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: books, in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [expected])
+        XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: expected))
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [books[0].id, books[2].id])
+        XCTAssertEqual(books.map { fixture.states.state(of: $0.id) }, [.inCloud, .downloaded, .inCloud])
+    }
+
+    /// Only downloaded books are removed: a book in the cloud has nothing to
+    /// remove, so nothing happens and nothing is said.
+    func testOnlyDownloadedBooksAreRemoved() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+
+        let said = await announcements {
+            _ = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [])
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+    }
+
     // MARK: - Wording
 
     /// Titles in a sentence join as "A", "A and B", "A, B, and C".
@@ -318,7 +423,8 @@ final class LibraryCloudCommandTests: XCTestCase {
 /// The library list's cloud commands with everything of their own: a store
 /// and fake storage for a library in iCloud Drive whose books start in the
 /// states given, and an inert library model holding the books. The storage
-/// counts the calls made on the main thread.
+/// counts the calls made on the main thread, and the fixture counts the
+/// refreshes the commands ask for.
 @MainActor
 final class CommandFixture {
     let states: BookCloudStates
@@ -326,16 +432,24 @@ final class CommandFixture {
     let storage: CountingBookCloudStorage
     let model: LibraryViewModel
     let commands: LibraryCloudCommands
+    /// The refreshes the commands asked for.
+    let refreshRequests: RequestCounter
 
     init(books: [Book], states recorded: [UUID: BookCloudState]) {
         let states = BookCloudStates()
         let fake = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
         let storage = CountingBookCloudStorage(fake)
+        let refreshRequests = RequestCounter()
         self.states = states
         self.fake = fake
         self.storage = storage
+        self.refreshRequests = refreshRequests
         model = LibraryViewModel(initializeServices: false)
-        commands = LibraryCloudCommands(states: states, storage: { storage })
+        commands = LibraryCloudCommands(
+            states: states,
+            storage: { storage },
+            refreshAfterRemoval: { refreshRequests.count += 1 }
+        )
         model.library = Library(books: books)
         states.setLibraryLocation(.cloud(.iCloudDrive))
         for (bookID, state) in recorded {
@@ -363,4 +477,11 @@ final class CommandFixture {
         subscription.cancel()
         return recorded
     }
+}
+
+/// Counts requests, such as the refreshes the commands ask for.
+@MainActor
+final class RequestCounter {
+    /// How many requests were made.
+    var count = 0
 }
