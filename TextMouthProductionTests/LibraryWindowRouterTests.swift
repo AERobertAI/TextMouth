@@ -742,6 +742,54 @@ final class LibraryWindowRouterTests: XCTestCase {
         )
     }
 
+    /// With every Library window closed and the app still running, an
+    /// app-wide action opens one Library window through SwiftUI, and that
+    /// window takes the action once it has registered: the whole chain in
+    /// the running app, through the shared router, the app delegate's way
+    /// of opening a window, and the Library window's own action. Go to
+    /// Library is the action, since it presents nothing. Before the test
+    /// ends, the window it opened is closed and the app's own Library
+    /// windows are shown and registered again.
+    func testWithEveryLibraryWindowClosedAnActionOpensOneThatTakesIt() throws {
+        let router = LibraryWindowRouter.shared
+        let shownBefore = Self.shownLibraryWindows()
+        let registeredBefore = router.registeredLibraryWindows
+        guard !shownBefore.isEmpty, !registeredBefore.isEmpty else {
+            throw XCTSkip("This run has no Library window open to close")
+        }
+        defer {
+            for window in Self.shownLibraryWindows() where !shownBefore.contains(where: { $0 === window }) {
+                window.close()
+            }
+            for window in shownBefore {
+                window.orderFront(nil)
+            }
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                registeredBefore.allSatisfy { window in router.registeredLibraryWindows.contains { $0 === window } }
+                    && router.registeredLibraryWindows.count == registeredBefore.count
+            }, "The app's own Library windows did not register again")
+        }
+        for window in shownBefore {
+            window.close()
+        }
+        XCTAssertTrue(waitUntil(timeout: 5) { !router.hasRegisteredWindow }, "A closed Library window stayed registered")
+
+        router.route(.goToLibrary)
+
+        XCTAssertTrue(
+            waitUntil(timeout: 5) { router.hasRegisteredWindow && router.waitingActions.isEmpty },
+            "No Library window opened and took the action"
+        )
+        let opened = router.registeredLibraryWindows
+        XCTAssertEqual(opened.count, 1)
+        let openedWindow = try XCTUnwrap(opened.first)
+        XCTAssertFalse(shownBefore.contains { $0 === openedWindow })
+        XCTAssertEqual(Array(router.recordedDecisions.suffix(2)), [
+            GlobalActionDecision(action: .goToLibrary, handler: .newLibraryWindow),
+            GlobalActionDecision(action: .goToLibrary, handler: .libraryWindow(openedWindow)),
+        ])
+    }
+
     /// The running app's File menu offers no way to open a reader without a
     /// book: New Window (Command-N) opens a Library window, and nothing opens
     /// the Book Reader scene. Open Book... and New from Text... stay enabled,
