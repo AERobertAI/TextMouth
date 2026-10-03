@@ -78,11 +78,21 @@ struct ImportedBook {
     /// The chapters the source names that could not be read. It is empty
     /// for a complete book and for formats that do not report omissions yet.
     var report = ExtractionReport()
+    /// Whether the book was copied from a DAISY book kept as loose files:
+    /// its folder, or its OPF or ncc.html inside that folder (TODO I02).
+    var isFromPackageFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
     /// that left chapters out never deletes it or offers to, whatever the
     /// "After Importing a Book" preference says.
     var keepsOriginal: Bool { !report.isComplete }
+
+    /// Whether the "After Importing a Book" preference may delete the
+    /// original, or offer to: only for a complete book copied from a single
+    /// file. A DAISY book's original is a folder of files, some of which may
+    /// belong to other books or to nothing the import copied, so it is
+    /// never deleted (TODO I02).
+    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromPackageFolder }
 
     /// The warning an import that left chapters out presents once: what is
     /// missing, then that the original was kept. Nil for a complete import.
@@ -108,9 +118,10 @@ struct ImportedFileMetadata {
     var audioYear: String?
 
     /// Reads the metadata `format` keeps inside the file at `url`, starting
-    /// from the file's name and an unknown author.
-    static func read(from url: URL, format: BookFormat) -> ImportedFileMetadata {
-        var metadata = ImportedFileMetadata(title: url.deletingPathExtension().lastPathComponent)
+    /// from `fallbackTitle`, or the file's name when that is nil, and an
+    /// unknown author.
+    static func read(from url: URL, format: BookFormat, fallbackTitle: String? = nil) -> ImportedFileMetadata {
+        var metadata = ImportedFileMetadata(title: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
         /// Adopts the title and author a format's metadata names, keeping
         /// the defaults for any it leaves empty.
         func adopt(title: String, author: String) {
@@ -475,12 +486,18 @@ enum FileImportService {
     /// the file, reading its text or audio as the reader will, and writing
     /// its bookInfo.json and reading it back. A book that could not be read,
     /// or whose record could not be saved, is never published.
+    ///
+    /// A DAISY book kept as loose files (its folder, or its OPF or ncc.html
+    /// inside that folder) is imported with every file it needs, laid out
+    /// in the package as in its folder (`DAISYPackageInventory`), and its
+    /// book file is its OPF or ncc.html there (TODO I02).
     /// - Parameter observer: told as each step on the staged package begins;
     ///   tests use it to make a step fail.
     /// - Throws: an `ImportFailure` naming the file and the step that failed,
-    ///   for example an EPUB with no readable chapter or a document whose
-    ///   text cannot be extracted. Whatever was staged is removed first, and
-    ///   the source file is never touched.
+    ///   for example an EPUB with no readable chapter, a document whose text
+    ///   cannot be extracted, or a DAISY book referring to a file outside
+    ///   its folder. Whatever was staged is removed first, and the source
+    ///   file is never touched.
     static func importFileWithReport(
         from sourceURL: URL,
         toFolder folderPath: String = "",
@@ -488,12 +505,17 @@ enum FileImportService {
     ) throws -> ImportedBook {
         try ImportRun.perform(importing: sourceURL.lastPathComponent, observer: observer) { run in
             guard let format = BookFormat.detect(from: sourceURL) else {
-                throw FileImportError.unsupportedFormat(sourceURL.pathExtension.lowercased())
+                throw unsupportedSourceError(for: sourceURL)
             }
 
             try run.begin(.readingSource)
-            let hash = try md5Hash(of: sourceURL)
-            let metadata = ImportedFileMetadata.read(from: sourceURL, format: format)
+            let package = try DAISYPackageInventory.ofSource(sourceURL)
+            let hash = try importHash(of: sourceURL, package: package)
+            let metadata = ImportedFileMetadata.read(
+                from: package?.entryURL ?? sourceURL,
+                format: format,
+                fallbackTitle: package?.untitledName
+            )
             let bookID = UUID()
             let dateAdded = Date()
 
@@ -508,8 +530,7 @@ enum FileImportService {
             defer { staging.discard() }
 
             try run.begin(.copying, in: staging.directory)
-            let stagedFile = staging.directory.appendingPathComponent(sourceURL.lastPathComponent)
-            try FileManager.default.copyItem(at: sourceURL, to: stagedFile)
+            let stagedFile = try stageContent(of: sourceURL, package: package, in: staging.directory)
 
             let staged = Book(
                 id: bookID,
@@ -532,8 +553,89 @@ enum FileImportService {
                 epubIdentifier: metadata.epub?.identifier,
                 epubVersion: metadata.epub?.epubVersion
             )
-            return try publishReadableBook(staged, from: staging, run: &run)
+            var imported = try publishReadableBook(staged, from: staging, run: &run)
+            imported.isFromPackageFolder = package != nil
+            return imported
         }
+    }
+
+    // MARK: - Loose DAISY Packages
+
+    /// The checksum a book imported from `source` is known by, which
+    /// duplicate detection compares before anything is copied: a DAISY book
+    /// kept as loose files has its package's checksum
+    /// (`DAISYPackageInventory.contentHash()`), and any other source the
+    /// MD5 of its file (TODO I02).
+    /// - Throws: when the source cannot be read, or is a folder that is not
+    ///   one DAISY book.
+    static func importHash(of source: URL) throws -> String {
+        try importHash(of: source, package: DAISYPackageInventory.ofSource(source))
+    }
+
+    /// The checksum a book imported from `source` is known by, when
+    /// `package` is the DAISY package `source` is, or nil when it is none.
+    private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
+        try package?.contentHash() ?? md5Hash(of: source)
+    }
+
+    /// Copies what an import of `source` reads into the staged package
+    /// `directory`, and returns the book's own file there: every file of
+    /// `package`, laid out as in its folder, when `source` is a DAISY book
+    /// kept as loose files; otherwise the source file itself.
+    private static func stageContent(
+        of source: URL,
+        package: DAISYPackageInventory?,
+        in directory: URL
+    ) throws -> URL {
+        guard let package else {
+            let stagedFile = directory.appendingPathComponent(source.lastPathComponent)
+            try FileManager.default.copyItem(at: source, to: stagedFile)
+            return stagedFile
+        }
+        logShortfalls(of: package)
+        return try package.copyFiles(into: directory)
+    }
+
+    /// Records in the console and the debug log what a DAISY package import
+    /// copies other than as the book's references list it: the files they
+    /// name that do not exist, and the whole folder, when the references
+    /// could not be read. Reading the copied book as the reader will then
+    /// decides whether the import succeeds.
+    private static func logShortfalls(of package: DAISYPackageInventory) {
+        var lines: [String] = []
+        if !package.missingPaths.isEmpty {
+            lines.append(
+                "DAISY_PACKAGE_MISSING: \(package.entryURL.path): refers to \(package.missingPaths.count) "
+                    + "file(s) that do not exist: \(package.missingPaths.joined(separator: ", "))"
+            )
+        }
+        if let reason = package.wholeFolderReason {
+            lines.append(
+                "DAISY_PACKAGE_WHOLE_FOLDER: \(package.root.path): copied every file, since the book's "
+                    + "files could not be listed: \(reason)"
+            )
+        }
+        for line in lines {
+            // One line per entry, whatever the reason holds.
+            let entry = line.components(separatedBy: .newlines).joined(separator: " ")
+            print(entry)
+            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: entry)
+        }
+    }
+
+    /// Why `source` cannot be imported when no format reads it: a folder
+    /// that is not a DAISY book is told so, in words; any other item's
+    /// extension is not supported. A TextMouth package is not a folder of
+    /// a book here: it is imported as a package, not as a file.
+    private static func unsupportedSourceError(for source: URL) -> Error {
+        let ext = source.pathExtension.lowercased()
+        var isDirectory: ObjCBool = false
+        if ext != "tmb",
+           FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            return DAISYPackageError.notAPackage
+        }
+        return FileImportError.unsupportedFormat(ext)
     }
 
     /// Imports text the reader typed or pasted as a plain-text book, staged

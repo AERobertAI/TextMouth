@@ -232,12 +232,14 @@ extension LibraryViewModel {
     /// original is never deleted or offered for deletion, whatever the
     /// preference. Such a book is not opened automatically either: the
     /// reader window would take focus from the warning in the library window.
+    /// A DAISY book copied from its folder of files never has its original
+    /// deleted or offered for deletion either (`ImportedBook.mayDeleteOriginal`).
     func completeSingleImportedBook(_ imported: ImportedBook, originalURL: URL, openAfterImport: Bool = false) {
         importProgressMessage = ""
         let book = imported.book
         // Without an original to offer, a later duplicate choice cannot
         // delete it either.
-        let deletableOriginal = imported.keepsOriginal ? nil : originalURL
+        let deletableOriginal = imported.mayDeleteOriginal ? originalURL : nil
         guard addBookCheckingDuplicate(
             book, toFolder: book.folderPath, originalURL: deletableOriginal, warning: imported.warning
         ) else {

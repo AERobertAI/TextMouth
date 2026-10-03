@@ -57,7 +57,15 @@ enum BookFormat: String, Codable, CaseIterable {
     /// Other document formats only support the shared title and author fields.
     var usesRichMetadataEditor: Bool { self == .epub || isAudio }
 
+    /// The format a book imported from `url` has: from its extension, or
+    /// for a DAISY book kept as loose files, from its navigation file's
+    /// name or its folder's contents (TODO I02).
     static func detect(from url: URL) -> BookFormat? {
+        // A DAISY 2.02 book's navigation file is always named ncc.html (or
+        // ncc.htm). It stands for its whole book, not for one HTML page.
+        if DAISYParser.isNCCFileName(url.lastPathComponent) {
+            return .daisy
+        }
         let ext = url.pathExtension.lowercased()
         for format in BookFormat.allCases {
             if format.fileExtensions.contains(ext) {
@@ -66,6 +74,12 @@ enum BookFormat: String, Codable, CaseIterable {
         }
         // Check if a ZIP file is actually a DAISY package
         if ext == "zip" && DAISYParser.isDAISYZip(url: url) {
+            return .daisy
+        }
+        // A folder with a DAISY book's package or navigation file at its top
+        // level is that book. A TextMouth package is never imported as one:
+        // it holds a book TextMouth already describes.
+        if ext != "tmb" && DAISYParser.isDAISYDirectory(url: url) {
             return .daisy
         }
         return nil
