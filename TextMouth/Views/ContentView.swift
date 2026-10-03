@@ -71,6 +71,13 @@ struct LibraryWindowView: View {
         .handlesExternalEvents(preferring: [], allowing: ["*"])
         .focusedValue(\.activeWindowType, .library)
         .onAppear {
+            // SwiftUI shows a closed Library window again, rather than open
+            // a new one, for a book opened from Finder; the window takes
+            // app-wide actions again from then on. A window appearing for
+            // the first time registers once its hosting window is found.
+            if let hostWindow {
+                registerForGlobalActions(hostWindow, openingReadersWith: openReaderWindow)
+            }
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }
         .onDisappear {

@@ -79,6 +79,29 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertEqual(harness.router.registeredLibraryWindows, [first, second])
     }
 
+    /// A Library window that closed and is shown again registers again, as
+    /// SwiftUI showing it for a book opened from Finder makes it do: it
+    /// takes the action waiting since it closed, and the actions after.
+    func testALibraryWindowShownAgainTakesActionsAgain() {
+        let harness = RouterHarness()
+        let library = harness.addLibraryWindow(named: "Library")
+        harness.router.unregister(library)
+        harness.post(.openBookFile)
+        harness.runDueWork()
+
+        harness.router.register(library) { [unowned harness] action in
+            harness.note("Library shown again: \(action)")
+        }
+        harness.runDueWork()
+        harness.post(.importDAISYFolder)
+
+        XCTAssertEqual(harness.takings, [
+            "Library shown again: openBookFile",
+            "Library shown again: importDAISYFolder",
+        ])
+        XCTAssertEqual(harness.router.registeredLibraryWindows, [library])
+    }
+
     // MARK: - Reader windows
 
     /// The reader window another reader opens through: the key window when
@@ -665,6 +688,11 @@ private final class RouterHarness {
             self.takings.append("\(name): opened \(bookID)")
         }
         return window
+    }
+
+    /// Records a taking described by the test itself.
+    func note(_ taking: String) {
+        takings.append(taking)
     }
 
     /// Posts a notification on the router's center.
