@@ -63,10 +63,27 @@ enum SavedFile {
         }
     }
 
-    /// How a log line names the preserved copy `copy` of an unusable file:
-    /// by its name, or says none could be made.
-    static func describe(preservedCopy copy: URL?) -> String {
-        copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
+    /// Keeps a copy of the file at `url`, which can't be read or decoded for
+    /// `reason`, as `preserveUnusable(_:bytes:)` does, and writes one event
+    /// line in `category`, beginning with `tag`, that names the file, the
+    /// reason, what stands in for the file now (`standIn`), and the copy.
+    /// - Returns: The copy, or nil when none could be made.
+    @discardableResult
+    static func preserveUnusable(
+        _ url: URL,
+        bytes: Data?,
+        because reason: String,
+        logging tag: String,
+        in category: DiagnosticLog.Category,
+        standIn: String
+    ) -> URL? {
+        let copy = preserveUnusable(url, bytes: bytes)
+        let preserved = copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
+        DiagnosticLog.event(
+            category,
+            "\(tag): could not read \(url.lastPathComponent): \(reason); \(standIn); \(preserved)"
+        )
+        return copy
     }
 
     /// Why a save was not written over a file only in the cloud: the file

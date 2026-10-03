@@ -515,6 +515,34 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         }
     }
 
+    /// Substitution rules cut short, as a write interrupted on another Mac
+    /// leaves them, are preserved beside the file before the next save
+    /// replaces it, so none of the user's own rules is lost; the standard
+    /// rules stand in meanwhile.
+    func testHalfWrittenSubstitutionsArePreservedBeforeTheyAreReplaced() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeOwnDataDirectory("RulesHalf")
+        let file = root.appendingPathComponent("substitutions.json")
+        let half = halfOf(try rulesData(named: ["Harbor", "Galley"]))
+        try half.write(to: file)
+        let service = TextSubstitutionService.shared
+
+        service.loadRules()
+
+        XCTAssertEqual(service.rules.map(\.name), TextSubstitutionService.defaultRules.map(\.name))
+        let copies = LibraryIndexQuarantine.existingCopies(of: file)
+        XCTAssertEqual(copies.count, 1, "the half-written rules were not preserved")
+        XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, half)
+
+        service.addRule(SubstitutionRule(name: "Chart Room", pattern: "chart", replacement: "chart", isRegex: false))
+
+        XCTAssertEqual(
+            try JSONDecoder().decode([SubstitutionRule].self, from: Data(contentsOf: file)).last?.name,
+            "Chart Room"
+        )
+        XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, half, "the preserved copy changed")
+    }
+
     /// Substitution rules only in the cloud are not read on the main
     /// thread: the sync service is asked for them, once, and the standard
     /// rules stand in. A change made meanwhile is reported unsaved, and

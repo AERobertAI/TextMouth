@@ -250,11 +250,13 @@ final class ReadingStatsService: ObservableObject {
     /// holding `bytes` when they could be read, and logs why the statistics
     /// start afresh.
     private func preserveUnusableStatsFile(bytes: Data?, because reason: String) {
-        let copy = SavedFile.preserveUnusable(fileURL, bytes: bytes)
-        DiagnosticLog.event(
-            .statistics,
-            "READING_STATS_FILE: could not read \(fileURL.lastPathComponent): \(reason); "
-                + "the statistics start afresh; \(SavedFile.describe(preservedCopy: copy))"
+        SavedFile.preserveUnusable(
+            fileURL,
+            bytes: bytes,
+            because: reason,
+            logging: "READING_STATS_FILE",
+            in: .statistics,
+            standIn: "the statistics start afresh"
         )
     }
 

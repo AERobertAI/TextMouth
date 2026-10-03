@@ -728,6 +728,8 @@ final class TextSubstitutionService: ObservableObject {
     /// Reads substitutions.json into `rules`, with dataless files left in
     /// the cloud, so the read never waits on the network. With no file, as
     /// at the first launch, the standard rules are installed and saved. A
+    /// file that can't be read or decoded is preserved beside itself, and
+    /// the standard rules stand in for it until a save replaces it. A
     /// file only in the cloud is asked of the sync service and logged once,
     /// and the standard rules stand in, unsaved, until a read finds it on
     /// this Mac (`rulesAwaitFileInCloud`); reading it again while it waits
@@ -754,12 +756,10 @@ final class TextSubstitutionService: ObservableObject {
             do {
                 rules = try JSONDecoder().decode([SubstitutionRule].self, from: data)
             } catch {
-                print("Failed to load substitutions: \(error)")
-                rules = Self.defaultRules
+                standInForUnusableRulesFile(url, bytes: data, because: error.localizedDescription)
             }
         case .unreadable(let reason):
-            print("Failed to load substitutions: \(reason)")
-            rules = Self.defaultRules
+            standInForUnusableRulesFile(url, bytes: nil, because: reason)
         case .inCloud:
             rulesAwaitFileInCloud = true
             guard !wasWaitingInTheCloud else { return }
@@ -771,6 +771,24 @@ final class TextSubstitutionService: ObservableObject {
                     + "asked the sync service for it, and the standard rules stand in until it is on this Mac"
             )
         }
+    }
+
+    /// Puts the standard rules in place of substitutions.json at `url`,
+    /// which can't be read or decoded for `reason`, such as one a write
+    /// interrupted on another Mac cut short. The file is preserved beside
+    /// itself first, holding `bytes` when they could be read, so the save
+    /// that later replaces it loses none of the user's own rules, and one
+    /// line says so.
+    private func standInForUnusableRulesFile(_ url: URL, bytes: Data?, because reason: String) {
+        SavedFile.preserveUnusable(
+            url,
+            bytes: bytes,
+            because: reason,
+            logging: "SUBSTITUTIONS_FILE",
+            in: .storage,
+            standIn: "the standard rules stand in"
+        )
+        rules = Self.defaultRules
     }
 
     /// Reads substitutions.json again while its rules wait in the cloud, as
