@@ -527,52 +527,21 @@ enum FileImportService {
     }
 
     /// Builds a Book from validated package metadata and a trusted package
-    /// location. Callers must validate the package before using this helper.
+    /// location: every field the record keeps, its text cache's
+    /// fingerprints included, as `Book(record:filePath:folderPath:tmbDirectoryName:)`
+    /// builds it, with the book's file where the record names it in the
+    /// package. Callers must validate the package before using this helper.
     static func bookFromPackageInfo(
         _ info: BookInfo,
         packageURL: URL,
         folderPath: String,
         tmbName: String
     ) -> Book {
-        let bookFilePath = packageURL.appendingPathComponent(info.metadata.originalFileName).path
-        return Book(
-            id: info.metadata.bookID,
-            title: info.metadata.title,
-            author: info.metadata.author,
-            format: info.metadata.format,
-            filePath: bookFilePath,
-            md5Hash: info.metadata.md5Hash,
+        Book(
+            record: info,
+            filePath: packageURL.appendingPathComponent(info.metadata.originalFileName).path,
             folderPath: folderPath,
-            dateAdded: info.metadata.dateAdded,
-            lastOpened: info.metadata.lastOpened,
-            readingPosition: info.state.readingPosition,
-            bookmarks: info.bookmarks,
-            totalWordCount: info.state.totalWordCount,
-            totalCharacterCount: info.state.totalCharacterCount,
-            tmbDirectoryName: tmbName,
-            sourceFilePath: info.metadata.sourceFilePath,
-            lastPlaybackStarted: info.state.lastPlaybackStarted,
-            lastPlaybackStopped: info.state.lastPlaybackStopped,
-            localVoiceID: info.state.localVoiceID,
-            localWPM: info.state.localWPM,
-            localPitch: info.state.localPitch,
-            skippedHeadingIDs: info.state.skippedHeadingIDs,
-            localEndOfBookBehavior: info.state.localEndOfBookBehavior,
-            localSkipForwardUnit: info.state.localSkipForwardUnit,
-            localSkipBackwardUnit: info.state.localSkipBackwardUnit,
-            manualSortOrder: info.state.manualSortOrder,
-            audioDuration: info.state.audioDuration,
-            audioAlbum: info.metadata.audioAlbum,
-            audioGenre: info.metadata.audioGenre,
-            audioYear: info.metadata.audioYear,
-            epubPublisher: info.metadata.publisher,
-            epubPublicationDate: info.metadata.publicationDate,
-            epubISBN: info.metadata.isbn,
-            epubLanguage: info.metadata.language,
-            epubIdentifier: info.metadata.epubIdentifier,
-            epubVersion: info.metadata.epubVersion,
-            cacheFormatVersion: info.state.cacheFormatVersion,
-            contentIndexVersion: info.state.contentIndexVersion
+            tmbDirectoryName: tmbName
         )
     }
 

@@ -19,13 +19,13 @@ final class StorageOperationOutcomeTests: XCTestCase {
 
     /// Rebuild Directory while the library index cannot be read returns the
     /// refusal and changes nothing, with no alert in the Library window.
-    func testRebuildWhileTheIndexIsUnreadableReturnsTheRefusal() throws {
+    func testRebuildWhileTheIndexIsUnreadableReturnsTheRefusal() async throws {
         let sandbox = try captureIndexSandbox()
         let damagedBytes = try sandbox.stage(.truncated, at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         model.loadLibraryIndex()
 
-        let outcome = model.rebuildDirectoryReturningOutcome()
+        let outcome = await model.rebuildDirectoryReturningOutcome()
 
         XCTAssertEqual(
             outcome,
@@ -98,15 +98,16 @@ final class StorageOperationOutcomeTests: XCTestCase {
     /// the status line shows the refusal, word for word as the outcome
     /// carries it, as a failure; it never says "Done", and VoiceOver hears
     /// it exactly once.
-    func testStatusAfterARefusedRebuild() throws {
+    func testStatusAfterARefusedRebuild() async throws {
         let sandbox = try captureIndexSandbox()
         try sandbox.stage(.truncated, at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         model.loadLibraryIndex()
         var status: StorageStatus?
+        let outcome = await model.rebuildDirectoryReturningOutcome()
 
         let recorder = recordingAnnouncements {
-            status = .announced(after: model.rebuildDirectoryReturningOutcome())
+            status = .announced(after: outcome)
         }
 
         let expected = "Failed to rebuild directory: \(LibraryIndexRecoveryError.indexUnreadable.localizedDescription)"

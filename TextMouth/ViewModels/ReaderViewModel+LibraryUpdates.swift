@@ -114,14 +114,20 @@ extension ReaderViewModel {
     /// The library is about to move the book's package. Audio that is
     /// playing stops now, releasing the file it plays, so nothing reads the
     /// book's files while they move or after they are gone; the reader goes
-    /// on showing Playing, its cursor where the audio stopped. Paused audio
-    /// reads nothing and is left alone. Speech reads no files as it plays,
-    /// and audio playing from the book's working copy (FR02) reads none of
-    /// the package's files, so it plays on through the move.
+    /// on showing Playing, its cursor where the audio stopped. A reader
+    /// waiting for its chapter's files to download (FR02) stops waiting the
+    /// same way, since the download reads the package's files and plays
+    /// them once they are here; once the move ends, the chapter plays, or
+    /// downloads again, from the package's new place. Paused audio reads
+    /// nothing and is left alone. Speech reads no files as it plays, and
+    /// audio playing from the book's working copy (FR02) reads none of the
+    /// package's files, so it plays on through the move.
     private func pauseAudioForPackageMove() {
-        guard isAudioBook, audioPausedForMove == nil, !playsFromWorkingCopy,
-              audioPlaybackService.isPlaying, !audioPlaybackService.isPaused else { return }
+        guard isAudioBook, audioPausedForMove == nil, !playsFromWorkingCopy else { return }
+        let isPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
+        guard isPlaying || isWaitingForChapterDownload else { return }
         audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
+        stopWaitingForChapterDownload(because: "the book's package is moving")
         audioPlaybackService.stop()
     }
 

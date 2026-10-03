@@ -261,12 +261,15 @@ enum BookCloudError: Error, Equatable, Sendable {
     case offline
     /// The sync service made no progress for this many seconds.
     case stalled(seconds: Int)
-    /// The sync service refused or failed, with its message.
+    /// The sync service refused or failed a download, with its message.
     case provider(String)
     /// Remove Download refused: some of the book's changes are not uploaded yet.
     case notUploaded
     /// Remove Download refused: the book is open in a reader.
     case bookIsOpen
+    /// Remove Download failed: the sync service refused or failed to remove
+    /// the local copy of one of the book's files, with its message.
+    case removalFailed(String)
     /// The book's package is not on this Mac.
     case packageMissing
 
@@ -290,6 +293,8 @@ enum BookCloudError: Error, Equatable, Sendable {
                 + "so its download can't be removed. Try again in a moment."
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
+        case .removalFailed(let message):
+            return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
             return "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them."
         }
@@ -313,7 +318,8 @@ protocol BookCloudStorage: AnyObject, Sendable {
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error>
     /// Removes the local copies of `package`'s files, keeping them in the
     /// cloud. Throws `BookCloudError.notUploaded` while any change of the
-    /// book waits to upload.
+    /// book waits to upload, and `.removalFailed` when the sync service
+    /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
 }
 

@@ -95,6 +95,55 @@ final class CloudMaintenanceCacheBatchTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount(skipLine(.textReextraction, count: 1)), skipLinesBefore + 1)
     }
 
+    /// Redo Text Extraction says, once it is done, how many books in the
+    /// cloud it skipped, where the user started it: Storage settings' status
+    /// line, which VoiceOver hears once. A run that left none says "Done."
+    /// A run asked for while another extraction runs starts nothing and
+    /// reports nothing.
+    @MainActor
+    func testRedoTextExtractionSaysHowManyBooksInTheCloudItSkipped() async throws {
+        let inCloud = try commitCache(of: makePackagedBook(title: "Source In Cloud"))
+        let onThisMac = try commitCache(of: makePackagedBook(title: "On This Mac"))
+        cloud.markDataless(inCloud.bookFileURL)
+        let model = makeModel(with: [inCloud, onThisMac])
+        let expected = "Done. 1 book in the cloud was skipped."
+
+        let finished = await model.redoAllTextExtractionReturningOutcome(access: cloud.access)
+        let outcome = try XCTUnwrap(finished, "the run did not start")
+        var status: StorageStatus?
+        let recorder = recordingAnnouncements {
+            status = .announced(after: outcome)
+        }
+
+        XCTAssertEqual(outcome, .success(expected))
+        XCTAssertEqual(status, StorageStatus(message: expected, isFailure: false))
+        XCTAssertEqual(recorder.announcements, [VoiceOverAnnouncement(message: expected, priority: .high)])
+        XCTAssertFalse(model.isExtracting)
+
+        let allHere = await model.redoAllTextExtractionReturningOutcome()
+        XCTAssertEqual(allHere, .success(nil))
+        XCTAssertEqual(StorageStatus.finished(.success(nil)).message, "Done.")
+
+        model.isExtracting = true
+        let refused = await model.redoAllTextExtractionReturningOutcome()
+        XCTAssertNil(refused)
+        model.isExtracting = false
+    }
+
+    /// Redo Text Extraction's words for the books it left in the cloud agree
+    /// with their count.
+    func testRedoTextExtractionOutcomeCountsTheBooksInTheCloud() {
+        XCTAssertEqual(LibraryViewModel.textReextractionOutcome(skippedInCloud: 0), .success(nil))
+        XCTAssertEqual(
+            LibraryViewModel.textReextractionOutcome(skippedInCloud: 1),
+            .success("Done. 1 book in the cloud was skipped.")
+        )
+        XCTAssertEqual(
+            LibraryViewModel.textReextractionOutcome(skippedInCloud: 12),
+            .success("Done. 12 books in the cloud were skipped.")
+        )
+    }
+
     /// A batch that leaves nothing in the cloud writes no skip line.
     @MainActor
     func testBatchWithEveryBookOnThisMacWritesNoSkipLine() async throws {

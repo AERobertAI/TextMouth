@@ -4,8 +4,9 @@ import XCTest
 /// How maintenance reaches a cloud library's files (FR02,
 /// `MaintenanceFileAccess`): reads with dataless files left in the cloud,
 /// refusals tests can script, a presence check that never answers "absent"
-/// when only the cloud knows, the files of a book a pass reads, and the one
-/// line that counts the books a pass left in the cloud.
+/// when only the cloud knows, the files of a book a pass reads, the one
+/// line that counts the books a pass left in the cloud, and the library's
+/// saves of package records, which leave a record in the cloud alone.
 final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
 
     // MARK: - Reading
@@ -188,7 +189,111 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount(oneBook), oneBefore + 1)
     }
 
+    // MARK: - Saving Package Records
+
+    /// A save of a book whose record, package, or removal marker is only in
+    /// the cloud neither reads the record, which would download it, nor
+    /// writes it: the library index alone holds the save, and one line says
+    /// so however often the book is saved. Once the files are on this Mac
+    /// again, the next save writes the record.
+    func testSavingABookWhoseRecordIsInTheCloudLeavesTheRecordAlone() throws {
+        let inCloud: [(name: String, item: (Book) -> URL)] = [
+            ("record", { TextMouthPaths.bookInfoPath(in: $0.tmbDirectory) }),
+            ("package", { $0.tmbDirectory }),
+            ("removal marker", { TextMouthPaths.removedFromLibraryMarkerPath(in: $0.tmbDirectory) }),
+        ]
+        useRecordAccess(cloud.access)
+        var books: [Book] = []
+        for (name, item) in inCloud {
+            var book = try makePackagedBook(title: "Tide Tables \(name)")
+            try book.saveBookInfoThrowing()
+            let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+            let written = try XCTUnwrap(contents(of: record))
+            cloud.markDataless(item(book))
+            // Any read of the record through the access is noted.
+            cloud.refuseReads(of: record)
+
+            book.title += ", Revised"
+            save(book)
+            save(book)
+
+            XCTAssertEqual(contents(of: record), written, "a record was written with its \(name) in the cloud")
+            XCTAssertEqual(logLineCount(recordInCloudLine(for: book)), 1, name)
+            books.append(book)
+        }
+        XCTAssertEqual(cloud.refusedReads, [], "a record was read with its files in the cloud")
+
+        useRecordAccess(.live)
+        for book in books {
+            save(book)
+            XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.title, book.title)
+        }
+    }
+
+    /// A record that goes to the cloud between the check and the read is
+    /// refused rather than downloaded, and is left alone the same way.
+    func testRecordGoingToTheCloudAsItIsReadIsLeftAlone() throws {
+        var book = try makePackagedBook(title: "Harbor Charts")
+        try book.saveBookInfoThrowing()
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let written = try XCTUnwrap(contents(of: record))
+        cloud.refuseReads(of: record)
+        useRecordAccess(cloud.access)
+
+        book.title = "Harbor Charts, Second Edition"
+        save(book)
+
+        XCTAssertEqual(contents(of: record), written)
+        XCTAssertEqual(cloud.refusedReads, [FakeCloudFiles.key(record)])
+        XCTAssertEqual(logLineCount(recordInCloudLine(for: book)), 1)
+    }
+
+    /// An analysis finished for a book whose record is only in the cloud is
+    /// dropped, rather than merged into the record, which would read it: one
+    /// line says why, and the record is left alone.
+    func testAnalysisOfABookWhoseRecordIsInTheCloudIsDropped() throws {
+        let book = try makePackagedBook(title: "Harbor Lights")
+        try book.saveBookInfoThrowing()
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let written = try XCTUnwrap(contents(of: record))
+        var cached = book
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &cached))
+        cloud.markDataless(record)
+        useRecordAccess(cloud.access)
+
+        let committed = try LibraryPersistenceService.saveContentAnalysis(
+            for: cached,
+            index: index,
+            cacheFormatVersion: cached.cacheFormatVersion
+        )
+
+        XCTAssertNil(committed)
+        XCTAssertEqual(contents(of: record), written)
+        XCTAssertEqual(logLineCount(
+            "CONTENT_ANALYSIS_DROPPED: book \(book.id.uuidString.prefix(8)) \"Harbor Lights\": its record is only in the cloud"
+        ), 1)
+    }
+
     // MARK: - Fixtures
+
+    /// Has package record writes reach a package's files through `access`
+    /// until the test ends.
+    private func useRecordAccess(_ access: MaintenanceFileAccess) {
+        let previous = LibraryPersistenceService._useRecordAccessForTesting(access)
+        addTeardownBlock { LibraryPersistenceService._useRecordAccessForTesting(previous) }
+    }
+
+    /// Saves `book`'s record as the library does, and waits for the write.
+    private func save(_ book: Book) {
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+    }
+
+    /// The start of the line saying a save of `book` went to the library
+    /// index alone.
+    private func recordInCloudLine(for book: Book) -> String {
+        "BOOK_RECORD_IN_CLOUD: book \(book.id.uuidString.prefix(8)) \"\(book.title)\""
+    }
 
     /// This thread's policy for dataless files.
     private func currentPolicy() -> Int32 {

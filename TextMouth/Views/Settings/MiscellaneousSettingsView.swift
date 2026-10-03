@@ -173,11 +173,15 @@ private struct GesturePatternEditor: View {
                     Text("Step \(index + 1):")
                         .frame(width: 60, alignment: .leading)
                         .accessibilityHidden(true)
-                    Picker("Event for step \(index + 1)",
-                           selection: bindingForStep(index)) {
+                    // The picker's own label is empty: a hidden title would
+                    // be spoken before the accessibility label, so VoiceOver
+                    // would hear "Event for step 1, Step 1" (board #242).
+                    Picker(selection: bindingForStep(index)) {
                         ForEach(MediaGestureDetector.EventType.allCases, id: \.self) { type in
                             Text(type.displayName).tag(type)
                         }
+                    } label: {
+                        EmptyView()
                     }
                     .labelsHidden()
                     .accessibilityLabel("Step \(index + 1)")

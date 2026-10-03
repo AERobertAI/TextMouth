@@ -145,6 +145,8 @@ struct StorageSettingsView: View {
     @State private var runningOperation: StorageOperation?
     @State private var showDuplicateFinder = false
     @State private var showRedoExtractionConfirmation = false
+    /// What the last Redo Text Extraction did, once it is done.
+    @State private var extractionStatus: StorageStatus?
     /// Failed writes, so the status never says all is well while changes
     /// are unsaved (TODO S09).
     @ObservedObject private var failureCenter = PersistenceFailureCenter.shared
@@ -346,6 +348,14 @@ struct StorageSettingsView: View {
                     Text("Re-extract the cached text for all books. Use this after parser updates to refresh the cached content.")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                    // What the last run did, such as how many books in the
+                    // cloud it skipped (FR02).
+                    if let extractionStatus {
+                        Text(extractionStatus.message)
+                            .font(.caption)
+                            .foregroundColor(extractionStatus.isFailure ? .red : .secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             } header: {
                 Text("Library Maintenance")
@@ -387,7 +397,7 @@ struct StorageSettingsView: View {
         }
         .alert("Redo Text Extraction?", isPresented: $showRedoExtractionConfirmation) {
             Button("Re-extract All") {
-                libraryViewModel.redoAllTextExtraction()
+                redoTextExtraction()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -662,7 +672,7 @@ struct StorageSettingsView: View {
     private func perform(_ operation: StorageOperation) async -> OperationOutcome {
         switch operation {
         case .rebuild:
-            return libraryViewModel.rebuildDirectoryReturningOutcome()
+            return await libraryViewModel.rebuildDirectoryReturningOutcome(waiting: showWait(of: operation))
         case .resetToDefault:
             return await libraryViewModel.rebuildToDefaultReturningOutcome()
         case .move(let destination):
@@ -672,9 +682,35 @@ struct StorageSettingsView: View {
         }
     }
 
+    /// Redo Text Extraction: re-extracts every book's text, its progress
+    /// shown meanwhile, then says what it did in the Library Maintenance
+    /// section's status line, which VoiceOver hears once: "Done.", with how
+    /// many books in the cloud it skipped when it left any (FR02), or, while
+    /// changes are left unsaved, the failure that is (TODO S09).
+    private func redoTextExtraction() {
+        extractionStatus = nil
+        Task { @MainActor in
+            guard let outcome = await libraryViewModel.redoAllTextExtractionReturningOutcome() else { return }
+            extractionStatus = .announced(after: libraryViewModel.outcomeConfirmingSaves(outcome))
+        }
+    }
+
     /// Pauses briefly, so the run loop draws the status line, and the
     /// buttons' state, before work that holds the interface begins.
     private func letTheStatusBeDrawn() async {
         try? await Task.sleep(for: .milliseconds(50))
+    }
+
+    /// What `operation`, which waits for the storage work under way before
+    /// it changes anything, tells the status line: each kind of work it
+    /// waits for, such as "Waiting for the current import to finish...",
+    /// and its own running status again once it waits for nothing more,
+    /// each announced once, as every status that changes while the user
+    /// waits is. A move shows its waits in its progress instead.
+    private func showWait(of operation: StorageOperation) -> (StorageWork?) async -> Void {
+        { work in
+            let message = work?.waitingMessage ?? operation.runningMessage
+            status = StorageStatus(message: message, isFailure: false).announced()
+        }
     }
 }
