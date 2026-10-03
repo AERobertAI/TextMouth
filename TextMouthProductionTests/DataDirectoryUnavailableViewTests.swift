@@ -129,6 +129,44 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
         XCTAssertEqual(model.dataDirectoryRefusalNotice, "Books can't be opened while the library isn't available.")
     }
 
+    // MARK: - Storage Settings
+
+    /// Storage settings say the library isn't available, ahead of every
+    /// other status, and offer no maintenance meanwhile.
+    func testStorageSettingsSayTheLibraryIsNotAvailable() {
+        XCTAssertEqual(
+            StorageSettingsView.statusText(
+                isRecoveringIndex: true,
+                directoryExists: false,
+                hasUnsavedChanges: true,
+                isLibraryUnavailable: true
+            ),
+            "Library Not Available"
+        )
+        XCTAssertTrue(StorageSettingsView.maintenanceUnavailable(
+            isRecoveringIndex: false,
+            isRunning: false,
+            isLibraryUnavailable: true
+        ))
+    }
+
+    /// Moving the data directory while the library isn't available fails,
+    /// saying so, and changes nothing.
+    func testAMoveWhileTheLibraryIsUnavailableSaysWhy() async throws {
+        let fixture = try UnavailableModelFixture(test: self)
+        let model = LibraryViewModel(dataDirectoryEnvironment: fixture.environment)
+        let destination = try makeSandboxDirectory("NowhereToGo").appendingPathComponent("Moved", isDirectory: true)
+
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination)
+
+        XCTAssertEqual(
+            outcome.failureMessage,
+            "Failed to move directory: The library at \(fixture.root.path) isn't available."
+        )
+        XCTAssertEqual(TextMouthPaths.root.path, fixture.root.path)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
     // MARK: - Fixtures
 
     /// The screen for `reason`, recording nothing unless told to.

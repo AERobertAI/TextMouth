@@ -119,14 +119,22 @@ struct StorageSettingsView: View {
                     Text(Self.statusText(
                         isRecoveringIndex: isRecoveringIndex,
                         directoryExists: TextMouthPaths.directoryExists,
-                        hasUnsavedChanges: hasUnsavedChanges
+                        hasUnsavedChanges: hasUnsavedChanges,
+                        isLibraryUnavailable: unavailability != nil
                     ))
                     .foregroundColor(
-                        isRecoveringIndex || hasUnsavedChanges || !TextMouthPaths.directoryExists ? .red : .green
+                        unavailability != nil || isRecoveringIndex || hasUnsavedChanges
+                            || !TextMouthPaths.directoryExists ? .red : .green
                     )
                 }
 
-                if isRecoveringIndex {
+                if let unavailability {
+                    // The reason the Library window's screen gives (FR02).
+                    Text(unavailability.explanation)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if isRecoveringIndex {
                     Text(LibraryIndexRecoveryText.settingsExplanation)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -353,6 +361,11 @@ struct StorageSettingsView: View {
         libraryViewModel.indexRecovery != nil
     }
 
+    /// Why the data directory can't be used, while it can't (FR02).
+    private var unavailability: DataDirectoryUnavailability? {
+        libraryViewModel.dataDirectoryUnavailability
+    }
+
     /// The removal preferences in force, which this pane's toggles show.
     private var removalPreferences: RemovalPreferences {
         removal.preferences
@@ -371,27 +384,41 @@ struct StorageSettingsView: View {
 
     /// Whether the location and rebuild buttons are unavailable right now.
     private var maintenanceUnavailable: Bool {
-        Self.maintenanceUnavailable(isRecoveringIndex: isRecoveringIndex, isRunning: runningOperation != nil)
+        Self.maintenanceUnavailable(
+            isRecoveringIndex: isRecoveringIndex,
+            isRunning: runningOperation != nil,
+            isLibraryUnavailable: unavailability != nil
+        )
     }
 
     /// Whether the location and rebuild buttons are unavailable: while the
     /// library index cannot be read, since they would act on the temporary
-    /// library, and while one of them runs. Once an operation ends, whether
-    /// it worked or failed, they are available again, so a failure can be
-    /// retried.
-    nonisolated static func maintenanceUnavailable(isRecoveringIndex: Bool, isRunning: Bool) -> Bool {
-        isRecoveringIndex || isRunning
+    /// library, while the library isn't available at all (FR02), since
+    /// there is nothing to copy or rebuild, and while one of them runs. Once
+    /// an operation ends, whether it worked or failed, they are available
+    /// again, so a failure can be retried.
+    nonisolated static func maintenanceUnavailable(
+        isRecoveringIndex: Bool,
+        isRunning: Bool,
+        isLibraryUnavailable: Bool = false
+    ) -> Bool {
+        isRecoveringIndex || isRunning || isLibraryUnavailable
     }
 
-    /// The data directory status, as shown and as VoiceOver reads it. An
+    /// The data directory status, as shown and as VoiceOver reads it. A
+    /// library that isn't available outranks everything (FR02); an
     /// unreadable library index outranks "Active": the directory exists, but
     /// its library index is not being saved. So do unsaved changes (TODO
     /// S09): a directory whose writes fail is not working as it should.
     nonisolated static func statusText(
         isRecoveringIndex: Bool,
         directoryExists: Bool,
-        hasUnsavedChanges: Bool = false
+        hasUnsavedChanges: Bool = false,
+        isLibraryUnavailable: Bool = false
     ) -> String {
+        if isLibraryUnavailable {
+            return DataDirectoryUnavailableText.title
+        }
         if isRecoveringIndex {
             return LibraryIndexRecoveryText.settingsStatus
         }

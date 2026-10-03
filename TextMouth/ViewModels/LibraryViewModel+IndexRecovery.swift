@@ -185,8 +185,13 @@ extension LibraryViewModel {
     /// Throws while the index cannot be read. Data-directory maintenance
     /// (Rebuild Directory, Reset to Default, Change Location) reconciles or
     /// copies the library index, so it would act on, or write out, the
-    /// provisional library; it waits until recovery ends.
+    /// provisional library; it waits until recovery ends. While the data
+    /// directory can't be used at all (FR02), there is no index to read and
+    /// nothing to copy or rebuild, so it says that instead.
     func ensureLibraryIndexIsReadable() throws {
+        if dataDirectoryUnavailability != nil {
+            throw DataDirectoryUnavailableError(root: TextMouthPaths.root)
+        }
         if indexRecovery != nil {
             throw LibraryIndexRecoveryError.indexUnreadable
         }
