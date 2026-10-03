@@ -45,6 +45,8 @@ struct LibraryWindowView: View {
                     showFileImporter: $showFileImporter,
                     showTextInput: $showTextInput,
                     onOpenBook: { book in
+                        // No book opens while the library moves (FR02).
+                        guard !refuseWhileTheLibraryMoves(.openBookWindow(book.id)) else { return }
                         openWindow(id: "book-reader", value: book.id)
                     }
                 )
@@ -148,6 +150,12 @@ struct LibraryWindowView: View {
         // and are asked one at a time, each in the window its import started
         // in (TODO I01).
         .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
+        // While the library moves, its progress and Cancel, in a sheet that
+        // keeps this window's library from changing until the move ends
+        // (FR02). It closes by itself when the move does.
+        .sheet(item: movingLibrary) { move in
+            DataDirectoryMoveSheet(move: move)
+        }
         // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
         // items opened from Finder, opening a book's reader, and Continue to
         // Next Book are app-wide actions: the router hands each to exactly
@@ -257,6 +265,11 @@ struct LibraryWindowView: View {
             libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
             return
         }
+        // Nor while it moves (FR02).
+        if refuseWhileTheLibraryMoves(action) {
+            bringToFront()
+            return
+        }
         switch action {
         case .openBookFile:
             bringToFront()
@@ -290,6 +303,26 @@ struct LibraryWindowView: View {
             hostWindow.deminiaturize(nil)
         }
         hostWindow.makeKeyAndOrderFront(nil)
+    }
+
+    // MARK: - While the Library Moves (FR02)
+
+    /// The move under way, which presents its sheet while there is one. The
+    /// model alone ends it: SwiftUI closing the sheet changes nothing.
+    private var movingLibrary: Binding<DataDirectoryMoveProgress?> {
+        Binding(get: { libraryViewModel.dataDirectoryMove }, set: { _ in })
+    }
+
+    /// Refuses `action` while the library moves, when it opens or adds a
+    /// book: the move's sheet shows why and VoiceOver hears it, from the key
+    /// window, which is the sheet itself while it is in front. Returns
+    /// whether it was refused.
+    private func refuseWhileTheLibraryMoves(_ action: GlobalAction) -> Bool {
+        guard let move = libraryViewModel.dataDirectoryMove,
+              let refusal = DataDirectoryMoveWording.refusal(of: action) else { return false }
+        move.notice = refusal
+        VoiceOverAnnouncer.announce(refusal)
+        return true
     }
 
     /// Presents the folder-only panel of Library > Import DAISY Folder… as a

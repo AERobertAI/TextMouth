@@ -154,21 +154,31 @@ final class StorageOperationOutcomeTests: XCTestCase {
     }
 
     /// While a move waits for storage work to finish before it copies
-    /// anything, the status line says what it waits for (TODO S04), never
-    /// as a failure, and VoiceOver hears each such status once.
+    /// anything, the move's progress, which Storage settings show in the
+    /// status line's place, says what it waits for (TODO S04), and VoiceOver
+    /// hears each such status once (FR02).
     func testStatusWhileAMoveWaits() {
-        XCTAssertEqual(
-            StorageStatus.waiting(for: .importing),
-            StorageStatus(message: "Waiting for the current import to finish...", isFailure: false)
-        )
-        XCTAssertEqual(StorageStatus.waiting(for: .textExtraction).message, "Waiting for text extraction to finish...")
-        XCTAssertEqual(StorageStatus.waiting(for: .contentAnalysis).message, "Waiting for book analysis to finish...")
+        let move = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Archive/.TextMouth"))
+        var shown: [String] = []
 
         let recorder = recordingAnnouncements {
-            _ = StorageStatus.waiting(for: .importing).announced()
+            for work in [StorageWork.importing, .importing, .textExtraction, .contentAnalysis] {
+                move.wait(for: work)
+                shown.append(move.statusText)
+            }
         }
 
-        XCTAssertEqual(recorder.announcements.map(\.message), ["Waiting for the current import to finish..."])
+        XCTAssertEqual(shown, [
+            "Waiting for the current import to finish...",
+            "Waiting for the current import to finish...",
+            "Waiting for text extraction to finish...",
+            "Waiting for book analysis to finish...",
+        ])
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Waiting for the current import to finish...",
+            "Waiting for text extraction to finish...",
+            "Waiting for book analysis to finish...",
+        ])
     }
 
     /// A move asked for while another is under way is refused before

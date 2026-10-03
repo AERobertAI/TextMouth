@@ -118,6 +118,12 @@ final class LibraryViewModel: ObservableObject {
     /// is unavailable, such as opening a book from Finder, for the Library
     /// Not Available screen; nil when there is none.
     @Published var dataDirectoryRefusalNotice: String?
+    /// The data-directory move under way, while one copies the library
+    /// (FR02): every Library window shows its progress in a sheet that
+    /// keeps the library from changing meanwhile, and Storage settings show
+    /// it too. Only the data-directory move in LibraryViewModel+Migration
+    /// sets it.
+    @Published var dataDirectoryMove: DataDirectoryMoveProgress?
 
     /// False for the inert model used by previews and tests, which never
     /// starts disk maintenance, observers, or background analysis by itself.
