@@ -389,6 +389,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// its accessibility label even when hidden, so a hidden "Seconds" would
     /// be heard as "Seconds, Minimum pause threshold".
     func testPlaybackSettingsSteppersSpeakTheirLabelsOnce() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let settings = try makeIsolatedSettings()
         // The pause threshold's stepper shows only for a smart rewind.
         settings.rewindOnResumeUnit = .sentence
@@ -422,6 +423,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// "Event for step 1, Step 1". A pop-up button's value is the title of
     /// the item it has chosen.
     func testGestureStepPickersSpeakTheirLabelsOnce() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let settings = try makeIsolatedSettings()
         // The pattern editor shows only while the gesture is on.
         settings.restartTimerGestureEnabled = true

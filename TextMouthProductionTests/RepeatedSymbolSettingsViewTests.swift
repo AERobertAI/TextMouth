@@ -9,12 +9,13 @@ import XCTest
 /// reads it.
 ///
 /// AppKit exposes the picker, the stepper, and the text fields itself, so
-/// their labels, values, and hints are read directly. SwiftUI builds the
-/// accessibility labels of its own toggles and buttons only for a connected
-/// assistive app, so their words are pinned by the wording tests, and the
-/// checkbox is clicked as the AppKit button SwiftUI draws for it. Every
-/// service here has no preferences store, so nothing a test changes is
-/// saved.
+/// their labels, values, and hints are read directly; where a session
+/// exposes none of a hosted window's AppKit controls, as on a CI runner,
+/// those tests are skipped. SwiftUI builds the accessibility labels of its
+/// own toggles and buttons only for a connected assistive app, so their
+/// words are pinned by the wording tests, and the checkbox is clicked as the
+/// AppKit button SwiftUI draws for it. Every service here has no preferences
+/// store, so nothing a test changes is saved.
 @MainActor
 final class RepeatedSymbolSettingsViewTests: XCTestCase {
 
@@ -205,7 +206,8 @@ final class RepeatedSymbolSettingsViewTests: XCTestCase {
 
     /// The group is part of the Text settings tab, below the substitution
     /// rules, where the user looks for pronunciation settings.
-    func testTheTextTabShowsTheGroup() {
+    func testTheTextTabShowsTheGroup() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let service = TextSubstitutionService(rules: [SubstitutionRule(name: "Mr.", pattern: "Mr.", replacement: "Mister")])
 
         withHostedView(
