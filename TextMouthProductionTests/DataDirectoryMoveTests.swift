@@ -248,6 +248,29 @@ final class DataDirectoryMoveTests: XCTestCase {
         XCTAssertNil(DataDirectoryMoveProgress.running)
     }
 
+    /// Asked to quit while the library moves, the app delegate cancels this
+    /// request and the move, and asks to quit again once the move has
+    /// ended, so no partial copy is left behind.
+    func testTheAppDelegateStopsAMoveBeforeQuitting() {
+        let delegate = AppDelegate()
+        let quits = QuitRequests()
+        delegate.requestTermination = { quits.count += 1 }
+        let move = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Backup/Library"))
+        move.begin()
+        recordingAnnouncements { move.beginCopying() }
+
+        var reply: NSApplication.TerminateReply?
+        recordingAnnouncements {
+            reply = delegate.applicationShouldTerminate(NSApplication.shared)
+        }
+
+        XCTAssertEqual(reply, .terminateCancel)
+        XCTAssertTrue(move.isCancelled)
+        XCTAssertEqual(quits.count, 0, "TextMouth asked to quit again before the move ended")
+        move.end()
+        XCTAssertTrue(waitUntil { quits.count == 1 }, "TextMouth did not ask to quit again once the move ended")
+    }
+
     /// A move whose copy is complete cannot be cancelled; quitting waits
     /// for it to finish.
     func testQuittingWhileAMoveFinishesLetsItFinish() {

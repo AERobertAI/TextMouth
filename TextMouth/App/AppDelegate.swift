@@ -107,8 +107,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Holds a quit while the failure center reports unsaved changes.
     private let terminationGuard = UnsavedChangesTerminationGuard()
 
+    /// Asks AppKit to quit again, once a library move stopped for a quit
+    /// has ended; tests replace it, so nothing quits.
+    var requestTermination: @MainActor @Sendable () -> Void = { NSApplication.shared.terminate(nil) }
+
     /// Whether TextMouth may quit now (TODO S09). The exact sequence:
     ///
+    /// 0. While the library moves (FR02), the move is stopped first, as its
+    ///    Cancel stops it, so no partial copy is left behind, or, when its
+    ///    copy is complete, let finish; this request is cancelled, and
+    ///    TextMouth asks to quit again once the move has ended, which starts
+    ///    over here.
     /// 1. Here, everything pending is flushed as the termination path
     ///    flushes it, but nothing is ended: the library index and every
     ///    queued book record (`LibraryPersistenceService.flushPendingSave`),
@@ -128,7 +137,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    that second request quits at step 2, whatever is unsaved. Cancel
     ///    keeps TextMouth open.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        terminationGuard.reply()
+        if DataDirectoryMoveProgress.stopForQuit(then: requestTermination) {
+            return .terminateCancel
+        }
+        return terminationGuard.reply()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
