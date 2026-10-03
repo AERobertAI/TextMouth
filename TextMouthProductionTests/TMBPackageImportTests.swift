@@ -350,6 +350,57 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertFalse(model.showError)
     }
 
+    // MARK: - The Book a Package Record Describes
+
+    /// A book built from a package's record keeps every field the record
+    /// holds, its text cache's fingerprints included, exactly as
+    /// `Book(record:)` builds it, so the cache of an imported package is not
+    /// read for its digests again when the book first opens (finding #17).
+    func testBookFromAPackageRecordKeepsItsTextCacheFingerprint() throws {
+        let fingerprint = TextCacheFingerprint(
+            source: FileFingerprint(
+                stamp: FileStamp(byteCount: 61, modificationTimeNanoseconds: 1_790_000_000_123_456_789),
+                digest: "8f14e45fceea167a5a36dedd4bea2543"
+            ),
+            cache: FileFingerprint(
+                stamp: FileStamp(byteCount: 64, modificationTimeNanoseconds: 1_790_000_001_000_000_000),
+                digest: "c9f0f895fb98ab9159f51fd0297e236d"
+            )
+        )
+        let info = BookInfo(
+            metadata: BookMetadata(
+                title: "Puncture Repair",
+                author: "Workshop Notes",
+                format: .txt,
+                md5Hash: "45c48cce2e2d7fbdea1afc51c7c6ad26",
+                originalFileName: "Puncture Repair.txt"
+            ),
+            state: BookState(
+                readingPosition: ReadingPosition(characterOffset: 12),
+                tmbDirectoryName: "Puncture Repair.tmb",
+                cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+                textCacheFingerprint: fingerprint
+            ),
+            bookmarks: []
+        )
+        let package = TextMouthPaths.libraryDir.appendingPathComponent("Workshop/Puncture Repair.tmb", isDirectory: true)
+
+        let book = FileImportService.bookFromPackageInfo(
+            info,
+            packageURL: package,
+            folderPath: "Workshop",
+            tmbName: "Puncture Repair.tmb"
+        )
+
+        XCTAssertEqual(book.textCacheFingerprint, fingerprint)
+        XCTAssertEqual(book, Book(
+            record: info,
+            filePath: package.appendingPathComponent("Puncture Repair.txt").path,
+            folderPath: "Workshop",
+            tmbDirectoryName: "Puncture Repair.tmb"
+        ))
+    }
+
     // MARK: - Fixtures
 
     /// A package outside the library holding one document and a record that
