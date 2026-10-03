@@ -100,6 +100,46 @@ struct ReportedUtterance: @unchecked Sendable {
     var id: ObjectIdentifier { ObjectIdentifier(utterance) }
 }
 
+/// One piece of a text that direct speech hands the synthesizer as a single
+/// utterance. Kept independent of AVFoundation so its boundaries can be
+/// tested on any text.
+struct DirectSpeechChunk: Equatable {
+    /// Where the chunk begins in the text, in UTF-16 units: the offset asked
+    /// for, moved back to the start of the character it falls in.
+    let start: Int
+    /// Where the chunk ends: just past a word, never inside one, or at the
+    /// end of the text.
+    let end: Int
+    /// Whether the rest of the text was longer than one chunk, so speech
+    /// goes on from `end`.
+    let isPartial: Bool
+
+    /// The chunk of `text` that begins at UTF-16 offset `offset` and holds
+    /// at most `maximumLength` units, extended to the end of the word that
+    /// limit would cut; the whole rest of the text when that is no longer
+    /// than `maximumLength`.
+    static func starting(at offset: Int, in text: String, maximumLength: Int) -> DirectSpeechChunk {
+        let startIndex = text.index(atUTF16Offset: max(0, min(offset, text.utf16Length)))
+        let start = text.utf16Offset(of: startIndex)
+        let length = text.utf16Length
+        guard length - start > maximumLength else {
+            return DirectSpeechChunk(start: start, end: length, isPartial: false)
+        }
+        var endIndex = text.index(atUTF16Offset: start + maximumLength)
+        // Advance to the end of the current word so no word is cut.
+        while endIndex < text.endIndex && !text[endIndex].isWhitespace {
+            endIndex = text.index(after: endIndex)
+        }
+        return DirectSpeechChunk(start: start, end: text.utf16Offset(of: endIndex), isPartial: true)
+    }
+
+    /// The chunk's part of `text`, the text it was made from.
+    func words(of text: String) -> String {
+        guard start > 0 || end < text.utf16Length else { return text }
+        return String(text[text.index(atUTF16Offset: start)..<text.index(atUTF16Offset: end)])
+    }
+}
+
 /// A short, pre-volume-adjusted utterance used to fade direct speech.
 /// `AVSpeechUtterance.volume` only takes effect when assigned before the
 /// utterance is enqueued, so direct `AVSpeechSynthesizer` playback cannot use
@@ -519,9 +559,21 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// keep the requested offset here and restart from it on resume
     /// instead of immediately speaking a new utterance.
     private var pendingDirectSeekOffset: Int?
-    /// Max characters to pass to direct-mode TTS at once. Keeps startup latency low
-    /// while providing enough audio buffer for the engine to render in the background.
-    private static let directModeChunkSize = 5000
+    /// The chunk handed to the synthesizer to follow the one speaking, so
+    /// it goes straight on; nil when none is queued. It becomes the one
+    /// speaking when the one before it ends, or when it starts, whichever
+    /// the main queue hears first.
+    private var queuedDirectChunk: QueuedDirectChunk?
+    /// Most UTF-16 units direct speech hands the synthesizer first, at Play,
+    /// a seek, a skip, or a restart: the synthesizer reads a whole utterance
+    /// before its first word, which took 111 ms at 5,000 units and 66 ms at
+    /// 1,000 (PERF06).
+    static let directModeFirstChunkSize = 1_000
+    /// Most UTF-16 units of each later chunk, queued while the one before it
+    /// speaks, so its length delays nothing. Keeps the utterances few while
+    /// providing enough audio buffer for the engine to render in the
+    /// background.
+    static let directModeChunkSize = 5_000
     /// Polls AVFoundation's own playback state after direct speech has started.
     /// Two consecutive idle observations leave time for a normal `didFinish`
     /// callback to reach the main queue before recovery is attempted.
@@ -702,48 +754,91 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         )
     }
 
+    /// Speak `text` directly from `charOffset`, starting with a short chunk
+    /// so the first word comes quickly; each later chunk is queued as the
+    /// one before it starts (`queueNextDirectChunk()`).
     private func speakDirect(_ text: String, fromCharOffset charOffset: Int) {
         usingDirectMode = true
-        let startOffset = max(0, min(charOffset, text.utf16Length))
-        let startIdx = text.index(atUTF16Offset: startOffset)
-        let normalizedStartOffset = text.utf16Offset(of: startIdx)
-        let remainingCount = text.utf16Length - normalizedStartOffset
-
-        let speakText: String
-        if remainingCount > Self.directModeChunkSize {
-            // Chunk: take only directModeChunkSize chars, snapped to a word boundary
-            var endIdx = text.index(atUTF16Offset: normalizedStartOffset + Self.directModeChunkSize)
-            // Advance to end of current word so we don't cut mid-word
-            while endIdx < text.endIndex && !text[endIdx].isWhitespace {
-                endIdx = text.index(after: endIdx)
-            }
-            speakText = String(text[startIdx..<endIdx])
-            directModeBaseOffset = normalizedStartOffset
-            directModeChunkEnd = text.utf16Offset(of: endIdx)
-            directModeChunked = true
-            transitionLog(.trace, "CHUNK_START: offset=\(normalizedStartOffset) len=\(speakText.utf16Length) end=\(directModeChunkEnd) totalText=\(text.utf16Length)")
-        } else if normalizedStartOffset > 0 {
-            speakText = String(text[startIdx...])
-            directModeBaseOffset = normalizedStartOffset
-            directModeChunkEnd = text.utf16Length
-            directModeChunked = false
-        } else {
-            speakText = text
-            directModeBaseOffset = 0
-            directModeChunkEnd = text.utf16Length
-            directModeChunked = false
+        let chunk = DirectSpeechChunk.starting(
+            at: charOffset,
+            in: text,
+            maximumLength: Self.directModeFirstChunkSize
+        )
+        directModeBaseOffset = chunk.start
+        directModeChunkEnd = chunk.end
+        directModeChunked = chunk.isPartial
+        if chunk.isPartial {
+            transitionLog(.trace, "CHUNK_START: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end) totalText=\(text.utf16Length)")
         }
 
-        let utterance = AVSpeechUtterance(string: speakText)
-        utterance.voice = currentVoice
-        utterance.rate = Self.rateForWPM(wordsPerMinute)
-        utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
-        utterance.prefersAssistiveTechnologySettings = false
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: text))
         // Mark this utterance as live BEFORE handing it to the synth.
         // The didFinish delegate compares against `liveDirectUtterance`
         // to filter callbacks for previously-stopped utterances.
         liveDirectUtterance = utterance
-        directSynth.speak(utterance)
+        handToSynthesizer(utterance)
+    }
+
+    /// Hand the synthesizer the chunk after the one that just started, so
+    /// it goes straight on when that one ends (PERF06). Starting a chunk only
+    /// once the end of the one before had reached the main queue kept the
+    /// synthesizer waiting on the main thread at every boundary, often
+    /// mid-sentence, for as long as the main thread was busy; queued, the
+    /// next chunk follows after the synthesizer's own pause between
+    /// utterances. Nothing is queued after the last chunk, or a second time,
+    /// or during a sleep fade, which queues its own segments.
+    private func queueNextDirectChunk() {
+        guard usingDirectMode, directModeChunked, queuedDirectChunk == nil, !isDirectSleepFadeActive,
+              directModeChunkEnd < currentText.utf16Length else { return }
+        let chunk = DirectSpeechChunk.starting(
+            at: directModeChunkEnd,
+            in: currentText,
+            maximumLength: Self.directModeChunkSize
+        )
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText))
+        queuedDirectChunk = QueuedDirectChunk(utterance: utterance, chunk: chunk)
+        transitionLog(.trace, "CHUNK_QUEUED: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end)")
+        handToSynthesizer(utterance)
+    }
+
+    /// Make the queued chunk the one speaking: the synthesizer has gone on
+    /// to it, so its words, its end, and its finish are the ones that count.
+    private func promoteQueuedDirectChunk() {
+        guard let queued = queuedDirectChunk else { return }
+        queuedDirectChunk = nil
+        liveDirectUtterance = queued.utterance
+        directModeBaseOffset = queued.chunk.start
+        directModeChunkEnd = queued.chunk.end
+        directModeChunked = queued.chunk.isPartial
+    }
+
+    /// A chunk handed to the synthesizer to follow the one speaking.
+    private struct QueuedDirectChunk {
+        /// The utterance speaking it, told apart from every other by identity.
+        let utterance: AVSpeechUtterance
+        /// Where it lies in the text being spoken.
+        let chunk: DirectSpeechChunk
+    }
+
+    /// An utterance of `text` in the voice, speed, and pitch chosen now.
+    private func makeDirectUtterance(speaking text: String) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = currentVoice
+        utterance.rate = Self.rateForWPM(wordsPerMinute)
+        utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
+        utterance.prefersAssistiveTechnologySettings = false
+        return utterance
+    }
+
+    /// Hand `utterance` to the direct synthesizer, which speaks it after
+    /// any it is speaking already; in tests, to the recorder standing in for
+    /// the synthesizer (`_directUtteranceRecorderForTesting`).
+    private func handToSynthesizer(_ utterance: AVSpeechUtterance) {
+        if let record = _directUtteranceRecorderForTesting {
+            record(utterance)
+        } else {
+            directSynth.speak(utterance)
+        }
     }
 
     /// Monitor a direct utterance after AVFoundation confirms that it started.
@@ -870,6 +965,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private func stopDirectSynthesizer() {
         stopDirectPlaybackWatchdog()
         liveDirectUtterance = nil
+        // Stopping the synthesizer drops the chunk queued behind the live
+        // one too; any callback for it is then for no chunk at all.
+        queuedDirectChunk = nil
         clearDirectSleepFadeState()
         directSynth.stopSpeaking(at: .immediate)
     }
@@ -963,11 +1061,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         isDirectSleepFadeActive = true
 
         let utterances = segments.map { segment -> AVSpeechUtterance in
-            let utterance = AVSpeechUtterance(string: segment.text)
-            utterance.voice = currentVoice
-            utterance.rate = Self.rateForWPM(wordsPerMinute)
-            utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
-            utterance.prefersAssistiveTechnologySettings = false
+            let utterance = makeDirectUtterance(speaking: segment.text)
             utterance.volume = segment.volume
             let identifier = ObjectIdentifier(utterance)
             directFadeOffsets[identifier] = segment.baseUTF16Offset
@@ -985,7 +1079,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 + "plannedEnd=\(directModeChunkEnd) duration=\(duration)"
         )
         for utterance in utterances {
-            directSynth.speak(utterance)
+            handToSynthesizer(utterance)
         }
     }
 
@@ -1423,6 +1517,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         liveDirectUtterance = utterance
     }
 
+    /// Takes every utterance direct speech would hand the synthesizer, in
+    /// its place, so hosted tests can follow the chunks speech is made of and
+    /// deliver the synthesizer's callbacks for them without a sound. Nil, as
+    /// in the app, hands them to the synthesizer.
+    var _directUtteranceRecorderForTesting: ((AVSpeechUtterance) -> Void)?
+
     deinit {
         stop()
     }
@@ -1527,6 +1627,16 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 self.isPaused = false
                 return
             }
+            // The chunk queued after the one speaking may report its start
+            // before that one's end reaches the main queue. The synthesizer
+            // has gone on to it, so it is the one speaking now, and the end
+            // of the one before is then for a chunk no longer live.
+            if self.usingDirectMode,
+               let queued = self.queuedDirectChunk,
+               Self.isLiveDirectUtterance(started.utterance, liveUtterance: queued.utterance) {
+                self.transitionLog(.trace, "CHUNK_CONTINUE: queued chunk started at offset \(queued.chunk.start)")
+                self.promoteQueuedDirectChunk()
+            }
             guard Self.isLiveDirectUtterance(started.utterance, liveUtterance: self.liveDirectUtterance),
                   self.usingDirectMode else {
                 self.transitionLog(.trace, "DIRECT_START_IGNORED: stale utterance or direct mode inactive")
@@ -1538,6 +1648,8 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             self.isSpeaking = true
             self.isPaused = false
             self.startDirectPlaybackWatchdog(for: started.utterance)
+            // The next chunk waits in the synthesizer while this one speaks.
+            self.queueNextDirectChunk()
         }
     }
 
@@ -1615,7 +1727,18 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // own didFinish twice.
             self.liveDirectUtterance = nil
 
-            // If this was a chunked utterance, continue with the next direct chunk.
+            // The synthesizer goes straight on to the chunk queued after this
+            // one, which is the one speaking now; its start re-arms the
+            // watchdog and queues the chunk after it.
+            if let queued = self.queuedDirectChunk {
+                self.transitionLog(.trace, "CHUNK_CONTINUE: queued chunk at offset \(queued.chunk.start)")
+                self.promoteQueuedDirectChunk()
+                return
+            }
+
+            // A chunked utterance whose successor was never queued, because
+            // its start never reached the main queue, continues with a new
+            // utterance from where it ended.
             if self.directModeChunked {
                 let nextOffset = self.directModeChunkEnd
                 if nextOffset < self.currentText.utf16Length {
