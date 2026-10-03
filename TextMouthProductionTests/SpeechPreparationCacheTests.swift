@@ -254,6 +254,112 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
+    // MARK: - The chapter a book opens at
+
+    /// A book that has loaded has the speech of the chapter it opened at
+    /// prepared off the main actor, and Play finds it kept: finding where
+    /// speech starts from the cursor, the first thing Play does, prepares
+    /// nothing on the main thread, even for a chapter too long to render.
+    func testTheOpenedChapterIsPreparedOffTheMainActorForPlay() throws {
+        var prose = BenchmarkProse(seed: 47)
+        let long = Chapter(title: "Long", text: prose.text(utf16Length: SpeechRenderCoordinator.maximumTextLength + 20_000))
+        try withReader(chapters: [Self.chapters[0], long, Self.chapters[2]], substitutions: [Self.harbourSpelling]) { reader, _ in
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 1))
+
+            try showLoaded(reader, atChapter: 1)
+
+            XCTAssertTrue(reader.chapterSpeechCache.isPreparingInBackground(inputs), "prepared off the main actor")
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "nothing prepared on the main thread yet")
+            XCTAssertTrue(
+                waitUntil(timeout: Self.backgroundPreparationTimeout) { !reader.chapterSpeechCache.isPreparingInBackground(inputs) },
+                "the speech never arrived"
+            )
+
+            let start = try XCTUnwrap(reader.speechStartFromCursor())
+
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "Play prepared the chapter on the main thread")
+            XCTAssertEqual(start.offset, 0)
+            assertSameSpeech(start.speech, try legacyPreparedSpeech(reader, chapterIndex: 1))
+        }
+    }
+
+    /// A change to what the opened chapter is prepared from before Play,
+    /// once its speech is ready or while it is still being prepared, is
+    /// never missed: Play prepares the chapter from the settings in force,
+    /// exactly as the old pipeline makes it, and speech prepared from the
+    /// settings before the change is not kept.
+    func testAChangeBeforePlayPreparesTheOpenedChapterFromTheSettingsInForce() throws {
+        let changes: [(name: String, change: (ReaderViewModel) throws -> Void)] = [
+            ("rule added", { $0.substitutionService.rules.append(Self.seabirdsForGulls) }),
+            ("substitutions off", { $0.substitutionService.isEnabled = false }),
+            ("symbol style", { $0.substitutionService.repeatedSymbolStyle = .leaveOut }),
+            ("pause level", { $0.settingsViewModel.punctuationPauseLevel = 2 }),
+            ("section skipped", { reader in
+                reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+            }),
+        ]
+        for (name, change) in changes {
+            for whilePreparing in [false, true] {
+                let label = "\(name)\(whilePreparing ? ", while preparing" : "")"
+                try withReader(substitutions: [Self.harbourSpelling]) { reader, _ in
+                    let opened = try XCTUnwrap(reader.speechInputs(forChapterAt: 1), label)
+                    try showLoaded(reader, atChapter: 1)
+                    if !whilePreparing {
+                        XCTAssertTrue(waitUntil(timeout: Self.backgroundPreparationTimeout) {
+                            !reader.chapterSpeechCache.isPreparingInBackground(opened)
+                        }, "\(label): the speech never arrived")
+                    }
+
+                    try change(reader)
+                    XCTAssertTrue(waitUntil(timeout: Self.backgroundPreparationTimeout) {
+                        !reader.chapterSpeechCache.isPreparingInBackground(opened)
+                    }, "\(label): the speech never arrived")
+                    let start = try XCTUnwrap(reader.speechStartFromCursor(), label)
+
+                    XCTAssertEqual(reader.chapterSpeechCache.misses, 1, "\(label): not prepared from the settings in force")
+                    assertSameSpeech(start.speech, try legacyPreparedSpeech(reader, chapterIndex: 1), label)
+                }
+            }
+        }
+    }
+
+    /// Nothing is prepared again for a chapter whose speech is already kept,
+    /// and a closed reader prepares nothing.
+    func testTheOpenedChapterIsNotPreparedTwice() throws {
+        try withReader { reader, _ in
+            _ = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            let inputs = try XCTUnwrap(reader.speechInputs(forChapterAt: 0))
+
+            reader.prepareOpenedChapterSpeech()
+
+            XCTAssertFalse(reader.chapterSpeechCache.isPreparingInBackground(inputs))
+            reader.close()
+            reader.prepareOpenedChapterSpeech()
+            XCTAssertFalse(reader.chapterSpeechCache.isPreparingInBackground(inputs))
+        }
+    }
+
+    /// Shows the reader's content as a finished load shows it, with the
+    /// cursor at the start of chapter `chapterIndex`.
+    private func showLoaded(_ reader: ReaderViewModel, atChapter chapterIndex: Int) throws {
+        let content = try XCTUnwrap(reader.content)
+        reader.currentChapterIndex = chapterIndex
+        reader.currentCharacterOffset = 0
+        reader.showLoadedContent(
+            ReaderViewModel.LoadedContent(
+                content: content,
+                index: content.contentIndex,
+                audioFiles: nil,
+                audioSegments: nil,
+                fileMetadata: nil,
+                audioTags: nil,
+                shouldPersistContentIndex: false,
+                cacheFormatVersion: nil
+            ),
+            readFrom: reader.book.filePath
+        )
+    }
+
     // MARK: - Closing
 
     /// A closed reader keeps no prepared speech: SwiftUI may keep a closed

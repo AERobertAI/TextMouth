@@ -219,6 +219,15 @@ struct ChapterSpeechCache {
         preparingInBackground.contains(inputs)
     }
 
+    /// Whether speech prepared from exactly `inputs` is kept, or is being
+    /// prepared in the background, asked without counting a miss or making
+    /// any kept speech the most recent, as `speech(for:)` would.
+    func isKeptOrPreparing(_ inputs: ChapterSpeechInputs) -> Bool {
+        lookAheadSpeech?.inputs == inputs
+            || recent.contains { $0.inputs == inputs }
+            || isPreparingInBackground(inputs)
+    }
+
     /// Forget the look-ahead's speech and the preparation it waits for, as
     /// the look-ahead itself is forgotten. Its speech stays among the
     /// recent chapters.
