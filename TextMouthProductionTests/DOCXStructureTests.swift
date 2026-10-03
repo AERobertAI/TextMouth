@@ -70,8 +70,8 @@ final class DOCXStructureTests: XCTestCase {
         """)
     }
 
-    /// A level that names no number format is decimal (ISO/IEC 29500-1
-    /// §17.9.17), so its paragraphs are numbered rather than bulleted.
+    /// A level that names no number format is decimal (ISO/IEC 29500-1,
+    /// `w:numFmt`), so its paragraphs are numbered rather than bulleted.
     func testLevelWithoutANumberFormatIsDecimal() throws {
         let numbering = try Self.numbering("""
         <w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:start w:val="1"/></w:lvl></w:abstractNum>
@@ -215,7 +215,7 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(numbering.levelFormat(numId: "1", level: 0)?.start, 2)
     }
 
-    /// ISO/IEC 29500-1 §17.9.10: by default a level restarts after any
+    /// ISO/IEC 29500-1 (`w:lvlRestart`): by default a level restarts after any
     /// shallower item; a restart value naming a shallower level restarts it
     /// only after items at that level or shallower; 0 never restarts it;
     /// and a value naming the level itself or a deeper one is ignored. An
@@ -514,7 +514,7 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(bulletedParents.spoken, "Tools\n\nSaw\n\nPlane\n\nMaterials\n\nOak")
     }
 
-    /// The example of ISO/IEC 29500-1 §17.9.10: the third level never
+    /// The example ISO/IEC 29500-1 gives for `w:lvlRestart`: the third level never
     /// restarts (`w:lvlRestart` 0), so it counts on under a new parent
     /// while the second level starts again, reading 1, A, i, ii, 2, A, iii,
     /// iv as numbers.

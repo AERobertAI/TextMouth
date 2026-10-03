@@ -33,8 +33,8 @@ struct DOCXNumbering {
         let override = levelOverrides[numId]?[level]
         let abstractLevel = numIdToAbstractId[numId].flatMap { abstractNums[$0]?[level] }
         guard var format = override?.level ?? abstractLevel else { return nil }
-        // ISO/IEC 29500-1 §17.9.27: a start override wins over the start of
-        // any level definition it accompanies.
+        // ISO/IEC 29500-1 (w:startOverride): a start override wins over the
+        // start of any level definition it accompanies.
         if let start = override?.startOverride {
             format.start = start
         }
@@ -77,10 +77,10 @@ struct ListLevelFormat {
     /// "lowerLetter", and so on.
     var numFmt: String
 
-    /// The number the level counts from (`w:start`). ISO/IEC 29500-1
-    /// §17.9.25 counts from 0 when a level names no start. Word always
-    /// writes one, and TextMouth has always counted such levels from 1, as
-    /// the simpler documents other tools write expect, so 1 is kept.
+    /// The number the level counts from (`w:start`). ISO/IEC 29500-1 counts
+    /// from 0 when a level names no start. Word always writes one, and
+    /// TextMouth has always counted such levels from 1, as the simpler
+    /// documents other tools write expect, so 1 is kept.
     var start = 1
 
     /// When the level counts from its start again (`w:lvlRestart`): nil
@@ -95,11 +95,12 @@ struct ListLevelFormat {
     }
 
     /// Whether this level, at index `ownLevel`, counts from its start again
-    /// when an item at index `usedLevel` appears (ISO/IEC 29500-1 §17.9.10).
+    /// when an item at index `usedLevel` appears (ISO/IEC 29500-1, `w:lvlRestart`).
     /// Only a shallower item restarts a level. By default any shallower
     /// item does; a restart value of n restarts it after an item at
     /// one-based level n or shallower, and 0 never. A value naming this
-    /// level or a deeper one is ignored, as the standard says.
+    /// level or a deeper one names no level that could restart it, so it is
+    /// ignored and the default applies.
     func restarts(level ownLevel: Int, afterItemAt usedLevel: Int) -> Bool {
         guard usedLevel < ownLevel else { return false }
         switch restartAfter {
@@ -122,7 +123,7 @@ struct ListLevelFormat {
 }
 
 /// How a list instance overrides one level of its abstract definition
-/// (`w:lvlOverride`, ISO/IEC 29500-1 §17.9.9).
+/// (`w:lvlOverride` in ISO/IEC 29500-1).
 struct ListLevelOverride {
     /// The number the level starts from in this instance (`w:startOverride`).
     var startOverride: Int?
@@ -152,7 +153,7 @@ enum DOCXListMarker: Equatable {
 ///   level) starts that level afresh when its first paragraph appears,
 ///   which is how Word stores Restart Numbering; later paragraphs of any
 ///   instance count on from there. The standard counts per abstract
-///   definition (the example in §17.9.25) without spelling out how
+///   definition (its example for `w:start`) without spelling out how
 ///   instances share a count; this follows Word as it is observed to number.
 /// - A level counts on from its start value, one item at a time.
 /// - Every item starts afresh the deeper levels that restart after it
@@ -269,7 +270,7 @@ class DOCXNumberingParser: DOCXSAXParser {
         case "abstractNum":
             abstractNum = (attributes["w:abstractNumId"] ?? "", [:])
         case "lvl" where abstractNum != nil || levelOverride != nil:
-            // ISO/IEC 29500-1 §17.9.17: a level that names no number format
+            // ISO/IEC 29500-1 (w:numFmt): a level that names no number format
             // is decimal, so the level starts out decimal. A level inside an
             // override replaces the level the override names, whatever
             // index the level itself declares.
