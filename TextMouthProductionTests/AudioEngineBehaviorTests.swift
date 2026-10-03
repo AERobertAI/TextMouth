@@ -575,7 +575,8 @@ final class AudioEngineBehaviorTests: XCTestCase {
 
     /// The synthesizer's pieces land in the render's blocks in order,
     /// however their sizes fall against the blocks' edges, followed by the
-    /// silence padding; and the last block keeps no room past the audio.
+    /// silence padding; the audio is kept at two bytes a sample, and the
+    /// last block keeps no room past it.
     func testRenderedAudioKeepsEveryPieceInOrderAcrossBlocks() throws {
         let builder = RenderedSpeechAudio.Builder(blockFrameCount: 4)
         var next = 0
@@ -588,10 +589,47 @@ final class AudioEngineBehaviorTests: XCTestCase {
 
         XCTAssertEqual(audio.speechFrameCount, 15)
         XCTAssertEqual(audio.frameCount, 17)
-        XCTAssertEqual(try Self.samples(of: audio, in: 0..<17), (0..<15).map(Self.sample) + [0, 0])
+        Self.assertSamples(try Self.samples(of: audio, in: 0..<17), match: (0..<15).map(Self.sample) + [0, 0])
         // A stretch beginning and ending inside blocks comes out whole.
-        XCTAssertEqual(try Self.samples(of: audio, in: 3..<10), (3..<10).map(Self.sample))
-        XCTAssertEqual(audio.byteCount, 17 * MemoryLayout<Float>.stride)
+        Self.assertSamples(try Self.samples(of: audio, in: 3..<10), match: (3..<10).map(Self.sample))
+        XCTAssertEqual(audio.byteCount, 17 * MemoryLayout<Int16>.stride)
+    }
+
+    /// Samples beyond full scale are clipped to it as they are kept in 16
+    /// bits, rather than wrap around into loud noise, and every other
+    /// sample comes back within half a 16-bit step.
+    func testSamplesBeyondFullScaleAreClippedToIt() throws {
+        let builder = RenderedSpeechAudio.Builder()
+
+        builder.append(try Self.makePiece([1.5, -2, 0.3, -0.25, 1, -1]))
+        let audio = try XCTUnwrap(builder.finish(paddingFrameCount: 0))
+
+        let played = try Self.samples(of: audio, in: 0..<6)
+        let halfStep = 0.5 / SpeechSampleCodec.fullScale
+        for (sample, expected) in zip(played, [Float(1), -1, 0.3, -0.25, 1, -1]) {
+            XCTAssertEqual(sample, expected, accuracy: halfStep)
+        }
+    }
+
+    /// A piece of 16-bit samples, which some voices may write, is kept as it
+    /// is.
+    func testSixteenBitPiecesAreKeptAsTheyAre() throws {
+        let format = try XCTUnwrap(
+            AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 22_050, channels: 1, interleaved: false)
+        )
+        let piece = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 3))
+        let channel = try XCTUnwrap(piece.int16ChannelData?[0])
+        for (index, value) in [Int16(100), -100, 32_767].enumerated() {
+            channel[index] = value
+        }
+        piece.frameLength = 3
+        let builder = RenderedSpeechAudio.Builder()
+
+        builder.append(piece)
+        let audio = try XCTUnwrap(builder.finish(paddingFrameCount: 0))
+
+        XCTAssertNil(builder.failure)
+        Self.assertSamples(try Self.samples(of: audio, in: 0..<3), match: [100, -100, 32_767].map(Self.sample))
     }
 
     /// A piece whose channels are interleaved is kept channel by channel,
@@ -617,8 +655,8 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let out = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: audio.format, frameCapacity: 4))
         audio.copyFrames(0..<4, into: out)
         let outChannels = try XCTUnwrap(out.floatChannelData)
-        XCTAssertEqual(Array(UnsafeBufferPointer(start: outChannels[0], count: 4)), [1, 2, 3, 0].map(Self.sample))
-        XCTAssertEqual(Array(UnsafeBufferPointer(start: outChannels[1], count: 4)), [-1, -2, -3, 0].map(Self.sample))
+        Self.assertSamples(Array(UnsafeBufferPointer(start: outChannels[0], count: 4)), match: [1, 2, 3, 0].map(Self.sample))
+        Self.assertSamples(Array(UnsafeBufferPointer(start: outChannels[1], count: 4)), match: [-1, -2, -3, 0].map(Self.sample))
     }
 
     /// A piece in another sample rate than the rest cannot join them, so
@@ -666,7 +704,7 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let scheduled = slices.all
         XCTAssertEqual(scheduled.map(\.frames.lowerBound), Array(stride(from: 0, to: frameCount, by: 2_205)))
         XCTAssertEqual(scheduled.last?.frames.upperBound, frameCount)
-        XCTAssertEqual(scheduled.flatMap(\.samples), speech + [Float](repeating: 0, count: padding))
+        Self.assertSamples(scheduled.flatMap(\.samples), match: speech + [Float](repeating: 0, count: padding))
         XCTAssertLessThanOrEqual(scheduled.map(\.bytesScheduled).max() ?? 0, 2 * 2_205 * MemoryLayout<Float>.stride)
         XCTAssertEqual(finishCount, 1)
     }
@@ -695,11 +733,12 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(scheduled.map(\.frames), [4_410..<6_615, 6_615..<8_820])
         let first = try XCTUnwrap(scheduled.first)
         let fadeFrames = 220
-        for index in [0, 1, 110, fadeFrames - 1] {
-            XCTAssertEqual(first.samples[index], speech[4_410 + index] * (Float(index) / Float(fadeFrames)))
-        }
-        XCTAssertEqual(Array(first.samples[fadeFrames...]), Array(speech[(4_410 + fadeFrames)..<6_615]))
-        XCTAssertEqual(scheduled.last?.samples, Array(speech[6_615..<8_820]))
+        Self.assertSamples(
+            Array(first.samples[..<fadeFrames]),
+            match: (0..<fadeFrames).map { speech[4_410 + $0] * (Float($0) / Float(fadeFrames)) }
+        )
+        Self.assertSamples(Array(first.samples[fadeFrames...]), match: Array(speech[(4_410 + fadeFrames)..<6_615]))
+        Self.assertSamples(scheduled.last?.samples, match: Array(speech[6_615..<8_820]))
     }
 
     /// A seek while playing schedules a few slices from where it lands, not
@@ -784,10 +823,10 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(engine.scheduledSegmentAudioByteCount, 0)
     }
 
-    /// A sample `index` steps of a 16-bit sample's size from silence, so it
-    /// keeps its exact value through any sample format the audio is kept in.
+    /// A sample `index` 16-bit steps from silence, so it keeps its value,
+    /// near enough, through being kept in 16 bits.
     private static func sample(_ index: Int) -> Float {
-        Float(index) / 32_767
+        Float(index) / SpeechSampleCodec.fullScale
     }
 
     /// `frameCount` samples of a quiet sawtooth that is never silent, so
@@ -808,6 +847,28 @@ final class AudioEngineBehaviorTests: XCTestCase {
         }
         piece.frameLength = AVAudioFrameCount(values.count)
         return piece
+    }
+
+    /// Check that `actual` holds `expected`'s samples, each within a
+    /// three-hundredth of a 16-bit step: the audio as rendered, as it comes
+    /// back from being kept in 16 bits.
+    private static func assertSamples(
+        _ actual: [Float]?,
+        match expected: [Float],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let actual else {
+            XCTFail("no samples", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(actual.count, expected.count, "the number of samples", file: file, line: line)
+        let mismatch = zip(actual, expected).enumerated().first { abs($0.element.0 - $0.element.1) > 1e-7 }
+        XCTAssertNil(
+            mismatch.map { "sample \($0.offset) is \($0.element.0), not \($0.element.1)" },
+            file: file,
+            line: line
+        )
     }
 
     /// The first channel's samples of frames `frames` of `audio`.

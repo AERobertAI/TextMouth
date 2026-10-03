@@ -1,3 +1,4 @@
+import Accelerate
 import AVFoundation
 import Combine
 
@@ -154,16 +155,17 @@ enum SpeechSegmentEndPolicy {
 
 /// Rendered speech as an `AudioEngineService` keeps it: the synthesizer's
 /// audio, then the silence padding every render ends with
-/// (`AudioEngineService.silencePaddingDuration`), in blocks of
-/// `blockFrameCount` frames.
+/// (`AudioEngineService.silencePaddingDuration`), as 16-bit samples in
+/// blocks of `blockFrameCount` frames.
 ///
 /// The synthesizer writes a render in pieces of about a hundredth of a
-/// second, some 89,000 for a 40,000-unit chapter. They used to be kept
-/// until the render finished and then joined into one buffer, holding the
-/// speech twice over at that moment, and every play that began part-way
-/// through copied the rest of the chapter once more (TODO PERF04). Each
-/// piece is now copied into the blocks as it arrives, and a play copies out
-/// only the few seconds it is about to schedule (`RenderedSpeechFeeder`).
+/// second, some 89,000 for a 40,000-unit chapter, as 32-bit floats. They
+/// used to be kept until the render finished and then joined into one
+/// float buffer, holding the speech twice over at that moment, and every
+/// play that began part-way through copied the rest of the chapter once
+/// more (TODO PERF04). Each piece is now converted into the blocks as it
+/// arrives, at half the size, and a play converts back only the few seconds
+/// it is about to schedule (`RenderedSpeechFeeder`).
 ///
 /// Immutable once built, so the render queue can hand it to the main queue
 /// and engines can share it, as the look-ahead's engine shares its render
@@ -171,9 +173,9 @@ enum SpeechSegmentEndPolicy {
 final class RenderedSpeechAudio: Sendable {
     /// Frames in a full block: about three seconds at the synthesizer's
     /// 22,050 Hz. With the 32 bytes Swift keeps ahead of an array's
-    /// elements, a block's allocation ends at or just short of a whole
-    /// number of the 16 KB granules the allocator rounds blocks this large
-    /// up to; 65,536 frames would waste most of a granule on every block.
+    /// elements, a one-channel block fills exactly 128 KB, a whole number of
+    /// the 16 KB granules the allocator rounds blocks this large up to;
+    /// 65,536 frames would waste most of a granule on every block.
     static let defaultBlockFrameCount = 65_520
 
     /// The format the audio plays in: the render's sample rate and channel
@@ -186,17 +188,17 @@ final class RenderedSpeechAudio: Sendable {
     let speechFrameCount: Int
     /// Every frame: the speech, then the padding.
     let frameCount: Int
-    /// Bytes the samples take.
+    /// Bytes the samples take: two a sample.
     let byteCount: Int
     /// The samples, `blockFrameCount` frames to a block, each frame's
     /// samples for its channels side by side.
-    private let blocks: [[Float]]
+    private let blocks: [[Int16]]
 
     /// The audio `Builder.finish(paddingFrameCount:)` built.
     fileprivate init(
         format: AVAudioFormat,
         blockFrameCount: Int,
-        blocks: [[Float]],
+        blocks: [[Int16]],
         speechFrameCount: Int,
         frameCount: Int
     ) {
@@ -205,15 +207,15 @@ final class RenderedSpeechAudio: Sendable {
         self.blocks = blocks
         self.speechFrameCount = speechFrameCount
         self.frameCount = frameCount
-        byteCount = blocks.reduce(0) { $0 + $1.count * MemoryLayout<Float>.stride }
+        byteCount = blocks.reduce(0) { $0 + $1.count * MemoryLayout<Int16>.stride }
     }
 
     /// The number of channels each frame holds.
     private var channelCount: Int { Int(format.channelCount) }
 
-    /// Copy frames `frames` of the audio into `buffer`, from its first frame
-    /// on, and set its frame length to how many they are. The buffer must
-    /// be in `format`, with room for them.
+    /// Copy frames `frames` of the audio into `buffer` as the floats it
+    /// plays, from the buffer's first frame on, and set its frame length to
+    /// how many they are. The buffer must be in `format`, with room for them.
     func copyFrames(_ frames: Range<Int>, into buffer: AVAudioPCMBuffer) {
         precondition(frames.lowerBound >= 0 && frames.upperBound <= frameCount, "frames outside the audio")
         precondition(Int(buffer.frameCapacity) >= frames.count, "no room for the frames")
@@ -228,9 +230,9 @@ final class RenderedSpeechAudio: Sendable {
             block.withUnsafeBufferPointer { samples in
                 guard let first = samples.baseAddress else { return }
                 for channel in 0..<channelCount {
-                    Self.copySamples(
-                        from: first + offset * channelCount + channel, stride: channelCount,
-                        to: destination[channel] + copied, stride: 1,
+                    SpeechSampleCodec.decode(
+                        first + offset * channelCount + channel, stride: channelCount,
+                        into: destination[channel] + copied,
                         count: run
                     )
                 }
@@ -240,20 +242,66 @@ final class RenderedSpeechAudio: Sendable {
         }
         buffer.frameLength = AVAudioFrameCount(copied)
     }
+}
 
-    /// Copy `count` samples, taking every `sourceStride`th from `source` and
-    /// writing every `destinationStride`th of `destination`.
-    fileprivate static func copySamples(
-        from source: UnsafePointer<Float>,
+/// Converts between the 32-bit float samples an audio engine plays and the
+/// 16-bit samples rendered speech is kept in, at half the size. Sixteen bits
+/// keep speech at compact-disc quality: a step lies about 90 dB below full
+/// scale.
+enum SpeechSampleCodec {
+    /// A full-scale float sample's value in 16 bits.
+    static let fullScale: Float = 32_767
+
+    /// Encode `count` float samples, every `sourceStride`th of `source`,
+    /// into every `destinationStride`th of `destination`: each clipped to
+    /// -1...1, scaled, and rounded to the nearest 16-bit step. `scratch`
+    /// holds the clipped samples on the way, and grows as needed.
+    static func encode(
+        _ source: UnsafePointer<Float>,
         stride sourceStride: Int,
-        to destination: UnsafeMutablePointer<Float>,
+        into destination: UnsafeMutablePointer<Int16>,
+        stride destinationStride: Int,
+        count: Int,
+        scratch: inout [Float]
+    ) {
+        guard count > 0 else { return }
+        if scratch.count < count {
+            scratch = [Float](repeating: 0, count: count)
+        }
+        var low: Float = -1
+        var high: Float = 1
+        var scale = fullScale
+        scratch.withUnsafeMutableBufferPointer { clipped in
+            guard let clippedSamples = clipped.baseAddress else { return }
+            vDSP_vclip(source, sourceStride, &low, &high, clippedSamples, 1, vDSP_Length(count))
+            vDSP_vsmul(clippedSamples, 1, &scale, clippedSamples, 1, vDSP_Length(count))
+            vDSP_vfixr16(clippedSamples, 1, destination, destinationStride, vDSP_Length(count))
+        }
+    }
+
+    /// Decode `count` 16-bit samples, every `sourceStride`th of `source`,
+    /// into consecutive float samples at `destination`.
+    static func decode(
+        _ source: UnsafePointer<Int16>,
+        stride sourceStride: Int,
+        into destination: UnsafeMutablePointer<Float>,
+        count: Int
+    ) {
+        guard count > 0 else { return }
+        var scale = fullScale
+        vDSP_vflt16(source, sourceStride, destination, 1, vDSP_Length(count))
+        vDSP_vsdiv(destination, 1, &scale, destination, 1, vDSP_Length(count))
+    }
+
+    /// Copy `count` 16-bit samples, every `sourceStride`th of `source`, into
+    /// every `destinationStride`th of `destination`, as they are.
+    static func copy(
+        _ source: UnsafePointer<Int16>,
+        stride sourceStride: Int,
+        into destination: UnsafeMutablePointer<Int16>,
         stride destinationStride: Int,
         count: Int
     ) {
-        guard sourceStride != 1 || destinationStride != 1 else {
-            destination.update(from: source, count: count)
-            return
-        }
         for index in 0..<count {
             destination[index * destinationStride] = source[index * sourceStride]
         }
@@ -262,8 +310,8 @@ final class RenderedSpeechAudio: Sendable {
 
 extension RenderedSpeechAudio {
     /// Builds rendered speech from the pieces the synthesizer writes,
-    /// copying each into the blocks as it arrives, so no piece outlives the
-    /// callback that delivers it.
+    /// converting each into the blocks as it arrives, so no piece outlives
+    /// the callback that delivers it.
     ///
     /// Used on one thread at a time: the synthesizer's callback appends the
     /// pieces, and the render queue finishes the audio once the synthesizer
@@ -280,9 +328,11 @@ extension RenderedSpeechAudio {
         /// Frames in each full block.
         private let blockFrameCount: Int
         /// The blocks filled so far; the last may have room for more.
-        private var blocks: [[Float]] = []
+        private var blocks: [[Int16]] = []
         /// Frames in the last block.
         private var framesInLastBlock = 0
+        /// Room for one channel of a piece on its way to 16 bits.
+        private var scratch: [Float] = []
 
         /// - Parameters:
         ///   - format: The audio's format when it is known before any piece
@@ -294,10 +344,12 @@ extension RenderedSpeechAudio {
             self.blockFrameCount = blockFrameCount
         }
 
-        /// Copy `piece`'s frames to the end of the audio. A piece in another
-        /// sample rate or channel count than the audio's, or of samples
-        /// other than 32-bit floats, cannot be kept: it fails the render,
-        /// and speech carries on without rendered audio.
+        /// Convert `piece`'s frames to the end of the audio: 32-bit float
+        /// samples, as the synthesizer writes them, become 16-bit ones, and
+        /// 16-bit samples are kept as they are. A piece in another sample
+        /// rate or channel count than the audio's, or of other samples,
+        /// cannot be kept: it fails the render, and speech carries on
+        /// without rendered audio.
         func append(_ piece: AVAudioPCMBuffer) {
             guard failure == nil, piece.frameLength > 0 else { return }
             let pieceFormat = piece.format
@@ -313,22 +365,33 @@ extension RenderedSpeechAudio {
                 failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")"
                 return
             }
-            guard pieceFormat.commonFormat == .pcmFormatFloat32, let source = piece.floatChannelData else {
-                failure = "a piece of samples other than 32-bit floats: \(pieceFormat)"
-                return
-            }
             let channelCount = Int(format.channelCount)
             // Each channel's samples lie `sampleStride` apart: 1 in a buffer
             // of its own, the channel count when the piece interleaves them.
             let sampleStride = piece.stride
-            appendFrames(Int(piece.frameLength)) { destination, run, done in
-                for channel in 0..<channelCount {
-                    RenderedSpeechAudio.copySamples(
-                        from: source[channel] + done * sampleStride, stride: sampleStride,
-                        to: destination + channel, stride: channelCount,
-                        count: run
-                    )
+            if let source = piece.floatChannelData {
+                appendFrames(Int(piece.frameLength)) { destination, run, done in
+                    for channel in 0..<channelCount {
+                        SpeechSampleCodec.encode(
+                            source[channel] + done * sampleStride, stride: sampleStride,
+                            into: destination + channel, stride: channelCount,
+                            count: run,
+                            scratch: &scratch
+                        )
+                    }
                 }
+            } else if let source = piece.int16ChannelData {
+                appendFrames(Int(piece.frameLength)) { destination, run, done in
+                    for channel in 0..<channelCount {
+                        SpeechSampleCodec.copy(
+                            source[channel] + done * sampleStride, stride: sampleStride,
+                            into: destination + channel, stride: channelCount,
+                            count: run
+                        )
+                    }
+                }
+            } else {
+                failure = "a piece of samples neither 32-bit floats nor 16-bit integers: \(pieceFormat)"
             }
         }
 
@@ -366,14 +429,14 @@ extension RenderedSpeechAudio {
         /// came before it. Nothing is appended before the format is known.
         private func appendFrames(
             _ count: Int,
-            fill: (_ destination: UnsafeMutablePointer<Float>, _ run: Int, _ done: Int) -> Void
+            fill: (_ destination: UnsafeMutablePointer<Int16>, _ run: Int, _ done: Int) -> Void
         ) {
             guard let format else { return }
             let channelCount = Int(format.channelCount)
             var done = 0
             while done < count {
                 if blocks.isEmpty || framesInLastBlock == blockFrameCount {
-                    blocks.append([Float](repeating: 0, count: blockFrameCount * channelCount))
+                    blocks.append([Int16](repeating: 0, count: blockFrameCount * channelCount))
                     framesInLastBlock = 0
                 }
                 let run = min(count - done, blockFrameCount - framesInLastBlock)
