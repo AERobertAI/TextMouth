@@ -3,7 +3,8 @@ import XCTest
 
 /// Diagnostic logging must never crash the app, however the disk behaves, and
 /// must never grow without bound (TODO Q07). Every test writes only inside a
-/// disposable temporary directory or the isolated test data root.
+/// disposable temporary directory, through a log writer of its own, or into
+/// the isolated test data root.
 final class LogWriteSafetyTests: XCTestCase {
     private var directory: URL!
 
@@ -14,7 +15,8 @@ final class LogWriteSafetyTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        // Every queued write targets this directory; wait so removal is complete.
+        // Each test's writers wait for their own lines; the app's writer may
+        // still hold lines for the shared logs the last test wrote.
         TextMouthPaths.flushLogs()
         try? FileManager.default.removeItem(at: directory)
     }
@@ -22,11 +24,12 @@ final class LogWriteSafetyTests: XCTestCase {
     /// The first line creates the file; later lines append in order, each
     /// timestamped and newline terminated.
     func testAppendCreatesTheFileThenAppendsLinesInOrder() throws {
-        let log = directory.appendingPathComponent("test.log")
+        let writer = makeWriter(writingInto: directory)
+        let log = directory.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
 
-        TextMouthPaths.appendLog(to: log, message: "first")
-        TextMouthPaths.appendLog(to: log, message: "second")
-        TextMouthPaths.flushLogs()
+        writer.append("first", to: .debug)
+        writer.append("second", to: .debug)
+        writer.flush()
 
         let lines = try String(contentsOf: log, encoding: .utf8).split(separator: "\n", omittingEmptySubsequences: false)
         XCTAssertEqual(lines.count, 3, "two lines plus the trailing newline")
@@ -35,27 +38,34 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertEqual(lines[2], "")
     }
 
-    /// A destination that cannot be written (its directory is missing, or the
-    /// file is read-only) is silently skipped. The legacy FileHandle calls
-    /// raised uncatchable exceptions here and crashed the app on a full disk.
+    /// A log that cannot be written (its folder cannot be made, or the file
+    /// is read-only) is silently skipped, and the writer goes on writing
+    /// once it can. The legacy FileHandle calls raised uncatchable
+    /// exceptions here and crashed the app on a full disk.
     func testUnwritableDestinationsAreDroppedWithoutCrashing() throws {
-        let missingDirectory = directory.appendingPathComponent("missing/deeper/test.log")
-        let readOnly = directory.appendingPathComponent("readonly.log")
+        // A file where the logs' folder should be made.
+        let blocker = directory.appendingPathComponent("blocker")
+        try Data("a file".utf8).write(to: blocker)
+        let blocked = blocker.appendingPathComponent("Logs", isDirectory: true)
+        let blockedWriter = makeWriter(writingInto: blocked)
+        let readOnly = directory.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
         try "locked\n".write(to: readOnly, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: readOnly.path)
         defer {
             try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: readOnly.path)
         }
+        let writer = makeWriter(writingInto: directory)
 
-        TextMouthPaths.appendLog(to: missingDirectory, message: "dropped")
-        TextMouthPaths.appendLog(to: readOnly, message: "dropped")
+        blockedWriter.append("dropped", to: .debug)
+        writer.append("dropped", to: .debug)
         // A later write to a healthy file proves the queue survived the failures.
-        let healthy = directory.appendingPathComponent("healthy.log")
-        TextMouthPaths.appendLog(to: healthy, message: "still logging")
-        TextMouthPaths.flushLogs()
+        writer.append("still logging", to: .sleepTimer)
+        blockedWriter.flush()
+        writer.flush()
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: missingDirectory.path))
+        XCTAssertEqual(try String(contentsOf: blocker, encoding: .utf8), "a file")
         XCTAssertEqual(try String(contentsOf: readOnly, encoding: .utf8), "locked\n")
+        let healthy = directory.appendingPathComponent(DiagnosticLog.File.sleepTimer.rawValue)
         XCTAssertTrue(try String(contentsOf: healthy, encoding: .utf8).hasSuffix(": still logging\n"))
     }
 
@@ -63,13 +73,14 @@ final class LogWriteSafetyTests: XCTestCase {
     /// generation and a fresh file receives the new line. A second rotation
     /// replaces that generation rather than accumulating more files.
     func testOversizedLogRotatesIntoOnePreviousGeneration() throws {
-        let log = directory.appendingPathComponent("big.log")
+        let writer = makeWriter(writingInto: directory)
+        let log = directory.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
         let previous = log.appendingPathExtension(TextMouthPaths.rotatedLogExtension)
         let filler = String(repeating: "x", count: Int(TextMouthPaths.maxLogFileSize))
         try filler.write(to: log, atomically: true, encoding: .utf8)
 
-        TextMouthPaths.appendLog(to: log, message: "after rotation")
-        TextMouthPaths.flushLogs()
+        writer.append("after rotation", to: .debug)
+        writer.flush()
 
         XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), filler)
         let fresh = try String(contentsOf: log, encoding: .utf8)
@@ -78,24 +89,25 @@ final class LogWriteSafetyTests: XCTestCase {
 
         let secondFiller = String(repeating: "y", count: Int(TextMouthPaths.maxLogFileSize))
         try secondFiller.write(to: log, atomically: true, encoding: .utf8)
-        TextMouthPaths.appendLog(to: log, message: "second rotation")
-        TextMouthPaths.flushLogs()
+        writer.append("second rotation", to: .debug)
+        writer.flush()
 
         XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), secondFiller)
         XCTAssertTrue(try String(contentsOf: log, encoding: .utf8).hasSuffix(": second rotation\n"))
         let contents = try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted()
-        XCTAssertEqual(contents, ["big.log", "big.log.previous"])
+        XCTAssertEqual(contents, ["textmouth_debug.log", "textmouth_debug.log.previous"])
     }
 
     /// A file just under the cap is appended to, not rotated, so rotation
     /// happens only when the cap is actually reached.
     func testLogBelowTheCapIsNotRotated() throws {
-        let log = directory.appendingPathComponent("small.log")
+        let writer = makeWriter(writingInto: directory)
+        let log = directory.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
         let filler = String(repeating: "x", count: Int(TextMouthPaths.maxLogFileSize) - 1)
         try filler.write(to: log, atomically: true, encoding: .utf8)
 
-        TextMouthPaths.appendLog(to: log, message: "appended")
-        TextMouthPaths.flushLogs()
+        writer.append("appended", to: .debug)
+        writer.flush()
 
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: log.appendingPathExtension(TextMouthPaths.rotatedLogExtension).path
@@ -103,6 +115,34 @@ final class LogWriteSafetyTests: XCTestCase {
         let text = try String(contentsOf: log, encoding: .utf8)
         XCTAssertTrue(text.hasPrefix(filler))
         XCTAssertTrue(text.hasSuffix(": appended\n"))
+    }
+
+    /// The folder is resolved as each line is written: once it changes,
+    /// the next line goes into the new folder, and the old one, removed
+    /// meanwhile, is not made again.
+    func testEachLineGoesIntoTheFolderInUseWhenItIsWritten() throws {
+        let first = directory.appendingPathComponent("First", isDirectory: true)
+        let second = directory.appendingPathComponent("Second", isDirectory: true)
+        let folder = LockedValue(first)
+        let writer = LogWriter(environment: LogWriter.Environment(folder: { folder.value }))
+
+        writer.append("into the first", to: .debug)
+        writer.flush()
+        try FileManager.default.removeItem(at: first)
+        folder.value = second
+        writer.append("into the second", to: .debug)
+        writer.flush()
+
+        let log = second.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
+        XCTAssertTrue(try String(contentsOf: log, encoding: .utf8).hasSuffix(": into the second\n"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path), "a line made the old folder again")
+    }
+
+    // MARK: - Fixtures
+
+    /// A log writer of the test's own that writes into `folder`.
+    private func makeWriter(writingInto folder: URL) -> LogWriter {
+        LogWriter(environment: LogWriter.Environment(folder: { folder }))
     }
 
     /// The sleep timer's and speech's own logs keep their names and are

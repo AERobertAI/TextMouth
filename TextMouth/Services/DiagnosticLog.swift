@@ -2,10 +2,10 @@ import Foundation
 
 /// TextMouth's one policy for its diagnostic logs: what a line may say,
 /// which lines are written, and how many (TODO Q07). Log lines go through
-/// here, to `TextMouthPaths.appendLog`, which writes them without ever
-/// blocking or crashing the app and rotates each file at 2 MB into a single
-/// `.previous` generation. Nothing else calls that writer, as
-/// `LogContentPolicyTests` checks.
+/// here, to `TextMouthPaths.appendLog` and the log writer beneath it
+/// (`LogWriter`), which writes them without ever blocking or crashing the
+/// app and rotates each file at 2 MB into a single `.previous` generation.
+/// Nothing else calls that writer, as `LogContentPolicyTests` checks.
 ///
 /// ## What a line may contain
 ///
@@ -415,7 +415,7 @@ extension DiagnosticLog {
             traceLinesPerSecond: Int = DiagnosticLog.traceLinesPerSecond,
             reportInterval: TimeInterval = DiagnosticLog.suppressionReportInterval,
             write: @escaping @Sendable (_ line: String, _ file: File) -> Void = { line, file in
-                TextMouthPaths.appendLog(to: file.url, message: line)
+                TextMouthPaths.appendLog(to: file, message: line)
             },
             echo: @escaping @Sendable (_ line: String) -> Void = { print($0) }
         ) {
