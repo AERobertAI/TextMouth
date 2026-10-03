@@ -44,7 +44,13 @@ enum LibraryCategory: String, CaseIterable, Codable {
 /// Per-window navigation state (folder path, category, search) lives in the views.
 @MainActor
 final class LibraryViewModel: ObservableObject {
-    @Published var library = Library()
+    /// Every change is offered to `bookUpdates`, which keeps the readers
+    /// with a book open up to date with its row (TODO P10).
+    @Published var library = Library() {
+        didSet { bookUpdates.libraryDidChange(library) }
+    }
+    /// Tells open readers when the library changes or moves their book.
+    let bookUpdates = LibraryBookUpdates()
     @Published var errorMessage: String?
     @Published var showError = false
     /// Book IDs currently open in a reader window

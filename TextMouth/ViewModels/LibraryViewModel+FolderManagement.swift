@@ -189,6 +189,13 @@ extension LibraryViewModel {
         // directory on this volume. Rename that directory in place first; the
         // transition then only rewrites the book paths and package records.
         let respellsDirectory = equivalence.areEquivalent(oldPath, newPath)
+        let affectedBookIDs = bookIDsChangingFolder(in: proposed)
+        // Respelling renames the books' directory before the transition runs,
+        // so readers playing them stop reading their files first, as the
+        // transition's own moves make them do (TODO P10).
+        let respelledBookIDs = respellsDirectory ? affectedBookIDs : []
+        bookUpdates.packagesWillMove(respelledBookIDs)
+        defer { bookUpdates.packagesDidMove(respelledBookIDs) }
         var respelled = false
         do {
             if respellsDirectory {
@@ -196,7 +203,7 @@ extension LibraryViewModel {
             }
             try commitLibraryTransition(
                 proposed,
-                affectedBookIDs: bookIDsChangingFolder(in: proposed),
+                affectedBookIDs: affectedBookIDs,
                 equivalence: equivalence
             )
             return .success(nil)

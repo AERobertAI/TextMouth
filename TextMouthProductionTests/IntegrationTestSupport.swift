@@ -153,6 +153,46 @@ final class IntegrationWorld {
             tmbDirectoryName: packageName,
             localEndOfBookBehavior: endOfBook.rawValue
         )
+        return try indexAndList(book)
+    }
+
+    /// A segmented audiobook, as a DAISY book is read: silent WAV files
+    /// named and timed by `files` (seconds), in an audio folder of a package
+    /// of its own in the world's folder, with a manifest whose `sections`
+    /// are the book's headings, each playing one or more clips of those
+    /// files. It is indexed as an import indexes it and listed in the
+    /// library, and its end-of-book behavior is Stop. A reader playing it
+    /// is never heard.
+    func makeSegmentedAudioBook(
+        title: String,
+        files: [String: TimeInterval],
+        sections: [AudioSegment],
+        savedPosition: ReadingPosition? = nil
+    ) throws -> Book {
+        let packageName = "\(UUID().uuidString).tmb"
+        let audio = TextMouthPaths.tmbPath(folderPath: folder.path, tmbName: packageName)
+            .appendingPathComponent("audio", isDirectory: true)
+        for (name, duration) in files {
+            try AudioTestFixtures.writeSilence(to: audio.appendingPathComponent(name), duration: duration)
+        }
+        try JSONEncoder().encode(AudioManifest(title: title, segments: sections))
+            .write(to: audio.appendingPathComponent("manifest.json"))
+        let book = Book(
+            title: title,
+            format: .audio,
+            filePath: audio.path,
+            md5Hash: UUID().uuidString,
+            folderPath: folder.path,
+            readingPosition: savedPosition,
+            tmbDirectoryName: packageName,
+            localEndOfBookBehavior: EndOfBookBehavior.stop.rawValue
+        )
+        return try indexAndList(book)
+    }
+
+    /// Indexes `book` as an import indexes it, saves its record with the
+    /// index in its package, and lists it in the library.
+    private func indexAndList(_ book: Book) throws -> Book {
         let analysis = try BookContentAnalysisService.load(book: book)
         try book.saveBookInfoThrowing(contentIndex: analysis.index)
         library.library.addBook(book)

@@ -174,8 +174,19 @@ final class ReaderViewModel: ObservableObject {
     /// (for example AirPods disconnecting). The next resume must recreate
     /// the active playback backend so audio binds to the newly-current
     /// output device instead of continuing a graph/synth paused on the old
-    /// route.
+    /// route. Also set when the library moves a paused audiobook's files, so
+    /// resuming plays them from where they are then instead of from a player
+    /// still holding the old place (TODO P10).
     var restartPlaybackBackendOnNextResume = false
+    /// The revision of the latest library update this reader has applied to
+    /// its copy of the book (see `LibraryBookUpdates`); an update that is
+    /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
+    /// when the reader starts watching its book.
+    var appliedLibraryRevision = 0
+    /// Audio that was playing when the library said the book's package was
+    /// about to move, set aside until the move ends and playback goes on
+    /// from the cursor (TODO P10); nil the rest of the time.
+    var audioPausedForMove: AudioPausedForMove?
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
@@ -299,6 +310,7 @@ final class ReaderViewModel: ObservableObject {
         setupCallbacks()
         setupNotifications()
         observeSpokenAudioSettings()
+        observeLibraryUpdates()
         forwardSpeechState()
 
         if isAudioBook {
@@ -335,6 +347,21 @@ final class ReaderViewModel: ObservableObject {
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] _ in self?.refreshLookAhead() }
+            .store(in: &cancellables)
+    }
+
+    /// Keep this reader's copy of its book current while the library edits,
+    /// renames, or moves the book from another window (TODO P10). The reader
+    /// watches its book until it closes, and applies every update newer than
+    /// the book's revision when it opened (see `ReaderViewModel+LibraryUpdates`).
+    /// Events arrive synchronously on the main actor, while the library is
+    /// making the change.
+    private func observeLibraryUpdates() {
+        let updates = libraryViewModel.bookUpdates
+        appliedLibraryRevision = updates.revision(of: book.id)
+        updates.watch(book)
+        updates.events(for: book.id)
+            .sink { [weak self] event in self?.handleLibraryEvent(event) }
             .store(in: &cancellables)
     }
 
@@ -829,33 +856,24 @@ final class ReaderViewModel: ObservableObject {
                 let audioFiles = analysis.audioFilePaths
                 let audioSegments = analysis.audioSegments
 
-                // Load EPUB metadata if applicable
-                var metadata: EPUBMetadata?
+                // Read the metadata the book's files hold: an EPUB's package
+                // metadata, or an audiobook's tags. The book's own edits are
+                // laid over it back on the main actor, from the reader's copy
+                // of the book as it is by then, so an edit the library makes
+                // while the book loads is shown too (TODO P10).
+                var fileMetadata: EPUBMetadata?
                 if format == .epub {
-                    if let extracted = try? EPUBParser.readMetadata(url: url) {
-                        metadata = bookCopy.mergingEditableEPUBMetadata(extracted)
-                    }
+                    fileMetadata = try? EPUBParser.readMetadata(url: url)
                 }
-
-                // Load audio metadata from file tags, then overlay any user-edited fields
-                // stored in the Book model so previous edits are preserved
-                var audioMeta: AudioMetadata?
+                var audioTags: AudioMetadata?
                 if format.isAudio {
-                    var extracted = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
-                    // Use the book's stored title/author (which may have been user-edited)
-                    extracted.title = bookCopy.title
-                    extracted.artist = bookCopy.author
-                    // Overlay stored audio-specific fields if the user previously edited them
-                    if let album = bookCopy.audioAlbum { extracted.album = album }
-                    if let genre = bookCopy.audioGenre { extracted.genre = genre }
-                    if let year = bookCopy.audioYear { extracted.year = year }
-                    audioMeta = extracted
+                    audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
                 }
 
                 let loadedAudioFiles = audioFiles
                 let loadedAudioSegments = audioSegments
-                let loadedMetadata = metadata
-                let loadedAudioMetadata = audioMeta
+                let loadedFileMetadata = fileMetadata
+                let loadedAudioTags = audioTags
                 let loadedContentIndex = analysis.index
                 let shouldPersistContentIndex = !analysis.usedPersistedIndex
                     || bookCopy.contentIndexVersion != BookContentIndex.currentVersion
@@ -864,15 +882,19 @@ final class ReaderViewModel: ObservableObject {
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, !self.hasClosed else { return }
                     if let audioFiles = loadedAudioFiles {
-                        self.audioChapterFiles = audioFiles
+                        // A move the library made while the book loaded left
+                        // the files it loaded from behind (TODO P10).
+                        self.audioChapterFiles = self.book.filePath == filePath
+                            ? audioFiles
+                            : self.audioChapterFilesAtCurrentLocation(audioFiles, index: parsed.contentIndex)
                     }
                     if let segs = loadedAudioSegments {
                         self.audioSegments = segs
                     }
                     // Assigning content also publishes its headings.
                     self.content = parsed
-                    self.epubMetadata = loadedMetadata
-                    self.audioMetadata = loadedAudioMetadata
+                    self.epubMetadata = loadedFileMetadata.map { self.book.mergingEditableEPUBMetadata($0) }
+                    self.audioMetadata = loadedAudioTags.map { self.book.mergingEditableAudioMetadata($0) }
 
                     // Clamp saved reading position to valid range. The chapter
                     // count can change if the book was re-imported or the cache
@@ -911,6 +933,13 @@ final class ReaderViewModel: ObservableObject {
             } catch {
                 DispatchQueue.main.async { [weak self] in
                     guard let self, !self.hasClosed else { return }
+                    // The library moved the book while it loaded, so the
+                    // files the load read may have gone from under it: load
+                    // it again from where the book is now (TODO P10).
+                    if self.book.filePath != filePath {
+                        self.loadContent()
+                        return
+                    }
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                     // A book that cannot load cannot play for a finished
@@ -1261,6 +1290,7 @@ final class ReaderViewModel: ObservableObject {
         if sleepTimerService.ownerID == book.id {
             sleepTimerService.stop()
         }
+        libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
     }
 
