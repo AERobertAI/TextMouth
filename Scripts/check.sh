@@ -7,11 +7,29 @@
 #   2. resolves Swift packages exactly as the committed Package.resolved pins
 #      them (make resolve-packages) and verifies that every pin's package,
 #      version, revision, and URL still matches the committed file;
-#   3. builds the Release app (make build);
-#   4. runs the hosted XCTest suite with the Makefile's flags (make test);
+#   3. builds the Release app from scratch (make build) and requires that
+#      the build reports no Swift warning;
+#   4. runs the hosted XCTest suite with the Makefile's flags (make test),
+#      built from scratch in the same folder, and requires that this build
+#      reports no Swift warning either;
 # and finally confirms that no step changed the pins. It fails on any
-# generation, resolution, compile, or test error, and when the test run
-# reports no executed tests.
+# generation, resolution, compile, or test error, on any Swift warning, and
+# when the test run reports no executed tests.
+#
+# A Swift warning is a line in which the Swift compiler reports one, as
+# "<file>.swift:<line>:<column>: warning: ..." or, about its own settings,
+# "<unknown>:0: warning: ...", whatever it is about. Every target checks
+# concurrency completely (project.yml), so a new concurrency problem fails
+# the gate. Other tools' warnings, such as the linker's, and anything a test
+# prints are not Swift warnings, and package warnings never reach the logs:
+# Xcode builds packages with their warnings suppressed. A failing step names
+# the first five warnings; its log holds them all.
+#
+# Both builds start from scratch, because xcodebuild reports a file's
+# warnings only when it compiles that file. Before step 3 the gate removes
+# the compiled code earlier builds left (build/DerivedData/Build and
+# TextMouthTests/.build), keeping the package checkouts step 2 verified, so
+# every source compiles in the gate's own run, on this Mac as on CI.
 #
 # Usage: Scripts/check.sh [--dry-run] [--help]
 #
@@ -58,6 +76,22 @@ readonly RESOLVED_FILE="TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swi
 readonly LOG_DIR="build/check"
 # The committed pins, copied before any tool can rewrite Package.resolved.
 readonly COMMITTED_COPY="$LOG_DIR/committed-Package.resolved"
+# Where `make build` builds (DERIVED_BUILD_DIR in the Makefile). The gate has
+# `make test` build there too (TEST_DERIVED_DATA), so one removal before
+# step 3 starts both builds from scratch.
+readonly DERIVED_DATA="build/DerivedData"
+# The compiled code earlier builds left: Xcode's products and intermediates,
+# and SwiftPM's build of the hosted test runner. The package checkouts, in
+# build/DerivedData/SourcePackages, are kept.
+readonly EARLIER_XCODE_BUILD="$DERIVED_DATA/Build"
+readonly EARLIER_RUNNER_BUILD="TextMouthTests/.build"
+# The log `make build` keeps xcodebuild's output in (BUILD_LOG in the
+# Makefile, for the Release configuration).
+readonly RELEASE_BUILD_LOG="build/xcodebuild-Release.log"
+# A line in which the Swift compiler reports a warning (see the header).
+readonly SWIFT_WARNING_PATTERN='^(.+\.swift:[0-9]+:[0-9]+|<unknown>:0): warning: '
+# How many warnings a step that fails on them names.
+readonly WARNINGS_NAMED=5
 
 readonly STEP_COUNT=4
 readonly UPDATE_HINT="If a package version changed on purpose, run make update-packages, review the Package.resolved diff, and commit it with project.yml."
@@ -321,6 +355,61 @@ run_step() {
   return "$status"
 }
 
+# remove_earlier_builds: removes the compiled code earlier builds left, so
+# every source compiles in this run, and the Release log an earlier build
+# left, so no warning check can read it. A dry run only says what it would
+# remove.
+remove_earlier_builds() {
+  local removed="$EARLIER_XCODE_BUILD and $EARLIER_RUNNER_BUILD"
+  if (( dry_run )); then
+    detail "would remove the compiled code of earlier builds: $removed"
+    return 0
+  fi
+  rm -rf "$EARLIER_XCODE_BUILD" "$EARLIER_RUNNER_BUILD" "$RELEASE_BUILD_LOG" ||
+    fail "step $step_number of $STEP_COUNT ($step_title): cannot remove the compiled code of earlier builds: $removed"
+  detail "removed the compiled code of earlier builds, so every source compiles: $removed"
+}
+
+# swift_warnings <log>: prints each Swift warning in <log> once, in the order
+# the build first reported it, with the repository root left off its path.
+# A Release build compiles every file once for each architecture, so the
+# same warning can appear twice.
+swift_warnings() {
+  local line
+  grep -E "$SWIFT_WARNING_PATTERN" "$1" 2>/dev/null |
+    awk '!seen[$0]++' |
+    while IFS= read -r line; do
+      printf '%s\n' "${line#"$ROOT/"}"
+    done
+}
+
+# require_no_swift_warnings <log>: says that the current step's build log
+# holds no Swift warning, or fails the gate with their number and the first
+# few of them. A missing log fails too, since its warnings cannot be known.
+require_no_swift_warnings() {
+  local log=$1 warnings count
+  if (( dry_run )); then
+    detail "would require no Swift warnings in $log"
+    return 0
+  fi
+  [[ -f $log ]] ||
+    fail "step $step_number of $STEP_COUNT ($step_title): $log is missing, so the build's Swift warnings are unknown"
+  warnings=$(swift_warnings "$log")
+  if [[ -z $warnings ]]; then
+    detail "no Swift warnings in $log"
+    return 0
+  fi
+  count=$(grep -c '' <<<"$warnings")
+  if (( count > WARNINGS_NAMED )); then
+    detail "$(count_of "$count" "Swift warning") in $log; the first $WARNINGS_NAMED:"
+  else
+    detail "$(count_of "$count" "Swift warning") in $log:"
+  fi
+  detail_lines "| " "$(head -n "$WARNINGS_NAMED" <<<"$warnings")"
+  detail "the gate allows no Swift warning, about concurrency or anything else"
+  fail "step $step_number of $STEP_COUNT ($step_title): $(count_of "$count" "Swift warning")"
+}
+
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
 # needs first: errors with two lines of context (where compiler diagnostics
 # show the source line and caret), xcodebuild's verdict, and make's failure
@@ -432,11 +521,14 @@ main() {
   fi
 
   begin_step 3 "build the Release app"
+  remove_earlier_builds
   run_step build yes make build || step_failed build $?
+  require_no_swift_warnings "$RELEASE_BUILD_LOG"
 
   begin_step 4 "run the hosted XCTest suite"
-  run_step test yes make test || step_failed test $?
+  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" || step_failed test $?
   report_tests
+  require_no_swift_warnings "$LOG_DIR/test.log"
 
   # No later step may re-resolve packages behind the gate's back.
   verify_pins "$RESOLVED_FILE" "Package.resolved changed during the build or tests"

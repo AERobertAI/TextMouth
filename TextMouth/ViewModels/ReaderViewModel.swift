@@ -889,7 +889,7 @@ final class ReaderViewModel: ObservableObject {
         var audioTags: AudioMetadata?
         if format.isAudio {
             let tagged = tagsURL ?? url
-            audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
+            audioTags = (try? AsyncBridge.waitForResult { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
         }
 
         return LoadedContent(
@@ -1362,43 +1362,10 @@ final class ReaderViewModel: ObservableObject {
 
 // MARK: - Helpers
 
-/// Bridge async code to sync context
-private func waitForAsync<T>(_ block: @escaping @Sendable () async throws -> T) throws -> T {
-    let box = ReaderAsyncResultBox<T>()
-    let semaphore = DispatchSemaphore(value: 0)
-    Task.detached {
-        do {
-            box.store(.success(try await block()))
-        } catch let e {
-            box.store(.failure(e))
-        }
-        semaphore.signal()
-    }
-    semaphore.wait()
-    guard let result = box.value else {
-        throw NSError(domain: "TextMouth", code: -1, userInfo: [NSLocalizedDescriptionKey: "Async operation returned no result"])
-    }
-    return try result.get()
-}
-
-private final class ReaderAsyncResultBox<Value>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var result: Result<Value, Error>?
-
-    var value: Result<Value, Error>? {
-        lock.lock()
-        defer { lock.unlock() }
-        return result
-    }
-
-    func store(_ value: Result<Value, Error>) {
-        lock.lock()
-        result = value
-        lock.unlock()
-    }
-}
-
 /// Helper delegate for the Where Am I synthesizer (separate from the book speech service)
+///
+/// `@unchecked Sendable`: its one property is a constant, and `onFinished`
+/// runs only on the main queue, where the synthesizer's callback sends it.
 final class WhereAmIDelegateHelper: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     let onFinished: () -> Void
 

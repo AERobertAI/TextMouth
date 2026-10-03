@@ -1,9 +1,12 @@
-@preconcurrency import AVFoundation
+import AVFoundation
 import Combine
 
 /// Latest-wins gate for asynchronous AVPlayer seeks. AVPlayer may complete
 /// overlapping seeks out of order; a plain Boolean lets an older completion
 /// re-enable position observers while a newer seek is still pending.
+///
+/// `@unchecked Sendable`: its counters are read and changed only under
+/// `lock`, since a seek completes on a thread AVFoundation chooses.
 final class AudioSeekGate: @unchecked Sendable {
     private let lock = NSLock()
     private var generation = 0
@@ -523,6 +526,13 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 /// from a time, a seek, or a stop has since replaced (see
 /// `AudioEndNoticePolicy`). An end that comes while playback is paused is
 /// held until it resumes.
+///
+/// `@unchecked Sendable`: everything it holds is read and changed on the
+/// main thread. Its owner, the reader, is main-actor isolated, and every
+/// AVFoundation callback it installs runs on the main queue or hops there;
+/// the two that run where AVFoundation calls them, the end-of-file notice
+/// and a seek's completion, touch only the lock-guarded `playGeneration`
+/// and `seekGate`.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var isPlaying = false
     @Published var isPaused = false

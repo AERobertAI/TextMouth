@@ -53,4 +53,41 @@ final class ImportConcurrencyTests: XCTestCase {
         release.signal()
         wait(for: [idle], timeout: 1)
     }
+
+    /// The activity observer may be replaced from any thread while an import
+    /// runs: the import queue reads it under the queue's lock as the import
+    /// finishes, so the replacement, not the observer it replaced, is told
+    /// that the queue is idle.
+    func testAnActivityObserverReplacedWhileAnImportRunsIsToldItFinished() {
+        let queue = SerialImportQueue()
+        let started = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let replacedToldIdle = expectation(description: "the replaced observer told the queue is idle")
+        replacedToldIdle.isInverted = true
+        queue.onActivityChanged = { count in
+            if count == 0 { replacedToldIdle.fulfill() }
+        }
+        queue.enqueue {
+            started.signal()
+            // Bounded, so a failed test never leaves the import queue stuck.
+            _ = release.wait(timeout: .now() + 5)
+        }
+        XCTAssertEqual(started.wait(timeout: .now() + 5), .success, "The import never started")
+
+        let idle = expectation(description: "the replacement told the queue is idle")
+        let replaced = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            queue.onActivityChanged = { count in
+                if count == 0 { idle.fulfill() }
+            }
+            replaced.signal()
+        }
+        XCTAssertEqual(replaced.wait(timeout: .now() + 5), .success, "The observer was never replaced")
+        release.signal()
+
+        wait(for: [idle], timeout: 5)
+        // Both observers are told on the main queue, which has now told the
+        // replacement; the replaced observer must not have been told.
+        wait(for: [replacedToldIdle], timeout: 0.1)
+    }
 }

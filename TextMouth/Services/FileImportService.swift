@@ -3,23 +3,6 @@ import CryptoKit
 import UniformTypeIdentifiers
 import ZIPFoundation
 
-private final class SynchronousResultBox<Value>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storedValue: Value?
-
-    var value: Value? {
-        lock.lock()
-        defer { lock.unlock() }
-        return storedValue
-    }
-
-    func store(_ value: Value) {
-        lock.lock()
-        storedValue = value
-        lock.unlock()
-    }
-}
-
 enum FileImportError: LocalizedError {
     case unsupportedFormat(String)
     case hashingFailed
@@ -170,16 +153,10 @@ struct ImportedFileMetadata {
 
     /// The common metadata tags of the audio file at `url`, read through
     /// AVFoundation's asynchronous loading while this thread waits, as an
-    /// import runs off the main thread.
+    /// import runs off the main thread. Reading tags never throws, so the
+    /// empty tags are only the type checker's fallback.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        let semaphore = DispatchSemaphore(value: 0)
-        let tagsBox = SynchronousResultBox<AudioMetadata>()
-        Task.detached {
-            tagsBox.store(await AudioPlaybackService.extractFullMetadata(from: url))
-            semaphore.signal()
-        }
-        semaphore.wait()
-        return tagsBox.value ?? AudioMetadata()
+        (try? AsyncBridge.waitForResult { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
     }
 }
 

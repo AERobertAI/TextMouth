@@ -506,6 +506,9 @@ final class SleepTimerService: ObservableObject {
         timerLog(.event, "FADE_STARTED steps=\(totalSteps) stepInterval=\(stepInterval)")
 
         let ft = Timer(timeInterval: stepInterval, repeats: true) { [weak self] timer in
+            // The timer is not Sendable, and is used only inside the block
+            // below, on the main thread: it runs on the main run loop, and
+            // assumeIsolated would trap if it ever did not.
             nonisolated(unsafe) let callbackTimer = timer
             MainActor.assumeIsolated {
                 guard let self = self else { callbackTimer.invalidate(); return }

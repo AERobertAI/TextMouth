@@ -1,4 +1,4 @@
-@preconcurrency import AVFoundation
+import AVFoundation
 import Combine
 
 /// Identifies rendered speech audio by everything that went into it, so audio
@@ -94,6 +94,15 @@ struct SpeechRenderRequest: Sendable {
 /// alive, so no later render can ever hold the same one.
 private final class RenderTicket: Sendable {}
 
+/// Rendered speech the render queue hands over to the main queue, which
+/// installs it. `@unchecked Sendable` because `AVAudioPCMBuffer` is not
+/// `Sendable`, yet only one thread ever touches the buffer at a time: the
+/// render queue makes and fills it, then hands it over as its last act.
+private struct HandedOverBuffer: @unchecked Sendable {
+    /// The rendered speech, with its silence padding.
+    let buffer: AVAudioPCMBuffer
+}
+
 /// What the speech engine made of one report from its player node that a
 /// segment of rendered audio it scheduled has played back.
 enum SpeechSegmentEndOutcome: Equatable, Sendable {
@@ -156,6 +165,14 @@ enum SpeechSegmentEndPolicy {
 ///
 /// Position tracking uses the AVAudioEngine's node time (not wall clock)
 /// for accurate position reporting.
+///
+/// `@unchecked Sendable`: everything it holds is read and changed on the
+/// main thread, where its owners, the speech service and the reader's
+/// look-ahead, call it, except `currentRender`, which the render queue
+/// shares under `renderLock`. The render queue otherwise works on a
+/// synthesizer and buffers of its own and hands the result over
+/// (`HandedOverBuffer`), and the player node's reports hop to the main
+/// queue, reading only the test hook `_segmentPlayedBackForTesting` first.
 final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var engine = AVAudioEngine()
     private var playerNode = AVAudioPlayerNode()
@@ -383,6 +400,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             }
             map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
             let completedMap = map
+            // This queue's last use of the buffer: from here on only the
+            // main queue touches it.
+            let handedOver = HandedOverBuffer(buffer: combinedBuffer)
 
             DispatchQueue.main.async {
                 // Recheck ownership on the queue that installs the buffer.
@@ -392,7 +412,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                     completion(false)
                     return
                 }
-                self.renderedBuffer = combinedBuffer
+                self.renderedBuffer = handedOver.buffer
                 self.renderedSignature = request.signature
                 self.renderFormat = audioFormat
                 self.wordFrameMap = completedMap

@@ -105,6 +105,9 @@ enum LibraryPersistenceService {
             }
         }
     }
+    /// Each book's record waiting for its debounced write, and the number of
+    /// the book's latest save, so that only the latest save's debounce
+    /// writes. Confined to bookInfoSaveQueue.
     nonisolated(unsafe) private static var pendingBookInfos: [UUID: (book: Book, contentIndex: BookContentIndex?)] = [:]
     nonisolated(unsafe) private static var bookInfoGenerations: [UUID: UInt] = [:]
     /// The highest revision this process has written into each book's
