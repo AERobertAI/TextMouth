@@ -61,6 +61,8 @@ TextMouth was measured against a library the size of its developer's on October 
 
 - Starting to listen:
   - A session's first Play no longer waits while the system loads the voice: a text book's reader loads its voice silently, in the background, when it opens and whenever the voice changes.
+  - When a text book opens, TextMouth prepares the speech of the chapter you are in (or, after a cover page, the first chapter with words) in the background, with your rules and settings, so Play starts without first preparing it. A setting changed before Play is applied as always.
+  - Opening a large book again, one whose text is a megabyte or more, reads the text TextMouth kept from the last open instead of reading the book's Markdown again, so the largest books open in about a tenth of the time with far less memory (see Where TextMouth keeps your library).
   - Speech starts with a short passage, so the first word follows Play, a seek, or a skip sooner, and each next passage is handed to the voice while the one before it speaks, so speech runs on without waiting for TextMouth between passages.
   - A reader makes its speech engine only when speech first needs one, so it opens sooner, and an audiobook's reader never makes one.
   - The installed voices are listed once, in the background, after the first window opens, and again only when the system's voices change, as when a voice finishes downloading; only the very first launch, which must choose a default voice, lists them before that. The Voice tab and a reader's voice sheet show that list rather than asking the system each time.
@@ -156,6 +158,7 @@ TextMouth also keeps folders of this Mac's own, which never sync and keep workin
   - Import Staging: the packages imports are building, while the data directory is on the same disk as this folder: the startup disk, which also holds the folders of iCloud Drive and other cloud drives. A data directory on another drive keeps them in its own library folders instead, so a new book is always put in place with one rename on one disk.
   - Archive Extraction: the working folders of ZIP imports, under the same condition.
   - Kept Books.json: the books kept on this Mac (see Keep on This Mac, in Keeping your library in the cloud), a choice another Mac sharing the library never reads.
+- ~/Library/Caches/com.textmouth.TextMouth/Reading Text: the reading text of the large books this Mac opened lately, those whose content.md is a megabyte or more, so that opening one again reads it from here instead of re-reading the book's Markdown. The largest anthology reopens in about a tenth of a second instead of three quarters of one, and a 20 MB book in one chapter in about 50 ms instead of a second or more. Nothing about speech is kept here, so changing substitution rules or speech settings never makes it wrong. A book's file is removed a day after the book was last opened, at once when its text is extracted again or the book is deleted, and whenever its content.md or title changes or a new version of TextMouth is installed. Time Machine leaves it out of backups, and macOS may empty it when the disk runs low; the next open simply reads the book again.
 
 ## Keeping your library in the cloud
 
