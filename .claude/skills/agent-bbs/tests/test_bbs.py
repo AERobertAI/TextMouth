@@ -4,15 +4,16 @@ Run from the repository root with:
 
     python3 -m unittest discover -s .claude/skills/agent-bbs/tests
 
-Every test uses its own temporary board through TEXTMOUTH_BBS_DIR, so the
-shared board in the main repository is never touched.
+Every test uses a temporary board, named by TEXTMOUTH_BBS_DIR or found in
+a temporary repository, so the shared board of this repository is never
+touched. The build-slot wrapper tests use a temporary slot directory too.
 """
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import datetime as dt
-import argparse
 import io
 import json
 import multiprocessing
@@ -76,7 +77,7 @@ def git(*args: str, cwd: Path) -> None:
     subprocess.run(["git", *identity, *args], cwd=cwd, env=env, check=True, capture_output=True, text=True)
 
 
-class TemporaryDirectoryMixin(unittest.TestCase):
+class TemporaryDirectoryTestCase(unittest.TestCase):
     """Gives each test a fresh temporary directory, removed afterwards."""
 
     def make_temp_dir(self) -> Path:
@@ -86,7 +87,7 @@ class TemporaryDirectoryMixin(unittest.TestCase):
         return path
 
 
-class BoardTestCase(TemporaryDirectoryMixin):
+class BoardTestCase(TemporaryDirectoryTestCase):
     """Base class: each test runs commands against its own empty board.
 
     Commands run from a scratch working tree (``self.worktree``), so that
@@ -263,7 +264,7 @@ class RegistrationTests(BoardTestCase):
         self.fails("heartbeat")
 
 
-class PatternTests(TemporaryDirectoryMixin):
+class PatternTests(TemporaryDirectoryTestCase):
     """normalize_pattern and patterns_overlap: the rules behind claims."""
 
     #: Pairs that can name a common file, whichever comes first.
@@ -1014,7 +1015,7 @@ class ConcurrencyTests(BoardTestCase):
             self.assertEqual(conn.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
 
-class RepositoryDiscoveryTests(TemporaryDirectoryMixin):
+class RepositoryDiscoveryTests(TemporaryDirectoryTestCase):
     """Where the board lives when TEXTMOUTH_BBS_DIR is not set."""
 
     @unittest.skipUnless(shutil.which("git"), "git is not installed")
