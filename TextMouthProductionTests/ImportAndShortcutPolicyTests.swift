@@ -150,6 +150,81 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
         XCTAssertEqual(manager.allDisplayStrings(for: .whereAmI), "No shortcut")
     }
 
+    // MARK: - Shortcuts as config.json writes them
+
+    /// config.json writes a shortcut's modifiers in the order Settings shows
+    /// them, then its key, joined by "+".
+    func testConfigTextNamesModifiersInSettingsOrderThenTheKey() {
+        XCTAssertEqual(KeyBinding(key: "space").configText, "space")
+        XCTAssertEqual(KeyBinding(key: "rightArrow", command: true).configText, "command+rightArrow")
+        XCTAssertEqual(
+            KeyBinding(key: "b", command: true, option: true, shift: true).configText,
+            "option+shift+command+b"
+        )
+        XCTAssertEqual(
+            KeyBinding(key: "a", command: true, option: true, shift: true, control: true).configText,
+            "control+option+shift+command+a"
+        )
+        XCTAssertEqual(KeyBinding(key: "+", command: true).configText, "command++")
+    }
+
+    /// Every default shortcut, and every key with every combination of
+    /// modifiers, reads back from its config.json text unchanged.
+    func testEveryShortcutReadsBackFromItsConfigText() {
+        var bindings = ShortcutAction.defaultBindings.values.flatMap { $0 }
+        for key in KeyBinding.namedKeys + ["k", "+", "-", "[", "é"] {
+            for modifiers in 0..<16 {
+                bindings.append(KeyBinding(
+                    key: key,
+                    command: modifiers & 1 != 0,
+                    option: modifiers & 2 != 0,
+                    shift: modifiers & 4 != 0,
+                    control: modifiers & 8 != 0
+                ))
+            }
+        }
+        for binding in bindings {
+            XCTAssertEqual(KeyBinding(configText: binding.configText), binding, binding.configText)
+        }
+    }
+
+    /// Shortcuts typed by hand are read generously: any letter case, spaces,
+    /// the usual abbreviations, a capital letter key, and a modifier named
+    /// twice all read as the binding they mean.
+    func testHandTypedShortcutsAreReadGenerously() {
+        let cases: [(text: String, binding: KeyBinding)] = [
+            ("Command+K", KeyBinding(key: "k", command: true)),
+            ("cmd + shift + K", KeyBinding(key: "k", command: true, shift: true)),
+            ("Ctrl+Opt+Space", KeyBinding(key: "space", option: true, control: true)),
+            ("alt+LEFTARROW", KeyBinding(key: "leftArrow", option: true)),
+            ("command++", KeyBinding(key: "+", command: true)),
+            ("+", KeyBinding(key: "+")),
+            ("shift+shift+b", KeyBinding(key: "b", shift: true)),
+        ]
+        for (text, binding) in cases {
+            XCTAssertEqual(KeyBinding(configText: text), binding, text)
+        }
+    }
+
+    /// Text that names no key, or a key that is neither a special key's name
+    /// nor one character, is not a shortcut.
+    func testUnreadableShortcutTextIsNotAShortcut() {
+        for text in ["", "   ", "command+", "comand+k", "command+kk", "hyper+k", "++", "command+f13"] {
+            XCTAssertNil(KeyBinding(configText: text), text)
+        }
+    }
+
+    /// An action's list of shortcuts is read whole, without repeats, or not
+    /// at all: one mistyped shortcut leaves the action's bindings alone.
+    func testShortcutListsAreReadWholeOrNotAtAll() {
+        XCTAssertEqual(
+            KeyBinding.bindings(fromConfigTexts: ["space", "K", "k"]),
+            [KeyBinding(key: "space"), KeyBinding(key: "k")]
+        )
+        XCTAssertEqual(KeyBinding.bindings(fromConfigTexts: []), [])
+        XCTAssertNil(KeyBinding.bindings(fromConfigTexts: ["space", "comand+k"]))
+    }
+
     func testModifierDisplayOrderIsControlOptionShiftCommand() {
         let binding = KeyBinding(
             key: "a",
