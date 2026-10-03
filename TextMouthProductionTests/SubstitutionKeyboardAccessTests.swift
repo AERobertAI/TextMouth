@@ -377,18 +377,6 @@ final class SubstitutionKeyboardAccessTests: XCTestCase {
                 .map { descendants(of: $0, as: NSButton.self) } ?? []
         }
     }
-
-    /// Every view of type `T` inside `view`, depth first in subview order.
-    private func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
-        var found: [T] = []
-        for subview in view.subviews {
-            if let match = subview as? T {
-                found.append(match)
-            }
-            found += descendants(of: subview, as: type)
-        }
-        return found
-    }
 }
 
 /// Keeps the hosted test root's substitutions.json as each test found it.

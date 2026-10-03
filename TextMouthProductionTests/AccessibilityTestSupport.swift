@@ -39,6 +39,13 @@ extension XCTestCase {
         )
         // Tests own this window; AppKit must not release it again on close.
         window.isReleasedWhenClosed = false
+        // The app's VoiceOver focus requests take an untitled window for a
+        // sheet, and bring a sheet forward and make it key before moving
+        // VoiceOver. A title keeps a hosted view that requests focus (and
+        // finds its target, as it does while VoiceOver runs) from putting
+        // this window on screen: a titled window that is not key is left
+        // alone.
+        window.title = "Hosted test view"
         window.contentView = hostingView
         defer { window.close() }
 
@@ -66,6 +73,20 @@ extension XCTestCase {
         try withHostedView(view, until: { !accessibleControls(in: $0).isEmpty }) { hostingView in
             try body(accessibleControls(in: hostingView))
         }
+    }
+
+    /// Every view of type `T` inside `view`, depth first in subview order:
+    /// the AppKit controls, and other platform views, SwiftUI drew.
+    @MainActor
+    func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
+        var found: [T] = []
+        for subview in view.subviews {
+            if let match = subview as? T {
+                found.append(match)
+            }
+            found += descendants(of: subview, as: type)
+        }
+        return found
     }
 
     /// Spin the main run loop until `condition` holds or `timeout` passes,
