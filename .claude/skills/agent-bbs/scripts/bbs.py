@@ -71,6 +71,15 @@ NAME_RULE = re.compile(r"[a-z0-9][a-z0-9._-]{0,39}")
 #: Longest accepted one-line field (role, branch, topic, activity note).
 MAX_LINE_LENGTH = 200
 
+#: Kinds of message; `notice` is the default.
+TAGS = ("build", "commit", "finding", "question", "notice", "merge")
+
+#: Largest accepted message body, in bytes of UTF-8 (16 KB).
+MAX_BODY_BYTES = 16 * 1024
+
+#: How many messages `read` shows when neither --last nor --since is given.
+DEFAULT_READ_COUNT = 20
+
 #: Exit statuses.
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
@@ -155,6 +164,48 @@ def ago_label(text: str) -> str:
 def plural(count: int, noun: str) -> str:
     """Return "1 agent" or "3 agents" (regular plurals only)."""
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+@dataclasses.dataclass(frozen=True)
+class Since:
+    """A parsed --since value: after a message id, or from a moment on."""
+
+    message_id: Optional[int] = None
+    moment: Optional[str] = None  # UTC text
+
+    def condition(self) -> Tuple[str, Any]:
+        """Return the SQL condition on messages (alias m) and its parameter."""
+        if self.message_id is not None:
+            return "m.id > ?", self.message_id
+        return "m.posted_at >= ?", self.moment
+
+
+def parse_since(text: str) -> Since:
+    """argparse type for --since: a message id, or a date and time.
+
+    A whole number is a message id and selects the messages after it.
+    Anything else is a moment and selects messages posted at or after it:
+    an ISO 8601 date and time ("2026-10-02T14:05", "2026-10-02 14:05Z"), a
+    date (its midnight), or a time of day ("14:05", today). A moment with
+    no time zone is local time.
+    """
+    value = text.strip()
+    if value.isdigit():
+        return Since(message_id=int(value))
+    if value.endswith(("Z", "z")):
+        value = value[:-1] + "+00:00"  # Python before 3.11 does not read "Z"
+    try:
+        try:
+            moment = dt.datetime.fromisoformat(value)
+        except ValueError:
+            moment = dt.datetime.combine(dt.date.today(), dt.time.fromisoformat(value))
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"expected a message id or an ISO date and time such as 2026-10-02T14:05, got {text!r}"
+        ) from None
+    if moment.tzinfo is None:
+        moment = moment.astimezone()  # a naive moment is local time
+    return Since(moment=to_utc_text(moment))
 
 
 # ---------------------------------------------------------------------------
@@ -597,6 +648,30 @@ SCHEMA = (
         PRIMARY KEY (agent, pattern)
     )
     """,
+    # Messages. AUTOINCREMENT never reuses an id, even after purges, so ids
+    # only grow and a remembered --since id never hides a newer message.
+    # `recipient` is an agent name or 'all'; `reply_to` is kept as a plain
+    # number so a reply survives the purge of the message it answers.
+    """
+    CREATE TABLE IF NOT EXISTS messages (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        posted_at TEXT NOT NULL,
+        sender    TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        tag       TEXT NOT NULL,
+        topic     TEXT NOT NULL,
+        body      TEXT NOT NULL,
+        reply_to  INTEGER
+    )
+    """,
+    # The paths and globs a message is about (post --file).
+    """
+    CREATE TABLE IF NOT EXISTS message_files (
+        message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+        path       TEXT NOT NULL,
+        PRIMARY KEY (message_id, path)
+    )
+    """,
 )
 
 
@@ -973,6 +1048,233 @@ def cmd_claims(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Messages
+# ---------------------------------------------------------------------------
+
+
+def query_messages(
+    conn: sqlite3.Connection, *, where: Iterable[str] = (), params: Iterable[Any] = ()
+) -> List[dict]:
+    """Return the messages meeting every condition, oldest first, with files.
+
+    Conditions refer to the messages table as ``m``.
+    """
+    clause = " AND ".join(where)
+    rows = conn.execute(
+        "SELECT m.*, f.path AS file FROM messages m"
+        " LEFT JOIN message_files f ON f.message_id = m.id"
+        f"{' WHERE ' + clause if clause else ''}"
+        " ORDER BY m.id, f.rowid",
+        list(params),
+    )
+    # The join yields one row per file, so gather each message's files.
+    messages: Dict[int, dict] = {}
+    for row in rows:
+        message = messages.get(row["id"])
+        if message is None:
+            message = messages[row["id"]] = {
+                "id": row["id"],
+                "posted": row["posted_at"],
+                "from": row["sender"],
+                "to": row["recipient"],
+                "tag": row["tag"],
+                "topic": row["topic"],
+                "body": row["body"],
+                "files": [],
+                "reply_to": row["reply_to"],
+            }
+        if row["file"] is not None:
+            message["files"].append(row["file"])
+    return list(messages.values())
+
+
+def require_message(conn: sqlite3.Connection, message_id: int) -> dict:
+    """Return one message by id, or raise UserError."""
+    found = query_messages(conn, where=["m.id = ?"], params=[message_id])
+    if not found:
+        raise UserError(f"there is no message #{message_id}")
+    return found[0]
+
+
+def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
+    """Return the SQL conditions for the --since and --tag options."""
+    where: List[str] = []
+    params: List[Any] = []
+    if args.since is not None:
+        condition, value = args.since.condition()
+        where.append(condition)
+        params.append(value)
+    if args.tag is not None:
+        where.append("m.tag = ?")
+        params.append(args.tag)
+    return where, params
+
+
+def describe_message(message: dict) -> str:
+    """Describe one message: a header line, then reply, files, and body."""
+    lines = [
+        f"#{message['id']} {message['tag']} from {message['from']} to {message['to']}, "
+        f"{local_label(message['posted'])}: {message['topic']}"
+    ]
+    if message["reply_to"] is not None:
+        lines.append(f"  In reply to #{message['reply_to']}.")
+    if message["files"]:
+        lines.append(f"  Files: {', '.join(message['files'])}")
+    lines += [f"  {line}".rstrip() for line in message["body"].splitlines()]
+    return "\n".join(lines)
+
+
+def describe_messages(heading: str, messages: List[dict]) -> str:
+    """Return a heading and then the messages, separated by blank lines."""
+    return "\n\n".join([heading] + [describe_message(message) for message in messages])
+
+
+def read_body(args: argparse.Namespace) -> str:
+    """Return a post's body from --body or --body-file, within the size limit.
+
+    Leading blank lines and trailing white space are dropped.
+    """
+    try:
+        if args.body_file is None:
+            body = args.body or ""
+        elif args.body_file == "-":
+            body = sys.stdin.read()
+        else:
+            body = Path(args.body_file).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise UserError(f"cannot read the message body: {error}") from error
+    body = body.rstrip().lstrip("\n")
+    size = len(body.encode("utf-8"))
+    if size > MAX_BODY_BYTES:
+        raise UserError(
+            f"the body is {size:,} bytes and the limit is {MAX_BODY_BYTES:,} (16 KB); "
+            "keep posts short, since the board is for coordination, not reports"
+        )
+    return body
+
+
+def resolve_recipient(
+    conn: sqlite3.Connection, raw: Optional[str], sender: str, parent: Optional[dict]
+) -> str:
+    """Return who a new post is addressed to.
+
+    --to wins: 'all', or a registered agent other than the sender. Without
+    it a reply goes back to the author of the message it answers (or, when
+    the sender wrote that message, to its recipient); any other post goes
+    to all.
+    """
+    if raw is None:
+        if parent is None:
+            return EVERYONE
+        return parent["from"] if parent["from"] != sender else parent["to"]
+    if raw.strip().lower() == EVERYONE:
+        return EVERYONE
+    name = normalize_name(raw)
+    if name == sender:
+        raise UserError("a post to yourself reaches nobody; address another agent or all")
+    if conn.execute("SELECT 1 FROM agents WHERE name = ?", (name,)).fetchone() is None:
+        raise UserError(f"unknown agent '{name}'{_did_you_mean(conn, name)}; address a registered agent or all")
+    return name
+
+
+def reply_topic(topic: str) -> str:
+    """Return a reply's default topic: "Re: " and the original, never doubled."""
+    if not topic.lower().startswith("re: "):
+        topic = f"Re: {topic}"
+    return topic[:MAX_LINE_LENGTH]
+
+
+def cmd_post(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Post a message to one agent or to all, optionally tied to files."""
+    topic = None if args.topic is None else one_line(args.topic, "topic")
+    body = read_body(args)
+    files = normalize_patterns(args.file)
+    with write_transaction(conn):
+        sender = require_agent(conn, args.sender)
+        parent = None if args.reply_to is None else require_message(conn, args.reply_to)
+        recipient = resolve_recipient(conn, args.to, sender, parent)
+        if topic is None:
+            if parent is None:
+                raise UserError("post needs --topic (only a reply may leave it out)")
+            topic = reply_topic(parent["topic"])
+        cursor = conn.execute(
+            "INSERT INTO messages (posted_at, sender, recipient, tag, topic, body, reply_to)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (to_utc_text(utc_now()), sender, recipient, args.tag, topic, body, args.reply_to),
+        )
+        conn.executemany(
+            "INSERT INTO message_files (message_id, path) VALUES (?, ?)",
+            [(cursor.lastrowid, path) for path in files],
+        )
+        message = require_message(conn, cursor.lastrowid)
+        holders = [
+            {"agent": claim["agent"], "pattern": claim["pattern"]}
+            for claim in load_claims(conn)
+            if claim["agent"] != sender and any(patterns_overlap(claim["pattern"], path) for path in files)
+        ]
+    replying = f", in reply to #{parent['id']}" if parent else ""
+    lines = [f"Posted #{message['id']} ({message['tag']}) to {recipient}{replying}."]
+    if holders:
+        lines.append("Claimed by: " + ", ".join(f"{h['agent']} ({h['pattern']})" for h in holders) + ".")
+    elif files:
+        lines.append("No other agent claims these files.")
+    return Outcome({**message, "claimed_by": holders}, "\n".join(lines))
+
+
+def cmd_read(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Show the public log, oldest first: every message, whoever it was for.
+
+    Without --since only the last DEFAULT_READ_COUNT messages are shown,
+    unless --last asks for another number.
+    """
+    where, params = message_filters(args)
+    if args.sender is not None:
+        where.append("m.sender = ?")
+        params.append(normalize_name(args.sender))
+    messages = query_messages(conn, where=where, params=params)
+    limit = args.last if args.last is not None else (None if args.since else DEFAULT_READ_COUNT)
+    shown = messages[-limit:] if limit else messages
+    if not shown:
+        text = "No messages match." if where else "No messages yet."
+    elif len(shown) < len(messages):
+        heading = (
+            f"The last {len(shown)} of {len(messages)} messages"
+            " (use --last N or --since ID to see others):"
+        )
+        text = describe_messages(heading, shown)
+    else:
+        text = describe_messages(f"{plural(len(shown), 'message')}:", shown)
+    return Outcome(shown, text)
+
+
+def cmd_thread(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Show a whole conversation: its first message and every reply under it."""
+    root = require_message(conn, args.id)
+    # Climb to the first message. Each reply's parent is an older message,
+    # so the climb ends; it stops early where a parent has been purged.
+    while root["reply_to"] is not None:
+        parents = query_messages(conn, where=["m.id = ?"], params=[root["reply_to"]])
+        if not parents:
+            break
+        root = parents[0]
+    replies: Dict[int, List[int]] = {}
+    for row in conn.execute(
+        "SELECT id, reply_to FROM messages WHERE reply_to IS NOT NULL AND id > ?", (root["id"],)
+    ):
+        replies.setdefault(row["reply_to"], []).append(row["id"])
+    ids, pending = [root["id"]], [root["id"]]
+    while pending:
+        children = replies.get(pending.pop(), [])
+        ids += children
+        pending += children
+    placeholders = ", ".join("?" for _ in ids)
+    messages = query_messages(conn, where=[f"m.id IN ({placeholders})"], params=ids)
+    purged = "" if root["reply_to"] is None else f" (it answers #{root['reply_to']}, which was purged)"
+    heading = f"Thread #{root['id']}{purged}, {plural(len(messages), 'message')}:"
+    return Outcome(messages, describe_messages(heading, messages))
+
+
+# ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
 
@@ -1064,6 +1366,46 @@ def build_parser() -> BoardArgumentParser:
 
     claims = command("claims", cmd_claims, "list claims and flag overlaps between agents")
     claims.add_argument("path", nargs="?", metavar="PATH", help="only the claims that cover this path or glob")
+
+    since_help = (
+        "a message id (messages after it) or a local date and time such as "
+        "2026-10-02T14:05 or 14:05 (messages from then on)"
+    )
+
+    post = command("post", cmd_post, "post a message to one agent or to all")
+    post.add_argument("sender", metavar="FROM", help="your agent name")
+    post.add_argument("--topic", help="a one-line subject (a reply may leave it out)")
+    post.add_argument(
+        "--to",
+        metavar="NAME",
+        help="an agent name or 'all' (default: all, or for a reply the author of the message it answers)",
+    )
+    post.add_argument("--tag", choices=TAGS, default="notice", help="the kind of message (default: notice)")
+    post.add_argument(
+        "--file",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="a path or glob the message is about; repeat for more",
+    )
+    body = post.add_mutually_exclusive_group()
+    body.add_argument("--body", help="the message text (at most 16 KB)")
+    body.add_argument("--body-file", metavar="FILE", help="read the text from FILE, or from standard input if FILE is -")
+    post.add_argument("--reply-to", type=positive_int, metavar="ID", help="the message this one answers")
+
+    read = command("read", cmd_read, "show the public log of messages")
+    read.add_argument("--since", type=parse_since, metavar="ID_OR_TIME", help=since_help)
+    read.add_argument("--tag", choices=TAGS, help="only messages of this kind")
+    read.add_argument("--from", dest="sender", metavar="NAME", help="only messages from this agent")
+    read.add_argument(
+        "--last",
+        type=positive_int,
+        metavar="N",
+        help=f"only the last N messages (default {DEFAULT_READ_COUNT} unless --since is given)",
+    )
+
+    thread = command("thread", cmd_thread, "show a message with its replies")
+    thread.add_argument("id", type=positive_int, metavar="ID", help="any message in the conversation")
     return parser
 
 

@@ -12,10 +12,13 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
+import argparse
 import io
 import json
+import multiprocessing
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -35,6 +38,28 @@ import bbs  # noqa: E402  (imported after the path is set up)
 
 #: A fixed moment for tests that control the clock.
 NOON = dt.datetime(2026, 10, 2, 12, 0, 0, tzinfo=dt.timezone.utc)
+
+#: Stored times look like this: UTC, to the second.
+UTC_TEXT = r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"
+
+
+def run_in_worker(label: int, board_dir: str, workdir: str, commands: List[List[str]], start, results) -> None:
+    """Body of a worker process in the concurrency tests.
+
+    Waits for the shared start signal so that every worker begins at once,
+    runs its board commands in order, and reports ``(label, outcomes)``
+    through ``results``, each outcome being (exit status, stdout, stderr).
+    """
+    os.environ[bbs.BOARD_DIR_ENV] = board_dir
+    os.chdir(workdir)
+    start.wait(60)
+    outcomes = []
+    for argv in commands:
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = bbs.main(argv)
+        outcomes.append((status, out.getvalue(), err.getvalue()))
+    results.put((label, outcomes))
 
 
 def environment_without_board_override() -> dict:
@@ -401,6 +426,229 @@ class ClaimTests(BoardTestCase):
         absolute = str(self.worktree / "TextMouth" / "Library.swift")
         data = self.ok_json("claim", "alpha", absolute, "TextMouth/Views")
         self.assertEqual(data["claims"], ["TextMouth/Library.swift", "TextMouth/Views/"])
+
+
+class SinceTests(unittest.TestCase):
+    """parse_since, the --since option shared by read and inbox."""
+
+    def test_a_whole_number_is_a_message_id(self) -> None:
+        self.assertEqual(bbs.parse_since("17"), bbs.Since(message_id=17))
+
+    def test_times_with_a_zone_are_converted_to_utc(self) -> None:
+        self.assertEqual(bbs.parse_since("2026-10-02T12:30Z").moment, "2026-10-02T12:30:00Z")
+        self.assertEqual(bbs.parse_since("2026-10-02 14:30:15+02:00").moment, "2026-10-02T12:30:15Z")
+
+    def test_times_without_a_zone_are_local(self) -> None:
+        local_midnight = dt.datetime(2026, 10, 2).astimezone()
+        self.assertEqual(bbs.parse_since("2026-10-02").moment, bbs.to_utc_text(local_midnight))
+        today_at = dt.datetime.combine(dt.date.today(), dt.time(12, 30)).astimezone()
+        self.assertEqual(bbs.parse_since("12:30").moment, bbs.to_utc_text(today_at))
+
+    def test_other_text_is_rejected(self) -> None:
+        for text in ("yesterday", "", "12:75", "-3"):
+            with self.subTest(text=text):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    bbs.parse_since(text)
+
+
+class PostingTests(BoardTestCase):
+    """post and read: putting messages on the board and the public log."""
+
+    def setUp(self) -> None:
+        """Register alpha, who claims TextMouth/Services/, and beta."""
+        super().setUp()
+        self.register("alpha", "TextMouth/Services/")
+        self.register("beta")
+
+    def post(self, *args: str, stdin: str = "") -> dict:
+        """Post a message and return it as stored."""
+        return self.ok_json("post", *args, stdin=stdin)
+
+    def test_a_post_is_stored_whole_and_goes_to_all_by_default(self) -> None:
+        message = self.post(
+            "beta", "--tag", "finding", "--topic", "Leaky  parser",
+            "--file", "TextMouth/Services/DOCXParser.swift", "--file", "./TextMouth/Services/Zip.swift",
+            "--body", "line one\nline two\n\n",
+        )
+        self.assertEqual(message["id"], 1)
+        self.assertEqual((message["from"], message["to"], message["tag"]), ("beta", "all", "finding"))
+        self.assertEqual(message["topic"], "Leaky parser")
+        self.assertEqual(message["body"], "line one\nline two")
+        self.assertEqual(message["files"], ["TextMouth/Services/DOCXParser.swift", "TextMouth/Services/Zip.swift"])
+        self.assertIsNone(message["reply_to"])
+        self.assertRegex(message["posted"], UTC_TEXT)
+        self.assertEqual(message["claimed_by"], [{"agent": "alpha", "pattern": "TextMouth/Services/"}])
+        self.assertEqual([m["id"] for m in self.ok_json("read")], [1])
+
+    def test_a_post_can_be_addressed_to_one_agent(self) -> None:
+        self.assertEqual(self.post("alpha", "--to", "BETA", "--topic", "hello")["to"], "beta")
+        self.assertEqual(self.post("alpha", "--to", "All", "--topic", "hello")["to"], "all")
+
+    def test_bad_senders_and_recipients_are_rejected(self) -> None:
+        self.assertIn("register gamma --role", self.fails("post", "gamma", "--topic", "x"))
+        self.assertIn("did you mean 'beta'", self.fails("post", "alpha", "--to", "bet", "--topic", "x"))
+        self.assertIn("reaches nobody", self.fails("post", "alpha", "--to", "alpha", "--topic", "x"))
+        self.fails("post", "alpha", "--topic", "x", "--tag", "bild")
+        self.assertEqual(self.ok_json("read"), [])
+
+    def test_a_topic_is_required(self) -> None:
+        self.assertIn("needs --topic", self.fails("post", "alpha", "--body", "no topic"))
+
+    def test_the_body_may_come_from_standard_input_or_a_file(self) -> None:
+        self.assertEqual(self.post("alpha", "--topic", "x", "--body-file", "-", stdin="\n\nfrom stdin\n")["body"], "from stdin")
+        (self.worktree / "note.txt").write_text("from a file\n")
+        self.assertEqual(self.post("alpha", "--topic", "x", "--body-file", "note.txt")["body"], "from a file")
+        self.fails("post", "alpha", "--topic", "x", "--body-file", "missing.txt")
+        self.fails("post", "alpha", "--topic", "x", "--body", "both", "--body-file", "-")
+
+    def test_bodies_are_limited_to_16_kb(self) -> None:
+        exactly = "é" * (16 * 1024 // 2)  # two bytes each in UTF-8
+        self.assertEqual(self.post("alpha", "--topic", "x", "--body", exactly)["body"], exactly)
+        message = self.fails("post", "alpha", "--topic", "x", "--body", "x" * (16 * 1024 + 1))
+        self.assertIn("16,385 bytes", message)
+        self.assertEqual(len(self.ok_json("read")), 1)
+
+    def test_ids_increase_with_every_post(self) -> None:
+        ids = [self.post("alpha", "--topic", f"post {n}")["id"] for n in range(5)]
+        self.assertEqual(ids, [1, 2, 3, 4, 5])
+
+    def test_read_filters_by_since_tag_and_sender(self) -> None:
+        self.post("alpha", "--topic", "one", "--tag", "build")
+        self.post("beta", "--topic", "two", "--tag", "commit")
+        self.post("alpha", "--topic", "three", "--tag", "commit")
+
+        def topics(*args: str) -> List[str]:
+            """Topics of the messages `read` shows with these options."""
+            return [message["topic"] for message in self.ok_json("read", *args)]
+
+        self.assertEqual(topics("--since", "1"), ["two", "three"])
+        self.assertEqual(topics("--tag", "commit"), ["two", "three"])
+        self.assertEqual(topics("--from", "Alpha"), ["one", "three"])
+        self.assertEqual(topics("--from", "alpha", "--tag", "commit"), ["three"])
+        self.assertIn("No messages match.", self.ok("read", "--tag", "merge"))
+
+    def test_read_since_a_time(self) -> None:
+        with self.clock(NOON):
+            self.post("alpha", "--topic", "at noon")
+        with self.clock(NOON + dt.timedelta(hours=1)):
+            self.post("alpha", "--topic", "an hour later")
+        half_past_local = (NOON + dt.timedelta(minutes=30)).astimezone().strftime("%Y-%m-%dT%H:%M")
+        for since in ("2026-10-02T12:30Z", half_past_local):
+            with self.subTest(since=since):
+                self.assertEqual([m["topic"] for m in self.ok_json("read", "--since", since)], ["an hour later"])
+
+    def test_read_shows_the_last_twenty_unless_asked_otherwise(self) -> None:
+        for number in range(25):
+            self.post("alpha", "--topic", f"post {number}")
+        self.assertEqual([m["id"] for m in self.ok_json("read")], list(range(6, 26)))
+        self.assertIn("The last 20 of 25 messages", self.ok("read"))
+        self.assertEqual([m["id"] for m in self.ok_json("read", "--last", "3")], [23, 24, 25])
+        self.assertEqual(len(self.ok_json("read", "--since", "2")), 23, "--since shows everything after the id")
+
+    def test_read_text_shows_each_message(self) -> None:
+        self.post("beta", "--tag", "finding", "--topic", "Leaky", "--file", "TextMouth/Services/A.swift", "--body", "Details\nhere")
+        text = self.ok("read")
+        self.assertIn("#1 finding from beta to all, ", text)
+        self.assertIn(": Leaky\n  Files: TextMouth/Services/A.swift\n  Details\n  here", text)
+
+
+class ThreadTests(BoardTestCase):
+    """Replies (post --reply-to) and thread."""
+
+    def setUp(self) -> None:
+        """Register alpha and beta."""
+        super().setUp()
+        self.register("alpha")
+        self.register("beta")
+
+    def post(self, *args: str) -> dict:
+        """Post a message and return it as stored."""
+        return self.ok_json("post", *args)
+
+    def test_a_reply_goes_back_to_the_author_under_the_same_topic(self) -> None:
+        self.post("alpha", "--to", "beta", "--tag", "question", "--topic", "Merge order?")
+        answer = self.post("beta", "--reply-to", "1", "--body", "After T07.")
+        self.assertEqual((answer["to"], answer["topic"], answer["reply_to"]), ("alpha", "Re: Merge order?", 1))
+        follow_up = self.post("alpha", "--reply-to", "2", "--body", "Will do.")
+        self.assertEqual((follow_up["to"], follow_up["topic"]), ("beta", "Re: Merge order?"))
+        own = self.post("alpha", "--reply-to", "3", "--body", "Done.")
+        self.assertEqual(own["to"], "beta", "answering yourself reaches whoever you wrote to")
+        self.assertEqual(self.post("beta", "--reply-to", "1", "--to", "all", "--topic", "FYI")["to"], "all")
+
+    def test_thread_shows_the_whole_conversation_from_any_of_its_messages(self) -> None:
+        self.post("alpha", "--topic", "root")  # 1
+        self.post("beta", "--reply-to", "1")  # 2
+        self.post("alpha", "--reply-to", "2")  # 3
+        self.post("beta", "--topic", "unrelated")  # 4
+        self.post("beta", "--reply-to", "1")  # 5
+        for start in ("1", "3", "5"):
+            with self.subTest(start=start):
+                self.assertEqual([m["id"] for m in self.ok_json("thread", start)], [1, 2, 3, 5])
+        self.assertEqual([m["id"] for m in self.ok_json("thread", "4")], [4])
+        self.assertIn("Thread #1, 4 messages:", self.ok("thread", "3"))
+
+    def test_missing_messages_are_errors(self) -> None:
+        self.assertIn("no message #9", self.fails("post", "alpha", "--reply-to", "9", "--body", "x"))
+        self.assertIn("no message #9", self.fails("thread", "9"))
+
+
+class ConcurrencyTests(BoardTestCase):
+    """Several processes using the board at the same moment."""
+
+    def run_in_parallel(self, command_lists: List[List[List[str]]]) -> List[List[Tuple[int, str, str]]]:
+        """Run each list of commands in its own process, all started at once.
+
+        Returns each process's outcomes, in the order the lists were given.
+        """
+        context = multiprocessing.get_context("spawn")
+        start, results = context.Event(), context.Queue()
+        workers = [
+            context.Process(
+                target=run_in_worker,
+                args=(label, str(self.board_dir), str(self.worktree), commands, start, results),
+            )
+            for label, commands in enumerate(command_lists)
+        ]
+        for worker in workers:
+            worker.start()
+        start.set()
+        reported = dict(results.get(timeout=120) for _ in workers)
+        for worker in workers:
+            worker.join(timeout=60)
+            self.assertEqual(worker.exitcode, 0)
+        return [reported[label] for label in range(len(workers))]
+
+    def test_parallel_posters_get_unique_increasing_ids(self) -> None:
+        posters, per_poster = [f"poster{n}" for n in range(6)], 15
+        for name in posters:
+            self.register(name)
+        outcomes = self.run_in_parallel(
+            [[["post", name, "--topic", f"{name} {n}", "--json"] for n in range(per_poster)] for name in posters]
+        )
+        all_ids = []
+        for name, results in zip(posters, outcomes):
+            for status, out, err in results:
+                self.assertEqual((status, err), (0, ""), f"{name}: {err}")
+            ids = [json.loads(out)["id"] for _, out, _ in results]
+            self.assertEqual(ids, sorted(ids), f"{name}'s posts must get increasing ids")
+            all_ids += ids
+        total = len(posters) * per_poster
+        self.assertEqual(sorted(all_ids), list(range(1, total + 1)), "every post is stored once with a unique id")
+        stored = self.ok_json("read", "--since", "0")
+        self.assertEqual([m["id"] for m in stored], list(range(1, total + 1)))
+        for name in posters:
+            numbers = [int(m["topic"].split()[1]) for m in stored if m["from"] == name]
+            self.assertEqual(numbers, list(range(per_poster)), f"{name}'s posts are stored in the order sent")
+
+    def test_parallel_first_use_creates_one_shared_board(self) -> None:
+        self.assertFalse(self.board_dir.exists())
+        names = [f"agent{n}" for n in range(6)]
+        outcomes = self.run_in_parallel([[["register", name, "--role", "r", "--branch", "b"]] for name in names])
+        for (status, _, err), in outcomes:
+            self.assertEqual((status, err), (0, ""))
+        self.assertEqual([agent["name"] for agent in self.ok_json("agents")], names)
+        with contextlib.closing(sqlite3.connect(str(self.board_dir / "board.sqlite"))) as conn:
+            self.assertEqual(conn.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
 
 class RepositoryDiscoveryTests(TemporaryDirectoryMixin):
