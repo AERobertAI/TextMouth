@@ -607,7 +607,8 @@ final class BookCloudStorageServiceTests: XCTestCase {
     /// The part of a file still to come that the sync service publishes
     /// counts toward the progress, by size: a book whose 900-byte file is
     /// still to come, beside a 100-byte record already here, moves as that
-    /// file does, and the download stops listening once it ends.
+    /// file does. The download listens to the package as a whole and to
+    /// that file, never to the record, and stops listening once it ends.
     func testAPublishedPartOfAFileCountsBySize() async throws {
         let book = try makePackage(["audio.m4b", "bookInfo.json"])
         let items = self.items!
@@ -632,7 +633,11 @@ final class BookCloudStorageServiceTests: XCTestCase {
             BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 1_000, totalBytes: 1_000),
         ])
         XCTAssertEqual(steps.map(\.percent), [10, 46, 64, 100])
-        XCTAssertEqual(publisher.filesListenedTo, paths([book["audio.m4b"]]), "listened to a file already here")
+        XCTAssertEqual(
+            publisher.filesListenedTo,
+            paths([book.package.url, book["audio.m4b"]]),
+            "listened to a file already here, or not to the package"
+        )
         XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
     }
 
@@ -659,8 +664,9 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(steps.map(\.percent), [50, 75, 100])
     }
 
-    /// A download listens to each file still to come, those found later in
-    /// a folder that arrives included, and to no file already here.
+    /// A download listens to the package as a whole and to each file still
+    /// to come, those found later in a folder that arrives included, and to
+    /// no file already here.
     func testADownloadListensToEachFileStillToCome() async throws {
         let book = try makePackage(["bookInfo.json", "content.md", "parts/0001.mp3"])
         let items = self.items!
@@ -683,7 +689,10 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
         _ = try await collect(storage.download(book.package))
 
-        XCTAssertEqual(publisher.filesListenedTo, paths([book["content.md"], book["parts/0001.mp3"]]))
+        XCTAssertEqual(
+            publisher.filesListenedTo,
+            paths([book.package.url, book["content.md"], book["parts/0001.mp3"]])
+        )
         XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
     }
 
@@ -698,7 +707,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
             makeStorage(sleep: { try await polls.sleep($0) }, stallLimit: .seconds(1)).download(book.package),
             failsWith: .stalled(seconds: 1)
         )
-        XCTAssertEqual(publisher.filesListenedTo.count, 1)
+        XCTAssertEqual(publisher.filesListenedTo.count, 2, "the package and its file")
         XCTAssertEqual(publisher.listeningCount, 0, "a failed download kept listening")
 
         let held = HeldPolls()
@@ -706,7 +715,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
             break
         }
         await fulfillment(of: [publisher.expectationThatListeningEnds()], timeout: 10)
-        XCTAssertEqual(publisher.filesListenedTo.count, 2)
+        XCTAssertEqual(publisher.filesListenedTo.count, 4, "the package and its file again")
     }
 
     /// A part published lower than one heard before, as when the sync
@@ -1072,6 +1081,70 @@ final class BookCloudStorageServiceTests: XCTestCase {
         )
     }
 
+    /// What the sync service publishes for a package as a whole moves the
+    /// progress of a package only in the cloud, counted as one item still to
+    /// come, as iCloud Drive's package-level fractions reach the reader's
+    /// bar; the download listens to the package alone, since it lists no
+    /// file, and stops listening once the package is here.
+    func testWhatIsPublishedForAPackageMovesItsProgress() async throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let items = try XCTUnwrap(self.items)
+        let publisher = try XCTUnwrap(self.publisher)
+        let package = book.package.url
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let inCloud = SharedFlag(true)
+        let polls = ScriptedPolls([
+            {
+                items.setStatus(managed(.downloading, bytes: nil), of: package)
+                publisher.publish(0.4, of: package)
+            },
+            { publisher.publish(0.8, of: package) },
+            {
+                inCloud.set(false)
+                items.setStatus(managed(.downloaded, bytes: nil), of: package)
+            },
+        ])
+        let storage = makeStorage(sleep: { try await polls.sleep($0) }, readFolder: listing(refusing: package, while: inCloud))
+
+        let steps = try await collect(storage.download(book.package))
+
+        XCTAssertEqual(steps, [
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0),
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.4),
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.8),
+            BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 0, totalBytes: 0),
+        ])
+        XCTAssertEqual(steps.map(\.percent), [0, 40, 80, 100])
+        XCTAssertEqual(publisher.filesListenedTo, paths([package]))
+        XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
+    }
+
+    /// What the sync service publishes for a package as a whole counts for
+    /// each of its files still to come, here by size: half the package is
+    /// half of each such file, unless a file's own published part is further
+    /// along.
+    func testAPartPublishedForThePackageCountsForEachFileStillToCome() async throws {
+        let book = try makePackage(["audio.m4b", "cover.jpg"])
+        let items = try XCTUnwrap(self.items)
+        let publisher = try XCTUnwrap(self.publisher)
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil))
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"], carriesSyncFlags: false)
+        items.setStatus(managed(.notDownloaded, bytes: 100), of: book["cover.jpg"], carriesSyncFlags: false)
+        let polls = ScriptedPolls([
+            { publisher.publish(0.5, of: book.package.url) },
+            { publisher.publish(0.8, of: book["audio.m4b"]) },
+            {
+                items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"], carriesSyncFlags: false)
+                items.setStatus(managed(.downloaded, bytes: 100), of: book["cover.jpg"], carriesSyncFlags: false)
+            },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.completedBytes), [0, 500, 770, 1_000])
+        XCTAssertEqual(steps.map(\.percent), [0, 50, 77, 100])
+    }
+
     /// A package synced as one item that the sync service is downloading
     /// keeps a stall away, however long it takes: the four quiet checks that
     /// make a two-second stall never come.
@@ -1124,7 +1197,8 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
     /// A package whose files carry flags of their own downloads file by
     /// file, its folder's flags notwithstanding, as on Google Drive: the
-    /// missing file is asked for, and the part published for it counts.
+    /// missing file is asked for, the download listens to the package and to
+    /// that file, and the part published for the file counts.
     func testAPackageWhoseFilesCarryFlagsDownloadsFileByFile() async throws {
         let book = try makePackage(["audio.m4b", "bookInfo.json"])
         let items = try XCTUnwrap(self.items)
@@ -1140,6 +1214,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
         XCTAssertEqual(steps.map(\.percent), [10, 55, 100])
         XCTAssertEqual(paths(items.downloadRequests), paths([book["audio.m4b"]]))
+        XCTAssertEqual(publisher.filesListenedTo, paths([book.package.url, book["audio.m4b"]]))
     }
 
     // MARK: - Installation

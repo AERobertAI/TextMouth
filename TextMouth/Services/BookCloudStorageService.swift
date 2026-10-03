@@ -28,9 +28,11 @@ import os
 /// offline, when an item reports a download error, when the package
 /// disappears, or after a minute with nothing arriving and nothing being
 /// downloaded. Meanwhile it listens for the progress the sync service
-/// publishes for each file still to come (`PublishedFileProgress`): a part
-/// of a file it publishes counts toward the progress, by size or by files,
-/// so a book of one large file shows how far that file has got. A file it
+/// publishes for the package as a whole, as iCloud Drive does for a package
+/// it syncs as one item, and for each file still to come, as Google Drive
+/// and Dropbox do (`PublishedFileProgress`). A part it publishes counts
+/// toward the progress, by size or by files, so a book of one large file,
+/// or a package arriving as one item, shows how far it has got. What it
 /// publishes nothing for counts only once it is here, as before.
 ///
 /// What is slow or outside the app is injectable, so tests run without a
@@ -50,10 +52,10 @@ final class BookCloudStorageService: BookCloudStorage {
     /// only in the cloud (`DatalessFiles.isDownloadRefusal(_:)`).
     typealias FolderReader = @Sendable (URL) throws -> [PackageEntry]
 
-    /// Listens for the progress the sync service publishes for one file,
-    /// handing each fraction heard, from 0 to 1, to the handler, on the
-    /// thread it is heard on; calling the closure it returns stops the
-    /// listening. `PublishedFileProgress` in the app.
+    /// Listens for the progress the sync service publishes for a download of
+    /// one item, a file or a package, handing each fraction heard, from 0 to
+    /// 1, to the handler, on the thread it is heard on; calling the closure
+    /// it returns stops the listening. `PublishedFileProgress` in the app.
     typealias ProgressListener = @Sendable (URL, @escaping @Sendable (Double) -> Void) -> @Sendable () -> Void
 
     /// One folder or regular file directly inside a folder.
@@ -113,14 +115,14 @@ final class BookCloudStorageService: BookCloudStorage {
     /// Writes one event line: the start, end, or failure of a download or
     /// a removal.
     private let logEvent: @Sendable (String) -> Void
-    /// Listens for the progress the sync service publishes for one file.
+    /// Listens for the progress the sync service publishes for one item.
     private let listenForProgress: ProgressListener
 
     /// Storage built on `items`. The rest is for tests: reachability (the
     /// system's), the sleep between checks (a real one), the stall limit
     /// (60 seconds), the folder listing (`FileManager`'s), where event lines
     /// go (the debug log, as storage events), and how a download listens
-    /// for the progress published for a file (`PublishedFileProgress`).
+    /// for the progress published for an item (`PublishedFileProgress`).
     init(
         items: any SyncFlagReporting,
         reachability: NetworkReachability = .system,
@@ -193,11 +195,11 @@ final class BookCloudStorageService: BookCloudStorage {
     /// The work of one download: ask the sync service for every missing
     /// item, then check the package every `pollInterval`, handing each new
     /// progress to `report`, until every file is on this Mac. Meanwhile it
-    /// listens for the progress published for each file still to come, and
-    /// counts the parts heard. Throws a `BookCloudError` when the download
-    /// cannot finish, and `CancellationError` when its task is cancelled.
-    /// Writes one event line when it starts and one when it ends, and only
-    /// trace lines between.
+    /// listens for the progress published for the package as a whole and
+    /// for each file still to come, and counts the parts heard. Throws a
+    /// `BookCloudError` when the download cannot finish, and
+    /// `CancellationError` when its task is cancelled. Writes one event line
+    /// when it starts and one when it ends, and only trace lines between.
     private func runDownload(of package: BookPackage, report: (BookDownloadProgress) -> Void) async throws {
         let name = Self.logName(of: package)
         let bookID = Self.traceName(of: package)
@@ -205,9 +207,10 @@ final class BookCloudStorageService: BookCloudStorage {
         let started = clock.now
         // The progress last reported, for the line a cancellation writes.
         var latest: BookDownloadProgress?
-        // The parts the sync service publishes of the files still to come,
-        // and how to stop listening to each file, by path. Every listening
-        // stops when the download ends, however it ends.
+        // The parts the sync service publishes of the package as a whole and
+        // of the files still to come, and how to stop listening to each, by
+        // path. Every listening stops when the download ends, however it
+        // ends.
         let parts = PublishedParts()
         var listening: [String: @Sendable () -> Void] = [:]
         defer { listening.values.forEach { $0() } }
@@ -221,7 +224,7 @@ final class BookCloudStorageService: BookCloudStorage {
             // reports one at the start, so the measure never switches to
             // sizes midway; it switches to files if new items lack sizes.
             var bySize = survey.sizesAreKnown
-            listen(to: survey, into: parts, listening: &listening)
+            listen(to: survey, of: package, into: parts, listening: &listening)
             var heard = parts.percents
             var current = survey.progress(bySize: bySize, parts: heard)
             let service = items.location(of: package.url).provider?.displayName ?? "the sync service"
@@ -258,14 +261,16 @@ final class BookCloudStorageService: BookCloudStorage {
                 // Files found since, such as those of a folder that arrived,
                 // are listened to as well. A part heard of a file that is
                 // here now, or gone, is forgotten, so a file that goes back
-                // to the cloud counts from nothing again.
-                listen(to: survey, into: parts, listening: &listening)
+                // to the cloud counts from nothing again. The package's part
+                // lasts the whole download, which ends once it is here.
+                listen(to: survey, of: package, into: parts, listening: &listening)
                 parts.forget(survey.files.filter { !$0.status.state.isArriving }.map(\.url.path))
                 let heardBefore = heard
                 heard = parts.percents
                 if !tracedParts, !heard.isEmpty {
                     tracedParts = true
-                    DiagnosticLog.trace(.storage, "cloud download \(bookID): the sync service publishes progress within files")
+                    let whose = package.isPackage && heard[package.url.path] != nil ? "for the package as a whole" : "within files"
+                    DiagnosticLog.trace(.storage, "cloud download \(bookID): the sync service publishes progress \(whose)")
                 }
 
                 bySize = bySize && survey.sizesAreKnown
@@ -316,17 +321,22 @@ final class BookCloudStorageService: BookCloudStorage {
         }
     }
 
-    /// Starts listening for the progress the sync service publishes for each
-    /// file of `survey` still to come that is not listened to yet, noting
-    /// what is heard in `parts`; `listening` keeps how to stop each.
+    /// Starts listening for the progress the sync service publishes for
+    /// `package` as a whole, which iCloud Drive publishes for a package it
+    /// syncs as one item, and for each file of `survey` still to come, which
+    /// Google Drive and Dropbox publish, each not listened to yet; what is
+    /// heard is noted in `parts`, and `listening` keeps how to stop each. A
+    /// book without a package is its own file, listened to once.
     private func listen(
         to survey: Survey,
+        of package: BookPackage,
         into parts: PublishedParts,
         listening: inout [String: @Sendable () -> Void]
     ) {
-        for file in survey.files where file.status.state.isArriving && listening[file.url.path] == nil {
-            let path = file.url.path
-            listening[path] = listenForProgress(file.url) { fraction in
+        let arriving = survey.files.filter { $0.status.state.isArriving }.map(\.url)
+        for item in [package.url] + arriving where listening[item.path] == nil {
+            let path = item.path
+            listening[path] = listenForProgress(item) { fraction in
                 parts.hear(fraction, of: path)
             }
         }
@@ -508,40 +518,52 @@ final class BookCloudStorageService: BookCloudStorage {
         }
 
         /// How far the download has got, by size or by files, with `parts`,
-        /// the parts the sync service published of files still to come, in
-        /// whole percent by path, folded in: by size, each such file's
-        /// reported size times its part; by files, its part of one file. A
-        /// file nothing was published for counts only once it is here.
+        /// the parts the sync service published, in whole percent by path,
+        /// folded in. Each file still to come counts its own part or, when
+        /// that is less, the part published for the package as a whole, as
+        /// iCloud Drive publishes a package arriving as one item: by size,
+        /// the file's reported size times that part; by files, that part of
+        /// one file. By files, each folder still in the cloud, the package's
+        /// own among them, counts as one file to come, of which the
+        /// package's part is done. What nothing was published for counts
+        /// only once it is here.
         func progress(bySize: Bool, parts: [String: Int] = [:]) -> BookDownloadProgress {
             var progress = BookCloudStorageService.progress(
                 of: files.map(\.status),
                 foldersInCloud: listing.foldersInCloud.count,
                 bySize: bySize
             )
+            let packagePart = package.flatMap { parts[$0.url.path] } ?? 0
             for file in files where file.status.state.isArriving {
-                guard let percent = parts[file.url.path], percent > 0 else { continue }
+                let percent = max(parts[file.url.path] ?? 0, packagePart)
+                guard percent > 0 else { continue }
                 if bySize {
                     progress.completedBytes += (file.status.byteCount ?? 0) * Int64(percent) / 100
                 } else {
                     progress.partialFiles += Double(percent) / 100
                 }
             }
+            // By size no folder is still in the cloud: one makes the
+            // download count files (`sizesAreKnown`).
+            if !bySize {
+                progress.partialFiles += Double(packagePart) / 100 * Double(listing.foldersInCloud.count)
+            }
             return progress
         }
     }
 
-    /// The parts of its files still to come that the sync service publishes
-    /// during one download: heard on the system's threads, and read at each
-    /// check.
+    /// The parts of the package as a whole, and of its files still to come,
+    /// that the sync service publishes during one download: heard on the
+    /// system's threads, and read at each check.
     private struct PublishedParts: Sendable {
-        /// Each file's part, in whole percent, by path: the most heard since
-        /// the file was last seen here, so a download the sync service
-        /// starts again never takes the progress back. Whole percents keep
-        /// a file's progress from changing at every check of a download that
-        /// takes minutes.
+        /// Each item's part, in whole percent, by path: the most heard since
+        /// a file was last seen here, or, for the package, since the download
+        /// began, so a download the sync service starts again never takes
+        /// the progress back. Whole percents keep the progress from changing
+        /// at every check of a download that takes minutes.
         private let percentsByPath = OSAllocatedUnfairLock(initialState: [String: Int]())
 
-        /// Notes that the sync service published `fraction` of the file at
+        /// Notes that the sync service published `fraction` of the item at
         /// `path`; a fraction that is no number is passed over.
         func hear(_ fraction: Double, of path: String) {
             guard fraction.isFinite else { return }
@@ -561,7 +583,7 @@ final class BookCloudStorageService: BookCloudStorage {
             }
         }
 
-        /// Each file's part so far, in whole percent, by path.
+        /// Each item's part so far, in whole percent, by path.
         var percents: [String: Int] {
             percentsByPath.withLock { $0 }
         }
