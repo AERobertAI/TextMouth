@@ -29,6 +29,8 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
     /// change if it reached the user's preferences.
     static let textMouthKeys = [
         "textMouthDataDirectory",
+        "textMouthDataDirectoryBookmark",
+        "textMouthLibraryIdentity",
         "soundEffectsEnabled",
         "soundEffectsVolume",
         "soundEffectAssignments",

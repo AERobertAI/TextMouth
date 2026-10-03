@@ -11,13 +11,14 @@ extension XCTestCase {
     /// helper arranges, the writes still queued are made and the data
     /// directory goes back to where it is now. Then config.json's copy of
     /// the setting is put back, then the scratch folder is removed; the
-    /// data-directory preference is put back too.
+    /// data-directory preferences (its path, bookmark, and the identity
+    /// expected there) are put back too.
     /// Call it after making any fixture whose teardown writes into the data
     /// directory, such as an integration world, so those writes land where
     /// they began.
     @MainActor
     func makeDataDirectoryMoveDestination(_ label: String) throws -> URL {
-        preservePreferences(["textMouthDataDirectory"])
+        preservePreferences(DataDirectoryPreferences.keys)
         // Teardown blocks run last registered first: the scratch folder's
         // removal, registered here, runs after the two blocks below.
         let scratch = try makeSandboxDirectory(label)

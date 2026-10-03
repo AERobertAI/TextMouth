@@ -8,10 +8,6 @@ import Foundation
 /// process's sandbox under hosted tests.
 enum TextMouthPaths {
 
-    /// Preferences key for the custom data directory path. Every release has
-    /// used it, so a location chosen earlier keeps loading.
-    private static let customPathKey = "textMouthDataDirectory"
-
     /// Name of the data directory inside a home directory.
     static let dataDirectoryName = ".TextMouth"
 
@@ -48,16 +44,24 @@ enum TextMouthPaths {
     }
 
     /// Set a custom data directory path. Pass nil to reset to default.
+    ///
+    /// Beside the path it records a bookmark of the folder, which finds the
+    /// folder again after it is renamed or its drive mounts under another
+    /// name, and the identity of the library the folder holds, so a folder
+    /// that only has the right name is never taken for this library (FR02).
+    /// A custom location always exists before it is set: a move publishes
+    /// its copy first, and choosing a library points at an existing one. A
+    /// folder holding no identity yet leaves none expected; the library
+    /// model records it when the library opens.
     /// - Parameters:
     ///   - url: The new data directory, or nil for the default location.
     ///   - preferences: The store holding the setting: this process's
     ///     preferences unless a test passes its own.
     static func setCustomRoot(_ url: URL?, in preferences: UserDefaults = TextMouthRuntime.current.preferences) {
-        if let url = url {
-            preferences.set(url.path, forKey: customPathKey)
-        } else {
-            preferences.removeObject(forKey: customPathKey)
-        }
+        DataDirectoryPreferences.customPath.write(url?.path, to: preferences)
+        DataDirectoryPreferences.bookmark.write(url.flatMap(DataDirectoryPreferences.makeBookmark), to: preferences)
+        let identity = DataDirectoryPreferences.identity(in: url ?? defaultRoot)
+        DataDirectoryPreferences.expectedIdentity.write(identity?.id, to: preferences)
     }
 
     /// The currently configured path as a string (for display)
@@ -83,7 +87,7 @@ enum TextMouthPaths {
     /// takes the root elsewhere, until the test puts it back.
     private static func customRootPath(for runtime: TextMouthRuntime) -> String? {
         guard !runtime.isHostedTest,
-              let path = runtime.preferences.string(forKey: customPathKey),
+              let path = DataDirectoryPreferences.customPath.read(from: runtime.preferences),
               !path.isEmpty else {
             return nil
         }
