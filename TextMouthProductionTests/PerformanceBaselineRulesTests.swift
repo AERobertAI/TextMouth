@@ -6,7 +6,7 @@ import XCTest
 /// medians, the verdicts at twice and 1.5 times a baseline, when the Mac
 /// counts as busy or the baselines as another Mac's, the settings the
 /// environment gives, comparing and confirming a regression, recording new
-/// baselines, and the list of measurements.
+/// baselines, the list of measurements, and the committed rules fixture.
 @MainActor
 final class PerformanceBaselineRulesTests: XCTestCase {
 
@@ -361,6 +361,23 @@ final class PerformanceBaselineRulesTests: XCTestCase {
     func testEveryMeasurementHasANameOfItsOwn() {
         let names = PerformanceMeasure.all.map(\.name)
         XCTAssertEqual(Set(names).count, names.count, "two measurements share a name")
+    }
+
+    // MARK: - The Committed Files
+
+    /// The developer's rules fixture holds the 16 rules, every one enabled
+    /// and with an ID of its own, and they change prose as the developer's
+    /// rules do: titles spelled out, footnote marks dropped, em dashes
+    /// spaced, and an OCR'd bar read as "I".
+    func testTheDevelopersRulesFixtureHoldsSixteenRules() throws {
+        let rules = try PerformanceFixtures.developerSubstitutionRules()
+        XCTAssertEqual(rules.count, 16)
+        XCTAssertTrue(rules.allSatisfy(\.isEnabled))
+        XCTAssertEqual(Set(rules.map(\.id)).count, rules.count)
+        XCTAssertEqual(rules.last?.name, "| OCR error to I")
+
+        let transformed = TextSubstitutionService(rules: rules).transform("Mr. Varga met Dr. Okafor — see [12] | then left.")
+        XCTAssertEqual(transformed.modifiedText, "Mister Varga met Doctor Okafor  —  see  I then left.")
     }
 
     // MARK: - Support
