@@ -591,6 +591,95 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(substitutions.isEnabled)
     }
 
+    /// The repeated-symbol settings applied from config.json reach the
+    /// substitution service following the same store at once, and are saved
+    /// back under readable names: the style as "repeat", "count", or "omit",
+    /// the threshold as a number, and the symbols as text.
+    func testRepeatedSymbolSettingsReachTheirServiceAndAreSaved() throws {
+        let store = try isolatedDefaults()
+        let substitutions = TextSubstitutionService(rules: [], preferences: store)
+        let viewModel = makeIsolatedViewModel(store)
+
+        viewModel.applyConfigChanges(try decodeConfig("""
+        {"repeatedSymbolStyle": "omit", "repeatedSymbolThreshold": -1, "repeatedSymbolSet": "#~"}
+        """))
+
+        XCTAssertEqual(substitutions.repeatedSymbolRule, RepeatedSymbolRule(style: .leaveOut, threshold: -1, symbols: "#~"))
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(saved.repeatedSymbolStyle, "omit")
+        XCTAssertEqual(saved.repeatedSymbolThreshold, -1)
+        XCTAssertEqual(saved.repeatedSymbolSet, "#~")
+        let file = try jsonObject(saved)
+        XCTAssertEqual(file["repeatedSymbolStyle"] as? String, "omit")
+        XCTAssertEqual(file["repeatedSymbolThreshold"] as? Int, -1)
+        XCTAssertEqual(file["repeatedSymbolSet"] as? String, "#~")
+    }
+
+    /// A store holding no repeated-symbol settings is saved with the
+    /// standard ones, so config.json always shows the settings in force.
+    func testStandardRepeatedSymbolSettingsAreSaved() throws {
+        let viewModel = makeIsolatedViewModel(try isolatedDefaults())
+        var saved = ConfigService.AppConfig()
+
+        viewModel.writePreferences(into: &saved)
+
+        XCTAssertEqual(saved.repeatedSymbolStyle, "count")
+        XCTAssertEqual(saved.repeatedSymbolThreshold, 4)
+        XCTAssertEqual(saved.repeatedSymbolSet, SettingsPolicy.repeatedSymbolSet.defaultValue)
+    }
+
+    /// Values the Settings controls could not produce are repaired as the
+    /// file is read: a negative threshold means -1, one past 99 is 99, and
+    /// the symbols keep only their punctuation and symbols, each once. Empty
+    /// symbols are a choice, collapsing nothing.
+    func testRepeatedSymbolValuesAreRepairedAsTheFileIsRead() throws {
+        let store = try isolatedDefaults()
+        let substitutions = TextSubstitutionService(rules: [], preferences: store)
+        let viewModel = makeIsolatedViewModel(store)
+
+        let clamped = try decodeConfig(#"{"repeatedSymbolThreshold": 150, "repeatedSymbolSet": "a * * b ="}"#)
+        XCTAssertEqual(clamped.repeatedSymbolThreshold, 99)
+        XCTAssertEqual(clamped.repeatedSymbolSet, "*=")
+        viewModel.applyConfigChanges(clamped)
+        XCTAssertEqual(substitutions.repeatedSymbolThreshold, 99)
+        XCTAssertEqual(substitutions.repeatedSymbolSet, "*=")
+
+        XCTAssertEqual(try decodeConfig(#"{"repeatedSymbolThreshold": -5}"#).repeatedSymbolThreshold, -1)
+        XCTAssertEqual(try decodeConfig(#"{"repeatedSymbolThreshold": 0}"#).repeatedSymbolThreshold, 2)
+
+        viewModel.applyConfigChanges(try decodeConfig(#"{"repeatedSymbolSet": ""}"#))
+        XCTAssertEqual(substitutions.repeatedSymbolSet, "")
+        XCTAssertFalse(substitutions.repeatedSymbolRule.collapsesRuns)
+    }
+
+    /// Missing, null, or unusable repeated-symbol values leave the settings
+    /// in force alone, and an unsupported style is logged once.
+    func testUnusableRepeatedSymbolValuesLeaveTheSettingsAlone() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let substitutions = TextSubstitutionService(rules: [], preferences: store)
+        substitutions.repeatedSymbolStyle = .repeatEach
+        substitutions.repeatedSymbolThreshold = 6
+        substitutions.repeatedSymbolSet = "~"
+        let viewModel = makeIsolatedViewModel(store)
+        let style = "Loud \(UUID().uuidString)"
+
+        let unusable = try decodeConfig("""
+        {"repeatedSymbolStyle": "\(style)", "repeatedSymbolThreshold": "four", "repeatedSymbolSet": 12}
+        """)
+        XCTAssertEqual(unusable.repeatedSymbolStyle, "")
+        XCTAssertNil(unusable.repeatedSymbolThreshold)
+        XCTAssertNil(unusable.repeatedSymbolSet)
+        for config in [unusable, try decodeConfig("{}"), try decodeConfig(#"{"repeatedSymbolThreshold": 4.5}"#),
+                       try decodeConfig(#"{"repeatedSymbolStyle": null, "repeatedSymbolSet": null}"#)] {
+            viewModel.applyConfigChanges(config)
+        }
+
+        XCTAssertEqual(substitutions.repeatedSymbolRule, RepeatedSymbolRule(style: .repeatEach, threshold: 6, symbols: "~"))
+        XCTAssertEqual(debugLogLines(containing: style).count, 1)
+    }
+
     // MARK: - Keyboard shortcuts
 
     /// Shortcuts applied from config.json reach the shortcut manager at
@@ -726,6 +815,10 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(sounds.volume, 0.35)
         XCTAssertEqual(sounds.assignments, SoundEffectService.assignmentsPreference.read(from: original))
         XCTAssertFalse(substitutions.isEnabled)
+        XCTAssertEqual(
+            substitutions.repeatedSymbolRule,
+            RepeatedSymbolRule(style: .leaveOut, threshold: 7, symbols: "*=~")
+        )
         XCTAssertEqual(shortcuts.bindings, KeyboardShortcutManager.bindingsPreference.read(from: original))
     }
 
@@ -939,6 +1032,9 @@ final class ConfigSyncTests: XCTestCase {
             // Shortcuts, text, and sounds, kept by their services.
             "customKeyboardBindings": try JSONEncoder().encode(shortcuts.keyedByRawValue),
             "substitutionsEnabled": false,
+            "repeatedSymbolStyle": RepeatedSymbolStyle.leaveOut.rawValue,
+            "repeatedSymbolThreshold": 7,
+            "repeatedSymbolSet": "*=~",
             "soundEffectsEnabled": false,
             "soundEffectsVolume": Float(0.35),
             "soundEffectAssignments": try JSONEncoder().encode(sounds.keyedByRawValue),

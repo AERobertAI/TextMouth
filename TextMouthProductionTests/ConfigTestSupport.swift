@@ -46,6 +46,9 @@ extension ConfigService.AppConfig {
             .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
         ] as [SoundEvent: String]).keyedByRawValue
         config.substitutionsEnabled = false
+        config.repeatedSymbolStyle = RepeatedSymbolStyle.leaveOut.rawValue
+        config.repeatedSymbolThreshold = 7
+        config.repeatedSymbolSet = "*=~"
         // Every action, as TextMouth writes them, three of them changed.
         var shortcuts = ShortcutAction.defaultBindings
         shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]

@@ -721,10 +721,9 @@ final class SettingsViewModel: ObservableObject {
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
-        SoundEffectService.preferenceKeys + [
-            TextSubstitutionService.enabledPreference.key,
-            KeyboardShortcutManager.bindingsPreference.key,
-        ]
+        SoundEffectService.preferenceKeys
+            + TextSubstitutionService.preferenceKeys
+            + [KeyboardShortcutManager.bindingsPreference.key]
     }
 
     /// Saves config.json whenever a preference another service keeps changes
@@ -745,6 +744,9 @@ final class SettingsViewModel: ObservableObject {
             SoundEffectService.assignmentsNamingEveryEvent(SoundEffectService.assignmentsPreference.read(from: preferences))
         )
         config.substitutionsEnabled = TextSubstitutionService.enabledPreference.read(from: preferences)
+        config.repeatedSymbolStyle = TextSubstitutionService.repeatedSymbolStylePreference.read(from: preferences).rawValue
+        config.repeatedSymbolThreshold = TextSubstitutionService.repeatedSymbolThresholdPreference.read(from: preferences)
+        config.repeatedSymbolSet = TextSubstitutionService.repeatedSymbolSetPreference.read(from: preferences)
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
@@ -761,6 +763,18 @@ final class SettingsViewModel: ObservableObject {
             into: SoundEffectService.assignmentsPreference
         )
         adopt(config.substitutionsEnabled, into: TextSubstitutionService.enabledPreference)
+        adopt(
+            SettingsPolicy.repeatedSymbolStyle.requestedValue(fromConfig: config.repeatedSymbolStyle),
+            into: TextSubstitutionService.repeatedSymbolStylePreference
+        )
+        adopt(
+            config.repeatedSymbolThreshold.map { SettingsPolicy.repeatedSymbolThreshold.validated($0) },
+            into: TextSubstitutionService.repeatedSymbolThresholdPreference
+        )
+        adopt(
+            config.repeatedSymbolSet.map { SettingsPolicy.repeatedSymbolSet.validated($0) },
+            into: TextSubstitutionService.repeatedSymbolSetPreference
+        )
         adopt(
             entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
             into: KeyboardShortcutManager.bindingsPreference,
