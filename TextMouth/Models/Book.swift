@@ -404,19 +404,107 @@ struct Book: Identifiable, Codable, Hashable {
         localPitch = nil
     }
 
+    /// The metadata the library's and the reader's metadata editors change:
+    /// the title and author, an audiobook's album, genre, and year, and an
+    /// EPUB's publisher and publication date, together with the content
+    /// hash, which changes when an edit is written into the book's EPUB file.
+    struct EditableMetadata: Equatable, Sendable {
+        var title: String
+        var author: String
+        var md5Hash: String
+        var audioAlbum: String?
+        var audioGenre: String?
+        var audioYear: String?
+        var epubPublisher: String?
+        var epubPublicationDate: String?
+    }
+
+    /// This book's editable metadata. Setting it changes exactly those
+    /// fields, so the book's identity, files, and reading state stay as they
+    /// were.
+    var editableMetadata: EditableMetadata {
+        get {
+            EditableMetadata(
+                title: title,
+                author: author,
+                md5Hash: md5Hash,
+                audioAlbum: audioAlbum,
+                audioGenre: audioGenre,
+                audioYear: audioYear,
+                epubPublisher: epubPublisher,
+                epubPublicationDate: epubPublicationDate
+            )
+        }
+        set {
+            title = newValue.title
+            author = newValue.author
+            md5Hash = newValue.md5Hash
+            audioAlbum = newValue.audioAlbum
+            audioGenre = newValue.audioGenre
+            audioYear = newValue.audioYear
+            epubPublisher = newValue.epubPublisher
+            epubPublicationDate = newValue.epubPublicationDate
+        }
+    }
+
     /// Apply the metadata fields that can be edited by the library and reader
-    /// metadata sheets. Keeping this mutation on Book makes the complete field
-    /// set independently testable and prevents individual callers from silently
-    /// dropping format-specific values.
+    /// metadata sheets (`EditableMetadata`). Keeping this mutation on Book
+    /// makes the complete field set independently testable and prevents
+    /// individual callers from silently dropping format-specific values.
     mutating func applyEditableMetadata(from updatedBook: Book) {
-        title = updatedBook.title
-        author = updatedBook.author
-        md5Hash = updatedBook.md5Hash
-        audioAlbum = updatedBook.audioAlbum
-        audioGenre = updatedBook.audioGenre
-        audioYear = updatedBook.audioYear
-        epubPublisher = updatedBook.epubPublisher
-        epubPublicationDate = updatedBook.epubPublicationDate
+        editableMetadata = updatedBook.editableMetadata
+    }
+
+    /// Where a book's files are: the library folder holding its package, the
+    /// package's name, and the path the book reads from inside it (its file,
+    /// or its folder of audio tracks). Moving the book, renaming or moving a
+    /// folder above it, and moving the data directory change it.
+    struct FileLocation: Equatable, Sendable {
+        var folderPath: String
+        var filePath: String
+        var tmbDirectoryName: String
+    }
+
+    /// This book's file location. Setting it changes exactly those fields.
+    var fileLocation: FileLocation {
+        get {
+            FileLocation(folderPath: folderPath, filePath: filePath, tmbDirectoryName: tmbDirectoryName)
+        }
+        set {
+            folderPath = newValue.folderPath
+            filePath = newValue.filePath
+            tmbDirectoryName = newValue.tmbDirectoryName
+        }
+    }
+
+    /// What a reader takes from the library's row of its book whenever the
+    /// library changes that row while the reader has the book open (TODO
+    /// P10): where the book's files are, its editable metadata, and what
+    /// content analysis measured.
+    ///
+    /// Everything else is the reader's own: its position and bookmarks, its
+    /// voice, speed, pitch, navigation units, skipped sections, end-of-book
+    /// behavior, and playback times, each of which it writes through to the
+    /// library as it changes them. The library's own bookkeeping (when the
+    /// book was added and last opened, its place in manual order) is nothing
+    /// a reader shows or uses.
+    struct LibraryFields: Equatable, Sendable {
+        var location: FileLocation
+        var metadata: EditableMetadata
+        var analysis: ContentAnalysisFields
+    }
+
+    /// This book's library fields. Setting them changes exactly those
+    /// fields, so a reader that takes them keeps all of its own state.
+    var libraryFields: LibraryFields {
+        get {
+            LibraryFields(location: fileLocation, metadata: editableMetadata, analysis: contentAnalysisFields)
+        }
+        set {
+            fileLocation = newValue.location
+            editableMetadata = newValue.metadata
+            contentAnalysisFields = newValue.analysis
+        }
     }
 
     /// Overlay metadata kept by TextMouth onto values extracted from the EPUB.
@@ -428,6 +516,21 @@ struct Book: Identifiable, Codable, Hashable {
         merged.author = author
         if let epubPublisher { merged.publisher = epubPublisher }
         if let epubPublicationDate { merged.publicationDate = epubPublicationDate }
+        return merged
+    }
+
+    /// Overlay metadata kept by TextMouth onto values read from an audio
+    /// file's tags: the title and author always, since they are the names
+    /// the library gives the book, and the album, genre, and year once they
+    /// have been edited. Nil means never edited, so the tag's value stands;
+    /// an empty string is an edit that clears it.
+    func mergingEditableAudioMetadata(_ extracted: AudioMetadata) -> AudioMetadata {
+        var merged = extracted
+        merged.title = title
+        merged.artist = author
+        if let audioAlbum { merged.album = audioAlbum }
+        if let audioGenre { merged.genre = audioGenre }
+        if let audioYear { merged.year = audioYear }
         return merged
     }
 

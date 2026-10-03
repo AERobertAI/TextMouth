@@ -841,15 +841,8 @@ final class ReaderViewModel: ObservableObject {
                 // stored in the Book model so previous edits are preserved
                 var audioMeta: AudioMetadata?
                 if format.isAudio {
-                    var extracted = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
-                    // Use the book's stored title/author (which may have been user-edited)
-                    extracted.title = bookCopy.title
-                    extracted.artist = bookCopy.author
-                    // Overlay stored audio-specific fields if the user previously edited them
-                    if let album = bookCopy.audioAlbum { extracted.album = album }
-                    if let genre = bookCopy.audioGenre { extracted.genre = genre }
-                    if let year = bookCopy.audioYear { extracted.year = year }
-                    audioMeta = extracted
+                    let extracted = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+                    audioMeta = bookCopy.mergingEditableAudioMetadata(extracted)
                 }
 
                 let loadedAudioFiles = audioFiles
