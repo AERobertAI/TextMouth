@@ -1,3 +1,4 @@
+import AVFoundation
 import Combine
 import XCTest
 @testable import TextMouth
@@ -240,6 +241,30 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             tmbDirectoryName: name,
             cacheFormatVersion: "3.0.3"
         )
+    }
+
+    // MARK: - PERF07: The Voice List
+
+    /// What listing the voices costs. SettingsViewModel listed them on the
+    /// main thread at launch, before the first window (one call), and again
+    /// at every change of the voice language (one call); the reader's voice
+    /// sheet listed them twice each time its body ran, which is eight times
+    /// a second during playback. The system keeps no list of its own, so
+    /// every call enumerates every installed voice again.
+    func testVoiceListCost() {
+        let settings = SettingsViewModel(initializeServices: false)
+        let launch = LibraryBenchmarkClock.medianMilliseconds(runs: 1) { settings.refreshVoices() }
+        let languageChange = LibraryBenchmarkClock.medianMilliseconds(runs: 5) { settings.refreshVoices() }
+        let sheetEvaluation = LibraryBenchmarkClock.medianMilliseconds(runs: 5) {
+            _ = SpeechService.availableVoices()
+            _ = SpeechService.availableVoices()
+        }
+
+        LibraryBenchmarkClock.report("PERF07 launch, on the main thread", launch, note: "1 voice listing")
+        LibraryBenchmarkClock.report("PERF07 a voice-language change", languageChange, note: "1 voice listing")
+        LibraryBenchmarkClock.report("PERF07 one voice sheet evaluation", sheetEvaluation, note: "2 voice listings")
+        LibraryBenchmarkClock.report("PERF07 voices listed", count: settings.availableVoices.count)
+        XCTAssertFalse(SpeechService.availableVoices().isEmpty)
     }
 
     // MARK: - Reading the List as LibraryView Does
