@@ -90,7 +90,76 @@ final class PersistenceCostTests: XCTestCase {
         XCTAssertEqual(saved.books.first { $0.id == book.id }?.readingPosition?.characterOffset, 300)
     }
 
+    // MARK: - PERF14: A Folder Rename
+
+    /// How long renaming a folder of as many books as the user's largest
+    /// (Science Fiction, 527 books) holds the main thread, where VoiceOver
+    /// waits for the app's answers: every package moves and its record is
+    /// rewritten. A heartbeat on the main thread measures the longest time
+    /// it went without running.
+    @MainActor
+    func testFolderRenameCost() async throws {
+        let folder = "Rename Cost \(UUID().uuidString.prefix(8))"
+        let renamed = "\(folder) Renamed"
+        for name in [folder, renamed] {
+            createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(name, isDirectory: true))
+        }
+        let books = try (0..<527).map { try makeShelvedBook(number: $0, in: folder) }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books, folders: [BookFolder(name: folder)])
+        let shelf = try XCTUnwrap(model.library.folders.first)
+
+        let heartbeat = MainThreadHeartbeat()
+        let clock = ContinuousClock()
+        let started = clock.now
+        let outcome = model.renameFolderReturningOutcome(shelf, to: renamed)
+        let elapsed = clock.now - started
+        let longestStall = await heartbeat.stop()
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(model.library.books.filter { $0.folderPath == renamed }.count, books.count)
+        Self.report(
+            "PERF14 renaming a folder of \(books.count) books took \(Self.milliseconds(elapsed)) ms; "
+                + "the main thread went \(Self.milliseconds(longestStall)) ms without running"
+        )
+    }
+
     // MARK: - Fixtures
+
+    /// A small Markdown book numbered `number`, in a package of its own in
+    /// the library folder `folder`, with a record and a content index, as an
+    /// imported and analyzed book has.
+    private func makeShelvedBook(number: Int, in folder: String) throws -> Book {
+        let packageName = "Shelved_Book_\(number)-Cost_Fixture-1774073441.tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Shelved Book \(number)\n\nA few words.".write(to: source, atomically: true, encoding: .utf8)
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Shelved Book \(number)", text: "A few words.")],
+            format: .markdown
+        )
+        var book = Book(
+            title: "Shelved Book \(number)",
+            author: "Cost Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: "shelved-\(number)",
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        )
+        book.applyContentAnalysis(index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
+        try book.saveBookInfoThrowing(contentIndex: index)
+        return book
+    }
+
+    /// A duration in milliseconds, rounded to a tenth.
+    private static func milliseconds(_ duration: Duration) -> String {
+        let components = duration.components
+        let value = Double(components.seconds) * 1_000 + Double(components.attoseconds) / 1e15
+        return String(format: "%.1f", value)
+    }
 
     /// A Markdown book in a package of its own, in a folder this test
     /// removes, whose record holds a content index of `headingCount`
@@ -233,5 +302,48 @@ final class PersistenceCostTests: XCTestCase {
     /// Prints one measurement on a line of its own.
     private static func report(_ line: String) {
         print("PERSISTENCE_COST: \(line)")
+    }
+}
+
+// MARK: - Measuring the Main Thread
+
+/// Measures how long the main thread goes without running, as VoiceOver
+/// feels it: a timer on the main run loop beats every two milliseconds, and
+/// the longest time between two beats, or between the start and the first
+/// beat, is how long something held the main thread.
+@MainActor
+private final class MainThreadHeartbeat {
+    /// The clock the beats are timed by.
+    private let clock = ContinuousClock()
+    /// When the last beat came, or the measurement started.
+    private var lastBeat: ContinuousClock.Instant
+    /// The longest time between two beats so far.
+    private var longest: Duration = .zero
+    /// The timer that beats, until the measurement stops.
+    private var timer: Timer?
+
+    /// Starts beating now.
+    init() {
+        lastBeat = clock.now
+        timer = Timer.scheduledTimer(withTimeInterval: 0.002, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.beat() }
+        }
+    }
+
+    /// Notes a beat, and how long it came after the one before.
+    private func beat() {
+        let now = clock.now
+        longest = max(longest, now - lastBeat)
+        lastBeat = now
+    }
+
+    /// Lets the main thread run a little longer, so the beat after a stall
+    /// that just ended is counted, then stops and returns the longest time
+    /// the main thread went without running.
+    func stop() async -> Duration {
+        try? await Task.sleep(for: .milliseconds(30))
+        timer?.invalidate()
+        timer = nil
+        return longest
     }
 }
