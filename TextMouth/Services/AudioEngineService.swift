@@ -86,6 +86,14 @@ struct SpeechRenderRequest: Sendable {
     }
 }
 
+/// Identifies one render of an `AudioEngineService` (TODO Q06). Each render
+/// makes a fresh ticket and keeps it beside its synthesizer while it is the
+/// engine's current render; its completion, which runs on the main queue,
+/// carries the ticket there, since the synthesizer is not Sendable. Tickets
+/// are compared by identity, and the completion's reference keeps its ticket
+/// alive, so no later render can ever hold the same one.
+private final class RenderTicket: Sendable {}
+
 /// Pre-renders speech to audio buffers using AVSpeechSynthesizer.write(),
 /// then plays through AVAudioEngine with AVAudioUnitTimePitch for
 /// real-time speed adjustment and instant seeking.
@@ -139,10 +147,13 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// clipping the last word. 200ms provides enough runway at any rate.
     static let silencePaddingDuration: Double = 0.2
 
-    /// Reference to the in-progress render synthesizer so we can cancel stale renders.
-    /// Without cancellation, old write() calls keep synthesizing in the background,
-    /// competing with the direct-mode synthesizer for system TTS resources and causing delays.
-    private var currentRenderSynth: AVSpeechSynthesizer?
+    /// The render in progress, or nil, read and written under `renderLock`.
+    /// Its synthesizer is kept so we can cancel stale renders: without
+    /// cancellation, old write() calls keep synthesizing in the background,
+    /// competing with the direct-mode synthesizer for system TTS resources
+    /// and causing delays. Its ticket identifies the render to its own
+    /// completion (`claimRenderCompletion(for:)`).
+    private var currentRender: (synth: AVSpeechSynthesizer, ticket: RenderTicket)?
     private let renderLock = NSLock()
 
     init() {
@@ -164,21 +175,22 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// compete with direct-mode TTS for system resources.
     func cancelRender() {
         renderLock.lock()
-        let synth = currentRenderSynth
-        currentRenderSynth = nil
+        let synth = currentRender?.synth
+        currentRender = nil
         renderLock.unlock()
         synth?.stopSpeaking(at: .immediate)
         isRendering = false
     }
 
-    /// Claims the completion of the specified render if it still owns this
-    /// engine. Cancellation or a newer render clears/replaces that ownership,
-    /// preventing a late main-queue commit from restoring stale chapter audio.
-    private func claimRenderCompletion(for synth: AVSpeechSynthesizer) -> Bool {
+    /// Claims the completion of the render `ticket` identifies if it still
+    /// owns this engine. Cancellation or a newer render clears/replaces that
+    /// ownership, preventing a late main-queue commit from restoring stale
+    /// chapter audio.
+    private func claimRenderCompletion(for ticket: RenderTicket) -> Bool {
         renderLock.lock()
         defer { renderLock.unlock() }
-        guard currentRenderSynth === synth else { return false }
-        currentRenderSynth = nil
+        guard currentRender?.ticket === ticket else { return false }
+        currentRender = nil
         return true
     }
 
@@ -206,10 +218,13 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
             // Fresh instance per render (required for write() reliability)
             let renderSynth = AVSpeechSynthesizer()
+            // Identifies this render to its completion on the main queue,
+            // where the synthesizer, which is not Sendable, cannot go.
+            let ticket = RenderTicket()
 
             // Store reference so it can be cancelled if a new render starts
             self.renderLock.lock()
-            self.currentRenderSynth = renderSynth
+            self.currentRender = (renderSynth, ticket)
             self.renderLock.unlock()
 
             let utterance = AVSpeechUtterance(string: text)
@@ -235,12 +250,12 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
             // Check if this render was cancelled while we were waiting
             self.renderLock.lock()
-            let wasCancelled = self.currentRenderSynth !== renderSynth
+            let wasCancelled = self.currentRender?.ticket !== ticket
             self.renderLock.unlock()
 
             guard result == .success, !wasCancelled, !buffers.isEmpty, let audioFormat = format else {
                 DispatchQueue.main.async {
-                    if self.claimRenderCompletion(for: renderSynth) {
+                    if self.claimRenderCompletion(for: ticket) {
                         self.isRendering = false
                     }
                     completion(false)
@@ -262,7 +277,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 frameCapacity: AVAudioFrameCount(totalFrameCount)
             ) else {
                 DispatchQueue.main.async {
-                    if self.claimRenderCompletion(for: renderSynth) {
+                    if self.claimRenderCompletion(for: ticket) {
                         self.isRendering = false
                     }
                     completion(false)
@@ -308,7 +323,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 // Recheck ownership on the queue that installs the buffer.
                 // A stop/new chapter can occur after the background render's
                 // earlier cancellation check but before this closure executes.
-                guard self.claimRenderCompletion(for: renderSynth) else {
+                guard self.claimRenderCompletion(for: ticket) else {
                     completion(false)
                     return
                 }
