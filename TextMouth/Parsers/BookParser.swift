@@ -1,22 +1,5 @@
 import Foundation
 
-private final class ParserResultBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storedResult: Result<DocumentContent, Error>?
-
-    var result: Result<DocumentContent, Error>? {
-        lock.lock()
-        defer { lock.unlock() }
-        return storedResult
-    }
-
-    func store(_ result: Result<DocumentContent, Error>) {
-        lock.lock()
-        storedResult = result
-        lock.unlock()
-    }
-}
-
 /// Unified interface for parsing all supported book formats
 enum BookParser {
 
@@ -44,20 +27,10 @@ enum BookParser {
         case .pdf:
             return try PDFTextParser.parse(url: url)
         case .audio:
-            // Audio parsing is async — use a synchronous bridge here
-            let resultBox = ParserResultBox()
-            let semaphore = DispatchSemaphore(value: 0)
-            Task.detached {
-                do {
-                    resultBox.store(.success(try await AudioBookParser.parse(url: url)))
-                } catch {
-                    resultBox.store(.failure(error))
-                }
-                semaphore.signal()
+            // Audio parsing is async, so wait for it through the shared bridge.
+            return try AsyncBridge.waitForResult {
+                try await AudioBookParser.parse(url: url)
             }
-            semaphore.wait()
-            guard let result = resultBox.result else { throw AudioParseError.invalidDuration }
-            return try result.get()
         }
     }
 }

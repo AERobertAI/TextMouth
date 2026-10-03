@@ -1,22 +1,5 @@
 import Foundation
 
-private final class ContentAnalysisResultBox<Value>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var value: Result<Value, Error>?
-
-    func store(_ value: Result<Value, Error>) {
-        lock.lock()
-        self.value = value
-        lock.unlock()
-    }
-
-    func load() -> Result<Value, Error>? {
-        lock.lock()
-        defer { lock.unlock() }
-        return value
-    }
-}
-
 /// Loads content and produces the versioned per-package index. Callers invoke
 /// this service from import/analysis queues; it performs no main-actor work.
 enum BookContentAnalysisService {
@@ -369,12 +352,12 @@ enum BookContentAnalysisService {
 
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
-            let directoryResult = try waitForAsync {
+            let directoryResult = try AsyncBridge.waitForResult {
                 try await AudioBookParser.parseDirectory(url: url)
             }
             parsed = (directoryResult.content, directoryResult.filePaths, directoryResult.segments)
         } else {
-            let content = try waitForAsync {
+            let content = try AsyncBridge.waitForResult {
                 try await AudioBookParser.parse(url: url)
             }
             parsed = (content, nil, nil)
@@ -401,23 +384,5 @@ enum BookContentAnalysisService {
             usedPersistedIndex: false,
             cacheFormatVersion: nil
         )
-    }
-
-    private static func waitForAsync<Value>(
-        _ operation: @escaping @Sendable () async throws -> Value
-    ) throws -> Value {
-        let box = ContentAnalysisResultBox<Value>()
-        let semaphore = DispatchSemaphore(value: 0)
-        Task.detached {
-            do {
-                box.store(.success(try await operation()))
-            } catch {
-                box.store(.failure(error))
-            }
-            semaphore.signal()
-        }
-        semaphore.wait()
-        guard let result = box.load() else { throw AudioParseError.invalidDuration }
-        return try result.get()
     }
 }
