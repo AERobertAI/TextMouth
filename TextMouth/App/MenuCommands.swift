@@ -156,6 +156,17 @@ struct LibraryCommands: Commands {
 
     var body: some Commands {
         CommandMenu("Library") {
+            // Chooses DAISY books kept as loose files by their folders, in a
+            // folder-only panel the Library window presents (TODO I02). The
+            // Open Book... panel stays file-only, so Return on a folder there
+            // keeps opening it.
+            Button("Import DAISY Folder…") {
+                NotificationCenter.default.post(name: .importDAISYFolder, object: nil)
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
+
+            Divider()
+
             Button("Edit Mode") {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }
@@ -245,6 +256,9 @@ extension Notification.Name {
     static let navigateUpLevel = Notification.Name("navigateUpLevel")
     static let whereAmI = Notification.Name("whereAmI")
     static let openBookFile = Notification.Name("openBookFile")
+    /// Posted by Library > Import DAISY Folder…. One Library window
+    /// presents the folder-only panel and imports the folders chosen.
+    static let importDAISYFolder = Notification.Name("importDAISYFolder")
     static let showBookInfo = Notification.Name("showBookInfo")
     static let openSelectedBook = Notification.Name("openSelectedBook")
     static let copyReadingPosition = Notification.Name("copyReadingPosition")
