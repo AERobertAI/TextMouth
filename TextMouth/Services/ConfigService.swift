@@ -655,21 +655,44 @@ final class ConfigService: ObservableObject {
     /// process changed keeps its value, and every other field takes the
     /// edit's. When both changed a field, this process's value wins, being
     /// the later change: the edit was already on disk when this process saved.
+    /// A field holding an object, such as the shortcuts of every action, is
+    /// merged entry by entry the same way, so this process's change to one
+    /// action's shortcuts and the edit's change to another's both stand.
     ///
     /// Fields are compared as config.json holds them, so the merge follows
     /// `AppConfig`'s coding keys and needs no list of fields of its own.
     nonisolated static func merging(ours: AppConfig, theirs: AppConfig, base: AppConfig) -> AppConfig {
         guard let oursFields = try? jsonFields(of: ours),
               let baseFields = try? jsonFields(of: base),
-              var mergedFields = try? jsonFields(of: theirs) else {
+              let theirsFields = try? jsonFields(of: theirs) else {
             return ours
         }
-        for (key, value) in oursFields where !sameJSONValue(value, baseFields[key]) {
-            mergedFields[key] = value
-        }
+        let mergedFields = mergedJSONObject(ours: oursFields, theirs: theirsFields, base: baseFields)
         guard let data = try? JSONSerialization.data(withJSONObject: mergedFields),
               let merged = try? decode(data) else {
             return ours
+        }
+        return merged
+    }
+
+    /// One JSON object merged: `theirs`, with each entry this process changed
+    /// from `base` taking this process's value. An entry that is an object on
+    /// all three sides is merged the same way, one level further in; any
+    /// other changed entry is taken whole.
+    private nonisolated static func mergedJSONObject(
+        ours: [String: Any],
+        theirs: [String: Any],
+        base: [String: Any]
+    ) -> [String: Any] {
+        var merged = theirs
+        for (key, value) in ours where !sameJSONValue(value, base[key]) {
+            if let oursObject = value as? [String: Any],
+               let theirsObject = theirs[key] as? [String: Any],
+               let baseObject = base[key] as? [String: Any] {
+                merged[key] = mergedJSONObject(ours: oursObject, theirs: theirsObject, base: baseObject)
+            } else {
+                merged[key] = value
+            }
         }
         return merged
     }

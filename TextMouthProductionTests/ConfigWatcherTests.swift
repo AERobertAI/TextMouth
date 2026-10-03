@@ -335,6 +335,32 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(ConfigService.merging(ours: ours, theirs: theirs, base: ours), theirs)
     }
 
+    /// A field holding an object merges entry by entry: TextMouth's change
+    /// to one action's shortcuts and the edit's change to another's both
+    /// stand, as does a sound each changed; when both changed one action,
+    /// TextMouth's later change wins.
+    func testMergeCombinesTheEntriesOfShortcutsAndSounds() {
+        let base = ConfigService.AppConfig.everyFieldCustomized
+        var ours = base
+        ours.keyboardShortcuts["Where Am I?"] = ["control+w"]
+        ours.keyboardShortcuts["Go Back"] = ["control+["]
+        ours.soundEffectAssignments["Play"] = "Ping"
+        var theirs = base
+        theirs.keyboardShortcuts["Add Bookmark"] = ["control+b"]
+        theirs.keyboardShortcuts["Go Back"] = ["option+["]
+        theirs.soundEffectAssignments["Pause"] = "Tink"
+
+        let merged = ConfigService.merging(ours: ours, theirs: theirs, base: base)
+
+        var expected = base
+        expected.keyboardShortcuts["Where Am I?"] = ["control+w"]
+        expected.keyboardShortcuts["Add Bookmark"] = ["control+b"]
+        expected.keyboardShortcuts["Go Back"] = ["control+["]
+        expected.soundEffectAssignments["Play"] = "Ping"
+        expected.soundEffectAssignments["Pause"] = "Tink"
+        XCTAssertEqual(merged, expected)
+    }
+
     /// An edit with a value out of range is applied repaired, and the
     /// repaired snapshot is written back once so the file shows the value in
     /// use. The watcher recognizes that write as TextMouth's own: the edit is
