@@ -25,15 +25,22 @@ packages:
     url: https://github.com/swiftlang/swift-markdown.git
     exactVersion: "0.9.0"
 
-# Every target checks Swift concurrency completely, so Xcode, make build,
-# make test, make check, and CI all report the same diagnostics. Set here,
-# for the whole project, so a target added later inherits it too; no target
-# may lower it. The build is free of warnings, and `make check` fails on any
-# Swift warning (Scripts/check.sh), so a new concurrency problem is reported
-# the day it is written. Package targets are not affected: Xcode builds them
-# with their own settings and suppresses their warnings.
+# Every target compiles in the Swift 6 language mode and checks Swift
+# concurrency completely, so Xcode, make build, make test, make check, and CI
+# all report the same diagnostics. Both are set here, for the whole project,
+# overriding XcodeGen's Swift 5 default, so a target added later inherits
+# them too; no target may lower them. In the Swift 6 mode a data race the
+# compiler can find is an error rather than a warning, and synchronous
+# main-actor code that a framework calls on another thread stops at a runtime
+# check instead of racing. SWIFT_STRICT_CONCURRENCY repeats what the Swift 6
+# mode implies, and stays as the setting the build commands and documentation
+# name. The build is free of warnings, and `make check` fails on any Swift
+# warning (Scripts/check.sh), so a new concurrency problem is reported the
+# day it is written. Package targets are not affected: Xcode builds them with
+# their own settings and suppresses their warnings.
 settings:
   base:
+    SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
 
 targets:
@@ -51,7 +58,6 @@ targets:
         TEXTMOUTH_BUILD_DATE: unknown
         INFOPLIST_FILE: TextMouth/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: TextMouth/Resources/TextMouth.entitlements
-        SWIFT_VERSION: "5"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
@@ -94,7 +100,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthProductionTests
         GENERATE_INFOPLIST_FILE: false
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
-        SWIFT_VERSION: "5"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
