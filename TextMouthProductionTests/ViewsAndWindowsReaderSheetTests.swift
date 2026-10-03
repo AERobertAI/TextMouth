@@ -105,11 +105,18 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
             settle(hosted.hostingView, seconds: 0.4)
             XCTAssertGreaterThan(ViewBodyCounter.count(of: name), 0, "\(name) never drew")
 
-            let runs = bodyRuns(of: [name, "HeadingNavigatorRow"], in: hosted.hostingView) { _ in
+            let publishes = 20
+            let runs = bodyRuns(of: [name, "HeadingNavigatorRow"], in: hosted.hostingView, publishing: publishes) { _ in
                 reader.objectWillChange.send()
             }
 
-            XCTAssertEqual(runs[name], 0, "\(name) drew again for publishes that changed nothing it shows")
+            // A sheet the reader's publishes redraw draws once for each of
+            // them. One draw is allowed for an update that is not one of
+            // them landing meanwhile: the sheet's own, such as the sleep
+            // timer sheet dropping its first focus request two seconds after
+            // it opens, or one of the timer every reader shares.
+            let drawn = runs[name, default: 0]
+            XCTAssertLessThanOrEqual(drawn, 1, "\(name) drew \(drawn) times for \(publishes) publishes that changed nothing it shows")
             XCTAssertEqual(runs["HeadingNavigatorRow"], 0, "\(name): heading rows drew again")
             takeDown(hosted.window)
         }
