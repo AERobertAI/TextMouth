@@ -515,6 +515,46 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         }
     }
 
+    /// Substitution rules only in the cloud are not read on the main
+    /// thread: the sync service is asked for them, once, and the standard
+    /// rules stand in. A change made meanwhile is reported unsaved, and
+    /// nothing is written over the file; once it is on this Mac, its rules
+    /// replace the stand-ins, and the change is no longer pending.
+    func testSubstitutionsOnlyInTheCloudAreNeverSavedOver() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let center = cleanSharedFailureCenter()
+        let root = try makeOwnDataDirectory("RulesInCloud")
+        let file = root.appendingPathComponent("substitutions.json")
+        let theirs = try rulesData(named: ["Harbor"])
+        try theirs.write(to: file)
+        let provider = FakeCloudItemStatusProvider()
+        installItemStatus(provider)
+        let reader = CloudFileReader()
+        let service = TextSubstitutionService.shared
+        readTheAppsRules(through: reader)
+
+        service.loadRules()
+
+        XCTAssertTrue(service.rulesAwaitFileInCloud)
+        XCTAssertEqual(service.rules.map(\.name), TextSubstitutionService.defaultRules.map(\.name))
+
+        service.addRule(SubstitutionRule(name: "Galley", pattern: "galley", replacement: "galley", isRegex: false))
+        service.readFileWaitingInTheCloud()
+
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the stand-ins were saved over the file in the cloud")
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.substitutions])
+        XCTAssertEqual(provider.downloadRequests, [file], "the sync service is asked once")
+
+        // The file is on this Mac now.
+        reader.isInCloud = false
+        service.readFileWaitingInTheCloud()
+
+        XCTAssertFalse(service.rulesAwaitFileInCloud)
+        XCTAssertEqual(service.rules.map(\.name), ["Harbor"])
+        XCTAssertEqual(try Data(contentsOf: file), theirs)
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "the stand-ins' change is still reported")
+    }
+
     // MARK: - reading-checkpoints.json
 
     /// A checkpoint journal cut short names no book, and the startup repair
@@ -671,6 +711,15 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         try JSONEncoder().encode(names.map {
             SubstitutionRule(name: $0, pattern: $0.lowercased(), replacement: $0, isRegex: false)
         })
+    }
+
+    /// Has the app's substitution service read its file through `reader`
+    /// until the test ends, when it reads the app's way again.
+    private func readTheAppsRules(through reader: CloudFileReader) {
+        TextSubstitutionService.shared.readFile = { try reader.read($0) }
+        addTeardownBlock { @MainActor in
+            TextSubstitutionService.shared.readFile = SavedFile.readWithoutDownloading
+        }
     }
 
     /// When the test ends, has the app's substitution service read the test

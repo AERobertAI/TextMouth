@@ -69,6 +69,19 @@ enum SavedFile {
         copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
     }
 
+    /// Why a save was not written over a file only in the cloud: the file
+    /// holds what was saved before, on this Mac or another, which writing
+    /// without reading it first would replace.
+    struct InCloudError: LocalizedError {
+        /// The file's name, as the sentence names it.
+        let fileName: String
+
+        var errorDescription: String? {
+            "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it. "
+                + "Try again in a moment."
+        }
+    }
+
     /// Asks the sync service to download the file at `url`, which a read
     /// found only in the cloud; returns at once, and a failure changes
     /// nothing, since the file is read again before anything replaces it.
