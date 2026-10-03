@@ -39,15 +39,9 @@ struct LibraryWindowView: View {
                 }
             )
 
-            // Import progress overlay
+            // Import progress overlay, whose Cancel button stops ZIP imports
             if libraryViewModel.isImporting {
-                ProgressOverlay(
-                    title: "Importing Books",
-                    current: libraryViewModel.importProgressCurrent,
-                    total: libraryViewModel.importProgressTotal,
-                    message: libraryViewModel.importProgressMessage,
-                    itemNoun: "books processed"
-                )
+                Self.importProgressOverlay(for: libraryViewModel)
             }
 
             // Text extraction progress overlay (shown on startup or re-extraction)
@@ -340,6 +334,11 @@ struct LibraryWindowView: View {
 // MARK: - Progress Overlay
 
 /// Reusable progress overlay for long-running operations (import, extraction, etc.)
+///
+/// For VoiceOver the overlay is a container labelled with its status
+/// (`spokenStatus`). It contains its parts rather than combining them, so a
+/// Cancel button inside stays a control of its own that VoiceOver can reach
+/// and press (TODO I05).
 struct ProgressOverlay: View {
     let title: String
     let current: Int
@@ -347,6 +346,18 @@ struct ProgressOverlay: View {
     let message: String
     /// Noun for the items being processed (e.g. "books extracted", "books processed")
     let itemNoun: String
+    /// Cancels the operation the overlay shows, from its Cancel button or
+    /// the Escape key; nil, the default, shows no Cancel button.
+    var onCancel: (@MainActor () -> Void)? = nil
+
+    /// What VoiceOver calls the Cancel button. Only the import overlay has
+    /// one, so the name says what it cancels.
+    static let cancelButtonLabel = "Cancel Import"
+    /// What VoiceOver says the Cancel button does: it stops the ZIP archive
+    /// imports under way and queued (`LibraryViewModel.cancelImports()`),
+    /// though a book already being imported, such as a single audiobook
+    /// archive, is finished first, and every book already imported stays.
+    static let cancelButtonHint = "Stops importing ZIP archives after the current book. Books already imported stay in the library."
 
     var body: some View {
         VStack(spacing: 16) {
@@ -371,14 +382,50 @@ struct ProgressOverlay: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
+            if let onCancel {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel(Self.cancelButtonLabel)
+                    .accessibilityHint(Self.cancelButtonHint)
+            }
         }
         .padding(32)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         .shadow(radius: 10)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(total > 0
-            ? "\(title): \(current) of \(total) \(itemNoun)"
-            : "\(title)"
+        // A container, not one combined element: combining would fold the
+        // Cancel button into the status, out of VoiceOver's reach.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(spokenStatus)
+    }
+
+    /// What VoiceOver reads for the overlay: its title, then the items done
+    /// of the total while the bar has one. While the bar is indeterminate,
+    /// the message carries the progress instead (a ZIP archive's items
+    /// extracted, say), so it follows the title; with no message, the title
+    /// is read alone.
+    var spokenStatus: String {
+        if total > 0 {
+            return "\(title): \(current) of \(total) \(itemNoun)"
+        }
+        return message.isEmpty ? title : "\(title): \(message)"
+    }
+}
+
+extension LibraryWindowView {
+    /// The overlay a Library window shows while imports run: their progress,
+    /// and a Cancel button, which Escape presses too, that stops the ZIP
+    /// imports under way and queued (`LibraryViewModel.cancelImports()`,
+    /// TODO I05). The window's body shows exactly this overlay, made here so
+    /// tests can press the very button the window shows.
+    static func importProgressOverlay(for libraryViewModel: LibraryViewModel) -> ProgressOverlay {
+        ProgressOverlay(
+            title: "Importing Books",
+            current: libraryViewModel.importProgressCurrent,
+            total: libraryViewModel.importProgressTotal,
+            message: libraryViewModel.importProgressMessage,
+            itemNoun: "books processed",
+            onCancel: libraryViewModel.cancelImports
         )
     }
 }

@@ -101,6 +101,57 @@ extension XCTestCase {
         return true
     }
 
+    /// Every accessibility element below `root` whose label is `label`,
+    /// groups included.
+    @MainActor
+    func accessibilityElements(labelled label: String, in root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let match = node.accessibilityLabel() == label ? [node] : []
+        return match + (node.accessibilityChildren() ?? []).flatMap {
+            accessibilityElements(labelled: label, in: $0)
+        }
+    }
+
+    /// Offer `key` to the window hosting `hostingView` as a key equivalent,
+    /// as AppKit does with a key pressed in a window, so that the button
+    /// with that keyboard shortcut can take it. Returns whether anything
+    /// did; some macOS releases hand an offscreen window none.
+    @MainActor
+    func pressKeyEquivalent(_ key: KeyEquivalent, in hostingView: NSView) -> Bool {
+        guard let window = hostingView.window, let event = keyDown(key, in: window) else { return false }
+        return window.performKeyEquivalent(with: event)
+    }
+
+    /// A key-down event for `key` in `window`, as the keyboard sends it; nil
+    /// for a key the tests never press.
+    @MainActor
+    func keyDown(_ key: KeyEquivalent, in window: NSWindow) -> NSEvent? {
+        // Virtual key codes of the keys the tests press.
+        let keyCodes: [Character: UInt16] = [
+            KeyEquivalent.return.character: 36,
+            KeyEquivalent.escape.character: 53,
+            KeyEquivalent.space.character: 49,
+            KeyEquivalent.upArrow.character: 126,
+            KeyEquivalent.downArrow.character: 125,
+        ]
+        guard let keyCode = keyCodes[key.character] else { return nil }
+        let characters = String(key.character)
+        // The keyboard flags arrow keys as function keys on the numeric pad.
+        let isArrow = key == .upArrow || key == .downArrow
+        return NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: isArrow ? [.function, .numericPad] : [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            characters: characters,
+            charactersIgnoringModifiers: characters,
+            isARepeat: false,
+            keyCode: keyCode
+        )
+    }
+
     /// Depth-first collection of every accessibility element below `root`
     /// that is not a plain group, i.e. the controls VoiceOver can land on.
     @MainActor
