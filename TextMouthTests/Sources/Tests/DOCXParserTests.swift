@@ -121,9 +121,10 @@ test("DOCX to Markdown conversion produces output") {
 test("DOCX Markdown contains headings") {
     let url = try requireFile("test_book.docx")
     let markdown = try parseDOCXToMarkdown(from: url)
+    // Text is written as Markdown literals, so the colon is escaped.
     try assertTrue(markdown.contains("# "), "Should contain heading markers")
-    try assertTrue(markdown.contains("Chapter 1: First Principles"), "Should contain chapter 1 heading")
-    try assertTrue(markdown.contains("Chapter 2: Weather and Observation"), "Should contain chapter 2 heading")
+    try assertTrue(markdown.contains("Chapter 1\\: First Principles"), "Should contain chapter 1 heading")
+    try assertTrue(markdown.contains("Chapter 2\\: Weather and Observation"), "Should contain chapter 2 heading")
 }
 
 test("DOCX Markdown contains bold text") {
@@ -170,7 +171,7 @@ test("DOCX Markdown contains table") {
     let markdown = try parseDOCXToMarkdown(from: url)
     try assertTrue(markdown.contains("|"), "Should contain table pipe separators")
     try assertTrue(markdown.contains("---"), "Should contain table header separator")
-    try assertTrue(markdown.contains("Reading (hPa)"), "Should contain table header text")
+    try assertTrue(markdown.contains("Reading \\(hPa\\)"), "Should contain table header text, as Markdown literals")
 }
 
 test("DOCX Markdown contains paragraph text") {
@@ -227,22 +228,24 @@ test("Alice DOCX produces DocumentContent with text") {
 }
 
 // Every byte of each fixture's Markdown, pinned on September 30, 2026, before
-// the DOCX parts were checked for damaged XML (TODO T04). An intact document
-// must convert exactly as before: a change here changes every DOCX book's
-// cached text, so it needs a cache format version bump.
+// the DOCX parts were checked for damaged XML (TODO T04), and pinned again on
+// October 3, 2026, when DOCX text began to be written as Markdown literals
+// (TODO T05). An intact document must convert exactly as pinned: a change
+// here changes every DOCX book's cached text, so it needs a cache format
+// version bump.
 test("DOCX fixture test_book.docx converts to its pinned Markdown") {
     try assertPinnedMarkdown(
         "test_book.docx",
-        bytes: 3186,
-        sha256: "b86888c9b156958ec4d78c3fce2ab8c1702558c0112427ae4cc4172afacbe7f1"
+        bytes: 3270,
+        sha256: "03acb604568b522cefed0a7284e349bb1ff5278269a9a5593346e347ba59c5de"
     )
 }
 
 test("DOCX fixture alice.docx converts to its pinned Markdown") {
     try assertPinnedMarkdown(
         "alice.docx",
-        bytes: 170285,
-        sha256: "bff54d05d660e10826e4763da6a33eebc061ad9505728355e544479fcd3a9a67"
+        bytes: 175404,
+        sha256: "3cd03f3458bf2cb10ef868498f9c16eb0eb132d8b0373a01ac1351244e88b5a0"
     )
 }
 

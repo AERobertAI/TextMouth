@@ -175,7 +175,7 @@ test("DOCX heading style maps to markdown heading") {
 // Numbered list with counter reset
 test("DOCX numbered lists restart after non-list paragraph") {
     var numbering = DOCXNumbering()
-    numbering.abstractNums["1"] = [legacyListLevel("decimal")]
+    numbering.abstractNums["1"] = [0: legacyListLevel("decimal")]
     numbering.numIdToAbstractId["1"] = "1"
 
     let xml = """
@@ -206,7 +206,7 @@ test("DOCX numbered lists restart after non-list paragraph") {
 // Bullet list
 test("DOCX bullet list uses dash prefix") {
     var numbering = DOCXNumbering()
-    numbering.abstractNums["2"] = [legacyListLevel("bullet")]
+    numbering.abstractNums["2"] = [0: legacyListLevel("bullet")]
     numbering.numIdToAbstractId["2"] = "2"
 
     let xml = """
@@ -343,7 +343,7 @@ test("DOCX mixed content converts in order") {
     var styles = DOCXStyles()
     styles.headingLevels["Heading1"] = 1
     var numbering = DOCXNumbering()
-    numbering.abstractNums["1"] = [legacyListLevel("bullet")]
+    numbering.abstractNums["1"] = [0: legacyListLevel("bullet")]
     numbering.numIdToAbstractId["1"] = "1"
 
     let xml = """
