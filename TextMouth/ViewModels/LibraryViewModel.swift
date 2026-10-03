@@ -375,6 +375,25 @@ extension LibraryViewModel {
         return true
     }
 
+    // MARK: The Library Not Available Screen
+
+    /// Tells VoiceOver why the library can't be used, once for each reason,
+    /// however many Library windows show the screen (FR02). The screen asks
+    /// for this once VoiceOver has moved to the reason.
+    func announceDataDirectoryUnavailability(from window: NSWindow? = nil) {
+        guard let reason = dataDirectoryUnavailability, reason != announcedUnavailability else { return }
+        announcedUnavailability = reason
+        VoiceOverAnnouncer.announce(DataDirectoryUnavailableText.announcement(for: reason), from: window)
+    }
+
+    /// Refuses an app-wide action that needs the library while it can't be
+    /// used (FR02), such as a book opened from Finder: the Library Not
+    /// Available screen shows `refusal`, and VoiceOver hears it.
+    func refuseWhileDataDirectoryUnavailable(_ refusal: String, from window: NSWindow? = nil) {
+        dataDirectoryRefusalNotice = refusal
+        VoiceOverAnnouncer.announce(refusal, from: window)
+    }
+
     // MARK: Losing the Data Directory
 
     /// Starts listening for what can take the data directory away while
