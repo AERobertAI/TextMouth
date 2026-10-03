@@ -270,7 +270,8 @@ extension LibraryViewModel {
     }
 
     /// Generate content.md caches for any books that don't have one yet, or
-    /// regenerate caches whose format version is older than the current version.
+    /// regenerate caches whose format version is older than the current version,
+    /// or whose source or content.md has changed size since the cache was written.
     /// Runs in the background with progress tracking so the UI stays responsive.
     /// Calls the optional completion handler on the main actor when finished.
     func extractMissingContentCaches(
@@ -282,9 +283,28 @@ extension LibraryViewModel {
             guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
             // Needs cache if missing or if the stored version is outdated
             if !MarkdownCacheService.cacheExists(for: book) { return true }
-            return MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+            if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+            return Self.hasResizedTextCacheFile(book)
         }
         rebuildTextCaches(books: booksNeedingCache, force: false, completion: completion)
+    }
+
+    /// Whether `book`'s source or content.md now has another size than the
+    /// fingerprints its library row recorded when the cache was written
+    /// (TODO T07): a stale cache, found by two stat calls, so asking it of
+    /// every book at startup reads no file. The batch then checks the
+    /// fingerprints its package recorded (`completedTextCacheIndex`), which
+    /// reports the stale cache and has it rebuilt like an outdated one; a
+    /// package newer than the row is recovered instead. A file that only has
+    /// a new date is left to the next open, which reads it for its digest
+    /// and keeps a cache that did not change. A book without fingerprints
+    /// has nothing to compare.
+    nonisolated static func hasResizedTextCacheFile(_ book: Book) -> Bool {
+        guard let recorded = book.textCacheFingerprint else { return false }
+        return recorded.hasResizedFile(
+            sourceStamp: FileStamp(of: book.bookFileURL),
+            cacheStamp: FileStamp(of: MarkdownCacheService.cacheURL(for: book))
+        )
     }
 
     /// Re-extract content.md caches for all non-audio books.

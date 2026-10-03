@@ -303,7 +303,86 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): source changed"])
     }
 
+    // MARK: - Startup Maintenance
+
+    /// The startup batch rebuilds a cache whose source changed size, as it
+    /// rebuilds an outdated one: the batch reports it and rebuilds it from
+    /// the source, and the library row and the package record the new
+    /// fingerprints. The next batch has nothing to do.
+    @MainActor
+    func testStartupBatchRebuildsAResizedCacheOnce() async throws {
+        let book = try makeCachedBook()
+        try "# Replacement\n\nA different and longer book.".write(to: book.bookFileURL, atomically: true, encoding: .utf8)
+        XCTAssertTrue(LibraryViewModel.hasResizedTextCacheFile(book))
+        let model = makeModel(with: [book])
+
+        await runStartupBatch(of: model)
+
+        XCTAssertEqual(model.extractionProgressTotal, 1)
+        XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): source changed"])
+        XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: book).allHeadings.map(\.text), ["Replacement"])
+        let row = try XCTUnwrap(model.bookByID(book.id))
+        let fingerprint = try XCTUnwrap(row.textCacheFingerprint)
+        try assertFingerprint(fingerprint, describesFilesOf: book)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint, fingerprint)
+        XCTAssertFalse(LibraryViewModel.hasResizedTextCacheFile(row))
+
+        model.extractMissingContentCaches()
+        XCTAssertFalse(model.isExtracting, "a rebuilt cache is not queued again")
+        XCTAssertEqual(staleReports(for: book).count, 1)
+    }
+
+    /// An edited content.md of another size is rebuilt at startup as well.
+    @MainActor
+    func testStartupBatchRebuildsAResizedContentMarkdown() async throws {
+        let book = try makeCachedBook()
+        try editCache(of: book, replacing: "Six seven eight.", with: "Six seven eight. Nine ten.")
+        let model = makeModel(with: [book])
+
+        await runStartupBatch(of: model)
+
+        XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): content.md changed"])
+        XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: book).allText.contains("Nine ten."))
+    }
+
+    /// Nothing changes for a book whose files match their fingerprints, nor
+    /// for one whose source only has a new date, which its next open reads
+    /// for a digest: no batch starts, and neither content.md is rewritten.
+    @MainActor
+    func testStartupBatchLeavesUnchangedAndTouchedCachesAlone() throws {
+        let unchanged = try makeCachedBook()
+        let touched = try makeCachedBook()
+        let recorded = try XCTUnwrap(touched.textCacheFingerprint)
+        try setModificationTime(of: touched.bookFileURL, nanoseconds: recorded.source.modificationTimeNanoseconds + 1_000_000_000)
+        let books = [unchanged, touched]
+        let cacheStamps = books.map { FileStamp(of: MarkdownCacheService.cacheURL(for: $0)) }
+        let model = makeModel(with: books)
+
+        model.extractMissingContentCaches()
+
+        XCTAssertFalse(model.isExtracting)
+        XCTAssertEqual(books.map { FileStamp(of: MarkdownCacheService.cacheURL(for: $0)) }, cacheStamps)
+    }
+
     // MARK: - Fixtures
+
+    /// A library model listing `books`, without the app's services.
+    @MainActor
+    private func makeModel(with books: [Book]) -> LibraryViewModel {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books)
+        return model
+    }
+
+    /// Runs the startup cache batch of `model` to its end, then writes every
+    /// pending save.
+    @MainActor
+    private func runStartupBatch(of model: LibraryViewModel) async {
+        let finished = expectation(description: "The startup batch finished")
+        model.extractMissingContentCaches { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 10)
+        LibraryPersistenceService.flushPendingSave()
+    }
 
     /// Two chapters with a heading each and a subheading in the second, so
     /// offsets between chapters and heading labels are observable.
