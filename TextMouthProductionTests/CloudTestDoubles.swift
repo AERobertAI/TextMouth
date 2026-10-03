@@ -186,12 +186,14 @@ final class FakeBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     }
 
     /// Plays the book's script: its steps, then its ending, or a hold.
+    ///
+    /// The steps, the hold, and the record of the start happen together
+    /// under the lock, so a test that sees the download started, on any
+    /// thread, can at once finish a held download with every step already
+    /// delivered. The ending happens outside the lock: finishing calls
+    /// `onTermination`, which takes the lock itself.
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
         let bookID = package.bookID
-        let script = lock.withLock { () -> Script in
-            startedDownloads.append(bookID)
-            return scripts.removeValue(forKey: bookID) ?? Script(steps: [], failure: nil, holdsOpen: false)
-        }
         return AsyncThrowingStream { continuation in
             continuation.onTermination = { [weak self] termination in
                 guard let self, case .cancelled = termination else { return }
@@ -200,12 +202,19 @@ final class FakeBookCloudStorage: BookCloudStorage, @unchecked Sendable {
                     _ = self.heldDownloads.removeValue(forKey: bookID)
                 }
             }
-            for step in script.steps {
-                continuation.yield(step)
+            let script = self.lock.withLock { () -> Script in
+                let script = self.scripts.removeValue(forKey: bookID) ?? Script(steps: [], failure: nil, holdsOpen: false)
+                for step in script.steps {
+                    continuation.yield(step)
+                }
+                if script.holdsOpen {
+                    self.heldDownloads[bookID] = continuation
+                }
+                self.startedDownloads.append(bookID)
+                return script
             }
-            if script.holdsOpen {
-                self.lock.withLock { self.heldDownloads[bookID] = continuation }
-            } else if let failure = script.failure {
+            guard !script.holdsOpen else { return }
+            if let failure = script.failure {
                 continuation.finish(throwing: failure)
             } else {
                 self.setState(.downloaded, of: bookID)
