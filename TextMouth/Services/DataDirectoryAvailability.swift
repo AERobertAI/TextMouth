@@ -159,10 +159,10 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         return "\(provider.displayName) may be signed out or not running."
     }
 
-    /// The reason as a debug log line gives it: the folder by its name
-    /// alone (`DiagnosticLog.loggablePath`), never by its absolute path.
+    /// The reason as a debug log line gives it: the folder by its short
+    /// name (`DataDirectoryPaths.shortName(of:)`), never its absolute path.
     var logDescription: String {
-        let name = DiagnosticLog.loggablePath(folder)
+        let name = DataDirectoryPaths.shortName(of: URL(fileURLWithPath: folder))
         switch self {
         case .driveNotConnected(let volume, _):
             return "the drive \(volume) holding \(name) isn't connected"
@@ -253,6 +253,13 @@ enum DataDirectoryPaths {
         if folderName.hasPrefix("Dropbox") { return .dropbox }
         let service = folderName.split(separator: "-", maxSplits: 1).first.map(String.init) ?? ""
         return .other(service.isEmpty ? folderName : service)
+    }
+
+    /// How a debug log line names a data directory: its folder's name and
+    /// the name of the folder or drive holding it ("Backup/TextMouth"),
+    /// never its absolute path (`DiagnosticLog`'s content policy).
+    static func shortName(of folder: URL) -> String {
+        folder.standardizedFileURL.pathComponents.filter { $0 != "/" }.suffix(2).joined(separator: "/")
     }
 
     /// Whether `path` lies inside a Trash folder: a home's .Trash or a

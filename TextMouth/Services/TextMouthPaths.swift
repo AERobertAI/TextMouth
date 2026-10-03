@@ -28,11 +28,41 @@ enum TextMouthPaths {
     /// The data directory a process with `runtime` starts with: the custom
     /// location when one is in use (see `customRootPath(for:)`), otherwise
     /// the default location in the runtime's home.
+    ///
+    /// The storage generation's first root comes from here
+    /// (`StorageBoundary.shared`), so this is where a custom location that
+    /// moved is found again, before anything reads or writes the data
+    /// directory (FR02): when its path is missing but its bookmark leads to
+    /// a folder holding this library under another path, as after a rename
+    /// or a remount under another name, that folder is the data directory,
+    /// and the preferences name it from now on. Whether the library there
+    /// can be used is the library model's launch check.
     static func root(for runtime: TextMouthRuntime) -> URL {
-        if let customPath = customRootPath(for: runtime) {
-            return URL(fileURLWithPath: customPath)
+        guard let customPath = customRootPath(for: runtime) else {
+            return defaultRoot(in: runtime.homeDirectory)
         }
-        return defaultRoot(in: runtime.homeDirectory)
+        let named = URL(fileURLWithPath: customPath)
+        let check = DataDirectoryCheck.of(root: named, preferences: runtime.preferences, runtime: runtime)
+        guard let relocated = check.relocatedLibrary()?.folder else { return named }
+        let line = recordRelocation(from: named, to: relocated, in: runtime.preferences)
+        // Logged on a later turn of the main queue: a log line names paths
+        // relative to the data directory, and the storage generation that
+        // knows the data directory may be resolving its root right now.
+        DispatchQueue.main.async {
+            DiagnosticLog.event(.storage, line)
+        }
+        return relocated
+    }
+
+    /// Makes `newRoot`, where the bookmark found the data directory last
+    /// named `oldRoot`, the data directory the preferences name, with a
+    /// fresh bookmark of it (FR02). Returns the debug log line saying so,
+    /// for the caller to write when it safely can.
+    static func recordRelocation(from oldRoot: URL, to newRoot: URL, in preferences: UserDefaults) -> String {
+        DataDirectoryPreferences.customPath.write(newRoot.path, to: preferences)
+        DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: newRoot), to: preferences)
+        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark "
+            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now"
     }
 
     /// The active data directory of this process: the root of the current

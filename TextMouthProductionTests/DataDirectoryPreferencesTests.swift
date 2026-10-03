@@ -62,6 +62,55 @@ final class DataDirectoryPreferencesTests: XCTestCase {
         XCTAssertNil(DataDirectoryPreferences.bookmark.read(from: store))
     }
 
+    // MARK: - Finding the Folder at Launch
+
+    /// The app's first data directory is a renamed custom folder, found
+    /// through its bookmark, and the preferences name it from then on, with
+    /// a fresh bookmark; the debug log says so.
+    func testLaunchFindsARenamedDataDirectoryThroughItsBookmark() throws {
+        let home = try makeSandboxDirectory("RelocatingHome")
+        let store = makeSandboxedPreferences("relocating")
+        let original = home.appendingPathComponent("Backup", isDirectory: true)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: false)
+        _ = try LibraryIdentity.adopt(in: original)
+        TextMouthPaths.setCustomRoot(original, in: store)
+        let renamed = home.appendingPathComponent("Backup 2", isDirectory: true)
+        try FileManager.default.moveItem(at: original, to: renamed)
+        let app = TextMouthRuntime(isHostedTest: false, homeDirectory: home, preferences: store)
+
+        let root = TextMouthPaths.root(for: app)
+
+        let renamedPath = renamed.resolvingSymlinksInPath().path
+        XCTAssertEqual(root.resolvingSymlinksInPath().path, renamedPath)
+        let recorded = try XCTUnwrap(DataDirectoryPreferences.customPath.read(from: store))
+        XCTAssertEqual(URL(fileURLWithPath: recorded).resolvingSymlinksInPath().path, renamedPath)
+        let bookmark = try XCTUnwrap(DataDirectoryPreferences.bookmark.read(from: store))
+        XCTAssertEqual(try Self.folder(resolving: bookmark), renamedPath)
+        let logged = "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: original))"
+        XCTAssertTrue(waitUntil(timeout: 5) { !self.debugLogLines(containing: logged).isEmpty }, "nothing logged")
+    }
+
+    /// A custom data directory that is there is used as named; a missing
+    /// one that no bookmark finds stays as named, for the launch check to
+    /// explain, and its preferences are left as they were.
+    func testLaunchUsesTheNamedDataDirectoryWhenTheBookmarkFindsNothingElse() throws {
+        let home = try makeSandboxDirectory("NamedHome")
+        let store = makeSandboxedPreferences("named")
+        let present = home.appendingPathComponent("Present", isDirectory: true)
+        try FileManager.default.createDirectory(at: present, withIntermediateDirectories: false)
+        let app = TextMouthRuntime(isHostedTest: false, homeDirectory: home, preferences: store)
+
+        TextMouthPaths.setCustomRoot(present, in: store)
+        XCTAssertEqual(TextMouthPaths.root(for: app).path, present.path)
+
+        let missing = home.appendingPathComponent("Unplugged", isDirectory: true)
+        TextMouthPaths.setCustomRoot(missing, in: store)
+        XCTAssertEqual(TextMouthPaths.root(for: app).path, missing.path)
+        XCTAssertEqual(DataDirectoryPreferences.customPath.read(from: store), missing.path)
+    }
+
+    // MARK: - Machine-Local
+
     /// The location preferences describe this Mac, so config.json never
     /// carries them.
     func testTheLocationPreferencesAreMachineLocal() {
