@@ -61,6 +61,29 @@ extension BookCloudStates {
     func countInTheCloud(_ books: [Book]) -> Int {
         books.filter { listedState(of: $0.id)?.isInTheCloud == true }.count
     }
+
+    /// Whether the library row of the book `bookID` says it is kept on this
+    /// Mac: only in a cloud location, where the rows have cloud notes, and
+    /// only for a book `kept` names.
+    func listsAsKept(_ bookID: UUID, in kept: KeptBooks) -> Bool {
+        showsCloudNotes && kept.contains(bookID)
+    }
+
+    /// How many of `books` the list's summary counts as kept on this Mac: in
+    /// a cloud location, the books `kept` names; always 0 elsewhere.
+    func countKept(_ books: [Book], in kept: KeptBooks) -> Int {
+        showsCloudNotes ? kept.count(of: books) : 0
+    }
+}
+
+/// The note that follows a kept book's cloud note in its row (Keep on This
+/// Mac): words of its own, which the row's label speaks after the cloud
+/// note, and a picture that only repeats them.
+enum KeptOnThisMacNote {
+    /// The note's words, shown and spoken.
+    static let text = "Kept on this Mac"
+    /// The SF Symbol drawn before the words.
+    static let symbolName = "pin.fill"
 }
 
 /// A book's cloud note in its library row: a small picture and the note's
@@ -73,24 +96,47 @@ struct BookCloudNote: View {
 
     var body: some View {
         if let note = state.visibleNote {
-            HStack(spacing: 3) {
-                if let symbol = state.noteSymbolName {
-                    Image(systemName: symbol)
-                        .accessibilityHidden(true)
-                }
-                Text(note)
-            }
-            .font(.caption2)
-            .fontWeight(.medium)
-            .foregroundColor(.secondary)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            // An outline rather than a fill keeps the note apart from the
-            // New and Now Reading badges without leaning on their colors.
-            .overlay(
-                RoundedRectangle(cornerRadius: 3)
-                    .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
-            )
+            CloudNoteBadge(symbolName: state.noteSymbolName, text: note)
         }
+    }
+}
+
+/// "Kept on this Mac" in a kept book's library row, after its cloud note
+/// (Keep on This Mac). The row speaks the words itself, in its own label, so
+/// this view adds nothing to what VoiceOver reads.
+struct BookKeptNote: View {
+    var body: some View {
+        CloudNoteBadge(symbolName: KeptOnThisMacNote.symbolName, text: KeptOnThisMacNote.text)
+    }
+}
+
+/// The outlined badge a library row's cloud notes are drawn in: a small
+/// picture, hidden from VoiceOver since it only repeats the words, and the
+/// words themselves.
+private struct CloudNoteBadge: View {
+    /// The SF Symbol drawn before the words, if any.
+    let symbolName: String?
+    /// The note's words.
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 3) {
+            if let symbolName {
+                Image(systemName: symbolName)
+                    .accessibilityHidden(true)
+            }
+            Text(text)
+        }
+        .font(.caption2)
+        .fontWeight(.medium)
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 1)
+        // An outline rather than a fill keeps the note apart from the
+        // New and Now Reading badges without leaning on their colors.
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+        )
     }
 }

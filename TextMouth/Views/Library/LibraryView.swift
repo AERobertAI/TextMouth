@@ -301,11 +301,12 @@ struct LibraryView: View {
             }
 
             // Total time remaining bar, with how many of the books shown are
-            // in the cloud (FR02)
+            // in the cloud (FR02) and kept on this Mac (Keep on This Mac)
             TimeRemainingBar(
                 books: allBooks,
                 wpm: settingsViewModel.wordsPerMinute,
                 booksInCloud: cloudStates.countInTheCloud(allBooks),
+                booksKept: cloudStates.countKept(allBooks, in: keptBooks),
                 focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
                 shouldTriggerFocus: focusTarget == .timeSummary,
                 livePositions: libraryViewModel.livePositions
@@ -899,6 +900,7 @@ struct LibraryView: View {
             isEditMode: isEditMode,
             isEditSelected: editSelection.contains(book.id),
             cloudState: cloudStates.listedState(of: book.id),
+            isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             targets: targets,
             cloudCommands: isSelectionRow
                 ? selectionCloudCommands

@@ -69,6 +69,11 @@ struct TimeRemainingBar: View {
     /// speaks when it is more than 0. The list counts them in a cloud
     /// library and passes 0 anywhere else, where the bar is as it was.
     var booksInCloud: Int = 0
+    /// How many of `books` are kept on this Mac (Keep on This Mac), which
+    /// the bar shows and speaks after the books in the cloud when it is more
+    /// than 0. The list counts them in a cloud library and passes 0 anywhere
+    /// else.
+    var booksKept: Int = 0
     /// Optional fallback focus target for the library when Continue Listening is absent.
     /// This summary is part of the content area and shows up reliably in the AX tree,
     /// unlike List section headers in this view hierarchy.
@@ -103,6 +108,12 @@ struct TimeRemainingBar: View {
 
                 if booksInCloud > 0 {
                     Text(Self.cloudCountText(booksInCloud))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                if booksKept > 0 {
+                    Text(Self.keptCountText(booksKept))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -155,7 +166,10 @@ struct TimeRemainingBar: View {
             parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
         }
         if booksInCloud > 0 {
-            parts.append("\(CountWording.phrase(booksInCloud, singular: "book is", plural: "books are")) in the cloud")
+            parts.append(Self.spokenCount(booksInCloud, "in the cloud"))
+        }
+        if booksKept > 0 {
+            parts.append(Self.spokenCount(booksKept, "kept on this Mac"))
         }
         return parts.joined(separator: ". ")
     }
@@ -170,6 +184,18 @@ struct TimeRemainingBar: View {
     /// "3 books in the cloud".
     static func cloudCountText(_ count: Int) -> String {
         "\(CountWording.books(count)) in the cloud"
+    }
+
+    /// The bar's visible count of books kept on this Mac: "1 book kept on
+    /// this Mac", "3 books kept on this Mac".
+    static func keptCountText(_ count: Int) -> String {
+        "\(CountWording.books(count)) kept on this Mac"
+    }
+
+    /// `count` books said to be somewhere, as the bar's label speaks it:
+    /// "1 book is in the cloud", "3 books are kept on this Mac".
+    private static func spokenCount(_ count: Int, _ place: String) -> String {
+        "\(CountWording.phrase(count, singular: "book is", plural: "books are")) \(place)"
     }
 }
 
@@ -248,6 +274,10 @@ struct BookRow: View {
     /// always has. The list passes what `BookCloudStates` recorded, so a row
     /// never asks the file system anything.
     var cloudState: BookCloudState? = nil
+    /// Whether the row says the book is kept on this Mac (Keep on This Mac):
+    /// "Kept on this Mac", shown and spoken after the cloud note. The list
+    /// passes true only for a kept book in a cloud library.
+    var isKeptOnThisMac: Bool = false
     /// The cloud commands of the row's context menu, which are also the
     /// row's VoiceOver actions (VO-Command-Space), under the same names
     /// (FR02).
@@ -305,6 +335,11 @@ struct BookRow: View {
                     // "Downloaded", "In Cloud", and so on, in a cloud library.
                     if let cloudState {
                         BookCloudNote(state: cloudState)
+                    }
+
+                    // "Kept on this Mac", after the cloud note.
+                    if isKeptOnThisMac {
+                        BookKeptNote()
                     }
                 }
                 HStack {
@@ -370,6 +405,9 @@ struct BookRow: View {
         }
         if let cloudNote = cloudState?.spokenNote {
             parts.append(cloudNote)
+        }
+        if isKeptOnThisMac {
+            parts.append(KeptOnThisMacNote.text)
         }
         let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
         if let progress = Self.spokenProgress(for: shownBook, besideDownloadPercentage: besideDownloadPercentage) {
@@ -483,6 +521,8 @@ struct LibraryBookListRow: View, Equatable {
     /// The book's cloud state, when the library is in a cloud location
     /// (FR02).
     let cloudState: BookCloudState?
+    /// Whether the row says the book is kept on this Mac (Keep on This Mac).
+    let isKeptOnThisMac: Bool
     /// The books the commands act on: the selection, in list order, when
     /// the row belongs to a selection of several books; otherwise the row's
     /// own book.
@@ -510,6 +550,7 @@ struct LibraryBookListRow: View, Equatable {
             && lhs.isEditMode == rhs.isEditMode
             && lhs.isEditSelected == rhs.isEditSelected
             && lhs.cloudState == rhs.cloudState
+            && lhs.isKeptOnThisMac == rhs.isKeptOnThisMac
             && lhs.targets == rhs.targets
             && lhs.cloudCommands == rhs.cloudCommands
             && lhs.manualMoves == rhs.manualMoves
@@ -526,6 +567,7 @@ struct LibraryBookListRow: View, Equatable {
             isEditMode: isEditMode,
             isEditSelected: isEditSelected,
             cloudState: cloudState,
+            isKeptOnThisMac: isKeptOnThisMac,
             cloudCommands: cloudCommands,
             performCloudCommand: actions.performCloudCommand,
             livePosition: livePosition

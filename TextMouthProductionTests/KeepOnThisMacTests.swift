@@ -1,9 +1,15 @@
+import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
 /// Keep on This Mac (FR02 polish): the set of books this Mac keeps
 /// downloaded is this Mac's own, saved in its own folder and never in the
-/// library, which every Mac reads.
+/// library, which every Mac reads. In a cloud library each row offers to
+/// keep its book or stop keeping it; a kept book in the cloud downloads at
+/// once, downloads again whenever a refresh finds it evicted, refuses Remove
+/// Download, and says "Kept on this Mac" after its cloud note, while the
+/// summary bar counts the kept books.
 @MainActor
 final class KeepOnThisMacTests: XCTestCase {
 
@@ -362,6 +368,104 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsStarted, [])
     }
 
+    // MARK: - The Row's Note and the Summary
+
+    /// A kept book's row says "Kept on this Mac" right after its cloud note,
+    /// whatever the state, and a row not kept reads as before.
+    func testAKeptRowSaysSoAfterItsCloudNote() {
+        let book = readBook()
+        let partway = BookDownloadProgress(completedFiles: 2, totalFiles: 5, completedBytes: 400, totalBytes: 1_000)
+        let expected: [(BookCloudState, String)] = [
+            (.downloaded, "Moby-Dick, by Herman Melville, Downloaded, Kept on this Mac, 42 percent, EPUB"),
+            (.inCloud, "Moby-Dick, by Herman Melville, In Cloud, Kept on this Mac, 42 percent, EPUB"),
+            (
+                .downloading(partway),
+                "Moby-Dick, by Herman Melville, Downloading, 40 percent, Kept on this Mac, 42 percent read, EPUB"
+            ),
+            (.waitingForSync, "Moby-Dick, by Herman Melville, Waiting for Sync, Kept on this Mac, 42 percent, EPUB"),
+        ]
+        for (state, label) in expected {
+            XCTAssertEqual(BookRow(book: book, cloudState: state, isKeptOnThisMac: true).rowAccessibilityLabel, label)
+        }
+        XCTAssertEqual(
+            BookRow(book: book, cloudState: .downloaded).rowAccessibilityLabel,
+            "Moby-Dick, by Herman Melville, Downloaded, 42 percent, EPUB"
+        )
+    }
+
+    /// The list says a book is kept only in a cloud library, where its rows
+    /// have cloud notes; elsewhere a kept book's row reads as any other.
+    func testTheListSaysKeptOnlyInACloudLibrary() {
+        let book = cloudTestBook()
+        let kept = KeptBooks(file: nil)
+        kept.keep([book.id])
+        let states = BookCloudStates()
+
+        for location in [StorageLocation.local, .otherVolume(name: "Archive Disk")] {
+            states.setLibraryLocation(location)
+            XCTAssertFalse(states.listsAsKept(book.id, in: kept), "\(location)")
+            XCTAssertEqual(states.countKept([book], in: kept), 0, "\(location)")
+        }
+        states.setLibraryLocation(.cloud(.googleDrive))
+        XCTAssertTrue(states.listsAsKept(book.id, in: kept))
+        XCTAssertFalse(states.listsAsKept(UUID(), in: kept))
+        XCTAssertEqual(states.countKept([book, cloudTestBook("Emma")], in: kept), 1)
+    }
+
+    /// The summary bar shows and speaks how many books are kept on this Mac,
+    /// after how many are in the cloud, and says nothing of it when none is.
+    func testTheSummaryCountsTheKeptBooks() {
+        let books = [cloudTestBook(), cloudTestBook("Emma"), cloudTestBook("Dracula")]
+
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200, booksInCloud: 1, booksKept: 2).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet. 1 book is in the cloud. 2 books are kept on this Mac"
+        )
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200, booksKept: 1).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet. 1 book is kept on this Mac"
+        )
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200, booksInCloud: 2).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet. 2 books are in the cloud"
+        )
+        XCTAssertEqual(TimeRemainingBar.keptCountText(1), "1 book kept on this Mac")
+        XCTAssertEqual(TimeRemainingBar.keptCountText(4), "4 books kept on this Mac")
+    }
+
+    /// The note's picture exists in SF Symbols, so no row draws an empty
+    /// space where it belongs.
+    func testTheKeptNotesPictureExists() {
+        XCTAssertNotNil(NSImage(systemSymbolName: KeptOnThisMacNote.symbolName, accessibilityDescription: nil))
+    }
+
+    /// Hosted in a window, a kept book's row is one element whose label says
+    /// it is kept, after its cloud note; when SwiftUI also exposes the row's
+    /// VoiceOver actions, which it does only for an assistive app, they name
+    /// the command that stops keeping it.
+    func testAHostedKeptRowSpeaksItsNote() throws {
+        let book = readBook()
+        let states = BookCloudStates()
+        states.setLibraryLocation(.cloud(.iCloudDrive))
+        states.record(.downloaded, for: book.id)
+        let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [book.id])
+        let row = BookRow(book: book, cloudState: .downloaded, isKeptOnThisMac: true, cloudCommands: commands)
+        let label = row.rowAccessibilityLabel
+        XCTAssertEqual(label, "Moby-Dick, by Herman Melville, Downloaded, Kept on this Mac, 42 percent, EPUB")
+
+        try withHostedView(row, until: { !self.accessibilityElements(labelled: label, in: $0).isEmpty }) { hostingView in
+            let found = accessibilityElements(labelled: label, in: hostingView)
+            guard let element = found.first else {
+                throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
+            }
+            XCTAssertEqual(found.count, 1, "the row is one element")
+            let actions = (element.accessibilityCustomActions() ?? []).map(\.name)
+            if !actions.isEmpty {
+                XCTAssertEqual(actions, ["Remove Download", "Stop Keeping on This Mac", "Show in Finder"])
+            }
+        }
+    }
+
     // MARK: - Wording
 
     /// The commands' titles name one book plainly and count a selection's.
@@ -450,6 +554,21 @@ final class KeepOnThisMacTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// An EPUB of Moby-Dick, opened before and 42 percent read, as the
+    /// library rows' own tests describe it, so its label holds every part.
+    private func readBook() -> Book {
+        Book(
+            title: "Moby-Dick",
+            author: "Herman Melville",
+            format: .epub,
+            filePath: "/Keep on This Mac/Moby-Dick.epub",
+            md5Hash: "",
+            lastOpened: Date(),
+            readingPosition: ReadingPosition(chapterIndex: 0, characterOffset: 0, globalCharacterOffset: 420),
+            totalCharacterCount: 1_000
+        )
+    }
 
     /// A refresher over `fixture`'s store and storage, whose timer sleeps
     /// until the test wakes it, which it never does here, and which hands
