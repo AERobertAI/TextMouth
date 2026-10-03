@@ -1,4 +1,3 @@
-import Combine
 import XCTest
 @testable import TextMouth
 
@@ -100,7 +99,7 @@ final class AudioClipChainReaderTests: XCTestCase {
             reader.stop()
 
             let heading = samples.filter { $0.chapter == 1 }
-            XCTAssertEqual(Self.runs(of: heading.compactMap(\.file)), ["a.wav", "b.wav", "c.wav"])
+            XCTAssertEqual(heading.compactMap(\.file).runs, ["a.wav", "b.wav", "c.wav"])
             let offsets = heading.map(\.offset)
             XCTAssertEqual(offsets, offsets.sorted(), "The heading's position went back: \(offsets)")
             XCTAssertGreaterThanOrEqual(offsets.max() ?? 0, 15, "\(offsets)")
@@ -165,117 +164,23 @@ final class AudioClipChainReaderTests: XCTestCase {
         ]
     }
 
-    /// One moment of playback: the reader's chapter and cursor and the
-    /// audio service's loaded file.
-    private struct PlaybackSample: Equatable {
-        let chapter: Int
-        let offset: Int
-        let file: String?
-    }
-
-    /// Subscriptions a test keeps until it ends; each test has its own.
-    private var subscriptions = Set<AnyCancellable>()
-
-    /// Run the main run loop until `condition` holds or `timeout` passes,
-    /// recording a sample of `reader`'s playback each time one changes.
-    private func trackPlayback(
-        of reader: ReaderViewModel,
-        within timeout: TimeInterval,
-        until condition: () -> Bool
-    ) -> [PlaybackSample] {
-        var samples: [PlaybackSample] = []
-        let deadline = Date().addingTimeInterval(timeout)
-        repeat {
-            let sample = PlaybackSample(
-                chapter: reader.currentChapterIndex,
-                offset: reader.currentCharacterOffset,
-                file: reader.audioPlaybackService.loadedURL?.lastPathComponent
-            )
-            if samples.last != sample { samples.append(sample) }
-            spinMainRunLoop(for: 0.01)
-        } while !condition() && Date() < deadline
-        return samples
-    }
-
-    /// `items` with each run of equal neighbors named once.
-    private static func runs(of items: [String]) -> [String] {
-        items.reduce(into: []) { runs, item in
-            if runs.last != item { runs.append(item) }
-        }
-    }
-
-    /// Wait until `reader` has finished loading its book, successfully or
-    /// not.
-    private func waitUntilLoaded(_ reader: ReaderViewModel) {
-        let loaded = expectation(description: "Loading ended")
-        reader.$isLoading
-            .filter { !$0 }
-            .prefix(1)
-            .sink { _ in loaded.fulfill() }
-            .store(in: &subscriptions)
-        wait(for: [loaded], timeout: 10)
-    }
-
     /// Run `body` with a reader opened at `position` on the book of
-    /// `sections()`, whose audio folder is passed along.
-    ///
-    /// The book is indexed and saved as an import leaves it before `damage`
-    /// changes its files, so the reader opens a saved index that still
-    /// lists every clip. Its end-of-book behavior is Stop. Settings live in
-    /// a private preferences suite, and the shared listening statistics
-    /// start empty with no open session and are put back afterwards, when
-    /// the reader is also closed and the package removed.
+    /// `sections()`, whose audio folder is passed along. Its end-of-book
+    /// behavior is Stop; `damage` changes its files after it was indexed
+    /// (see `withSegmentedAudioBook`).
     private func withSegmentedBook(
         at position: ReadingPosition = ReadingPosition(chapterIndex: 1, characterOffset: 0),
         damage: (URL) throws -> Void = { _ in },
         _ body: (ReaderViewModel, URL) throws -> Void
     ) throws {
-        let packageName = "\(UUID().uuidString).tmb"
-        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
-        defer { try? FileManager.default.removeItem(at: package) }
-        let folder = package.appendingPathComponent("audio", isDirectory: true)
-        for (file, duration) in Self.files {
-            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(file), duration: duration)
-        }
-        try JSONEncoder().encode(AudioManifest(title: "Harbor Soundings", segments: try Self.sections()))
-            .write(to: folder.appendingPathComponent("manifest.json"))
-        var book = Book(
+        try withSegmentedAudioBook(
             title: "Harbor Soundings",
-            format: .audio,
-            filePath: folder.path,
-            md5Hash: UUID().uuidString,
-            readingPosition: position,
-            tmbDirectoryName: packageName
-        )
-        book.localEndOfBookBehavior = EndOfBookBehavior.stop.rawValue
-        let analysis = try BookContentAnalysisService.load(book: book)
-        try book.saveBookInfoThrowing(contentIndex: analysis.index)
-        try damage(folder)
-
-        let defaults = makeSandboxedPreferences("reader-clip-chains")
-        let settings = SettingsViewModel(
-            notificationCenter: NotificationCenter(),
-            initializeServices: false,
-            userDefaults: defaults
-        )
-        let library = LibraryViewModel()
-        library.library = Library(books: [book])
-
-        let statistics = ReadingStatsService.shared
-        let savedStatistics = statistics.stats
-        statistics.endSession()
-        statistics.stats = ReadingStats()
-        defer {
-            statistics.endSession()
-            statistics.stats = savedStatistics
-            statistics.save()
+            files: Self.files,
+            sections: try Self.sections(),
+            at: position,
+            damage: damage
+        ) { audiobook in
+            try body(audiobook.openReader(), audiobook.folder)
         }
-
-        let reader = ReaderViewModel(book: book, libraryViewModel: library, settingsViewModel: settings)
-        defer { reader.close() }
-        waitUntilLoaded(reader)
-        XCTAssertNil(reader.errorMessage, "The book did not load")
-
-        try body(reader, folder)
     }
 }
