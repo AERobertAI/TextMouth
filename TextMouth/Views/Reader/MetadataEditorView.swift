@@ -86,7 +86,7 @@ struct MetadataEditorView: View {
                 Spacer()
                 Button("Save", action: save)
                     .keyboardShortcut(.return, modifiers: .command)
-                    .accessibilityLabel("Save metadata changes")
+                    .accessibilityLabel(saveButtonAccessibilityLabel)
             }
             .padding()
         }
@@ -139,6 +139,13 @@ struct MetadataEditorView: View {
     /// EPUB's can be written, and only when the user asks.
     private var writesToFile: Bool {
         isEPUB && writeToFile
+    }
+
+    /// What VoiceOver says for Save. For an EPUB it says where the metadata
+    /// goes, following the choice to write the file; audio metadata only
+    /// ever goes to the library.
+    private var saveButtonAccessibilityLabel: String {
+        isAudio ? "Save metadata changes" : EPUBMetadataSaveWording.saveButtonLabel(writesToFile: writesToFile)
     }
 
     /// The EPUB edits a failure is about, so its message clears as soon as
@@ -259,17 +266,20 @@ struct MetadataEditorView: View {
         }
     }
 
-    /// Optional toggle to write EPUB metadata changes back to the original file
+    /// The choice to write the edits into the library's copy of the EPUB
+    /// file as well. Its title, which VoiceOver reads as its label, its
+    /// hint, and its note all say which file that is: the copy TextMouth
+    /// keeps in its library, never the file the book was imported from
+    /// (TODO A09).
     @ViewBuilder
     private var epubWriteBackSection: some View {
         if isEPUB {
             Section {
-                Toggle("Also save changes to the EPUB file", isOn: $writeToFile)
-                    .accessibilityLabel("Save changes to original EPUB file")
-                    .accessibilityHint("When enabled, the original EPUB file on disk will be modified and its hash recalculated")
+                Toggle(EPUBMetadataSaveWording.writeBackToggleTitle, isOn: $writeToFile)
+                    .accessibilityHint(EPUBMetadataSaveWording.writeBackToggleHint)
 
                 if writeToFile {
-                    Text("Warning: This will modify the original file and recalculate its MD5 hash.")
+                    Text(EPUBMetadataSaveWording.writeBackNote)
                         .font(.caption)
                         .foregroundColor(.orange)
                 }

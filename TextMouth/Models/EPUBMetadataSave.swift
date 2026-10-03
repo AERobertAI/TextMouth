@@ -104,3 +104,33 @@ struct EPUBMetadataSaveWording {
         "Could not save metadata: “\(title)” is no longer in the library. Nothing was changed."
     }
 }
+
+// MARK: - The Editor's Words
+
+extension EPUBMetadataSaveWording {
+    /// The file the editor can write, as named before any file name is
+    /// shown.
+    private static let libraryCopyOfTheFile = "the library's copy of the EPUB file"
+
+    /// The metadata editor's choice to write the file too, which VoiceOver
+    /// also reads as the choice's label.
+    static let writeBackToggleTitle = "Also write to \(libraryCopyOfTheFile)"
+
+    /// VoiceOver's hint for that choice: which file is written, and that the
+    /// file the user imported is not.
+    static let writeBackToggleHint = "Writes the title, author, publisher, and date into the copy of this book "
+        + "that TextMouth keeps in its library. The original file you imported is not touched."
+
+    /// Shown under the choice while it is on.
+    static let writeBackNote = "Warning: This will rewrite \(libraryCopyOfTheFile) and recalculate its MD5 hash. "
+        + "The original file you imported is not changed."
+
+    /// What VoiceOver says for the editor's Save button, which tells where
+    /// the metadata goes: to the library only, or to the library and to the
+    /// library's copy of the EPUB file.
+    static func saveButtonLabel(writesToFile: Bool) -> String {
+        writesToFile
+            ? "Save metadata to the library and to \(libraryCopyOfTheFile)"
+            : "Save metadata to the library only"
+    }
+}

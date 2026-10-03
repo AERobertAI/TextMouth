@@ -177,6 +177,38 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         XCTAssertTrue(center.outstandingFailures().isEmpty, "\(center.outstandingFailures().map(\.sentence))")
     }
 
+    // MARK: - The Editor's Words
+
+    /// The editor says which file it writes. The choice to write the file
+    /// names the library's copy and its hint says the imported original is
+    /// not touched; VoiceOver's label for Save follows the choice in both of
+    /// its states. Nothing the editor says claims to change the original.
+    func testTheEditorSaysWhichFileItWrites() {
+        typealias Wording = EPUBMetadataSaveWording
+        XCTAssertEqual(Wording.writeBackToggleTitle, "Also write to the library's copy of the EPUB file")
+        XCTAssertTrue(
+            Wording.writeBackToggleHint.hasSuffix("The original file you imported is not touched."),
+            Wording.writeBackToggleHint
+        )
+        XCTAssertEqual(Wording.saveButtonLabel(writesToFile: false), "Save metadata to the library only")
+        XCTAssertEqual(
+            Wording.saveButtonLabel(writesToFile: true),
+            "Save metadata to the library and to the library's copy of the EPUB file"
+        )
+
+        let everything = [
+            Wording.writeBackToggleTitle,
+            Wording.writeBackToggleHint,
+            Wording.writeBackNote,
+            Wording.saveButtonLabel(writesToFile: false),
+            Wording.saveButtonLabel(writesToFile: true)
+        ]
+        for words in everything {
+            XCTAssertFalse(words.localizedCaseInsensitiveContains("original EPUB"), words)
+            XCTAssertFalse(words.localizedCaseInsensitiveContains("modify the original"), words)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// The Alice EPUB in the repository's test data.
