@@ -240,6 +240,68 @@ final class PersistenceCostTests: XCTestCase {
         XCTAssertEqual(writes.count, 1, "config.json was not written once, after the slider stopped")
     }
 
+    // MARK: - PERF16: A Cloud Refresh
+
+    /// What one refresh of the library list's cloud states costs, as the list
+    /// makes one every minute while a Library window is visible, when the app
+    /// becomes active, after every add, move, or removal, and every 2 seconds
+    /// while a book downloads: the real book storage over the real item
+    /// provider, with the provider's location reads counted, for as many
+    /// packages as the user's library holds (643). It is measured twice: in
+    /// the test root, which is local, as the user's library is; and with
+    /// every location reported as iCloud Drive once the real provider has
+    /// worked it out, for a library in the cloud. Those packages are not on
+    /// disk, so each reads as waiting for sync after one failed listing.
+    ///
+    /// Before PERF16 each refresh worked out where the library lives once,
+    /// and once more for every package: 644 location reads in either
+    /// library.
+    @MainActor
+    func testCloudRefreshCost() async throws {
+        let packages = (0..<643).map { number in
+            BookPackage(
+                bookID: UUID(),
+                url: TextMouthPaths.libraryDir
+                    .appendingPathComponent("Synthetic Shelf \(number % 38)", isDirectory: true)
+                    .appendingPathComponent("Synthetic_Title_\(number)-Synthetic_Author-1774073441.tmb", isDirectory: true),
+                isPackage: true,
+                isAudio: false
+            )
+        }
+
+        for reportsCloud in [false, true] {
+            let items = LocationCountingItems(reportingCloud: reportsCloud)
+            let storage = BookCloudStorageService(items: items)
+            let states = BookCloudStates()
+            let clock = ContinuousClock()
+            var durations: [Duration] = []
+            var readsPerRefresh: [Int] = []
+            for _ in 1...5 {
+                let readsBefore = items.locationReads
+                let started = clock.now
+                await states.refresh(packages, using: storage)
+                durations.append(clock.now - started)
+                readsPerRefresh.append(items.locationReads - readsBefore)
+            }
+
+            let median = durations.sorted()[durations.count / 2]
+            let library = reportsCloud ? "a library in the cloud" : "a local library"
+            Self.report(
+                "PERF16 a cloud refresh of \(packages.count) packages in \(library) read the library's location "
+                    + "\(readsPerRefresh.map(String.init).joined(separator: ", ")) times, "
+                    + "in \(Self.milliseconds(median)) ms (median of 5)"
+            )
+            if reportsCloud {
+                XCTAssertEqual(states.libraryLocation, .cloud(.iCloudDrive))
+                XCTAssertEqual(states.states.count, packages.count, "a package's state was not recorded")
+                XCTAssertTrue(states.states.values.allSatisfy { $0 == .waitingForSync })
+            } else {
+                XCTAssertEqual(states.libraryLocation, .local)
+                XCTAssertEqual(states.states, [:], "a local library recorded cloud states")
+            }
+        }
+    }
+
     // MARK: - Fixtures
 
     /// A small Markdown book numbered `number`, in a package of its own in
@@ -521,5 +583,54 @@ private final class MainThreadHeartbeat {
         timer?.invalidate()
         timer = nil
         return longest
+    }
+}
+
+// MARK: - Counting Location Reads
+
+/// The item provider the app installs, with how often it works out where a
+/// folder lives counted. When `reportingCloud`, every location it has
+/// worked out is reported as iCloud Drive, so a library in the test root
+/// costs what a library in the cloud costs to locate. A refresh never asks
+/// for a download or a removal, so neither is passed on.
+private final class LocationCountingItems: CloudItemStatusProviding {
+    /// The provider the app installs.
+    private let system = UbiquitousItemStatusProvider()
+    /// Whether every location is reported as iCloud Drive.
+    private let reportsCloud: Bool
+    /// How many locations were worked out, from any thread.
+    private let reads = OSAllocatedUnfairLock(initialState: 0)
+
+    /// A provider that reports locations as they are, or every one as
+    /// iCloud Drive when `reportingCloud`.
+    init(reportingCloud: Bool) {
+        reportsCloud = reportingCloud
+    }
+
+    /// How many locations were worked out so far.
+    var locationReads: Int {
+        reads.withLock { $0 }
+    }
+
+    /// Works out where `folder` lives as the app does, and counts it.
+    func location(of folder: URL) -> StorageLocation {
+        reads.withLock { $0 += 1 }
+        let location = system.location(of: folder)
+        return reportsCloud ? .cloud(.iCloudDrive) : location
+    }
+
+    /// The file's state, as the app reads it.
+    func status(of file: URL) -> CloudItemStatus {
+        system.status(of: file)
+    }
+
+    /// Never asked for by a refresh.
+    func requestDownload(of file: URL) throws {
+        throw CocoaError(.featureUnsupported)
+    }
+
+    /// Never asked for by a refresh.
+    func removeLocalCopy(of file: URL) throws {
+        throw CocoaError(.featureUnsupported)
     }
 }
