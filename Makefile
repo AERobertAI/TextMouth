@@ -28,7 +28,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check open xcode help
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest open xcode help
 
 ## Default: build the app
 all: build
@@ -46,6 +46,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests"
+	@echo "  make check-selftest - Test the gate script in seconds, without building"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
 	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
@@ -138,6 +139,10 @@ test:
 ## CHECK_ARGS, for example: make check CHECK_ARGS=--dry-run
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
+
+## Test the gate script itself: dry runs and stubbed build tools, no building
+check-selftest:
+	@Scripts/check-selftest.sh
 
 ## Open the project in Xcode
 xcode: generate
