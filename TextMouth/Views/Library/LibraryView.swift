@@ -154,10 +154,12 @@ struct LibraryView: View {
     /// Books selected via edit mode (persists through VoiceOver navigation)
     @State private var editSelection: Set<UUID> = []
     @State private var bookInfoTarget: Book?
-    /// EPUB metadata loaded on-demand when showing the rich editor from the library
-    @State private var richInfoEPUBMetadata: EPUBMetadata?
-    /// Audio metadata loaded on-demand when showing the rich editor from the library
-    @State private var richInfoAudioMetadata: AudioMetadata?
+    /// What the Book Info sheet shows for `bookInfoTarget`: read off the
+    /// main thread, and never downloaded for a book only in the cloud (FR02).
+    @State private var bookInfo: LibraryBookInfo = .simple
+    /// The Book Info request still reading, so only the latest one presents
+    /// its sheet.
+    @State private var bookInfoRequest: UUID?
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
     /// Whether removing asks first and where deleted files go, kept current
@@ -503,39 +505,7 @@ struct LibraryView: View {
             }
         }
         .sheet(item: $bookInfoTarget) { book in
-            if book.format == .epub, let metadata = richInfoEPUBMetadata {
-                // EPUB books get the rich metadata editor with publisher, date, etc.
-                MetadataEditorView(
-                    metadata: metadata,
-                    isEPUB: true,
-                    onSave: { updated, writeToFile in
-                        // The library's copy of the EPUB is written first when
-                        // asked, and nothing changes if that fails: the editor
-                        // then stays open and shows why (TODO A09). VoiceOver
-                        // hears the outcome from the editor, which has focus.
-                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
-                        VoiceOverAnnouncer.announce(save.message)
-                        return save.outcome
-                    }
-                )
-            } else if book.format.isAudio, let audioMeta = richInfoAudioMetadata {
-                // Audio books get the rich metadata editor with album, genre, etc.
-                MetadataEditorView(
-                    audioMetadata: audioMeta,
-                    onSave: { updated in
-                        var updatedBook = book
-                        updatedBook.title = updated.title
-                        updatedBook.author = updated.artist
-                        updatedBook.audioAlbum = updated.album
-                        updatedBook.audioGenre = updated.genre
-                        updatedBook.audioYear = updated.year
-                        libraryViewModel.updateBookMetadata(updatedBook)
-                    }
-                )
-            } else {
-                // Plain text, markdown, HTML — simple title/author editor
-                LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
-            }
+            bookInfoSheet(for: book)
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
@@ -1185,46 +1155,90 @@ struct LibraryView: View {
         }
     }
 
-    /// Load format-specific metadata and present the appropriate info editor.
-    /// EPUB and audio books get the rich MetadataEditorView; plain text formats
-    /// get the simple LibraryBookInfoSheet.
+    /// Shows Book Info for `book` once its metadata is read. EPUB and audio
+    /// books get the rich MetadataEditorView; other formats, and an EPUB
+    /// that cannot be read, get the simple LibraryBookInfoSheet. The reading
+    /// happens off the main thread and never downloads a book whose file is
+    /// only in the cloud, whose editor shows what the library keeps (FR02).
+    /// A later request replaces one still reading.
     private func showBookInfo(for book: Book) {
-        richInfoEPUBMetadata = nil
-        richInfoAudioMetadata = nil
-
-        guard book.format.usesRichMetadataEditor else {
+        let request = UUID()
+        bookInfoRequest = request
+        Task {
+            let info = await LibraryBookInfoReader.system.info(for: book)
+            guard bookInfoRequest == request else { return }
+            bookInfoRequest = nil
+            bookInfo = info
             bookInfoTarget = book
-            return
         }
+    }
 
-        if book.format == .epub {
-            // Load EPUB metadata from the file
-            let url = URL(fileURLWithPath: book.filePath)
-            if let extracted = try? EPUBParser.readMetadata(url: url) {
-                richInfoEPUBMetadata = book.mergingEditableEPUBMetadata(extracted)
-            }
-        } else if book.format.isAudio {
-            // Load audio metadata asynchronously, then show the sheet
-            Task {
-                let meta = await AudioPlaybackService.extractFullMetadata(
-                    from: URL(fileURLWithPath: book.filePath)
-                )
-                // Overlay stored user edits
-                var merged = meta
-                merged.title = book.title
-                merged.artist = book.author
-                if let album = book.audioAlbum { merged.album = album }
-                if let genre = book.audioGenre { merged.genre = genre }
-                if let year = book.audioYear { merged.year = year }
-                await MainActor.run {
-                    richInfoAudioMetadata = merged
-                    bookInfoTarget = book
+    /// The Book Info sheet for `book`, as `showBookInfo(for:)` read it.
+    @ViewBuilder
+    private func bookInfoSheet(for book: Book) -> some View {
+        switch bookInfo {
+        case .epub(let metadata, let isCloudOnly):
+            VStack(spacing: 0) {
+                if isCloudOnly {
+                    bookInfoCloudOnlyNote
                 }
+                // EPUB books get the rich metadata editor with publisher, date, etc.
+                MetadataEditorView(
+                    metadata: metadata,
+                    isEPUB: true,
+                    onSave: { updated, writeToFile in
+                        // Writing an EPUB only in the cloud would download it
+                        // first while the interface waited, so the editor
+                        // stays open and says why instead.
+                        if let refusal = LibraryBookInfo.writeRefusal(
+                            isCloudOnly: isCloudOnly,
+                            writesToFile: writeToFile
+                        ) {
+                            VoiceOverAnnouncer.announce(refusal)
+                            return .failure(refusal)
+                        }
+                        // The library's copy of the EPUB is written first when
+                        // asked, and nothing changes if that fails: the editor
+                        // then stays open and shows why (TODO A09). VoiceOver
+                        // hears the outcome from the editor, which has focus.
+                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
+                        VoiceOverAnnouncer.announce(save.message)
+                        return save.outcome
+                    }
+                )
             }
-            return // Don't set bookInfoTarget yet — the Task will do it
+        case .audio(let metadata, let isCloudOnly):
+            VStack(spacing: 0) {
+                if isCloudOnly {
+                    bookInfoCloudOnlyNote
+                }
+                // Audio books get the rich metadata editor with album, genre, etc.
+                MetadataEditorView(
+                    audioMetadata: metadata,
+                    onSave: { updated in
+                        var updatedBook = book
+                        updatedBook.title = updated.title
+                        updatedBook.author = updated.artist
+                        updatedBook.audioAlbum = updated.album
+                        updatedBook.audioGenre = updated.genre
+                        updatedBook.audioYear = updated.year
+                        libraryViewModel.updateBookMetadata(updatedBook)
+                    }
+                )
+            }
+        case .simple:
+            // Plain text, markdown, HTML — simple title/author editor
+            LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
         }
+    }
 
-        bookInfoTarget = book
+    /// Says, above the editor, that some details appear once the book is
+    /// downloaded, for a book whose file is only in the cloud (FR02).
+    private var bookInfoCloudOnlyNote: some View {
+        Label(LibraryBookInfo.cloudOnlyNote, systemImage: "cloud")
+            .font(.callout)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding([.horizontal, .top])
     }
 }
 
