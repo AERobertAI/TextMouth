@@ -26,7 +26,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies beside library.json are never read or touched: the
     /// index itself loads, and writes go on.
     func testConflictCopiesBesideTheLibraryIndexAreLeftAlone() throws {
-        _ = try makeOwnDataDirectory("IndexConflicts")
+        _ = try makeCurrentDataDirectory("IndexConflicts")
         let book = try makePackagedBook("Moby-Dick")
         let index = TextMouthPaths.libraryIndexFile
         try LibraryPersistenceService.encodedIndex(Library(books: [book])).write(to: index)
@@ -46,7 +46,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// leave it, enters index recovery: its bytes are preserved beside it,
     /// and no save is written over it until the user chooses.
     func testAHalfWrittenLibraryIndexIsPreservedAndNotWrittenOver() throws {
-        _ = try makeOwnDataDirectory("IndexHalf")
+        _ = try makeCurrentDataDirectory("IndexHalf")
         let index = TextMouthPaths.libraryIndexFile
         let half = halfOf(try LibraryPersistenceService.encodedIndex(Library(books: [try makePackagedBook("Moby-Dick")])))
         try half.write(to: index)
@@ -89,7 +89,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// another Mac and not synced here, keeps every row through the startup
     /// repair, and nothing is made where the packages will arrive.
     func testALibraryIndexListingPackagesNotHereYetKeepsEveryRow() throws {
-        _ = try makeOwnDataDirectory("IndexAhead")
+        _ = try makeCurrentDataDirectory("IndexAhead")
         let here = try makePackagedBook("Moby-Dick")
         let notHere = [bookNotHereYet("Emma"), bookNotHereYet("Dracula")]
         let library = Library(books: [here] + notHere)
@@ -120,7 +120,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// package can leave ("Book 2.tmb"), is not adopted as a second book,
     /// and stays where it is.
     func testAConflictCopyOfAPackageIsNotAdoptedAsASecondBook() throws {
-        _ = try makeOwnDataDirectory("PackageConflict")
+        _ = try makeCurrentDataDirectory("PackageConflict")
         let book = try makePackagedBook("Moby-Dick")
         let copyName = book.tmbDirectoryName.replacingOccurrences(of: ".tmb", with: " 2.tmb")
         let copy = book.tmbDirectory.deletingLastPathComponent().appendingPathComponent(copyName, isDirectory: true)
@@ -137,7 +137,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies of a book's record inside its package are never
     /// read: the record loads as it is, and a save writes the record alone.
     func testConflictCopiesOfARecordAreLeftAlone() throws {
-        _ = try makeOwnDataDirectory("RecordConflicts")
+        _ = try makeCurrentDataDirectory("RecordConflicts")
         let book = try makePackagedBook("Moby-Dick")
         let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
         let theirs = halfOf(try Data(contentsOf: record))
@@ -158,7 +158,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A package another Mac left with its record cut short is not adopted,
     /// and is left as it is for that Mac to finish.
     func testAPackageWithAHalfWrittenRecordIsSkippedAndKept() throws {
-        _ = try makeOwnDataDirectory("RecordHalf")
+        _ = try makeCurrentDataDirectory("RecordHalf")
         let orphan = try makePackagedBook("Moby-Dick")
         let record = TextMouthPaths.bookInfoPath(in: orphan.tmbDirectory)
         let half = halfOf(try Data(contentsOf: record))
@@ -174,7 +174,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A save for a book whose package another Mac removed makes no package
     /// again: the write is dropped, with one log line.
     func testASaveForAPackageThatDisappearedMakesNothing() throws {
-        _ = try makeOwnDataDirectory("PackageRemoved")
+        _ = try makeCurrentDataDirectory("PackageRemoved")
         let book = try makePackagedBook("Moby-Dick")
         try FileManager.default.removeItem(at: book.tmbDirectory)
 
@@ -188,7 +188,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// library; nothing is asked of the sync service for it, and a kept
     /// book waiting so is not downloaded.
     func testAPackageThatDisappearedWaitsForSync() async throws {
-        _ = try makeOwnDataDirectory("PackageGone")
+        _ = try makeCurrentDataDirectory("PackageGone")
         let gone = try makePackagedBook("Moby-Dick")
         try FileManager.default.removeItem(at: gone.tmbDirectory)
         let provider = FakeCloudItemStatusProvider()
@@ -500,7 +500,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies beside the substitution rules are never read.
     func testConflictCopiesBesideTheSubstitutionsAreLeftAlone() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesConflicts")
+        let root = try makeCurrentDataDirectory("RulesConflicts")
         let file = root.appendingPathComponent("substitutions.json")
         try rulesData(named: ["Harbor"]).write(to: file)
         let theirs = try rulesData(named: ["Galley", "Chart Room"])
@@ -521,7 +521,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// rules stand in meanwhile.
     func testHalfWrittenSubstitutionsArePreservedBeforeTheyAreReplaced() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesHalf")
+        let root = try makeCurrentDataDirectory("RulesHalf")
         let file = root.appendingPathComponent("substitutions.json")
         let half = halfOf(try rulesData(named: ["Harbor", "Galley"]))
         try half.write(to: file)
@@ -551,7 +551,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     func testSubstitutionsOnlyInTheCloudAreNeverSavedOver() throws {
         reloadTheAppsRulesWhenTheTestEnds()
         let center = cleanSharedFailureCenter()
-        let root = try makeOwnDataDirectory("RulesInCloud")
+        let root = try makeCurrentDataDirectory("RulesInCloud")
         let file = root.appendingPathComponent("substitutions.json")
         let theirs = try rulesData(named: ["Harbor"])
         try theirs.write(to: file)
@@ -590,7 +590,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Mac's. A rule changed then writes the rules, the change with them.
     func testTheStandardRulesAreWrittenOnlyOnceARuleChanges() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesFirstLaunch")
+        let root = try makeCurrentDataDirectory("RulesFirstLaunch")
         let file = root.appendingPathComponent("substitutions.json")
         let service = TextSubstitutionService.shared
 
@@ -618,7 +618,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// of this Mac's beside it.
     func testSubstitutionsThatArriveLaterAreTakenUpAsTheyCame() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesArriveLater")
+        let root = try makeCurrentDataDirectory("RulesArriveLater")
         let file = root.appendingPathComponent("substitutions.json")
         let service = TextSubstitutionService.shared
         service.loadRules()
@@ -641,7 +641,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// as one made while the library was unavailable is.
     func testARuleChangedAfterTheRulesArriveWritesNothingOverThem() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesArriveBeforeAChange")
+        let root = try makeCurrentDataDirectory("RulesArriveBeforeAChange")
         let file = root.appendingPathComponent("substitutions.json")
         let service = TextSubstitutionService.shared
         service.loadRules()
@@ -661,7 +661,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A checkpoint journal cut short names no book, and the startup repair
     /// changes no row because of it.
     func testAHalfWrittenCheckpointJournalChangesNothing() throws {
-        _ = try makeOwnDataDirectory("JournalHalf")
+        _ = try makeCurrentDataDirectory("JournalHalf")
         let book = try makePackagedBook("Moby-Dick")
         let whole = try JSONSerialization.data(withJSONObject: ["books": [book.id.uuidString]])
         try halfOf(whole).write(to: TextMouthPaths.readingCheckpointsFile)
@@ -677,7 +677,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A checkpoint journal naming books whose packages aren't on this Mac,
     /// or that this library doesn't hold, changes no row.
     func testACheckpointJournalNamingBooksNotHereChangesNothing() throws {
-        _ = try makeOwnDataDirectory("JournalAhead")
+        _ = try makeCurrentDataDirectory("JournalAhead")
         let here = try makePackagedBook("Moby-Dick")
         let notHere = bookNotHereYet("Emma")
         let journal = ["books": [notHere.id.uuidString, here.id.uuidString, UUID().uuidString]]
@@ -700,19 +700,6 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         hasUnresolvedConflicts: false,
         downloadError: nil
     )
-
-    /// A data directory of the test's own, with its Library folder, made the
-    /// current one until the test ends, and its gate opened then.
-    private func makeOwnDataDirectory(_ label: String) throws -> URL {
-        let root = try makeDataDirectoryMoveDestination(label)
-        try FileManager.default.createDirectory(
-            at: root.appendingPathComponent("Library", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        StorageBoundary.shared.publish(root: root)
-        addTeardownBlock { DataDirectoryGate.open(root) }
-        return root
-    }
 
     /// A book in a package of its own at the top of the current data
     /// directory's Library folder, its file and its record written, as

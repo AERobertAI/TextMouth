@@ -37,6 +37,22 @@ extension XCTestCase {
         }
         return scratch.appendingPathComponent("Moved Data", isDirectory: true)
     }
+
+    /// A data directory of the test's own, with its Library folder, made the
+    /// current one until the test ends (`makeDataDirectoryMoveDestination`),
+    /// when its gate is opened too, in case the test closed it. `label`
+    /// names its scratch folder.
+    @MainActor
+    func makeCurrentDataDirectory(_ label: String) throws -> URL {
+        let root = try makeDataDirectoryMoveDestination(label)
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent("Library", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        StorageBoundary.shared.publish(root: root)
+        addTeardownBlock { DataDirectoryGate.open(root) }
+        return root
+    }
 }
 
 /// Makes the data directory at `root` the current one again, when a test

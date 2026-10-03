@@ -74,18 +74,4 @@ final class DataDirectoryPersistenceTests: XCTestCase {
         XCTAssertEqual(failure.subsystem, .libraryIndex)
         XCTAssertEqual((failure.error as? DataDirectoryUnavailableError)?.root.path, root.path)
     }
-
-    // MARK: - Fixtures
-
-    /// A data directory of the test's own, with its folders, made the
-    /// current one until the test ends.
-    private func makeCurrentDataDirectory(_ label: String) throws -> URL {
-        let root = try makeDataDirectoryMoveDestination(label)
-        try FileManager.default.createDirectory(
-            at: root.appendingPathComponent("Library", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        StorageBoundary.shared.publish(root: root)
-        return root
-    }
 }

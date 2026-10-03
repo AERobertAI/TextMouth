@@ -63,19 +63,4 @@ final class DataDirectoryServicesTests: XCTestCase {
         XCTAssertFalse(service.statsAwaitDataDirectory)
         XCTAssertEqual(service.stats.totalListeningSeconds, 5_400)
     }
-
-    // MARK: - Fixtures
-
-    /// A data directory of the test's own, with its Library folder, made the
-    /// current one until the test ends, and its gate opened then.
-    private func makeCurrentDataDirectory(_ label: String) throws -> URL {
-        let root = try makeDataDirectoryMoveDestination(label)
-        try FileManager.default.createDirectory(
-            at: root.appendingPathComponent("Library", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        StorageBoundary.shared.publish(root: root)
-        addTeardownBlock { DataDirectoryGate.open(root) }
-        return root
-    }
 }
