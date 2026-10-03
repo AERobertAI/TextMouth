@@ -400,7 +400,12 @@ extension BookContentIndex {
     ///
     /// The reason names the first mismatch by the field bookInfo.json spells,
     /// for example
-    /// `chapters[1].headings[0].text is "Later", but the reading text has "Sooner"`.
+    /// `chapters[1].characterCount is 15, but the reading text holds 16`.
+    /// The debug log records the reason (`CONTENT_INDEX_REJECTED`), and the
+    /// book's text never goes there (`DiagnosticLog`), so a relabeled heading
+    /// is named by its place, with where the two labels first differ and how
+    /// long each is, never by either label:
+    /// `chapters[1].headings[0].text differs from the reading text's label at UTF-16 offset 0 (lengths 5 and 6)`.
     ///
     /// - Parameter countingWords: Whether to count each chapter's words, the
     ///   one comparison that reads every character of the text (tens of
@@ -445,7 +450,9 @@ extension BookContentIndex {
     /// headings of `chapter`, its reading text, or nil when it does: the
     /// same number of headings, each at the offset the builder would record
     /// (`indexedHeadingOffset`), with the same label and level. `field` names
-    /// the chapter in reasons. Called once the lengths match.
+    /// the chapter in reasons, and a label that differs is described by
+    /// where it first differs and by the two labels' lengths, never by its
+    /// words. Called once the lengths match.
     private func headingAlignmentFailure(
         of stored: BookContentChapterIndex,
         with chapter: Chapter,
@@ -461,14 +468,25 @@ extension BookContentIndex {
                 return "\(field).characterOffset is \(storedHeading.characterOffset), but the reading text has it at \(offset)"
             }
             if storedHeading.text != heading.text {
-                return "\(field).text is \(String(reflecting: storedHeading.text)), "
-                    + "but the reading text has \(String(reflecting: heading.text))"
+                // A label is the book's text, which the debug log never
+                // holds: say where the two part and how long each is.
+                let difference = Self.firstDifferingUTF16Offset(storedHeading.text, heading.text)
+                return "\(field).text differs from the reading text's label at UTF-16 offset \(difference) "
+                    + "(lengths \(storedHeading.text.utf16Length) and \(heading.text.utf16Length))"
             }
             if storedHeading.level != heading.level {
                 return "\(field).level is \(storedHeading.level), but the reading text has \(heading.level)"
             }
         }
         return nil
+    }
+
+    /// The UTF-16 offset at which `label` and `other` first differ: their
+    /// first code unit that disagrees, or the shorter one's length when it
+    /// is the start of the other. Labels that differ as strings always
+    /// differ somewhere in their code units.
+    private static func firstDifferingUTF16Offset(_ label: String, _ other: String) -> Int {
+        zip(label.utf16, other.utf16).prefix(while: { $0.0 == $0.1 }).count
     }
 
     /// Whether the current builder made this index for a book of `format`.

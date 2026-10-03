@@ -114,6 +114,46 @@ final class LogContentPolicyTests: XCTestCase {
         XCTAssertFalse(description.contains("Salt Road"), description)
     }
 
+    // MARK: - Rejected Content Index
+
+    /// A saved content index whose heading label disagrees with the reading
+    /// text is set aside with a reason the debug log records as it is
+    /// (`CONTENT_INDEX_REJECTED: <title>: <reason>`). The reason is built
+    /// outside any log call, where the source scan cannot see it, and a
+    /// label is the book's own text, so the reason names the heading by its
+    /// place, with where the two labels first differ and how long each is
+    /// in UTF-16 units, never by either label.
+    func testRejectedIndexReasonGivesHeadingLengthsNotLabels() throws {
+        let relabelings: [(indexed: String, reading: String, difference: String)] = [
+            // The same length, differing midway.
+            ("Quillwort Landing", "Quillwort Harbour", "offset 10 (lengths 17 and 17)"),
+            // The index's label is the start of the text's.
+            ("Ferry Slip", "Ferry Slip Ledger", "offset 10 (lengths 10 and 17)"),
+            // An emoji is two UTF-16 units.
+            ("📖 Pilot Notes", "📖 Pilot Charts", "offset 9 (lengths 14 and 15)"),
+            // A label where the index has an empty one.
+            ("", "Breakwater", "offset 0 (lengths 0 and 10)"),
+        ]
+        for relabeling in relabelings {
+            let indexed = [
+                Chapter(title: "Shore", text: "Gulls over the pier.", headings: [Heading(level: 1, text: relabeling.indexed)]),
+            ]
+            var reading = indexed
+            reading[0].headings[0].text = relabeling.reading
+
+            let index = BookContentIndex.build(fromChapters: indexed, format: .epub)
+            let reason = try XCTUnwrap(index.alignmentFailure(with: reading), relabeling.reading)
+
+            XCTAssertEqual(
+                reason,
+                "chapters[0].headings[0].text differs from the reading text's label at UTF-16 \(relabeling.difference)"
+            )
+            for word in (relabeling.indexed + " " + relabeling.reading).split(separator: " ") {
+                XCTAssertFalse(reason.contains(word), "\(word) reached the reason: \(reason)")
+            }
+        }
+    }
+
     // MARK: - Media Routing
 
     /// Media-route bookkeeping, logged for every focus change, command, and

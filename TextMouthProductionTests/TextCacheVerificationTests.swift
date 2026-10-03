@@ -142,9 +142,12 @@ final class TextCacheVerificationTests: XCTestCase {
 
         let result = try BookContentAnalysisService.load(book: book, hasher: counter.hasher)
 
+        // "Later" and "Never" differ from their first letter on, and are
+        // named only by that place and their lengths.
         XCTAssertEqual(
             rejections(of: book),
-            [#"CONTENT_INDEX_REJECTED: \#(book.title): chapters[1].headings[1].text is "Later", but the reading text has "Never""#]
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].headings[1].text differs from the reading "
+                + "text's label at UTF-16 offset 0 (lengths 5 and 5)"]
         )
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): content.md changed"])
         XCTAssertEqual(counter.dataCount, 1, "only the rejected index sends content.md to be digested")
@@ -241,9 +244,9 @@ final class TextCacheVerificationTests: XCTestCase {
     // MARK: - Index Disagreeing With Its Text
 
     /// An index whose headings disagree with the text it is paired with is
-    /// indexed again, with the reason naming the heading. content.md still
-    /// holds what was written, as one digest of it confirms, so it is not
-    /// rebuilt.
+    /// indexed again, with the reason naming the heading by its place, never
+    /// by its label. content.md still holds what was written, as one digest
+    /// of it confirms, so it is not rebuilt.
     func testIndexWhoseHeadingsDisagreeIsReindexedNamingTheHeading() throws {
         let book = try makeCachedBook()
         var relabeled = try savedIndex(of: book)
@@ -254,9 +257,11 @@ final class TextCacheVerificationTests: XCTestCase {
 
         let result = try BookContentAnalysisService.load(book: book, hasher: counter.hasher)
 
+        // The index's "Sooner" (6 long) against the text's "Later" (5).
         XCTAssertEqual(
             rejections(of: book),
-            [#"CONTENT_INDEX_REJECTED: \#(book.title): chapters[1].headings[1].text is "Sooner", but the reading text has "Later""#]
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[1].headings[1].text differs from the reading "
+                + "text's label at UTF-16 offset 0 (lengths 6 and 5)"]
         )
         XCTAssertEqual(staleReports(for: book), [])
         XCTAssertEqual(counter.dataCount, 1)
