@@ -1,5 +1,6 @@
 import SwiftSoup
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Golden tests for the text pipeline's performance work (PERF18 to PERF25
@@ -282,6 +283,39 @@ final class TextPipelineGoldenTests: XCTestCase {
                 text.unicodeScalars.prefix(40).map { String($0.value, radix: 16) }.joined(separator: " ")
             )
         }
+    }
+
+    // MARK: - Archive Lookups (PERF20)
+
+    /// Members of an archive whose paths repeat, differ only in case, or
+    /// differ only in how an accented letter is encoded, in that order.
+    private static let lookupEntries: [TestZIPEntry] = [
+        .folder("Text/"),
+        TestZIPEntry("Text/Page.html", Data("first exact".utf8)),
+        TestZIPEntry("text/page.HTML", Data("first by case".utf8)),
+        TestZIPEntry("Text/Page.html", Data("second exact".utf8)),
+        TestZIPEntry("TEXT/PAGE.HTML", Data("second by case".utf8)),
+        TestZIPEntry("cafe\u{301}.html", Data("decomposed".utf8)),
+        TestZIPEntry("caf\u{E9}.html", Data("composed".utf8)),
+    ]
+
+    /// A DAISY book's files are found as the archive finds them: the first
+    /// entry at a path wins (paths compare as Swift compares strings, so an
+    /// accented letter written either way is one path), and a path no entry
+    /// has exactly finds the first file that matches it without regard to
+    /// case. Every file is listed, in the archive's order.
+    func testArchiveMembersAreFoundAsTheArchiveFindsThem() throws {
+        let zip = try makeTemporaryZip(prefix: "TextPipelineLookup", orderedEntries: Self.lookupEntries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
+        let provider = ArchiveFileProvider(archive: try Archive(url: zip, accessMode: .read))
+
+        XCTAssertEqual(try provider.readFile(at: "Text/Page.html"), Data("first exact".utf8))
+        XCTAssertEqual(try provider.readFile(at: "text/page.HTML"), Data("first by case".utf8))
+        XCTAssertEqual(try provider.readFile(at: "TEXT/page.html"), Data("first exact".utf8))
+        XCTAssertEqual(try provider.readFile(at: "caf\u{E9}.html"), Data("decomposed".utf8))
+        XCTAssertEqual(try provider.readFile(at: "CAFE\u{301}.HTML"), Data("decomposed".utf8))
+        XCTAssertThrowsError(try provider.readFile(at: "Text/Missing.html"))
+        XCTAssertEqual(provider.listFiles(), Self.lookupEntries.filter { $0.type == .file }.map(\.path))
     }
 
     // MARK: - HTML Conversion (PERF18)

@@ -1,5 +1,6 @@
 import Darwin
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// Benchmarks of the text pipeline's performance work (PERF18 to PERF25 in
@@ -62,6 +63,28 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         let alice = try requireFile("alice.epub")
         try benchmark("PERF19", "EPUBParser.prepareBook, alice.epub", repetitions: 5) {
             try EPUBParser.prepareBook(url: alice)
+        }
+    }
+
+    // MARK: - PERF20: Archive Lookups
+
+    /// Preparing an EPUB of 1,000 short documents behind 1,000 images, whose
+    /// every chapter lookup passes the images; reading TestData's Alice
+    /// document; and looking up every member of that EPUB one by one.
+    func testPERF20ArchiveLookups() throws {
+        let entries = TextPipelineFixtures.convertedBookEPUB(documents: 1_000, paragraphs: 1, images: 1_000)
+        let epub = try TextPipelineFixtures.writeEPUB(entries, named: "many-members.epub", for: self)
+        try benchmark("PERF20", "EPUBParser.prepareBook, 1,000 documents behind 1,000 images", repetitions: 1) {
+            try EPUBParser.prepareBook(url: epub)
+        }
+        let archive = try Archive(url: epub, accessMode: .read)
+        let paths = entries.map(\.path)
+        try benchmark("PERF20", "Archive subscript for each of \(paths.count) members", repetitions: 1) {
+            paths.reduce(0) { found, path in found + (archive[path] == nil ? 0 : 1) }
+        }
+        let docx = try requireFile("alice.docx")
+        try benchmark("PERF20", "DOCXParser.extractMarkdown, alice.docx", repetitions: 5) {
+            try DOCXParser.extractMarkdown(from: docx)
         }
     }
 
