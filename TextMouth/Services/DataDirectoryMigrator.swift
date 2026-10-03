@@ -301,6 +301,22 @@ enum DataDirectoryMigrator {
         return migratedLibrary
     }
 
+    /// What Storage settings say once the data directory is at `destination`
+    /// after a run that began with it at `source`: "Done. Data is now at
+    /// <path>." Wherever a link stands in either location, the folder it
+    /// leads to is named too, so the user hears where the data really is
+    /// (TODO S10), as in "Done. Data is now at /Users/me/Archive, which leads
+    /// to /Volumes/Archive/.TextMouth."
+    static func doneMessage(dataAt destination: DataDirectoryLocation, copiedFrom source: DataDirectoryLocation) -> String {
+        var message = "Done. Data is now at \(destination.namedDescription)."
+        // A data directory reached through a link was copied from the folder
+        // the link leads to; nothing was copied when the data stayed put.
+        if source.isAlias, source.real.path != destination.real.path {
+            message += " It was copied from \(source.realDescription)."
+        }
+        return message
+    }
+
     // MARK: Steps
 
     /// Refuses, before anything is copied, a migration that could not be

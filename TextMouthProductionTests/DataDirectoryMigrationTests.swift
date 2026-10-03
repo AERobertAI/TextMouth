@@ -228,6 +228,14 @@ final class DataDirectoryMigrationTests: XCTestCase {
             XCTAssertEqual(try String(contentsOfFile: book.filePath, encoding: .utf8), "migration")
         }
         XCTAssertEqual(try publishedLibrary(in: destination).books.map(\.filePath), migrated.books.map(\.filePath))
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(
+                dataAt: DataDirectoryLocation(destination),
+                copiedFrom: DataDirectoryLocation(link)
+            ),
+            "Done. Data is now at \(destination.path). "
+                + "It was copied from \(folder.resolvingSymlinksInPath().path), where \(link.path) leads."
+        )
     }
 
     /// Acceptance (TODO S10): a new location that is a link to an empty
@@ -261,6 +269,13 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertEqual(try publishedLibrary(in: folder).books.map(\.filePath), [book.filePath])
         XCTAssertEqual(try snapshot(of: source), sourceBefore)
         XCTAssertEqual(stagingLeft(in: elsewhere), [])
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(
+                dataAt: DataDirectoryLocation(link),
+                copiedFrom: DataDirectoryLocation(source)
+            ),
+            "Done. Data is now at \(link.path), which leads to \(folder.resolvingSymlinksInPath().path)."
+        )
     }
 
     /// A new location that is a link leading nowhere, to a missing folder or
@@ -352,6 +367,37 @@ final class DataDirectoryMigrationTests: XCTestCase {
             }
         }
         XCTAssertEqual(try snapshot(of: base), before)
+    }
+
+    /// Done names where the data is now and, wherever a link stands in
+    /// either location, the folder it leads to. A move without links reads
+    /// as it always did.
+    func testDoneMessageNamesTheFolderEachLinkLeadsTo() {
+        let archive = location("/Volumes/Archive/.TextMouth")
+        let current = location("/Users/reader/.TextMouth")
+        let linkedCurrent = location("/Users/reader/.TextMouth", real: "/Volumes/Old/.TextMouth")
+
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(dataAt: archive, copiedFrom: current),
+            "Done. Data is now at /Volumes/Archive/.TextMouth."
+        )
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(
+                dataAt: location("/Users/reader/Archive", real: "/Volumes/Archive/.TextMouth"),
+                copiedFrom: current
+            ),
+            "Done. Data is now at /Users/reader/Archive, which leads to /Volumes/Archive/.TextMouth."
+        )
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(dataAt: archive, copiedFrom: linkedCurrent),
+            "Done. Data is now at /Volumes/Archive/.TextMouth. "
+                + "It was copied from /Volumes/Old/.TextMouth, where /Users/reader/.TextMouth leads."
+        )
+        XCTAssertEqual(
+            DataDirectoryMigrator.doneMessage(dataAt: linkedCurrent, copiedFrom: linkedCurrent),
+            "Done. Data is now at /Users/reader/.TextMouth, which leads to /Volumes/Old/.TextMouth.",
+            "Reset to Default with the data already there copies nothing"
+        )
     }
 
     // MARK: - Changes While Copying (S10)

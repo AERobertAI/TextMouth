@@ -463,15 +463,17 @@ extension LibraryViewModel {
     }
 
     /// Reset to Default, returning its outcome and presenting nothing. It
-    /// succeeds with "Done. Data is now at <path>.", followed by any legacy
-    /// books that could not move into packages, or fails with the reason,
-    /// such as a default location that already holds other files.
+    /// succeeds with "Done. Data is now at <path>." (see
+    /// `dataLocationDone(since:)`), followed by any legacy books that could
+    /// not move into packages, or fails with the reason, such as a default
+    /// location that already holds other files.
     func rebuildToDefaultReturningOutcome() -> OperationOutcome {
+        let previousRoot = DataDirectoryLocation(TextMouthPaths.root)
         let run = runRebuildToDefault()
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.resetFailureContext,
-            done: "Done. Data is now at \(TextMouthPaths.rootPath)."
+            done: Self.dataLocationDone(since: previousRoot)
         )
     }
 
@@ -501,14 +503,29 @@ extension LibraryViewModel {
     }
 
     /// Change Location, returning its outcome and presenting nothing. It
-    /// succeeds with "Done. Data is now at <path>." or fails with the
-    /// reason nothing moved, such as a destination that is not empty.
+    /// succeeds with "Done. Data is now at <path>." (see
+    /// `dataLocationDone(since:)`) or fails with the reason nothing moved,
+    /// such as a destination that is not empty or that changed while the
+    /// data was copied.
     func moveDataDirectoryReturningOutcome(to newURL: URL) -> OperationOutcome {
+        let previousRoot = DataDirectoryLocation(TextMouthPaths.root)
         let run = runDataDirectoryMove(to: newURL)
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.moveFailureContext,
-            done: "Done. Data is now at \(TextMouthPaths.rootPath)."
+            done: Self.dataLocationDone(since: previousRoot)
+        )
+    }
+
+    /// "Done. Data is now at <path>." for a run that began with the data
+    /// directory at `previousRoot` and left it where `TextMouthPaths.root`
+    /// names it now, with the folder each link in either location leads to
+    /// (TODO S10). Built after the run, so it describes the state the run
+    /// left.
+    private static func dataLocationDone(since previousRoot: DataDirectoryLocation) -> String {
+        DataDirectoryMigrator.doneMessage(
+            dataAt: DataDirectoryLocation(TextMouthPaths.root),
+            copiedFrom: previousRoot
         )
     }
 
