@@ -141,8 +141,12 @@ class StandardVoiceOverFocusTriggerView: NSView {
     /// pending work and let the latest instance win.
     private static var pendingWork: [ObjectIdentifier: DispatchWorkItem] = [:]
 
+    // The three focus policies below are pure, reading only their
+    // arguments, so they are nonisolated: tests and any other context call
+    // them directly, though the view itself is main-actor isolated.
+
     /// Pure focus-stealing guard used before posting accessibility events.
-    static func shouldPostFocus(
+    nonisolated static func shouldPostFocus(
         isSheet: Bool,
         targetWindowIsKey: Bool,
         anotherWindowIsKey: Bool
@@ -152,12 +156,12 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
     /// Sheets receive extra retries because their accessibility hierarchy is
     /// commonly published later than a standard window's hierarchy.
-    static func focusAttemptCount(isSheet: Bool) -> Int {
+    nonisolated static func focusAttemptCount(isSheet: Bool) -> Int {
         isSheet ? 4 : 2
     }
 
     /// Defines which accessibility nodes are safe generic fallback targets.
-    static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
+    nonisolated static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
         if role == "AXRow" || role == "AXCell" || role == "AXTextField" { return true }
         return role == "AXButton" && !isScrollerPart && label?.isEmpty == false
     }
