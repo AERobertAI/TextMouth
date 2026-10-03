@@ -14,9 +14,9 @@ worktree shares:
   worktree finds the same board.
 
 Each command prints readable text, or JSON with ``--json``. The exit status
-is 0 on success and 1 on a user error, which is reported as one line on
-standard error. Only the Python standard library is used: no network, no
-daemons, no third-party packages.
+is 0 on success, 1 on a user error (reported as one line on standard
+error), and 2 when ``watch`` printed messages. Only the Python standard
+library is used: no network, no daemons, no third-party packages.
 
 Run ``bbs.py --help`` or ``bbs.py COMMAND --help`` for the commands.
 """
@@ -31,6 +31,7 @@ import difflib
 import fnmatch
 import functools
 import json
+import math
 import os
 import posixpath
 import re
@@ -83,9 +84,13 @@ MAX_BODY_BYTES = 16 * 1024
 #: How many messages `read` shows when neither --last nor --since is given.
 DEFAULT_READ_COUNT = 20
 
+#: Seconds between checks when `watch` waits for new messages.
+DEFAULT_WATCH_INTERVAL = 5.0
+
 #: Exit statuses.
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
+EXIT_HAS_MESSAGES = 2  # `watch` printed at least one message
 
 #: Stored times are UTC ISO 8601 text to the second, so they sort as text.
 UTC_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -105,12 +110,14 @@ class Outcome:
     """What a command produced.
 
     ``data`` is printed as JSON under ``--json`` and ``text`` otherwise;
-    ``code`` becomes the exit status.
+    ``code`` becomes the exit status. ``printed`` means the command already
+    wrote its output as it went, so there is nothing left to print.
     """
 
     data: Any
     text: str
     code: int = EXIT_OK
+    printed: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -1393,6 +1400,53 @@ def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     return Outcome(messages, text)
 
 
+def take_unread(conn: sqlite3.Connection, name: str, *, after: int = 0, peek: bool = False) -> List[dict]:
+    """Return an agent's unread inbox messages with ids above ``after``.
+
+    They are marked read in the same transaction, unless ``peek``.
+    """
+    with write_transaction(conn):
+        messages = collect_inbox(conn, name, where=["m.id > ?"], params=[after], unread_only=True)
+        if not peek:
+            mark_read(conn, name, messages)
+    return messages
+
+
+def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Print an agent's unread messages, then new ones as they arrive.
+
+    With --once it prints what is unread now and returns at once. Otherwise
+    it checks every --interval seconds until --timeout seconds have passed,
+    or until interrupted, printing each message as it comes (one JSON
+    object per line under --json). Messages are marked read as they are
+    printed, unless --peek. Nothing is printed when nothing is new. The
+    exit status is 2 when at least one message was printed and 0 when
+    none was, so a script can branch on it.
+    """
+    with write_transaction(conn):
+        name = require_agent(conn, args.name)
+    if args.once:
+        messages = take_unread(conn, name, peek=args.peek)
+        text = "\n\n".join(describe_message(message) for message in messages)
+        return Outcome(messages, text, EXIT_HAS_MESSAGES if messages else EXIT_OK)
+    deadline = None if args.timeout is None else time.monotonic() + args.timeout
+    newest = 0  # highest id printed so far, so --peek never prints one twice
+    printed = False
+    while True:
+        for message in take_unread(conn, name, after=newest, peek=args.peek):
+            # Text gets a blank line after each message; JSON is one object per line.
+            line = json.dumps(message, ensure_ascii=False) if args.json else describe_message(message) + "\n"
+            print(line, flush=True)
+            newest, printed = message["id"], True
+        if deadline is not None and time.monotonic() >= deadline:
+            break
+        # Sleep until the next check, but never past the deadline; the loop
+        # then checks once more before stopping.
+        pause = args.interval if deadline is None else min(args.interval, deadline - time.monotonic())
+        time.sleep(max(pause, 0.0))
+    return Outcome(None, "", EXIT_HAS_MESSAGES if printed else EXIT_OK, printed=True)
+
+
 # ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
@@ -1418,6 +1472,17 @@ def positive_int(text: str) -> int:
         raise argparse.ArgumentTypeError(f"expected a whole number, got {text!r}") from None
     if value < 1:
         raise argparse.ArgumentTypeError(f"expected a number of at least 1, got {value}")
+    return value
+
+
+def positive_seconds(text: str) -> float:
+    """argparse type for a finite number of seconds greater than zero."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a number of seconds, got {text!r}") from None
+    if not (math.isfinite(value) and value > 0):
+        raise argparse.ArgumentTypeError(f"expected a number of seconds above 0, got {text!r}")
     return value
 
 
@@ -1538,6 +1603,25 @@ def build_parser() -> BoardArgumentParser:
     inbox.add_argument("--tag", choices=TAGS, help="only messages of this kind")
     inbox.add_argument("--last", type=positive_int, metavar="N", help="only the last N messages")
     inbox.add_argument("--peek", action="store_true", help="leave the messages shown unread")
+
+    watch = command("watch", cmd_watch, "print your unread messages, then new ones as they arrive")
+    watch.add_argument("name", help="your agent name")
+    watch.add_argument(
+        "--once",
+        action="store_true",
+        help="print what is unread now and return at once (exit status 2 if anything was printed, else 0)",
+    )
+    watch.add_argument(
+        "--interval",
+        type=positive_seconds,
+        default=DEFAULT_WATCH_INTERVAL,
+        metavar="SECONDS",
+        help=f"how often to check for new messages (default {DEFAULT_WATCH_INTERVAL:g})",
+    )
+    watch.add_argument(
+        "--timeout", type=positive_seconds, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
+    )
+    watch.add_argument("--peek", action="store_true", help="leave the messages printed unread")
     return parser
 
 
@@ -1548,7 +1632,9 @@ def run_command(args: argparse.Namespace) -> Outcome:
 
 
 def print_outcome(outcome: Outcome, as_json: bool) -> None:
-    """Print a command's result as JSON or as text."""
+    """Print a command's result as JSON or as text, unless already printed."""
+    if outcome.printed:
+        return
     if as_json:
         print(json.dumps(outcome.data, indent=2, ensure_ascii=False))
     elif outcome.text:

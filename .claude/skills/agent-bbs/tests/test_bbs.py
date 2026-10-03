@@ -694,6 +694,70 @@ class InboxTests(BoardTestCase):
         self.assertIn("unknown agent 'delta'", self.fails("inbox", "delta"))
 
 
+class WatchTests(BoardTestCase):
+    """watch: waiting for messages, and its exit statuses."""
+
+    def setUp(self) -> None:
+        """Register alpha and beta."""
+        super().setUp()
+        self.register("alpha")
+        self.register("beta")
+
+    def test_once_exits_0_silently_when_nothing_is_unread(self) -> None:
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once"), (0, "", ""))
+
+    def test_once_exits_2_with_unread_messages_and_marks_them_read(self) -> None:
+        self.ok("post", "beta", "--to", "alpha", "--topic", "Heads up", "--body", "Rebasing now.")
+        status, out, err = self.run_bbs("watch", "alpha", "--once")
+        self.assertEqual((status, err), (2, ""))
+        self.assertIn("#1 notice from beta to alpha", out)
+        self.assertIn("Rebasing now.", out)
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once"), (0, "", ""))
+
+    def test_once_with_peek_leaves_messages_unread(self) -> None:
+        self.ok("post", "beta", "--topic", "For everyone")
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once", "--peek")[0], 2)
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once", "--peek")[0], 2)
+        self.assertEqual([m["id"] for m in self.ok_json("inbox", "alpha", "--unread")], [1])
+
+    def test_once_with_json_prints_an_array(self) -> None:
+        self.assertEqual(self.run_bbs("watch", "alpha", "--once", "--json"), (0, "[]\n", ""))
+        self.ok("post", "beta", "--topic", "For everyone")
+        status, out, _ = self.run_bbs("watch", "alpha", "--once", "--json")
+        self.assertEqual(status, 2)
+        self.assertEqual([m["topic"] for m in json.loads(out)], ["For everyone"])
+
+    def test_watching_stops_quietly_after_the_timeout(self) -> None:
+        started = dt.datetime.now()
+        self.assertEqual(self.run_bbs("watch", "alpha", "--interval", "0.1", "--timeout", "0.3"), (0, "", ""))
+        self.assertGreaterEqual((dt.datetime.now() - started).total_seconds(), 0.3)
+
+    def test_watching_prints_messages_as_they_arrive(self) -> None:
+        self.ok("post", "beta", "--to", "alpha", "--topic", "before")
+        watcher = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "watch", "alpha", "--interval", "0.1", "--timeout", "3", "--json"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            first = json.loads(watcher.stdout.readline())  # the message already waiting
+            self.ok("post", "beta", "--topic", "after")
+            second = json.loads(watcher.stdout.readline())
+            rest, errors = watcher.communicate(timeout=30)
+        finally:
+            if watcher.poll() is None:
+                watcher.kill()
+                watcher.wait()
+        self.assertEqual([first["topic"], second["topic"]], ["before", "after"])
+        self.assertEqual((rest, errors, watcher.returncode), ("", "", 2))
+        self.assertEqual(self.ok_json("inbox", "alpha", "--unread"), [], "printed messages are marked read")
+
+    def test_watch_rejects_bad_durations_and_unknown_agents(self) -> None:
+        for option, value in (("--interval", "0"), ("--timeout", "-1"), ("--interval", "nan"), ("--timeout", "inf")):
+            with self.subTest(option=option, value=value):
+                self.fails("watch", "alpha", option, value)
+        self.assertIn("unknown agent", self.fails("watch", "nobody", "--once"))
+
+
 class ConcurrencyTests(BoardTestCase):
     """Several processes using the board at the same moment."""
 
