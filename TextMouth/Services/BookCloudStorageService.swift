@@ -240,23 +240,24 @@ final class BookCloudStorageService: BookCloudStorage {
 
             var idle = Duration.zero
             var foldersInCloud = survey.listing.foldersInCloud.count
-            var filesWithErrors = Set<URL>()
+            var itemsWithErrors = Set<URL>()
             // Whether the trace has said that the sync service publishes
-            // parts of files, which it says once a download.
+            // parts of files or of the package, which it says once a
+            // download.
             var tracedParts = false
             while true {
                 try await sleep(Self.pollInterval)
                 try Task.checkCancellation()
                 survey = try self.survey(of: package)
 
-                // A download error counts once a file still reports it at
+                // A download error counts once an item still reports it at
                 // the next check, so an error left from an earlier attempt,
                 // which the new request clears, never ends this one.
                 let errors = survey.downloadErrors
-                if let repeated = errors.first(where: { filesWithErrors.contains($0.url) }) {
+                if let repeated = errors.first(where: { itemsWithErrors.contains($0.url) }) {
                     throw BookCloudError.provider(repeated.message)
                 }
-                filesWithErrors = Set(errors.map(\.url))
+                itemsWithErrors = Set(errors.map(\.url))
 
                 // Files found since, such as those of a folder that arrived,
                 // are listened to as well. A part heard of a file that is
@@ -294,7 +295,7 @@ final class BookCloudStorageService: BookCloudStorage {
 
                 // The download moves while a file or folder arrives, while
                 // the sync service downloads anything, or while it publishes
-                // more of a file.
+                // more of a file or of the package.
                 let arrived = next.completedFiles > current.completedFiles
                     || survey.listing.foldersInCloud.count < foldersInCloud
                     || heard.contains { path, percent in percent > heardBefore[path] ?? 0 }
