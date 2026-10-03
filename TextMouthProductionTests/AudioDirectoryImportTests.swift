@@ -13,7 +13,7 @@ final class AudioDirectoryImportTests: XCTestCase {
         let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: packageName)
         defer { try? FileManager.default.removeItem(at: package) }
         let source = package.appendingPathComponent("Track.wav")
-        try writeSilence(to: source)
+        try AudioTestFixtures.writeSilence(to: source)
         var book = Book(
             title: "Looping Audio", format: .audio, filePath: source.path,
             md5Hash: UUID().uuidString, tmbDirectoryName: packageName
@@ -49,10 +49,10 @@ final class AudioDirectoryImportTests: XCTestCase {
     func testNestedFilesUseRelativeNaturalOrderAndIgnoreMetadata() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        try writeSilence(to: directory.appendingPathComponent("Disc 10/Track.wav"))
-        try writeSilence(to: directory.appendingPathComponent("Disc 2/Track.wav"))
-        try writeSilence(to: directory.appendingPathComponent("__MACOSX/._Track.wav"))
-        try writeSilence(to: directory.appendingPathComponent(".hidden.wav"))
+        try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent("Disc 10/Track.wav"))
+        try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent("Disc 2/Track.wav"))
+        try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent("__MACOSX/._Track.wav"))
+        try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent(".hidden.wav"))
         try FileManager.default.createSymbolicLink(
             at: directory.appendingPathComponent("link.wav"),
             withDestinationURL: directory.appendingPathComponent("Disc 2/Track.wav")
@@ -74,7 +74,7 @@ final class AudioDirectoryImportTests: XCTestCase {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         for name in ["Disc 1/Track.wav", "Disc 2/Track.wav", "Extra.wav"] {
-            try writeSilence(to: directory.appendingPathComponent(name))
+            try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent(name))
         }
         let manifest = AudioManifest(
             title: "Recorded Lectures", author: "Lecturer",
@@ -97,7 +97,7 @@ final class AudioDirectoryImportTests: XCTestCase {
     func testInvalidSegmentsAreRejected() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        try writeSilence(to: directory.appendingPathComponent("Track.wav"))
+        try AudioTestFixtures.writeSilence(to: directory.appendingPathComponent("Track.wav"))
         let invalidSegments = [
             AudioSegment(title: "Outside", file: "../Track.wav", startTime: 0, endTime: 1),
             AudioSegment(title: "Negative", file: "Track.wav", startTime: -1, endTime: 1),
@@ -121,7 +121,7 @@ final class AudioDirectoryImportTests: XCTestCase {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appendingPathComponent("Lectures")
-        try writeSilence(to: source.appendingPathComponent("Part 1.wav"))
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("Part 1.wav"))
         let archive = directory.appendingPathComponent("Lectures.zip")
         try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: true)
 
