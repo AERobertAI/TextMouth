@@ -18,6 +18,9 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// to the link (TODO S10).
     case unreachableLink(DataDirectoryLocation, target: String)
     case destinationNotEmpty
+    /// A file, or anything else that is not a folder, stands at the new
+    /// location, or at the end of the link the new location is.
+    case destinationNotAFolder(DataDirectoryLocation)
     case missingSource
     case missingBook(String)
     case invalidLibrary
@@ -30,6 +33,8 @@ enum DataDirectoryMigrationError: LocalizedError {
             return "The new location, \(link.named.path), is a link to \(target), which cannot be found. "
                 + "Choose another location."
         case .destinationNotEmpty: return "The selected data directory is not empty. Choose an empty location."
+        case .destinationNotAFolder(let location):
+            return "The new location, \(location.namedDescription), is a file, not a folder. Choose another location."
         case .missingSource: return "The current data directory does not exist."
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
         case .invalidLibrary: return "The migrated library index could not be validated."
@@ -66,6 +71,13 @@ struct DataDirectoryLocation: Equatable {
     /// where /Users/me/.TextMouth leads".
     var realDescription: String {
         isAlias ? "\(real.path), where \(named.path) leads" : real.path
+    }
+
+    /// The name as a message gives it, followed by the real folder when the
+    /// name is a link: "/Users/me/.TextMouth, which leads to
+    /// /Volumes/Archive/.TextMouth".
+    var namedDescription: String {
+        isAlias ? "\(named.path), which leads to \(real.path)" : named.path
     }
 
     /// `path` without the /private that /var, /tmp, and /etc lead to.
@@ -230,9 +242,14 @@ enum DataDirectoryMigrator {
            !fileManager.fileExists(atPath: destinationPath) {
             throw DataDirectoryMigrationError.unreachableLink(destination, target: target)
         }
-        if fileManager.fileExists(atPath: destination.real.path) {
-            let contents = try fileManager.contentsOfDirectory(atPath: destination.real.path)
-            guard contents.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
+        // Publication can only make way for an empty folder, or for nothing.
+        switch try DestinationContents(at: destination.real, fileManager: fileManager) {
+        case .nothing:
+            break
+        case .folder(let names):
+            guard names.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
+        case .notAFolder:
+            throw DataDirectoryMigrationError.destinationNotAFolder(destination)
         }
     }
 
@@ -304,5 +321,34 @@ enum DataDirectoryMigrator {
             try fileManager.removeItem(at: destination.real)
         }
         try fileManager.moveItem(at: staging, to: destination.real)
+    }
+}
+
+/// What stands at a migration's destination, looked at without following a
+/// link there, so a link is seen as the link it is (TODO S10).
+private enum DestinationContents: Equatable {
+    /// Nothing: no folder or anything else exists there yet.
+    case nothing
+    /// A folder, with the names of the items inside it, hidden ones
+    /// included, sorted.
+    case folder([String])
+    /// A file, a link, or anything else that is not a folder.
+    case notAFolder
+
+    /// What stands at `url` now.
+    init(at url: URL, fileManager: FileManager) throws {
+        let attributes: [FileAttributeKey: Any]
+        do {
+            // The attributes of the item itself, never of a link's target.
+            attributes = try fileManager.attributesOfItem(atPath: url.path)
+        } catch CocoaError.fileReadNoSuchFile {
+            self = .nothing
+            return
+        }
+        guard attributes[.type] as? FileAttributeType == .typeDirectory else {
+            self = .notAFolder
+            return
+        }
+        self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sorted())
     }
 }

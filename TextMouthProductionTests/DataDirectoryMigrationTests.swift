@@ -319,6 +319,41 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertEqual(try snapshot(of: base), before)
     }
 
+    /// A new location where a file stands, or a link to a file, is refused
+    /// before anything is copied, in words that say so and name where the
+    /// link leads; the file is left as it was.
+    func testFileAtTheNewLocationIsRefused() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let file = base.appendingPathComponent(".TextMouth")
+        try Data("keep".utf8).write(to: file)
+        let link = base.appendingPathComponent("FileLink")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+        let before = try snapshot(of: base)
+        let refusals = [
+            (file, "The new location, \(file.path), is a file, not a folder. Choose another location."),
+            (
+                link,
+                "The new location, \(link.path), which leads to \(file.resolvingSymlinksInPath().path), "
+                    + "is a file, not a folder. Choose another location."
+            ),
+        ]
+
+        for (destination, explanation) in refusals {
+            XCTAssertThrowsError(
+                try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+            ) { error in
+                guard case DataDirectoryMigrationError.destinationNotAFolder(let refused) = error else {
+                    return XCTFail("Expected the not-a-folder refusal, received \(error)")
+                }
+                XCTAssertEqual(refused.named.path, destination.path)
+                XCTAssertEqual(error.localizedDescription, explanation)
+            }
+        }
+        XCTAssertEqual(try snapshot(of: base), before)
+    }
+
     // MARK: - Fixtures
 
     /// The names of the hidden staging folders a migration left in `folder`.
