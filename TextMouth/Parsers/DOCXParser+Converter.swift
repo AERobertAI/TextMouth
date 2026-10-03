@@ -124,9 +124,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             break
         case "ilvl":
             // Word lists support nine levels. Malformed values must not reach
-            // an array index or a potentially enormous indentation allocation.
+            // a level lookup or a potentially enormous indentation allocation.
             if let val = attributes["w:val"], let level = Int(val) {
-                listLevel = (0...8).contains(level) ? level : 0
+                listLevel = DOCXNumbering.levelIndexes.contains(level) ? level : 0
             }
         case "numId":
             // List numbering definition ID

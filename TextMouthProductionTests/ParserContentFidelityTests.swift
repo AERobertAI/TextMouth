@@ -21,7 +21,7 @@ final class ParserContentFidelityTests: XCTestCase {
     /// indexing before the level array or allocating unbounded indentation.
     func testDOCXInvalidListLevelsRemainReadable() throws {
         var numbering = DOCXNumbering()
-        numbering.abstractNums["list"] = [ListLevelFormat(numFmt: "decimal")]
+        numbering.abstractNums["list"] = [0: ListLevelFormat(numFmt: "decimal")]
         numbering.numIdToAbstractId["1"] = "list"
         XCTAssertEqual(numbering.listType(numId: "1", level: -1), .bullet)
         for level in [-1, Int.max] {
