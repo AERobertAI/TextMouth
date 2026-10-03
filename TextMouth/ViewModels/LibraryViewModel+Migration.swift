@@ -472,7 +472,9 @@ extension LibraryViewModel {
                 return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
             }
         }
-        rebuildTextCaches(books: booksNeedingCache, force: false, access: access, completion: completion)
+        rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _ in
+            completion?()
+        }
     }
 
     /// Whether `book`'s source or content.md now has another size than the
@@ -508,13 +510,51 @@ extension LibraryViewModel {
 
     /// Re-extract content.md caches for all non-audio books.
     /// Called from the "Redo Text Extraction" button in Storage Settings.
-    /// - Parameter access: How the pass reaches the books' files (FR02).
-    func redoAllTextExtraction(access: MaintenanceFileAccess = .live) {
-        guard !isExtracting else { return }
+    /// - Parameters:
+    ///   - access: How the pass reaches the books' files (FR02).
+    ///   - completion: Told on the main actor, once every book is done, what
+    ///     the pass did (`textReextractionOutcome(skippedInCloud:)`).
+    /// - Returns: Whether the pass started: false while another text
+    ///   extraction runs, when nothing is done and `completion` is not told.
+    @discardableResult
+    func redoAllTextExtraction(
+        access: MaintenanceFileAccess = .live,
+        completion: (@MainActor @Sendable (OperationOutcome) -> Void)? = nil
+    ) -> Bool {
+        guard !isExtracting else { return false }
         let booksToExtract = library.books.filter { book in
             !book.format.isAudio && !book.tmbDirectoryName.isEmpty
         }
-        rebuildTextCaches(books: booksToExtract, force: true, access: access)
+        rebuildTextCaches(books: booksToExtract, force: true, access: access) { skippedInCloud in
+            completion?(Self.textReextractionOutcome(skippedInCloud: skippedInCloud))
+        }
+        return true
+    }
+
+    /// Redo Text Extraction for Storage settings, returning once every book
+    /// is done with what the pass did, which Storage settings' status line
+    /// says and VoiceOver hears; nil when another text extraction runs and
+    /// nothing was started.
+    /// - Parameter access: How the pass reaches the books' files (FR02).
+    func redoAllTextExtractionReturningOutcome(access: MaintenanceFileAccess = .live) async -> OperationOutcome? {
+        await withCheckedContinuation { continuation in
+            let started = redoAllTextExtraction(access: access) { outcome in
+                continuation.resume(returning: outcome)
+            }
+            if !started {
+                continuation.resume(returning: nil)
+            }
+        }
+    }
+
+    /// What Redo Text Extraction says once it is done: "Done.", and, when it
+    /// left books as they were because their files are only in the cloud
+    /// (FR02), how many, as in "Done. 12 books in the cloud were skipped."
+    /// Before, only its MAINTENANCE_SKIPPED_IN_CLOUD log line told.
+    nonisolated static func textReextractionOutcome(skippedInCloud: Int) -> OperationOutcome {
+        guard skippedInCloud > 0 else { return .success(nil) }
+        let books = CountWording.phrase(skippedInCloud, singular: "book in the cloud was", plural: "books in the cloud were")
+        return .success("Done. \(books) skipped.")
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
@@ -523,14 +563,16 @@ extension LibraryViewModel {
     /// `access` is how each book's files are reached (FR02): a book whose
     /// files are in the cloud counts toward the progress, is left as it is,
     /// and is counted in the batch's one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
+    /// `completion` is told, on the main actor once every book is done, how
+    /// many books the batch left in the cloud.
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
         access: MaintenanceFileAccess,
-        completion: (@MainActor @Sendable () -> Void)? = nil
+        completion: (@MainActor @Sendable (_ skippedInCloud: Int) -> Void)? = nil
     ) {
         guard !books.isEmpty else {
-            completion?()
+            completion?(0)
             return
         }
 
@@ -566,12 +608,13 @@ extension LibraryViewModel {
         }, completion: { [weak self] in
             // Every worker has returned, so the tally is complete.
             skips.log()
+            let skippedInCloud = skips.count
             // Each worker enqueues its progress before returning, so this final
             // main-queue block follows all completed-book notifications.
             DispatchQueue.main.async { [weak self] in
                 self?.isExtracting = false
                 self?.extractionProgressMessage = ""
-                completion?()
+                completion?(skippedInCloud)
             }
         })
     }
