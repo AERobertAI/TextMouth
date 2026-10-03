@@ -558,12 +558,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                // Menu command (no sourceWindow) — check this window is key
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             // Cmd+I: show info for the first selected book
             if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
@@ -572,11 +567,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
                 onOpenBook(book)
@@ -584,11 +575,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
             // Cmd+Delete: remove selected books from library
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let books = selectedBooks
             if !books.isEmpty {
                 libraryViewModel.removeBooks(books)
@@ -597,21 +584,13 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .newFolder)) { notification in
             // Cmd+Shift+N: create new folder
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             newFolderParentPath = currentFolderPath
             showNewFolderSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveToFolder)) { notification in
             // Cmd+Shift+M: move selected books to folder
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let books = selectedBooks
             if !books.isEmpty {
                 booksToMove = books
@@ -620,11 +599,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .selectAll)) { notification in
             // Cmd+A: select all visible books (in edit mode, use edit selection)
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let allIDs = Set(filteredBooks.map { $0.id })
             if isEditMode {
                 editSelection = allIDs
@@ -636,11 +611,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleEditMode)) { notification in
             // Cmd+E: toggle edit mode
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             if isEditMode {
                 clearAllSelections()
             } else {
@@ -648,19 +619,11 @@ struct LibraryView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             moveSelectedBookInManualOrder(direction: -1)
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             moveSelectedBookInManualOrder(direction: 1)
         }
         .sheet(isPresented: $showTextInput) {
@@ -1042,6 +1005,22 @@ struct LibraryView: View {
     private var selectedBooks: [Book] {
         let ids = effectiveSelection
         return filteredBooks.filter { ids.contains($0.id) }
+    }
+
+    /// Whether this Library window takes the menu command or keyboard
+    /// shortcut `notification` posts, as `WindowCommandRouting` decides: a
+    /// shortcut names the window it was pressed in (`sourceWindow` in its
+    /// user info), which alone takes it; a menu command names none, and the
+    /// key window takes it; a window whose NSWindow isn't known yet takes
+    /// either.
+    private func takesCommand(_ notification: Notification) -> Bool {
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        return WindowCommandRouting.shouldAccept(
+            hasSourceWindow: sourceWindow != nil,
+            sourceMatchesHost: sourceWindow === hostWindow,
+            hasHostWindow: hostWindow != nil,
+            hostWindowIsKey: hostWindow?.isKeyWindow ?? false
+        )
     }
 
     /// Where this list is: its category and, in Folders, its folder.
