@@ -390,6 +390,8 @@ These small types each own one rule that several parts of the app follow; use th
 
 - LibraryWindowRouter (Services/LibraryWindowRouter.swift): decides which window takes each app-wide action.
 - LibraryBookUpdates (ViewModels/LibraryBookUpdates.swift): how open readers learn that the library changed their book or is moving its files.
+- LiveReadingPositions (ViewModels/LiveReadingPositions.swift): where readers are between checkpoints. A live position goes there, never into the library, which takes a reader's position only at its checkpoints.
+- ReaderSnapshot and SheetOverOneReader (Views/Reader/ReaderSnapshot.swift): what a view shows of its reader, republished only when it changes, and sheets that compare equal while they show the same reader. A view over a playing reader observes a snapshot, never the whole reader.
 - TextCacheFingerprint (Models/TextCacheFingerprint.swift): what a text cache was written from, checked by size and date before any file is read.
 - PersistenceFailureCenter (Services/PersistenceFailureCenter.swift): where every failed save is reported and settled.
 - ImportStaging (Services/ImportStaging.swift): builds a package out of sight and publishes it with one rename.
@@ -403,7 +405,9 @@ These small types each own one rule that several parts of the app follow; use th
 - SettingsPolicy (Models/SettingsPolicy.swift): the table of every validated preference.
 - StoredPreference and PreferenceObserver (Models/StoredPreference.swift): one definition of each preference's key and stored form, and notice of its changes.
 - VoiceOverAnnouncer (Services/VoiceOverAnnouncer.swift): every VoiceOver announcement, recorded instead under tests.
-- TextMouthRuntime (App/TextMouthRuntime.swift): the one switch that keeps hosted tests away from the user's data.
+- VoiceCatalog (Services/VoiceCatalog.swift): the installed voices, listed once off the main thread and again when the system's voices change. Offer its list rather than asking the system for the voices.
+- TextMouthRuntime (App/TextMouthRuntime.swift): the one switch that keeps hosted tests away from the user's data, and the sandbox each test process keeps it in, deleted when the process is done with it.
+- ViewBodyCounter (Views/ViewBodyCounter.swift): how many times a view's body ran, counted in Debug builds for the tests that check what a change redraws.
 - DatalessFiles (Models/CloudStorageContract.swift): whether a file's content is only in the cloud, and running work that must never download with dataless files left there.
 - MachineLocalPaths (Models/CloudStorageContract.swift): this Mac's own folders, which never sync: its Logs folder, the working copies, import staging, and archive extraction.
 - NetworkReachability (Services/NetworkReachability.swift): whether this Mac is online, from one NWPathMonitor, or a test's answer.
