@@ -139,22 +139,11 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// In a folder holding two books' package files, each book opens from
     /// its own package file, never from the other one beside it.
     func testBookOpensFromTheChosenPackageFile() throws {
-        let almanac: [String: String] = [
-            "almanac.opf": Fixtures.packageBook["book.opf", default: ""]
-                .replacingOccurrences(of: "Ferry Timetables of the Outer Sound", with: "Harbor Almanac")
-                .replacingOccurrences(of: "content/timetables.xml", with: "almanac.xml"),
-            "almanac.xml": Fixtures.packageBook["content/timetables.xml", default: ""]
-                .replacingOccurrences(of: "The first ferry leaves", with: "The almanac says the tide turns")
-        ]
-        let folder = try Fixtures.writeFolder(
-            Fixtures.packageBook.merging(almanac) { first, _ in first },
-            named: "Two Books",
-            in: makeSandboxDirectory("daisy-two-opf")
-        )
+        let folder = try Fixtures.writeFolder(Fixtures.twoBooksFolder, named: "Two Books", in: makeSandboxDirectory("daisy-two-opf"))
 
         for (package, title, sentence) in [
             ("book.opf", "Ferry Timetables of the Outer Sound", "The first ferry leaves"),
-            ("almanac.opf", "Harbor Almanac", "The almanac says the tide turns")
+            ("almanac.opf", "Harbor Almanac", Fixtures.almanacSentence)
         ] {
             let url = folder.appendingPathComponent(package)
             XCTAssertEqual(try DAISYParser.readMetadata(from: url)?.title, title, package)

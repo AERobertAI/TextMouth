@@ -141,6 +141,22 @@ enum DAISYPackageFixtures {
     ]
     static let packageBookHeadings = ["The Morning Crossing", "The Evening Return"]
 
+    // MARK: - Two Books in One Folder
+
+    /// A folder holding two DAISY 3 books' package files side by side: the
+    /// package book's, and that of "Harbor Almanac", whose own DTBook lies
+    /// beside it (its manifest also lists the files the books share).
+    static let twoBooksFolder: [String: String] = packageBook.merging([
+        "almanac.opf": packageBook["book.opf", default: ""]
+            .replacingOccurrences(of: "Ferry Timetables of the Outer Sound", with: "Harbor Almanac")
+            .replacingOccurrences(of: "content/timetables.xml", with: "almanac.xml"),
+        "almanac.xml": packageBook["content/timetables.xml", default: ""]
+            .replacingOccurrences(of: "The first ferry leaves", with: almanacSentence)
+    ]) { first, _ in first }
+
+    /// The almanac's first sentence, which the package book does not hold.
+    static let almanacSentence = "The almanac says the tide turns"
+
     // MARK: - Files Beside a Book
 
     /// Files a book's folder holds that are not part of the book: notes,

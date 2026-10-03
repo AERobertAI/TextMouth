@@ -378,16 +378,7 @@ final class DAISYPackageImportTests: XCTestCase {
     /// A folder in an archive holding two books' package files imports each
     /// book from its own package file.
     func testArchiveFolderOfTwoPackageFilesImportsEachBook() throws {
-        let almanac: [String: String] = [
-            "almanac.opf": Fixtures.packageBook["book.opf", default: ""]
-                .replacingOccurrences(of: "Ferry Timetables of the Outer Sound", with: "Harbor Almanac")
-                .replacingOccurrences(of: "content/timetables.xml", with: "almanac.xml"),
-            "almanac.xml": Fixtures.packageBook["content/timetables.xml", default: ""]
-                .replacingOccurrences(of: "The first ferry leaves", with: "The almanac says the tide turns")
-        ]
-        let archive = try makeArchive(
-            Self.archiveEntries(Fixtures.files(Fixtures.packageBook, changing: almanac), inFolder: "Two Books")
-        )
+        let archive = try makeArchive(Self.archiveEntries(Fixtures.twoBooksFolder, inFolder: "Two Books"))
 
         let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
 
@@ -397,7 +388,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(almanacBook.bookFileURL.lastPathComponent, "almanac.opf")
         XCTAssertTrue(
             try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: almanacBook.bookFileURL))
-                .contains("The almanac says the tide turns")
+                .contains(Fixtures.almanacSentence)
         )
     }
 
