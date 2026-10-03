@@ -55,6 +55,13 @@ struct StorageStatus: Equatable {
 
 struct StorageSettingsView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
+    /// The import choice, which the settings model reads from config.json
+    /// and announces whenever it changes, an edit of the file included.
+    @EnvironmentObject var settingsViewModel: SettingsViewModel
+    /// The removal choices, shared with the library's windows and menus and
+    /// kept in step with config.json, so the toggles always show, and
+    /// VoiceOver always reads, the choices in force (TODO C04).
+    @ObservedObject private var removal = RemovalPreferencesModel.shared
     @State private var showRebuildConfirmation = false
     @State private var showResetToDefaultConfirmation = false
     @State private var showMoveConfirmation = false
@@ -64,20 +71,11 @@ struct StorageSettingsView: View {
     @State private var status: StorageStatus?
     /// The data-directory operation in progress, if any.
     @State private var runningOperation: StorageOperation?
-    @State private var importDeleteBehavior: ImportDeleteBehavior
-    @State private var confirmBeforeDelete: Bool
-    @State private var moveToTrash: Bool
     @State private var showDuplicateFinder = false
     @State private var showRedoExtractionConfirmation = false
     /// Failed writes, so the status never says all is well while changes
     /// are unsaved (TODO S09).
     @ObservedObject private var failureCenter = PersistenceFailureCenter.shared
-
-    init() {
-        _importDeleteBehavior = State(initialValue: ConfigService.shared.config.importDeleteBehavior)
-        _confirmBeforeDelete = State(initialValue: ConfigService.shared.config.confirmBeforeDelete)
-        _moveToTrash = State(initialValue: ConfigService.shared.config.moveToTrashInsteadOfDeleting)
-    }
 
     var body: some View {
         Form {
@@ -170,21 +168,17 @@ struct StorageSettingsView: View {
             }
 
             Section {
-                Picker("After Importing a Book", selection: $importDeleteBehavior) {
+                Picker("After Importing a Book", selection: $settingsViewModel.importDeleteBehavior) {
                     ForEach(ImportDeleteBehavior.allCases, id: \.self) { behavior in
                         Text(behavior.rawValue).tag(behavior)
                     }
                 }
                 .accessibilityLabel("Original file handling")
                 .accessibilityHint("What to do with the original file after importing a book")
-                .onChange(of: importDeleteBehavior) { newValue in
-                    ConfigService.shared.config.importDeleteBehavior = newValue
-                    ConfigService.shared.saveToDisk()
-                }
 
                 // Deleting the original follows "Move to Trash instead of
                 // deleting" below, so these say which it will be.
-                switch importDeleteBehavior {
+                switch settingsViewModel.importDeleteBehavior {
                 case .keepOriginal:
                     Text("The original file will remain untouched after import.")
                         .font(.caption)
@@ -203,19 +197,17 @@ struct StorageSettingsView: View {
             }
 
             Section {
-                Toggle("Confirm before removing a book", isOn: $confirmBeforeDelete)
-                    .onChange(of: confirmBeforeDelete) { newValue in
-                        ConfigService.shared.config.confirmBeforeDelete = newValue
-                        ConfigService.shared.saveToDisk()
-                    }
-                    .accessibilityHint(removalPreferences.confirmationExplanation)
+                Toggle("Confirm before removing a book", isOn: Binding(
+                    get: { removal.preferences.confirmsFirst },
+                    set: { removal.setConfirmsFirst($0) }
+                ))
+                .accessibilityHint(removalPreferences.confirmationExplanation)
 
-                Toggle("Move to Trash instead of deleting", isOn: $moveToTrash)
-                    .onChange(of: moveToTrash) { newValue in
-                        ConfigService.shared.config.moveToTrashInsteadOfDeleting = newValue
-                        ConfigService.shared.saveToDisk()
-                    }
-                    .accessibilityHint(RemovalPreferences.trashPreferenceExplanation)
+                Toggle("Move to Trash instead of deleting", isOn: Binding(
+                    get: { removal.preferences.movesToTrash },
+                    set: { removal.setMovesToTrash($0) }
+                ))
+                .accessibilityHint(RemovalPreferences.trashPreferenceExplanation)
 
                 // What deleting does now, beside Remove from Library Only,
                 // which always keeps the files (TODO A08).
@@ -347,15 +339,15 @@ struct StorageSettingsView: View {
         libraryViewModel.indexRecovery != nil
     }
 
-    /// The removal preferences as this pane's toggles currently set them.
+    /// The removal preferences in force, which this pane's toggles show.
     private var removalPreferences: RemovalPreferences {
-        RemovalPreferences(confirmsFirst: confirmBeforeDelete, movesToTrash: moveToTrash)
+        removal.preferences
     }
 
-    /// The words for deleting an import's original file, as this pane's
-    /// Trash toggle currently sets them.
+    /// The words for deleting an import's original file, under the Trash
+    /// preference in force.
     private var originalFileWording: OriginalFileDeletionWording {
-        OriginalFileDeletionWording(movesToTrash: moveToTrash)
+        OriginalFileDeletionWording(movesToTrash: removalPreferences.movesToTrash)
     }
 
     /// Whether a failed write leaves changes unsaved, as last published.

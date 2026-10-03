@@ -789,6 +789,55 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(counter.writes, 3, "choosing a value already in force saves nothing")
     }
 
+    /// The open Storage settings, as AppKit draws them, show their choices
+    /// changing when the configuration changes outside them, as applying an
+    /// edit of config.json changes it: both removal checkboxes and the
+    /// import pop-up follow. The app's shared configuration is changed in
+    /// memory only, and put back.
+    func testOpenStorageSettingsShowChoicesChangedOutsideThem() throws {
+        let service = ConfigService.shared
+        let original = service.config
+        defer {
+            service.config.confirmBeforeDelete = original.confirmBeforeDelete
+            service.config.moveToTrashInsteadOfDeleting = original.moveToTrashInsteadOfDeleting
+            service.config.importDeleteBehavior = original.importDeleteBehavior
+        }
+        service.config.confirmBeforeDelete = false
+        service.config.moveToTrashInsteadOfDeleting = false
+        service.config.importDeleteBehavior = .keepOriginal
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: try isolatedDefaults()
+        )
+        let view = StorageSettingsView()
+            .environmentObject(LibraryViewModel(initializeServices: false))
+            .environmentObject(settings)
+
+        try withHostedView(view, size: NSSize(width: 600, height: 900), until: { StorageControls($0) != nil }) { hosting in
+            guard let before = StorageControls(hosting) else {
+                throw XCTSkip("This macOS does not draw the Storage choices with AppKit controls")
+            }
+            XCTAssertEqual(before.confirm.state, .off)
+            XCTAssertEqual(before.moveToTrash.state, .off)
+            XCTAssertEqual(before.afterImport.titleOfSelectedItem, ImportDeleteBehavior.keepOriginal.rawValue)
+
+            service.config.confirmBeforeDelete = true
+            service.config.moveToTrashInsteadOfDeleting = true
+            service.config.importDeleteBehavior = .askEachTime
+
+            // SwiftUI redraws on a later turn of the run loop, and may draw
+            // new controls, so each look finds them again.
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let after = StorageControls(hosting) else { return false }
+                return after.confirm.state == .on
+                    && after.moveToTrash.state == .on
+                    && after.afterImport.titleOfSelectedItem == ImportDeleteBehavior.askEachTime.rawValue
+            })
+        }
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the
@@ -921,6 +970,47 @@ final class ConfigWatcherTests: XCTestCase {
                     system.close(descriptor)
                 }
             )
+        }
+    }
+
+    /// The Storage settings' three choices as AppKit draws them: the import
+    /// pop-up, found by its choices, and the two removal checkboxes. Nil
+    /// until all three are drawn.
+    @MainActor
+    private struct StorageControls {
+        let confirm: NSButton
+        let moveToTrash: NSButton
+        let afterImport: NSPopUpButton
+
+        init?(_ root: NSView) {
+            let importChoices = ImportDeleteBehavior.allCases.map(\.rawValue)
+            // SwiftUI draws each checkbox's label itself, beside an untitled
+            // AppKit checkbox, so the two are told apart by their order in
+            // the pane: "Confirm before removing a book", then "Move to Trash
+            // instead of deleting".
+            let checkboxes = Self.descendants(of: root, as: NSButton.self).filter {
+                !($0 is NSPopUpButton) && $0.title.isEmpty
+            }
+            guard checkboxes.count == 2,
+                  let afterImport = Self.descendants(of: root, as: NSPopUpButton.self)
+                      .first(where: { $0.itemTitles == importChoices }) else {
+                return nil
+            }
+            confirm = checkboxes[0]
+            moveToTrash = checkboxes[1]
+            self.afterImport = afterImport
+        }
+
+        /// Every view of type `T` inside `view`, depth first.
+        private static func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
+            var found: [T] = []
+            for subview in view.subviews {
+                if let match = subview as? T {
+                    found.append(match)
+                }
+                found += descendants(of: subview, as: type)
+            }
+            return found
         }
     }
 
