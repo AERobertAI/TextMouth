@@ -55,6 +55,41 @@ This file is the guide to using, building, and testing TextMouth. ARCHITECTURE.m
   - The Shortcuts tab changes the shortcuts for reading, navigation, bookmarks, the sleep timer, and the library's actions. Open Book… and New from Text… always use Command-O and Shift-Command-T.
   - The Text tab's Repeated Symbols group sets how the voice reads one symbol written several times in a row, directly or with single spaces between, such as a separator line of asterisks. Say how many, the default, reads a run of 4 or more as a count, such as "7 asterisks"; Leave out skips the run with a pause; Repeat each symbol reads every one. "Collapse runs of at least" sets the shortest run that is counted or left out (2 to 99), and "Never collapse: read every symbol" reads every symbol whatever the style. The Symbols field lists the characters that can form runs; Reset to Default restores the standard list of ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines. Only speech changes: the text on screen and on a braille display keeps every symbol. A change applies from the next chapter spoken.
 
+## Speed and memory
+
+TextMouth was measured against a library the size of its developer's on October 3, 2026, and changed wherever a listener could notice what it cost. What changed in use:
+
+- Starting to listen:
+  - A session's first Play no longer waits while the system loads the voice: a text book's reader loads its voice silently, in the background, when it opens and whenever the voice changes.
+  - Speech starts with a short passage, so the first word follows Play, a seek, or a skip sooner, and each next passage is handed to the voice while the one before it speaks, so speech runs on without waiting for TextMouth between passages.
+  - A reader makes its speech engine only when speech first needs one, so it opens sooner, and an audiobook's reader never makes one.
+  - The installed voices are listed once, in the background, after the first window opens (at the very first launch, which must choose a default voice, before it), and again only when the system's voices change, as when a voice finishes downloading. The Voice tab and a reader's voice sheet show that list rather than asking the system each time.
+- Long chapters:
+  - Each substitution rule, the punctuation pauses, and the repeated symbols are applied in one pass through a chapter, so even a chapter as long as a whole book starts without a pause that grew with its length.
+  - Each chapter's speech is prepared once, and used again for as long as everything it was prepared from stays the same: the chapter's text, its skipped sections, the substitution rules, the repeated-symbol settings, and the punctuation pause level. Changing the speed or pitch prepares nothing again, and the next chapter starts with the speech prepared for it while the chapter before it played.
+  - A coming chapter too long to render ahead has its speech prepared in the background meanwhile.
+- Memory:
+  - The audio rendered for a chapter takes half the memory it did, and far less while it is being made. It is handed to the player a few seconds at a time, so a seek within the chapter prepares only the few seconds it is about to play.
+  - macOS keeps a closed window for the rest of the session. A closed reader window now lets go of its book's text, headings, and audio, and a closed Library window stops drawing its list until it is shown again.
+  - Importing a DAISY audiobook copies its audio out of the ZIP a piece at a time, instead of reading each audio file into memory whole.
+- The library list:
+  - The list is worked out once for each change of the library, and only the rows that changed are drawn again. While a book plays, only its row and the summary line follow its reading position, and a window in which nothing changes draws nothing.
+  - When TextMouth rebuilds the text of many books at once, as at the first launch after an update that reads a format better, the finished books reach the list together, in batches, instead of one at a time.
+  - A playing reader's Headings, Voice, Bookmarks, and Sleep Timer sheets are drawn again only when what they show changes, such as the heading being read.
+  - Moving books to another folder, and renaming, moving, or deleting a folder while keeping its contents, move the books' packages in the background. The sheet says what it is doing, as in "Moving 3 books...", and keeps its buttons unavailable until it is done, and a change that moved 25 books or more ends with an announcement, as in "Done. Moved 30 books." Such a change first waits for an import, text extraction, or analysis under way, and VoiceOver hears what it waits for. It is refused while the data directory moves, while Rebuild Directory runs, or while another such change moves books: "TextMouth is still moving books or its data directory. Try again once that is done."
+- Saving your place:
+  - While a book plays, its position is saved every 30 seconds into the book's own small record in its package, as before, but library.json, the index of the whole library, takes it only within five minutes, or when the reader closes or TextMouth quits. A crash loses no more than before: the next launch takes the newer positions from the records (see Where TextMouth keeps your library).
+  - Saving a book's place no longer rewrites its index of chapters and headings, which has a file of its own, and library.json is written without line breaks, so listening writes a small fraction of what it did, which matters most in a library in the cloud, where every write is uploaded.
+  - A change in Settings is saved to config.json a moment after the last one, so dragging a slider writes the file once.
+- Opening and importing books:
+  - Importing a book, and rebuilding the text of the library's books, take far less time for large EPUB, HTML, Word, DAISY, and plain-text books: each EPUB document is parsed once, each file inside a book's archive is found without searching the whole archive, and HTML's emphasis and links, word counts, white space, and plain-text headings take time that grows only with the text. The text TextMouth makes is unchanged, byte for byte.
+  - Opening a book whose text is cached copies far less of that text while splitting it into chapters.
+  - Launch checks each book's package with fewer file-system calls, and works out in the background which text caches need rebuilding.
+- Elsewhere:
+  - In a library in the cloud, each reading of the books' states looks once at where the library lives, and while a book downloads, the frequent checks read only the downloading books. A library outside a cloud location stops at that one look.
+  - Storage settings check the data directory in the background, so a slow or unplugged drive can't hold up the window.
+  - A VoiceOver focus request for a window that closes before the request runs is dropped; it once could crash TextMouth.
+
 ## Where TextMouth keeps your library
 
 TextMouth keeps everything in one data directory: .TextMouth in your home folder unless you chose another folder in Storage settings. Any folder can hold it, hidden or not: on this Mac, on an external or network drive, or in a cloud folder such as iCloud Drive, Dropbox, or Google Drive (see Keeping your library in the cloud). That choice itself is kept in TextMouth's preferences, with a bookmark of the folder and the identity of the library in it, because config.json lives inside the directory it names.
@@ -124,7 +159,7 @@ A data directory in iCloud Drive, Dropbox, Google Drive (streaming), or another 
 - In the Library window:
   - Each book's row shows and speaks its state after the New or Now Reading badge: Downloaded, In Cloud, Downloading 40%, Download Failed, or Waiting for Sync, which means the book's package hasn't arrived on this Mac yet. While a row speaks a download's percentage, it speaks the reading progress as "42 percent read", so the two never sound alike. A library on this Mac or on another drive looks and reads as before.
   - The summary line adds how many of the books shown are in the cloud, as in "3 books in the cloud": those not wholly on this Mac.
-  - The states are read again when a Library window opens, when TextMouth becomes the active app, after books are added, moved, or removed, every minute while a Library window is open, and every 2 seconds while any book downloads, even one Finder started.
+  - The states are read again when a Library window opens, when TextMouth becomes the active app, after books are added, moved, or removed, and every minute while a Library window is open. While any book downloads, even one Finder started, the downloading books are read every 2 seconds; a download that starts meanwhile shows when every book is next read, within a minute.
   - A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), offer Download Now for a book in the cloud or one whose download failed, Remove Download for a downloaded book, and Show in Finder, which selects the book's package. Each cloud service's own command for keeping a book on this Mac is in Finder: Keep Downloaded for iCloud Drive, Offline Access for Google Drive, and Make available offline for Dropbox.
   - With several books selected, these commands act on the selection and count the books they act on: "Download 3 Books", "Remove Downloads of 3 Books", "Show 3 Books in Finder".
   - Download Now downloads the books one at a time, each showing Downloading 0% until its turn. It announces when it starts, and gives one summary when every book has ended, naming any book that wasn't downloaded and why.
@@ -215,7 +250,8 @@ config.json, in the data directory, mirrors TextMouth's settings so you can read
 - When it is read:
   - At launch, TextMouth applies the file first, because it may have been edited while TextMouth was closed.
   - While TextMouth runs, it notices a saved edit within a moment and applies it.
-  - Every change you make in Settings saves the file again.
+  - Every change you make in Settings saves the file again, a moment after the last change, so a slider dragged through many steps writes it once, and quitting writes a save still waiting. An edit saved to the file in that moment is merged with the changes, not written over.
+  - When config.json is only in the cloud, TextMouth neither reads it, which would wait for a download, nor writes over it, which would replace what another Mac saved: the settings on this Mac stand, and the first save that finds the file on this Mac merges it as an edit.
   - While the library isn't available, TextMouth neither reads, writes, nor watches the file, which may hold another library's settings. Once the library is back, a setting changed meanwhile keeps its new value, and every other one takes the file's.
 - How values are checked:
   - Each field is read on its own, so one mistake never discards the rest of the file. A number out of range is moved to the nearest allowed value, a value that cannot be read counts as missing, and each repair is noted in the debug log (textmouth_debug.log, in the data directory's Logs folder, or in ~/Library/Logs/TextMouth when Storage settings put the logs there).
