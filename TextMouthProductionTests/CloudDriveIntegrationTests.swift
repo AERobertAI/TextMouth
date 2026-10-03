@@ -23,6 +23,13 @@ import XCTest
 /// staying readable, and the run folders going. For each of the plan's open
 /// questions they record the answer each drive gave, as an activity with an
 /// attachment, and print every answer in one table when the class ends.
+///
+/// iCloud Drive syncs a book's package as one item: the package carries the
+/// sync flags and its files none, and it refuses a request for one of those
+/// files. So the tests ask for and remove what the book service would
+/// (`syncedItems(of:)`): the package there, each file elsewhere; they count
+/// a file without flags as uploaded once its package is (`areUploaded`); and
+/// a file counts as only in the cloud when it or its package is dataless.
 final class CloudDriveIntegrationTests: XCTestCase {
 
     /// The folders this run uses, read before each test.
@@ -57,29 +64,31 @@ final class CloudDriveIntegrationTests: XCTestCase {
     // MARK: - A Book's Round Trip (Steps 1 to 7)
 
     /// A package of a 5 MB, a 50 KB, and a 1 KB file goes to the cloud and
-    /// back on each drive. It uploads; a download request for files already
-    /// here changes nothing; each file's local copy can be removed, leaving
-    /// it dataless; a read with downloading switched off is refused at once;
-    /// the book service downloads the package again, its progress in order;
-    /// and a working copy cloned from it stays readable after the original's
-    /// local copies are removed. Answers questions 1 to 5.
+    /// back on each drive. It uploads; a download request for what is
+    /// already here changes nothing; the local copies of the items the drive
+    /// syncs, the package as one item on iCloud Drive and each file
+    /// elsewhere, can be removed, leaving the files only in the cloud; a
+    /// read with downloading switched off is refused at once; the book
+    /// service downloads the package again, its progress in order; and a
+    /// working copy cloned from it stays readable after the original's local
+    /// copies are removed. Answers questions 1 to 5.
     func testABookPackageGoesToTheCloudAndComesBack() async throws {
         await forEachRoot(label: "round-trip") { root, run in
             let package = try SyntheticPackage.write(named: "Round Trip.tmb", in: run)
-            let uploaded = try await requireUpload(of: package.files, on: root)
-            assertDownloadRequestChangesNothing(in: package, on: root)
+            let uploaded = try await requireUpload(of: package, on: root)
+            try assertDownloadRequestChangesNothing(in: package, on: root)
 
             let beforeRemoval = package.files.map(FileSnapshot.read)
             let removed: Duration
             do {
-                removed = try await removeLocalCopies(of: package.files, on: root)
+                removed = try await removeLocalCopies(of: package, on: root)
             } catch {
                 await recordAnswer("No: \(error.localizedDescription)", to: .downloadAndRemovalRequests, on: root)
                 throw error
             }
             let whileRemoved = package.files.map(FileSnapshot.read)
             await recordSizes(of: package, whileRemoved: whileRemoved, on: root)
-            assertReadIsRefused(of: package.files[0], on: root)
+            assertReadIsRefused(of: package.files[0], in: package, on: root)
 
             let download = await downloadThroughService(package, on: root)
             await recordAnswer(
@@ -128,10 +137,12 @@ final class CloudDriveIntegrationTests: XCTestCase {
             let package = staged.moved(to: run.appendingPathComponent("Renamed.tmb", isDirectory: true))
             try Self.renameItem(staged.url, to: package.url)
 
-            guard let uploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded(package.files) }) else {
+            let uploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload) { areUploaded(package.files, on: root) }
+            guard let uploaded else {
                 await recordAnswer(
                     "Unknown: not every file was reported uploaded within "
-                        + "\(CloudDriveWait.describe(CloudDriveWait.upload)) of the rename (\(describeStatuses(of: package.files))).",
+                        + "\(CloudDriveWait.describe(CloudDriveWait.upload)) of the rename "
+                        + "(\(describeStatuses(of: package.files, in: package.url))).",
                     to: .renamedPackage,
                     on: root
                 )
@@ -171,10 +182,10 @@ final class CloudDriveIntegrationTests: XCTestCase {
             var visibleUploaded: Duration?
 
             let hiddenUploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload) {
-                if visibleUploaded == nil, areUploaded([visible]) {
+                if visibleUploaded == nil, areUploaded([visible], on: root) {
                     visibleUploaded = clock.now - start
                 }
-                return areUploaded([hidden])
+                return areUploaded([hidden], on: root)
             }
 
             let control = visibleUploaded.map { "the same file in a visible folder uploaded within \(CloudDriveWait.describe($0))" }
@@ -209,6 +220,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
             )
             let file = package.files[0]
             let flags = Self.metadata(of: file)
+            let packageFlags = Self.metadata(of: package.url)
 
             let answer: String
             do {
@@ -222,7 +234,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
             }
             await recordAnswer(
                 "\(answer) Just before the call, the drive reported the file "
-                    + "\(Self.describeFlags(flags)).",
+                    + "\(Self.describeFlags(flags)), and the package \(Self.describeFlags(packageFlags)).",
                 to: .removalWhileUploading,
                 on: root
             )
@@ -275,7 +287,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
 
             let files = Self.regularFiles(in: library)
             let bytes = files.compactMap { FileSnapshot.read($0)?.byteCount }.reduce(0, +)
-            let uploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload) { areUploaded(files) }
+            let uploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload) { areUploaded(files, on: root) }
             let upload = uploaded.map { "uploaded within \(CloudDriveWait.describe($0))" }
                 ?? "not all reported uploaded within \(CloudDriveWait.describe(CloudDriveWait.upload))"
             let note = "\(root.driveName): Small Library, \(Self.smallLibraryBooks.count) books in \(files.count) files "
@@ -403,15 +415,16 @@ final class CloudDriveIntegrationTests: XCTestCase {
     // MARK: - Uploads
 
     /// Waits, within the upload limit, until the sync service reports every
-    /// one of `files` uploaded, and returns how long that took. Throws when
-    /// the limit runs out: nothing after it can be tested without a copy in
-    /// the cloud.
-    private func requireUpload(of files: [URL], on root: CloudDriveTestRoot) async throws -> Duration {
-        guard let elapsed = try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded(files) }) else {
+    /// file of `package` uploaded, and returns how long that took. Throws
+    /// when the limit runs out: nothing after it can be tested without a
+    /// copy in the cloud.
+    private func requireUpload(of package: SyntheticPackage, on root: CloudDriveTestRoot) async throws -> Duration {
+        let files = package.files
+        guard let elapsed = try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded(files, on: root) }) else {
             throw CloudDriveStepFailure(
                 reason: "\(files.count) new files were not reported uploaded within "
                     + "\(CloudDriveWait.describe(CloudDriveWait.upload)). Is \(root.driveName) running, "
-                    + "signed in, and not paused? \(describeStatuses(of: files))"
+                    + "signed in, and not paused? \(describeStatuses(of: files, in: package.url))"
             )
         }
         for file in files {
@@ -422,15 +435,34 @@ final class CloudDriveIntegrationTests: XCTestCase {
         return elapsed
     }
 
-    /// Whether the sync service reports each of `files` as its own and
-    /// uploaded. The flags count as the system gives them, so a drive that
-    /// says nothing about uploading never counts as done, where the status
-    /// provider would read a missing flag as uploaded.
-    private func areUploaded(_ files: [URL]) -> Bool {
+    /// Whether the sync service reports each of `files` uploaded: by the
+    /// file's own flags or, for a file that carries none, as inside an
+    /// iCloud Drive package, by the flags of the package holding it, looked
+    /// for inside `root`'s folder only (`CloudDriveUploads`). The flags
+    /// count as the system gives them, so a drive that says nothing about
+    /// uploading never counts as done, where the status provider would read
+    /// a missing flag as uploaded.
+    private func areUploaded(_ files: [URL], on root: CloudDriveTestRoot) -> Bool {
         files.allSatisfy { file in
-            let metadata = Self.metadata(of: file)
-            return metadata?.isUbiquitousItem == true && metadata?.isUploaded == true
+            let package = CloudDriveUploads.package(holding: file, inside: root.folder)
+            return CloudDriveUploads.isUploaded(file: Self.metadata(of: file), package: package.flatMap(Self.metadata(of:)))
         }
+    }
+
+    /// The items the book service asks for and removes for `package`: the
+    /// package itself where the drive syncs it as one item (iCloud Drive),
+    /// and otherwise each of its files (`BookCloudStorageService.Survey`).
+    private func syncedItems(of package: SyntheticPackage) throws -> [URL] {
+        try storage.survey(of: package.bookPackage).syncedItems.map(\.url)
+    }
+
+    /// Whether `file` of `package` is only in the cloud: it reads as not
+    /// downloaded, and it, or its package, is dataless. iCloud Drive makes a
+    /// package it syncs as one item dataless whole, and then nothing inside
+    /// it can be looked up.
+    private func isInCloud(_ file: URL, of package: SyntheticPackage) -> Bool {
+        items.status(of: file).state == .notDownloaded
+            && (DatalessFiles.isDataless(file) || DatalessFiles.isDataless(package.url))
     }
 
     /// What the status provider reads of `file`, its flags as the system
@@ -443,51 +475,54 @@ final class CloudDriveIntegrationTests: XCTestCase {
 
     // MARK: - Steps 2 to 4
 
-    /// Step 2: asking the sync service to download files already on this
-    /// Mac neither fails nor changes them.
-    private func assertDownloadRequestChangesNothing(in package: SyntheticPackage, on root: CloudDriveTestRoot) {
+    /// Step 2: asking the sync service to download the items it syncs of a
+    /// package already on this Mac (`syncedItems(of:)`) neither fails nor
+    /// changes its files.
+    private func assertDownloadRequestChangesNothing(in package: SyntheticPackage, on root: CloudDriveTestRoot) throws {
+        for item in try syncedItems(of: package) {
+            XCTAssertNoThrow(try items.requestDownload(of: item), "\(root.driveName): \(item.lastPathComponent)")
+        }
         for file in package.files {
-            XCTAssertNoThrow(try items.requestDownload(of: file), "\(root.driveName): \(file.lastPathComponent)")
             XCTAssertEqual(items.status(of: file).state, .downloaded, "\(root.driveName): \(file.lastPathComponent)")
             XCTAssertFalse(DatalessFiles.isDataless(file), "\(root.driveName): \(file.lastPathComponent)")
         }
         XCTAssertEqual(package.filesNotIntact(), [], "\(root.driveName): a download request changed files")
     }
 
-    /// Step 3: asks the sync service to remove the local copy of each of
-    /// `files` (`removeLocalCopy`), then waits, within the removal limit,
-    /// until each is dataless and reads as not downloaded. Returns how long
-    /// that took; throws when a removal is refused or does not happen in
-    /// time.
-    private func removeLocalCopies(of files: [URL], on root: CloudDriveTestRoot) async throws -> Duration {
+    /// Step 3: asks the sync service to remove the local copy of each item
+    /// it syncs of `package` (`removeLocalCopy`), the package itself or each
+    /// file, then waits, within the removal limit, until every file is only
+    /// in the cloud (`isInCloud(_:of:)`). Returns how long that took; throws
+    /// when a removal is refused or does not happen in time.
+    private func removeLocalCopies(of package: SyntheticPackage, on root: CloudDriveTestRoot) async throws -> Duration {
         let clock = ContinuousClock()
         let start = clock.now
-        for file in files {
+        for item in try syncedItems(of: package) {
             do {
-                try items.removeLocalCopy(of: file)
+                try items.removeLocalCopy(of: item)
             } catch {
                 throw CloudDriveStepFailure(
-                    reason: "\(root.driveName) refused to remove the local copy of \(file.lastPathComponent): "
+                    reason: "\(root.driveName) refused to remove the local copy of \(item.lastPathComponent): "
                         + CloudDriveFindings.describe(error)
                 )
             }
         }
         let removed = try await CloudDriveWait.until(limit: CloudDriveWait.removal) {
-            files.allSatisfy { items.status(of: $0).state == .notDownloaded && DatalessFiles.isDataless($0) }
+            package.files.allSatisfy { isInCloud($0, of: package) }
         }
         guard removed != nil else {
             throw CloudDriveStepFailure(
                 reason: "Local copies were still on this Mac \(CloudDriveWait.describe(CloudDriveWait.removal)) "
-                    + "after their removal was asked for: \(describeStatuses(of: files))"
+                    + "after their removal was asked for: \(describeStatuses(of: package.files, in: package.url))"
             )
         }
         return clock.now - start
     }
 
-    /// Step 4: a read of a file only in the cloud, with downloading switched
-    /// off, fails at once with the download refusal, and the file stays in
-    /// the cloud.
-    private func assertReadIsRefused(of file: URL, on root: CloudDriveTestRoot) {
+    /// Step 4: a read of a file of `package` only in the cloud, with
+    /// downloading switched off, fails at once with the download refusal,
+    /// and the file stays in the cloud.
+    private func assertReadIsRefused(of file: URL, in package: SyntheticPackage, on root: CloudDriveTestRoot) {
         let clock = ContinuousClock()
         let start = clock.now
         let read = DatalessFiles.withoutDownloading { Result { try Data(contentsOf: file) } }
@@ -503,26 +538,32 @@ final class CloudDriveIntegrationTests: XCTestCase {
             )
         }
         XCTAssertLessThan(elapsed, Self.atOnce, "\(root.driveName): the refusal took \(elapsed)")
-        XCTAssertTrue(DatalessFiles.isDataless(file), "\(root.driveName): the refused read downloaded the file")
-        XCTAssertEqual(items.status(of: file).state, .notDownloaded, "\(root.driveName): \(file.lastPathComponent)")
+        XCTAssertTrue(isInCloud(file, of: package), "\(root.driveName): the refused read downloaded the file")
     }
 
     // MARK: - Step 5: Downloading Through the Book Service
 
     /// Step 5: downloads `package` through the book service, listening
-    /// meanwhile for the progress the system publishes for its files
-    /// (question 2). Asserts that the progress came in order and that the
-    /// download finished with every file on this Mac, holding what was
-    /// written.
+    /// meanwhile for the progress the system publishes for its files and for
+    /// the package as a whole (question 2), and records with it the
+    /// percentages the book service reported, which fold in what it heard.
+    /// Asserts that the progress came in order and that the download
+    /// finished with every file on this Mac, holding what was written.
     private func downloadThroughService(_ package: SyntheticPackage, on root: CloudDriveTestRoot) async -> CloudDriveDownloadRecord {
+        let listenedTo = package.files + [package.url]
         let published = PublishedProgressRecorder()
-        published.subscribe(to: package.files)
+        published.subscribe(to: listenedTo)
         let download = await CloudDriveDownloadRecord.follow(
             storage.download(package.bookPackage),
             limit: CloudDriveWait.download
         )
         published.stop()
-        await recordAnswer(published.summary(of: package.files), to: .publishedProgress, on: root)
+        let percents = download.updates.map { "\($0.percent)" }.joined(separator: ", ")
+        await recordAnswer(
+            "\(published.summary(of: listenedTo)) The book service reported \(percents.isEmpty ? "no" : percents) percent.",
+            to: .publishedProgress,
+            on: root
+        )
         assertFinished(download, of: package, on: root)
         return download
     }
@@ -580,7 +621,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
             }
             return
         }
-        let removed = try await removeLocalCopies(of: package.files, on: root)
+        let removed = try await removeLocalCopies(of: package, on: root)
         let unreadable = package.filesNotIntact(at: copy.location(of:))
 
         XCTAssertEqual(unreadable, [], "\(root.driveName): the clone lost files when the original's local copies went")
@@ -600,16 +641,19 @@ final class CloudDriveIntegrationTests: XCTestCase {
 
     /// Asks the book service to remove `package`'s download, as Remove
     /// Download does, and waits, within the removal limit, for every file
-    /// to be dataless. Returns whether that happened, and what happened in
-    /// words.
+    /// to be only in the cloud (`isInCloud(_:of:)`). Returns whether that
+    /// happened, and what happened in words.
     private func removeDownloadAsOneBook(_ package: SyntheticPackage, on root: CloudDriveTestRoot) async -> (succeeded: Bool, words: String) {
         do {
             try storage.removeDownload(of: package.bookPackage)
             let removed = try await CloudDriveWait.until(limit: CloudDriveWait.removal) {
-                package.files.allSatisfy(DatalessFiles.isDataless)
+                package.files.allSatisfy { isInCloud($0, of: package) }
             }
             guard let removed else {
-                return (false, "after Remove Download, files were still on this Mac (\(describeStatuses(of: package.files)))")
+                return (
+                    false,
+                    "after Remove Download, files were still on this Mac (\(describeStatuses(of: package.files, in: package.url)))"
+                )
             }
             return (true, "Remove Download left all of them dataless within \(CloudDriveWait.describe(removed))")
         } catch {
@@ -630,6 +674,10 @@ final class CloudDriveIntegrationTests: XCTestCase {
             verdict = "The real size"
         } else if (listed + reported).allSatisfy({ $0 == 0 }) {
             verdict = "0"
+        } else if (listed + reported).allSatisfy({ $0 == nil }) {
+            // iCloud Drive makes a package it syncs as one item dataless
+            // whole, and then nothing inside it can be looked up.
+            verdict = "Unknown: no file could be looked up while its package was only in the cloud"
         } else {
             verdict = "Not always the real size"
         }
@@ -706,15 +754,18 @@ final class CloudDriveIntegrationTests: XCTestCase {
         return CloudDriveFindings.describe(error)
     }
 
-    /// Each of `files` with its state and the drive's flags, for messages.
-    private func describeStatuses(of files: [URL]) -> String {
-        files.map { file in
+    /// Each of `files` with its state and the drive's flags, for messages,
+    /// after the flags of `package`, the package holding them, when given:
+    /// on iCloud Drive only the package carries flags.
+    private func describeStatuses(of files: [URL], in package: URL? = nil) -> String {
+        let packageWords = package.map { ["\($0.lastPathComponent) (the package): \(Self.describeFlags(Self.metadata(of: $0)))"] }
+        let fileWords = files.map { file in
             "\(file.lastPathComponent): \(items.status(of: file).state), \(Self.describeFlags(Self.metadata(of: file)))"
         }
-        .joined(separator: "; ")
+        return ((packageWords ?? []) + fileWords).joined(separator: "; ")
     }
 
-    /// A file's sync flags as the drive reported them, in words.
+    /// An item's sync flags as the drive reported them, in words.
     private static func describeFlags(_ metadata: UbiquitousItemStatusProvider.Metadata?) -> String {
         guard let metadata else { return "unreadable" }
         /// A flag's value, or "unreported".
