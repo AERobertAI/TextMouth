@@ -271,6 +271,15 @@ enum TextMouthPaths {
         tmbDir.appendingPathComponent("bookInfo.json")
     }
 
+    /// Name of the file holding a package's content index (PERF15), beside
+    /// bookInfo.json, which no longer holds it. See `BookInfo`.
+    static let contentIndexFileName = "contentIndex.json"
+
+    /// Path to the content index inside a .tmb package
+    static func contentIndexPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(contentIndexFileName)
+    }
+
     /// Name of the marker recording that a package's book was removed from
     /// the library while the package stayed on disk. See
     /// `RemovedFromLibraryMarker`.

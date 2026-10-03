@@ -130,6 +130,7 @@ struct MaintenanceFileAccess: Sendable {
         var namedFiles: [URL] = []
         if files.contains(.record) {
             namedFiles.append(TextMouthPaths.bookInfoPath(in: package))
+            namedFiles.append(TextMouthPaths.contentIndexPath(in: package))
         }
         if files.contains(.textCache) {
             namedFiles.append(TextMouthPaths.contentMarkdownPath(in: package))
@@ -280,7 +281,8 @@ struct MaintainedFiles: OptionSet, Sendable {
     static let content = MaintainedFiles(rawValue: 1 << 0)
     /// The text cache, content.md.
     static let textCache = MaintainedFiles(rawValue: 1 << 1)
-    /// The book's record, bookInfo.json.
+    /// The book's record: bookInfo.json, and its content index beside it,
+    /// contentIndex.json (PERF15), which a pass reads with the record.
     static let record = MaintainedFiles(rawValue: 1 << 2)
     /// Everything a pass can read of a book.
     static let all: MaintainedFiles = [.content, .textCache, .record]

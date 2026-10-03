@@ -527,8 +527,9 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// still gets one above every revision written before it.
     func testRevisionFollowsTheHigherOfTheStoredRevisionAndTheFloor() {
         let book = Self.bookWithEveryFieldSet(seed: 4)
-        var stored = book.makeBookInfo()
-        stored.state.revision = 9
+        var storedInfo = book.makeBookInfo()
+        storedInfo.state.revision = 9
+        let stored = StoredBookRecord(info: storedInfo, keepsContentIndex: false)
 
         XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil).state.revision, 1)
         XCTAssertEqual(book.bookInfo(replacing: nil, contentIndex: nil, revisionFloor: 7).state.revision, 8)

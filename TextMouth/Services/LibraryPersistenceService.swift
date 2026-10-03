@@ -372,7 +372,7 @@ enum LibraryPersistenceService {
             let pending = pendingBookInfos[analyzed.id].map { StorageBoundary.shared.rebasedToCurrent($0.book) }
             // The record is read only when no snapshot waits, and never
             // downloaded: one only in the cloud leaves nothing to merge into.
-            let stored: BookInfo?
+            let stored: StoredBookRecord?
             if pending == nil {
                 switch storedRecord(of: analyzed) {
                 case .inCloud:
@@ -388,7 +388,7 @@ enum LibraryPersistenceService {
             // is where the book it describes lives.
             let latest = pending ?? stored.map {
                 Book(
-                    record: $0,
+                    record: $0.info,
                     filePath: analyzed.filePath,
                     folderPath: analyzed.folderPath,
                     tmbDirectoryName: analyzed.tmbDirectoryName
@@ -566,12 +566,18 @@ enum LibraryPersistenceService {
     /// downloading anything; otherwise it is read here, the same way
     /// (`storedRecord(of:)`), before anything else in the package is
     /// looked at. Must run on bookInfoSaveQueue.
+    ///
+    /// Only bookInfo.json is read and, unless `contentIndex` is given,
+    /// written (PERF15): the package's contentIndex.json stays as it is, so
+    /// a reading checkpoint writes about a kilobyte, however large the
+    /// book's index. A record an older version wrote with its index inside
+    /// has that index moved into contentIndex.json by its first write here.
     private static func writeBookInfo(
         _ book: Book,
         contentIndex: BookContentIndex?,
-        stored: BookInfo? = nil
+        stored: StoredBookRecord? = nil
     ) throws -> Bool {
-        let replaced: BookInfo?
+        let replaced: StoredBookRecord?
         if let stored {
             replaced = stored
         } else {
@@ -589,7 +595,7 @@ enum LibraryPersistenceService {
             contentIndex: contentIndex,
             revisionFloor: bookInfoRevisions[book.id] ?? 0
         )
-        try record.save(to: book.tmbDirectory)
+        try record.saveRecord(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision
         booksWithRecordsInCloud.remove(book.id)
         return true
@@ -598,10 +604,10 @@ enum LibraryPersistenceService {
     // MARK: - Records Only in the Cloud (FR02)
 
     /// What a record write finds of the record already in a package.
-    private enum StoredRecord {
+    private enum RecordLookup {
         /// The record, or nil when there is none or it cannot be read, which
         /// counts as none for every save.
-        case readable(BookInfo?)
+        case readable(StoredBookRecord?)
         /// The record, the package holding it, or the package's removal
         /// marker (the item named) is only in the cloud: reading any of them
         /// would download it, so the record is neither read nor written.
@@ -612,8 +618,9 @@ enum LibraryPersistenceService {
     /// cloud, as orphan adoption reads a package's record: the package, its
     /// record, and its removal marker are first checked without reading
     /// them, and a read refused because the record went to the cloud
-    /// meanwhile also leaves it there. Must run on bookInfoSaveQueue.
-    private static func storedRecord(of book: Book) -> StoredRecord {
+    /// meanwhile also leaves it there. The package's content index is never
+    /// read here (`StoredBookRecord`). Must run on bookInfoSaveQueue.
+    private static func storedRecord(of book: Book) -> RecordLookup {
         let package = book.tmbDirectory
         let record = TextMouthPaths.bookInfoPath(in: package)
         let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
@@ -621,7 +628,7 @@ enum LibraryPersistenceService {
             return .inCloud(inCloud)
         }
         do {
-            return .readable(try recordAccess.read(record) { try BookInfo.load(from: package) })
+            return .readable(try recordAccess.read(record) { try StoredBookRecord.read(from: package) })
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return .inCloud(record)
         } catch {

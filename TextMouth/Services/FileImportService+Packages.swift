@@ -265,9 +265,12 @@ extension FileImportService {
             return nil
         }
 
-        let record = TextMouthPaths.bookInfoPath(in: location)
-        let hadRecord = FileManager.default.fileExists(atPath: record.path)
-        let previousRecord = hadRecord ? try? Data(contentsOf: record) : nil
+        // The record's files as they are now, bookInfo.json and the content
+        // index beside it, put back should the reinstatement fail.
+        let previousRecord = [
+            TextMouthPaths.bookInfoPath(in: location),
+            TextMouthPaths.contentIndexPath(in: location),
+        ].map(RecordFileSnapshot.init(of:))
         var wroteRecord = false
         do {
             let content = try readableContent(of: &book, run: &run)
@@ -279,7 +282,7 @@ extension FileImportService {
             return ImportedBook(book: book, report: content.report)
         } catch {
             if wroteRecord {
-                restoreRecord(at: record, hadRecord: hadRecord, previousBytes: previousRecord)
+                previousRecord.forEach { $0.restore() }
             }
             throw error
         }
@@ -329,16 +332,34 @@ extension FileImportService {
         )
     }
 
-    /// Puts a retained package's bookInfo.json at `record` back as it was
-    /// before a reinstatement failed: its earlier bytes, or no record when
-    /// there was none. A record that existed but could not be read cannot
-    /// be put back, and is left as the failed reinstatement wrote it; the
-    /// removal marker keeps the package retired either way.
-    private static func restoreRecord(at record: URL, hadRecord: Bool, previousBytes: Data?) {
-        if !hadRecord {
-            try? FileManager.default.removeItem(at: record)
-        } else if let previousBytes {
-            try? previousBytes.write(to: record, options: .atomic)
+    /// One file of a retained package's record (bookInfo.json, or the
+    /// content index beside it) as it was before a reinstatement wrote over
+    /// it, so a failed reinstatement can put it back.
+    private struct RecordFileSnapshot {
+        /// Where the file is.
+        let url: URL
+        /// Whether anything was there.
+        let existed: Bool
+        /// Its bytes, or nil when there was none or it could not be read.
+        let bytes: Data?
+
+        /// The file at `url` as it is now.
+        init(of url: URL) {
+            self.url = url
+            existed = FileManager.default.fileExists(atPath: url.path)
+            bytes = existed ? try? Data(contentsOf: url) : nil
+        }
+
+        /// Puts the file back as it was: its earlier bytes, or no file when
+        /// there was none. A file that existed but could not be read cannot
+        /// be put back, and is left as the failed reinstatement wrote it; the
+        /// removal marker keeps the package retired either way.
+        func restore() {
+            if !existed {
+                try? FileManager.default.removeItem(at: url)
+            } else if let bytes {
+                try? bytes.write(to: url, options: .atomic)
+            }
         }
     }
 
@@ -413,11 +434,13 @@ extension FileImportService {
 
     /// Whether the entry `name` in a package can be the book's own content:
     /// anything that is not hidden and is not one of the files TextMouth
-    /// keeps beside the content (bookInfo.json, the content.md text cache,
-    /// the cachedAudio folder, and the removal marker).
+    /// keeps beside the content (bookInfo.json and the content index beside
+    /// it, the content.md text cache, the cachedAudio folder, and the
+    /// removal marker).
     static func isPackageContentName(_ name: String) -> Bool {
         !name.hasPrefix(".")
             && name != "bookInfo.json"
+            && name != TextMouthPaths.contentIndexFileName
             && name != "content.md"
             && name != "cachedAudio"
             && name != TextMouthPaths.removedFromLibraryMarkerName

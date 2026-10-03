@@ -45,6 +45,9 @@ final class BookContentIndexTests: XCTestCase {
         XCTAssertEqual(content.totalCharacterCount, 456)
     }
 
+    /// A package's record keeps the full index and its version summary: the
+    /// index in contentIndex.json, and the summary in bookInfo.json, which
+    /// never holds the index itself (PERF15).
     func testBookInfoRoundTripsFullIndexAndVersionSummary() throws {
         let content = DocumentContent(
             title: "Book",
@@ -60,16 +63,25 @@ final class BookContentIndexTests: XCTestCase {
             state: BookState(contentIndexVersion: index.version),
             contentIndex: index
         )
+        let package = FileManager.default.temporaryDirectory
+            .appendingPathComponent("BookInfoRoundTrip-\(UUID().uuidString).tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: package) }
+
+        try info.save(to: package)
+        let loaded = try BookInfo.load(from: package)
+
+        XCTAssertEqual(loaded.state.contentIndexVersion, BookContentIndex.currentVersion)
+        XCTAssertEqual(loaded.contentIndex, index)
+        XCTAssertEqual(loaded.contentIndex?.chapters.first?.headings.first?.text, "Chapter")
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let decoded = try decoder.decode(BookInfo.self, from: encoder.encode(info))
-
-        XCTAssertEqual(decoded.state.contentIndexVersion, BookContentIndex.currentVersion)
-        XCTAssertEqual(decoded.contentIndex, index)
-        XCTAssertEqual(decoded.contentIndex?.chapters.first?.headings.first?.text, "Chapter")
+        let recordAlone = try decoder.decode(BookInfo.self, from: encoder.encode(info))
+        XCTAssertEqual(recordAlone.state.contentIndexVersion, BookContentIndex.currentVersion)
+        XCTAssertNil(recordAlone.contentIndex, "bookInfo.json's encoding holds the index")
     }
 
     func testLegacyBookInfoDecodesWithoutIndex() throws {

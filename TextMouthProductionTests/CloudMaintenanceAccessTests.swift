@@ -76,11 +76,13 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
     // MARK: - The Files a Pass Reads
 
     /// Each file a pass reads is found in the cloud: the package, the
-    /// record, the text cache, and the source; a pass that does not read
-    /// the text cache does not care where it is.
+    /// record and the content index beside it, the text cache, and the
+    /// source; a pass that does not read the text cache does not care where
+    /// it is.
     func testFileInCloudFindsEachFileAPassReads() throws {
         let book = try commitCache(of: makePackagedBook())
         let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let contentIndex = TextMouthPaths.contentIndexPath(in: book.tmbDirectory)
         let cache = MarkdownCacheService.cacheURL(for: book)
         let rereadingSources: MaintainedFiles = [.content, .record]
 
@@ -91,7 +93,7 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
         assertSameItem(cacheCloud.access.fileInCloud(of: book, reading: .all), cache)
         XCTAssertNil(cacheCloud.access.fileInCloud(of: book, reading: rereadingSources))
 
-        for file in [record, book.bookFileURL, book.tmbDirectory] {
+        for file in [record, contentIndex, book.bookFileURL, book.tmbDirectory] {
             let fileCloud = FakeCloudFiles()
             fileCloud.markDataless(file)
             assertSameItem(fileCloud.access.fileInCloud(of: book, reading: rereadingSources), file)

@@ -1,14 +1,43 @@
 import Foundation
 
-/// The bookInfo.json model stored inside each .tmb package.
-/// Contains all book-specific data: metadata, reading state, bookmarks, etc.
+/// The record of a book kept inside its .tmb package: its metadata, reading
+/// state, bookmarks, and content index.
+///
+/// Two files hold it (PERF15). bookInfo.json holds everything but the
+/// content index, about a kilobyte, so the save the reader makes every 30
+/// seconds of playback writes only that. The content index, which can run
+/// to hundreds of kilobytes and changes only when the book is analyzed or
+/// imported, has a file of its own beside it, contentIndex.json
+/// (`TextMouthPaths.contentIndexPath(in:)`).
+///
+/// Older versions of TextMouth kept the index inside bookInfo.json. Such a
+/// record still loads with its index, and the next save of the book moves
+/// the index into contentIndex.json. An index found inside bookInfo.json
+/// wins over contentIndex.json: TextMouth no longer writes one there, so
+/// either an older version wrote it after the file was written, or a save
+/// that would have replaced it was interrupted, and either way it is the
+/// index the record's analysis fields describe. An older version reading a
+/// record written since finds no index in it and builds the book's index
+/// once, as for any book without one, keeping it inside bookInfo.json, from
+/// where the next save here moves it out again.
 struct BookInfo: Codable {
     var metadata: BookMetadata
     var state: BookState
     var bookmarks: [Bookmark]
     /// Versioned chapter/heading/statistics index. Kept per package rather than
     /// in library.json so startup does not decode every heading in the library.
+    /// On disk it lives in contentIndex.json; bookInfo.json holds it only as
+    /// an older version of TextMouth wrote it (see the type's notes).
     var contentIndex: BookContentIndex?
+
+    /// The keys of bookInfo.json. The content index is only ever read under
+    /// its key, from a record an older version wrote; it is never written.
+    private enum CodingKeys: String, CodingKey {
+        case metadata
+        case state
+        case bookmarks
+        case contentIndex
+    }
 
     init(
         metadata: BookMetadata = BookMetadata(),
@@ -35,6 +64,16 @@ struct BookInfo: Codable {
             isAudio: metadata.format.isAudio,
             codingPath: container.codingPath + [CodingKeys.state]
         )
+    }
+
+    /// Encodes the record as bookInfo.json holds it: its metadata, state,
+    /// and bookmarks. The content index is never encoded here; it is written
+    /// to contentIndex.json (`save(to:)` and `saveRecord(to:)`).
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(state, forKey: .state)
+        try container.encode(bookmarks, forKey: .bookmarks)
     }
 }
 
@@ -278,10 +317,22 @@ extension BookState {
 
 extension BookInfo {
 
+    /// How bookInfo.json is written: readable, with sorted keys, so two
+    /// records of one book compare line by line.
     private static let encoder: JSONEncoder = {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
         e.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return e
+    }()
+
+    /// How contentIndex.json is written: compact, since only TextMouth reads
+    /// it and it is a package's largest record, with sorted keys, so one
+    /// index is always written as the same bytes.
+    private static let contentIndexEncoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        e.outputFormatting = [.sortedKeys]
         return e
     }()
 
@@ -291,17 +342,144 @@ extension BookInfo {
         return d
     }()
 
-    /// Save this BookInfo to the bookInfo.json in the given .tmb directory
+    // MARK: Writing
+
+    /// Replaces the package's whole record with this one: afterwards
+    /// contentIndex.json holds `contentIndex`, or is gone when it is nil,
+    /// and bookInfo.json holds the rest. For a package written whole, as an
+    /// import, a data-directory move, or a repair that separates a shared
+    /// package writes one. A save of a book's state uses `saveRecord(to:)`,
+    /// which leaves the package's index alone.
     func save(to tmbDir: URL) throws {
-        let url = TextMouthPaths.bookInfoPath(in: tmbDir)
-        let data = try BookInfo.encoder.encode(self)
-        try data.write(to: url, options: .atomic)
+        if let contentIndex {
+            try Self.writeContentIndex(contentIndex, in: tmbDir)
+        } else {
+            try Self.removeContentIndex(from: tmbDir)
+        }
+        try writeRecordFile(in: tmbDir)
     }
 
-    /// Load a BookInfo from a .tmb directory
+    /// Writes this record over the package's, as every save of a book's
+    /// state does (PERF15). A record that carries a content index writes it
+    /// into contentIndex.json first: a new analysis's index, or one an older
+    /// version of TextMouth kept inside bookInfo.json, moving into its own
+    /// file. A record without one leaves the package's contentIndex.json as
+    /// it is, so a reading checkpoint writes about a kilobyte.
+    ///
+    /// The index goes first, so bookInfo.json, whose analysis fields describe
+    /// the index (`Book.ContentAnalysisFields`), never names one that is not
+    /// on disk yet. A failure between the two leaves the new index beside the
+    /// older record: every load checks a saved index against the book's text
+    /// before it trusts it, and the next save writes both again.
+    func saveRecord(to tmbDir: URL) throws {
+        if let contentIndex {
+            try Self.writeContentIndex(contentIndex, in: tmbDir)
+        }
+        try writeRecordFile(in: tmbDir)
+    }
+
+    /// Writes bookInfo.json alone, which never holds the content index
+    /// (`encode(to:)`), replacing it atomically.
+    private func writeRecordFile(in tmbDir: URL) throws {
+        let data = try Self.encoder.encode(self)
+        try data.write(to: TextMouthPaths.bookInfoPath(in: tmbDir), options: .atomic)
+    }
+
+    /// Writes `index` as the package's contentIndex.json, replacing it
+    /// atomically.
+    private static func writeContentIndex(_ index: BookContentIndex, in tmbDir: URL) throws {
+        let data = try contentIndexEncoder.encode(index)
+        try data.write(to: TextMouthPaths.contentIndexPath(in: tmbDir), options: .atomic)
+    }
+
+    /// Removes the package's contentIndex.json. A package without one is
+    /// left as it is.
+    private static func removeContentIndex(from tmbDir: URL) throws {
+        do {
+            try FileManager.default.removeItem(at: TextMouthPaths.contentIndexPath(in: tmbDir))
+        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+            // Nothing to remove.
+        }
+    }
+
+    // MARK: Reading
+
+    /// The package's whole record: bookInfo.json, with the content index
+    /// from contentIndex.json, unless bookInfo.json still holds one an older
+    /// version of TextMouth kept there, which wins (see the type's notes).
+    ///
+    /// Throws when bookInfo.json is missing or cannot be read. A missing,
+    /// unreadable, or damaged contentIndex.json leaves the record without an
+    /// index, which the book's next load builds afresh, as for a book never
+    /// indexed; but a read refused because either file is only in the cloud
+    /// throws that refusal (`DatalessFiles.isDownloadRefusal`), so a pass
+    /// that must not download leaves the book as it is.
     static func load(from tmbDir: URL) throws -> BookInfo {
-        let url = TextMouthPaths.bookInfoPath(in: tmbDir)
-        let data = try Data(contentsOf: url)
+        var info = try loadRecordFile(from: tmbDir)
+        if info.contentIndex == nil {
+            info.contentIndex = try loadContentIndex(from: tmbDir)
+        }
+        return info
+    }
+
+    /// bookInfo.json alone, with the index an older version kept inside it,
+    /// if any. Throws when it is missing or cannot be read.
+    fileprivate static func loadRecordFile(from tmbDir: URL) throws -> BookInfo {
+        let data = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: tmbDir))
         return try decoder.decode(BookInfo.self, from: data)
+    }
+
+    /// The package's contentIndex.json: nil when there is none, or when it
+    /// cannot be read or decoded, which counts as none. Throws only a read
+    /// refused because the file is only in the cloud.
+    private static func loadContentIndex(from tmbDir: URL) throws -> BookContentIndex? {
+        let data: Data
+        do {
+            data = try Data(contentsOf: TextMouthPaths.contentIndexPath(in: tmbDir))
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            return nil
+        }
+        return try? decoder.decode(BookContentIndex.self, from: data)
+    }
+
+    /// Whether the package holds a contentIndex.json, downloaded or not,
+    /// asked of the file's metadata alone: one lstat(2), which reads no
+    /// content.
+    fileprivate static func hasContentIndexFile(in tmbDir: URL) -> Bool {
+        var status = stat()
+        return TextMouthPaths.contentIndexPath(in: tmbDir).withUnsafeFileSystemRepresentation { path in
+            guard let path else { return false }
+            return lstat(path, &status) == 0
+        }
+    }
+}
+
+// MARK: - The Record a Save Replaces
+
+/// A package's record as a save of the book's state finds it before
+/// replacing it (PERF15): bookInfo.json, and whether the package keeps a
+/// content index. Such a save needs nothing more of the index than whether
+/// there is one (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`),
+/// so reading this never reads contentIndex.json, which can hold hundreds
+/// of kilobytes.
+struct StoredBookRecord {
+    /// bookInfo.json. Its `contentIndex` is set only when an older version
+    /// of TextMouth kept the index inside it; the next save moves that index
+    /// into its own file.
+    var info: BookInfo
+    /// Whether the package keeps a content index: in contentIndex.json, or
+    /// inside `info`.
+    var keepsContentIndex: Bool
+
+    /// The record in the package at `tmbDir`. Throws when bookInfo.json is
+    /// missing or cannot be read, as `BookInfo.load(from:)` does.
+    static func read(from tmbDir: URL) throws -> StoredBookRecord {
+        let info = try BookInfo.loadRecordFile(from: tmbDir)
+        return StoredBookRecord(
+            info: info,
+            keepsContentIndex: info.contentIndex != nil || BookInfo.hasContentIndexFile(in: tmbDir)
+        )
     }
 }
