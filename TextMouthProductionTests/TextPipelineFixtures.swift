@@ -621,6 +621,48 @@ enum TextPipelineFixtures {
         return folder
     }
 
+    // MARK: - Generated DAISY Books
+
+    /// A DAISY 2.02 audio book (path → bytes) whose two headings play from
+    /// one audio file of `audioBytes` bytes, `track.mp3`, beside a short
+    /// audio file no heading plays, `extra.mp3`, which conversion copies
+    /// too. The audio is stand-in bytes, a repeating pattern: conversion
+    /// copies audio without decoding it.
+    static func daisyAudioBook(audioBytes: Int) -> [String: Data] {
+        let ncc = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><head>
+        <meta name="dc:title" content="Soundings of the Upper Reach"/>
+        <meta name="dc:creator" content="Wilhelmina Achterberg"/>
+        <title>Soundings of the Upper Reach</title></head><body>
+        <h1 id="h1"><a href="part1.smil#p1">The Weir</a></h1>
+        <h1 id="h2"><a href="part2.smil#p2">The Sluice</a></h1>
+        </body></html>
+        """
+        /// A SMIL file whose one clip plays `track.mp3` from `begin` to `end` seconds.
+        func smil(_ id: String, text: String, begin: Double, end: Double) -> String {
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <smil><body><seq>
+            <par id="\(id)"><text src="text.html#\(text)"/><audio src="track.mp3" clip-begin="npt=\(begin)s" clip-end="npt=\(end)s"/></par>
+            </seq></body></smil>
+            """
+        }
+        let content = """
+        <html><body><h1 id="t1">The Weir</h1><p>Water over the weir.</p><h1 id="t2">The Sluice</h1><p>The sluice gate.</p></body></html>
+        """
+        let pattern: [UInt8] = Array("ID3 stand-in audio frame ".utf8)
+        let audio = Data((0..<audioBytes).map { pattern[$0 % pattern.count] })
+        return [
+            "ncc.html": Data(ncc.utf8),
+            "part1.smil": Data(smil("p1", text: "t1", begin: 0, end: 30).utf8),
+            "part2.smil": Data(smil("p2", text: "t2", begin: 30, end: 75.5).utf8),
+            "text.html": Data(content.utf8),
+            "track.mp3": audio,
+            "extra.mp3": Data("a short file no heading plays".utf8),
+        ]
+    }
+
     // MARK: - Timing
 
     /// The fastest of `runs` runs of `body`, in seconds: the run least

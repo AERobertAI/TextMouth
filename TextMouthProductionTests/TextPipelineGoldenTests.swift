@@ -648,6 +648,73 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
     }
 
+    // MARK: - DAISY Audio (PERF24)
+
+    /// The generated DAISY audio book as a deflated ZIP archive, and as a
+    /// folder of loose files, removed when the test ends.
+    private func daisyAudioBookCopies(audioBytes: Int) throws -> (files: [String: Data], zip: URL, folder: URL) {
+        let files = TextPipelineFixtures.daisyAudioBook(audioBytes: audioBytes)
+        let zip = try makeTemporaryZip(
+            prefix: "TextPipelineDAISY",
+            orderedEntries: files.keys.sorted().map { TestZIPEntry($0, files[$0] ?? Data()) },
+            compressionMethod: .deflate
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
+        let folder = try TextPipelineFixtures.temporaryFolder(for: self)
+        for (path, data) in files {
+            try data.write(to: folder.appendingPathComponent(path))
+        }
+        return (files, zip, folder)
+    }
+
+    /// Converting a DAISY audio book copies each audio file byte for byte,
+    /// from a ZIP archive and from a folder of loose files, and writes the
+    /// same manifest, as a package served from memory converts.
+    func testDAISYAudioIsCopiedByteForByte() throws {
+        let book = try daisyAudioBookCopies(audioBytes: 300_000)
+        let providers: [(String, DAISYFileProvider)] = [
+            ("archive", ArchiveFileProvider(archive: try Archive(url: book.zip, accessMode: .read))),
+            ("folder", DirectoryFileProvider(baseURL: book.folder)),
+            ("memory", InMemoryDAISYPackage(text: [:], binary: book.files)),
+        ]
+        var manifests: [Data] = []
+        for (name, provider) in providers {
+            let audio = try TextPipelineFixtures.temporaryFolder(for: self)
+            let manifest = try DAISYAudioConverter.convertToAudioBook(from: provider, version: .daisy202, toDirectory: audio)
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audio.path).sorted(), ["extra.mp3", "track.mp3"], name)
+            for file in ["extra.mp3", "track.mp3"] {
+                XCTAssertEqual(try Data(contentsOf: audio.appendingPathComponent(file)), book.files[file], "\(name): \(file)")
+            }
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            manifests.append(try encoder.encode(manifest))
+        }
+        XCTAssertEqual(Set(manifests).count, 1)
+    }
+
+    /// An audio file an import's budget refuses, because it holds more
+    /// than the archive records for it, or more than the most TextMouth
+    /// reads from one file, is not copied, and nothing of it is left behind;
+    /// the budget keeps the refusal for the import to report.
+    func testRefusedDAISYAudioLeavesNothingBehind() throws {
+        let book = try daisyAudioBookCopies(audioBytes: 300_000)
+        try setRecordedSize(of: "track.mp3", in: book.zip, to: 1_000)
+        let refusals: [(String, ArchiveEntryLimits)] = [
+            ("past its recorded size", .standard),
+            ("past the limit", ArchiveEntryLimits(audio: 500, text: ArchiveEntryLimits.standard.text)),
+        ]
+        for (reason, limits) in refusals {
+            let budget = ArchiveBudget()
+            let provider = ArchiveFileProvider(archive: try Archive(url: book.zip, accessMode: .read), budget: budget)
+            let audio = try TextPipelineFixtures.temporaryFolder(for: self)
+            _ = try ArchiveEntryLimits.$current.withValue(limits) {
+                try DAISYAudioConverter.convertToAudioBook(from: provider, version: .daisy202, toDirectory: audio)
+            }
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: audio.path), ["extra.mp3"], reason)
+            XCTAssertNotNil(budget.violation, reason)
+        }
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the

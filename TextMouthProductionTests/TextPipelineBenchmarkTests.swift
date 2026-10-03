@@ -154,6 +154,36 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF24: DAISY Audio
+
+    /// Converting a DAISY 2.02 book with one 64 MB audio file to an audio
+    /// book, from a ZIP archive and from a folder: its peak heap is the
+    /// figure that matters.
+    func testPERF24DAISYAudioCopy() throws {
+        let files = TextPipelineFixtures.daisyAudioBook(audioBytes: 64 * 1_048_576)
+        let zip = try makeTemporaryZip(
+            prefix: "TextPipelineDAISY",
+            orderedEntries: files.keys.sorted().map { TestZIPEntry($0, files[$0] ?? Data()) },
+            compressionMethod: .deflate
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
+        let archive = try Archive(url: zip, accessMode: .read)
+        let folder = try TextPipelineFixtures.temporaryFolder(for: self)
+        for (path, data) in files {
+            try data.write(to: folder.appendingPathComponent(path))
+        }
+        let providers: [(String, DAISYFileProvider)] = [
+            ("ZIP archive", ArchiveFileProvider(archive: archive)),
+            ("folder", DirectoryFileProvider(baseURL: folder)),
+        ]
+        for (name, provider) in providers {
+            try benchmark("PERF24", "DAISYAudioConverter.convertToAudioBook, 64 MB of audio from a \(name)", repetitions: 2) {
+                let audio = try TextPipelineFixtures.temporaryFolder(for: self)
+                return try DAISYAudioConverter.convertToAudioBook(from: provider, version: .daisy202, toDirectory: audio)
+            }
+        }
+    }
+
     // MARK: - PERF25: Markdown Whitespace
 
     /// Normalizing the whitespace of 1 MB and 5 MB of Markdown, as DOCX and
