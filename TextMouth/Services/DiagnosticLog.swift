@@ -72,6 +72,9 @@ enum DiagnosticLog {
         case storage
         /// Listening statistics.
         case statistics
+        /// The app as a whole: its launch, and the app-wide actions it
+        /// routes to its windows (`LibraryWindowRouter`).
+        case app
     }
 
     /// The log files, all in the Logs folder of the data directory. Each
