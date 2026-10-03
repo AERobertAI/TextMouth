@@ -132,6 +132,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         menuVisibilityManager.stopObserving()
         ConfigService.shared.shutdown()
+        // Another Mac sharing the library no longer sees this one as open.
+        LibrarySessionLease.shared.end()
         LibraryPersistenceService.flushPendingSave()
         let statsService = ReadingStatsService.shared
         statsService.endSession()

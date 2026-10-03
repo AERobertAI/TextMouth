@@ -194,6 +194,8 @@ final class LibraryViewModel: ObservableObject {
         }
         startRefreshTimer()
         updateContentCachesAndStatistics()
+        // In a library another Mac can open, say this Mac has it open.
+        dataDirectoryEnvironment.sessionLease?.begin()
     }
 
     deinit {
@@ -242,19 +244,34 @@ final class LibraryViewModel: ObservableObject {
 // MARK: - Data Directory Availability (FR02)
 
 /// What the library model's data-directory check works with: the app's
-/// own preferences and the workspace's volume notifications, or a test's.
+/// own preferences, the workspace's volume notifications, and the session
+/// lease, or a test's.
 struct DataDirectoryEnvironment {
     /// The store naming the data directory and the library expected there.
     var preferences: UserDefaults
     /// Where volume unmounts are announced: the workspace's notification
     /// center in the app.
     var volumeNotifications: NotificationCenter
+    /// The note in a library other Macs can open that this Mac has it open
+    /// (`LibrarySessionLease`), held while the library is open; nil holds
+    /// none.
+    var sessionLease: LibrarySessionLease?
 
-    /// The app's: this process's preferences and the shared workspace.
+    /// An environment of a test's own, holding no session lease unless it
+    /// passes one.
+    init(preferences: UserDefaults, volumeNotifications: NotificationCenter, sessionLease: LibrarySessionLease? = nil) {
+        self.preferences = preferences
+        self.volumeNotifications = volumeNotifications
+        self.sessionLease = sessionLease
+    }
+
+    /// The app's: this process's preferences, the shared workspace, and the
+    /// shared session lease.
     @MainActor static var app: DataDirectoryEnvironment {
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
-            volumeNotifications: NSWorkspace.shared.notificationCenter
+            volumeNotifications: NSWorkspace.shared.notificationCenter,
+            sessionLease: .shared
         )
     }
 }
@@ -366,6 +383,7 @@ extension LibraryViewModel {
         }
         if hasStartedLibrary {
             reloadLibraryAfterDataDirectoryReturned()
+            dataDirectoryEnvironment.sessionLease?.begin()
         } else {
             startLibrary()
         }
@@ -444,6 +462,9 @@ extension LibraryViewModel {
             return
         }
         guard !checkDataDirectory() else { return }
+        // Its folder may be gone: the lease ages out unless Try Again
+        // resumes it.
+        dataDirectoryEnvironment.sessionLease?.pause()
         DiagnosticLog.event(.storage, "DATA_DIRECTORY_LOST: stopped saving until the library is back")
     }
 }

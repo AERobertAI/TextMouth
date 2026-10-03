@@ -31,6 +31,7 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "textMouthDataDirectory",
         "textMouthDataDirectoryBookmark",
         "textMouthLibraryIdentity",
+        "textMouthSessionMacID",
         "soundEffectsEnabled",
         "soundEffectsVolume",
         "soundEffectAssignments",

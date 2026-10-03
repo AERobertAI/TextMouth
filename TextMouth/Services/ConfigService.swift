@@ -451,13 +451,15 @@ final class ConfigService: ObservableObject {
             /// - `textMouthDataDirectoryBookmark` and `textMouthLibraryIdentity`:
             ///   a bookmark of that folder, and the identity of the library
             ///   this Mac expects in it (`DataDirectoryPreferences`, FR02).
+            /// - `textMouthSessionMacID`: the ID naming this Mac's lease in a
+            ///   library other Macs can open (`LibrarySessionLease`, FR02).
             /// - `sleepTimer.lastUsedDuration`: the last sleep timer started,
             ///   which restarting the timer reuses: state, not a setting.
             /// - `NSQuitAlwaysKeepsWindows`: window restoration, which
             ///   TextMouth turns off at every launch. AppKit keeps this Mac's
             ///   window positions in the store too, and they stay there.
             static let localStoreKeys = DataDirectoryPreferences.keys
-                + ["sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
+                + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
