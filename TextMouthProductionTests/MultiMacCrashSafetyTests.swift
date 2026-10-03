@@ -269,12 +269,12 @@ final class MultiMacCrashSafetyTests: XCTestCase {
 
     /// Another Mac's lease, refreshed a moment ago, brings the warning, and
     /// stays as that Mac wrote it.
-    func testAnotherMacsLeaseIsWarnedAboutAndKept() throws {
+    func testAnotherMacsLeaseIsWarnedAboutAndKept() async throws {
         let harness = try LeaseHarness(test: self)
         let theirs = try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
         let bytes = try Data(contentsOf: theirs)
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(harness.warnings.map(\.computerName), ["Galley"])
         XCTAssertEqual(try Data(contentsOf: theirs), bytes, "another Mac's lease was changed")
@@ -282,7 +282,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
 
     /// Another Mac's lease cut short is judged by its modification date,
     /// naming no computer, and stays as it is.
-    func testAHalfWrittenLeaseFromAnotherMacIsJudgedByItsDateAndKept() throws {
+    func testAHalfWrittenLeaseFromAnotherMacIsJudgedByItsDateAndKept() async throws {
         let harness = try LeaseHarness(test: self)
         let theirs = try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
         let half = halfOf(try Data(contentsOf: theirs))
@@ -292,7 +292,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
             ofItemAtPath: theirs.path
         )
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(
             harness.warnings,
@@ -305,13 +305,13 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// when this Mac's newer lease meets an older one on its way back
     /// ("<ID> 2.json", "<ID> (1).json"), is not another Mac: TextMouth never
     /// warns that it is open on this very Mac, and the copies stay.
-    func testAConflictCopyOfThisMacsOwnLeaseIsNotAnotherMac() throws {
+    func testAConflictCopyOfThisMacsOwnLeaseIsNotAnotherMac() async throws {
         let harness = try LeaseHarness(test: self)
-        harness.lease.refresh()
+        await harness.lease.refresh()
         let own = harness.sessions.appendingPathComponent("\(harness.lease.macID).json")
         let copies = try writeConflictCopies(of: own, holding: Data(contentsOf: own))
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(harness.warnings, [], "this Mac was warned about itself")
         for copy in copies {

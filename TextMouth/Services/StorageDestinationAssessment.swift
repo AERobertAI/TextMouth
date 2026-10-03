@@ -577,10 +577,15 @@ enum StorageWording {
 /// not a Swift task, runs it: the work blocks its thread for as long as it
 /// takes, which Swift's cooperative threads must never do.
 enum OffMainWork {
-    /// What `work` returns, once it has run on a background queue.
-    static func run<Value: Sendable>(_ work: @escaping @Sendable () -> Value) async -> Value {
+    /// What `work` returns, once it has run on `queue`: a global queue,
+    /// unless the caller passes a queue of its own, such as a serial queue
+    /// that keeps its work in order.
+    static func run<Value: Sendable>(
+        on queue: DispatchQueue = .global(qos: .userInitiated),
+        _ work: @escaping @Sendable () -> Value
+    ) async -> Value {
         await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            queue.async {
                 continuation.resume(returning: work())
             }
         }
