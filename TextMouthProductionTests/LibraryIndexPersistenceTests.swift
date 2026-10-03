@@ -69,6 +69,28 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         )
     }
 
+    /// An index an older version wrote pretty-printed loads as before, and
+    /// is written back compact (PERF15): the same index in fewer bytes, on
+    /// one line, which any JSON reader, older versions included, reads the
+    /// same.
+    func testPrettyPrintedIndexIsWrittenBackCompact() throws {
+        let original = LibraryIndexSandbox.sampleLibrary()
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        let pretty = try encoder.encode(original)
+        try pretty.write(to: sandbox.indexURL, options: .atomic)
+
+        let loaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+        LibraryPersistenceService.save(loaded)
+        LibraryPersistenceService.flushPendingSave()
+
+        let written = try Data(contentsOf: sandbox.indexURL)
+        XCTAssertFalse(written.contains(UInt8(ascii: "\n")), "library.json is still pretty-printed")
+        XCTAssertLessThan(written.count, pretty.count)
+        XCTAssertEqual(try LibraryIndexSandbox.canonicalJSON(written), try LibraryIndexSandbox.canonicalJSON(pretty))
+    }
+
     /// No index at either location is a fresh install, not a failure.
     func testMissingIndexIsAFreshInstall() throws {
         try? FileManager.default.removeItem(at: sandbox.indexURL)

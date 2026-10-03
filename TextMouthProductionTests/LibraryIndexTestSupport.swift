@@ -149,10 +149,7 @@ struct LibraryIndexSandbox {
 
     /// `library` encoded exactly as `LibraryPersistenceService` writes it.
     static func encoded(_ library: Library) throws -> Data {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-        return try encoder.encode(library)
+        try LibraryPersistenceService.encodedIndex(library)
     }
 
     /// The bytes of `library`'s index damaged by `damage`. An unreadable

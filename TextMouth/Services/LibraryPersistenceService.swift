@@ -303,12 +303,17 @@ enum LibraryPersistenceService {
     /// atomically, so a reader never sees a half-written index.
     private static func encodeAndWrite(_ library: Library, to url: URL) throws {
         try TextMouthPaths.ensureDirectoryStructure()
+        try encodedIndex(library).write(to: url, options: .atomic)
+    }
 
+    /// `library` as library.json holds it: compact JSON with ISO 8601
+    /// dates. Only TextMouth reads the index, so it is not pretty-printed,
+    /// which makes it about 16% smaller (PERF15); any JSON reader, older
+    /// versions of TextMouth included, reads it the same.
+    static func encodedIndex(_ library: Library) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-        let data = try encoder.encode(library)
-        try data.write(to: url, options: .atomic)
+        return try encoder.encode(library)
     }
 
     /// Save a single book's bookInfo.json. Call this when a specific book's data changes.
