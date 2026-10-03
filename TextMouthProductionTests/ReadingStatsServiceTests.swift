@@ -207,14 +207,12 @@ final class ReadingStatsServiceTests: XCTestCase {
         assertTotalsAgree(relaunchedService().stats)
     }
 
-    /// A checkpoint credits its whole slice to the day it is made on, and
-    /// the end credits the rest to the day the session ends. A session
-    /// across midnight is therefore split at the first checkpoint after
-    /// midnight, whose slice (at most one interval) goes wholly to the new
-    /// day. Before checkpoints the whole session went to the day it ended;
-    /// splitting exactly at midnight is left to TODO C06.
+    /// A checkpoint whose slice straddles midnight splits it there: the day
+    /// before gets the seconds up to midnight and the new day the rest
+    /// (TODO C06). Until C06 the whole slice went to the day the checkpoint
+    /// was made on. ReadingStatsDayAttributionTests covers the split fully.
     @MainActor
-    func testCheckpointCreditsItsSliceToTheDayItIsMadeOn() {
+    func testCheckpointSplitsTheSliceThatStraddlesMidnight() {
         let service = makeService()
         let midnight = Calendar.current.startOfDay(for: noon)
         let dayBefore = ReadingStatsService.dateKey(midnight - 1)
@@ -226,8 +224,8 @@ final class ReadingStatsServiceTests: XCTestCase {
         service.checkpointActiveSession(at: midnight + 30)
         service.endSession(at: midnight + 45)
 
-        // 60 s before midnight, then a 60 s slice straddling it and 15 s after.
-        XCTAssertEqual(service.stats.dailyListeningSeconds, [dayBefore: 60, dayAfter: 75])
+        // 60 s before midnight, then a 60 s slice split 30 s and 30 s, and 15 s after.
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [dayBefore: 90, dayAfter: 45])
         XCTAssertEqual(service.stats.totalListeningSeconds, 135)
     }
 

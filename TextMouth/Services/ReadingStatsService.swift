@@ -7,7 +7,8 @@ import Combine
 /// every `checkpointInterval` a timer adds the open session's time since the
 /// previous checkpoint to the totals and saves them, so a crash or force quit
 /// loses at most one interval. `ActiveSession` states the rule that keeps any
-/// second from being counted twice.
+/// second from being counted twice, and `ListeningDays` the rules for the
+/// local day each second is credited to and the key that day is saved under.
 @MainActor
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
@@ -32,12 +33,38 @@ final class ReadingStatsService: ObservableObject {
     /// Seconds between the timer's checkpoints of an open session.
     let checkpointInterval: TimeInterval
 
+    /// The user's calendar as the system reports it at this moment. Only its
+    /// time zone bears on listening days: it decides which local day a
+    /// credited second falls on. Its calendar system, locale, and digits
+    /// never reach a day key (`ListeningDays`). It is asked afresh at every
+    /// credit and every reading of the totals, so a change of time zone,
+    /// as on a journey, applies from then on and moves nothing already
+    /// credited.
+    private let userCalendar: () -> Calendar
+
+    /// The days listening is attributed to at this moment: local days in
+    /// the time zone the user's calendar is in now.
+    private var listeningDays: ListeningDays {
+        ListeningDays(timeZone: userCalendar().timeZone)
+    }
+
+    /// The user's calendar from the system, with its time zone read afresh.
+    /// Foundation renews `TimeZone.current` when the system time zone
+    /// changes, as it does on arrival in another zone, while the cached
+    /// `Calendar.current` may keep the zone it was made with.
+    nonisolated static func systemCalendar() -> Calendar {
+        var calendar = Calendar.current
+        calendar.timeZone = .current
+        return calendar
+    }
+
     /// A listening session in progress, and how much of it the totals
     /// already include.
     ///
     /// The rule that keeps any second from being counted twice: the totals
     /// include `start..<creditedThrough` exactly once, in the grand total, in
-    /// `bookID`'s total, and in one day's total, and include nothing after
+    /// `bookID`'s total, and in the daily totals, where each second is in
+    /// the total of the local day it fell on, and include nothing after
     /// `creditedThrough`. Crediting, which each checkpoint and the final
     /// `endSession` do, adds only `creditedThrough..<time` and then moves
     /// `creditedThrough` up to `time`. It never moves backwards, so a clock
@@ -66,13 +93,45 @@ final class ReadingStatsService: ObservableObject {
     ///     so they never touch the app's statistics.
     ///   - checkpointInterval: Seconds between checkpoints; must be
     ///     positive. Tests shorten it to watch the timer work.
-    init(fileURL: URL? = nil, checkpointInterval: TimeInterval = defaultCheckpointInterval) {
+    ///   - userCalendar: The user's calendar now, read each time listening
+    ///     is credited or totals are read: the system's unless a test
+    ///     stands in another calendar system or time zone.
+    init(
+        fileURL: URL? = nil,
+        checkpointInterval: TimeInterval = defaultCheckpointInterval,
+        userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar
+    ) {
         precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
         self.checkpointInterval = checkpointInterval
+        self.userCalendar = userCalendar
         // `self.fileURL` is the resolved location, not the optional parameter.
         stats = Self.load(from: self.fileURL)
+        migrateDayKeysIfNeeded(at: Date())
         startCheckpointTimer()
+    }
+
+    /// Rewrites the day keys of statistics saved before TODO C06, which
+    /// followed the system's calendar, as Gregorian keys
+    /// (`ListeningDayKeyMigration`), logs what changed, and saves at once
+    /// with `dayKeyVersion` set, so the migration runs, and logs, once.
+    /// Keys this version writes are never read in another calendar. Does
+    /// nothing for statistics already migrated or new, and waits for a
+    /// later launch while the clock reads a date before TextMouth existed.
+    private func migrateDayKeysIfNeeded(at now: Date) {
+        guard stats.dayKeyVersion == nil,
+              let migration = ListeningDayKeyMigration(userCalendar: userCalendar(), now: now)
+        else { return }
+        let outcome = migration.migrate(stats.dailyListeningSeconds)
+        var migrated = stats
+        migrated.dailyListeningSeconds = outcome.dailyListeningSeconds
+        migrated.dayKeyVersion = ListeningDays.keyVersion
+        stats = migrated
+        if let line = outcome.logLine {
+            print(line)
+            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        }
+        save()
     }
 
     /// Stops the checkpoint timer. At termination this follows
@@ -108,13 +167,19 @@ final class ReadingStatsService: ObservableObject {
 
     /// Credits the open session's time since its last checkpoint and saves,
     /// leaving the session open, so a crash afterwards loses only what
-    /// follows. The slice goes to the day containing `time`. Does nothing
-    /// without an open session or while it is too short to count.
+    /// follows. The slice is split at every local midnight it crosses, in
+    /// the time zone current now, so each day gets exactly the seconds
+    /// heard on it (`ListeningDays.split`). Does nothing without an open
+    /// session or while it is too short to count.
     func checkpointActiveSession(at time: Date = Date()) {
-        guard let session = activeSession else { return }
-        let seconds = uncreditedSessionTime(at: time)
-        guard seconds > 0 else { return }
-        stats.addListening(seconds, bookID: session.bookID, dayKey: Self.dateKey(time))
+        guard let session = activeSession, uncreditedSessionTime(at: time) > 0 else { return }
+        // Credit every piece to a copy and publish the result once, so no
+        // observer ever sees a slice half credited.
+        var credited = stats
+        for piece in listeningDays.split(from: session.creditedThrough, to: time) {
+            credited.addListening(piece.seconds, bookID: session.bookID, dayKey: piece.dayKey)
+        }
+        stats = credited
         activeSession?.creditedThrough = time
         save()
     }
@@ -128,6 +193,15 @@ final class ReadingStatsService: ObservableObject {
               time.timeIntervalSince(session.start) > Self.longestIgnoredSession
         else { return 0 }
         return max(0, time.timeIntervalSince(session.creditedThrough))
+    }
+
+    /// The part of the open session's uncredited time from `start` on: what
+    /// ending the session at `now` would credit to the days that begin at
+    /// `start`, since crediting splits time at midnight. Zero whenever
+    /// `uncreditedSessionTime(at:)` is.
+    private func uncreditedSessionTime(at now: Date, since start: Date) -> TimeInterval {
+        guard let session = activeSession, uncreditedSessionTime(at: now) > 0 else { return 0 }
+        return max(0, now.timeIntervalSince(max(session.creditedThrough, start)))
     }
 
     /// Whether a listening session is open.
@@ -152,12 +226,17 @@ final class ReadingStatsService: ObservableObject {
         todayListeningTime(at: Date())
     }
 
-    /// Listening time on the day containing `now`: that day's total plus the
-    /// open session's time since its last checkpoint. Its checkpointed time
-    /// is already in the day's total, so adding the whole session would
-    /// count that part twice.
+    /// Listening time on the local day containing `now`, in the time zone
+    /// current now: that day's total plus the open session's time since its
+    /// last checkpoint, as much of it as falls on that day. Its checkpointed
+    /// time is already in the day's total, so adding the whole session
+    /// would count that part twice, and time before midnight belongs to the
+    /// day before, where the next checkpoint will put it.
     func todayListeningTime(at now: Date) -> TimeInterval {
-        (stats.dailyListeningSeconds[Self.dateKey(now)] ?? 0) + uncreditedSessionTime(at: now)
+        let days = listeningDays
+        let today = days.calendar.startOfDay(for: now)
+        return (stats.dailyListeningSeconds[days.key(for: now)] ?? 0)
+            + uncreditedSessionTime(at: now, since: today)
     }
 
     /// Listening time over the last seven days, the open session included.
@@ -165,18 +244,14 @@ final class ReadingStatsService: ObservableObject {
         thisWeekListeningTime(at: Date())
     }
 
-    /// Listening time over the seven days ending with the one containing
-    /// `now`, plus the open session's time since its last checkpoint.
+    /// Listening time over the seven local days ending with the one
+    /// containing `now`, plus the open session's time since its last
+    /// checkpoint, as much of it as falls on those days.
     func thisWeekListeningTime(at now: Date) -> TimeInterval {
-        let calendar = Calendar.current
-        var total: TimeInterval = 0
-        for dayOffset in 0..<7 {
-            if let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) {
-                let key = Self.dateKey(date)
-                total += stats.dailyListeningSeconds[key] ?? 0
-            }
-        }
-        return total + uncreditedSessionTime(at: now)
+        // Days are counted back in the calendar that wrote their keys.
+        let week = listeningDays.span(ofDays: 7, endingWith: now)
+        let saved = week.keys.reduce(0) { $0 + (stats.dailyListeningSeconds[$1] ?? 0) }
+        return saved + uncreditedSessionTime(at: now, since: week.start)
     }
 
     var booksFinishedThisYear: Int {
@@ -186,40 +261,44 @@ final class ReadingStatsService: ObservableObject {
         }.count
     }
 
+    /// The listening streak through today, in the time zone current now.
     var currentStreak: Int {
-        Self.streak(in: stats.dailyListeningSeconds, through: Date())
+        currentStreak(at: Date())
     }
 
-    static func streak(
+    /// The listening streak through the local day containing `now`, in the
+    /// time zone current now.
+    func currentStreak(at now: Date) -> Int {
+        Self.streak(in: stats.dailyListeningSeconds, through: now, timeZone: userCalendar().timeZone)
+    }
+
+    /// A day joins a streak once it has more listening than this, a minute,
+    /// so a stray play and pause does not keep a streak alive.
+    nonisolated private static let streakDayMinimum: TimeInterval = 60
+
+    /// The number of consecutive local days, in `timeZone`, with more than
+    /// a minute of listening, ending with the day containing `now` or, while
+    /// that day has no such listening yet, with the day before.
+    nonisolated static func streak(
         in dailyListeningSeconds: [String: TimeInterval],
         through now: Date,
-        calendar: Calendar = .current
+        timeZone: TimeZone = .current
     ) -> Int {
+        // Days are counted back in the calendar that wrote their keys, one
+        // calendar day at a time, so a 23- or 25-hour day is neither
+        // skipped nor counted twice.
+        let days = ListeningDays(timeZone: timeZone)
+        /// Whether the day containing `date` has enough listening to count.
+        func counts(_ date: Date) -> Bool {
+            (dailyListeningSeconds[days.key(for: date)] ?? 0) > streakDayMinimum
+        }
+        // Today joins the streak once it counts; until then the streak may
+        // still run through yesterday.
+        var day = counts(now) ? now : days.dayBefore(now)
         var streak = 0
-        var date = now
-        // Check today and each preceding day
-        while true {
-            let key = Self.dateKey(date)
-            if (dailyListeningSeconds[key] ?? 0) > 60 { // At least 1 minute counts
-                streak += 1
-                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                date = prev
-            } else if streak == 0 {
-                // Today might not have listening yet, check yesterday
-                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                date = prev
-                // Only allow one skip (today)
-                let key2 = Self.dateKey(date)
-                if (dailyListeningSeconds[key2] ?? 0) > 60 {
-                    streak += 1
-                    guard let prev2 = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                    date = prev2
-                } else {
-                    break
-                }
-            } else {
-                break
-            }
+        while counts(day) {
+            streak += 1
+            day = days.dayBefore(day)
         }
         return streak
     }
@@ -236,10 +315,11 @@ final class ReadingStatsService: ObservableObject {
         qos: .utility
     )
 
-    static func dateKey(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+    /// The key of the local day in `timeZone` containing `date`: Gregorian
+    /// "yyyy-MM-dd" in ASCII digits, whatever the user's calendar and
+    /// locale (`ListeningDays`).
+    nonisolated static func dateKey(_ date: Date, in timeZone: TimeZone = .current) -> String {
+        ListeningDays(timeZone: timeZone).key(for: date)
     }
 
     /// Persist stats to disk on a background queue. Safe to call
@@ -360,21 +440,16 @@ final class ReadingStatsService: ObservableObject {
         RunLoop.main.add(timer, forMode: .common)
         checkpointTimer = timer
     }
-
-    /// Prune daily entries older than 90 days to keep the file small
-    func pruneOldEntries() {
-        let calendar = Calendar.current
-        guard let cutoff = calendar.date(byAdding: .day, value: -90, to: Date()) else { return }
-        let cutoffKey = Self.dateKey(cutoff)
-        stats.dailyListeningSeconds = stats.dailyListeningSeconds.filter { $0.key >= cutoffKey }
-        save()
-    }
 }
 
 // MARK: - Data Model
 
 struct ReadingStats: Codable {
-    /// Daily listening time in seconds, keyed by "yyyy-MM-dd"
+    /// Daily listening time in seconds, keyed by local day as
+    /// `ListeningDays` writes keys: "yyyy-MM-dd", Gregorian, ASCII digits.
+    /// A key from an earlier version that names no day is kept under
+    /// `ListeningDayKeyMigration.legacyKeyPrefix`; it counts in the total
+    /// but in no day. All entries together add up to the total.
     var dailyListeningSeconds: [String: TimeInterval] = [:]
     /// Total listening time across all time
     var totalListeningSeconds: TimeInterval = 0
@@ -382,6 +457,12 @@ struct ReadingStats: Codable {
     var bookListeningSeconds: [String: TimeInterval] = [:]
     /// Books that have been finished
     var finishedBooks: [FinishedBookEntry] = []
+    /// The version of the rules the keys of `dailyListeningSeconds`
+    /// follow: `ListeningDays.keyVersion` once they are Gregorian keys, as
+    /// new statistics are from the start. A file saved before TODO C06
+    /// decodes with none, since its keys followed the system's calendar;
+    /// the service migrates them once when it loads the file.
+    var dayKeyVersion: Int? = ListeningDays.keyVersion
 
     /// Adds `seconds` of listening to `bookID` on the day `dayKey` names,
     /// keeping the grand, per-book, and daily totals in step.
