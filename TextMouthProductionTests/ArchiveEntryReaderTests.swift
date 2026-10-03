@@ -144,6 +144,113 @@ final class ArchiveEntryReaderTests: XCTestCase {
         XCTAssertEqual(checksum, entry.checksum)
     }
 
+    // MARK: - EPUB
+
+    /// An EPUB whose package document holds more than the text limit is
+    /// refused, naming the document and the limit in the EPUB damage
+    /// sentence, instead of reading it whole.
+    func testEPUBPackageDocumentPastTheLimitIsNamedAsDamaged() throws {
+        let epub = try makeEPUB(chapterTexts: ["Oil the chain after every wet ride."])
+        // The container fits; the larger package document does not.
+        let limit = Int64(Data(Self.epubContainer.utf8).count)
+        let archive = try Archive(url: epub, accessMode: .read)
+        let opf = try XCTUnwrap(archive["OEBPS/content.opf"])
+        XCTAssertGreaterThan(Int64(opf.uncompressedSize), limit, "the fixture's package document must pass the limit")
+
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: limit, text: limit)) {
+            XCTAssertThrowsError(try EPUBParser.parse(url: epub)) { error in
+                XCTAssertEqual(
+                    error.localizedDescription,
+                    "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: it holds more than "
+                        + "\(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
+                        + "Get a fresh copy of the book, then import it again."
+                )
+            }
+        }
+    }
+
+    /// A chapter holding more than the text limit is left out and reported
+    /// by number and file, while the book's other chapters are read.
+    func testEPUBChapterPastTheLimitIsLeftOutWhileTheOthersAreRead() throws {
+        let longChapter = String(repeating: "Spokes loosen one by one when the rim is out of true. ", count: 100)
+        let epub = try makeEPUB(chapterTexts: [
+            "Oil the chain after every wet ride.",
+            longChapter,
+            "Set each brake pad a coin's width from the rim."
+        ])
+
+        let book = try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: 4_000, text: 4_000)) {
+            try EPUBParser.prepareBook(url: epub)
+        }
+
+        XCTAssertEqual(
+            book.report.omissions,
+            [ExtractionOmission(chapterNumber: 2, member: "OEBPS/ch2.xhtml", reason: .unreadableMember)]
+        )
+        XCTAssertEqual(book.chapters.count, 2)
+    }
+
+    /// Importing that book fails naming the step, the package document, and
+    /// the limit, and leaves nothing in the library folder.
+    func testEPUBImportPastTheLimitFailsNamingTheEntry() throws {
+        let epub = try makeEPUB(chapterTexts: ["Oil the chain after every wet ride."])
+        let limit = Int64(Data(Self.epubContainer.utf8).count)
+        let folderPath = "Archive Entry Limits \(UUID().uuidString.prefix(8))"
+        let folder = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: limit, text: limit)) {
+            XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub, toFolder: folderPath)) { error in
+                XCTAssertEqual(
+                    (error as? ImportFailure)?.reason,
+                    "Reading its text failed: The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                        + "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
+                        + "Get a fresh copy of the book, then import it again."
+                )
+            }
+        }
+        XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [], [])
+    }
+
+    /// The container document every fixture EPUB holds, naming its package
+    /// document.
+    private static let epubContainer = """
+    <?xml version="1.0"?>
+    <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+    <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+    </container>
+    """
+
+    /// An EPUB whose chapters read `chapterTexts`, one file each
+    /// ("OEBPS/ch1.xhtml" on), in a file removed when the test ends.
+    private func makeEPUB(chapterTexts: [String]) throws -> URL {
+        let ids = chapterTexts.indices.map { "ch\($0 + 1)" }
+        let manifest = ids.map { "<item id=\"\($0)\" href=\"\($0).xhtml\" media-type=\"application/xhtml+xml\"/>" }.joined()
+        let spine = ids.map { "<itemref idref=\"\($0)\"/>" }.joined()
+        var entries: [String: Data] = [
+            "mimetype": Data("application/epub+zip".utf8),
+            "META-INF/container.xml": Data(Self.epubContainer.utf8),
+            "OEBPS/content.opf": Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id">
+            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <dc:identifier id="id">urn:uuid:\(UUID().uuidString)</dc:identifier>
+            <dc:title>Roadside Repairs</dc:title><dc:creator>Ifeoma Lindqvist</dc:creator><dc:language>en</dc:language>
+            </metadata>
+            <manifest>\(manifest)</manifest>
+            <spine>\(spine)</spine>
+            </package>
+            """.utf8)
+        ]
+        for (id, text) in zip(ids, chapterTexts) {
+            entries["OEBPS/\(id).xhtml"] = Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <html xmlns="http://www.w3.org/1999/xhtml"><head><title>\(id)</title></head><body><p>\(text)</p></body></html>
+            """.utf8)
+        }
+        return try makeBookFile(named: "Roadside Repairs.epub", entries: entries)
+    }
+
     // MARK: - Fixtures
 
     /// An archive holding `entries`, opened for reading. Its file is removed
@@ -166,5 +273,18 @@ final class ArchiveEntryReaderTests: XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: url) }
         try setRecordedSize(of: member, in: url, to: recordedSize)
         return try Archive(url: url, accessMode: .read)
+    }
+
+    /// A book file named `name` holding `entries`, in a folder of its own
+    /// that is removed when the test ends.
+    private func makeBookFile(named name: String, entries: [String: Data]) throws -> URL {
+        let zip = try makeTemporaryZip(prefix: "ArchiveEntryReaderBook", entries: entries)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ArchiveEntryReaderBook-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let book = directory.appendingPathComponent(name)
+        try FileManager.default.moveItem(at: zip, to: book)
+        return book
     }
 }

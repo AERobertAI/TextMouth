@@ -11,9 +11,10 @@ enum EPUBParserError: LocalizedError {
     case missingSpine
     case writeFailed(String)
     /// A file in the package is present but unusable: its data could not be
-    /// decompressed, or it does not match the checksum the archive stores
-    /// for it. `file` is the file's path inside the package; `reason`
-    /// completes the sentence "The file is damaged or incomplete: …".
+    /// decompressed, it does not match the checksum the archive stores for
+    /// it, or it holds more than TextMouth reads from one file. `file` is
+    /// the file's path inside the package; `reason` completes the sentence
+    /// "The file is damaged or incomplete: …".
     case damagedFile(file: String, reason: String)
     /// No chapter in the reading order holds text that could be read.
     /// `report` names each chapter that could not be read and why; when it
@@ -406,6 +407,10 @@ enum EPUBParser {
     /// The text of the archive member `entry`, decoded as UTF-8, or as ISO
     /// Latin 1 when it is not valid UTF-8.
     ///
+    /// The member is read through the shared `ArchiveEntryReader`, so one
+    /// larger than the most TextMouth reads from a file is refused rather
+    /// than read whole into memory (TODO I05).
+    ///
     /// ZIPFoundation's `extract` returns the checksum of the bytes it read
     /// without comparing it to the one the archive stores, so a damaged
     /// member would otherwise read as garbled text. The comparison is made
@@ -414,14 +419,15 @@ enum EPUBParser {
     /// cannot judge the data. (Empty data's real checksum is 0 as well, and
     /// it has nothing to verify.)
     /// - Throws: `EPUBParserError.damagedFile` naming the member when its
-    ///   data cannot be decompressed or does not match its checksum.
+    ///   data cannot be decompressed, does not match its checksum, or holds
+    ///   more than `ArchiveEntryLimits.current` allows.
     static func text(of entry: Entry, in archive: Archive) throws -> String {
-        var data = Data()
+        let data: Data
         let checksum: CRC32
         do {
-            checksum = try archive.extract(entry) { chunk in
-                data.append(chunk)
-            }
+            (data, checksum) = try ArchiveEntryReader.read(entry, in: archive)
+        } catch let overflow as ArchiveEntryOverflow {
+            throw EPUBParserError.damagedFile(file: entry.path, reason: overflow.reason)
         } catch {
             let reason = entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
             throw EPUBParserError.damagedFile(file: entry.path, reason: reason)
