@@ -8,7 +8,29 @@ final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
     private let stateLock = NSLock()
     private var activeCount = 0
+    /// The cancellation the imports enqueued since the last
+    /// `cancelEnqueued()` share (TODO I05).
+    private var cancellation = ImportCancellation()
     var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+
+    /// The cancellation an import enqueued now shares with every import
+    /// already waiting or running: `cancelEnqueued()` cancels it.
+    var currentCancellation: ImportCancellation {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return cancellation
+    }
+
+    /// Cancels every import enqueued so far, running or waiting, and gives
+    /// the imports enqueued afterwards a cancellation of their own, which
+    /// this cancel never reaches (TODO I05).
+    func cancelEnqueued() {
+        stateLock.lock()
+        let cancelled = cancellation
+        cancellation = ImportCancellation()
+        stateLock.unlock()
+        cancelled.cancel()
+    }
 
     func enqueue(_ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
@@ -202,10 +224,29 @@ extension LibraryViewModel {
         return hasAudio && !hasNonAudio
     }
 
-    /// Import a zip file asynchronously with progress tracking
+    /// Stops the ZIP imports under way and those waiting behind them (TODO
+    /// I05): a running batch stops before its next entry or book, keeps the
+    /// books it already imported, and its summary says where it stopped; a
+    /// waiting ZIP import never starts. Imports started afterwards are not
+    /// affected. The import overlay has no Cancel button yet; one would call
+    /// this.
+    func cancelImports() {
+        importOperationQueue.cancelEnqueued()
+    }
+
+    /// Import a zip file asynchronously with progress tracking. The import
+    /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
+    /// stops it while it waits as well as while it runs (TODO I05).
     func importZipAsync(from url: URL, toFolder folderPath: String) {
+        let cancellation = importOperationQueue.currentCancellation
         importOperationQueue.enqueue { [weak self] in
             guard let self = self else { return }
+            // A ZIP import cancelled while it waited never starts, and says
+            // nothing: the batch that was running reports the cancel.
+            guard !cancellation.isCancelled else {
+                ImportCancellation.log(url.lastPathComponent, stopped: "before it started")
+                return
+            }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
@@ -237,7 +278,8 @@ extension LibraryViewModel {
                     existingHashes: existingHashes,
                     progress: { progress in
                         DispatchQueue.main.async { self.showZipImportProgress(progress) }
-                    }
+                    },
+                    isCancelled: cancellation.check
                 )
                 DispatchQueue.main.sync {
                     self.completeZIPImport(result, originalURL: url, folderPath: folderPath)
@@ -328,8 +370,9 @@ extension LibraryViewModel {
     }
 
     /// Publish a batch result while retaining an archive that still contains
-    /// failed or unimported content, or a book imported without some of its
-    /// chapters. This also covers empty/duplicate-only ZIPs.
+    /// failed or unimported content, a book imported without some of its
+    /// chapters, or books a cancel left unimported (`ZipImportResult
+    /// .keepsOriginal`). This also covers empty/duplicate-only ZIPs.
     func completeZIPImport(_ result: ZipImportResult, originalURL: URL, folderPath: String) {
         let priorIDs = Set(library.books.map(\.id))
         for book in result.books { library.addBook(book) }
@@ -341,8 +384,7 @@ extension LibraryViewModel {
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
-        if result.failures.isEmpty, result.incompleteBooks.isEmpty, !acceptedBooks.isEmpty,
-           acceptedBooks.count == result.books.count {
+        if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count {
             handleOriginalFileDeletion(url: originalURL)
         }
         if acceptedBooks.count > 1 {

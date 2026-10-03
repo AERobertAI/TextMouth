@@ -368,6 +368,92 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(importing.message, "Importing book 3 of 10...")
     }
 
+    // MARK: - Cancelling in the Library
+
+    /// The original ZIP is kept when a file in it failed, a book from it is
+    /// missing chapters, or the batch was cancelled; otherwise the "After
+    /// Importing a Book" preference decides.
+    func testOriginalIsKeptForFailuresMissingChaptersAndCancellation() {
+        let failure = ZipImportFailure(fileName: "Knots.docx", message: "unreadable")
+
+        XCTAssertFalse(ZipImportResult(books: [], failures: []).keepsOriginal)
+        XCTAssertTrue(ZipImportResult(books: [], failures: [failure]).keepsOriginal)
+        XCTAssertTrue(ZipImportResult(books: [], failures: [], incompleteBooks: [failure]).keepsOriginal)
+        XCTAssertTrue(ZipImportResult(books: [], failures: [], cancellation: .whileExtracting).keepsOriginal)
+    }
+
+    /// The library adds the books a cancelled batch imported, says where the
+    /// batch stopped, and keeps the archive although the preference says to
+    /// delete it.
+    @MainActor
+    func testLibraryKeepsTheArchiveOfACancelledBatch() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let archive = try makeArchive("Library Export", [TestZIPEntry("Rope Splicing.txt", Self.notes("rope"))])
+        let book = Book(title: "Rope Splicing", format: .txt, filePath: "/tmp/rope.txt", md5Hash: UUID().uuidString)
+        let result = ZipImportResult(books: [book], failures: [], cancellation: .afterBooks(completed: 1, total: 3))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        withImportDeleteBehavior(.deleteAfterImport) {
+            withTrashPreference(movesToTrash: false) {
+                model.completeZIPImport(result, originalURL: archive, folderPath: folderPath)
+            }
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path))
+        XCTAssertEqual(model.library.books.map(\.id), [book.id])
+        XCTAssertTrue(model.showError)
+        XCTAssertEqual(model.errorMessage, "Import cancelled after 1 of 3 books. Imported 1 book.\nThe original file was kept.")
+    }
+
+    /// A ZIP import waiting in the queue when the reader cancels never
+    /// starts: nothing is imported or reported, the archive is kept, and the
+    /// cancellation is logged.
+    @MainActor
+    func testZIPImportWaitingWhenCancelledNeverStarts() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let archive = try makeArchive("Library Export", [TestZIPEntry("Rope Splicing.txt", Self.notes("rope"))])
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        // The queue is held while the import is queued and cancelled.
+        let gate = DispatchSemaphore(value: 0)
+        model.importOperationQueue.enqueue { gate.wait() }
+
+        model.importZipAsync(from: archive, toFolder: folderPath)
+        model.cancelImports()
+        gate.signal()
+        drainImportQueue(of: model)
+
+        XCTAssertEqual(model.library.books, [])
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(try folderEntries(), [])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path))
+        XCTAssertEqual(debugLogLines(containing: "IMPORT_CANCELLED: \(archive.lastPathComponent): before it started").count, 1)
+    }
+
+    /// A ZIP import queued after a cancel is not reached by it and imports
+    /// as usual.
+    @MainActor
+    func testZIPImportQueuedAfterACancelRuns() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let archive = try makeArchive("Library Export", [TestZIPEntry("Rope Splicing.txt", Self.notes("rope"))])
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        model.cancelImports()
+        withImportDeleteBehavior(.keepOriginal) {
+            model.importZipAsync(from: archive, toFolder: folderPath)
+            drainImportQueue(of: model)
+        }
+
+        XCTAssertEqual(model.library.books.map(\.title), ["Rope Splicing"])
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(try folderEntries(), Set(model.library.books.map(\.tmbDirectoryName)))
+    }
+
     // MARK: - Audio Archives
 
     /// An audio archive past its budget is refused before anything is
@@ -567,6 +653,27 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(try? Data(contentsOf: source), bytes, "the source must be untouched", file: file, line: line)
         XCTAssertEqual(leftoverExtractionDirectories(), [], "left extracted", file: file, line: line)
         return failure
+    }
+
+    /// Waits until every import `model` has queued so far has run, and lets
+    /// the main-queue work they sent run too.
+    @MainActor
+    private func drainImportQueue(of model: LibraryViewModel) {
+        let drained = expectation(description: "the import queue ran everything queued before")
+        model.importOperationQueue.enqueue { drained.fulfill() }
+        wait(for: [drained], timeout: 60)
+        spinMainRunLoop(for: 0.1)
+    }
+
+    /// Runs `body` with the "After Importing a Book" preference set to
+    /// `behavior`, restoring the previous preference afterwards.
+    @MainActor
+    private func withImportDeleteBehavior(_ behavior: ImportDeleteBehavior, _ body: () throws -> Void) rethrows {
+        let config = ConfigService.shared
+        let previous = config.config.importDeleteBehavior
+        config.config.importDeleteBehavior = behavior
+        defer { config.config.importDeleteBehavior = previous }
+        try body()
     }
 
     /// Every name in this test's library folder, hidden ones included; none

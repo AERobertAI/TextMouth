@@ -198,6 +198,14 @@ struct ZipImportResult {
     /// when it ran to its end. A cancelled batch keeps the ZIP.
     var cancellation: ZipImportCancellation?
 
+    /// Whether the original ZIP must be kept whatever the "After Importing
+    /// a Book" preference says: a file in it failed, a book from it is
+    /// missing chapters, or the batch was cancelled before every book was
+    /// imported, so the ZIP is still the only complete copy of something.
+    var keepsOriginal: Bool {
+        !failures.isEmpty || !incompleteBooks.isEmpty || cancellation != nil
+    }
+
     /// What the library's alert says about the batch: where it stopped, when
     /// it was cancelled; the files that failed; then the books missing
     /// chapters. A cancelled batch, or one with books missing chapters, also
