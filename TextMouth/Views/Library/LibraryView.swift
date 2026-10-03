@@ -163,6 +163,9 @@ struct LibraryView: View {
     /// Whether removing asks first and where deleted files go, kept current
     /// so removal buttons and confirmations say what removal will do.
     @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
+    /// Every book's cloud state (FR02), observed so the rows' notes follow
+    /// each refresh and download. Rows read only what it recorded.
+    @ObservedObject private var cloudStates = BookCloudStates.shared
 
     var body: some View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
@@ -303,7 +306,8 @@ struct LibraryView: View {
                             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
                             wpm: settingsViewModel.wordsPerMinute,
                             isEditMode: isEditMode,
-                            isEditSelected: editSelection.contains(book.id)
+                            isEditSelected: editSelection.contains(book.id),
+                            cloudState: cloudStates.listedState(of: book.id)
                         )
                             .tag(book.id)
                             .accessibilityAction(.default) {

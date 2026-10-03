@@ -210,6 +210,12 @@ struct BookRow: View {
     var wpm: Double = 200
     var isEditMode: Bool = false
     var isEditSelected: Bool = false
+    /// The book's cloud state, shown and spoken after the New or Now Reading
+    /// badge (FR02). Nil when the library is not in a cloud location, or the
+    /// book has not been checked yet: the row then looks and reads as it
+    /// always has. The list passes what `BookCloudStates` recorded, so a row
+    /// never asks the file system anything.
+    var cloudState: BookCloudState? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -244,6 +250,11 @@ struct BookRow: View {
                             .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(3)
+                    }
+
+                    // "Downloaded", "In Cloud", and so on, in a cloud library.
+                    if let cloudState {
+                        BookCloudNote(state: cloudState)
                     }
                 }
                 HStack {
@@ -296,8 +307,12 @@ struct BookRow: View {
         } else if isOpenInWindow {
             parts.append("Now Reading")
         }
-        if let progress = Self.progressText(for: book) {
-            parts.append(progress.spoken)
+        if let cloudNote = cloudState?.spokenNote {
+            parts.append(cloudNote)
+        }
+        let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
+        if let progress = Self.spokenProgress(for: book, besideDownloadPercentage: besideDownloadPercentage) {
+            parts.append(progress)
         }
         if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
             parts.append("\(TimeFormatting.spoken(remaining)) remaining")
@@ -313,6 +328,15 @@ struct BookRow: View {
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
         return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
+    }
+
+    /// The reading progress as the row's label speaks it: "42 percent", or
+    /// "42 percent read" when the label also speaks a download's percentage
+    /// (FR02), so it never holds two bare percentages. Nil when the row
+    /// shows no progress.
+    static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
+        guard let progress = progressText(for: book) else { return nil }
+        return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
     }
 }
 
