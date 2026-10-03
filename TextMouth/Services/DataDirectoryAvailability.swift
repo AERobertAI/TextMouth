@@ -76,6 +76,59 @@ enum DataDirectoryPreferences {
     }
 }
 
+// MARK: - Nothing Written Where the Library Isn't
+
+/// The data directories the library model found unavailable (FR02), which
+/// nothing may create or write into until a check finds the library there
+/// again.
+///
+/// The library model closes the gate of a data directory its check finds
+/// unavailable and opens it when a check finds the library. While the data
+/// directory in use is closed, `TextMouthPaths.ensureDirectoryStructure()`,
+/// which every writer of the data directory's own files calls first,
+/// refuses, and library index writes are skipped. Gates are kept by path,
+/// so one closed for a data directory no longer in use, such as one a test
+/// published and put back, closes no other.
+enum DataDirectoryGate {
+    /// Guards `closedRoots`: writers ask from their own queues.
+    private static let lock = NSLock()
+    /// The standardized paths of the closed data directories.
+    nonisolated(unsafe) private static var closedRoots: Set<String> = []
+
+    /// Closes the gate of the data directory at `root`.
+    static func close(_ root: URL) {
+        lock.withLock { _ = closedRoots.insert(key(root)) }
+    }
+
+    /// Opens the gate of the data directory at `root` again.
+    static func open(_ root: URL) {
+        lock.withLock { _ = closedRoots.remove(key(root)) }
+    }
+
+    /// Whether the gate of the data directory at `root` is closed.
+    static func isClosed(_ root: URL) -> Bool {
+        lock.withLock { closedRoots.contains(key(root)) }
+    }
+
+    /// How a data directory is known here: its standardized path.
+    private static func key(_ root: URL) -> String {
+        root.standardizedFileURL.path
+    }
+}
+
+/// Thrown in place of creating a data directory that is missing, or of
+/// writing into one the library model found unavailable (FR02). Its
+/// description follows what failed, as in "Listening statistics could not
+/// be saved: The library at /Volumes/Backup/TextMouth isn't available."
+struct DataDirectoryUnavailableError: LocalizedError, Equatable {
+    /// The data directory, as the current storage generation names it.
+    let root: URL
+
+    var errorDescription: String? {
+        "The library at \(root.path) isn't available."
+    }
+}
+
 // MARK: - Why the Library Can't Be Used
 
 /// Why the data directory can't be used now (FR02), as the Library Not

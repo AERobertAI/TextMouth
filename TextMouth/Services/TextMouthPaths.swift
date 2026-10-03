@@ -126,12 +126,18 @@ enum TextMouthPaths {
 
     // MARK: - Subdirectories
 
+    /// The name of the folder of books inside the data directory.
+    static let libraryFolderName = "Library"
+
+    /// The name of the folder of logs inside the data directory.
+    static let logsFolderName = "Logs"
+
     static var libraryDir: URL {
-        root.appendingPathComponent("Library", isDirectory: true)
+        root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
     static var logsDir: URL {
-        root.appendingPathComponent("Logs", isDirectory: true)
+        root.appendingPathComponent(logsFolderName, isDirectory: true)
     }
 
     static var configFile: URL {
@@ -211,25 +217,107 @@ enum TextMouthPaths {
 
     // MARK: - Directory Setup
 
-    /// Create the full directory structure. Safe to call multiple times.
+    /// Creates the data directory's folders where that is safe; every writer
+    /// of the data directory's own files calls it first. Safe to call any
+    /// number of times.
+    ///
+    /// - The default location is created when missing, with its folders, as
+    ///   on a first launch, and the library created there is given its
+    ///   identity at once (`LibraryIdentity`).
+    /// - A custom location is never created, nor any folder above it (FR02).
+    ///   It always exists before it is set: a move publishes its folder
+    ///   first, and choosing a library points at an existing one. A missing
+    ///   one is an unplugged drive, a signed-out cloud service, or a folder
+    ///   that was removed, and creating it would make a new, empty library
+    ///   in its place. Only folders inside it are created.
+    /// - Nothing is created while the library model has found the data
+    ///   directory unavailable (`DataDirectoryGate`).
+    /// - Throws: `DataDirectoryUnavailableError` when the data directory
+    ///   can't be written into now, or the file system's error.
     static func ensureDirectoryStructure() throws {
-        let fm = FileManager.default
-        let dirs = [root, libraryDir, logsDir]
-        for dir in dirs {
-            if !fm.fileExists(atPath: dir.path) {
-                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let root = self.root
+        try ensureDirectoryStructure(at: root, isDefaultLocation: isDefaultLocation(root))
+    }
+
+    /// `ensureDirectoryStructure()` for the data directory at `root`, which
+    /// is the default location when `isDefaultLocation`: separate so tests
+    /// can lay out folders of their own.
+    static func ensureDirectoryStructure(at root: URL, isDefaultLocation: Bool) throws {
+        let fileManager = FileManager.default
+        if isDefaultLocation {
+            guard !DataDirectoryGate.isClosed(root) else { throw DataDirectoryUnavailableError(root: root) }
+            if !fileManager.fileExists(atPath: root.path) {
+                try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+                // A new library: it is given its identity as it is created.
+                _ = try? LibraryIdentity.adopt(in: root)
             }
+        } else {
+            try requireExistingDataDirectory(root)
+        }
+        // The data directory's own folders, each directly inside it.
+        for name in [libraryFolderName, logsFolderName] {
+            try createFolders([name], inside: root)
         }
     }
 
-    /// Create a library subfolder on disk
+    /// Creates the library subfolder `folderPath`, with any folder above it
+    /// inside the data directory, which must exist already (FR02): nothing
+    /// is created outside it, and nothing while the library model has found
+    /// it unavailable.
+    /// - Throws: `DataDirectoryUnavailableError` when the data directory is
+    ///   missing or unavailable, or the file system's error.
     static func ensureLibrarySubfolder(_ folderPath: String) throws {
         guard BookFolder.isValidLibraryPath(folderPath) else {
             throw CocoaError(.fileWriteInvalidFileName)
         }
         guard !folderPath.isEmpty else { return }
-        let dir = libraryDir.appendingPathComponent(folderPath, isDirectory: true)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let root = self.root
+        try requireExistingDataDirectory(root)
+        let components = folderPath.split(separator: "/").map(String.init)
+        try createFolders([libraryFolderName] + components, inside: root)
+    }
+
+    /// Creates the folders named by `components`, each inside the one
+    /// before, inside the existing folder `base`, one level at a time: a
+    /// `base` that vanishes meanwhile, as an unplugged drive does, makes
+    /// this fail instead of reappearing, with nothing created above it. A
+    /// folder already there, or made by another writer first, is kept; a
+    /// file with a folder's name fails with the file system's reason.
+    private static func createFolders(_ components: [String], inside base: URL) throws {
+        var folder = base
+        for component in components {
+            folder.appendPathComponent(component, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+            } catch CocoaError.fileWriteFileExists where isExistingFolder(folder) {
+                // Already there.
+            }
+        }
+    }
+
+    /// Whether a folder, or a link to one, is at `url`.
+    private static func isExistingFolder(_ url: URL) -> Bool {
+        var isFolder: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder) && isFolder.boolValue
+    }
+
+    /// Whether the data directory at `root` is the default location.
+    static func isDefaultLocation(_ root: URL) -> Bool {
+        root.standardizedFileURL.path == defaultRoot.standardizedFileURL.path
+    }
+
+    /// Whether the data directory in use is one the library model found
+    /// unavailable, so nothing may be read from it or written into it (FR02).
+    static var isDataDirectoryUnavailable: Bool {
+        DataDirectoryGate.isClosed(root)
+    }
+
+    /// Throws unless the data directory at `root` is an existing folder whose
+    /// gate is open: the condition for creating anything inside it.
+    private static func requireExistingDataDirectory(_ root: URL) throws {
+        guard !DataDirectoryGate.isClosed(root), isExistingFolder(root) else {
+            throw DataDirectoryUnavailableError(root: root)
+        }
     }
 
     /// Renames a library folder's directory to another spelling of the same
