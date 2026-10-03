@@ -161,7 +161,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     func testAFolderEditIsRefusedWhileStorageIsHeldElsewhere() async throws {
         let (model, folder) = try makeShelf(bookCount: 1)
         let before = model.library.books
-        let hold = try XCTUnwrap(StorageBoundary.shared.holdWork())
+        let hold = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
         defer { hold.release() }
 
         let outcome = await model.renameFolderReturningOutcome(folder, to: uniqueFolder("Held"))
@@ -181,7 +181,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     func testAnEmptyFolderIsRenamedAtOnceEvenWhileStorageIsHeld() async throws {
         let (model, folder) = try makeShelf(bookCount: 0)
         let renamed = uniqueFolder("Renamed Empty")
-        let hold = try XCTUnwrap(StorageBoundary.shared.holdWork())
+        let hold = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
         defer { hold.release() }
 
         let outcome = await model.renameFolderReturningOutcome(folder, to: renamed)

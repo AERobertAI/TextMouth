@@ -28,9 +28,6 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// copy was not published and the data directory in use did not change
     /// (TODO S10). The description names what changed and where.
     case destinationChanged(DataDirectoryDestinationChange)
-    /// Another move of the data directory is under way, waiting for work to
-    /// finish or copying (TODO S04), so this one did not start.
-    case moveInProgress
     /// The move was cancelled before its copy was published (FR02): the
     /// partial copy is deleted, and the data directory in use, its setting,
     /// and the library stay as they were.
@@ -50,8 +47,6 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
         case .invalidLibrary: return "The migrated library index could not be validated."
         case .destinationChanged(let change): return change.explanation
-        case .moveInProgress:
-            return "TextMouth is already moving its data directory. Try again once that move is done."
         case .cancelled:
             return "The move was cancelled, so nothing changed."
         }

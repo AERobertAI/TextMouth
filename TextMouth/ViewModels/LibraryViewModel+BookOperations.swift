@@ -291,7 +291,7 @@ extension LibraryViewModel {
             publish(plan)
             return
         }
-        guard let hold = StorageBoundary.shared.holdWork() else {
+        guard let hold = try? StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders) else {
             throw LibraryTransitionError.storageBusy
         }
         defer { hold.release() }
