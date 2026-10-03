@@ -295,6 +295,7 @@
 		D60F460F9CC5FD8AADBA323C /* ConfigWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FAEAAB3F2CA699EACA58D3C /* ConfigWatcherTests.swift */; };
 		D6C521E9D46072D084D92BAA /* TextFileDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 041F4C0852AF0AC0888BAA03 /* TextFileDecoder.swift */; };
 		D6CFE3C60A674711A0A2657D /* HTMLReadingText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B5A22FE29C279ACD6A92D9 /* HTMLReadingText.swift */; };
+		D742AEB51DB3E5D4B86B5562 /* PDFShortEmbeddedTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BA814A43ED56631AB67591 /* PDFShortEmbeddedTextTests.swift */; };
 		D76B14B5FE9FAF0A0FDD891D /* OffsetMapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9ACC1F97DF34D1D8FC94C9F /* OffsetMapTests.swift */; };
 		D8A7538D328E55FC862DA947 /* AsyncBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A9F1D5959749AD5D3D9146 /* AsyncBridgeTests.swift */; };
 		D8F3E731356EE743DB4469C4 /* SleepTimerServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C8DBFF02248C668CCEE864 /* SleepTimerServiceTests.swift */; };
@@ -638,6 +639,7 @@
 		C0A9F1D5959749AD5D3D9146 /* AsyncBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncBridgeTests.swift; sourceTree = "<group>"; };
 		C14AD9A5C5401036C7765BDF /* BookContentIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookContentIndex.swift; sourceTree = "<group>"; };
 		C2B2B615C2055C998533620E /* DAISYParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYParserTests.swift; sourceTree = "<group>"; };
+		C2BA814A43ED56631AB67591 /* PDFShortEmbeddedTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFShortEmbeddedTextTests.swift; sourceTree = "<group>"; };
 		C495B6597A143726D8203953 /* RetainedPackageImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetainedPackageImportTests.swift; sourceTree = "<group>"; };
 		C525F6CC779170339B462DF3 /* IntegrationWindowRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationWindowRoutingTests.swift; sourceTree = "<group>"; };
 		C5BDF4BE043D7AE530F97F86 /* EPUBParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBParser.swift; sourceTree = "<group>"; };
@@ -1084,6 +1086,7 @@
 				1677B7F2E6442C2C19C33511 /* PDFPageImageScannerTests.swift */,
 				47B6D4315EAAD02FC58C9042 /* PDFPageTextMergerTests.swift */,
 				0822DEC58557FEA8335C7A8D /* PDFRecognitionPlanTests.swift */,
+				C2BA814A43ED56631AB67591 /* PDFShortEmbeddedTextTests.swift */,
 				186793069C8793F7A4F5BCBF /* PDFTestFixtures.swift */,
 				3647D77803306A7C2D1546DE /* PDFTextRecognizerTests.swift */,
 				3D2BD0370A3A2872D25105A2 /* PersistenceFailureCenterTests.swift */,
@@ -1410,6 +1413,7 @@
 				F72BA1A922786F6D5360327E /* PDFPageImageScannerTests.swift in Sources */,
 				B151CEFD35F5ED6F1872654F /* PDFPageTextMergerTests.swift in Sources */,
 				E06CEC96BD3F9C8F39FA82EA /* PDFRecognitionPlanTests.swift in Sources */,
+				D742AEB51DB3E5D4B86B5562 /* PDFShortEmbeddedTextTests.swift in Sources */,
 				483E599273A6AF19093DB856 /* PDFTestFixtures.swift in Sources */,
 				BBE4C8E528B4B3CE875C97D4 /* PDFTextRecognizerTests.swift in Sources */,
 				B14277F654632E7561591CAA /* PackageNavigationAuditTests.swift in Sources */,

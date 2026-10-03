@@ -1,6 +1,5 @@
 import Foundation
 import PDFKit
-import Vision
 import AppKit
 
 // MARK: - Error Types
@@ -10,6 +9,8 @@ enum PDFParserError: LocalizedError {
     case fileNotFound(String)
     case cannotOpenPDF
     case noTextContent
+    /// No page has embedded text, and OCR could not run where it was
+    /// needed, for this reason.
     case ocrFailed(String)
 
     var errorDescription: String? {
@@ -17,7 +18,8 @@ enum PDFParserError: LocalizedError {
         case .fileNotFound(let path): return "PDF file not found at: \(path)"
         case .cannotOpenPDF: return "The PDF file could not be opened."
         case .noTextContent: return "No text content could be extracted from the PDF."
-        case .ocrFailed(let msg): return "OCR failed: \(msg)"
+        case .ocrFailed(let reason):
+            return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))."
         }
     }
 }
@@ -26,8 +28,14 @@ enum PDFParserError: LocalizedError {
 
 /// Parses text-based and scanned PDF files into Markdown.
 /// Uses PDFKit for text extraction with font-based heading detection,
-/// PDFOutline for table of contents, and Vision OCR as a fallback
-/// for scanned/image-only pages.
+/// PDFOutline for table of contents, and OCR (Vision, through
+/// `PDFPageTextRecognizer`) for text that a page shows only as pixels.
+///
+/// The text embedded in a page is always kept, however short. OCR reads a
+/// page with no embedded text in full, and on a page with some it reads
+/// only the pictures that may hold more (`PDFRecognitionPlan`); what it
+/// adds is merged in reading order without repeating embedded text
+/// (`PDFPageTextMerger`). Each page's outcome is reported (TODO T09).
 enum PDFTextParser {
 
     // MARK: - Public API
@@ -43,10 +51,33 @@ enum PDFTextParser {
         return DocumentContent(title: title, author: author, chapters: content.chapters)
     }
 
-    /// Extract Markdown from a PDF file. Main entry point for MarkdownCacheService.
-    /// Uses PDFKit text extraction with font-based heading detection.
-    /// Falls back to Vision OCR for pages with no embedded text.
+    /// Extract Markdown from a PDF file, reading pictures with Vision OCR.
+    /// Main entry point for MarkdownCacheService.
     static func extractMarkdown(from url: URL) throws -> String {
+        try extract(from: url).markdown
+    }
+
+    /// A PDF's Markdown and the report of how each of its pages was read.
+    struct Extraction {
+        /// The whole document's Markdown.
+        var markdown: String
+        /// How each page's text was obtained, and the pages whose pictures
+        /// OCR could not read (see `PDFExtractionDiagnostics`).
+        var report: ExtractionReport
+    }
+
+    /// Extract Markdown from a PDF file with the report of how each page was
+    /// read. Uses PDFKit text extraction with font-based heading detection,
+    /// or the outline's headings when the PDF has one.
+    /// - Parameter recognizer: reads text in pictures; nil when OCR is not
+    ///   available, so pictures go unread and the report says why.
+    /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
+    ///   and OCR could not run, `.noTextContent` when there is no text at
+    ///   all, or why the file could not be opened.
+    static func extract(
+        from url: URL,
+        recognizer: (any PDFPageTextRecognizer)? = VisionPDFTextRecognizer()
+    ) throws -> Extraction {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)
         }
@@ -63,50 +94,44 @@ enum PDFTextParser {
         // paragraphs, drop caps, etc.). Only use font heuristics when there's
         // no outline to provide structure.
         let hasOutline = !outline.isEmpty
-        var allPageTexts: [(pageIndex: Int, markdown: String, wasOCR: Bool)] = []
+        var pageTexts: [PageText] = []
+        var diagnoses: [PDFPageDiagnosis] = []
+        var ocr = OCRSession(recognizer: recognizer)
 
         for i in 0..<document.pageCount {
             guard let page = document.page(at: i) else { continue }
-
-            let pageText = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-            if pageText.count >= 10 {
-                if hasOutline {
-                    // Outline provides structure — extract plain text with inline
-                    // formatting (bold/italic) but no heading detection
-                    let markdown = extractPlainMarkdownFromPage(page)
-                    allPageTexts.append((i, markdown, false))
-                } else {
-                    // No outline — use font analysis for heading detection
-                    let markdown = extractMarkdownFromTextPage(page)
-                    allPageTexts.append((i, markdown, false))
-                }
-            } else {
-                // Possibly scanned page — try OCR
-                let ocrText = performOCR(on: page)
-                if !ocrText.isEmpty {
-                    allPageTexts.append((i, ocrText, true))
-                }
+            // Each page's text, attributes, and pictures are temporary;
+            // draining them page by page keeps a long PDF's memory flat.
+            let reading = autoreleasepool {
+                readPage(page, number: i + 1, detectsHeadings: !hasOutline, ocr: &ocr)
+            }
+            diagnoses.append(reading.diagnosis)
+            if !reading.markdown.isEmpty {
+                pageTexts.append(PageText(pageIndex: i, markdown: reading.markdown))
             }
         }
 
-        guard !allPageTexts.isEmpty else {
+        let diagnostics = PDFExtractionDiagnostics(pages: diagnoses, ocrUnavailableReason: ocr.unavailableReason)
+        guard !pageTexts.isEmpty else {
+            // Without embedded text anywhere, OCR was the only way to read
+            // the PDF: say why it could not, when that is what happened.
+            if let reason = diagnostics.firstOCRFailureReason {
+                throw PDFParserError.ocrFailed(reason)
+            }
             throw PDFParserError.noTextContent
         }
 
-        // If we have an outline, use it to insert chapter markers
+        let markdown: String
         if hasOutline {
-            return buildMarkdownWithOutline(
-                pageTexts: allPageTexts,
-                outline: outline,
-                document: document
-            )
+            // If we have an outline, use it to insert chapter markers
+            markdown = buildMarkdownWithOutline(pageTexts: pageTexts, outline: outline, document: document)
+        } else {
+            // No outline — just concatenate page text (with font-based headings)
+            markdown = pageTexts.map(\.markdown)
+                .joined(separator: "\n\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-
-        // No outline — just concatenate page text (with font-based headings)
-        return allPageTexts.map { $0.markdown }
-            .joined(separator: "\n\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return Extraction(markdown: markdown, report: ExtractionReport(container: "this PDF", pdf: diagnostics))
     }
 
     /// Read metadata (title, author) from PDF document attributes
@@ -124,17 +149,225 @@ enum PDFTextParser {
         return PDFMetadata(title: title, author: author)
     }
 
-    // MARK: - Plain Text Extraction (for PDFs with outline)
+    // MARK: - Reading One Page
 
-    /// Extract text from a PDF page with bold/italic inline formatting but
-    /// no heading detection. Used when the PDF has an outline that provides
-    /// reliable chapter structure, avoiding false heading positives from font
-    /// size variations.
-    private static func extractPlainMarkdownFromPage(_ page: PDFPage) -> String {
-        guard let attrString = page.attributedString else {
-            return page.string ?? ""
+    /// One page's Markdown, kept with the index of the page it came from
+    /// until the document is assembled.
+    struct PageText {
+        var pageIndex: Int
+        var markdown: String
+    }
+
+    /// What reading one page produced: its Markdown (empty when it holds no
+    /// text) and how its text was obtained.
+    private struct PageReading {
+        var markdown: String
+        var diagnosis: PDFPageDiagnosis
+    }
+
+    /// Reads one page. Its embedded text is always kept, however short. A
+    /// page with none is read whole by OCR, as a scanned page is. A page
+    /// with some has OCR read only the pictures that may hold more
+    /// (`PDFRecognitionPlan`), and what OCR finds there is merged in
+    /// reading order without repeating embedded text (`PDFPageTextMerger`).
+    private static func readPage(
+        _ page: PDFPage,
+        number: Int,
+        detectsHeadings: Bool,
+        ocr: inout OCRSession
+    ) -> PageReading {
+        let lines = embeddedLines(of: page, detectsHeadings: detectsHeadings)
+        guard !lines.isEmpty else {
+            return readScannedPage(page, number: number, ocr: &ocr)
         }
 
+        // Pictures are found from the page's drawing operators. Only a page
+        // that draws some needs to know where its lines are.
+        let images = page.pageRef.map(PDFPageImageScanner.imageRects(on:)) ?? []
+        let lineBounds = images.isEmpty ? [] : bounds(of: lines, on: page)
+        let regions = images.isEmpty ? [] : PDFRecognitionPlan.regions(
+            images: images,
+            visibleBounds: visibleBounds(of: page),
+            embeddedLines: lineBounds.compactMap { $0 },
+            rotation: page.rotation
+        )
+        guard !regions.isEmpty else {
+            let diagnosis = PDFPageDiagnosis(pageNumber: number, source: .embedded, recognition: .notNeeded)
+            return PageReading(markdown: joinLinesIntoParagraphs(lines), diagnosis: diagnosis)
+        }
+
+        let recognition = ocr.recognize(regions, on: page)
+        let merged = PDFPageTextMerger.merge(
+            lines: lines, lineBounds: lineBounds, recognized: recognition.lines, rotation: page.rotation
+        )
+        let diagnosis = PDFPageDiagnosis(
+            pageNumber: number,
+            source: merged.addedLineCount > 0 ? .both : .embedded,
+            recognition: recognition.outcome
+        )
+        return PageReading(markdown: merged.markdown, diagnosis: diagnosis)
+    }
+
+    /// Reads a page that has no embedded text by OCR of the whole shown
+    /// page, since a scan's text may be drawn in any way. Each recognized
+    /// line becomes a line of Markdown, as scanned pages have always been
+    /// written.
+    private static func readScannedPage(_ page: PDFPage, number: Int, ocr: inout OCRSession) -> PageReading {
+        let recognition = ocr.recognize([visibleBounds(of: page)], on: page)
+        let diagnosis = PDFPageDiagnosis(
+            pageNumber: number,
+            source: recognition.lines.isEmpty ? .none : .recognized,
+            recognition: recognition.outcome
+        )
+        return PageReading(markdown: recognition.lines.map(\.text).joined(separator: "\n"), diagnosis: diagnosis)
+    }
+
+    /// The page's embedded text as the lines the paragraph joiner reads,
+    /// with headings detected from font sizes when `detectsHeadings`. Empty
+    /// when the page's text is nothing but white space. Any other text is
+    /// kept, however short: a title, a folio, or a caption is never
+    /// replaced by OCR's reading of it (TODO T09), as it was when a page
+    /// with fewer than 10 characters was taken for a scan.
+    private static func embeddedLines(of page: PDFPage, detectsHeadings: Bool) -> [TextLine] {
+        guard let text = page.string, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return []
+        }
+        guard let attributed = page.attributedString else {
+            // PDFKit gives an attributed string whenever it gives text;
+            // should it not, the text is still kept, as body text.
+            return unformattedLines(in: text)
+        }
+        return detectsHeadings ? formattedLines(in: attributed) : plainLines(in: attributed)
+    }
+
+    /// The part of `page` that is shown: its crop box within its media box.
+    private static func visibleBounds(of page: PDFPage) -> CGRect {
+        let media = page.bounds(for: .mediaBox)
+        let shown = page.bounds(for: .cropBox).intersection(media)
+        return shown.isNull || shown.isEmpty ? media : shown
+    }
+
+    /// Where each of `lines` is on `page`, in default user space, nil for a
+    /// line PDFKit gives no bounds for. The lines are found again in the
+    /// page's text, because the paragraph joiner's lines are exactly that
+    /// text's lines holding more than spaces and tabs, in order. Empty when
+    /// the two do not correspond, so the lines' positions go unused.
+    private static func bounds(of lines: [TextLine], on page: PDFPage) -> [CGRect?] {
+        guard let text = page.string else { return [] }
+        let ranges = nonBlankLineRanges(in: text as NSString)
+        guard ranges.count == lines.count else { return [] }
+        return ranges.map { range in
+            guard let selection = page.selection(for: range) else { return nil }
+            let rect = selection.bounds(for: page)
+            return rect.isEmpty ? nil : rect
+        }
+    }
+
+    /// The range of every line of `text` (lines end at "\n") that holds more
+    /// than spaces and tabs, without its leading and trailing spaces and
+    /// tabs, in order. These are the lines the line readers below turn into
+    /// `TextLine`s.
+    static func nonBlankLineRanges(in text: NSString) -> [NSRange] {
+        let content = CharacterSet.whitespaces.inverted
+        var ranges: [NSRange] = []
+        var lineStart = 0
+        while true {
+            let rest = NSRange(location: lineStart, length: text.length - lineStart)
+            let newline = text.range(of: "\n", options: [], range: rest)
+            let lineEnd = newline.location == NSNotFound ? text.length : newline.location
+            let line = NSRange(location: lineStart, length: lineEnd - lineStart)
+            let first = text.rangeOfCharacter(from: content, options: [], range: line)
+            if first.location != NSNotFound {
+                let last = text.rangeOfCharacter(from: content, options: .backwards, range: line)
+                ranges.append(NSRange(location: first.location, length: NSMaxRange(last) - first.location))
+            }
+            guard newline.location != NSNotFound else { return ranges }
+            lineStart = lineEnd + 1
+        }
+    }
+
+    /// The lines of plain text, each trimmed of spaces and tabs, as body
+    /// text in the default body size: how a page is read in the unexpected
+    /// case that PDFKit gives its text without attributes.
+    private static func unformattedLines(in text: String) -> [TextLine] {
+        let bodySize = mostCommonFontSize(in: [:])
+        return nonBlankLineRanges(in: text as NSString).map { range in
+            TextLine(
+                text: (text as NSString).substring(with: range),
+                isHeading: false, headingLevel: 0, fontSize: bodySize
+            )
+        }
+    }
+
+    // MARK: - OCR
+
+    /// OCR for one document. Once OCR proves unavailable, later pages are
+    /// not asked again; each records the same reason instead.
+    private struct OCRSession {
+        /// What OCR recognized on one page, and why it could not read all
+        /// of what it was asked to.
+        struct PageRecognition {
+            /// The recognized lines, region by region, each in reading order.
+            var lines: [PDFRecognizedLine] = []
+            /// The first reason a region could not be read; nil when every
+            /// region was.
+            var failure: String?
+
+            /// What OCR did on the page, for the page's diagnosis. A page
+            /// with any region left unread could not be read in full.
+            var outcome: PDFPageDiagnosis.Recognition {
+                if let failure { return .couldNotRun(failure) }
+                return lines.isEmpty ? .foundNothing : .recognizedText
+            }
+        }
+
+        /// What OCR says when there is no recognizer to ask.
+        static let notAvailable = "text recognition is not available"
+
+        /// Recognizes text in pictures; nil when this process has no OCR.
+        let recognizer: (any PDFPageTextRecognizer)?
+        /// Why OCR cannot run, once a page has needed it and found it
+        /// unavailable; nil until then.
+        private(set) var unavailableReason: String?
+
+        init(recognizer: (any PDFPageTextRecognizer)?) {
+            self.recognizer = recognizer
+        }
+
+        /// Reads `regions` of `page`, in order. A region that cannot be read
+        /// is recorded and the others are still read, unless OCR turns out
+        /// to be unavailable, which ends the reading of this page and of
+        /// every later one.
+        mutating func recognize(_ regions: [CGRect], on page: PDFPage) -> PageRecognition {
+            var result = PageRecognition()
+            for region in regions {
+                guard unavailableReason == nil, let recognizer else {
+                    let reason = unavailableReason ?? Self.notAvailable
+                    unavailableReason = reason
+                    result.failure = result.failure ?? reason
+                    break
+                }
+                do {
+                    result.lines += try recognizer.recognizeLines(in: region, of: page)
+                } catch let error as PDFTextRecognitionError {
+                    if case .unavailable(let reason) = error { unavailableReason = reason }
+                    result.failure = result.failure ?? error.reason
+                } catch {
+                    result.failure = result.failure ?? "text recognition failed: \(error.localizedDescription)"
+                }
+            }
+            return result
+        }
+    }
+
+    // MARK: - Plain Text Extraction (for PDFs with outline)
+
+    /// The lines of a PDF page's text (`attrString`) with bold/italic inline
+    /// formatting but no heading detection. Used when the PDF has an outline
+    /// that provides reliable chapter structure, avoiding false heading
+    /// positives from font size variations. `joinLinesIntoParagraphs` turns
+    /// the lines into the page's Markdown.
+    private static func plainLines(in attrString: NSAttributedString) -> [TextLine] {
         var lines: [TextLine] = []
         var currentLineText = ""
         let bodyFontSize = detectBodyFontSize(in: attrString)
@@ -186,7 +419,7 @@ enum PDFTextParser {
                                   fontSize: detectBodyFontSize(in: attrString)))
         }
 
-        return joinLinesIntoParagraphs(lines)
+        return lines
     }
 
     // MARK: - Text Page Extraction (with heading detection)
@@ -199,15 +432,12 @@ enum PDFTextParser {
         var fontSize: CGFloat
     }
 
-    /// Extract Markdown from a text-based PDF page using font attribute analysis
-    /// to detect headings, bold, and italic formatting.
-    /// Joins consecutive body-text lines into paragraphs (PDFs have hard line
-    /// breaks at each visual line, which we need to unwrap).
-    private static func extractMarkdownFromTextPage(_ page: PDFPage) -> String {
-        guard let attrString = page.attributedString else {
-            return page.string ?? ""
-        }
-
+    /// The lines of a text-based PDF page's text (`attrString`), using font
+    /// attribute analysis to detect headings, bold, and italic formatting.
+    /// `joinLinesIntoParagraphs` turns the lines into the page's Markdown,
+    /// joining consecutive body-text lines into paragraphs (PDFs have hard
+    /// line breaks at each visual line, which we need to unwrap).
+    private static func formattedLines(in attrString: NSAttributedString) -> [TextLine] {
         // First pass: determine the body font size (most common size)
         let bodyFontSize = detectBodyFontSize(in: attrString)
 
@@ -302,11 +532,9 @@ enum PDFTextParser {
             }
         }
 
-        // Fourth pass: join consecutive body-text lines into paragraphs.
-        // PDF line breaks are visual, not semantic — a line that doesn't end
-        // with sentence-ending punctuation and is followed by another body line
-        // at the same font size is likely a continuation of the same paragraph.
-        return joinLinesIntoParagraphs(lines)
+        // The fourth pass, joining consecutive body-text lines into
+        // paragraphs, is `joinLinesIntoParagraphs`.
+        return lines
     }
 
     /// One heading or paragraph of a page's Markdown, as the paragraph
@@ -440,82 +668,6 @@ enum PDFTextParser {
         return 5
     }
 
-    // MARK: - OCR
-
-    /// Perform OCR on a PDF page using Vision framework.
-    /// Renders the page to an image and runs text recognition.
-    private static func performOCR(on page: PDFPage) -> String {
-        // Render page to CGImage at 2x scale for better OCR accuracy
-        let pageRect = page.bounds(for: .mediaBox)
-        let scale: CGFloat = 2.0
-        let width = Int(pageRect.width * scale)
-        let height = Int(pageRect.height * scale)
-
-        guard width > 0 && height > 0 else { return "" }
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return "" }
-
-        // White background
-        context.setFillColor(CGColor.white)
-        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-
-        // Scale and draw the PDF page
-        context.scaleBy(x: scale, y: scale)
-        page.draw(with: .mediaBox, to: context)
-
-        guard let cgImage = context.makeImage() else { return "" }
-
-        // Run Vision OCR
-        var recognizedText = ""
-        let semaphore = DispatchSemaphore(value: 0)
-
-        let request = VNRecognizeTextRequest { request, error in
-            defer { semaphore.signal() }
-            guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
-
-            // Sort observations top-to-bottom, left-to-right for reading order
-            let sorted = observations.sorted { a, b in
-                // Vision uses bottom-left origin, so higher y = higher on page
-                if abs(a.boundingBox.midY - b.boundingBox.midY) > 0.01 {
-                    return a.boundingBox.midY > b.boundingBox.midY
-                }
-                return a.boundingBox.midX < b.boundingBox.midX
-            }
-
-            var lines: [String] = []
-            for observation in sorted {
-                guard let candidate = observation.topCandidates(1).first else { continue }
-                lines.append(candidate.string)
-            }
-            recognizedText = lines.joined(separator: "\n")
-        }
-
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
-            // If perform() throws, the callback never fires, so signal
-            // the semaphore here to avoid a deadlock
-            semaphore.signal()
-            print("Warning: Vision OCR failed for page: \(error.localizedDescription)")
-        }
-        semaphore.wait()
-
-        return recognizedText
-    }
-
     // MARK: - Outline / Table of Contents
 
     /// Outline entry extracted from PDF bookmarks
@@ -563,7 +715,7 @@ enum PDFTextParser {
     /// Build Markdown with chapter markers derived from the PDF outline.
     /// Inserts heading markers at the appropriate page boundaries.
     private static func buildMarkdownWithOutline(
-        pageTexts: [(pageIndex: Int, markdown: String, wasOCR: Bool)],
+        pageTexts: [PageText],
         outline: [OutlineEntry],
         document: PDFDocument
     ) -> String {
@@ -575,8 +727,9 @@ enum PDFTextParser {
 
         var markdown = ""
 
-        for (pageIndex, pageMarkdown, _) in pageTexts {
-            var cleanedPageMarkdown = pageMarkdown
+        for pageText in pageTexts {
+            let pageIndex = pageText.pageIndex
+            var cleanedPageMarkdown = pageText.markdown
 
             // Insert outline headings for this page
             if let entries = pageOutlineMap[pageIndex] {
