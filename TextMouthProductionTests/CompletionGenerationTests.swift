@@ -375,6 +375,47 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(events.finishedCount, 1)
     }
 
+    // MARK: - The Speech Service's Finished Utterances
+
+    /// A finished utterance held for the main queue keeps its identity its
+    /// own: however many utterances are made and released meanwhile, none
+    /// takes its identifier, and it is released only with its holder.
+    func testAHeldFinishedUtteranceKeepsItsIdentityItsOwn() {
+        var finished: FinishedUtterance?
+        weak var heldUtterance: AVSpeechUtterance?
+        autoreleasepool {
+            finished = FinishedUtterance(utterance: AVSpeechUtterance(string: "Mooring lines are fast."))
+            heldUtterance = finished?.utterance
+        }
+        let finishedID = try? XCTUnwrap(finished?.id)
+
+        let laterIDs = autoreleasepool {
+            (0..<500).map { _ in ObjectIdentifier(AVSpeechUtterance(string: "Cast off.")) }
+        }
+
+        XCTAssertNotNil(heldUtterance, "The held utterance was released")
+        XCTAssertFalse(laterIDs.contains { $0 == finishedID }, "A later utterance took the held one's identity")
+        autoreleasepool { finished = nil }
+        XCTAssertNil(heldUtterance, "The utterance outlived its holder")
+    }
+
+    /// A finish reported for an utterance that is not the one speaking, such
+    /// as one stopped by a seek, moves nothing.
+    func testFinishOfAnUtteranceNoLongerSpeakingIsIgnored() {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("finished-utterances"))
+        var finishedCount = 0
+        speech.onUtteranceFinished = { finishedCount += 1 }
+
+        speech.speechSynthesizer(AVSpeechSynthesizer(), didFinish: AVSpeechUtterance(string: "Already stopped."))
+        // The finish is handled on the main queue; a block queued after it
+        // runs only once it has been.
+        var handled = false
+        DispatchQueue.main.async { handled = true }
+        XCTAssertTrue(eventually { handled }, "The finish was never handled")
+
+        XCTAssertEqual(finishedCount, 0)
+    }
+
     // MARK: - End Notice Policy
 
     /// A notice posted during an earlier play ends nothing, wherever the
