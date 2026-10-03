@@ -8,8 +8,8 @@ import Foundation
 ///
 /// Everything that follows from the place alone is decided here: the key its
 /// sort setting is saved under, the sort it shows until the user chooses one,
-/// and its name in the window title. The window, its Sort menu, and the
-/// tests share these rules.
+/// its name in the window title, and the folder whose manual order it can
+/// rearrange. The window, its Sort menu, and the tests share these rules.
 struct LibraryLocation: Equatable {
     /// The category shown.
     var category: LibraryCategory
@@ -41,6 +41,30 @@ struct LibraryLocation: Equatable {
             // The same words the category picker shows.
             return category.rawValue
         }
+    }
+
+    /// The folder whose manual order the location shows: the folder shown in
+    /// Folders, and the root in No Folder, whose books are exactly the
+    /// root's. All Items and Recent mix books from many folders, which share
+    /// no one order, so they have none.
+    var manualOrderFolder: String? {
+        switch category {
+        case .folders:
+            return folderPath
+        case .noFolder:
+            return ""
+        case .allItems, .recent:
+            return nil
+        }
+    }
+
+    /// The folder whose books the user can rearrange here while `sort` is
+    /// shown: the location's manual-order folder, while the books are in
+    /// manual order; otherwise nil. Rearranging, by dragging or with Move
+    /// Book Up and Move Book Down, saves that folder's order at once and
+    /// leaves the sort on manual order.
+    func reorderableFolder(sortedBy sort: LibrarySortState) -> String? {
+        sort.field == .manual ? manualOrderFolder : nil
     }
 
     /// The library window's title, naming the location and its sort:
@@ -95,6 +119,9 @@ extension LibrarySortField {
 ///   Choosing a field shows it in that direction, or ascending when the
 ///   location has not shown it, so leaving manual order restores the chosen
 ///   field's last direction.
+/// - Books can be rearranged only where the list shows one folder's manual
+///   order (see `LibraryLocation.reorderableFolder(sortedBy:)`); doing so
+///   saves the order at once and leaves the field on manual order.
 struct LibrarySortState: Equatable {
     /// The field the books are sorted by.
     let field: LibrarySortField

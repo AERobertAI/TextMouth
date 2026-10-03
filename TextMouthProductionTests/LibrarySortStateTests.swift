@@ -271,6 +271,38 @@ final class LibrarySortStateTests: XCTestCase {
         }
     }
 
+    // MARK: - Where Books Can Be Rearranged
+
+    /// Books can be rearranged only where the list shows one folder's
+    /// manual order: a folder in Folders, and the root's books in No Folder.
+    /// All Items and Recent mix folders, and other sorts have no manual
+    /// order to change.
+    func testRearrangingIsOfferedOnlyWhereOneFoldersManualOrderIsShown() {
+        let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
+        let expected: [(LibraryLocation, String?)] = [
+            (LibraryLocation(category: .folders, folderPath: "Essays/Travel"), "Essays/Travel"),
+            (LibraryLocation(category: .folders, folderPath: ""), ""),
+            (LibraryLocation(category: .noFolder, folderPath: "Essays/Travel"), ""),
+            (LibraryLocation(category: .allItems, folderPath: "Essays/Travel"), nil),
+            (LibraryLocation(category: .recent, folderPath: "Essays/Travel"), nil)
+        ]
+
+        for (location, folder) in expected {
+            XCTAssertEqual(location.reorderableFolder(sortedBy: manual), folder, "\(location.category)")
+            for field in LibrarySortField.allCases where field.hasDirection {
+                let sorted = LibrarySortState(restoring: FolderSortSetting(sortField: field, sortAscending: true))
+                XCTAssertNil(location.reorderableFolder(sortedBy: sorted), "\(location.category), \(field.rawValue)")
+            }
+        }
+
+        // No Folder lists exactly the root's books, so its order is the root's.
+        let library = Library(books: [
+            Self.shelvedBook("Loose Pages", in: "", manualOrder: 0),
+            Self.shelvedBook("Filed Pages", in: "Essays", manualOrder: 0)
+        ])
+        XCTAssertEqual(library.booksWithNoFolder().map(\.id), library.booksInFolder("").map(\.id))
+    }
+
     // MARK: - One Value, Shown Consistently
 
     /// For every field and saved direction, the window title, the Sort

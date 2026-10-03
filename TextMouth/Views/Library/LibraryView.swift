@@ -341,33 +341,26 @@ struct LibraryView: View {
                                     booksToMove = targetBooks
                                     showMoveSheet = true
                                 }
-                                // Manual order move commands (single book only, when sort is Manual)
-                                if !isMulti && sort.field == .manual {
+                                // Manual order move commands: single book only, where
+                                // the list shows one folder's manual order (TODO A06)
+                                if !isMulti, let folder = reorderableFolder {
                                     let canUp = libraryViewModel.canMoveBookInManualOrder(
-                                        bookID: book.id, direction: -1, folderPath: currentFolderPath
+                                        bookID: book.id, direction: -1, folderPath: folder
                                     )
                                     let canDown = libraryViewModel.canMoveBookInManualOrder(
-                                        bookID: book.id, direction: 1, folderPath: currentFolderPath
+                                        bookID: book.id, direction: 1, folderPath: folder
                                     )
                                     if canUp || canDown {
                                         Divider()
                                     }
                                     if canUp {
                                         Button("Move Up") {
-                                            if let result = libraryViewModel.moveBookInManualOrder(
-                                                bookID: book.id, direction: -1, folderPath: currentFolderPath
-                                            ) {
-                                                announceToVoiceOver("Moved \(result.movedTitle) above \(result.adjacentTitle)")
-                                            }
+                                            moveBook(book.id, direction: -1, inManualOrderOf: folder)
                                         }
                                     }
                                     if canDown {
                                         Button("Move Down") {
-                                            if let result = libraryViewModel.moveBookInManualOrder(
-                                                bookID: book.id, direction: 1, folderPath: currentFolderPath
-                                            ) {
-                                                announceToVoiceOver("Moved \(result.movedTitle) below \(result.adjacentTitle)")
-                                            }
+                                            moveBook(book.id, direction: 1, inManualOrderOf: folder)
                                         }
                                     }
                                 }
@@ -386,15 +379,9 @@ struct LibraryView: View {
                                 }
                             }
                     }
-                    .onMove { source, destination in
-                        if sort.field == .manual {
-                            libraryViewModel.reorderBooksInFolder(
-                                folderPath: currentFolderPath,
-                                from: source,
-                                to: destination
-                            )
-                        }
-                    }
+                    // Dragging rearranges a folder's manual order only where
+                    // the rows are that whole order; elsewhere it is off.
+                    .onMove(perform: dragReorderAction)
                 } header: {
                     Text("Books (\(filteredBooks.count))")
                         .accessibilityAddTraits(.isHeader)
@@ -976,6 +963,24 @@ struct LibraryView: View {
         libraryViewModel.sortState(at: location)
     }
 
+    /// The folder whose books can be rearranged here now, or nil: only while
+    /// the list shows one folder's manual order (see
+    /// `LibraryLocation.reorderableFolder(sortedBy:)`).
+    private var reorderableFolder: String? {
+        location.reorderableFolder(sortedBy: sort)
+    }
+
+    /// What dragging a row does: rearranges the folder's manual order while
+    /// the rows are that whole order, with no search narrowing them, and
+    /// nothing anywhere else, where a row's position in the list is not its
+    /// position in one folder's order (TODO A06). Nil turns dragging off.
+    private var dragReorderAction: ((IndexSet, Int) -> Void)? {
+        guard let folder = reorderableFolder, searchText.isEmpty else { return nil }
+        return { source, destination in
+            libraryViewModel.reorderBooksInFolder(folderPath: folder, from: source, to: destination)
+        }
+    }
+
     /// Makes and saves a change the user chose in the Sort menu, the one
     /// way a location's sort changes, then says the sort now shown, since
     /// the menu closes without saying it (TODO A06).
@@ -1028,18 +1033,24 @@ struct LibraryView: View {
     }
 
     /// Move the currently selected book up or down in manual sort order.
-    /// Only works when a single book is selected and sort is Manual Order.
-    /// Announces the result to VoiceOver.
+    /// Only works when a single book is selected and the list shows one
+    /// folder's manual order (TODO A06). Announces the result to VoiceOver.
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard sort.field == .manual else { return }
+        guard let folder = reorderableFolder else { return }
         let ids = effectiveSelection
         guard ids.count == 1, let bookID = ids.first else { return }
+        moveBook(bookID, direction: direction, inManualOrderOf: folder)
+    }
+
+    /// Moves a book one place up (-1) or down (+1) in `folder`'s manual
+    /// order, which saves at once, and tells VoiceOver where it went. Move
+    /// Up and Move Down in the context menu and on the keyboard share it.
+    private func moveBook(_ bookID: UUID, direction: Int, inManualOrderOf folder: String) {
         if let result = libraryViewModel.moveBookInManualOrder(
-            bookID: bookID, direction: direction, folderPath: currentFolderPath
+            bookID: bookID, direction: direction, folderPath: folder
         ) {
             let position = result.direction < 0 ? "above" : "below"
-            let message = "Moved \(result.movedTitle) \(position) \(result.adjacentTitle)"
-            announceToVoiceOver(message)
+            announceToVoiceOver("Moved \(result.movedTitle) \(position) \(result.adjacentTitle)")
         }
     }
 
