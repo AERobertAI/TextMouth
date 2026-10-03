@@ -55,13 +55,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var hyperlinkRelId = ""
     private var hyperlinkText = ""
 
-    // Table state
-    private var isInTable = false
-    private var isInTableRow = false
-    private var isInTableCell = false
-    private var tableRows: [[String]] = []
-    private var currentRowCells: [String] = []
-    private var currentCellText = ""
+    /// The tables being read, outermost first. A table inside a cell is read
+    /// above the table holding it and, once finished, becomes part of that cell.
+    private var tables: [TableInProgress] = []
 
     /// Numbers the list paragraphs from the package's list definitions.
     /// Its counts start again when a non-list paragraph interrupts a list.
@@ -193,17 +189,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             hyperlinkRelId = attributes["r:id"] ?? ""
             hyperlinkText = ""
         case "tbl":
-            // Start of a table
-            isInTable = true
-            tableRows = []
+            // Start of a table, at the top level or inside a cell
+            tables.append(TableInProgress())
         case "tr":
             // Table row
-            isInTableRow = true
-            currentRowCells = []
+            startTableRow()
         case "tc":
             // Table cell
-            isInTableCell = true
-            currentCellText = ""
+            startTableCell()
         default:
             break
         }
@@ -272,20 +265,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // End of hyperlink -- emit Markdown link
             endHyperlink()
         case "tbl":
-            // End of table -- emit as Markdown table
+            // End of table -- written out, or kept in the cell holding it
             endTable()
         case "tr":
             // End of table row
-            if isInTableRow {
-                tableRows.append(currentRowCells)
-                isInTableRow = false
-            }
+            endTableRow()
         case "tc":
             // End of table cell
-            if isInTableCell {
-                currentRowCells.append(currentCellText.trimmingCharacters(in: .whitespacesAndNewlines))
-                isInTableCell = false
-            }
+            endTableCell()
         default:
             break
         }
@@ -327,12 +314,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private func endParagraph() {
         let text = currentParagraphText.trimmingCharacters(in: .whitespaces)
 
-        // If we're inside a table cell, append to cell text instead of main output
-        if isInTableCell {
-            if !currentCellText.isEmpty && !text.isEmpty {
-                currentCellText += " "
+        // Inside a table, the paragraph's words belong to the cell being read
+        if !tables.isEmpty {
+            if !text.isEmpty {
+                appendToTable(.text(text))
             }
-            currentCellText += text
             isInParagraph = false
             return
         }
@@ -526,37 +512,184 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     // MARK: - Table Processing
 
-    /// Emit a completed table as a Markdown table
-    private func endTable() {
-        isInTable = false
+    /// What a table cell holds, in reading order: the text of its paragraphs,
+    /// and any tables nested in it.
+    private enum CellContent {
+        case text(String)
+        case table(ReadTable)
+    }
 
-        guard !tableRows.isEmpty else { return }
+    /// A table read from the document.
+    private struct ReadTable {
+        /// One cell: the text and nested tables it holds, in reading order.
+        typealias Cell = [CellContent]
+        /// One row: its cells, in reading order.
+        typealias Row = [Cell]
+
+        var rows: [Row] = []
+        /// Whether a cell holds a table, which a Markdown table cannot hold.
+        var nestsTables = false
+    }
+
+    /// A table being read: the table so far, and its row and cell in progress.
+    private struct TableInProgress {
+        var table = ReadTable()
+        var row: ReadTable.Row?
+        var cell: ReadTable.Cell?
+    }
+
+    /// Start a row in the innermost table, finishing any row left open.
+    private func startTableRow() {
+        guard !tables.isEmpty else { return }
+        endTableRow()
+        tables[tables.count - 1].row = []
+    }
+
+    /// Start a cell in the innermost table's row in progress, finishing any
+    /// cell left open. A cell outside any row is not started; its text is
+    /// still kept in reading order (see `appendToTable(_:)`).
+    private func startTableCell() {
+        guard let innermost = tables.indices.last, tables[innermost].row != nil else { return }
+        endTableCell()
+        tables[innermost].cell = []
+    }
+
+    /// Finish the innermost table's cell in progress, adding it to its row.
+    private func endTableCell() {
+        guard let innermost = tables.indices.last, let cell = tables[innermost].cell else { return }
+        tables[innermost].row?.append(cell)
+        tables[innermost].cell = nil
+    }
+
+    /// Finish the innermost table's row in progress, and any cell left open
+    /// in it, adding the row to its table.
+    private func endTableRow() {
+        guard let innermost = tables.indices.last else { return }
+        endTableCell()
+        if let row = tables[innermost].row {
+            tables[innermost].table.rows.append(row)
+            tables[innermost].row = nil
+        }
+    }
+
+    /// Finish the innermost table, and any row left open in it. A table
+    /// inside a cell becomes part of that cell; an outermost table is
+    /// written out.
+    private func endTable() {
+        guard !tables.isEmpty else { return }
+        endTableRow()
+        let finished = tables.removeLast().table
+        if tables.isEmpty {
+            writeTable(finished)
+        } else {
+            appendToTable(.table(finished))
+        }
+    }
+
+    /// Add `content` to the innermost table where reading has reached: to
+    /// its cell in progress, or else as a cell of its own in the row in
+    /// progress, or else as a row of its own. Content a malformed table
+    /// holds outside its cells thus keeps its place in reading order.
+    private func appendToTable(_ content: CellContent) {
+        guard let innermost = tables.indices.last else { return }
+        if case .table = content {
+            tables[innermost].table.nestsTables = true
+        }
+        if tables[innermost].cell != nil {
+            tables[innermost].cell?.append(content)
+        } else if tables[innermost].row != nil {
+            tables[innermost].row?.append([content])
+        } else {
+            tables[innermost].table.rows.append([[content]])
+        }
+    }
+
+    /// Write a finished outermost table, which ends any list before it. A
+    /// table of text cells is written as a Markdown table, as it always has
+    /// been. A Markdown table cannot hold a table in a cell, so a table that
+    /// nests one is written as paragraphs instead.
+    private func writeTable(_ table: ReadTable) {
+        let written = table.nestsTables ? Self.paragraphMarkdown(of: table) : Self.markdownTable(of: table)
+        guard let written else { return }
+        openListItems.removeAll()
+        markdown += written
+    }
+
+    /// A table of text cells as a Markdown table, its first row the header
+    /// and every row padded to the widest; nil when it has no cells.
+    private static func markdownTable(of table: ReadTable) -> String? {
+        let rows = table.rows.map { row in row.map(cellText) }
 
         // Determine column count from the widest row
-        let colCount = tableRows.map { $0.count }.max() ?? 0
-        guard colCount > 0 else { return }
+        let columnCount = rows.map(\.count).max() ?? 0
+        guard columnCount > 0 else { return nil }
 
-        // The table ends any list before it.
-        openListItems.removeAll()
-        markdown += "\n"
-
-        for (rowIndex, row) in tableRows.enumerated() {
+        var written = "\n"
+        for (rowIndex, row) in rows.enumerated() {
             // Pad rows to consistent column count
-            var cells = row
-            while cells.count < colCount {
-                cells.append("")
-            }
-
-            markdown += "| " + cells.joined(separator: " | ") + " |\n"
+            let cells = row + Array(repeating: "", count: columnCount - row.count)
+            written += "| " + cells.joined(separator: " | ") + " |\n"
 
             // Add header separator after first row
             if rowIndex == 0 {
-                let separator = cells.map { _ in "---" }.joined(separator: " | ")
-                markdown += "| \(separator) |\n"
+                written += "| " + Array(repeating: "---", count: columnCount).joined(separator: " | ") + " |\n"
             }
         }
+        return written + "\n"
+    }
 
-        markdown += "\n"
+    /// The text of a cell of a Markdown table: the text of its paragraphs,
+    /// joined by spaces and trimmed.
+    private static func cellText(_ cell: ReadTable.Cell) -> String {
+        cell.compactMap { content -> String? in
+            if case .text(let text) = content {
+                return text
+            }
+            return nil
+        }
+        .joined(separator: " ")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// A table that holds tables, as paragraphs (see `rowParagraphs(of:)`)
+    /// separated by blank lines; nil when it holds no words.
+    private static func paragraphMarkdown(of table: ReadTable) -> String? {
+        let paragraphs = rowParagraphs(of: table)
+        guard !paragraphs.isEmpty else { return nil }
+        return "\n" + paragraphs.map { $0 + "\n" }.joined(separator: "\n") + "\n"
+    }
+
+    /// The paragraphs `table` reads as, by the rule HTML tables are read by
+    /// (TODO T03), applied at every depth: each row is one paragraph of its
+    /// cells' words joined by spaces, so no two cells' words run together. A
+    /// table nested in a cell puts its own rows, each a paragraph, between
+    /// the words of its row that come before it and those after it, so all
+    /// of it reads in source order and its rows stay apart from the row
+    /// holding it.
+    private static func rowParagraphs(of table: ReadTable) -> [String] {
+        var paragraphs: [String] = []
+        for row in table.rows {
+            var words: [String] = []
+            for content in row.joined() {
+                switch content {
+                case .text(let text):
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        words.append(trimmed)
+                    }
+                case .table(let nested):
+                    if !words.isEmpty {
+                        paragraphs.append(words.joined(separator: " "))
+                        words = []
+                    }
+                    paragraphs += rowParagraphs(of: nested)
+                }
+            }
+            if !words.isEmpty {
+                paragraphs.append(words.joined(separator: " "))
+            }
+        }
+        return paragraphs
     }
 
     // MARK: - Whitespace Normalization

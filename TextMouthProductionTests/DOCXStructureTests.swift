@@ -7,10 +7,11 @@ import XCTest
 /// that each is heard once, apart from the text around it, with no bullet
 /// or number read as a word; styles inherit heading levels through their
 /// `w:basedOn` chains; a paragraph's own outline level makes it a heading or
-/// body text; and only current formatting counts, never the formatting a
-/// tracked change replaced. Each test builds a minimal DOCX package in
-/// memory and reads it through `DOCXParser`, the path every import takes,
-/// or parses one part with its production parser.
+/// body text; only current formatting counts, never the formatting a
+/// tracked change replaced; and a table nested in a cell keeps its rows
+/// apart from the row holding it. Each test builds a minimal DOCX package
+/// in memory and reads it through `DOCXParser`, the path every import
+/// takes, or parses one part with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -830,6 +831,144 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(reading.headings, ["1 Brake Pads"])
     }
 
+    // MARK: - Nested Tables
+
+    /// A table nested in a cell keeps its rows apart from the row holding
+    /// it. Every row is one paragraph of its cells' words, as an HTML table
+    /// reads (TODO T03), and the nested rows come between the words of the
+    /// cell before and after them, so everything reads once, in source
+    /// order, with no two cells' words run together.
+    func testNestedTableRowsStayApartFromTheRowHoldingThem() throws {
+        let reading = try read(body: [
+            Self.table(
+                Self.row(Self.textCell("Tool"), Self.textCell("Use")),
+                Self.row(
+                    Self.textCell("Bone folder"),
+                    Self.cell(
+                        Self.paragraph("Creasing"),
+                        Self.table(
+                            Self.row(Self.textCell("Size"), Self.textCell("Small")),
+                            Self.row(Self.textCell("Edge"), Self.textCell("Rounded"))
+                        ),
+                        Self.paragraph("Keep it dry")
+                    )
+                ),
+                Self.row(Self.textCell("Awl"), Self.textCell("Piercing"))
+            )
+        ])
+
+        XCTAssertEqual(reading.markdown, """
+        Tool Use
+
+        Bone folder Creasing
+
+        Size Small
+
+        Edge Rounded
+
+        Keep it dry
+
+        Awl Piercing
+        """)
+        XCTAssertEqual(reading.spoken, reading.markdown)
+    }
+
+    /// Tables nest to any depth, and every table's rows stay paragraphs of
+    /// their own, in source order, between the text around the table.
+    func testTablesNestedTwoDeepKeepEveryRowApart() throws {
+        let reading = try read(body: [
+            Self.paragraph("Kit list:"),
+            Self.table(Self.row(
+                Self.textCell("Bench"),
+                Self.cell(Self.table(
+                    Self.row(Self.textCell("Vise"), Self.cell(Self.table(
+                        Self.row(Self.textCell("Jaw"), Self.textCell("Wooden")),
+                        Self.row(Self.textCell("Screw"), Self.textCell("Steel"))
+                    ))),
+                    Self.row(Self.textCell("Stop"), Self.textCell("Brass"))
+                ))
+            )),
+            Self.paragraph("Check each before work.")
+        ])
+
+        XCTAssertEqual(reading.spoken, """
+        Kit list:
+
+        Bench
+
+        Vise
+
+        Jaw Wooden
+
+        Screw Steel
+
+        Stop Brass
+
+        Check each before work.
+        """)
+    }
+
+    /// A table of text cells is still a Markdown table, before and after a
+    /// table that nests one, and a nested table in a row's first cell reads
+    /// before the cells after it.
+    func testSimpleTablesStayMarkdownTablesBesideNestedOnes() throws {
+        let simple = Self.table(
+            Self.row(Self.textCell("Glue"), Self.textCell("Open time")),
+            Self.row(Self.textCell("Hide"), Self.textCell("Short"))
+        )
+        let reading = try read(body: [
+            simple,
+            Self.table(Self.row(
+                Self.cell(Self.table(Self.row(Self.textCell("Bar"), Self.textCell("Long")))),
+                Self.textCell("Clamp")
+            )),
+            simple
+        ])
+
+        XCTAssertEqual(reading.markdown, """
+        | Glue | Open time |
+        | --- | --- |
+        | Hide | Short |
+
+
+        Bar Long
+
+        Clamp
+
+
+        | Glue | Open time |
+        | --- | --- |
+        | Hide | Short |
+        """)
+    }
+
+    /// A document cut off inside a nested table keeps everything read before
+    /// the cut: the nested table, its row, and the table holding it close
+    /// as their end tags would have closed them, and the damage is reported
+    /// beside the text.
+    func testCutInsideANestedTableKeepsTheRowsReadBeforeIt() throws {
+        let document = Self.documentPart([
+            Self.paragraph("Joint chart:"),
+            Self.table(
+                Self.row(Self.textCell("Joint"), Self.textCell("Notes")),
+                Self.row(Self.textCell("Dovetail"), Self.cell(Self.table(
+                    Self.row(Self.textCell("Pins"), Self.textCell("Tails")),
+                    Self.row(Self.textCell("Ratio"), Self.textCell("One to six"))
+                )))
+            )
+        ])
+        let docx = try makeTemporaryZip(prefix: "TextMouthDOCXStructure", entries: [
+            DOCXParser.Part.document: Data(Self.truncated(document, before: "six</w:t>").utf8)
+        ])
+        addTeardownBlock { try? FileManager.default.removeItem(at: docx) }
+
+        var diagnostics: [DOCXParserError] = []
+        let markdown = try DOCXParser.extractMarkdown(from: docx) { diagnostics.append($0) }
+
+        XCTAssertEqual(markdown, "Joint chart:\n\nJoint Notes\n\nDovetail\n\nPins Tails\n\nRatio One to")
+        XCTAssertEqual(diagnostics.count, 1, "\(diagnostics)")
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.
@@ -845,6 +984,26 @@ final class DOCXStructureTests: XCTestCase {
     private static func paragraph(_ text: String, style: String? = nil) -> String {
         let properties = style.map { "<w:pPr><w:pStyle w:val=\"\($0)\"/></w:pPr>" } ?? ""
         return "<w:p>\(properties)<w:r><w:t>\(text)</w:t></w:r></w:p>"
+    }
+
+    /// A table holding `rows`.
+    private static func table(_ rows: String...) -> String {
+        "<w:tbl>" + rows.joined() + "</w:tbl>"
+    }
+
+    /// A table row holding `cells`.
+    private static func row(_ cells: String...) -> String {
+        "<w:tr>" + cells.joined() + "</w:tr>"
+    }
+
+    /// A table cell holding the paragraphs and tables in `contents`.
+    private static func cell(_ contents: String...) -> String {
+        "<w:tc>" + contents.joined() + "</w:tc>"
+    }
+
+    /// A table cell holding one paragraph reading `text`.
+    private static func textCell(_ text: String) -> String {
+        cell(paragraph(text))
     }
 
     /// A paragraph reading `text` whose own properties give it the outline
