@@ -346,6 +346,34 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: book).allText.contains("Nine ten."))
     }
 
+    /// A library row can lag its package: a crash after the package recorded
+    /// a rebuilt cache, but before library.json was saved, leaves the row
+    /// with the old fingerprints, which no longer match the files. The batch
+    /// then finds the package's own fingerprints matching and recovers its
+    /// cache instead of rebuilding it: nothing is reported or rewritten, and
+    /// the row takes the package's fingerprints.
+    @MainActor
+    func testStartupBatchRecoversAPackageNewerThanItsRow() async throws {
+        let row = try makeCachedBook()
+        try "# Second Edition\n\nA longer book than the first.".write(to: row.bookFileURL, atomically: true, encoding: .utf8)
+        var rebuilt = row
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &rebuilt))
+        try LibraryPersistenceService.saveContentAnalysis(
+            for: rebuilt, index: index, cacheFormatVersion: rebuilt.cacheFormatVersion
+        )
+        let packageFingerprint = try XCTUnwrap(index.textCacheFingerprint)
+        XCTAssertTrue(LibraryViewModel.hasResizedTextCacheFile(row), "the row's fingerprints are the old ones")
+        let cacheStamp = FileStamp(of: MarkdownCacheService.cacheURL(for: row))
+        let model = makeModel(with: [row])
+
+        await runStartupBatch(of: model)
+
+        XCTAssertEqual(model.extractionProgressTotal, 1)
+        XCTAssertEqual(staleReports(for: row), [])
+        XCTAssertEqual(FileStamp(of: MarkdownCacheService.cacheURL(for: row)), cacheStamp, "content.md was not rewritten")
+        XCTAssertEqual(model.bookByID(row.id)?.textCacheFingerprint, packageFingerprint)
+    }
+
     /// Nothing changes for a book whose files match their fingerprints, nor
     /// for one whose source only has a new date, which its next open reads
     /// for a digest: no batch starts, and neither content.md is rewritten.
