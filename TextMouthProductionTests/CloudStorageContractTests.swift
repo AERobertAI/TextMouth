@@ -339,9 +339,10 @@ final class CloudStorageContractTests: XCTestCase {
         XCTAssertEqual(store.state(of: downloaded.bookID), .downloaded, "the fake's default state")
     }
 
-    /// A book being downloaded keeps its progress through a refresh: only
-    /// the download records how it ended.
-    func testRefreshLeavesADownloadingStateAlone() async {
+    /// A book TextMouth is downloading keeps its download's progress through
+    /// a refresh, which records the other books; once the download ends, a
+    /// refresh records the book's state again.
+    func testRefreshLeavesABookToItsRunningDownload() async {
         let storage = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
         let downloading = Self.package()
         let other = Self.package()
@@ -350,12 +351,93 @@ final class CloudStorageContractTests: XCTestCase {
         let progress = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 10, totalBytes: 40)
         let store = BookCloudStates()
         store.setLibraryLocation(.cloud(.iCloudDrive))
+        store.beginDownload(of: downloading.bookID)
         store.record(.downloading(progress), for: downloading.bookID)
 
         await store.refresh([downloading, other], using: storage)
 
         XCTAssertEqual(store.state(of: downloading.bookID), .downloading(progress))
         XCTAssertEqual(store.state(of: other.bookID), .inCloud)
+
+        store.endDownload(of: downloading.bookID)
+        await store.refresh([downloading, other], using: storage)
+
+        XCTAssertEqual(store.state(of: downloading.bookID), .inCloud)
+    }
+
+    /// A download only the sync service reports, such as one Finder started,
+    /// is refreshed like any other state, so its row never stays
+    /// "Downloading" once it ends.
+    func testRefreshFollowsADownloadNoOneInTextMouthRuns() async {
+        let storage = FakeBookCloudStorage(location: .cloud(.dropbox))
+        let book = Self.package()
+        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 2, completedBytes: 0, totalBytes: 0)
+        let store = BookCloudStates()
+
+        storage.setState(.downloading(progress), of: book.bookID)
+        await store.refresh([book], using: storage)
+        XCTAssertEqual(store.state(of: book.bookID), .downloading(progress))
+
+        storage.setState(.downloaded, of: book.bookID)
+        await store.refresh([book], using: storage)
+        XCTAssertEqual(store.state(of: book.bookID), .downloaded)
+    }
+
+    /// A refresh leaves a book alone until every download begun for it has
+    /// ended, as when the reader and the list both download it.
+    func testRefreshWaitsForEveryRunningDownloadOfABookToEnd() async {
+        let storage = FakeBookCloudStorage(location: .cloud(.googleDrive))
+        let book = Self.package()
+        let progress = BookDownloadProgress(completedFiles: 1, totalFiles: 3, completedBytes: 0, totalBytes: 0)
+        let store = BookCloudStates()
+        store.beginDownload(of: book.bookID)
+        store.beginDownload(of: book.bookID)
+        store.record(.downloading(progress), for: book.bookID)
+
+        store.endDownload(of: book.bookID)
+        await store.refresh([book], using: storage)
+        XCTAssertEqual(store.state(of: book.bookID), .downloading(progress), "one download still runs")
+
+        store.endDownload(of: book.bookID)
+        await store.refresh([book], using: storage)
+        XCTAssertEqual(store.state(of: book.bookID), .downloaded, "the fake's default state")
+    }
+
+    /// A refresh that was reading while a book's download ended leaves the
+    /// book alone: its reading is older than the state the download recorded.
+    func testRefreshSkipsABookWhoseDownloadEndedWhileItWasReading() async {
+        let progress = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0)
+        let storage = GatedBookStorage(reporting: .downloading(progress))
+        let book = Self.package()
+        let store = BookCloudStates()
+        store.setLibraryLocation(.cloud(.iCloudDrive))
+        store.beginDownload(of: book.bookID)
+        store.record(.downloading(progress), for: book.bookID)
+
+        let refresh = Task { await store.refresh([book], using: storage) }
+        for await _ in storage.readingBegan { break }
+        store.record(.downloaded, for: book.bookID)
+        store.endDownload(of: book.bookID)
+        storage.letReadingFinish()
+        await refresh.value
+
+        XCTAssertEqual(store.state(of: book.bookID), .downloaded)
+    }
+
+    /// Ending a download that never began changes nothing: it cannot cancel
+    /// out a later download's beginning.
+    func testEndingADownloadThatNeverBeganChangesNothing() async {
+        let storage = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
+        let book = Self.package()
+        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 9)
+        let store = BookCloudStates()
+
+        store.endDownload(of: book.bookID)
+        store.beginDownload(of: book.bookID)
+        store.record(.downloading(progress), for: book.bookID)
+        await store.refresh([book], using: storage)
+
+        XCTAssertEqual(store.state(of: book.bookID), .downloading(progress))
     }
 
     /// A refresh of a library that is not in a cloud location records the
@@ -563,4 +645,50 @@ final class CloudStorageContractTests: XCTestCase {
             isAudio: false
         )
     }
+}
+
+// MARK: - A Storage That Holds Its Readings
+
+/// Book storage in iCloud Drive whose every reading of a book's state waits
+/// until the test lets it finish, so a test can act while a refresh reads.
+private final class GatedBookStorage: BookCloudStorage, @unchecked Sendable {
+    /// The state every book reads as.
+    private let reportedState: BookCloudState
+    /// Yields once each time a reading begins.
+    let readingBegan: AsyncStream<Void>
+    /// Feeds `readingBegan`.
+    private let readingBeganContinuation: AsyncStream<Void>.Continuation
+    /// Holds each reading until `letReadingFinish()`.
+    private let gate = DispatchSemaphore(value: 0)
+
+    /// Storage whose books all read as `state`, once the test lets them.
+    init(reporting state: BookCloudState) {
+        reportedState = state
+        (readingBegan, readingBeganContinuation) = AsyncStream<Void>.makeStream()
+    }
+
+    /// Lets one waiting reading finish.
+    func letReadingFinish() {
+        gate.signal()
+    }
+
+    /// Always iCloud Drive.
+    func libraryLocation() -> StorageLocation {
+        .cloud(.iCloudDrive)
+    }
+
+    /// Says a reading began, then waits for the test before reporting.
+    func state(of package: BookPackage) -> BookCloudState {
+        readingBeganContinuation.yield()
+        gate.wait()
+        return reportedState
+    }
+
+    /// Never used: finishes at once.
+    func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
+        AsyncThrowingStream { $0.finish() }
+    }
+
+    /// Never used: removes nothing.
+    func removeDownload(of package: BookPackage) throws {}
 }

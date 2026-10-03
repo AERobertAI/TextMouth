@@ -370,6 +370,14 @@ final class BookCloudStates: ObservableObject {
     /// The latest known state of each book, by ID. A book not listed has not
     /// been checked yet.
     @Published private(set) var states: [UUID: BookCloudState] = [:]
+    /// How many downloads TextMouth is running for each book, by ID: each
+    /// counts from its `beginDownload(of:)` to its `endDownload(of:)`. A
+    /// refresh leaves these books' states to their downloads.
+    private var runningDownloads: [UUID: Int] = [:]
+    /// How many times a download of each book has begun or ended, by ID. A
+    /// refresh skips a book whose download began or ended while it read the
+    /// states, since its reading may be older than what the download recorded.
+    private var downloadEvents: [UUID: Int] = [:]
 
     /// A store with nothing recorded. The app uses `shared`; tests make
     /// their own.
@@ -402,17 +410,40 @@ final class BookCloudStates: ObservableObject {
         states[bookID] = state
     }
 
+    /// Notes that a download TextMouth runs for the book `bookID` has
+    /// started. Until it ends, a refresh leaves the book's state to it, so
+    /// only the download records its progress and how it ended. Call it
+    /// before iterating `BookCloudStorage.download(_:)`, and pair it with one
+    /// `endDownload(of:)`: the reader and the list can each run a download
+    /// of the same book.
+    func beginDownload(of bookID: UUID) {
+        runningDownloads[bookID, default: 0] += 1
+        downloadEvents[bookID, default: 0] += 1
+    }
+
+    /// Notes that a download begun with `beginDownload(of:)` has ended,
+    /// however it ended. Once none of the book's downloads is running, a
+    /// refresh records its state again.
+    func endDownload(of bookID: UUID) {
+        guard let running = runningDownloads[bookID] else { return }
+        runningDownloads[bookID] = running > 1 ? running - 1 : nil
+        downloadEvents[bookID, default: 0] += 1
+    }
+
     /// Reads where the library lives and the state of each of `packages` off
-    /// the main thread through `storage`, then records them. A book being
-    /// downloaded keeps its progress: only the download records how it ended.
+    /// the main thread through `storage`, then records them. A book TextMouth
+    /// is downloading keeps its download's progress: only the download
+    /// records how it ended. A download only the sync service reports, such
+    /// as one Finder started, is refreshed like any other state.
     func refresh(_ packages: [BookPackage], using storage: any BookCloudStorage) async {
+        let eventsBeforeReading = downloadEvents
         let (location, results) = await Task.detached(priority: .utility) {
             (storage.libraryLocation(), packages.map { ($0.bookID, storage.state(of: $0)) })
         }.value
         setLibraryLocation(location)
         guard location.isCloud else { return }
-        for (bookID, state) in results {
-            if case .downloading = states[bookID] { continue }
+        for (bookID, state) in results
+        where runningDownloads[bookID] == nil && downloadEvents[bookID] == eventsBeforeReading[bookID] {
             record(state, for: bookID)
         }
     }
