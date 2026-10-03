@@ -124,19 +124,25 @@ class DirectoryFileProvider: DAISYFileProvider {
         self.baseURL = baseURL
     }
 
+    /// Every file in the folder and the folders inside it, by its path
+    /// relative to the folder. Enumerating by path yields those relative
+    /// paths directly. Deriving them by deleting the folder's path from each
+    /// enumerated URL failed wherever that path passed through a symbolic
+    /// link, as /tmp and /var do: the URLs then start with the link's target
+    /// (/private/var/…), and every file was listed under a wrong path, so no
+    /// book in such a folder could be read (TODO I02).
     func listFiles() -> [String] {
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: baseURL, includingPropertiesForKeys: nil) else {
+        guard let enumerator = fm.enumerator(atPath: baseURL.path) else {
             return []
         }
         var files: [String] = []
-        let basePath = baseURL.path
-        while let url = enumerator.nextObject() as? URL {
+        while let relative = enumerator.nextObject() as? String {
+            // Following symbolic links, as before: a link to a folder is
+            // not a file.
             var isDir: ObjCBool = false
-            fm.fileExists(atPath: url.path, isDirectory: &isDir)
+            fm.fileExists(atPath: baseURL.appendingPathComponent(relative).path, isDirectory: &isDir)
             if !isDir.boolValue {
-                let relative = url.path.replacingOccurrences(of: basePath, with: "")
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 files.append(relative)
             }
         }
@@ -223,16 +229,24 @@ enum DAISYParser {
 
     /// Detect whether a ZIP file contains a DAISY book.
     /// Used by the import system to identify DAISY packages in zip imports.
+    /// An archive holding several DAISY books, each in a folder of its own,
+    /// is not one book but a batch, whose books import one by one; an
+    /// archive with a book at its top level is that book (TODO I02).
     static func isDAISYZip(url: URL) -> Bool {
         guard let archive = try? Archive(url: url, accessMode: .read) else { return false }
-        let provider = ArchiveFileProvider(archive: archive)
-        return detectVersion(in: provider) != nil
+        // Cached, since detection and the count of books both list the archive.
+        let provider = CachingFileProvider(wrapping: ArchiveFileProvider(archive: archive))
+        guard detectVersion(in: provider) != nil else { return false }
+        let folders = packageFolders(inArchivePaths: provider.listFiles())
+        return folders.count <= 1 || folders.contains("")
     }
 
-    /// Detect whether a directory contains a DAISY book
+    /// Detect whether a directory holds a DAISY book: a package file or a
+    /// navigation file at its top level (`packageEntryPoints(in:)`). A
+    /// folder of books, each in a folder of its own, is not itself a book,
+    /// and neither is a folder whose files merely include one (TODO I02).
     static func isDAISYDirectory(url: URL) -> Bool {
-        let provider = DirectoryFileProvider(baseURL: url)
-        return detectVersion(in: provider) != nil
+        !packageEntryPoints(in: url).isEmpty
     }
 
     // MARK: - File Access Abstraction
@@ -264,10 +278,16 @@ enum DAISYParser {
                 } catch {
                     throw DAISYParserError.invalidArchive
                 }
-            } else if ext == "opf" {
-                // .opf file — treat the containing directory as the DAISY book
+            } else if isPackageEntryFile(url) {
+                // A package file (.opf) or a DAISY 2.02 navigation file
+                // (ncc.html): its folder holds the book. The chosen file is
+                // listed first, so the reader takes it over any other
+                // package file in the folder (TODO I02).
                 let parentDir = url.deletingLastPathComponent()
-                base = DirectoryFileProvider(baseURL: parentDir)
+                base = EntryFirstFileProvider(
+                    entry: url.lastPathComponent,
+                    wrapping: DirectoryFileProvider(baseURL: parentDir)
+                )
             } else if let archive = try? Archive(url: url, accessMode: .read) {
                 // Try opening as ZIP anyway (some DAISY files don't have .zip extension)
                 base = ArchiveFileProvider(archive: archive)
