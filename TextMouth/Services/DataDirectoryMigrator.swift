@@ -24,6 +24,10 @@ enum DataDirectoryMigrationError: LocalizedError {
     case missingSource
     case missingBook(String)
     case invalidLibrary
+    /// The new location changed while the data was being copied, so the
+    /// copy was not published and the data directory in use did not change
+    /// (TODO S10). The description names what changed and where.
+    case destinationChanged(DataDirectoryDestinationChange)
 
     var errorDescription: String? {
         switch self {
@@ -38,6 +42,7 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .missingSource: return "The current data directory does not exist."
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
         case .invalidLibrary: return "The migrated library index could not be validated."
+        case .destinationChanged(let change): return change.explanation
         }
     }
 }
@@ -50,8 +55,10 @@ enum DataDirectoryMigrationError: LocalizedError {
 /// `real` is the folder the data lives in.
 ///
 /// The memberwise initializer takes both as given, for describing locations;
-/// `init(_:fileManager:)` resolves a name against the file system.
-struct DataDirectoryLocation: Equatable {
+/// `init(_:fileManager:)` resolves a name against the file system. Compare
+/// locations by their paths: URLs for one folder can differ in whether
+/// they are marked as directories.
+struct DataDirectoryLocation {
     /// The location as named: standardized, with every link left in place.
     let named: URL
     /// The folder `named` leads to: every link in the part of the path that
@@ -167,10 +174,90 @@ enum DataDirectoryOverlap: Equatable {
     }
 }
 
+// MARK: - Publication
+
+/// What publication found at the new location in place of the empty
+/// folder, or nothing, that the migration began with (TODO S10). The copy
+/// is then not published: whatever was found stays where it is, and the
+/// current data directory stays in use.
+struct DataDirectoryDestinationChange {
+    /// What changed at the new location.
+    enum Finding: Equatable {
+        /// Items appeared inside the new location's folder: their names,
+        /// sorted.
+        case items([String])
+        /// Something else was put where the new location's folder belongs:
+        /// a file, a link, or a folder publication did not find there.
+        case replaced
+        /// The new location's name now leads to another folder: this real
+        /// path.
+        case redirected(to: String)
+    }
+
+    /// What changed.
+    let finding: Finding
+    /// The new location, as named and as it led when the copy began.
+    let destination: DataDirectoryLocation
+    /// The current data directory, which stays in use.
+    let source: DataDirectoryLocation
+
+    /// What happened, where, and what TextMouth did, as in "While TextMouth
+    /// was copying its data, 2 items appeared in /Volumes/Archive/.TextMouth:
+    /// Library and library.json. TextMouth left them there and is still
+    /// using /Users/me/.TextMouth. Choose an empty location and try again."
+    var explanation: String {
+        let prefix = "While TextMouth was copying its data,"
+        let inUse = "is still using \(source.namedDescription)."
+        switch finding {
+        case .items(let names):
+            let count = CountWording.phrase(names.count, singular: "item", plural: "items")
+            let them = names.count == 1 ? "it" : "them"
+            return "\(prefix) \(count) appeared in \(destination.realDescription): \(Self.listing(names)). "
+                + "TextMouth left \(them) there and \(inUse) Choose an empty location and try again."
+        case .replaced:
+            return "\(prefix) something else was put at \(destination.realDescription). "
+                + "TextMouth left it there and \(inUse) Choose an empty location and try again."
+        case .redirected(let path):
+            return "\(prefix) \(destination.named.path) was changed to lead to \(path) instead of "
+                + "\(destination.real.path). TextMouth \(inUse) Try again."
+        }
+    }
+
+    /// At most three names, then how many more, so a folder that filled up
+    /// does not flood the status line or a braille display: "a", "a and b",
+    /// "a, b, and c", or "a, b, c, and 2 more".
+    static func listing(_ names: [String]) -> String {
+        var parts = Array(names.prefix(3))
+        if names.count > parts.count {
+            parts.append("\(names.count - parts.count) more")
+        }
+        switch parts.count {
+        case 0: return ""
+        case 1: return parts[0]
+        case 2: return "\(parts[0]) and \(parts[1])"
+        default: return parts.dropLast().joined(separator: ", ") + ", and " + parts[parts.count - 1]
+        }
+    }
+}
+
 // MARK: - Migration
 
 /// Copy-and-validate migration primitive. It does not mutate global path state,
 /// which makes failure behavior deterministic and independently testable.
+///
+/// Links are explicit (TODO S10). Each location is taken as the folder it
+/// leads to: a data directory that is a link is copied from its folder, and
+/// a new location that is a link to an empty folder receives the data in
+/// that folder. Locations whose real folders overlap (TODO F20), and a new
+/// location that is a link leading nowhere, are refused before anything is
+/// copied, in words that name the real folders.
+///
+/// Publication checks the new location again (TODO S10). The copy can take
+/// several minutes, and anything that arrives at the new location meanwhile,
+/// from another app, a sync service, or another Mac, stops publication and
+/// is never deleted. The data directory in use, its setting, and the
+/// library index change only after a published copy, and only the caller
+/// changes them.
 enum DataDirectoryMigrator {
     /// The start of the hidden name a migration stages its copy under,
     /// beside the destination's real folder, followed by a UUID.
@@ -210,7 +297,7 @@ enum DataDirectoryMigrator {
         try fileManager.copyItem(at: source.real, to: staging)
 
         let migratedLibrary = try stage(library, from: source, to: destination, in: staging, fileManager: fileManager)
-        try publish(staging, at: destination, fileManager: fileManager)
+        try publish(staging, at: destination, keeping: source, fileManager: fileManager)
         return migratedLibrary
     }
 
@@ -311,16 +398,73 @@ enum DataDirectoryMigrator {
     }
 
     /// Renames the checked copy in `staging` to the destination's real
-    /// folder, which makes it the new data directory.
+    /// folder, which makes it the new data directory, once it is sure the
+    /// new location did not change while the data was copied (TODO S10).
+    ///
+    /// Whatever arrives there, at any moment, is never deleted or replaced.
+    /// The only item removed to make way is the empty folder found there,
+    /// with rmdir(2), which the kernel refuses once anything is inside, and
+    /// `moveItem` never replaces an item. A change stops publication
+    /// instead, with the error naming it; the caller then deletes the copy,
+    /// which holds only what this migration copied and wrote.
     private static func publish(
         _ staging: URL,
         at destination: DataDirectoryLocation,
+        keeping source: DataDirectoryLocation,
         fileManager: FileManager
     ) throws {
-        if fileManager.fileExists(atPath: destination.real.path) {
-            try fileManager.removeItem(at: destination.real)
+        /// The error that stops publication over `finding`.
+        func stopped(_ finding: DataDirectoryDestinationChange.Finding) -> DataDirectoryMigrationError {
+            .destinationChanged(DataDirectoryDestinationChange(finding: finding, destination: destination, source: source))
         }
-        try fileManager.moveItem(at: staging, to: destination.real)
+
+        // The name must still lead to the folder the copy was staged beside.
+        // Paths are compared, not URLs: a URL built for a folder that did not
+        // exist yet is marked as a directory, and one resolved later may not be.
+        let current = DataDirectoryLocation(destination.named, fileManager: fileManager)
+        guard current.real.path == destination.real.path else {
+            throw stopped(.redirected(to: current.real.path))
+        }
+
+        // Look again: anything that arrived since the first look stops here.
+        let contents = try DestinationContents(at: destination.real, fileManager: fileManager)
+        if let arrival = contents.arrival {
+            throw stopped(arrival)
+        }
+        if contents == .folder([]) {
+            try removeEmptyFolder(destination.real, fileManager: fileManager, stopped: stopped)
+        }
+
+        do {
+            try fileManager.moveItem(at: staging, to: destination.real)
+        } catch {
+            // moveItem never replaces an item, so whatever stands at the
+            // destination now arrived after the look above.
+            if let now = try? DestinationContents(at: destination.real, fileManager: fileManager), now != .nothing {
+                throw stopped(now.arrival ?? .replaced)
+            }
+            throw error
+        }
+    }
+
+    /// Removes the empty folder at `folder` to make way for the copy, with
+    /// rmdir(2), which the kernel refuses once anything is inside: whatever
+    /// arrived after the caller looked then stops publication through
+    /// `stopped`, and is never deleted. A folder already gone needs nothing.
+    /// Any other failure, such as a volume mounted on the folder, is thrown
+    /// as it is.
+    private static func removeEmptyFolder(
+        _ folder: URL,
+        fileManager: FileManager,
+        stopped: (DataDirectoryDestinationChange.Finding) -> DataDirectoryMigrationError
+    ) throws {
+        guard rmdir(folder.path) != 0 else { return }
+        let code = errno
+        if code == ENOENT { return }
+        if let now = try? DestinationContents(at: folder, fileManager: fileManager), let arrival = now.arrival {
+            throw stopped(arrival)
+        }
+        throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
     }
 }
 
@@ -350,5 +494,16 @@ private enum DestinationContents: Equatable {
             return
         }
         self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sorted())
+    }
+
+    /// What makes this more than the empty folder, or nothing, that a copy
+    /// can be published over: the items inside a folder, or an item that is
+    /// not a folder. Nil for an empty folder or nothing.
+    var arrival: DataDirectoryDestinationChange.Finding? {
+        switch self {
+        case .nothing: return nil
+        case .folder(let names): return names.isEmpty ? nil : .items(names)
+        case .notAFolder: return .replaced
+        }
     }
 }

@@ -260,13 +260,24 @@ enum TextMouthPaths {
 
     /// Move the entire data directory from the current location to a new one.
     /// Updates the custom path setting and rewrites file paths in the library.
-    static func moveDataDirectory(to newRoot: URL, library: inout Library) throws {
+    ///
+    /// Both change only once the copy is published. A migration refused or
+    /// stopped before then (TODO S10) throws with the data directory in use,
+    /// its setting, and `library` as they were.
+    /// - Parameter fileManager: The file manager the migration works with;
+    ///   tests pass one that changes the new location while it copies.
+    static func moveDataDirectory(
+        to newRoot: URL,
+        library: inout Library,
+        fileManager: FileManager = .default
+    ) throws {
         let oldRoot = root
         guard oldRoot.path != newRoot.path else { return }
         let migratedLibrary = try DataDirectoryMigrator.prepareMigration(
             from: oldRoot,
             to: newRoot,
-            library: library
+            library: library,
+            fileManager: fileManager
         )
 
         // Update the path setting

@@ -354,7 +354,325 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertEqual(try snapshot(of: base), before)
     }
 
+    // MARK: - Changes While Copying (S10)
+
+    /// Acceptance (TODO S10): a file created in the empty new location while
+    /// the data is being copied stops publication. The file stays and
+    /// nothing joins it, the copy is deleted, the data directory is
+    /// unchanged, and the refusal names what arrived and where.
+    func testFileArrivingInTheEmptyNewLocationWhileCopyingIsKept() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let arrival = destination.appendingPathComponent("arrived.txt")
+        let sourceBefore = try snapshot(of: source)
+        let fileManager = InterruptingFileManager(at: .afterCopy) {
+            try Data("arrived".utf8).write(to: arrival)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+        })
+
+        XCTAssertEqual(change.finding, .items(["arrived.txt"]))
+        XCTAssertEqual(change.destination.real.path, destination.path)
+        XCTAssertEqual(
+            DataDirectoryMigrationError.destinationChanged(change).localizedDescription,
+            "While TextMouth was copying its data, 1 item appeared in \(destination.path): arrived.txt. "
+                + "TextMouth left it there and is still using \(source.path). Choose an empty location and try again."
+        )
+        XCTAssertEqual(try String(contentsOf: arrival, encoding: .utf8), "arrived")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["arrived.txt"])
+        XCTAssertEqual(stagingLeft(in: base), [], "the copy is deleted")
+        XCTAssertEqual(try snapshot(of: source), sourceBefore)
+        XCTAssertEqual(fileManager.moveAttempts, 0, "nothing was renamed into place")
+    }
+
+    /// A folder created at the new location while the data is being copied,
+    /// with a file inside, stops publication, and both are kept.
+    func testFolderCreatedAtTheNewLocationWhileCopyingIsKept() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let notes = destination.appendingPathComponent("notes.txt")
+        let fileManager = InterruptingFileManager(at: .afterCopy) {
+            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false)
+            try Data("notes".utf8).write(to: notes)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+        })
+
+        XCTAssertEqual(change.finding, .items(["notes.txt"]))
+        XCTAssertEqual(try String(contentsOf: notes, encoding: .utf8), "notes")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["notes.txt"])
+        XCTAssertEqual(stagingLeft(in: base), [])
+        XCTAssertEqual(fileManager.moveAttempts, 0)
+    }
+
+    /// A file put where the new location's folder belongs while the data is
+    /// being copied stops publication and is kept.
+    func testFilePutAtTheNewLocationWhileCopyingIsKept() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        // Not a directory URL: a file is written at this path.
+        let destination = base.appendingPathComponent("Destination")
+        let library = try makeLibrary(at: source)
+        let fileManager = InterruptingFileManager(at: .afterCopy) {
+            try Data("file".utf8).write(to: destination)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+        })
+
+        XCTAssertEqual(change.finding, .replaced)
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "file")
+        XCTAssertEqual(stagingLeft(in: base), [])
+        XCTAssertEqual(fileManager.moveAttempts, 0)
+    }
+
+    /// An item that arrives in the empty new location after publication's
+    /// last look inside it, as the folder makes way for the copy, is never
+    /// deleted: rmdir refuses a folder that is not empty, and publication
+    /// stops, naming the item.
+    func testItemArrivingAfterTheLastLookIsNeverDeleted() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let late = destination.appendingPathComponent("late.txt")
+        let fileManager = InterruptingFileManager(at: .afterListing(destination.path)) {
+            try Data("late".utf8).write(to: late)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+        })
+
+        XCTAssertEqual(change.finding, .items(["late.txt"]))
+        XCTAssertEqual(try String(contentsOf: late, encoding: .utf8), "late")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["late.txt"])
+        XCTAssertEqual(stagingLeft(in: base), [])
+        XCTAssertEqual(fileManager.moveAttempts, 0)
+    }
+
+    /// A folder that appears at the new location after publication's last
+    /// look, just before the copy is renamed into place, is never replaced:
+    /// the rename refuses, and publication stops, naming what is inside it.
+    func testItemArrivingJustBeforeTheRenameIsNeverReplaced() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let late = destination.appendingPathComponent("late.txt")
+        let fileManager = InterruptingFileManager(at: .afterLookingAt(destination.path)) {
+            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false)
+            try Data("late".utf8).write(to: late)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+        })
+
+        XCTAssertEqual(change.finding, .items(["late.txt"]))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["late.txt"])
+        XCTAssertEqual(stagingLeft(in: base), [])
+        XCTAssertEqual(fileManager.moveAttempts, 1, "the rename was tried, and refused")
+    }
+
+    /// An empty folder at the new location, there from the start or created
+    /// while the data is being copied, holds nothing to lose: the copy takes
+    /// its place.
+    func testEmptyFolderAtTheNewLocationMakesWayForTheCopy() throws {
+        for createdWhileCopying in [false, true] {
+            let base = try makeMigrationBase()
+            let source = base.appendingPathComponent("Source", isDirectory: true)
+            let destination = base.appendingPathComponent("Destination", isDirectory: true)
+            let library = try makeLibrary(at: source)
+            if !createdWhileCopying {
+                try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+            }
+            let fileManager = InterruptingFileManager(at: .afterCopy) {
+                if createdWhileCopying {
+                    try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false)
+                }
+            }
+
+            let migrated = try DataDirectoryMigrator.prepareMigration(
+                from: source, to: destination, library: library, fileManager: fileManager
+            )
+
+            XCTAssertEqual(
+                Set(try FileManager.default.contentsOfDirectory(atPath: destination.path)),
+                ["Library", "Logs", "library.json"]
+            )
+            XCTAssertTrue(FileManager.default.fileExists(atPath: try XCTUnwrap(migrated.books.first).filePath))
+            XCTAssertEqual(stagingLeft(in: base), [])
+            XCTAssertEqual(fileManager.moveAttempts, 1)
+        }
+    }
+
+    /// A new location that is a link, pointed at another folder while the
+    /// data is being copied, stops publication: neither folder receives the
+    /// data, and the refusal names the link and both folders.
+    func testLinkRedirectedWhileCopyingStopsPublication() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let elsewhere = base.appendingPathComponent("Elsewhere", isDirectory: true)
+        let first = elsewhere.appendingPathComponent("First", isDirectory: true)
+        let second = elsewhere.appendingPathComponent("Second", isDirectory: true)
+        try FileManager.default.createDirectory(at: first, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: second, withIntermediateDirectories: true)
+        let link = base.appendingPathComponent("Link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: first)
+        let fileManager = InterruptingFileManager(at: .afterCopy) {
+            try FileManager.default.removeItem(at: link)
+            try FileManager.default.createSymbolicLink(at: link, withDestinationURL: second)
+        }
+
+        let change = try XCTUnwrap(destinationChange {
+            try DataDirectoryMigrator.prepareMigration(
+                from: source, to: link, library: library, fileManager: fileManager
+            )
+        })
+
+        let firstPath = first.resolvingSymlinksInPath().path
+        let secondPath = second.resolvingSymlinksInPath().path
+        XCTAssertEqual(change.finding, .redirected(to: secondPath))
+        XCTAssertEqual(
+            DataDirectoryMigrationError.destinationChanged(change).localizedDescription,
+            "While TextMouth was copying its data, \(link.path) was changed to lead to \(secondPath) "
+                + "instead of \(firstPath). TextMouth is still using \(source.path). Try again."
+        )
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: first.path), [])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: second.path), [])
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: link.path), second.path)
+        XCTAssertEqual(stagingLeft(in: elsewhere), [])
+        XCTAssertEqual(fileManager.moveAttempts, 0)
+    }
+
+    /// A move stopped at publication changes nothing the app uses: the data
+    /// directory in use, its setting in the preferences, and the library,
+    /// whose books still name the current data directory, stay as they
+    /// were. The setting and the library change only after a published
+    /// copy (TODO S10).
+    func testStoppedMoveKeepsTheDataDirectoryItsSettingAndTheLibrary() throws {
+        let preferences = TextMouthRuntime.current.preferences
+        // TextMouthPaths' private key for a custom data directory.
+        let key = "textMouthDataDirectory"
+        let savedLocation = preferences.string(forKey: key)
+        addTeardownBlock {
+            // Looked up again here: the store itself is not Sendable.
+            let preferences = TextMouthRuntime.current.preferences
+            if let savedLocation {
+                preferences.set(savedLocation, forKey: key)
+            } else {
+                preferences.removeObject(forKey: key)
+            }
+        }
+        try TextMouthPaths.ensureDirectoryStructure()
+        let root = TextMouthPaths.root
+        var library = try makeLibrary(at: root)
+        let package = root.appendingPathComponent("Library/\(library.books[0].tmbDirectoryName)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let booksBefore = library.books.map { "\($0.id) \($0.filePath)" }
+        let base = try makeMigrationBase()
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let arrival = destination.appendingPathComponent("arrived.txt")
+        let fileManager = InterruptingFileManager(at: .afterCopy) {
+            try Data("arrived".utf8).write(to: arrival)
+        }
+        // Write any waiting log lines now, so none lands in the data
+        // directory while it is copied.
+        TextMouthPaths.flushLogs()
+
+        XCTAssertThrowsError(
+            try TextMouthPaths.moveDataDirectory(to: destination, library: &library, fileManager: fileManager)
+        ) { error in
+            guard case DataDirectoryMigrationError.destinationChanged = error else {
+                return XCTFail("Expected the destination change, received \(error)")
+            }
+        }
+
+        XCTAssertEqual(TextMouthPaths.root, root)
+        XCTAssertEqual(preferences.string(forKey: key), savedLocation, "the setting was not written")
+        XCTAssertEqual(library.books.map { "\($0.id) \($0.filePath)" }, booksBefore)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["arrived.txt"])
+        XCTAssertEqual(stagingLeft(in: base), [])
+    }
+
+    /// What arrived is named, at most three names and a count of the rest,
+    /// with where it arrived, the link that leads there, and the data
+    /// directory still in use.
+    func testChangeExplanationsNameWhatArrivedAndWhere() {
+        let archive = location("/Volumes/Archive/.TextMouth")
+        let linkedArchive = location("/Users/reader/Archive", real: "/Volumes/Archive/.TextMouth")
+        let current = location("/Users/reader/.TextMouth")
+        func explanation(_ finding: DataDirectoryDestinationChange.Finding, at destination: DataDirectoryLocation) -> String {
+            DataDirectoryMigrationError.destinationChanged(
+                DataDirectoryDestinationChange(finding: finding, destination: destination, source: current)
+            ).localizedDescription
+        }
+
+        XCTAssertEqual(
+            explanation(.items(["Library", "library.json"]), at: archive),
+            "While TextMouth was copying its data, 2 items appeared in /Volumes/Archive/.TextMouth: "
+                + "Library and library.json. TextMouth left them there and is still using "
+                + "/Users/reader/.TextMouth. Choose an empty location and try again."
+        )
+        XCTAssertEqual(
+            explanation(.items(["a", "b", "c", "d", "e"]), at: linkedArchive),
+            "While TextMouth was copying its data, 5 items appeared in /Volumes/Archive/.TextMouth, "
+                + "where /Users/reader/Archive leads: a, b, c, and 2 more. TextMouth left them there and "
+                + "is still using /Users/reader/.TextMouth. Choose an empty location and try again."
+        )
+        XCTAssertEqual(
+            explanation(.replaced, at: archive),
+            "While TextMouth was copying its data, something else was put at /Volumes/Archive/.TextMouth. "
+                + "TextMouth left it there and is still using /Users/reader/.TextMouth. "
+                + "Choose an empty location and try again."
+        )
+        XCTAssertEqual(DataDirectoryDestinationChange.listing(["a"]), "a")
+        XCTAssertEqual(DataDirectoryDestinationChange.listing(["a", "b", "c"]), "a, b, and c")
+    }
+
     // MARK: - Fixtures
+
+    /// The change that stopped the migration `migrate` runs, after failing
+    /// the test when it published its copy or failed another way.
+    private func destinationChange(
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        _ migrate: () throws -> Library
+    ) -> DataDirectoryDestinationChange? {
+        do {
+            _ = try migrate()
+            XCTFail("The migration published its copy", file: file, line: line)
+        } catch DataDirectoryMigrationError.destinationChanged(let change) {
+            return change
+        } catch {
+            XCTFail("Expected the destination change, received \(error)", file: file, line: line)
+        }
+        return nil
+    }
 
     /// The names of the hidden staging folders a migration left in `folder`.
     private func stagingLeft(in folder: URL) -> [String] {
@@ -407,6 +725,116 @@ final class DataDirectoryMigrationTests: XCTestCase {
             named: URL(fileURLWithPath: named),
             real: URL(fileURLWithPath: real ?? named)
         )
+    }
+}
+
+/// How Storage settings report a data-directory move that a change at the
+/// new location stopped (TODO S10).
+@MainActor
+final class DataDirectoryMigrationReportTests: XCTestCase {
+    /// The status line shows the stopped move as a failure, in the words of
+    /// the library's error alert, naming what arrived and where, and
+    /// VoiceOver announces those words once.
+    func testStoppedMoveIsShownAndAnnouncedAsAFailure() {
+        let change = DataDirectoryDestinationChange(
+            finding: .items(["library.json"]),
+            destination: DataDirectoryLocation(
+                named: URL(fileURLWithPath: "/Volumes/Archive/.TextMouth"),
+                real: URL(fileURLWithPath: "/Volumes/Archive/.TextMouth")
+            ),
+            source: DataDirectoryLocation(
+                named: URL(fileURLWithPath: "/Users/reader/.TextMouth"),
+                real: URL(fileURLWithPath: "/Users/reader/.TextMouth")
+            )
+        )
+        let outcome = LibraryViewModel.maintenanceOutcome(
+            .failure(DataDirectoryMigrationError.destinationChanged(change)),
+            failureContext: "Failed to move directory",
+            done: "Done."
+        )
+        var status: StorageStatus?
+
+        let recorder = recordingAnnouncements {
+            status = .announced(after: outcome)
+        }
+
+        let expected = "Failed to move directory: While TextMouth was copying its data, 1 item appeared in "
+            + "/Volumes/Archive/.TextMouth: library.json. TextMouth left it there and is still using "
+            + "/Users/reader/.TextMouth. Choose an empty location and try again."
+        XCTAssertEqual(status, StorageStatus(message: expected, isFailure: true))
+        XCTAssertEqual(recorder.announcements, [VoiceOverAnnouncement(message: expected, priority: .high)])
+    }
+}
+
+/// A file manager that changes the file system at one chosen moment of a
+/// data-directory migration, to show what publication does with whatever
+/// arrives then, without waiting on a clock. It also counts the renames
+/// into place the migration asks it for.
+final class InterruptingFileManager: FileManager, @unchecked Sendable {
+    /// The moments a test can choose. Each follows the copy of the data.
+    enum Moment: Equatable {
+        /// As soon as the data is copied: an arrival while the copy runs.
+        case afterCopy
+        /// The first time the folder at this path is listed: an arrival
+        /// between publication's last look inside it and the removal of the
+        /// empty folder.
+        case afterListing(String)
+        /// The first time the item at this path is looked at: an arrival
+        /// between publication's last look and the rename into place.
+        case afterLookingAt(String)
+    }
+
+    /// When the interruption runs.
+    private let moment: Moment
+    /// What changes the file system then.
+    private let interruption: () throws -> Void
+    /// Whether the data has been copied; every moment follows the copy.
+    private var copied = false
+    /// Whether the interruption has run. It runs once.
+    private var interrupted = false
+    /// How many renames into place the migration asked for.
+    private(set) var moveAttempts = 0
+
+    /// A file manager that runs `interruption` once, at `moment`.
+    init(at moment: Moment, _ interruption: @escaping () throws -> Void) {
+        self.moment = moment
+        self.interruption = interruption
+        super.init()
+    }
+
+    /// Copies as FileManager does, then interrupts if this is the moment.
+    override func copyItem(at srcURL: URL, to dstURL: URL) throws {
+        try super.copyItem(at: srcURL, to: dstURL)
+        copied = true
+        try interrupt(at: .afterCopy)
+    }
+
+    /// Lists as FileManager does, then interrupts if this is the moment; the
+    /// names returned are those found before the interruption.
+    override func contentsOfDirectory(atPath path: String) throws -> [String] {
+        let names = try super.contentsOfDirectory(atPath: path)
+        try interrupt(at: .afterListing(path))
+        return names
+    }
+
+    /// Looks as FileManager does, then interrupts if this is the moment,
+    /// whether or not anything was there to see.
+    override func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
+        defer { try? interrupt(at: .afterLookingAt(path)) }
+        return try super.attributesOfItem(atPath: path)
+    }
+
+    /// Renames as FileManager does, counting the attempt.
+    override func moveItem(at srcURL: URL, to dstURL: URL) throws {
+        moveAttempts += 1
+        try super.moveItem(at: srcURL, to: dstURL)
+    }
+
+    /// Runs the interruption when `now` is its moment, the first time only.
+    private func interrupt(at now: Moment) throws {
+        guard copied, !interrupted, now == moment else { return }
+        interrupted = true
+        try interruption()
     }
 }
 
