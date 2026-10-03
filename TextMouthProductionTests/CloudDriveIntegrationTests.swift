@@ -459,10 +459,19 @@ final class CloudDriveIntegrationTests: XCTestCase {
     /// Whether `file` of `package` is only in the cloud: it reads as not
     /// downloaded, and it, or its package, is dataless. iCloud Drive makes a
     /// package it syncs as one item dataless whole, and then nothing inside
-    /// it can be looked up.
+    /// it can be looked up without downloading the package again.
     private func isInCloud(_ file: URL, of package: SyntheticPackage) -> Bool {
         items.status(of: file).state == .notDownloaded
-            && (DatalessFiles.isDataless(file) || DatalessFiles.isDataless(package.url))
+            && (Self.isDataless(file) || Self.isDataless(package.url))
+    }
+
+    /// Whether the item at `url` is dataless, looked up with downloading
+    /// switched off. A plain lookup of a file inside a folder only in the
+    /// cloud, as inside a package iCloud Drive evicted whole, downloads the
+    /// folder first: polled that way, an evicted package came straight back
+    /// (seen on the real drive), and the check undid what it waited for.
+    private static func isDataless(_ url: URL) -> Bool {
+        DatalessFiles.withoutDownloading { DatalessFiles.isDataless(url) }
     }
 
     /// What the status provider reads of `file`, its flags as the system
@@ -484,7 +493,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
         }
         for file in package.files {
             XCTAssertEqual(items.status(of: file).state, .downloaded, "\(root.driveName): \(file.lastPathComponent)")
-            XCTAssertFalse(DatalessFiles.isDataless(file), "\(root.driveName): \(file.lastPathComponent)")
+            XCTAssertFalse(Self.isDataless(file), "\(root.driveName): \(file.lastPathComponent)")
         }
         XCTAssertEqual(package.filesNotIntact(), [], "\(root.driveName): a download request changed files")
     }
@@ -586,7 +595,7 @@ final class CloudDriveIntegrationTests: XCTestCase {
         XCTAssertEqual(download.updates.last?.percent, 100, "\(drive): \(download.updates)")
         for file in package.files {
             XCTAssertEqual(items.status(of: file).state, .downloaded, "\(drive): \(file.lastPathComponent)")
-            XCTAssertFalse(DatalessFiles.isDataless(file), "\(drive): \(file.lastPathComponent)")
+            XCTAssertFalse(Self.isDataless(file), "\(drive): \(file.lastPathComponent)")
         }
         XCTAssertEqual(package.filesNotIntact(), [], "\(drive): files differ after the download")
     }
