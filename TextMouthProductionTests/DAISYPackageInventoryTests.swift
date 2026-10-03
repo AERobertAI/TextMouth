@@ -97,12 +97,48 @@ final class DAISYPackageInventoryTests: XCTestCase {
         XCTAssertTrue(DAISYParser.isDAISYZip(url: withMacCopies))
     }
 
+    // MARK: - Listing a Folder
+
+    /// A folder's files are listed by their paths inside it wherever the
+    /// folder lies, even when its path passes through a symbolic link (the
+    /// sandbox's own path does, through /var), and a book there reads.
+    func testFolderListsItsFilesRelativeToItselfThroughSymbolicLinks() throws {
+        let sandbox = try makeSandboxDirectory("daisy-listing")
+        let book = try write([
+            "ncc.html": Self.minimalNCC,
+            "part1.smil": Self.minimalSMIL,
+            "text/part1.html": Self.minimalText
+        ], in: sandbox, "Rope Splicing")
+        let link = sandbox.appendingPathComponent("Link to Rope Splicing", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: book)
+
+        for folder in [book, link] {
+            XCTAssertEqual(
+                DirectoryFileProvider(baseURL: folder).listFiles().sorted(),
+                ["ncc.html", "part1.smil", "text/part1.html"],
+                folder.path
+            )
+            XCTAssertTrue(try DAISYParser.extractMarkdown(from: folder).contains("Unlay the strands"), folder.path)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// The smallest DAISY 2.02 navigation file: a title and one heading.
     static let minimalNCC = """
     <html><head><meta name="dc:title" content="Notes on Rope Splicing"/></head>
     <body><h1><a href="part1.smil#p1">Short Splice</a></h1></body></html>
+    """
+
+    /// The smallest SMIL file: the heading's one text fragment.
+    static let minimalSMIL = """
+    <?xml version="1.0" encoding="utf-8"?>
+    <smil><body><seq><par id="p1"><text src="text/part1.html#t1"/></par></seq></body></smil>
+    """
+
+    /// The smallest DAISY 2.02 text file: the fragment the SMIL file names.
+    static let minimalText = """
+    <html><body><p id="t1">Unlay the strands for twelve turns before tucking them against the lay.</p></body></html>
     """
 
     /// The smallest DAISY 3 package file: a title and one DTBook.

@@ -124,19 +124,25 @@ class DirectoryFileProvider: DAISYFileProvider {
         self.baseURL = baseURL
     }
 
+    /// Every file in the folder and the folders inside it, by its path
+    /// relative to the folder. Enumerating by path yields those relative
+    /// paths directly. Deriving them by deleting the folder's path from each
+    /// enumerated URL failed wherever that path passed through a symbolic
+    /// link, as /tmp and /var do: the URLs then start with the link's target
+    /// (/private/var/…), and every file was listed under a wrong path, so no
+    /// book in such a folder could be read (TODO I02).
     func listFiles() -> [String] {
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: baseURL, includingPropertiesForKeys: nil) else {
+        guard let enumerator = fm.enumerator(atPath: baseURL.path) else {
             return []
         }
         var files: [String] = []
-        let basePath = baseURL.path
-        while let url = enumerator.nextObject() as? URL {
+        while let relative = enumerator.nextObject() as? String {
+            // Following symbolic links, as before: a link to a folder is
+            // not a file.
             var isDir: ObjCBool = false
-            fm.fileExists(atPath: url.path, isDirectory: &isDir)
+            fm.fileExists(atPath: baseURL.appendingPathComponent(relative).path, isDirectory: &isDir)
             if !isDir.boolValue {
-                let relative = url.path.replacingOccurrences(of: basePath, with: "")
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 files.append(relative)
             }
         }
