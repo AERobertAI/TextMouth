@@ -37,6 +37,9 @@ enum FileImportError: LocalizedError {
     /// A ZIP archive holds a link to a file outside it, which ZIPFoundation
     /// refuses to extract.
     case archiveLinksOutside
+    /// A ZIP archive holds a file whose path climbs out of the folder it is
+    /// extracted into, which is never extracted (TODO I05).
+    case archivePathOutside
 
     var errorDescription: String? {
         switch self {
@@ -47,6 +50,7 @@ enum FileImportError: LocalizedError {
         case .unplayableAudio(let failure): return failure.message
         case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive."
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
+        case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
         }
     }
 }

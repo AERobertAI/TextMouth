@@ -88,14 +88,33 @@ func makeTemporaryZip(
 /// deliberately crafted one can. ZIPFoundation reads sizes from the central
 /// directory and never compares the two copies.
 func setRecordedSize(of member: String, in url: URL, to size: UInt32) throws {
+    try rewriteRecordedField(at: (central: 24, local: 22), of: member, in: url, to: size)
+}
+
+/// Rewrites the checksum the ZIP archive at `url` records for `member`, in
+/// its central directory and its local header, to `checksum`, leaving its
+/// data alone, as damage to the data leaves it no longer matching.
+func setRecordedChecksum(of member: String, in url: URL, to checksum: UInt32) throws {
+    try rewriteRecordedField(at: (central: 16, local: 14), of: member, in: url, to: checksum)
+}
+
+/// Rewrites the 32-bit little-endian field that sits `offsets.central`
+/// bytes into `member`'s central directory header and `offsets.local` bytes
+/// into its local header, in the ZIP archive at `url`, to `value`.
+/// - Throws: when the archive has not exactly one of each header for `member`.
+private func rewriteRecordedField(
+    at offsets: (central: Int, local: Int),
+    of member: String,
+    in url: URL,
+    to value: UInt32
+) throws {
     var bytes = [UInt8](try Data(contentsOf: url))
     let name = Array(member.utf8)
     // Each header: its signature, where its name's length is kept, where the
-    // name starts, and where the uncompressed size is kept, as the ZIP
-    // format lays them out.
-    let headers: [(signature: [UInt8], nameLength: Int, nameStart: Int, sizeField: Int)] = [
-        ([0x50, 0x4B, 0x01, 0x02], 28, 46, 24),
-        ([0x50, 0x4B, 0x03, 0x04], 26, 30, 22)
+    // name starts, and where the field is kept, as the ZIP format lays them out.
+    let headers: [(signature: [UInt8], nameLength: Int, nameStart: Int, field: Int)] = [
+        ([0x50, 0x4B, 0x01, 0x02], 28, 46, offsets.central),
+        ([0x50, 0x4B, 0x03, 0x04], 26, 30, offsets.local)
     ]
     var rewritten = 0
     for header in headers {
@@ -104,7 +123,7 @@ func setRecordedSize(of member: String, in url: URL, to size: UInt32) throws {
             let nameEnd = start + header.nameStart + length
             guard nameEnd <= bytes.count, bytes[(start + header.nameStart)..<nameEnd].elementsEqual(name) else { continue }
             for byte in 0..<4 {
-                bytes[start + header.sizeField + byte] = UInt8(truncatingIfNeeded: size >> (8 * UInt32(byte)))
+                bytes[start + header.field + byte] = UInt8(truncatingIfNeeded: value >> (8 * UInt32(byte)))
             }
             rewritten += 1
         }

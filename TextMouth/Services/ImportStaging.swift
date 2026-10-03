@@ -30,7 +30,7 @@ final class ImportStaging {
     /// the cleanup of abandoned ones leaves alone. Imports normally run one
     /// at a time on the import queue, but tests and other callers can run
     /// them on other threads, so the set is locked.
-    private static let inUse = StagedNames()
+    private static let inUse = NamesInUse()
 
     /// A staging location beside `destination`, with a name no other import
     /// can choose.
@@ -199,8 +199,11 @@ final class ImportStaging {
     }
 }
 
-/// A set of staged package names shared by every thread that imports.
-private final class StagedNames: @unchecked Sendable {
+/// A set of names shared by every thread that imports: the staged packages
+/// (`ImportStaging`) or the extraction directories
+/// (`ArchiveExtractionDirectory`) this process's imports are using, which
+/// the cleanup of abandoned ones leaves alone.
+final class NamesInUse: @unchecked Sendable {
     private let lock = NSLock()
     private var names: Set<String> = []
 
