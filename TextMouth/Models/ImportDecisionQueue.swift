@@ -75,6 +75,14 @@ struct ImportDecisionQueue {
         return withdrawn
     }
 
+    /// Passes every book the waiting questions hold through `transform`,
+    /// keeping the questions, their order, and the count as they are. A
+    /// data-directory move gives the books their file paths in the new data
+    /// directory this way (TODO S04).
+    mutating func mapBooks(_ transform: (Book) -> Book) {
+        waiting = waiting.map { $0.mappingBooks(transform) }
+    }
+
     /// Starts counting afresh once no question is waiting, so the next
     /// question to arise is "1 of" the questions that follow it.
     private mutating func restartCountIfEmpty() {

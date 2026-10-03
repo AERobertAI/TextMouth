@@ -50,6 +50,40 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual([queue.position, queue.total], [4, 4])
     }
 
+    /// Mapping the waiting questions' books, as a data-directory move does
+    /// (TODO S04), passes every book a question holds through the transform
+    /// (a duplicate's new copy and the copy it matched, a ZIP archive's
+    /// books) and keeps each question itself, the order, and the count.
+    func testMappingBooksKeepsEachQuestionAndChangesOnlyItsBooks() {
+        var queue = ImportDecisionQueue()
+        let duplicate = Self.duplicateQuestion()
+        let original = Self.originalFileQuestion()
+        let book = Book(title: "Harbor Atlas", format: .txt, filePath: "/library/c.txt", md5Hash: "harbor")
+        let zip = ImportDecision(
+            kind: .zipFolder(.init(archiveURL: URL(fileURLWithPath: "/Downloads/Charts.zip"), books: [book], folderPath: "Charts")),
+            request: ImportRequest()
+        )
+        [duplicate, original, zip].forEach { queue.enqueue($0) }
+        queue.settleCurrent(followedBy: duplicate)
+
+        queue.mapBooks { book in
+            var moved = book
+            moved.filePath = "/moved" + book.filePath
+            return moved
+        }
+
+        XCTAssertEqual(queue.waiting.map(\.id), [duplicate.id, original.id, zip.id])
+        XCTAssertEqual([queue.position, queue.total], [2, 4])
+        XCTAssertEqual(queue.current?.duplicate?.book.filePath, "/moved/library/b.txt")
+        XCTAssertEqual(queue.current?.duplicate?.existing.filePath, "/moved/library/a.txt")
+        guard case .zipFolder(let batch) = queue.waiting[2].kind else {
+            return XCTFail("The ZIP question changed kind")
+        }
+        XCTAssertEqual(batch.books.map(\.filePath), ["/moved/library/c.txt"])
+        XCTAssertEqual(batch.books.map(\.id), [book.id])
+        XCTAssertEqual(batch.folderPath, "Charts")
+    }
+
     /// Withdrawing takes the chosen questions, the one being asked included,
     /// keeps the rest in order, and does not count the withdrawn as settled;
     /// once the queue is empty the count starts again.
