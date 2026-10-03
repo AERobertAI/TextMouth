@@ -191,28 +191,40 @@ struct BookPackage: Equatable, Sendable {
 }
 
 /// How far a book's download has got.
+///
+/// A sync service may report how much of a file still arriving it has
+/// downloaded. Such a part counts toward the progress: by size in
+/// `completedBytes`, by files in `partialFiles`. A file it reports nothing
+/// for counts only once it is on this Mac.
 struct BookDownloadProgress: Equatable, Sendable {
     /// Files of the book whose content is on this Mac.
     var completedFiles: Int
     /// Files in the book.
     var totalFiles: Int
-    /// Bytes of the files already on this Mac, by their reported sizes.
+    /// Bytes of the files already on this Mac, by their reported sizes, and
+    /// of the parts reported of files still arriving.
     var completedBytes: Int64
     /// Bytes of all the book's files by their reported sizes; 0 when no size
     /// is known.
     var totalBytes: Int64
+    /// When progress goes by files, the parts reported of files still
+    /// arriving, counted in files: 0.4 while the one file left is 40 percent
+    /// here. Always 0 by size, where those parts are bytes.
+    var partialFiles: Double = 0
 
-    /// Progress from 0 to 1: by bytes when sizes are known, otherwise by files.
+    /// Progress from 0 to 1: by bytes when sizes are known, otherwise by
+    /// files, the parts of files still arriving included.
     var fractionCompleted: Double {
         if totalBytes > 0 {
             return min(1, max(0, Double(completedBytes) / Double(totalBytes)))
         }
         guard totalFiles > 0 else { return 0 }
-        return min(1, max(0, Double(completedFiles) / Double(totalFiles)))
+        return min(1, max(0, (Double(completedFiles) + partialFiles) / Double(totalFiles)))
     }
 
     /// Whole percent from 0 to 100, rounded down, and never 100 while a file
-    /// is still missing (a file can report a size of 0).
+    /// is still missing: a file can report a size of 0, and one can be
+    /// reported whole a moment before it is on this Mac.
     var percent: Int {
         let whole = Int((fractionCompleted * 100).rounded(.down))
         return completedFiles < totalFiles ? min(whole, 99) : whole
