@@ -38,7 +38,26 @@ extension LibraryViewModel {
 
     /// Migrate any books still using old storage paths to .tmb packages,
     /// and fix any stale file paths pointing to old locations.
-    func migrateOldBooksIfNeeded() {
+    ///
+    /// The data directory may be in a cloud folder (FR02), so every check
+    /// and read of the repair runs with dataless files left in the cloud: one
+    /// that would download a file or a folder's listing fails at once instead
+    /// of waiting on the network, here on the main thread. Nothing is moved,
+    /// rewritten, adopted, separated, or relocated on the strength of a check
+    /// that met a dataless folder or a read that was refused: such a book
+    /// keeps its row as it is, and one `MAINTENANCE_SKIPPED_IN_CLOUD` line
+    /// counts such books.
+    /// - Parameter access: How the repair reaches the books' files: `live`
+    ///   in the app; tests pass one that pretends files are in the cloud.
+    func migrateOldBooksIfNeeded(access: MaintenanceFileAccess = .live) {
+        DatalessFiles.withoutDownloading {
+            repairLibrary(access: access)
+        }
+    }
+
+    /// The work of `migrateOldBooksIfNeeded(access:)`, run with dataless
+    /// files left in the cloud.
+    private func repairLibrary(access: MaintenanceFileAccess) {
         // Every repair below reconciles the index with the disk and then saves
         // the index. While the index cannot be read there is nothing to
         // reconcile, and saving would replace the evidence the user may still
@@ -48,77 +67,41 @@ extension LibraryViewModel {
             return
         }
 
+        let skips = CloudSkips(.startupRepair)
+        defer { skips.log() }
         var needsSave = false
 
         // A book taken out with Remove from Library Only stays out, even when
         // this index was saved before the removal. It goes first, so no
         // repair below touches its package.
-        if !RemovedFromLibraryMarker.removeRetiredBooks(from: &library).isEmpty { needsSave = true }
+        if !removeRetiredBooks(access: access, skips: skips).isEmpty { needsSave = true }
 
         // Merge folder rows that name one directory on this volume before the
         // repairs below reason about where each book's package lives.
         if repairEquivalentFolderDuplicates() { needsSave = true }
 
-        // Fix stale file paths — if the file doesn't exist at the stored path,
-        // search for the .tmb in the expected folder, then fall back to the root
-        // Library directory (fixes a bug where folder moves updated the path
-        // without physically moving the .tmb directory).
-        for i in library.books.indices {
-            let book = library.books[i]
-            if !book.tmbDirectoryName.isEmpty &&
-               !FileManager.default.fileExists(atPath: book.filePath) {
-                let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-
-                // First try the expected folder location
-                let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
-                let correctPath = tmbDir.appendingPathComponent(fileName).path
-                if FileManager.default.fileExists(atPath: correctPath) {
-                    library.books[i].filePath = correctPath
-                    needsSave = true
-                    continue
-                }
-
-                // Fall back: check root Library directory (the .tmb may never
-                // have been physically moved when the book was assigned to a folder)
-                let rootTmbDir = TextMouthPaths.tmbPath(folderPath: "", tmbName: book.tmbDirectoryName)
-                let rootPath = rootTmbDir.appendingPathComponent(fileName).path
-                if FileManager.default.fileExists(atPath: rootPath) {
-                    // Move the .tmb to the correct folder location
-                    do {
-                        if !book.folderPath.isEmpty {
-                            try? TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
-                        }
-                        try FileManager.default.moveItem(at: rootTmbDir, to: tmbDir)
-                        library.books[i].filePath = correctPath
-                    } catch {
-                        // Move failed — just update the path to where the file actually is
-                        library.books[i].filePath = rootPath
-                    }
-                    needsSave = true
-                }
-            }
-        }
+        if repairStaleFilePaths(access: access, skips: skips) { needsSave = true }
 
         // Move books that have no .tmb package yet into packages. Each copy
         // is verified before its original is removed; a book that cannot
         // move keeps its record and original, and the pass logs why.
-        let migration = FileImportService.migrateLegacyBooks(in: &library)
+        let migration = migrateLegacyBooks(access: access, skips: skips)
         if migration.migratedCount > 0 { needsSave = true }
 
         // Repair legacy package-name collisions before background parsing can
         // write two different books' caches and indexes into the same directory.
-        let separated = FileImportService.separateSharedTMBPackages(library: &library)
+        let separated = FileImportService.separateSharedTMBPackages(library: &library, access: access, skips: skips)
         if separated > 0 { needsSave = true }
 
         // Move .tmb packages that are at the root but should be in a subfolder.
         // This fixes books whose folder was assigned in the UI without physically
         // moving the directory (a bug fixed in d6c6b2c but existing books need repair).
-        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, access: access, skips: skips)
         if relocated > 0 { needsSave = true }
 
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
         // This recovers books left behind by interrupted imports or crashes.
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
         if adopted > 0 { needsSave = true }
 
         if needsSave {
@@ -127,6 +110,115 @@ extension LibraryViewModel {
 
         // Once, after the whole repair, so one alert covers every book.
         showLegacyMigrationIssues(migration)
+    }
+
+    /// Takes the books Remove from Library Only retired out of the library,
+    /// as `RemovedFromLibraryMarker.removeRetiredBooks(from:)` does, and
+    /// returns them. A book whose removal marker is in the cloud keeps its
+    /// row (FR02): the marker cannot be read without downloading it, and a
+    /// marker that cannot be read counts as retiring its book. The book is
+    /// counted in `skips`, and taken out once its marker is on this Mac.
+    private func removeRetiredBooks(access: MaintenanceFileAccess, skips: CloudSkips) -> [Book] {
+        let held = library.books.filter { book in
+            !book.tmbDirectoryName.isEmpty
+                && access.isInCloud(TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory))
+        }
+        guard !held.isEmpty else {
+            return RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
+        }
+        held.forEach(skips.record)
+        let heldIDs = Set(held.map(\.id))
+        var checkable = library
+        checkable.books.removeAll { heldIDs.contains($0.id) }
+        let retired = RemovedFromLibraryMarker.removeRetiredBooks(from: &checkable)
+        let retiredIDs = Set(retired.map(\.id))
+        library.books.removeAll { retiredIDs.contains($0.id) }
+        return retired
+    }
+
+    /// Fixes stale file paths: when a book's file is not at its recorded
+    /// path, the package is looked for in the book's folder, then at the top
+    /// of the library, where a folder assignment may have left it without
+    /// moving it (a bug fixed in d6c6b2c), and is moved into its folder.
+    /// Returns whether any row changed.
+    ///
+    /// Only a file found missing counts as missing (FR02). A check that met
+    /// a dataless folder, or a package that is itself in the cloud, decides
+    /// nothing: the book keeps its row as it is, and is counted in `skips`.
+    private func repairStaleFilePaths(access: MaintenanceFileAccess, skips: CloudSkips) -> Bool {
+        var changed = false
+        for i in library.books.indices {
+            let book = library.books[i]
+            guard !book.tmbDirectoryName.isEmpty else { continue }
+            /// What is at `url`, with the book counted in `skips` when the
+            /// answer is in the cloud.
+            func presence(of url: URL) -> ItemPresence {
+                let found = access.presence(of: url)
+                if found == .inCloud {
+                    skips.record(book)
+                }
+                return found
+            }
+            guard presence(of: book.bookFileURL) == .absent else { continue }
+            let fileName = book.bookFileURL.lastPathComponent
+
+            // First try the expected folder location
+            let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
+            let correctPath = tmbDir.appendingPathComponent(fileName)
+            switch presence(of: correctPath) {
+            case .present:
+                library.books[i].filePath = correctPath.path
+                changed = true
+                continue
+            case .inCloud:
+                continue
+            case .absent:
+                break
+            }
+
+            // Fall back: check root Library directory (the .tmb may never
+            // have been physically moved when the book was assigned to a folder)
+            let rootTmbDir = TextMouthPaths.tmbPath(folderPath: "", tmbName: book.tmbDirectoryName)
+            let rootPath = rootTmbDir.appendingPathComponent(fileName)
+            guard presence(of: rootPath) == .present else { continue }
+            // A package that is itself in the cloud is not moved on the
+            // strength of what this Mac knows of it.
+            guard !access.isDataless(rootTmbDir) else {
+                skips.record(book)
+                continue
+            }
+            // Move the .tmb to the correct folder location
+            do {
+                if !book.folderPath.isEmpty {
+                    try? TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
+                }
+                try FileManager.default.moveItem(at: rootTmbDir, to: tmbDir)
+                library.books[i].filePath = correctPath.path
+            } catch {
+                // Move failed — just update the path to where the file actually is
+                library.books[i].filePath = rootPath.path
+            }
+            changed = true
+        }
+        return changed
+    }
+
+    /// Moves the books recorded without a package into packages
+    /// (`FileImportService.migrateLegacyBooks(in:)`) and returns its report,
+    /// unless an original is in the cloud (FR02): copying it would download
+    /// it. The migration decides whether an original may be removed by every
+    /// record that reads it, so then none of the books moves this time; the
+    /// ones in the cloud are counted in `skips`, and all of them move at a
+    /// launch that finds their originals on this Mac.
+    private func migrateLegacyBooks(access: MaintenanceFileAccess, skips: CloudSkips) -> LegacyMigrationReport {
+        let inCloud = library.books.filter { book in
+            book.tmbDirectoryName.isEmpty && access.fileInCloud(of: book, reading: .content) != nil
+        }
+        guard inCloud.isEmpty else {
+            inCloud.forEach(skips.record)
+            return LegacyMigrationReport()
+        }
+        return FileImportService.migrateLegacyBooks(in: &library)
     }
 
     /// Tells the user, through the library's error alert, which legacy books
@@ -218,12 +310,36 @@ extension LibraryViewModel {
     /// waits for the one under way and holds the rest until it has published,
     /// and a book listed before the move is then analyzed in the new data
     /// directory.
-    func calculateMissingBookStats() {
+    ///
+    /// A book whose files are in the cloud is left as it is (FR02), and the
+    /// pass's one `MAINTENANCE_SKIPPED_IN_CLOUD` line counts such books (see
+    /// `commitStatistics(of:access:skips:)`).
+    /// - Parameters:
+    ///   - access: How the pass reaches the books' files: `live` in the app;
+    ///     tests pass one that pretends files are in the cloud.
+    ///   - completion: Called on the main actor once the pass has ended,
+    ///     after the updates of every book it analyzed.
+    func calculateMissingBookStats(
+        access: MaintenanceFileAccess = .live,
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
         let booksNeedingStats = library.books.filter(Self.needsContentAnalysis)
-        guard !booksNeedingStats.isEmpty else { return }
+        guard !booksNeedingStats.isEmpty else {
+            completion?()
+            return
+        }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
+            let skips = CloudSkips(.statistics)
+            defer {
+                // Once the pass ends, however it ends. The completion is
+                // queued behind every update the pass sent the main queue.
+                skips.log()
+                if let completion {
+                    DispatchQueue.main.async { completion() }
+                }
+            }
             for listedBook in booksNeedingStats {
                 let shouldContinue = autoreleasepool {
                     boundary.perform(.contentAnalysis) { _ -> Bool in
@@ -231,29 +347,15 @@ extension LibraryViewModel {
                         // paths in the data directory in use now.
                         let book = boundary.rebasedToCurrent(listedBook)
                         guard let self = self else { return false }
-                        guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
-
-                        do {
-                            let analysis = try BookContentAnalysisService.load(book: book)
-                            // `book` is the row as it was when this pass began. The
-                            // result lands on the book's latest state; a dropped one
-                            // leaves the row alone, so a later pass tries again.
-                            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                                for: book,
-                                index: analysis.index,
-                                cacheFormatVersion: analysis.cacheFormatVersion
-                            ) else { return true }
-                            let summary = ContentAnalysisSummary(committed: committed)
-
-                            DispatchQueue.main.async {
-                                guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
-                                    return
-                                }
-                                summary.apply(to: &self.library.books[index])
-                                self.save()
+                        guard let summary = Self.commitStatistics(of: book, access: access, skips: skips) else {
+                            return true
+                        }
+                        DispatchQueue.main.async {
+                            guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
+                                return
                             }
-                        } catch {
-                            // Silently skip books that fail to parse — they'll be parsed when opened
+                            summary.apply(to: &self.library.books[index])
+                            self.save()
                         }
                         return true
                     }
@@ -264,11 +366,58 @@ extension LibraryViewModel {
         }
     }
 
+    /// Analyzes `book` for the statistics pass, on the pass's thread, and
+    /// commits the analysis to the book's record; returns the analysis
+    /// fields its package now records, or nil when nothing was committed.
+    ///
+    /// A book is left as it is, and counted in `skips`, when any of its
+    /// files is in the cloud (FR02): the pass can read its record, its text
+    /// cache, and its content, which for an audiobook is every track. Every
+    /// read runs with dataless files left in the cloud, and a read refused
+    /// because it met a dataless file leaves the book the same way, as does
+    /// a file that went to the cloud while the book was read: nothing read in
+    /// part is committed. A book whose file is missing, or that fails to
+    /// parse, is skipped quietly too, and is parsed when it is opened.
+    nonisolated private static func commitStatistics(
+        of book: Book,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips
+    ) -> ContentAnalysisSummary? {
+        do {
+            try access.requireOnThisMac(book, reading: .all)
+            guard access.presence(of: book.bookFileURL) == .present else { return nil }
+            return try access.read(book.bookFileURL) {
+                let analysis = try BookContentAnalysisService.load(
+                    book: book,
+                    hasher: access.hasher,
+                    isDataless: access.isDataless
+                )
+                try access.requireOnThisMac(book, reading: .all)
+                // `book` is the row as it was when this pass began. The
+                // result lands on the book's latest state; a dropped one
+                // leaves the row alone, so a later pass tries again.
+                guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                    for: book,
+                    index: analysis.index,
+                    cacheFormatVersion: analysis.cacheFormatVersion
+                ) else { return nil }
+                return ContentAnalysisSummary(committed: committed)
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            skips.record(book)
+            return nil
+        } catch {
+            // Silently skip books that fail to parse — they'll be parsed when opened
+            return nil
+        }
+    }
+
     /// Bring every book's text cache and statistics up to date: caches first,
     /// then statistics, which can use them. Both run on background queues.
-    func updateContentCachesAndStatistics() {
-        extractMissingContentCaches(then: { [weak self] in
-            self?.calculateMissingBookStats()
+    /// - Parameter access: How both passes reach the books' files (FR02).
+    func updateContentCachesAndStatistics(access: MaintenanceFileAccess = .live) {
+        extractMissingContentCaches(access: access, then: { [weak self] in
+            self?.calculateMissingBookStats(access: access)
         })
     }
 
@@ -301,19 +450,29 @@ extension LibraryViewModel {
     /// or whose source or content.md has changed size since the cache was written.
     /// Runs in the background with progress tracking so the UI stays responsive.
     /// Calls the optional completion handler on the main actor when finished.
+    /// - Parameter access: How the batch reaches the books' files (FR02):
+    ///   `live` in the app; tests pass one that pretends files are in the
+    ///   cloud.
     func extractMissingContentCaches(
+        access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         // A second scene/action must not launch the same library migration again.
         guard !isExtracting else { return }
-        let booksNeedingCache = library.books.filter { book in
-            guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
-            // Needs cache if missing or if the stored version is outdated
-            if !MarkdownCacheService.cacheExists(for: book) { return true }
-            if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-            return Self.hasResizedTextCacheFile(book)
+        // These checks stat every book's files with dataless files left in
+        // the cloud (FR02): one that would download a folder's listing fails
+        // at once instead of waiting on the network, and the book it could
+        // not check is listed, for the batch to find its files in the cloud.
+        let booksNeedingCache = DatalessFiles.withoutDownloading {
+            library.books.filter { book in
+                guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
+                // Needs cache if missing or if the stored version is outdated
+                if !MarkdownCacheService.cacheExists(for: book) { return true }
+                if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+                return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
+            }
         }
-        rebuildTextCaches(books: booksNeedingCache, force: false, completion: completion)
+        rebuildTextCaches(books: booksNeedingCache, force: false, access: access, completion: completion)
     }
 
     /// Whether `book`'s source or content.md now has another size than the
@@ -326,30 +485,48 @@ extension LibraryViewModel {
     /// a new date is left to the next open, which reads it for its digest
     /// and keeps a cache that did not change. A book without fingerprints
     /// has nothing to compare.
-    nonisolated static func hasResizedTextCacheFile(_ book: Book) -> Bool {
+    ///
+    /// A dataless file is never resized by the size it reports (FR02): an
+    /// evicted iCloud Drive file reports 0 bytes, which would otherwise call
+    /// its cache stale and have it rebuilt from a source downloaded for it.
+    /// - Parameter isDataless: Whether a file is dataless: the maintenance
+    ///   access's check.
+    nonisolated static func hasResizedTextCacheFile(
+        _ book: Book,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
         guard let recorded = book.textCacheFingerprint else { return false }
+        let source = book.bookFileURL
+        let cache = MarkdownCacheService.cacheURL(for: book)
         return recorded.hasResizedFile(
-            sourceStamp: FileStamp(of: book.bookFileURL),
-            cacheStamp: FileStamp(of: MarkdownCacheService.cacheURL(for: book))
+            sourceStamp: FileStamp(of: source),
+            cacheStamp: FileStamp(of: cache),
+            sourceIsDataless: isDataless(source),
+            cacheIsDataless: isDataless(cache)
         )
     }
 
     /// Re-extract content.md caches for all non-audio books.
     /// Called from the "Redo Text Extraction" button in Storage Settings.
-    func redoAllTextExtraction() {
+    /// - Parameter access: How the pass reaches the books' files (FR02).
+    func redoAllTextExtraction(access: MaintenanceFileAccess = .live) {
         guard !isExtracting else { return }
         let booksToExtract = library.books.filter { book in
             !book.format.isAudio && !book.tmbDirectoryName.isEmpty
         }
-        rebuildTextCaches(books: booksToExtract, force: true)
+        rebuildTextCaches(books: booksToExtract, force: true, access: access)
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
     /// book and publishing each durable checkpoint before advancing progress.
     /// Bounded utility workers keep memory and CPU available for reading.
+    /// `access` is how each book's files are reached (FR02): a book whose
+    /// files are in the cloud counts toward the progress, is left as it is,
+    /// and is counted in the batch's one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
+        access: MaintenanceFileAccess,
         completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         guard !books.isEmpty else {
@@ -375,39 +552,20 @@ extension LibraryViewModel {
             self.extractionProgressMessage = "\(activity): \(self.extractionProgressCurrent) of \(books.count)..."
         }
 
+        let skips = CloudSkips(force ? .textReextraction : .textCacheUpdate)
+        // What the pass reads of each book. Redo Text Extraction writes a new
+        // text cache without reading the one it replaces.
+        let files: MaintainedFiles = force ? [.content, .record] : .all
+
         TextCacheUpdateQueue.run(books: books, update: { book in
-            let currentVersion = MarkdownCacheService.currentCacheVersion
-            let summary: ContentAnalysisSummary? = autoreleasepool {
-                if !force, let savedIndex = BookContentAnalysisService.completedTextCacheIndex(for: book) {
-                    // An earlier run already committed this book; repairing
-                    // the library summary requires no source parsing or writes.
-                    // The package records this index with the current version.
-                    var recovered = book
-                    recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-                    return ContentAnalysisSummary(committed: recovered)
-                }
-                var updatedBook = book
-                guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &updatedBook) else {
-                    return nil
-                }
-                do {
-                    // `book` is the row as it was when the batch was queued. The
-                    // result lands on the book's latest state; a dropped one
-                    // leaves the library version unchanged, so a later pass
-                    // tries again.
-                    guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                        for: updatedBook, index: contentIndex, cacheFormatVersion: currentVersion
-                    ) else { return nil }
-                    return ContentAnalysisSummary(committed: committed)
-                } catch {
-                    // Leave the library version unchanged so startup retries
-                    // a book whose new index could not be committed.
-                    return nil
-                }
+            let summary = autoreleasepool {
+                Self.updateTextCache(of: book, force: force, reading: files, access: access, skips: skips)
             }
             releaseBatchParserMemory()
             DispatchQueue.main.async { updateProgress(summary) }
         }, completion: { [weak self] in
+            // Every worker has returned, so the tally is complete.
+            skips.log()
             // Each worker enqueues its progress before returning, so this final
             // main-queue block follows all completed-book notifications.
             DispatchQueue.main.async { [weak self] in
@@ -416,6 +574,88 @@ extension LibraryViewModel {
                 completion?()
             }
         })
+    }
+
+    /// Brings `book`'s text cache up to date on a batch's worker thread, and
+    /// returns what its package now records, or nil when nothing new was
+    /// committed. `force` rebuilds the cache from the source even when an
+    /// earlier run committed it, as Redo Text Extraction does.
+    ///
+    /// A book is left as it is, and counted in `skips`, when any of the
+    /// `files` the batch reads is in the cloud (FR02). Its cache is caught up
+    /// the next time its files are on this Mac, and the reader, which
+    /// downloads a book before it loads it, rebuilds an outdated cache as it
+    /// loads. Every read runs with dataless files left in the cloud, and a
+    /// read refused because it met a dataless file leaves the book the same
+    /// way: it is never logged as a failure, never rebuilds a cache, and
+    /// never reaches the book's record.
+    nonisolated private static func updateTextCache(
+        of book: Book,
+        force: Bool,
+        reading files: MaintainedFiles,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips
+    ) -> ContentAnalysisSummary? {
+        do {
+            try access.requireOnThisMac(book, reading: files)
+            return try access.read(book.bookFileURL) {
+                try committedTextCache(of: book, force: force, reading: files, access: access)
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            skips.record(book)
+            return nil
+        } catch {
+            MarkdownCacheService.logGenerationFailure(error, for: book)
+            return nil
+        }
+    }
+
+    /// The work of `updateTextCache(of:force:reading:access:skips:)` for a
+    /// book whose `files` were on this Mac when it began: recovers the cache
+    /// an earlier run committed, or writes the cache from the source and
+    /// commits its analysis to the book's record.
+    /// - Throws: why no cache could be written, including the refusal of a
+    ///   read that met a file which went to the cloud meanwhile.
+    nonisolated private static func committedTextCache(
+        of book: Book,
+        force: Bool,
+        reading files: MaintainedFiles,
+        access: MaintenanceFileAccess
+    ) throws -> ContentAnalysisSummary? {
+        let currentVersion = MarkdownCacheService.currentCacheVersion
+        if !force, let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
+            for: book,
+            hasher: access.hasher,
+            isDataless: access.isDataless
+        ) {
+            // An earlier run already committed this book; repairing
+            // the library summary requires no source parsing or writes.
+            // The package records this index with the current version.
+            var recovered = book
+            recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
+            return ContentAnalysisSummary(committed: recovered)
+        }
+        var updatedBook = book
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updatedBook) else {
+            return nil
+        }
+        // A file that went to the cloud while the cache was written may have
+        // been read only in part, so nothing is committed from it.
+        try access.requireOnThisMac(book, reading: files)
+        do {
+            // `book` is the row as it was when the batch was queued. The
+            // result lands on the book's latest state; a dropped one
+            // leaves the library version unchanged, so a later pass
+            // tries again.
+            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                for: updatedBook, index: generated.content.contentIndex, cacheFormatVersion: currentVersion
+            ) else { return nil }
+            return ContentAnalysisSummary(committed: committed)
+        } catch {
+            // Leave the library version unchanged so startup retries
+            // a book whose new index could not be committed.
+            return nil
+        }
     }
 
     // MARK: - Directory Management

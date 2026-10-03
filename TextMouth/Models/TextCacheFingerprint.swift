@@ -68,6 +68,12 @@ enum FileStampComparison: Equatable {
     case resized
     /// The file is missing, is not a regular file, or cannot be examined.
     case unexamined
+    /// The file is dataless (FR02): only its metadata is on this Mac, and
+    /// its content is in the cloud. The size and date it reports describe
+    /// nothing a check can trust (an evicted iCloud Drive file can report 0
+    /// bytes), and reading it for its digest would download it, so it is
+    /// judged neither changed nor unchanged.
+    case dataless
 }
 
 // MARK: - File Fingerprint
@@ -110,6 +116,13 @@ struct FileFingerprint: Codable, Hashable, Sendable {
         if current.byteCount != byteCount { return .resized }
         if current.modificationTimeNanoseconds != modificationTimeNanoseconds { return .redated(current) }
         return .same
+    }
+
+    /// How the file compares with the stamp recorded here: `.dataless` when
+    /// `isDataless` says it is (FR02), whatever its stamp, and otherwise as
+    /// `comparison(with:)` has it.
+    func comparison(with current: FileStamp?, isDataless: Bool) -> FileStampComparison {
+        isDataless ? .dataless : comparison(with: current)
     }
 }
 
@@ -163,15 +176,22 @@ extension TextCacheFingerprint {
     /// is not a change: nothing could be extracted from it again, so the
     /// cache, now the only copy of the book's text, is kept as it is. A
     /// content.md that cannot be examined has changed.
+    ///
+    /// A dataless file (FR02), as `sourceIsDataless` and `cacheIsDataless`
+    /// say, is never read for its digest and never judged by the size and
+    /// date it reports: a dataless source is kept as one that cannot be
+    /// examined, and a dataless content.md is not stale.
     func verify(
         sourceURL: URL,
         sourceStamp: FileStamp?,
         cacheStamp: FileStamp?,
         cacheDigest: () throws -> String,
-        hasher: FingerprintHasher
+        hasher: FingerprintHasher,
+        sourceIsDataless: Bool = false,
+        cacheIsDataless: Bool = false
     ) rethrows -> TextCacheVerification {
         var verified = self
-        switch source.comparison(with: sourceStamp) {
+        switch source.comparison(with: sourceStamp, isDataless: sourceIsDataless) {
         case .resized:
             return .stale(.sourceChanged)
         case .redated(let stamp):
@@ -179,16 +199,16 @@ extension TextCacheFingerprint {
                 guard digest == source.digest else { return .stale(.sourceChanged) }
                 verified.source = FileFingerprint(stamp: stamp, digest: digest)
             }
-        case .same, .unexamined:
+        case .same, .unexamined, .dataless:
             break
         }
-        switch cache.comparison(with: cacheStamp) {
+        switch cache.comparison(with: cacheStamp, isDataless: cacheIsDataless) {
         case .resized, .unexamined:
             return .stale(.cacheChanged)
         case .redated(let stamp):
             guard try cacheDigest() == cache.digest else { return .stale(.cacheChanged) }
             verified.cache = FileFingerprint(stamp: stamp, digest: cache.digest)
-        case .same:
+        case .same, .dataless:
             break
         }
         return .current(verified)
@@ -197,13 +217,20 @@ extension TextCacheFingerprint {
     /// Whether the source or content.md, stamped now, has another size than
     /// recorded: a change that needs no digest to prove, so this can be
     /// asked of every book at startup. A source that cannot be examined has
-    /// not been resized (see `verify`); a content.md that cannot be has.
-    func hasResizedFile(sourceStamp: FileStamp?, cacheStamp: FileStamp?) -> Bool {
-        if source.comparison(with: sourceStamp) == .resized { return true }
-        switch cache.comparison(with: cacheStamp) {
+    /// not been resized (see `verify`); a content.md that cannot be has. A
+    /// dataless file has not been resized, whatever size it reports (FR02):
+    /// an evicted iCloud Drive file reports 0 bytes.
+    func hasResizedFile(
+        sourceStamp: FileStamp?,
+        cacheStamp: FileStamp?,
+        sourceIsDataless: Bool = false,
+        cacheIsDataless: Bool = false
+    ) -> Bool {
+        if source.comparison(with: sourceStamp, isDataless: sourceIsDataless) == .resized { return true }
+        switch cache.comparison(with: cacheStamp, isDataless: cacheIsDataless) {
         case .resized, .unexamined:
             return true
-        case .same, .redated:
+        case .same, .redated, .dataless:
             return false
         }
     }

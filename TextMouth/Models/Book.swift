@@ -291,9 +291,12 @@ struct Book: Identifiable, Codable, Hashable {
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
     }
 
-    /// The .tmb package directory URL
+    /// The .tmb package directory URL: in the library, or, while an import
+    /// is staging this book's package, wherever the import builds it, which
+    /// can be this Mac's Import Staging folder (`ImportStaging`, FR02).
     var tmbDirectory: URL {
-        TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbDirectoryName)
+        ImportStaging.directory(ofStagedPackage: tmbDirectoryName)
+            ?? TextMouthPaths.tmbPath(folderPath: folderPath, tmbName: tmbDirectoryName)
     }
 
     /// The actual book file URL inside the .tmb package

@@ -26,11 +26,13 @@ enum BookContentAnalysisService {
     /// it was written (TODO T07, see `loadExistingCache`): a cache whose
     /// source or content.md has changed since is rebuilt from the source.
     /// `hasher` computes the digests that check needs; tests pass one that
-    /// counts them.
+    /// counts them. `isDataless` says whether a file is dataless (FR02):
+    /// the maintenance access's check, or `DatalessFiles.isDataless`.
     static func load(
         book: Book,
         regenerateTextCache: Bool = false,
-        hasher: FingerprintHasher = .md5
+        hasher: FingerprintHasher = .md5,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
     ) throws -> Result {
         let url = URL(fileURLWithPath: book.filePath)
 
@@ -85,7 +87,8 @@ enum BookContentAnalysisService {
             cacheIsCurrent: !regenerateTextCache
                 && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
             verifying: !regenerateTextCache,
-            hasher: hasher
+            hasher: hasher,
+            isDataless: isDataless
         )
     }
 
@@ -117,7 +120,10 @@ enum BookContentAnalysisService {
     ///     reads a file only when its size is unchanged but its date is
     ///     not) logs `CACHE_STALE: <title>: <reason>` and rebuilds the cache
     ///     from the source. Unchanged files are verified by their sizes and
-    ///     dates alone, so an unchanged book is read without hashing.
+    ///     dates alone, so an unchanged book is read without hashing. A file
+    ///     `isDataless` calls dataless when it is stamped (FR02) is never
+    ///     judged by the size and date it reports, and a dataless source is
+    ///     never read for its digest (`TextCacheFingerprint.verify`).
     ///
     /// A saved index that fails validation or alignment is reported and
     /// replaced by a fresh index of the text, as before fingerprints. Since
@@ -132,7 +138,9 @@ enum BookContentAnalysisService {
     /// first open, or the statistics pass in the background. Its result does
     /// not count as the persisted index, so the caller's usual save records
     /// the fingerprints; that load reads both files in full, and every
-    /// later one compares stamps.
+    /// later one compares stamps. A cache whose source is dataless waits
+    /// for a load that finds the source on this Mac: reading it for its
+    /// digest would download it.
     ///
     /// When the source cannot be read again, a stale cache is read as it is,
     /// with the fingerprints it was written with, so the next load tries
@@ -141,16 +149,21 @@ enum BookContentAnalysisService {
         of book: Book,
         cacheIsCurrent: Bool,
         verifying: Bool,
-        hasher: FingerprintHasher
+        hasher: FingerprintHasher,
+        isDataless: (URL) -> Bool
     ) throws -> Result {
         let sourceURL = book.bookFileURL
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let record = book.storedBookInfo()
         let recorded = record?.state.textCacheFingerprint
         // Stamp both files before reading either, so a file that changes
-        // while it is read differs from its stamp next time.
+        // while it is read differs from its stamp next time. Whether each is
+        // dataless is asked with its stamp, since reading content.md for the
+        // reader downloads it.
         let sourceStamp = FileStamp(of: sourceURL)
         let cacheStamp = FileStamp(of: cacheURL)
+        let sourceIsDataless = isDataless(sourceURL)
+        let cacheIsDataless = isDataless(cacheURL)
         let bytes = try Data(contentsOf: cacheURL)
 
         // content.md's digest, computed only when a check needs it, and at
@@ -174,7 +187,9 @@ enum BookContentAnalysisService {
                 sourceStamp: sourceStamp,
                 cacheStamp: cacheStamp,
                 cacheDigest: cacheDigest,
-                hasher: hasher
+                hasher: hasher,
+                sourceIsDataless: sourceIsDataless,
+                cacheIsDataless: cacheIsDataless
             ) {
             case .current(let current):
                 fingerprint = current
@@ -224,7 +239,7 @@ enum BookContentAnalysisService {
         // every check, is fingerprinted for the caller's save to record: its
         // stamps as taken before reading, the bytes just read, and the
         // source read now.
-        if verifying, recorded == nil, cacheIsCurrent, let cacheStamp,
+        if verifying, recorded == nil, cacheIsCurrent, let cacheStamp, !sourceIsDataless,
            let source = FileFingerprint(of: sourceURL, hasher: hasher) {
             fingerprint = TextCacheFingerprint(
                 source: source,
@@ -269,31 +284,66 @@ enum BookContentAnalysisService {
     /// cache whose source or content.md changed since it was written, by the
     /// fingerprints the package recorded (which is reported as
     /// `CACHE_STALE: <title>: <reason>`). A file with a new date but the
-    /// recorded size is read for its digest, which decides.
-    static func completedTextCacheIndex(for book: Book, hasher: FingerprintHasher = .md5) -> BookContentIndex? {
-        guard !book.format.isAudio,
-              MarkdownCacheService.cacheExists(for: book),
-              let info = book.storedBookInfo(),
-              info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
+    /// recorded size is read for its digest, which decides. `isDataless`
+    /// says whether a file is dataless (FR02): a dataless file is never read
+    /// for its digest nor judged by the size and date it reports, and a
+    /// check that met one gives no index, as any unreadable file does.
+    static func completedTextCacheIndex(
+        for book: Book,
+        hasher: FingerprintHasher = .md5,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> BookContentIndex? {
+        (try? recoveredTextCacheIndex(for: book, hasher: hasher, isDataless: isDataless)) ?? nil
+    }
+
+    /// `completedTextCacheIndex(for:hasher:isDataless:)` for a maintenance
+    /// pass that reads with dataless files left in the cloud (FR02): a read
+    /// refused because it met a dataless file throws that refusal
+    /// (`DatalessFiles.isDownloadRefusal`) instead of answering nil, which
+    /// would have the cache rebuilt from its source. A file not downloaded
+    /// is no reason to rebuild anything; the pass leaves the book as it is.
+    static func recoveredTextCacheIndex(
+        for book: Book,
+        hasher: FingerprintHasher,
+        isDataless: (URL) -> Bool
+    ) throws -> BookContentIndex? {
+        guard !book.format.isAudio, MarkdownCacheService.cacheExists(for: book) else { return nil }
+        let info: BookInfo
+        do {
+            info = try BookInfo.load(from: book.tmbDirectory)
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            return nil
+        }
+        guard info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
               let index = info.contentIndex,
               let trustedIndex = trusted(index, for: book, audioBaseURL: nil) else { return nil }
         guard let recorded = info.state.textCacheFingerprint else { return trustedIndex }
+        let sourceURL = book.bookFileURL
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
-        let verification = try? recorded.verify(
-            sourceURL: book.bookFileURL,
-            sourceStamp: FileStamp(of: book.bookFileURL),
-            cacheStamp: FileStamp(of: cacheURL),
-            cacheDigest: { try hasher.digestOfFile(cacheURL) },
-            hasher: hasher
-        )
+        let verification: TextCacheVerification
+        do {
+            verification = try recorded.verify(
+                sourceURL: sourceURL,
+                sourceStamp: FileStamp(of: sourceURL),
+                cacheStamp: FileStamp(of: cacheURL),
+                cacheDigest: { try hasher.digestOfFile(cacheURL) },
+                hasher: hasher,
+                sourceIsDataless: isDataless(sourceURL),
+                cacheIsDataless: isDataless(cacheURL)
+            )
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            // content.md vanished or could not be read meanwhile: rebuild it.
+            return nil
+        }
         switch verification {
         case .current:
             return trustedIndex
         case .stale(let staleness):
             reportStaleCache(of: book, staleness)
-            return nil
-        case nil:
-            // content.md vanished or could not be read meanwhile: rebuild it.
             return nil
         }
     }

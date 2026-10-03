@@ -32,6 +32,12 @@ enum TextCacheUpdateQueue {
     }
 
     /// Inspect and enqueue packages from a utility queue, never from UI code.
+    ///
+    /// The inspection reads only metadata, with dataless files left in the
+    /// cloud (FR02): resolving a path through a dataless folder fails instead
+    /// of downloading its listing, and a source whose size cannot be read
+    /// runs alone, as a large one does. Each update decides for itself
+    /// whether its book's files are on this Mac to be read.
     private static func enqueue(
         books: [Book],
         concurrentEPUBs: Int,
@@ -47,9 +53,13 @@ enum TextCacheUpdateQueue {
         var scheduledPackages: Set<String> = []
 
         for book in books {
-            let package = book.tmbDirectory.resolvingSymlinksInPath().standardizedFileURL.path
+            let (package, size) = DatalessFiles.withoutDownloading { () -> (String, Int?) in
+                (
+                    book.tmbDirectory.resolvingSymlinksInPath().standardizedFileURL.path,
+                    try? URL(fileURLWithPath: book.filePath).resourceValues(forKeys: [.fileSizeKey]).fileSize
+                )
+            }
             let isRepeatedPackage = !scheduledPackages.insert(package).inserted
-            let size = try? URL(fileURLWithPath: book.filePath).resourceValues(forKeys: [.fileSizeKey]).fileSize
             let canOverlap = book.format == .epub && !isRepeatedPackage
                 && size.map { $0 <= maximumParallelEPUBBytes } == true
             let operation: @Sendable () -> Void = {
