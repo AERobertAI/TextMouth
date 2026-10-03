@@ -246,9 +246,8 @@ struct LibraryView: View {
                 )
             }
 
-            // Total time remaining bar (refreshTick forces periodic re-evaluation),
-            // with how many of the books shown are in the cloud (FR02)
-            let _ = libraryViewModel.refreshTick
+            // Total time remaining bar, with how many of the books shown are
+            // in the cloud (FR02)
             let summarizedBooks = displayedBooks
             TimeRemainingBar(
                 books: summarizedBooks,
@@ -309,8 +308,6 @@ struct LibraryView: View {
 
                 // Books section
                 Section {
-                    // Reference refreshTick so the list re-evaluates when the timer fires
-                    let _ = libraryViewModel.refreshTick
                     bookRows
                 } header: {
                     Text("Books (\(filteredBooks.count))")

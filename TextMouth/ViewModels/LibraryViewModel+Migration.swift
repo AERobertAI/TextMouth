@@ -33,7 +33,7 @@ private struct ContentAnalysisSummary: Sendable {
 }
 
 /// Extension for data migration, directory management, content cache extraction,
-/// statistics calculation, and periodic refresh timing.
+/// statistics calculation, and time estimation.
 extension LibraryViewModel {
 
     /// Migrate any books still using old storage paths to .tmb packages,
@@ -1225,20 +1225,6 @@ extension LibraryViewModel {
         }
         relauncher.quit()
         return .success("Opening the library in \(folder.path)…")
-    }
-
-    // MARK: - Refresh Timer
-
-    /// Start the periodic refresh timer that bumps refreshTick for time estimate updates
-    func startRefreshTimer() {
-        // Defensive invalidate-before-assign so a second call doesn't leak
-        // a Timer (two copies firing every 10s — visible as accelerated
-        // refreshTick updates and double the wakeups).
-        refreshTimer?.invalidate()
-        let timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshTick &+= 1 }
-        }
-        refreshTimer = LibraryRefreshTimer(timer: timer)
     }
 
     // MARK: - Time Estimation

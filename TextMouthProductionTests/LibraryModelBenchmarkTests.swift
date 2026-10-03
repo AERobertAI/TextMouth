@@ -3,7 +3,10 @@ import XCTest
 @testable import TextMouth
 
 /// Benchmarks for the library model's performance items in
-/// TODO-2026-09-04.md (PERF10, PERF11, PERF29, PERF12, PERF07).
+/// TODO-2026-09-04.md (PERF10, PERF11, PERF12, PERF07). PERF29's measured
+/// the refresh tick (6 publishes per idle minute) and went with it; the
+/// test that rows follow live positions without a tick is in
+/// LiveReadingPositionsTests.
 ///
 /// Each one measures what its item costs on a generated library the size
 /// of the developer's (643 books in 38 folders, `LibraryBenchmarkFixture`)
@@ -158,33 +161,6 @@ final class LibraryModelBenchmarkTests: XCTestCase {
                 model.updateLiveReadingPosition(bookID: bookID, position: position)
             }
         }
-    }
-
-    // MARK: - PERF29: The Refresh Tick
-
-    /// How many times an idle minute publishes the library model: a timer
-    /// bumped `refreshTick` every 10 seconds, re-rendering every Library
-    /// window's list though nothing it shows depends on the clock.
-    func testLibraryPublishesPerIdleMinute() throws {
-        let model = LibraryViewModel(initializeServices: false)
-        model.startRefreshTimer()
-        let timer = try XCTUnwrap(model.refreshTimer?.timer)
-        defer { timer.invalidate() }
-        var publishes = 0
-        let subscription = model.objectWillChange.sink { publishes += 1 }
-        defer { subscription.cancel() }
-
-        let ticksPerMinute = Int((60 / timer.timeInterval).rounded())
-        for _ in 0..<ticksPerMinute {
-            timer.fire()
-        }
-
-        LibraryBenchmarkClock.report(
-            "PERF29 library publishes per idle minute",
-            count: publishes,
-            note: "a tick every \(timer.timeInterval) s"
-        )
-        XCTAssertEqual(publishes, 6)
     }
 
     // MARK: - Reading the List as LibraryView Does

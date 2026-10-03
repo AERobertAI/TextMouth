@@ -75,6 +75,42 @@ final class LiveReadingPositionsTests: XCTestCase {
         XCTAssertNil(model.livePositions.entry(for: stranger).position)
     }
 
+    // MARK: - No Refresh Tick
+
+    /// A row's time left follows its reader's position as it moves, with no
+    /// clock (TODO PERF29): each report publishes the book's entry, which
+    /// redraws the row, and the row says the new time left at once. The
+    /// library model, which a 10-second tick used to publish so that rows
+    /// would refresh, publishes nothing at all.
+    func testARowsTimeLeftFollowsALivePositionWithNoTick() {
+        let (model, books) = makeModel()
+        let entry = model.livePositions.entry(for: books[0].id)
+        var rowRedraws = 0
+        var libraryPublishes = 0
+        let watchers = [
+            entry.objectWillChange.sink { rowRedraws += 1 },
+            model.objectWillChange.sink { libraryPublishes += 1 }
+        ]
+        defer { watchers.forEach { $0.cancel() } }
+
+        var spoken: [String] = []
+        for minute in 1...3 {
+            // 2,000 words at 200 a minute: each minute read is 1,000 characters.
+            let offset = minute * 1_000
+            let position = ReadingPosition(chapterIndex: 0, characterOffset: offset, globalCharacterOffset: offset)
+            model.updateLiveReadingPosition(bookID: books[0].id, position: position)
+            spoken.append(BookRow(book: model.library.books[0], wpm: 200, livePosition: entry).rowAccessibilityLabel)
+        }
+
+        XCTAssertEqual(spoken, [
+            "Harbor Ledger, by Odile Halvorsen, 10 percent, 9 minutes remaining, Plain Text",
+            "Harbor Ledger, by Odile Halvorsen, 20 percent, 8 minutes remaining, Plain Text",
+            "Harbor Ledger, by Odile Halvorsen, 30 percent, 7 minutes remaining, Plain Text"
+        ])
+        XCTAssertEqual(rowRedraws, 3, "each report redraws the row")
+        XCTAssertEqual(libraryPublishes, 0, "the library model published")
+    }
+
     // MARK: - Checkpoints and Closing
 
     /// A checkpoint takes over from the live position at once (it is the

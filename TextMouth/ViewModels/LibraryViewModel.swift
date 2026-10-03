@@ -73,8 +73,6 @@ final class LibraryViewModel: ObservableObject {
     @Published var openBookIDs: Set<UUID> = [] {
         didSet { livePositions.keepOnly(openBookIDs) }
     }
-    /// Incremented periodically to force library views to refresh time estimates
-    @Published var refreshTick: UInt = 0
 
     /// The questions imports are waiting to ask, one at a time and in the
     /// order they arose (TODO I01): whether to replace or keep a duplicate,
@@ -160,8 +158,6 @@ final class LibraryViewModel: ObservableObject {
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
-    /// Owns the main-run-loop timer through a handle that can cancel from any thread.
-    var refreshTimer: LibraryRefreshTimer?
     /// Shared config service used across extension files. Reached when
     /// first needed rather than when the model is made, so config.json is
     /// never read before the launch check has found the library (FR02).
@@ -216,16 +212,9 @@ final class LibraryViewModel: ObservableObject {
                 self.importProgressMessage = ""
             }
         }
-        startRefreshTimer()
         updateContentCachesAndStatistics()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
-    }
-
-    deinit {
-        // Background analysis can release the final reference. The handle moves
-        // timer cleanup to its owning thread without capturing this dying model.
-        refreshTimer?.invalidate()
     }
 
     // MARK: - Book Update Helpers
@@ -490,29 +479,6 @@ extension LibraryViewModel {
         // resumes it.
         dataDirectoryEnvironment.sessionLease?.pause()
         DiagnosticLog.event(.storage, "DATA_DIRECTORY_LOST: stopped saving until the library is back")
-    }
-}
-
-/// Keeps a Timer on the main run loop while allowing its owner to die on a worker
-/// queue. Global-actor isolation makes this handle Sendable; the Timer itself is
-/// accessed only on the thread where it was scheduled.
-@MainActor
-final class LibraryRefreshTimer {
-    let timer: Timer
-
-    /// Wrap a timer that was created on the main actor.
-    init(timer: Timer) {
-        self.timer = timer
-    }
-
-    /// Cancel immediately on the main thread, or keep just this handle alive until
-    /// the main queue can cancel. Repeated cancellation is safe for Foundation timers.
-    nonisolated func invalidate() {
-        if Thread.isMainThread {
-            MainActor.assumeIsolated { timer.invalidate() }
-        } else {
-            DispatchQueue.main.async { self.timer.invalidate() }
-        }
     }
 }
 
