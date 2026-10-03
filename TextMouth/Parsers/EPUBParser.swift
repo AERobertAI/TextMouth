@@ -235,7 +235,7 @@ enum EPUBParser {
 
         // Reopen and parse the prepared archive before touching the original.
         // This catches a corrupt update while the source EPUB is still intact.
-        guard let preparedArchive = try? Archive(url: tempURL, accessMode: .read),
+        guard let preparedArchive = Archive.openedForReading(at: tempURL),
               let preparedOPF = try? extractString(archive: preparedArchive, path: opfPath) else {
             throw EPUBParserError.writeFailed("Updated archive failed validation")
         }
