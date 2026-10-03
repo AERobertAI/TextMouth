@@ -1,10 +1,11 @@
 import Foundation
 
 /// TextMouth's one policy for its diagnostic logs: what a line may say,
-/// which lines are written, and how many (TODO Q07). Every log line in the
-/// app goes through here, to `TextMouthPaths.appendLog`, which writes it
-/// without ever blocking or crashing the app and rotates each file at 2 MB
-/// into a single `.previous` generation.
+/// which lines are written, and how many (TODO Q07). Log lines go through
+/// here, to `TextMouthPaths.appendLog`, which writes them without ever
+/// blocking or crashing the app and rotates each file at 2 MB into a single
+/// `.previous` generation. `LogContentPolicyTests` names the few files that
+/// still call that writer directly, until they move onto the policy.
 ///
 /// ## What a line may contain
 ///
@@ -349,8 +350,9 @@ extension DiagnosticLog {
             self.lastRefill = now
         }
 
-        /// The dropped lines to report at `now`, if any, and whether the
-        /// last report is old enough; reporting them starts a new count.
+        /// The lines dropped since the last report, when there are any and
+        /// that report is at least `reportInterval` old at `now`; reporting
+        /// them starts a new count.
         private mutating func takeReport(at now: TimeInterval) -> DroppedLines? {
             guard droppedCount > 0, let firstDrop else { return nil }
             if let lastReport, now - lastReport < reportInterval { return nil }
@@ -376,7 +378,7 @@ extension DiagnosticLog {
     /// the one mutable property, the limiters, is only read or changed while
     /// holding `lock`.
     final class Gate: @unchecked Sendable {
-        /// The gate every line in the app passes.
+        /// The gate the app's log lines pass.
         static let shared = Gate()
 
         /// Whether trace lines are written now.
