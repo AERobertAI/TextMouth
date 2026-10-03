@@ -5,12 +5,14 @@ import XCTest
 
 /// The Library Not Available screen as the user meets it (FR02): every
 /// control has an explicit label and a hint, Return presses Try Again, the
-/// VoiceOver focus target is the reason, the reason is announced once for
-/// each reason however many windows show the screen, and an app-wide action
-/// that needs the library is refused in words. SwiftUI builds the
-/// accessibility elements of its buttons only for a connected assistive
-/// app, so the test that reads them skips, rather than fails, when it
-/// exposes none; the wording test covers every label either way.
+/// VoiceOver focus target is the reason, a sentence pointing to Storage
+/// settings is read after the reason and before the buttons, the reason is
+/// announced once for each reason however many windows show the screen,
+/// and an app-wide action that needs the library is refused in words.
+/// SwiftUI builds the accessibility elements of its text and buttons only
+/// for a connected assistive app, so the tests that read them skip, rather
+/// than fail, when it exposes none; the wording test covers every label
+/// either way.
 @MainActor
 final class DataDirectoryUnavailableViewTests: XCTestCase {
 
@@ -20,9 +22,14 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
     // MARK: - Wording
 
     /// The heading, labels, hints, announcement, and refusals say what they
-    /// are about.
+    /// are about, and the pointer names Storage settings and the buttons
+    /// they show while the library isn't available.
     func testTheScreenIsWordedForTheListener() {
         XCTAssertEqual(DataDirectoryUnavailableText.title, "Library Not Available")
+        XCTAssertEqual(
+            DataDirectoryUnavailableText.anotherFolderPointer,
+            "To use another folder, open Settings, Storage, and choose Choose Another Library or Use Default Location."
+        )
         XCTAssertEqual(DataDirectoryUnavailableText.tryAgain, "Try Again")
         XCTAssertEqual(DataDirectoryUnavailableText.quit, "Quit TextMouth")
         XCTAssertTrue(DataDirectoryUnavailableText.tryAgainHint.hasSuffix("."))
@@ -65,6 +72,24 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
             )
             XCTAssertTrue(buttons[0].element.accessibilityPerformPress())
             XCTAssertTrue(waitUntil { tries.calls == ["try"] }, "pressing Try Again did \(tries.calls)")
+        }
+    }
+
+    /// VoiceOver reads the pointer to Storage settings after the reason and
+    /// before Try Again and Quit TextMouth, which follow in that order.
+    func testThePointerIsReadAfterTheReasonAndBeforeTheButtons() throws {
+        let pointer = DataDirectoryUnavailableText.anotherFolderPointer
+        let screen = makeScreen()
+
+        try withHostedView(screen, until: { !self.accessibilityElements(labelled: pointer, in: $0).isEmpty }) { hostingView in
+            let labels = labelsInReadingOrder(in: hostingView)
+            guard labels.contains(pointer) else {
+                throw XCTSkip("SwiftUI exposed no text to accessibility without an assistive app")
+            }
+            let expected = [reason.explanation, pointer, DataDirectoryUnavailableText.tryAgain, DataDirectoryUnavailableText.quit]
+            let positions = expected.compactMap { labels.firstIndex(of: $0) }
+            XCTAssertEqual(positions.count, expected.count, "VoiceOver can't reach each of \(expected) in \(labels)")
+            XCTAssertEqual(positions, positions.sorted(), "VoiceOver reads \(labels)")
         }
     }
 
@@ -191,6 +216,15 @@ final class DataDirectoryUnavailableViewTests: XCTestCase {
         guard let node = root as? NSAccessibilityProtocol else { return [] }
         let match = node.accessibilityIdentifier() == identifier ? [node] : []
         return match + (node.accessibilityChildren() ?? []).flatMap { elements(identified: identifier, in: $0) }
+    }
+
+    /// The label of every accessibility element below `root` that has one,
+    /// depth first in child order: the order VoiceOver moves through them.
+    private func labelsInReadingOrder(in root: Any) -> [String] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let label = node.accessibilityLabel() ?? ""
+        let own = label.isEmpty ? [] : [label]
+        return own + (node.accessibilityChildren() ?? []).flatMap { labelsInReadingOrder(in: $0) }
     }
 }
 
