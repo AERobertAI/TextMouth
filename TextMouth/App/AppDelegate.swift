@@ -46,13 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let buildIdentity = BuildIdentity.current
-        NSLog("%@", buildIdentity.diagnosticLine)
+        // The data directory first, so its Logs folder can take the line.
         try? TextMouthPaths.ensureDirectoryStructure()
-        TextMouthPaths.appendLog(
-            to: TextMouthPaths.debugLogFile,
-            message: buildIdentity.diagnosticLine
-        )
+        Self.logBuildIdentity(.current)
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
@@ -61,6 +57,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start hiding/showing context-specific menus based on active window type
         menuVisibilityManager.startObserving()
+    }
+
+    /// Records which build is running, as launch does: in the unified log,
+    /// which Console shows even for an app opened from Finder, and as the
+    /// debug log's `BUILD_IDENTITY` line, an event of the app category
+    /// (`DiagnosticLog`), so it is written whether or not tracing is on.
+    static func logBuildIdentity(_ identity: BuildIdentity) {
+        NSLog("%@", identity.diagnosticLine)
+        DiagnosticLog.event(.app, identity.diagnosticLine)
     }
 
     /// Disables macOS automatic window state restoration

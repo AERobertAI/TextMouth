@@ -458,13 +458,15 @@ final class ArchiveImportBoundsTests: XCTestCase {
 
     /// At startup the library removes, in the background, the extraction
     /// directory an interrupted import of a process no longer running left
-    /// in the data directory, with everything in it, and logs the removal.
+    /// in the data directory, with everything in it, and logs the removal,
+    /// naming the directory by its path inside the data directory.
     @MainActor
     func testStartupRemovesLeftoverExtractionDirectories() throws {
         let leftover = try makeLeftoverExtraction()
         let sandbox = try LibraryIndexSandbox.capture()
         defer { sandbox.restore() }
-        let logLine = "ARCHIVE_EXTRACTION_REMOVED: \(leftover.path): left by an interrupted import"
+        let insideDataDirectory = "\(ArchiveExtractionDirectory.folderName)/\(leftover.lastPathComponent)"
+        let logLine = "ARCHIVE_EXTRACTION_REMOVED: \(insideDataDirectory): left by an interrupted import"
 
         _ = LibraryViewModel()
 

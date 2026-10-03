@@ -324,9 +324,10 @@ final class ArchiveExtractionTests: XCTestCase {
 
     /// The sweep removes the extraction directories no import is using
     /// (those of stopped processes, and this process's own that none of its
-    /// imports holds) with everything inside, logs each, and leaves alone a
-    /// directory in use, another running process's, anything else named,
-    /// and a file named like one.
+    /// imports holds) with everything inside, logs each by its loggable path
+    /// and never its absolute one, and leaves alone a directory in use,
+    /// another running process's, anything else named, and a file named
+    /// like one.
     func testSweepRemovesOnlyAbandonedExtractionDirectories() throws {
         let stoppedProcess: Int32 = 4_000_001
         let runningProcess: Int32 = 4_000_002
@@ -344,15 +345,44 @@ final class ArchiveExtractionTests: XCTestCase {
 
         XCTAssertEqual(removed, 2)
         for gone in [stopped, ownAbandoned] {
+            let named = DiagnosticLog.loggablePath(gone)
             XCTAssertFalse(FileManager.default.fileExists(atPath: gone.path), gone.lastPathComponent)
             XCTAssertEqual(
-                debugLogLines(containing: "ARCHIVE_EXTRACTION_REMOVED: \(gone.path): left by an interrupted import").count,
+                debugLogLines(containing: "ARCHIVE_EXTRACTION_REMOVED: \(named): left by an interrupted import").count,
                 1
             )
+            XCTAssertEqual(debugLogLines(containing: gone.path), [], "the log named \(named) by its absolute path")
         }
         for kept in [inUse.directory, running, unrelated, malformed, fileNamedLikeOne] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path), kept.lastPathComponent)
         }
+    }
+
+    /// An abandoned extraction directory the sweep cannot remove, here
+    /// because a folder inside it may not have its contents deleted, stays
+    /// and is not counted, and its one log line names it by its loggable
+    /// path, never its absolute one.
+    func testSweepLogsADirectoryItCannotRemoveByItsLoggablePath() throws {
+        try XCTSkipIf(getuid() == 0, "the superuser can delete what permissions forbid")
+        let stuck = try makeDirectory("extract-4000001-\(UUID().uuidString)", holdingAFile: false)
+        let locked = stuck.appendingPathComponent("archive", isDirectory: true)
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data("Departs at nine.".utf8).write(to: locked.appendingPathComponent("timetable.txt"))
+        // Read and search only: the file inside cannot be deleted. The
+        // permission is restored before the sandbox folder is removed.
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: locked.path)
+        addTeardownBlock {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: locked.path)
+        }
+        let named = DiagnosticLog.loggablePath(stuck)
+
+        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent) { _ in false }
+
+        XCTAssertEqual(removed, 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: stuck.path))
+        XCTAssertEqual(debugLogLines(containing: "ARCHIVE_EXTRACTION_LEFT: \(named): could not be removed: ").count, 1)
+        XCTAssertEqual(debugLogLines(containing: "ARCHIVE_EXTRACTION_REMOVED: \(named):"), [])
+        XCTAssertEqual(debugLogLines(containing: stuck.path), [], "the log named \(named) by its absolute path")
     }
 
     /// Only an extraction directory's name gives a process identifier.

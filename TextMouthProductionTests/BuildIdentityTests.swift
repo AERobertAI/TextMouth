@@ -58,5 +58,25 @@ final class BuildIdentityTests: XCTestCase {
         XCTAssertTrue(identity.diagnosticLine.contains("builtAt=2026-07-30T17:00:00Z"))
         XCTAssertTrue(identity.diagnosticLine.contains("executable=/Applications/TextMouth.app"))
     }
+
+    /// Launch records the build in the debug log as an event, written with
+    /// tracing off, exactly as `diagnosticLine` spells it: its tag first
+    /// after the timestamp, and no trace marker. A fresh commit value tells
+    /// this line from the one the test host's own launch wrote.
+    @MainActor
+    func testLaunchRecordsTheBuildAsADebugLogEvent() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        setAppTracing(false)
+        let identity = BuildIdentity(
+            info: ["CFBundleShortVersionString": "0.1.2", "TextMouthGitCommit": UUID().uuidString],
+            executablePath: "/Applications/TextMouth.app/Contents/MacOS/TextMouth"
+        )
+
+        let lines = logLines(in: .debug) { AppDelegate.logBuildIdentity(identity) }
+            .filter { $0.contains(identity.gitCommit) }
+            .compactMap { line in line.range(of: ": ").map { String(line[$0.upperBound...]) } }
+
+        XCTAssertEqual(lines, [identity.diagnosticLine])
+    }
 }
 

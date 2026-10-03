@@ -173,22 +173,8 @@ final class LogContentPolicyTests: XCTestCase {
         }
         let violations = calls.flatMap(LogCallScanner.violations(in:))
             + sources.flatMap { LogCallScanner.taggedLiteralViolations(in: $0.text, file: $0.name) }
-        XCTAssertEqual(
-            violations.filter { !Self.knownViolations.contains("\($0.file): \($0.found)") }.map(\.description),
-            []
-        )
+        XCTAssertEqual(violations.map(\.description), [])
     }
-
-    /// What the scan finds in code outside this change, to repair when that
-    /// code moves onto the policy, named by file and finding so that a new
-    /// line of the same kind elsewhere still fails. The archive extraction,
-    /// on main since the archive-bounds merge, names an abandoned or stuck
-    /// extraction directory by its absolute path in its two
-    /// ARCHIVE_EXTRACTION_ lines; `DiagnosticLog.loggablePath` would name it
-    /// by its path inside the data directory.
-    private static let knownViolations: Set<String> = [
-        "ArchiveExtraction.swift: .path in a tagged line",
-    ]
 
     /// The scanner finds what the policy forbids however a call is laid out,
     /// and lets through lengths, titles in events, loggable paths, and words
@@ -242,9 +228,10 @@ final class LogContentPolicyTests: XCTestCase {
         "CONTENT_INDEX_REJECTED", "EPUB_INCOMPLETE_CONTENT", "FOLDER_REPAIR", "IMPORT_FAILED",
         "LEGACY_MIGRATION", "READING_STATS_DAY_KEYS", "STORED_VALUE_REPAIRED", "TEXT_ENCODING_FALLBACK",
         // Every other tag the debug log's events begin with.
-        "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
+        "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
+        "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
         "DAISY_PACKAGE_MISSING", "DAISY_PACKAGE_WHOLE_FOLDER", "DOCX_DAMAGED_METADATA",
-        "DOCX_INCOMPLETE_CONTENT", "EPUB_METADATA_WRITE_FAILED", "IMPORT_STAGING_LEFT",
+        "DOCX_INCOMPLETE_CONTENT", "EPUB_METADATA_WRITE_FAILED", "IMPORT_CANCELLED", "IMPORT_STAGING_LEFT",
         "IMPORT_STAGING_REMOVED", "LIBRARY_INDEX", "LIBRARY_REMOVAL", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED",
         "TMB_RECONCILE", "TRACE_SUPPRESSED",
@@ -290,24 +277,16 @@ final class LogContentPolicyTests: XCTestCase {
 
     // MARK: - The Writer
 
-    /// The files that still hand lines straight to the writer: code outside
-    /// this policy's change, to be moved onto `DiagnosticLog`. The last two
-    /// reached main with the archive-bounds and app-wide-action merges.
-    private static let filesStillWritingDirectly: Set<String> = [
-        "AppDelegate.swift", "BookContentAnalysisService.swift", "ConfigService.swift",
-        "ArchiveExtraction.swift", "LibraryWindowRouter.swift",
-    ]
-
-    /// Every other line goes through `DiagnosticLog`, the one place that
-    /// applies the policy: no other file calls the writer beneath it.
-    func testOnlyKnownFilesWriteAroundThePolicy() throws {
+    /// Every line goes through `DiagnosticLog`, the one place that applies
+    /// the policy: no other file calls the writer beneath it.
+    func testOnlyThePolicyCallsTheWriter() throws {
         let writingDirectly = try Self.appSources().filter { source in
             LogCallScanner.calls(in: source.text, file: source.name)
                 .contains { $0.function == "TextMouthPaths.appendLog" }
         }.map(\.name)
 
         XCTAssertTrue(writingDirectly.contains("DiagnosticLog.swift"), "the policy writes through the writer")
-        for file in writingDirectly where file != "DiagnosticLog.swift" && !Self.filesStillWritingDirectly.contains(file) {
+        for file in writingDirectly where file != "DiagnosticLog.swift" {
             XCTFail(
                 "\(file) calls TextMouthPaths.appendLog directly, around the log policy. Replace "
                     + "`TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)` with "
@@ -364,10 +343,11 @@ private enum LogCallScanner {
         LoggingFunction(name: "SleepTimerService.log", level: nil),
         LoggingFunction(name: "timerLog", level: nil),
         LoggingFunction(name: "transitionLog", level: nil),
+        LoggingFunction(name: "routingLog", level: nil),
         LoggingFunction(name: "voiceOverFocusLog", level: .trace),
         LoggingFunction(name: "diagnostic", level: .trace, file: "NowPlayingService.swift"),
-        // The writer itself, which files not yet moved onto the policy still
-        // call with their event lines.
+        // The writer itself, which only the policy calls; a call anywhere
+        // else is found, and `testOnlyThePolicyCallsTheWriter` fails it.
         LoggingFunction(name: "TextMouthPaths.appendLog", level: .event),
     ]
 

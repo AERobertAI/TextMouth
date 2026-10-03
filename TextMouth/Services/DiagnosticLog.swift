@@ -4,8 +4,8 @@ import Foundation
 /// which lines are written, and how many (TODO Q07). Log lines go through
 /// here, to `TextMouthPaths.appendLog`, which writes them without ever
 /// blocking or crashing the app and rotates each file at 2 MB into a single
-/// `.previous` generation. `LogContentPolicyTests` names the few files that
-/// still call that writer directly, until they move onto the policy.
+/// `.previous` generation. Nothing else calls that writer, as
+/// `LogContentPolicyTests` checks.
 ///
 /// ## What a line may contain
 ///
@@ -72,6 +72,9 @@ enum DiagnosticLog {
         case storage
         /// Listening statistics.
         case statistics
+        /// The app as a whole: its launch, and the app-wide actions it
+        /// routes to its windows (`LibraryWindowRouter`).
+        case app
     }
 
     /// The log files, all in the Logs folder of the data directory. Each

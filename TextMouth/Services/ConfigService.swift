@@ -877,11 +877,12 @@ final class ConfigService: ObservableObject {
 
     // MARK: - Diagnostics
 
-    /// Records a config.json event in the console and the debug log.
+    /// Records a config.json event in the console and the debug log, as
+    /// `CONFIG_FILE: <message>`, an event of the storage category
+    /// (`DiagnosticLog`). The policy names the file by its path inside the
+    /// data directory (`config.json`), never by its absolute path.
     private func log(_ message: String) {
-        let line = "CONFIG_FILE: \(message)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.storage, "CONFIG_FILE: \(message)")
     }
 
     /// Records that config.json could not be used, and that the settings in

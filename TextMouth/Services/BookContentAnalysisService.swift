@@ -332,14 +332,12 @@ enum BookContentAnalysisService {
         logLine("CACHE_STALE", about: book, staleness.rawValue)
     }
 
-    /// Record `<tag>: <title>: <detail>` in the console and the debug log. A
-    /// line break in the title becomes a space so the entry stays on one
-    /// line.
+    /// Record `<tag>: <title>: <detail>` in the console and the debug log, as
+    /// an event of the storage category (`DiagnosticLog`). The policy keeps
+    /// the entry on one line, a line break in the title or the detail
+    /// becoming a space.
     private static func logLine(_ tag: String, about book: Book, _ detail: String) {
-        let title = book.title.components(separatedBy: .newlines).joined(separator: " ")
-        let line = "\(tag): \(title): \(detail)"
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.storage, "\(tag): \(book.title): \(detail)")
     }
 
     private static func analyzeAudio(book: Book, url: URL) throws -> Result {
