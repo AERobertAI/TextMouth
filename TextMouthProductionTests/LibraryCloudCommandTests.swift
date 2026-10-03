@@ -359,6 +359,27 @@ final class LibraryCloudCommandTests: XCTestCase {
         XCTAssertEqual(books.map { fixture.states.state(of: $0.id) }, [.inCloud, .downloaded, .inCloud])
     }
 
+    /// Asking again while a removal runs removes nothing more: the second
+    /// request finds the book's removal already in hand, and says nothing.
+    func testRemovingTwiceAtOnceRemovesOnce() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        let removing = expectation(description: "the first removal reaches the storage")
+        fixture.storage.holdRemovals { removing.fulfill() }
+
+        let first = Task { await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil) }
+        await fulfillment(of: [removing], timeout: 10)
+        XCTAssertEqual(fixture.commands.booksBeingRemoved, [book.id])
+        let second = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        fixture.storage.releaseRemovals()
+        let firstRefusal = await first.value
+
+        XCTAssertNil(second)
+        XCTAssertNil(firstRefusal)
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [book.id])
+        XCTAssertTrue(fixture.commands.booksBeingRemoved.isEmpty)
+    }
+
     /// Only downloaded books are removed: a book in the cloud has nothing to
     /// remove, so nothing happens and nothing is said.
     func testOnlyDownloadedBooksAreRemoved() async {

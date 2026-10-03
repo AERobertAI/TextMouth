@@ -6,9 +6,10 @@ import Foundation
 //
 // The library list shows each book's cloud state from `BookCloudStates`
 // (see BookCloudNote.swift). `LibraryCloudRefresher` keeps that record
-// current while a Library window is visible, and `LibraryCloudCommand`
-// decides which cloud commands a book or a selection offers. Every read of
-// the file system goes through `BookCloudStorage`, off the main thread.
+// current while a Library window is visible, `LibraryCloudCommand` decides
+// which cloud commands a book or a selection offers, and
+// `LibraryCloudCommands` runs them. Every read of the file system goes
+// through `BookCloudStorage`, off the main thread.
 
 extension LibraryViewModel {
     /// The package of every book in the library, as the cloud services see
@@ -390,6 +391,8 @@ final class LibraryCloudCommands {
 
     /// The books the list is downloading or has queued to download, by ID.
     private(set) var booksDownloading: Set<UUID> = []
+    /// The books whose downloads the list is removing now, by ID.
+    private(set) var booksBeingRemoved: Set<UUID> = []
 
     /// The store the commands record into.
     private let states: BookCloudStates
@@ -569,18 +572,24 @@ final class LibraryCloudCommands {
     /// in the cloud, records them as in the cloud, and announces what
     /// happened from `window`.
     ///
-    /// Only downloaded books take part. A book open in a reader is refused
-    /// at once, without asking the storage (`BookCloudError.bookIsOpen`),
-    /// and the storage refuses a book with changes not uploaded yet
-    /// (`.notUploaded`); a refused book keeps its download. Nothing is
-    /// deleted from the cloud, so nothing asks first. The removals read and
-    /// change files, so they run off the main thread.
+    /// Only downloaded books take part, and none whose download the list is
+    /// removing already, so asking twice removes once. A book open in a
+    /// reader is refused at once, without asking the storage
+    /// (`BookCloudError.bookIsOpen`), and the storage refuses a book with
+    /// changes not uploaded yet (`.notUploaded`); a refused book keeps its
+    /// download. Nothing is deleted from the cloud, so nothing asks first.
+    /// The removals read and change files, so they run off the main thread.
     /// - Returns: The refusal for `window` to show when any book keeps its
     ///   download; nil when every download was removed, or none could be.
     @discardableResult
     func removeDownloads(of books: [Book], in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
-        let targets = books.filter { states.listedState(of: $0.id)?.canRemoveDownload == true }
+        let targets = books.filter { book in
+            !booksBeingRemoved.contains(book.id) && states.listedState(of: book.id)?.canRemoveDownload == true
+        }
         guard !targets.isEmpty else { return nil }
+        let targetIDs = Set(targets.map(\.id))
+        booksBeingRemoved.formUnion(targetIDs)
+        defer { booksBeingRemoved.subtract(targetIDs) }
         let provider = states.libraryLocation.provider
         let storage = storage()
         // Each book's package, or nil for a book open in a reader.

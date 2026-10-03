@@ -28,6 +28,10 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     private var gate: DispatchSemaphore?
     /// Called on the reading thread as each refresh starts to read.
     private var readObserver: (@Sendable () -> Void)?
+    /// While set, each removal waits on it.
+    private var removalGate: DispatchSemaphore?
+    /// Called on the removing thread as a held removal starts.
+    private var removalObserver: (@Sendable () -> Void)?
 
     /// Storage in front of `fake`.
     init(_ fake: FakeBookCloudStorage = FakeBookCloudStorage()) {
@@ -72,6 +76,27 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
         held?.signal()
     }
 
+    /// Makes the next removal call `observer` on its thread as it starts,
+    /// then wait until `releaseRemovals()`.
+    func holdRemovals(onRemoval observer: @escaping @Sendable () -> Void) {
+        lock.withLock {
+            removalGate = DispatchSemaphore(value: 0)
+            removalObserver = observer
+        }
+    }
+
+    /// Lets a held removal go on, and stops holding later ones.
+    func releaseRemovals() {
+        let held = lock.withLock { () -> DispatchSemaphore? in
+            defer {
+                removalGate = nil
+                removalObserver = nil
+            }
+            return removalGate
+        }
+        held?.signal()
+    }
+
     /// Counts the read, tells the observer, waits while held, then answers
     /// as the fake does.
     func libraryLocation() -> StorageLocation {
@@ -97,9 +122,12 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
         return fake.download(package)
     }
 
-    /// The fake's removal.
+    /// Tells the observer, waits while held, then removes as the fake does.
     func removeDownload(of package: BookPackage) throws {
         noteThread()
+        let (held, observer) = lock.withLock { (removalGate, removalObserver) }
+        observer?()
+        held?.wait()
         try fake.removeDownload(of: package)
     }
 }
