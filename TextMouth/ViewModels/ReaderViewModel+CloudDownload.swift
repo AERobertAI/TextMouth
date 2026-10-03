@@ -861,6 +861,8 @@ extension ReaderViewModel {
             return "changes not uploaded"
         case .bookIsOpen:
             return "the book is open"
+        case .keptOnThisMac:
+            return "the book is kept on this Mac"
         case .packageMissing:
             return "the package is not on this Mac"
         }

@@ -274,12 +274,14 @@ final class LogContentPolicyTests: XCTestCase {
         "DATA_DIRECTORY_SWITCH", "DATA_DIRECTORY_UNAVAILABLE", "DATA_DIRECTORY_UNMOUNTED",
         "LIBRARY_IDENTITY", "LIBRARY_SESSION", "READING_STATS_FILE", "SUBSTITUTIONS_FILE",
         // Cloud libraries (FR02): a book's download and the removal of its download, the library's
-        // Download Now and Remove Download, the reader's downloads and working copies, a
-        // maintenance pass leaving books in the cloud, and a record save leaving a record there.
+        // Download Now and Remove Download, Keep on This Mac and the downloads of kept books, the
+        // reader's downloads and working copies, a maintenance pass leaving books in the cloud,
+        // and a record save leaving a record there.
         "BOOK_RECORD_IN_CLOUD",
         "CLOUD_DOWNLOAD_FAILED", "CLOUD_DOWNLOAD_FINISHED", "CLOUD_DOWNLOAD_REMOVAL_FAILED",
         "CLOUD_DOWNLOAD_REMOVED", "CLOUD_DOWNLOAD_STARTED", "CLOUD_DOWNLOAD_STOPPED",
         "DOWNLOAD_NOW_FAILED", "DOWNLOAD_NOW_FINISHED", "DOWNLOAD_NOW_STARTED",
+        "KEEP_ON_MAC", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED", "KEPT_BOOK_DOWNLOAD_STARTED",
         "REMOVE_DOWNLOAD_FINISHED", "REMOVE_DOWNLOAD_REFUSED", "REMOVE_DOWNLOAD_STARTED",
         "READER_DOWNLOAD_CANCELLED", "READER_DOWNLOAD_FAILED", "READER_DOWNLOAD_FINISHED",
         "READER_DOWNLOAD_STARTED", "READER_READ_REFUSED",

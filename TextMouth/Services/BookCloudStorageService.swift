@@ -781,6 +781,7 @@ private extension BookCloudError {
         case .provider(let message), .removalFailed(let message): return "the sync service said: \(message)"
         case .notUploaded: return "changes are waiting to upload"
         case .bookIsOpen: return "the book is open"
+        case .keptOnThisMac: return "the book is kept on this Mac"
         case .packageMissing: return "the package is not on this Mac"
         }
     }

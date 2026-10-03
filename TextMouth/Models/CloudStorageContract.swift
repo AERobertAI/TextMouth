@@ -279,6 +279,9 @@ enum BookCloudError: Error, Equatable, Sendable {
     case notUploaded
     /// Remove Download refused: the book is open in a reader.
     case bookIsOpen
+    /// Remove Download refused: the book is kept on this Mac (Keep on This
+    /// Mac, `KeptBooks`).
+    case keptOnThisMac
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
@@ -305,6 +308,9 @@ enum BookCloudError: Error, Equatable, Sendable {
                 + "so its download can't be removed. Try again in a moment."
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
+        case .keptOnThisMac:
+            return "The book is kept on this Mac, so its download can't be removed. "
+                + "Choose Stop Keeping on This Mac first."
         case .removalFailed(let message):
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:
@@ -603,5 +609,12 @@ enum MachineLocalPaths {
     /// startup volume.
     static var importStaging: URL {
         root.appendingPathComponent("Import Staging", isDirectory: true)
+    }
+
+    /// The books this Mac keeps downloaded (Keep on This Mac, `KeptBooks`):
+    /// a choice of this Mac's own, which another Mac sharing the library
+    /// never reads, so it is kept here rather than in the data directory.
+    static var keptBooks: URL {
+        root.appendingPathComponent("Kept Books.json", isDirectory: false)
     }
 }

@@ -1,5 +1,6 @@
-import Foundation
+import AppKit
 import Combine
+import Foundation
 
 /// A single text substitution rule.
 struct SubstitutionRule: Codable, Identifiable, Equatable {
@@ -427,12 +428,29 @@ final class TextSubstitutionService: ObservableObject {
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
 
+    /// Whether the rules in use stand in for substitutions.json, found only
+    /// in the cloud (FR02 polish: several Macs): it was not read, since
+    /// reading it here, on the main thread, would have waited on the
+    /// network, and the sync service was asked for it. The standard rules
+    /// stand in meanwhile, and nothing is saved over the file, which holds
+    /// the user's own rules: it is read again when the app becomes active
+    /// and before each save, and once it is on this Mac its rules replace
+    /// the stand-ins, as when the data directory comes back.
+    private(set) var rulesAwaitFileInCloud = false
+    /// Reads substitutions.json: with dataless files left in the cloud,
+    /// unless a test reads it otherwise.
+    var readFile: SavedFile.Reader = SavedFile.readWithoutDownloading
+    /// Hears when the app becomes active, to read a file that waited in the
+    /// cloud again.
+    private var activationSubscription: AnyCancellable?
+
     static let shared = TextSubstitutionService()
 
     /// The app's service: `isEnabled` and the repeated-symbol settings from
     /// this process's preferences, which it then follows, and the rules from
     /// substitutions.json, read again when the data directory comes back
-    /// after it was unavailable.
+    /// after it was unavailable, and when the app becomes active while the
+    /// file waits in the cloud.
     private init() {
         let preferences = TextMouthRuntime.current.preferences
         self.preferences = preferences
@@ -445,6 +463,9 @@ final class TextSubstitutionService: ObservableObject {
         availabilitySubscription = NotificationCenter.default
             .publisher(for: .dataDirectoryDidBecomeAvailable)
             .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
+        activationSubscription = NotificationCenter.default
+            .publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in self?.readFileWaitingInTheCloud() }
     }
 
     /// A service of the caller's own: for deterministic production-target
@@ -659,8 +680,14 @@ final class TextSubstitutionService: ObservableObject {
 
     /// Writes the rules to the substitutions file. A failure is reported to
     /// the failure center with a retry that saves the rules as they are
-    /// then, and the next save that succeeds settles it (TODO S09).
+    /// then, and the next save that succeeds settles it (TODO S09). While
+    /// the file waits in the cloud, nothing is written over it
+    /// (`saveWhileFileInCloud()`).
     func saveRules() {
+        guard !rulesAwaitFileInCloud else {
+            saveWhileFileInCloud()
+            return
+        }
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             let encoder = JSONEncoder()
@@ -680,6 +707,33 @@ final class TextSubstitutionService: ObservableObject {
         }
     }
 
+    /// A save asked for while substitutions.json waits in the cloud: the
+    /// file is read again first. Once it is on this Mac, its rules replace
+    /// the stand-ins, dropping the change made to them, and nothing is
+    /// written; while it is still in the cloud, nothing may be written over
+    /// it, so the change is reported unsaved, with a retry that tries again.
+    private func saveWhileFileInCloud() {
+        readFileWaitingInTheCloud()
+        guard rulesAwaitFileInCloud else { return }
+        let url = TextMouthPaths.substitutionsFile
+        PersistenceFailureCenter.shared.recordFailure(
+            .substitutions,
+            path: url.path,
+            error: SavedFile.InCloudError(fileName: url.lastPathComponent)
+        ) { [weak self] _ in
+            self?.saveRules()
+        }
+    }
+
+    /// Reads substitutions.json into `rules`, with dataless files left in
+    /// the cloud, so the read never waits on the network. With no file, as
+    /// at the first launch, the standard rules are installed and saved. A
+    /// file that can't be read or decoded is preserved beside itself, and
+    /// the standard rules stand in for it until a save replaces it. A
+    /// file only in the cloud is asked of the sync service and logged once,
+    /// and the standard rules stand in, unsaved, until a read finds it on
+    /// this Mac (`rulesAwaitFileInCloud`); reading it again while it waits
+    /// leaves the rules standing in as they are.
     func loadRules() {
         // Nothing is read from a data directory the library model found
         // unavailable, and a file missing there is no first launch (FR02):
@@ -690,20 +744,69 @@ final class TextSubstitutionService: ObservableObject {
             return
         }
         rulesAwaitDataDirectory = false
+        let wasWaitingInTheCloud = rulesAwaitFileInCloud
+        rulesAwaitFileInCloud = false
         let url = TextMouthPaths.substitutionsFile
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        switch SavedFile.read(url, using: readFile) {
+        case .missing:
             // First launch: install default rules
             rules = Self.defaultRules
             saveRules()
-            return
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            rules = try JSONDecoder().decode([SubstitutionRule].self, from: data)
-        } catch {
-            print("Failed to load substitutions: \(error)")
+        case .contents(let data):
+            do {
+                rules = try JSONDecoder().decode([SubstitutionRule].self, from: data)
+            } catch {
+                standInForUnusableRulesFile(url, bytes: data, because: error.localizedDescription)
+            }
+        case .unreadable(let reason):
+            standInForUnusableRulesFile(url, bytes: nil, because: reason)
+        case .inCloud:
+            rulesAwaitFileInCloud = true
+            guard !wasWaitingInTheCloud else { return }
             rules = Self.defaultRules
+            SavedFile.requestDownload(of: url)
+            DiagnosticLog.event(
+                .storage,
+                "SUBSTITUTIONS_FILE: \(url.lastPathComponent) is only in the cloud, so it was not read; "
+                    + "asked the sync service for it, and the standard rules stand in until it is on this Mac"
+            )
         }
+    }
+
+    /// Puts the standard rules in place of substitutions.json at `url`,
+    /// which can't be read or decoded for `reason`, such as one a write
+    /// interrupted on another Mac cut short. The file is preserved beside
+    /// itself first, holding `bytes` when they could be read, so the save
+    /// that later replaces it loses none of the user's own rules, and one
+    /// line says so.
+    private func standInForUnusableRulesFile(_ url: URL, bytes: Data?, because reason: String) {
+        SavedFile.preserveUnusable(
+            url,
+            bytes: bytes,
+            because: reason,
+            logging: "SUBSTITUTIONS_FILE",
+            in: .storage,
+            standIn: "the standard rules stand in"
+        )
+        rules = Self.defaultRules
+    }
+
+    /// Reads substitutions.json again while its rules wait in the cloud, as
+    /// the app becomes active and before a save. Once the file is on this
+    /// Mac, its rules replace the stand-ins, and a change made to them is no
+    /// longer reported unsaved, as when the data directory comes back: the
+    /// file holds the user's own rules, which they never saw. While it is
+    /// still in the cloud, nothing changes.
+    func readFileWaitingInTheCloud() {
+        guard rulesAwaitFileInCloud else { return }
+        loadRules()
+        guard !rulesAwaitFileInCloud else { return }
+        clearCompiledRules()
+        PersistenceFailureCenter.shared.withdraw(.substitutions)
+        DiagnosticLog.event(
+            .storage,
+            "SUBSTITUTIONS_FILE: read \(rules.count) rules now that the file is on this Mac"
+        )
     }
 
     /// Reads substitutions.json once the data directory is back, when the
@@ -713,19 +816,25 @@ final class TextSubstitutionService: ObservableObject {
     func dataDirectoryBecameAvailable() {
         guard rulesAwaitDataDirectory, !TextMouthPaths.isDataDirectoryUnavailable else { return }
         loadRules()
-        regexCache.removeAll()
-        wholeWordRegexCache.removeAll()
+        clearCompiledRules()
         PersistenceFailureCenter.shared.withdraw(.substitutions)
+        // A file found only in the cloud said so as it was read.
+        guard !rulesAwaitFileInCloud else { return }
         DiagnosticLog.event(
             .storage,
             "SUBSTITUTIONS_FILE: read \(rules.count) rules now that the library is available"
         )
     }
 
-    func resetToDefaults() {
-        rules = Self.defaultRules
+    /// Forgets every compiled rule, for rules replaced all at once.
+    private func clearCompiledRules() {
         regexCache.removeAll()
         wholeWordRegexCache.removeAll()
+    }
+
+    func resetToDefaults() {
+        rules = Self.defaultRules
+        clearCompiledRules()
         saveRules()
     }
 

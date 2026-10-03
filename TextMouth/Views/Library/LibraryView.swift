@@ -168,6 +168,9 @@ struct LibraryView: View {
     /// Every book's cloud state (FR02), observed so the rows' notes follow
     /// each refresh and download. Rows read only what it recorded.
     @ObservedObject private var cloudStates = BookCloudStates.shared
+    /// The books this Mac keeps downloaded (Keep on This Mac), observed so
+    /// the rows' commands follow every change.
+    @ObservedObject private var keptBooks = KeptBooks.shared
     /// This window's token for the cloud refresher, which keeps refreshing
     /// while any Library window is visible (FR02).
     @State private var cloudRefreshToken = UUID()
@@ -298,11 +301,12 @@ struct LibraryView: View {
             }
 
             // Total time remaining bar, with how many of the books shown are
-            // in the cloud (FR02)
+            // in the cloud (FR02) and kept on this Mac (Keep on This Mac)
             TimeRemainingBar(
                 books: allBooks,
                 wpm: settingsViewModel.wordsPerMinute,
                 booksInCloud: cloudStates.countInTheCloud(allBooks),
+                booksKept: cloudStates.countKept(allBooks, in: keptBooks),
                 focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
                 shouldTriggerFocus: focusTarget == .timeSummary,
                 livePositions: libraryViewModel.livePositions
@@ -530,11 +534,13 @@ struct LibraryView: View {
         }
         .trackingRemovalPreferences($removalPreferences)
         // Keeps the books' cloud states refreshed while the window is
-        // visible, and shows Remove Download's refusals (FR02).
+        // visible, shows Remove Download's refusals (FR02), and takes the
+        // Library menu's Keep on This Mac and Stop Keeping on This Mac.
         .modifier(LibraryCloudWindowSupport(
             token: cloudRefreshToken,
             library: libraryViewModel,
-            refusal: $cloudRefusal
+            refusal: $cloudRefusal,
+            performKeepMenuCommand: performKeepMenuCommand
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
@@ -554,12 +560,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                // Menu command (no sourceWindow) — check this window is key
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             // Cmd+I: show info for the first selected book
             if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
@@ -568,11 +569,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             if let id = selectedBookIDs.first,
                let book = filteredBooks.first(where: { $0.id == id }) {
                 onOpenBook(book)
@@ -580,11 +577,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
             // Cmd+Delete: remove selected books from library
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let books = selectedBooks
             if !books.isEmpty {
                 libraryViewModel.removeBooks(books)
@@ -593,21 +586,13 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .newFolder)) { notification in
             // Cmd+Shift+N: create new folder
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             newFolderParentPath = currentFolderPath
             showNewFolderSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveToFolder)) { notification in
             // Cmd+Shift+M: move selected books to folder
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let books = selectedBooks
             if !books.isEmpty {
                 booksToMove = books
@@ -616,11 +601,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .selectAll)) { notification in
             // Cmd+A: select all visible books (in edit mode, use edit selection)
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             let allIDs = Set(filteredBooks.map { $0.id })
             if isEditMode {
                 editSelection = allIDs
@@ -632,11 +613,7 @@ struct LibraryView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleEditMode)) { notification in
             // Cmd+E: toggle edit mode
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             if isEditMode {
                 clearAllSelections()
             } else {
@@ -644,19 +621,11 @@ struct LibraryView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveBookUp)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             moveSelectedBookInManualOrder(direction: -1)
         }
         .onReceive(NotificationCenter.default.publisher(for: .moveBookDown)) { notification in
-            if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
-                guard hostWindow == nil || sourceWindow === hostWindow else { return }
-            } else {
-                if let hw = hostWindow, !hw.isKeyWindow { return }
-            }
+            guard takesCommand(notification) else { return }
             moveSelectedBookInManualOrder(direction: 1)
         }
         .sheet(isPresented: $showTextInput) {
@@ -849,7 +818,8 @@ struct LibraryView: View {
         let selectionCloudCommands = LibraryCloudCommand.commands(
             for: selection,
             isSelection: selection.count > 1,
-            states: cloudStates
+            states: cloudStates,
+            kept: keptBooks.bookIDs
         )
         // Every book's moves in the folder's manual order, read from the
         // order shown rather than by sorting the folder again for each row.
@@ -895,10 +865,16 @@ struct LibraryView: View {
             isEditMode: isEditMode,
             isEditSelected: editSelection.contains(book.id),
             cloudState: cloudStates.listedState(of: book.id),
+            isKeptOnThisMac: cloudStates.listsAsKept(book.id, in: keptBooks),
             targets: targets,
             cloudCommands: isSelectionRow
                 ? selectionCloudCommands
-                : LibraryCloudCommand.commands(for: targets, isSelection: false, states: cloudStates),
+                : LibraryCloudCommand.commands(
+                    for: targets,
+                    isSelection: false,
+                    states: cloudStates,
+                    kept: keptBooks.bookIDs
+                ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
             manualMoves: isSelectionRow ? nil : manualMoves[book.id],
             removalPreferences: removalPreferences,
@@ -968,6 +944,15 @@ struct LibraryView: View {
         }
     }
 
+    /// Runs Library > Keep on This Mac (`keeping`) or Stop Keeping on This
+    /// Mac, which `notification` carried, for the books selected here, when
+    /// this window takes the command; VoiceOver hears why when nothing
+    /// changes.
+    private func performKeepMenuCommand(_ keeping: Bool, _ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        LibraryCloudCommands.shared.setKeptFromMenu(keeping, for: selectedBooks, in: libraryViewModel, from: hostWindow)
+    }
+
     // MARK: - Finishing Sheets
 
     /// Finishes the operation a sheet started: after a success runs `close`,
@@ -1031,6 +1016,22 @@ struct LibraryView: View {
     private var selectedBooks: [Book] {
         let ids = effectiveSelection
         return filteredBooks.filter { ids.contains($0.id) }
+    }
+
+    /// Whether this Library window takes the menu command or keyboard
+    /// shortcut `notification` posts, as `WindowCommandRouting` decides: a
+    /// shortcut names the window it was pressed in (`sourceWindow` in its
+    /// user info), which alone takes it; a menu command names none, and the
+    /// key window takes it; a window whose NSWindow isn't known yet takes
+    /// either.
+    private func takesCommand(_ notification: Notification) -> Bool {
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        return WindowCommandRouting.shouldAccept(
+            hasSourceWindow: sourceWindow != nil,
+            sourceMatchesHost: sourceWindow === hostWindow,
+            hasHostWindow: hostWindow != nil,
+            hostWindowIsKey: hostWindow?.isKeyWindow ?? false
+        )
     }
 
     /// Where this list is: its category and, in Folders, its folder.
@@ -1285,8 +1286,9 @@ private struct ClosedLibraryWindowPlaceholder: View {
 // MARK: - Cloud Library Window Support (FR02)
 
 /// A Library window's part in the cloud library (FR02): while the window is
-/// visible, the shared refresher keeps the books' cloud states current, and
-/// the window shows the refusals of the Remove Download commands run in it.
+/// visible, the shared refresher keeps the books' cloud states current; the
+/// window shows the refusals of the Remove Download commands run in it; and
+/// it hears the Library menu's Keep on This Mac and Stop Keeping on This Mac.
 private struct LibraryCloudWindowSupport: ViewModifier {
     /// The window's token for the refresher.
     let token: UUID
@@ -1294,6 +1296,10 @@ private struct LibraryCloudWindowSupport: ViewModifier {
     let library: LibraryViewModel
     /// The refusal to show, cleared when its alert is dismissed.
     @Binding var refusal: LibraryCloudRefusal?
+    /// Runs Keep on This Mac (true) or Stop Keeping on This Mac (false) from
+    /// the Library menu, with the notification that carried it, which says
+    /// whether this window takes it.
+    let performKeepMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1302,6 +1308,12 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             }
             .onDisappear {
                 LibraryCloudRefresher.shared.libraryWindowDisappeared(token)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .keepOnThisMac)) { notification in
+                performKeepMenuCommand(true, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
+                performKeepMenuCommand(false, notification)
             }
             // Why Remove Download kept a book's download, which VoiceOver
             // has also heard announced.

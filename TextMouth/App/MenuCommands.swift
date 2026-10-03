@@ -198,6 +198,19 @@ struct LibraryCommands: Commands {
 
             Divider()
 
+            // Keeps the selected books downloaded on this Mac, or stops, in
+            // a library in the cloud (Keep on This Mac). The key Library
+            // window acts on its selection, and says why when nothing changes.
+            Button(LibraryCloudWording.keepName) {
+                NotificationCenter.default.post(name: .keepOnThisMac, object: nil)
+            }
+
+            Button(LibraryCloudWording.stopKeepingName) {
+                NotificationCenter.default.post(name: .stopKeepingOnThisMac, object: nil)
+            }
+
+            Divider()
+
             // "Remove from Library..." when it asks first; with confirmation
             // off it deletes at once, so it says "Move to Trash" or
             // "Delete Permanently".
@@ -278,6 +291,12 @@ extension Notification.Name {
     static let toggleEditMode = Notification.Name("toggleEditMode")
     static let moveBookUp = Notification.Name("moveBookUp")
     static let moveBookDown = Notification.Name("moveBookDown")
+    /// Posted by Library > Keep on This Mac: the key Library window keeps
+    /// its selected books downloaded on this Mac.
+    static let keepOnThisMac = Notification.Name("keepOnThisMac")
+    /// Posted by Library > Stop Keeping on This Mac: the key Library window
+    /// stops keeping its selected books on this Mac.
+    static let stopKeepingOnThisMac = Notification.Name("stopKeepingOnThisMac")
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")

@@ -34,6 +34,18 @@ final class ReadingStatsService: ObservableObject {
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
 
+    /// Whether `stats` stand in for reading_stats.json, found only in the
+    /// cloud (FR02 polish: several Macs): it was not read, since reading it
+    /// here, on the main thread, would have waited on the network, and the
+    /// sync service was asked for it. The stand-ins hold only the listening
+    /// credited since, so no save replaces the file meanwhile, which would
+    /// put this session's listening in place of all it holds: each save
+    /// reads it again first, and once it is on this Mac, adds the stand-ins
+    /// to what it holds and saves the sum.
+    private(set) var statsAwaitFileInCloud = false
+    /// Reads reading_stats.json, with dataless files left in the cloud.
+    private let readFile: SavedFile.Reader
+
     /// reading_stats.json: the file this service was created for, or else the
     /// one in the data directory in use, which moves when the library does.
     var fileURL: URL { customFileURL ?? TextMouthPaths.readingStatsFile }
@@ -104,15 +116,19 @@ final class ReadingStatsService: ObservableObject {
     ///   - userCalendar: The user's calendar now, read each time listening
     ///     is credited or totals are read: the system's unless a test
     ///     stands in another calendar system or time zone.
+    ///   - readFile: How the statistics file is read: with dataless files
+    ///     left in the cloud, unless a test reads it otherwise.
     init(
         fileURL: URL? = nil,
         checkpointInterval: TimeInterval = defaultCheckpointInterval,
-        userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar
+        userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar,
+        readFile: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading
     ) {
         precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
         self.checkpointInterval = checkpointInterval
         self.userCalendar = userCalendar
+        self.readFile = readFile
         if fileURL == nil {
             // Nothing is read from a data directory the library model found
             // unavailable (FR02): fresh statistics stand in until it is back.
@@ -122,8 +138,7 @@ final class ReadingStatsService: ObservableObject {
                 .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
         }
         if !statsAwaitDataDirectory {
-            // `self.fileURL` is the resolved location, not the optional parameter.
-            stats = Self.load(from: self.fileURL)
+            loadStatsFile()
         }
         migrateDayKeysIfNeeded(at: Date())
         startCheckpointTimer()
@@ -135,7 +150,7 @@ final class ReadingStatsService: ObservableObject {
     func dataDirectoryBecameAvailable() {
         guard statsAwaitDataDirectory, !TextMouthPaths.isDataDirectoryUnavailable else { return }
         statsAwaitDataDirectory = false
-        stats = Self.load(from: fileURL)
+        loadStatsFile()
         migrateDayKeysIfNeeded(at: Date())
         PersistenceFailureCenter.shared.withdraw(.statistics)
         DiagnosticLog.event(.statistics, "READING_STATS_FILE: read the statistics now that the library is available")
@@ -149,18 +164,135 @@ final class ReadingStatsService: ObservableObject {
     /// nothing for statistics already migrated or new, and waits for a
     /// later launch while the clock reads a date before TextMouth existed.
     private func migrateDayKeysIfNeeded(at now: Date) {
-        guard stats.dayKeyVersion == nil,
+        guard let migrated = dayKeysMigrated(stats, at: now) else { return }
+        stats = migrated
+        save()
+    }
+
+    /// `saved` with day keys from before TODO C06 rewritten as Gregorian
+    /// keys, with what changed logged, as `migrateDayKeysIfNeeded(at:)`
+    /// describes; nil when they need no migration now.
+    private func dayKeysMigrated(_ saved: ReadingStats, at now: Date) -> ReadingStats? {
+        guard saved.dayKeyVersion == nil,
               let migration = ListeningDayKeyMigration(userCalendar: userCalendar(), now: now)
-        else { return }
-        let outcome = migration.migrate(stats.dailyListeningSeconds)
-        var migrated = stats
+        else { return nil }
+        let outcome = migration.migrate(saved.dailyListeningSeconds)
+        var migrated = saved
         migrated.dailyListeningSeconds = outcome.dailyListeningSeconds
         migrated.dayKeyVersion = ListeningDays.keyVersion
-        stats = migrated
         if let line = outcome.logLine {
             DiagnosticLog.event(.statistics, line)
         }
-        save()
+        return migrated
+    }
+
+    // MARK: - The Statistics File
+
+    /// What reading_stats.json gives the service when it is read.
+    private enum SavedStats {
+        /// The statistics the file holds.
+        case saved(ReadingStats)
+        /// None: there is no file yet, or it can't be used.
+        case none
+        /// The file is only in the cloud, so it was not read.
+        case inCloud
+    }
+
+    /// Reads reading_stats.json into `stats`: its statistics, or fresh ones
+    /// when there is none yet or it can't be used, or, when it is only in
+    /// the cloud, fresh ones that stand in for it until a save finds it on
+    /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it.
+    private func loadStatsFile() {
+        statsAwaitFileInCloud = false
+        switch readSavedStats() {
+        case .saved(let saved):
+            stats = saved
+        case .none:
+            stats = ReadingStats()
+        case .inCloud:
+            stats = ReadingStats()
+            statsAwaitFileInCloud = true
+            SavedFile.requestDownload(of: fileURL)
+            DiagnosticLog.event(
+                .statistics,
+                "READING_STATS_FILE: \(fileURL.lastPathComponent) is only in the cloud, so it was not read; "
+                    + "asked the sync service for it, and this session's listening is kept in memory "
+                    + "until the file is on this Mac"
+            )
+        }
+    }
+
+    /// What reading_stats.json holds, read with dataless files left in the
+    /// cloud, so the read never waits on the network. A file that can't be
+    /// read or decoded, such as one a write interrupted on another Mac cut
+    /// short, holds none: it is preserved beside itself first, so the save
+    /// that later replaces it loses nothing it held.
+    private func readSavedStats() -> SavedStats {
+        switch SavedFile.read(fileURL, using: readFile) {
+        case .missing:
+            return .none
+        case .inCloud:
+            return .inCloud
+        case .contents(let data):
+            do {
+                return .saved(try Self.decodeStats(data))
+            } catch {
+                preserveUnusableStatsFile(bytes: data, because: error.localizedDescription)
+                return .none
+            }
+        case .unreadable(let reason):
+            preserveUnusableStatsFile(bytes: nil, because: reason)
+            return .none
+        }
+    }
+
+    /// Keeps a copy of reading_stats.json, which can't be used, beside it,
+    /// holding `bytes` when they could be read, and logs why the statistics
+    /// start afresh.
+    private func preserveUnusableStatsFile(bytes: Data?, because reason: String) {
+        SavedFile.preserveUnusable(
+            fileURL,
+            bytes: bytes,
+            because: reason,
+            logging: "READING_STATS_FILE",
+            in: .statistics,
+            standIn: "the statistics start afresh"
+        )
+    }
+
+    /// Whether a save may replace reading_stats.json now: always, unless
+    /// the file waits in the cloud (`statsAwaitFileInCloud`). Then it is read
+    /// again first: once it is on this Mac, the listening credited meanwhile
+    /// is added to what it holds, the wait ends, and the save goes on with
+    /// the sum; while it is still in the cloud, nothing is written over it.
+    private func mayReplaceStatsFile() -> Bool {
+        guard statsAwaitFileInCloud else { return true }
+        let saved: ReadingStats
+        switch readSavedStats() {
+        case .inCloud:
+            return false
+        case .none:
+            // The file went, or can't be used: the stand-ins are all there is.
+            saved = ReadingStats()
+        case .saved(let found):
+            saved = dayKeysMigrated(found, at: Date()) ?? found
+        }
+        let standIn = stats
+        stats = saved.adding(standIn)
+        statsAwaitFileInCloud = false
+        DiagnosticLog.event(
+            .statistics,
+            "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "
+                + "\(Int(standIn.totalListeningSeconds.rounded())) seconds listened while it was in the cloud"
+        )
+        return true
+    }
+
+    /// Decodes reading_stats.json's bytes, as `write` encodes them.
+    private static func decodeStats(_ data: Data) throws -> ReadingStats {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ReadingStats.self, from: data)
     }
 
     /// Stops the checkpoint timer. At termination this follows
@@ -371,8 +503,10 @@ final class ReadingStatsService: ObservableObject {
 
     /// Persist stats to disk on a background queue. Safe to call
     /// from the main thread — the actual encoding and file write
-    /// are dispatched asynchronously.
+    /// are dispatched asynchronously. Nothing is written while the file
+    /// waits in the cloud (`mayReplaceStatsFile()`).
     func save() {
+        guard mayReplaceStatsFile() else { return }
         // Snapshot the stats value type on the calling thread so
         // the background write captures a consistent copy, and resolve
         // the destination here too, where the main actor owns it
@@ -390,8 +524,10 @@ final class ReadingStatsService: ObservableObject {
     /// this one may have done. The statistics written are the ones in use
     /// now: they hold everything the failed save had, since a failure
     /// changes nothing in memory, and they go to wherever this service's
-    /// file is now, which moves when the data directory does.
+    /// file is now, which moves when the data directory does. Nothing is
+    /// written while the file waits in the cloud (`mayReplaceStatsFile()`).
     func retrySave(failureID: PersistenceFailure.ID) {
+        guard mayReplaceStatsFile() else { return }
         let snapshot = stats
         let url = fileURL
         let retry = retryAfterFailure
@@ -444,23 +580,6 @@ final class ReadingStatsService: ObservableObject {
     /// touches only that queue, so any thread may wait, test tear-down too.
     nonisolated static func waitForQueuedSaves() {
         saveQueue.sync {}
-    }
-
-    /// Reads the statistics saved at `url`, starting empty when there is no
-    /// file yet or it cannot be decoded.
-    private static func load(from url: URL) -> ReadingStats {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            return ReadingStats()
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(ReadingStats.self, from: data)
-        } catch {
-            print("Failed to load reading stats: \(error)")
-            return ReadingStats()
-        }
     }
 
     /// Starts the timer that checkpoints the open session every
@@ -517,6 +636,24 @@ struct ReadingStats: Codable {
         dailyListeningSeconds[dayKey, default: 0] += seconds
         totalListeningSeconds += seconds
         bookListeningSeconds[bookID.uuidString, default: 0] += seconds
+    }
+
+    /// These statistics with `other`'s added: its listening to each day,
+    /// each book, and the total, and the books it finished that these don't
+    /// list yet. Statistics that stood in for a file only in the cloud are
+    /// added so to what the file holds once it is read. The day keys stay
+    /// these statistics' own version.
+    func adding(_ other: ReadingStats) -> ReadingStats {
+        var sum = self
+        sum.dailyListeningSeconds.merge(other.dailyListeningSeconds, uniquingKeysWith: +)
+        sum.totalListeningSeconds += other.totalListeningSeconds
+        sum.bookListeningSeconds.merge(other.bookListeningSeconds, uniquingKeysWith: +)
+        for entry in other.finishedBooks where !sum.finishedBooks.contains(where: {
+            $0.bookID == entry.bookID && $0.dateFinished == entry.dateFinished
+        }) {
+            sum.finishedBooks.append(entry)
+        }
+        return sum
     }
 }
 

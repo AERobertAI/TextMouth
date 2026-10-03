@@ -93,7 +93,8 @@ enum LibraryCloudRefreshScope: Comparable {
 /// off the main thread. Refreshes never overlap: a request made while one
 /// runs starts one more right after it, reading every book any of the
 /// requests asked for, so the last refresh always reads after the last
-/// request.
+/// request. After each refresh, the books kept on this Mac that it found
+/// only in the cloud are downloaded again (Keep on This Mac).
 @MainActor
 final class LibraryCloudRefresher {
     /// Waits for a duration, throwing when the waiting task is cancelled.
@@ -118,6 +119,9 @@ final class LibraryCloudRefresher {
     private let sleep: Sleep
     /// Where the app's activation is posted.
     private let notificationCenter: NotificationCenter
+    /// What follows each refresh, with the library it read: downloading
+    /// again the kept books it found only in the cloud.
+    private let afterRefresh: @MainActor (LibraryViewModel) -> Void
 
     /// The library the Library windows show, whose books are refreshed.
     private weak var library: LibraryViewModel?
@@ -143,18 +147,24 @@ final class LibraryCloudRefresher {
     ///   - notificationCenter: Where `NSApplication.didBecomeActiveNotification`
     ///     is posted.
     ///   - isEnabled: False for a refresher that never refreshes.
+    ///   - afterRefresh: What follows each refresh: the list's commands
+    ///     download again the kept books found only in the cloud.
     init(
         states: BookCloudStates = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         sleep: @escaping Sleep = { try await Task.sleep(for: $0) },
         notificationCenter: NotificationCenter = .default,
-        isEnabled: Bool = true
+        isEnabled: Bool = true,
+        afterRefresh: @escaping @MainActor (LibraryViewModel) -> Void = {
+            LibraryCloudCommands.shared.downloadEvictedKeptBooks(in: $0)
+        }
     ) {
         self.states = states
         self.storage = storage
         self.sleep = sleep
         self.notificationCenter = notificationCenter
         self.isEnabled = isEnabled
+        self.afterRefresh = afterRefresh
     }
 
     // MARK: Windows
@@ -201,12 +211,15 @@ final class LibraryCloudRefresher {
 
     /// Refreshes `scope`, then back to back what was requested meanwhile,
     /// until no request is left; then lets the next request start a new run.
+    /// Each refresh is followed by `afterRefresh`, which reads only what the
+    /// refresh recorded.
     private func refreshUntilCurrent(_ scope: LibraryCloudRefreshScope) async {
         var next: LibraryCloudRefreshScope? = scope
         while let scope = next {
             scopeRequestedWhileRunning = nil
             guard let library else { break }
             await states.refresh(packages(of: library, in: scope), using: storage())
+            afterRefresh(library)
             next = scopeRequestedWhileRunning
         }
         refreshing = nil
@@ -353,9 +366,32 @@ struct LibraryCloudCommand: Identifiable, Equatable {
         /// Remove Download: removes the local copies of downloaded books,
         /// which stay in the cloud.
         case removeDownload
+        /// Keep on This Mac: keeps books downloaded on this Mac from now on,
+        /// downloading at once those in the cloud (`KeptBooks`).
+        case keepOnThisMac
+        /// Stop Keeping on This Mac: leaves books' downloads to the sync
+        /// service and Remove Download again.
+        case stopKeepingOnThisMac
         /// Show in Finder: selects the books' packages in Finder, where the
         /// sync service's own commands are, such as Keep Downloaded.
         case showInFinder
+
+        /// The command's title for `count` books: its plain name for the one
+        /// book a menu is for, or a title counting the books of a selection.
+        func title(count: Int, forSelection: Bool) -> String {
+            switch self {
+            case .download:
+                return LibraryCloudWording.downloadTitle(count: count, forSelection: forSelection)
+            case .removeDownload:
+                return LibraryCloudWording.removeDownloadTitle(count: count, forSelection: forSelection)
+            case .keepOnThisMac:
+                return LibraryCloudWording.keepTitle(count: count, forSelection: forSelection)
+            case .stopKeepingOnThisMac:
+                return LibraryCloudWording.stopKeepingTitle(count: count, forSelection: forSelection)
+            case .showInFinder:
+                return LibraryCloudWording.showInFinderTitle(count: count, forSelection: forSelection)
+            }
+        }
     }
 
     /// What the command does.
@@ -372,48 +408,50 @@ struct LibraryCloudCommand: Identifiable, Equatable {
     /// The cloud commands for `targets`, in menu order:
     /// - Download Now for the books not downloaded, and Remove Download for
     ///   the downloaded ones, both only in a cloud library;
+    /// - Keep on This Mac for the books this Mac doesn't keep, and Stop
+    ///   Keeping on This Mac for the ones it does, both only in a cloud
+    ///   library, whatever each book's state, so a book waiting for sync can
+    ///   be kept before it arrives;
     /// - Show in Finder, in every library, for each book whose package is on
     ///   this Mac (all but those waiting for sync).
     ///
-    /// A book not checked yet offers only Show in Finder. A book open in a
-    /// reader offers the same commands as any other; Remove Download then
-    /// explains why it can't remove its download.
+    /// A book not checked yet offers no Download Now or Remove Download. A
+    /// book open in a reader, or kept on this Mac, offers the same commands
+    /// as any other; Remove Download then explains why it can't remove its
+    /// download.
     /// - Parameters:
     ///   - targets: The clicked book, or the selection it is part of, in
     ///     list order.
     ///   - isSelection: Whether `targets` is a selection of several books,
     ///     so the titles count the books each command acts on.
     ///   - states: The books' recorded cloud states.
+    ///   - kept: The IDs of the books this Mac keeps downloaded.
     @MainActor
-    static func commands(for targets: [Book], isSelection: Bool, states: BookCloudStates) -> [LibraryCloudCommand] {
+    static func commands(
+        for targets: [Book],
+        isSelection: Bool,
+        states: BookCloudStates,
+        kept: Set<UUID>
+    ) -> [LibraryCloudCommand] {
         let listed = targets.map { (book: $0, state: states.listedState(of: $0.id)) }
-        let downloadable = listed.filter { $0.state?.canDownload == true }.map(\.book)
-        let removable = listed.filter { $0.state?.canRemoveDownload == true }.map(\.book)
-        let revealable = listed.filter { $0.state != .waitingForSync }.map(\.book)
-
-        var commands: [LibraryCloudCommand] = []
-        if !downloadable.isEmpty {
-            commands.append(LibraryCloudCommand(
-                kind: .download,
-                books: downloadable,
-                title: LibraryCloudWording.downloadTitle(count: downloadable.count, forSelection: isSelection)
-            ))
+        let inCloudLibrary = states.showsCloudNotes ? targets : []
+        let offered: [(kind: Kind, books: [Book])] = [
+            (.download, listed.filter { $0.state?.canDownload == true }.map(\.book)),
+            (.removeDownload, listed.filter { $0.state?.canRemoveDownload == true }.map(\.book)),
+            (.keepOnThisMac, inCloudLibrary.filter { !kept.contains($0.id) }),
+            (.stopKeepingOnThisMac, inCloudLibrary.filter { kept.contains($0.id) }),
+            (.showInFinder, listed.filter { $0.state != .waitingForSync }.map(\.book)),
+        ]
+        // A command is offered only for the books it suits, and only when
+        // there is at least one.
+        return offered.compactMap { kind, books in
+            guard !books.isEmpty else { return nil }
+            return LibraryCloudCommand(
+                kind: kind,
+                books: books,
+                title: kind.title(count: books.count, forSelection: isSelection)
+            )
         }
-        if !removable.isEmpty {
-            commands.append(LibraryCloudCommand(
-                kind: .removeDownload,
-                books: removable,
-                title: LibraryCloudWording.removeDownloadTitle(count: removable.count, forSelection: isSelection)
-            ))
-        }
-        if !revealable.isEmpty {
-            commands.append(LibraryCloudCommand(
-                kind: .showInFinder,
-                books: revealable,
-                title: LibraryCloudWording.showInFinderTitle(count: revealable.count, forSelection: isSelection)
-            ))
-        }
-        return commands
     }
 }
 
@@ -445,13 +483,25 @@ final class LibraryCloudCommands {
     /// The commands every Library window runs.
     static let shared = LibraryCloudCommands()
 
+    /// How long a kept book whose download failed waits before a refresh
+    /// downloads it again on its own: long enough that a Mac offline, or a
+    /// sync service paused, isn't asked every minute, short enough that the
+    /// book comes back soon after the network does. Download Now and Keep on
+    /// This Mac never wait.
+    static let keptBookRetryDelay: TimeInterval = 5 * 60
+
     /// The books the list is downloading or has queued to download, by ID.
     private(set) var booksDownloading: Set<UUID> = []
     /// The books whose downloads the list is removing now, by ID.
     private(set) var booksBeingRemoved: Set<UUID> = []
+    /// When each kept book whose last download failed may be downloaded
+    /// again by a refresh, by ID.
+    private var keptBookRetryTimes: [UUID: Date] = [:]
 
     /// The store the commands record into.
     private let states: BookCloudStates
+    /// The books this Mac keeps downloaded (Keep on This Mac).
+    private let kept: KeptBooks
     /// The book storage, looked up when each command runs.
     private let storage: @MainActor () -> any BookCloudStorage
     /// Asks for a refresh once a removal has recorded its states, so that a
@@ -460,42 +510,164 @@ final class LibraryCloudCommands {
     private let refreshAfterRemoval: @MainActor () -> Void
     /// Selects files in Finder.
     private let revealInFinder: @MainActor ([URL]) -> Void
+    /// The time now, which decides when a failed kept book is tried again.
+    private let now: @MainActor () -> Date
 
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
     ///   - states: The store to record into.
+    ///   - kept: The books this Mac keeps downloaded.
     ///   - storage: The book storage to act through, looked up when each
     ///     command runs, so a storage installed later is used.
     ///   - refreshAfterRemoval: Asks for a refresh after a removal.
     ///   - revealInFinder: Selects files in Finder.
+    ///   - now: The time now: the system clock, unless a test sets it.
     init(
         states: BookCloudStates = .shared,
+        kept: KeptBooks = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() },
-        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
+        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
+        now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.states = states
+        self.kept = kept
         self.storage = storage
         self.refreshAfterRemoval = refreshAfterRemoval
         self.revealInFinder = revealInFinder
+        self.now = now
     }
 
     /// Runs `command` for the Library window `window` shows, announcing
-    /// from it. Download Now returns as soon as it starts; its downloads go
-    /// on in the background.
+    /// from it. Download Now, and Keep on This Mac for books in the cloud,
+    /// return as soon as their downloads start; the downloads go on in the
+    /// background.
     /// - Returns: Remove Download's refusal for the window to show, if any.
     @discardableResult
     func perform(_ command: LibraryCloudCommand, in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
         switch command.kind {
         case .download:
             download(command.books, in: library, from: window)
-            return nil
         case .removeDownload:
             return await removeDownloads(of: command.books, in: library, from: window)
+        case .keepOnThisMac:
+            keep(command.books, in: library, from: window)
+        case .stopKeepingOnThisMac:
+            stopKeeping(command.books, from: window)
         case .showInFinder:
             showInFinder(command.books)
+        }
+        return nil
+    }
+
+    // MARK: Keep on This Mac
+
+    /// Keeps `books` on this Mac (Keep on This Mac): each stays downloaded
+    /// from now on (`KeptBooks`). Those whose state lets them download, only
+    /// in the cloud or left there by a failed download, start downloading
+    /// at once, as Download Now downloads them, their rows showing
+    /// "Downloading". VoiceOver hears one sentence saying both, then the
+    /// downloads' summary when they end. Books kept already change nothing.
+    /// - Returns: The task running the downloads, which tests await; nil
+    ///   when no book needed downloading.
+    @discardableResult
+    func keep(_ books: [Book], in library: LibraryViewModel, from window: NSWindow?) -> Task<Void, Never>? {
+        let newlyKept = kept.keep(books.map(\.id))
+        let keptNow = books.filter { newlyKept.contains($0.id) }
+        guard !keptNow.isEmpty else { return nil }
+        let downloadable = keptNow.filter(canStartDownload)
+        let titles = keptNow.map(\.title)
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: keeping \(LibraryCloudWording.list(titles)) on this Mac")
+        VoiceOverAnnouncer.announce(
+            LibraryCloudWording.keepStarted(titles: titles, downloading: downloadable.count),
+            from: window
+        )
+        return download(downloadable, in: library, from: window, origin: .keepOnThisMac)
+    }
+
+    /// Stops keeping `books` on this Mac (Stop Keeping on This Mac), and
+    /// tells VoiceOver which books. Nothing is downloaded or removed now:
+    /// their downloads stay until the sync service, or Remove Download,
+    /// removes them. Books not kept change nothing.
+    func stopKeeping(_ books: [Book], from window: NSWindow?) {
+        let released = kept.stopKeeping(books.map(\.id))
+        let titles = books.filter { released.contains($0.id) }.map(\.title)
+        guard !titles.isEmpty else { return }
+        released.forEach { keptBookRetryTimes[$0] = nil }
+        DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(LibraryCloudWording.list(titles)) on this Mac")
+        VoiceOverAnnouncer.announce(LibraryCloudWording.stoppedKeeping(titles: titles), from: window)
+    }
+
+    /// Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen in
+    /// the Library menu for `selection`, the books selected in `window`'s
+    /// list, in list order. It runs the command a row of the selection
+    /// offers, on the books that command acts on; when no row would offer
+    /// it, VoiceOver hears why nothing changed: the library isn't in the
+    /// cloud, no book is selected, or every one is already as asked.
+    /// - Returns: The task running the downloads a keep started, which tests
+    ///   await; nil when none started.
+    @discardableResult
+    func setKeptFromMenu(
+        _ keeping: Bool,
+        for selection: [Book],
+        in library: LibraryViewModel,
+        from window: NSWindow?
+    ) -> Task<Void, Never>? {
+        let kind: LibraryCloudCommand.Kind = keeping ? .keepOnThisMac : .stopKeepingOnThisMac
+        let offered = LibraryCloudCommand.commands(
+            for: selection,
+            isSelection: selection.count > 1,
+            states: states,
+            kept: kept.bookIDs
+        )
+        guard let command = offered.first(where: { $0.kind == kind }) else {
+            VoiceOverAnnouncer.announce(
+                LibraryCloudWording.keepMenuRefusal(
+                    keeping: keeping,
+                    selected: selection.map(\.title),
+                    inCloudLibrary: states.showsCloudNotes
+                ),
+                from: window
+            )
             return nil
         }
+        guard keeping else {
+            stopKeeping(command.books, from: window)
+            return nil
+        }
+        return keep(command.books, in: library, from: window)
+    }
+
+    /// Downloads again each book of `library` kept on this Mac that the
+    /// latest refresh recorded as only in the cloud: the sync service
+    /// removed its download, while TextMouth ran or before it started. The
+    /// cloud refresher calls this after each refresh.
+    ///
+    /// Nothing is announced, since nobody asked just then; the rows show
+    /// "Downloading", and KEPT_BOOK_DOWNLOAD lines log the downloads. A
+    /// kept book whose last download failed waits `keptBookRetryDelay`
+    /// before a refresh tries it again, so a Mac offline isn't asked every
+    /// minute; a book waiting for sync downloads once it has arrived.
+    /// - Returns: The task running the downloads, which tests await; nil
+    ///   when no kept book needed downloading.
+    @discardableResult
+    func downloadEvictedKeptBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
+        guard states.showsCloudNotes, !kept.bookIDs.isEmpty else { return nil }
+        let time = now()
+        let evicted = library.library.books.filter { book in
+            kept.contains(book.id)
+                && states.listedState(of: book.id) == .inCloud
+                && (keptBookRetryTimes[book.id].map { $0 <= time } ?? true)
+        }
+        return download(evicted, in: library, from: nil, origin: .keptBookRefresh)
+    }
+
+    /// Notes how a download of the book `bookID` ended, for a kept book: a
+    /// failure makes refreshes wait `keptBookRetryDelay` before they try it
+    /// again, and a success lets the next eviction be downloaded at once.
+    private func noteKeptBookDownload(_ bookID: UUID, failed: Bool) {
+        guard kept.contains(bookID) else { return }
+        keptBookRetryTimes[bookID] = failed ? now().addingTimeInterval(Self.keptBookRetryDelay) : nil
     }
 
     // MARK: Show in Finder
@@ -527,9 +699,60 @@ final class LibraryCloudCommands {
     ///   when no book needed downloading.
     @discardableResult
     func download(_ books: [Book], in library: LibraryViewModel, from window: NSWindow?) -> Task<Void, Never>? {
-        let queued = books.filter { book in
-            !booksDownloading.contains(book.id) && states.listedState(of: book.id)?.canDownload == true
+        download(books, in: library, from: window, origin: .downloadNow)
+    }
+
+    /// Why the list downloads books, which decides what VoiceOver hears and
+    /// which lines the log gets.
+    private enum DownloadOrigin {
+        /// Download Now: VoiceOver hears the start and the end.
+        case downloadNow
+        /// Keep on This Mac, for the kept books in the cloud: Keep on This
+        /// Mac announced the start, so VoiceOver hears only the end.
+        case keepOnThisMac
+        /// A refresh found kept books only in the cloud: nobody asked just
+        /// then, so VoiceOver hears nothing, and the rows show the downloads.
+        case keptBookRefresh
+
+        /// Whether VoiceOver hears which books start downloading.
+        var announcesStart: Bool {
+            self == .downloadNow
         }
+
+        /// Whether VoiceOver hears how the downloads ended.
+        var announcesEnd: Bool {
+            self != .keptBookRefresh
+        }
+
+        /// The tags of the lines logged as the downloads start, as one of
+        /// them fails, and once they have all ended. Each tag is spelled out
+        /// whole, so a search of the source finds it.
+        var logTags: (started: String, failed: String, finished: String) {
+            switch self {
+            case .downloadNow:
+                return ("DOWNLOAD_NOW_STARTED", "DOWNLOAD_NOW_FAILED", "DOWNLOAD_NOW_FINISHED")
+            case .keepOnThisMac, .keptBookRefresh:
+                return ("KEPT_BOOK_DOWNLOAD_STARTED", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED")
+            }
+        }
+    }
+
+    /// Whether a download of `book` can start now: its recorded state lets
+    /// it download, and the list isn't downloading it already.
+    private func canStartDownload(_ book: Book) -> Bool {
+        !booksDownloading.contains(book.id) && states.listedState(of: book.id)?.canDownload == true
+    }
+
+    /// Downloads those of `books` that can start downloading now, one after
+    /// another, as `download(_:in:from:)` describes, saying and logging what
+    /// `origin` calls for.
+    private func download(
+        _ books: [Book],
+        in library: LibraryViewModel,
+        from window: NSWindow?,
+        origin: DownloadOrigin
+    ) -> Task<Void, Never>? {
+        let queued = books.filter(canStartDownload)
         guard !queued.isEmpty else { return nil }
         let provider = states.libraryLocation.provider
         for book in queued {
@@ -538,15 +761,17 @@ final class LibraryCloudCommands {
             states.record(.downloading(.notStarted), for: book.id)
         }
         let titles = queued.map(\.title)
-        VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
-        DiagnosticLog.event(.storage, "DOWNLOAD_NOW_STARTED: \(LibraryCloudWording.list(titles))")
+        if origin.announcesStart {
+            VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
+        }
+        DiagnosticLog.event(.storage, "\(origin.logTags.started): \(LibraryCloudWording.list(titles))")
 
         let queuedIDs = queued.map(\.id)
         return Task { [self, weak window] in
             var downloaded: [String] = []
             var failed: [(title: String, explanation: String)] = []
             for bookID in queuedIDs {
-                switch await downloadQueuedBook(bookID, in: library, provider: provider) {
+                switch await downloadQueuedBook(bookID, in: library, provider: provider, origin: origin) {
                 case .downloaded(let title)?:
                     downloaded.append(title)
                 case .failed(let title, let explanation)?:
@@ -557,9 +782,10 @@ final class LibraryCloudCommands {
             }
             DiagnosticLog.event(
                 .storage,
-                "DOWNLOAD_NOW_FINISHED: \(downloaded.count) downloaded, \(failed.count) failed"
+                "\(origin.logTags.finished): \(downloaded.count) downloaded, \(failed.count) failed"
             )
-            if let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
+            if origin.announcesEnd,
+               let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
                 VoiceOverAnnouncer.announce(summary, from: window)
             }
         }
@@ -573,15 +799,16 @@ final class LibraryCloudCommands {
         case failed(title: String, explanation: String)
     }
 
-    /// Downloads the book `bookID` when its turn in a Download Now comes,
-    /// as the library has it then, recording its progress and how it ended.
-    /// Ends quietly, recording no ending, when the book has left the
-    /// library, before or during its download, or when the task was
-    /// cancelled; a later refresh then records what the storage says.
+    /// Downloads the book `bookID` when its turn among the books queued for
+    /// `origin` comes, as the library has it then, recording its progress
+    /// and how it ended. Ends quietly, recording no ending, when the book has
+    /// left the library, before or during its download, or when the task
+    /// was cancelled; a later refresh then records what the storage says.
     private func downloadQueuedBook(
         _ bookID: UUID,
         in library: LibraryViewModel,
-        provider: CloudProvider?
+        provider: CloudProvider?,
+        origin: DownloadOrigin
     ) async -> DownloadEnding? {
         defer {
             booksDownloading.remove(bookID)
@@ -608,7 +835,7 @@ final class LibraryCloudCommands {
             guard !Task.isCancelled, !(error is CancellationError) else { return nil }
             let failure = (error as? BookCloudError) ?? .provider(error.localizedDescription)
             let explanation = failure.explanation(in: provider)
-            DiagnosticLog.event(.storage, "DOWNLOAD_NOW_FAILED: \(book.title): \(explanation)")
+            DiagnosticLog.event(.storage, "\(origin.logTags.failed): \(book.title): \(explanation)")
             ending = .failed(title: book.title, explanation: explanation)
         }
         // A book removed from the library meanwhile has no row to tell.
@@ -616,8 +843,10 @@ final class LibraryCloudCommands {
         switch ending {
         case .downloaded:
             states.record(.downloaded, for: bookID)
+            noteKeptBookDownload(bookID, failed: false)
         case .failed(_, let explanation):
             states.record(.downloadFailed(explanation), for: bookID)
+            noteKeptBookDownload(bookID, failed: true)
         }
         return ending
     }
@@ -630,11 +859,12 @@ final class LibraryCloudCommands {
     ///
     /// Only downloaded books take part, and none whose download the list is
     /// removing already, so asking twice removes once. A book open in a
-    /// reader is refused at once, without asking the storage
-    /// (`BookCloudError.bookIsOpen`), and the storage refuses a book with
-    /// changes not uploaded yet (`.notUploaded`); a refused book keeps its
-    /// download. Nothing is deleted from the cloud, so nothing asks first.
-    /// The removals read and change files, so they run off the main thread.
+    /// reader, or one kept on this Mac, is refused at once, without asking
+    /// the storage (`BookCloudError.bookIsOpen`, `.keptOnThisMac`), and the
+    /// storage refuses a book with changes not uploaded yet (`.notUploaded`);
+    /// a refused book keeps its download. Nothing is deleted from the cloud,
+    /// so nothing asks first. The removals read and change files, so they
+    /// run off the main thread.
     /// - Returns: The refusal for `window` to show when any book keeps its
     ///   download; nil when every download was removed, or none could be.
     @discardableResult
@@ -648,16 +878,27 @@ final class LibraryCloudCommands {
         defer { booksBeingRemoved.subtract(targetIDs) }
         let provider = states.libraryLocation.provider
         let storage = storage()
-        // Each book's package, or nil for a book open in a reader.
-        let packages = targets.map { library.openBookIDs.contains($0.id) ? nil : BookPackage($0) }
+        // Each book's package, or why its download stays without asking the
+        // storage: the book is open in a reader, or kept on this Mac.
+        let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
+            if library.openBookIDs.contains(book.id) { return .failure(.bookIsOpen) }
+            if kept.contains(book.id) { return .failure(.keptOnThisMac) }
+            return .success(BookPackage(book))
+        }
         DiagnosticLog.event(
             .storage,
             "REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
         )
 
         let failures = await Task.detached(priority: .userInitiated) {
-            packages.map { package -> BookCloudError? in
-                guard let package else { return .bookIsOpen }
+            requests.map { request -> BookCloudError? in
+                let package: BookPackage
+                switch request {
+                case .failure(let refusal):
+                    return refusal
+                case .success(let found):
+                    package = found
+                }
                 do {
                     try storage.removeDownload(of: package)
                     return nil

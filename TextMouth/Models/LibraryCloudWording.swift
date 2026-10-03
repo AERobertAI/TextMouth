@@ -24,6 +24,28 @@ enum LibraryCloudWording {
         return "Remove \(count == 1 ? "Download" : "Downloads") of \(titleCount(count))"
     }
 
+    /// Keep on This Mac's name: its title in the Library menu, and for the
+    /// one book a row's menu is for.
+    static let keepName = "Keep on This Mac"
+
+    /// Stop Keeping on This Mac's name: its title in the Library menu, and
+    /// for the one book a row's menu is for.
+    static let stopKeepingName = "Stop Keeping on This Mac"
+
+    /// Keep on This Mac's title: "Keep on This Mac" for the one book a menu
+    /// is for, or "Keep 3 Books on This Mac" for `count` books of a
+    /// selection.
+    static func keepTitle(count: Int, forSelection: Bool) -> String {
+        forSelection ? "Keep \(titleCount(count)) on This Mac" : keepName
+    }
+
+    /// Stop Keeping on This Mac's title: "Stop Keeping on This Mac" for the
+    /// one book a menu is for, or "Stop Keeping 3 Books on This Mac" for
+    /// `count` books of a selection.
+    static func stopKeepingTitle(count: Int, forSelection: Bool) -> String {
+        forSelection ? "Stop Keeping \(titleCount(count)) on This Mac" : stopKeepingName
+    }
+
     /// Show in Finder's title: "Show in Finder" for the one book a menu is
     /// for, or "Show 3 Books in Finder" for `count` books of a selection.
     static func showInFinderTitle(count: Int, forSelection: Bool) -> String {
@@ -40,10 +62,52 @@ enum LibraryCloudWording {
     /// What Download Now announces as it starts: "Downloading Moby-Dick"
     /// for one book, "Downloading 3 books" for several.
     static func downloadStarted(titles: [String]) -> String {
-        if titles.count == 1, let title = titles.first {
-            return "Downloading \(title)"
+        "Downloading \(subject(titles))"
+    }
+
+    // MARK: - Keep on This Mac
+
+    /// What Keep on This Mac announces: "Keeping Moby-Dick on this Mac" for
+    /// one book, or "Keeping 3 books on this Mac" for several, and then,
+    /// when `downloading` of them start downloading now, being only in the
+    /// cloud, "Downloading it now", "Downloading them now", or "Downloading
+    /// 2 of them now".
+    static func keepStarted(titles: [String], downloading: Int) -> String {
+        let keeping = "Keeping \(subject(titles)) on this Mac"
+        guard downloading > 0 else { return keeping }
+        let which: String
+        if titles.count == 1 {
+            which = "it"
+        } else if downloading == titles.count {
+            which = "them"
+        } else {
+            which = "\(downloading) of them"
         }
-        return "Downloading \(CountWording.books(titles.count))"
+        return "\(keeping). Downloading \(which) now"
+    }
+
+    /// What Stop Keeping on This Mac announces: "Stopped keeping Moby-Dick
+    /// on this Mac" for one book, "Stopped keeping 3 books on this Mac" for
+    /// several.
+    static func stoppedKeeping(titles: [String]) -> String {
+        "Stopped keeping \(subject(titles)) on this Mac"
+    }
+
+    /// Why Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen
+    /// in the Library menu for the books selected, `titles`, changed nothing:
+    /// the library isn't in the cloud, no book is selected, or every one is
+    /// already as asked.
+    static func keepMenuRefusal(keeping: Bool, selected titles: [String], inCloudLibrary: Bool) -> String {
+        guard inCloudLibrary else {
+            return "The library isn't in a cloud folder, so its books are always on this Mac."
+        }
+        guard !titles.isEmpty else { return "No books are selected." }
+        if titles.count == 1, let title = titles.first {
+            return keeping ? "\(title) is already kept on this Mac." : "\(title) isn't kept on this Mac."
+        }
+        return keeping
+            ? "The \(titles.count) selected books are already kept on this Mac."
+            : "None of the \(titles.count) selected books is kept on this Mac."
     }
 
     /// What Download Now announces once every book it started has ended:
@@ -141,5 +205,14 @@ enum LibraryCloudWording {
         case 2: return "\(items[0]) and \(items[1])"
         default: return items.dropLast().joined(separator: ", ") + ", and " + (items.last ?? "")
         }
+    }
+
+    /// The books an announcement is about, named by `titles`: the one
+    /// book's title, or how many books there are ("3 books").
+    private static func subject(_ titles: [String]) -> String {
+        if titles.count == 1, let title = titles.first {
+            return title
+        }
+        return CountWording.books(titles.count)
     }
 }
