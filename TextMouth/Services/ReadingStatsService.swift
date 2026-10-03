@@ -251,17 +251,55 @@ final class ReadingStatsService: ObservableObject {
         // the destination here too, where the main actor owns it
         let snapshot = stats
         let url = fileURL
+        let retry = retryAfterFailure
         Self.saveQueue.async {
-            do {
-                try TextMouthPaths.ensureDirectoryStructure()
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                let data = try encoder.encode(snapshot)
-                try data.write(to: url, options: .atomic)
-            } catch {
-                print("Failed to save reading stats: \(error)")
-            }
+            Self.write(snapshot, to: url, retry: retry)
+        }
+    }
+
+    /// Saves the statistics again for a retry of the failed save
+    /// `failureID`, and waits for the write. Nothing is written when a later
+    /// save has settled that failure, which a save still queued ahead of
+    /// this one may have done. The statistics written are the ones in use
+    /// now: they hold everything the failed save had, since a failure
+    /// changes nothing in memory, and they go to wherever this service's
+    /// file is now, which moves when the data directory does.
+    func retrySave(failureID: PersistenceFailure.ID) {
+        let snapshot = stats
+        let url = fileURL
+        let retry = retryAfterFailure
+        Self.saveQueue.sync {
+            guard PersistenceFailureCenter.shared.isOutstanding(failureID) else { return }
+            Self.write(snapshot, to: url, retry: retry)
+        }
+    }
+
+    /// The retry reported with a failed save: `retrySave(failureID:)` on
+    /// this service, while it exists.
+    private var retryAfterFailure: PersistenceFailure.Retry {
+        { [weak self] failureID in self?.retrySave(failureID: failureID) }
+    }
+
+    /// Writes `snapshot` to `url` and reports the outcome to the failure
+    /// center (TODO S09): a file written settles any earlier failed save of
+    /// the statistics, and a failure is reported with `retry`, so it is
+    /// never known only to the console. Must run on saveQueue.
+    nonisolated private static func write(
+        _ snapshot: ReadingStats,
+        to url: URL,
+        retry: @escaping PersistenceFailure.Retry
+    ) {
+        do {
+            try TextMouthPaths.ensureDirectoryStructure()
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(snapshot)
+            try data.write(to: url, options: .atomic)
+            PersistenceFailureCenter.shared.recordSuccess(.statistics)
+        } catch {
+            print("Failed to save reading stats: \(error)")
+            PersistenceFailureCenter.shared.recordFailure(.statistics, path: url.path, error: error, retry: retry)
         }
     }
 

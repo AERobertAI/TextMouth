@@ -109,7 +109,7 @@ extension LibraryViewModel {
         for book in booksToRemove {
             do {
                 try FileImportService.deleteBookPackage(book)
-                library.removeBook(id: book.id)
+                removeDeletedBook(book)
             } catch {
                 failures.append("\(book.title): \(error.localizedDescription)")
             }

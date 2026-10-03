@@ -377,6 +377,16 @@ final class ConfigService: ObservableObject {
             try fileOperations.write(data, fileURL)
         } catch {
             log("could not save \(fileURL.path): \(error)")
+            // The settings in use are not on disk: the user is told, not only
+            // the log (TODO S09). A retry saves the settings as they are then,
+            // the same ones unless a later change has saved them itself.
+            PersistenceFailureCenter.shared.recordFailure(
+                .configuration,
+                path: fileURL.path,
+                error: error
+            ) { [weak self] _ in
+                self?.saveToDisk()
+            }
             return
         }
         recordAgreement(data)
@@ -386,10 +396,12 @@ final class ConfigService: ObservableObject {
     }
 
     /// Records that config.json holds `data`, the bytes of `config`: the
-    /// watcher ignores these bytes, and the next merge starts from `config`.
+    /// watcher ignores these bytes, the next merge starts from `config`, and
+    /// the settings are saved, which settles any earlier failed save.
     private func recordAgreement(_ data: Data) {
         lastHandledContents = data
         lastSyncedConfig = config
+        PersistenceFailureCenter.shared.recordSuccess(.configuration)
     }
 
     /// config.json's current bytes, or nil when there is no file or it

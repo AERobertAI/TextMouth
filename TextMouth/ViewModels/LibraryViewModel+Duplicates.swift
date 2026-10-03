@@ -54,7 +54,7 @@ extension LibraryViewModel {
             presentFilesystemError("Could not replace duplicate", error: error)
             return
         }
-        library.removeBook(id: existing.id)
+        removeDeletedBook(existing)
 
         // Add new book (already has its own .tmb from import)
         library.addBook(newBook)
@@ -134,10 +134,53 @@ extension LibraryViewModel {
         case .keepOriginal:
             break
         case .deleteAfterImport:
-            FileImportService.deleteOriginalFile(at: url)
+            deleteOriginalFile(at: url)
         case .askEachTime:
             pendingOriginalURL = url
             showDeleteOriginalDialog = true
+        }
+    }
+
+    /// The words of the Delete Original File confirmation for the file it
+    /// asks about, in the mode the Trash preference is in now: the deletion
+    /// reads the same preference, so the file goes where the button says.
+    var pendingOriginalFileWording: OriginalFileDeletionWording {
+        OriginalFileDeletionWording(
+            movesToTrash: removalPreferences.movesToTrash,
+            fileName: pendingOriginalURL?.lastPathComponent
+        )
+    }
+
+    /// Deletes `url`, the original file of a book just imported, to the
+    /// Trash or permanently as "Move to Trash instead of deleting" chooses
+    /// (TODO S09). A deletion that fails is reported to the failure center
+    /// with the file's path, in the words of that mode, and with a retry, so
+    /// a file left behind is never taken for one removed; one that succeeds
+    /// settles an earlier failure for the file. Leaving a file behind loses
+    /// nothing, so such a failure never holds up quitting.
+    ///
+    /// - Parameters:
+    ///   - url: The original file.
+    ///   - delete: Removes the file; tests replace it, so nothing they do
+    ///     reaches the real Trash. Its retry removes the same way.
+    func deleteOriginalFile(
+        at url: URL,
+        using delete: @escaping @MainActor @Sendable (URL) throws -> Void = { url in
+            try FileImportService.deleteOriginalFile(at: url)
+        }
+    ) {
+        let movesToTrash = removalPreferences.movesToTrash
+        do {
+            try delete(url)
+            failureCenter.recordSuccess(.originalFile(url.path))
+        } catch {
+            failureCenter.recordFailure(
+                .originalFile(path: url.path, movesToTrash: movesToTrash),
+                path: url.path,
+                error: error
+            ) { [weak self] _ in
+                self?.deleteOriginalFile(at: url, using: delete)
+            }
         }
     }
 }
