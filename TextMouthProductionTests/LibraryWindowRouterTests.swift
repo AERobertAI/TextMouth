@@ -204,6 +204,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertNil(GlobalAction.openBookFile.bookToOpen)
         XCTAssertNil(GlobalAction.newFromText.bookToOpen)
         XCTAssertNil(GlobalAction.importDAISYFolder.bookToOpen)
+        XCTAssertNil(GlobalAction.goToLibrary.bookToOpen)
     }
 
     /// Who takes each kind of app-wide action in every window arrangement
@@ -222,7 +223,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         // Settings, or any other window that is neither Library nor reader.
         let otherWindow = makeWindow()
         let book = UUID()
-        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .newFromText, .importDAISYFolder]
+        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .newFromText, .importDAISYFolder, .goToLibrary]
         let actionsOpeningAReader: [GlobalAction] = [.openBookWindow(book), .continueToNextBook(book)]
 
         let arrangements: [(
@@ -277,6 +278,7 @@ final class LibraryWindowRouterTests: XCTestCase {
             (Notification(name: .openBookFile), .openBookFile),
             (Notification(name: .newFromText), .newFromText),
             (Notification(name: .importDAISYFolder), .importDAISYFolder),
+            (Notification(name: .goToLibrary), .goToLibrary),
             (Notification(name: .openBookWindow, object: book), .openBookWindow(book)),
             (
                 Notification(
@@ -292,6 +294,17 @@ final class LibraryWindowRouterTests: XCTestCase {
         for sample in samples {
             XCTAssertEqual(GlobalAction(notification: sample.notification), sample.action)
         }
+        // The keyboard shortcut's notification names its source window, and
+        // asks for the same action as the menu command's.
+        let shortcutSource = makeWindow()
+        XCTAssertEqual(
+            GlobalAction(notification: Notification(
+                name: .goToLibrary,
+                object: nil,
+                userInfo: ["sourceWindow": shortcutSource]
+            )),
+            .goToLibrary
+        )
         XCTAssertNil(GlobalAction(notification: Notification(name: .openBookWindow)))
         XCTAssertNil(GlobalAction(notification: Notification(name: .openBookWindow, object: "not a book")))
         XCTAssertNil(GlobalAction(notification: Notification(name: .continueToNextBook)))
@@ -309,6 +322,7 @@ final class LibraryWindowRouterTests: XCTestCase {
             (.openBookFile, nil, nil, .openBookFile),
             (.newFromText, nil, nil, .newFromText),
             (.importDAISYFolder, nil, nil, .importDAISYFolder),
+            (.goToLibrary, nil, nil, .goToLibrary),
             (.openBookWindow, book, nil, .openBookWindow(book)),
             (.continueToNextBook, nil, [Notification.ContinueToNextBookKey.bookID: book], .continueToNextBook(book)),
         ]

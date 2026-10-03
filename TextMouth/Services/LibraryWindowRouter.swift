@@ -397,6 +397,9 @@ enum GlobalAction: Equatable {
     /// Library > Import DAISY Folder…: a Library window presents the
     /// folder-only panel (TODO I02).
     case importDAISYFolder
+    /// Navigate > Go to Library, or its shortcut: a Library window comes to
+    /// the front.
+    case goToLibrary
     /// Open a book's reader window, or bring it forward when it is already
     /// open: a book just imported, or a package from Finder the library
     /// already lists.
@@ -413,7 +416,7 @@ enum GlobalAction: Equatable {
         switch self {
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             return bookID
-        case .openBookFile, .newFromText, .importDAISYFolder:
+        case .openBookFile, .newFromText, .importDAISYFolder, .goToLibrary:
             return nil
         }
     }
@@ -424,6 +427,7 @@ enum GlobalAction: Equatable {
         .openBookFile,
         .newFromText,
         .importDAISYFolder,
+        .goToLibrary,
         .openBookWindow,
         .continueToNextBook,
     ]
@@ -438,6 +442,8 @@ enum GlobalAction: Equatable {
             self = .newFromText
         case .importDAISYFolder:
             self = .importDAISYFolder
+        case .goToLibrary:
+            self = .goToLibrary
         case .openBookWindow:
             guard let bookID = notification.object as? UUID else { return nil }
             self = .openBookWindow(bookID)
@@ -459,6 +465,8 @@ enum GlobalAction: Equatable {
             return "New from Text"
         case .importDAISYFolder:
             return "Import DAISY Folder"
+        case .goToLibrary:
+            return "Go to Library"
         case .openBookWindow(let bookID):
             return "open book \(bookID.uuidString.prefix(8))"
         case .continueToNextBook(let bookID):

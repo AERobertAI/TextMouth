@@ -186,11 +186,11 @@ struct LibraryWindowView: View {
                 Text(verbatim: choice + incomplete)
             }
         }
-        // Open Book..., New from Text..., Import DAISY Folder…, opening a
-        // book's reader, and Continue to Next Book are app-wide actions: the
-        // router takes each posted one and hands it to exactly one window
-        // (TODO A05), this one through `takeGlobalAction(_:openingReadersWith:)`
-        // when it is chosen.
+        // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
+        // opening a book's reader, and Continue to Next Book are app-wide
+        // actions: the router takes each posted one and hands it to exactly
+        // one window (TODO A05), this one through
+        // `takeGlobalAction(_:openingReadersWith:)` when it is chosen.
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
             if isKeyLibraryWindow, let path = folderNav.goBack() {
                 currentFolderPath = path
@@ -292,6 +292,8 @@ struct LibraryWindowView: View {
         case .importDAISYFolder:
             bringToFront()
             presentDAISYFolderPanel()
+        case .goToLibrary:
+            bringToFront()
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             // Opens the book's reader window, or brings it forward when it
             // is already open.
