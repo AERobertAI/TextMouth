@@ -666,6 +666,102 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "config.json keyboardShortcuts.Go Back: could not be read").isEmpty)
     }
 
+    // MARK: - Portability
+
+    /// Every portable preference survives config.json (TODO C04): each is
+    /// set to a value unlike its default, the file is written, the stores
+    /// are reset, and the file is applied, after which every value is back,
+    /// in the preferences store and in the services that follow it. The
+    /// expected set is `AppConfig.Portability`'s, and the samples must cover
+    /// it, so a portable preference listed there but left out of the mirror
+    /// fails here.
+    func testEveryPortablePreferenceSurvivesARoundTripThroughConfigJSON() throws {
+        let samples = try Self.portablePreferenceSamples()
+        XCTAssertEqual(
+            Set(samples.keys),
+            Set(ConfigService.AppConfig.Portability.mirrored.map(\.storeKey)),
+            "every portable preference needs a sample below"
+        )
+        let url = try makeConfigFileURL()
+
+        // Every portable preference set, then written to the file.
+        let original = try isolatedDefaults()
+        for (key, value) in samples {
+            original.set(value, forKey: key)
+        }
+        let writer = ConfigService(fileURL: url)
+        writer.config.importDeleteBehavior = .askEachTime
+        writer.config.confirmBeforeDelete = false
+        writer.config.moveToTrashInsteadOfDeleting = false
+        SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: original,
+            configService: writer
+        ).syncToConfig()
+
+        // The stores reset: an empty preferences store, services following
+        // it, and the file read afresh; then the file applied.
+        let reset = try isolatedDefaults()
+        let sounds = SoundEffectService(preferences: reset)
+        let substitutions = TextSubstitutionService(rules: [], preferences: reset)
+        let shortcuts = KeyboardShortcutManager(userDefaults: reset, installsEventMonitor: false)
+        let reader = ConfigService(fileURL: url)
+        let restored = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: reset,
+            configService: reader
+        )
+        restored.applyConfigChanges(reader.config)
+
+        for (key, value) in samples {
+            XCTAssertTrue(Self.sameStoredValue(reset.object(forKey: key), value), "\(key) did not survive config.json")
+        }
+        XCTAssertEqual(reader.config.importDeleteBehavior, .askEachTime)
+        XCTAssertFalse(reader.config.confirmBeforeDelete)
+        XCTAssertFalse(reader.config.moveToTrashInsteadOfDeleting)
+        // The services took the values up as they arrived.
+        XCTAssertFalse(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.35)
+        XCTAssertEqual(sounds.assignments, SoundEffectService.assignmentsPreference.read(from: original))
+        XCTAssertFalse(substitutions.isEnabled)
+        XCTAssertEqual(shortcuts.bindings, KeyboardShortcutManager.bindingsPreference.read(from: original))
+    }
+
+    /// Every preference the settings model keeps in the store, and every one
+    /// the services keep, is listed as portable, and nothing else is: a new
+    /// preference cannot be left out of config.json unnoticed. SwiftUI's
+    /// AppStorage shows reflection its key at `location.key`; were that to
+    /// change, this test says so rather than passing.
+    func testEveryStoredPreferenceIsListedAsPortable() throws {
+        let viewModel = makeIsolatedViewModel(try isolatedDefaults())
+        let storages = Mirror(reflecting: viewModel).children.filter {
+            String(describing: type(of: $0.value)).hasPrefix("AppStorage<")
+        }
+        let keys = storages.compactMap { Mirror(reflecting: $0.value).descendant("location", "key") as? String }
+
+        XCTAssertFalse(storages.isEmpty)
+        XCTAssertEqual(keys.count, storages.count, "AppStorage no longer shows its key at location.key")
+        let stored = Set(keys + SettingsViewModel.servicePreferenceKeys)
+        let listed = Set(ConfigService.AppConfig.Portability.mirrored.map(\.storeKey))
+        XCTAssertEqual(stored.subtracting(listed), [], "kept in the store but not listed in AppConfig.Portability")
+        XCTAssertEqual(listed.subtracting(stored), [], "listed as portable but kept by neither the model nor a service")
+    }
+
+    /// Every field config.json holds is listed, once, as portable or
+    /// machine-local, and every listed field is in the file; no machine-local
+    /// store key is.
+    func testEveryConfigFieldIsListedOnce() throws {
+        let portability = ConfigService.AppConfig.Portability.self
+        let fields = Set(try jsonObject(.everyFieldCustomized).keys)
+        let listed = portability.mirrored.map(\.field) + portability.fileOnly + portability.localFields
+
+        XCTAssertEqual(fields, Set(listed))
+        XCTAssertEqual(listed.count, Set(listed).count, "a field is listed twice")
+        XCTAssertTrue(fields.isDisjoint(with: portability.localStoreKeys))
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or
@@ -807,6 +903,66 @@ final class ConfigSyncTests: XCTestCase {
         SettingsPolicy.punctuationPauseLevel, SettingsPolicy.bluetoothDisconnectDelay,
         SettingsPolicy.restartTimerGestureWindow,
     ]
+
+    /// A value unlike its default for every portable preference, by store
+    /// key, in the form its owner keeps it in the preferences store.
+    private static func portablePreferenceSamples() throws -> [String: Any] {
+        var shortcuts = ShortcutAction.defaultBindings
+        shortcuts[.togglePlayback] = [KeyBinding(key: "p", control: true)]
+        shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true), KeyBinding(key: "w", control: true)]
+        let sounds: [SoundEvent: String] = [
+            .play: "Glass", .pause: "None", .skipForward: "Funk",
+            .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
+        ]
+        return [
+            // Voice.
+            "selectedVoiceID": "com.apple.voice.compact.fr-FR.Thomas",
+            "wordsPerMinute": 425.0,
+            "pitchMultiplier": 1.4,
+            "selectedLanguage": "fr",
+            // Playback.
+            "skipForwardUnit": SkipUnit.heading.rawValue,
+            "skipBackwardUnit": SkipUnit.sentence.rawValue,
+            "shiftSkipForwardUnit": SkipUnit.seconds60.rawValue,
+            "shiftSkipBackwardUnit": SkipUnit.paragraph.rawValue,
+            "rewindOnResumeUnit": RewindUnit.paragraph.rawValue,
+            "rewindSmartMode": true,
+            "rewindSmartThreshold": 125.0,
+            "punctuationPauseLevel": 2.0,
+            "autoPlayOnNavigate": true,
+            "endOfBookBehavior": EndOfBookBehavior.continueNext.rawValue,
+            "sleepFadeOutDuration": 6.0,
+            "sleepTimerAutoClose": false,
+            "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,
+            "showBookmarkInPlaybackControls": true,
+            "showSpeedInPlaybackControls": false,
+            // Shortcuts, text, and sounds, kept by their services.
+            "customKeyboardBindings": try JSONEncoder().encode(shortcuts.keyedByRawValue),
+            "substitutionsEnabled": false,
+            "soundEffectsEnabled": false,
+            "soundEffectsVolume": Float(0.35),
+            "soundEffectAssignments": try JSONEncoder().encode(sounds.keyedByRawValue),
+            // Miscellaneous.
+            "bluetoothMonitoringEnabled": false,
+            "bluetoothDisconnectDelay": 7.0,
+            "restartTimerGestureEnabled": true,
+            "restartTimerGesturePattern": "togglePlayPause,nextTrack",
+            "restartTimerGestureWindow": 3.5,
+        ]
+    }
+
+    /// Whether a value read back from a preferences store is `expected`.
+    /// Data holding JSON compares by what it holds, since a dictionary's
+    /// entries are encoded in no fixed order; any other value compares as
+    /// the property list object it is.
+    private static func sameStoredValue(_ stored: Any?, _ expected: Any) -> Bool {
+        if let storedData = stored as? Data, let expectedData = expected as? Data {
+            let storedJSON = try? JSONSerialization.jsonObject(with: storedData) as? NSObject
+            let expectedJSON = try? JSONSerialization.jsonObject(with: expectedData) as? NSObject
+            return storedJSON != nil && storedJSON == expectedJSON
+        }
+        return (stored as? NSObject)?.isEqual(expected) == true
+    }
 
     /// A settings model bound to `defaults` that starts no services and
     /// posts only to a private notification center.

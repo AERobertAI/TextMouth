@@ -175,6 +175,9 @@ final class ConfigService: ObservableObject {
     /// The contents of config.json. Numeric and enum-backed fields follow
     /// `SettingsPolicy`, which supplies their defaults and validates them
     /// when the file is decoded.
+    ///
+    /// Which preferences the file carries, and why the others stay out of
+    /// it, is set out in `Portability`, below.
     struct AppConfig: Codable, Equatable {
         var selectedVoiceID: String = ""
         /// Words per minute (50–650). 0 means "not yet set by user".
@@ -349,6 +352,79 @@ final class ConfigService: ObservableObject {
         /// Three previous-track presses in a row: the restart-timer gesture
         /// until the user picks another, shared with the Settings model.
         static let defaultRestartTimerGesturePattern = "previousTrack,previousTrack,previousTrack"
+
+        // MARK: Portability
+
+        /// Which preferences config.json carries (TODO C04).
+        ///
+        /// Every preference TextMouth keeps is portable or machine-local. A
+        /// portable preference is mirrored in config.json, so it can be set
+        /// by editing the file and travels with it to another Mac: the
+        /// settings model writes it into the file and applies the file's
+        /// value back. A machine-local one describes this Mac, or what
+        /// TextMouth was last doing on it, so it stays out of the mirror.
+        ///
+        /// The tests take their expected sets from these lists: every
+        /// preference the settings model and the services keep must be
+        /// listed, every listed config.json field must be in the file, and
+        /// every portable preference must survive a round trip through it.
+        enum Portability {
+            /// Portable preferences kept in the preferences store, each with
+            /// the config.json field that carries it, by Settings tab.
+            static let mirrored: [(storeKey: String, field: String)] = {
+                // Voice.
+                var mirrored = sameNames(["selectedVoiceID", "wordsPerMinute", "pitchMultiplier", "selectedLanguage"])
+                // Playback.
+                mirrored += sameNames([
+                    "skipForwardUnit", "skipBackwardUnit", "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
+                    "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
+                    "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
+                    "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
+                    "showSpeedInPlaybackControls",
+                ])
+                // Shortcuts: the store's key is older than the file's field.
+                mirrored.append((storeKey: "customKeyboardBindings", field: "keyboardShortcuts"))
+                // Text: the switch. The rules are kept in substitutions.json.
+                mirrored += sameNames(["substitutionsEnabled"])
+                // Sounds.
+                mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
+                // Miscellaneous.
+                mirrored += sameNames([
+                    "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",
+                    "restartTimerGesturePattern", "restartTimerGestureWindow",
+                ])
+                return mirrored
+            }()
+
+            /// Portable preferences config.json alone holds: the Storage
+            /// settings' import and removal choices.
+            static let fileOnly = ["importDeleteBehavior", "confirmBeforeDelete", "moveToTrashInsteadOfDeleting"]
+
+            /// Machine-local values config.json holds without mirroring them.
+            /// - `dataDirectoryPath`: where this Mac keeps its library. The
+            ///   Storage settings manage it: TextMouth always writes the
+            ///   directory in use, and a different path in the file asks the
+            ///   library to move there rather than being copied as a setting.
+            /// - `lastOpenedBookID`: a book in this Mac's library, which the
+            ///   library records when a book opens.
+            static let localFields = ["dataDirectoryPath", "lastOpenedBookID"]
+
+            /// Machine-local preferences-store keys, never written to
+            /// config.json.
+            /// - `textMouthDataDirectory`: the data directory's location, the
+            ///   store's copy of `dataDirectoryPath`.
+            /// - `sleepTimer.lastUsedDuration`: the last sleep timer started,
+            ///   which restarting the timer reuses: state, not a setting.
+            /// - `NSQuitAlwaysKeepsWindows`: window restoration, which
+            ///   TextMouth turns off at every launch. AppKit keeps this Mac's
+            ///   window positions in the store too, and they stay there.
+            static let localStoreKeys = ["textMouthDataDirectory", "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
+
+            /// Pairs each key with the config.json field of the same name.
+            private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
+                keys.map { (storeKey: $0, field: $0) }
+            }
+        }
     }
 
     // MARK: - Lifecycle

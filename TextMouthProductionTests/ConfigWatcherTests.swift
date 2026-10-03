@@ -867,14 +867,4 @@ final class ConfigWatcherTests: XCTestCase {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         return FileStamp(identity: FileIdentity(of: url), modified: attributes[.modificationDate] as? Date)
     }
-
-    /// A config.json location in a directory of this test's own inside the
-    /// isolated test root. The directory is removed when the test ends.
-    private func makeConfigFileURL() throws -> URL {
-        let directory = TextMouthPaths.root
-            .appendingPathComponent("ConfigWatcherTests-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
-        return directory.appendingPathComponent("config.json")
-    }
 }

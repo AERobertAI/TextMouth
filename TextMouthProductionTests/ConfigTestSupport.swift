@@ -64,6 +64,16 @@ extension XCTestCase {
         makeSandboxedPreferences("config")
     }
 
+    /// A config.json location in a directory of this test's own inside the
+    /// isolated test root. The directory is removed when the test ends.
+    func makeConfigFileURL() throws -> URL {
+        let directory = TextMouthPaths.root
+            .appendingPathComponent("ConfigTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        return directory.appendingPathComponent("config.json")
+    }
+
     /// The debug log's lines that contain `text`, waiting first for every
     /// queued log write. The rotated generation is read too, in case one of
     /// the lines started a new file.
