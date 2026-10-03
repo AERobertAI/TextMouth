@@ -376,8 +376,17 @@ enum TextMouthPaths {
         let line = "\(Date()): \(message)\n"
         guard let data = line.data(using: .utf8) else { return }
         logQueue.async {
-            appendNow(data, to: logFile)
+            appendNow(data, to: currentLocation(of: logFile))
         }
+    }
+
+    /// `logFile`, named when its line was queued, where it is now: a line
+    /// queued before a data-directory move published and written after it
+    /// goes to the same log in the new data directory, never into the old
+    /// one (TODO S04).
+    private static func currentLocation(of logFile: URL) -> URL {
+        let path = StorageBoundary.shared.rebasedToCurrent(logFile.path)
+        return path == logFile.path ? logFile : URL(fileURLWithPath: path, isDirectory: false)
     }
 
     /// Block until every log line queued so far has been written (or
