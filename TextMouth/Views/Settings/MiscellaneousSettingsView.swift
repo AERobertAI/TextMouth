@@ -28,8 +28,9 @@ struct MiscellaneousSettingsView: View {
 
             if settingsViewModel.bluetoothMonitoringEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Disconnect delay: \(Int(settingsViewModel.bluetoothDisconnectDelay)) \(Int(settingsViewModel.bluetoothDisconnectDelay) == 1 ? "second" : "seconds")")
-                        .accessibilityLabel("Disconnect delay: \(Int(settingsViewModel.bluetoothDisconnectDelay)) seconds")
+                    // VoiceOver reads this text as shown, and the slider's
+                    // value is the same phrase, so both say "1 second".
+                    Text("Disconnect delay: \(disconnectDelay)")
 
                     Slider(
                         value: $settingsViewModel.bluetoothDisconnectDelay,
@@ -39,7 +40,7 @@ struct MiscellaneousSettingsView: View {
                         Text("Disconnect delay")
                     }
                     .accessibilityLabel("Bluetooth disconnect delay slider")
-                    .accessibilityValue("\(Int(settingsViewModel.bluetoothDisconnectDelay)) seconds")
+                    .accessibilityValue(disconnectDelay)
 
                     Text("How long to suppress spurious media commands after a Bluetooth device disconnects. Increase if playback sometimes auto-resumes after removing headphones.")
                         .font(.caption)
@@ -117,6 +118,20 @@ struct MiscellaneousSettingsView: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    /// The Bluetooth disconnect delay as the screen shows it and VoiceOver
+    /// speaks it (see `disconnectDelayPhrase(_:)`).
+    private var disconnectDelay: String {
+        Self.disconnectDelayPhrase(settingsViewModel.bluetoothDisconnectDelay)
+    }
+
+    /// A disconnect delay of `seconds`, in the whole seconds the slider
+    /// sets: "1 second", "5 seconds". The visible text and the slider's
+    /// spoken value both use this phrase; VoiceOver used to hear "1 seconds"
+    /// beside a screen that said "1 second".
+    nonisolated static func disconnectDelayPhrase(_ seconds: Double) -> String {
+        CountWording.phrase(Int(seconds), singular: "second", plural: "seconds")
     }
 
     /// Display string for the time window slider that handles both

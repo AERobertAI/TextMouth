@@ -41,4 +41,14 @@ final class CountWordingTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(3_600), "1 hour")
         XCTAssertEqual(TimeFormatting.spoken(120), "2 minutes")
     }
+
+    // MARK: - Shown and Spoken Alike
+
+    /// The Bluetooth disconnect delay reads the same on screen and to
+    /// VoiceOver, which used to hear "1 seconds" beside "1 second".
+    func testDisconnectDelaySpeaksTheCountItShows() {
+        XCTAssertEqual(MiscellaneousSettingsView.disconnectDelayPhrase(1), "1 second")
+        XCTAssertEqual(MiscellaneousSettingsView.disconnectDelayPhrase(5), "5 seconds")
+        XCTAssertEqual(MiscellaneousSettingsView.disconnectDelayPhrase(10), "10 seconds")
+    }
 }
