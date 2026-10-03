@@ -249,7 +249,7 @@ final class LibraryWindowRouter: ObservableObject {
             readerWindowOpeners.first { $0.window === window }?.openReader(bookID)
         case .newLibraryWindow:
             pendingActions.add(action, at: now())
-            log("no open window can take \(action.logDescription); it waits for a Library window")
+            routingLog(.trace, "no open window can take \(action.logDescription); it waits for a Library window")
             requestLibraryWindow(after: libraryWindowRequestDelay(for: action))
         }
     }
@@ -338,9 +338,9 @@ final class LibraryWindowRouter: ObservableObject {
         libraryWindowRequestedAt = date
         let waiting = pendingActions.actions.map(\.logDescription).joined(separator: ", ")
         if openLibraryWindow() {
-            log("opened a Library window for \(waiting)")
+            routingLog(.trace, "opened a Library window for \(waiting)")
         } else {
-            log("could not open a Library window for \(waiting)")
+            routingLog(.event, "could not open a Library window for \(waiting)")
         }
     }
 
@@ -357,7 +357,7 @@ final class LibraryWindowRouter: ObservableObject {
     /// Throws away the waiting actions too old to take, and logs each.
     private func discardExpiredActions() {
         for action in pendingActions.discardExpired(at: now()) {
-            log("\(action.logDescription) waited too long for a Library window and was dropped")
+            routingLog(.event, "\(action.logDescription) waited too long for a Library window and was dropped")
         }
     }
 
@@ -396,9 +396,16 @@ final class LibraryWindowRouter: ObservableObject {
         }
     }
 
-    /// Notes a routing event in the debug log.
-    private func log(_ message: String) {
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: "app-wide action: \(message)")
+    /// Records how an app-wide action was routed, in the debug log, as
+    /// `app-wide action: <message>` in the app category (`DiagnosticLog`).
+    /// What goes wrong is an event, always written: a Library window that
+    /// could not be opened, and an action dropped after waiting too long for
+    /// one. The routine path of an action that waits for a Library window is
+    /// trace, written only while tracing is on. A line names each action by
+    /// its `GlobalAction.logDescription`, so a book by the first eight
+    /// characters of its ID, never by its title.
+    private func routingLog(_ level: DiagnosticLog.Level, _ message: @autoclosure () -> String) {
+        DiagnosticLog.log(level, .app, "app-wide action: \(message())")
     }
 }
 

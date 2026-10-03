@@ -683,6 +683,64 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertTrue(pending.isEmpty)
     }
 
+    // MARK: - Diagnostics
+
+    /// What goes wrong in routing reaches the debug log as an event,
+    /// written while tracing is off: a Library window that could not be
+    /// opened, and an action dropped after waiting too long. The routine
+    /// line of the action starting to wait is trace, so it is not written.
+    /// A book is named by the first eight characters of its ID.
+    func testRoutingFailuresAreEventsAndTheRoutinePathIsNot() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
+        try TextMouthPaths.ensureDirectoryStructure()
+        setAppTracing(false)
+        let harness = RouterHarness()
+        harness.router.openLibraryWindow = { false }
+        let book = UUID()
+        let action = GlobalAction.openBookWindow(book)
+
+        let lines = routingLines(naming: action) {
+            harness.router.route(action)
+            harness.runDueWork()
+            // Past its lifetime the action is dropped when the next action
+            // asks for a Library window.
+            harness.advance(by: PendingGlobalActions.lifetime + 1)
+            harness.router.route(.goToLibrary)
+            harness.runDueWork()
+        }
+
+        let named = "open book \(book.uuidString.prefix(8))"
+        XCTAssertEqual(action.logDescription, named)
+        XCTAssertEqual(lines, [
+            "app-wide action: could not open a Library window for \(named)",
+            "app-wide action: \(named) waited too long for a Library window and was dropped",
+        ])
+    }
+
+    /// While tracing is on, the routine path is written too, as trace of
+    /// the app category: the action starting to wait, and the Library
+    /// window opened for it.
+    func testRoutinePathIsAppTraceWhileTracing() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        setAppTracing(true)
+        let harness = RouterHarness()
+        let action = GlobalAction.openBookWindow(UUID())
+
+        let lines = routingLines(naming: action) {
+            harness.router.route(action)
+            harness.runDueWork()
+        }
+
+        XCTAssertEqual(harness.libraryWindowRequests, 1)
+        XCTAssertEqual(lines, [
+            "TRACE app: app-wide action: no open window can take \(action.logDescription); it waits for a Library window",
+            "TRACE app: app-wide action: opened a Library window for \(action.logDescription)",
+        ])
+    }
+
     // MARK: - The running app
 
     /// The app delegate starts the shared router listening to the default
@@ -840,6 +898,15 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 5) {
             LibraryWindowRouter.shared.registeredLibraryWindows.count == registeredBefore.count
         }, "A Library window the test opened is still registered")
+    }
+
+    /// The debug log's lines written while `body` runs that name `action`
+    /// by its `logDescription`, each without the timestamp before its
+    /// first ": ".
+    private func routingLines(naming action: GlobalAction, during body: () -> Void) -> [String] {
+        logLines(in: .debug, writtenDuring: body)
+            .filter { $0.contains(action.logDescription) }
+            .compactMap { line in line.range(of: ": ").map { String(line[$0.upperBound...]) } }
     }
 }
 

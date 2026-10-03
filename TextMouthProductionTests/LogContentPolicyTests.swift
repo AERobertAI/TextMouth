@@ -278,11 +278,9 @@ final class LogContentPolicyTests: XCTestCase {
     // MARK: - The Writer
 
     /// The files that still hand lines straight to the writer: code outside
-    /// this policy's change, to be moved onto `DiagnosticLog`. The last one
-    /// reached main with the app-wide-action merge.
+    /// this policy's change, to be moved onto `DiagnosticLog`.
     private static let filesStillWritingDirectly: Set<String> = [
         "AppDelegate.swift", "BookContentAnalysisService.swift", "ConfigService.swift",
-        "LibraryWindowRouter.swift",
     ]
 
     /// Every other line goes through `DiagnosticLog`, the one place that
@@ -351,6 +349,7 @@ private enum LogCallScanner {
         LoggingFunction(name: "SleepTimerService.log", level: nil),
         LoggingFunction(name: "timerLog", level: nil),
         LoggingFunction(name: "transitionLog", level: nil),
+        LoggingFunction(name: "routingLog", level: nil),
         LoggingFunction(name: "voiceOverFocusLog", level: .trace),
         LoggingFunction(name: "diagnostic", level: .trace, file: "NowPlayingService.swift"),
         // The writer itself, which files not yet moved onto the policy still
