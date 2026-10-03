@@ -267,11 +267,12 @@ final class LogContentPolicyTests: XCTestCase {
         "AUDIO_SEGMENT_CLAMPED", "BOOK_METADATA_DROPPED", "CONTENT_ANALYSIS_DROPPED",
         "CONTENT_INDEX_REJECTED", "EPUB_INCOMPLETE_CONTENT", "FOLDER_REPAIR", "IMPORT_FAILED",
         "LEGACY_MIGRATION", "READING_STATS_DAY_KEYS", "STORED_VALUE_REPAIRED", "TEXT_ENCODING_FALLBACK",
-        // The data directory: a move waiting for work under way (TODO S04); a library found again,
-        // lost, or back, its identity and session lease, and the files read once it is back (FR02).
+        // The data directory: a move and what it waits for (TODO S04); a library found again, lost,
+        // or back, a switch to another library, the library's identity and session lease, and the
+        // files read once it is back (FR02).
         "DATA_DIRECTORY_AVAILABLE", "DATA_DIRECTORY_FOUND", "DATA_DIRECTORY_LOST", "DATA_DIRECTORY_MOVE",
-        "DATA_DIRECTORY_UNAVAILABLE", "DATA_DIRECTORY_UNMOUNTED", "LIBRARY_IDENTITY", "LIBRARY_SESSION",
-        "READING_STATS_FILE", "SUBSTITUTIONS_FILE",
+        "DATA_DIRECTORY_SWITCH", "DATA_DIRECTORY_UNAVAILABLE", "DATA_DIRECTORY_UNMOUNTED",
+        "LIBRARY_IDENTITY", "LIBRARY_SESSION", "READING_STATS_FILE", "SUBSTITUTIONS_FILE",
         // Cloud libraries (FR02): a book's download and the removal of its download, the library's
         // Download Now and Remove Download, the reader's downloads and working copies, a
         // maintenance pass leaving books in the cloud, and a record save leaving a record there.
