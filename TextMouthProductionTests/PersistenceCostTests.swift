@@ -256,7 +256,8 @@ final class PersistenceCostTests: XCTestCase {
     ///
     /// Before PERF16 each refresh worked out where the library lives once,
     /// and once more for every package: 644 location reads in either
-    /// library. Now a local library's refresh reads it once and stops.
+    /// library. Now a local library's refresh reads it once and stops, and a
+    /// cloud library's reads it once and passes it to every package's state.
     @MainActor
     func testCloudRefreshCost() async throws {
         let packages = (0..<643).map { number in
@@ -296,6 +297,7 @@ final class PersistenceCostTests: XCTestCase {
                 XCTAssertEqual(states.libraryLocation, .cloud(.iCloudDrive))
                 XCTAssertEqual(states.states.count, packages.count, "a package's state was not recorded")
                 XCTAssertTrue(states.states.values.allSatisfy { $0 == .waitingForSync })
+                XCTAssertEqual(readsPerRefresh, [1, 1, 1, 1, 1], "a cloud refresh looked the location up for a package")
             } else {
                 XCTAssertEqual(states.libraryLocation, .local)
                 XCTAssertEqual(states.states, [:], "a local library recorded cloud states")

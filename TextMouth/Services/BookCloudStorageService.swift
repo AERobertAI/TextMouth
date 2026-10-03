@@ -141,7 +141,15 @@ final class BookCloudStorageService: BookCloudStorage {
     /// when the package is not on this Mac yet, and otherwise what its files
     /// say (`Survey.bookState`).
     func state(of package: BookPackage) -> BookCloudState {
-        guard libraryLocation().isCloud else { return .local }
+        state(of: package, in: libraryLocation())
+    }
+
+    /// The cloud state of `package` in a library at `location`, which the
+    /// caller has just read (see `BookCloudStorage`): `state(of:)` without
+    /// working out the location again, as a refresh of every package asks
+    /// (PERF16).
+    func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {
+        guard location.isCloud else { return .local }
         do {
             return try survey(of: package).bookState
         } catch BookCloudError.packageMissing {

@@ -104,6 +104,24 @@ final class LibraryCloudRefreshTests: XCTestCase {
         XCTAssertEqual(states.state(of: books[1].id), .downloaded)
     }
 
+    /// A refresh of a library in the cloud through the app's book storage
+    /// works out where the library lives once, not once more for each
+    /// package (PERF16).
+    func testTheBookStorageWorksOutTheLocationOncePerRefresh() async {
+        let items = LocationCountingReads(reportingCloud: true)
+        let storage = BookCloudStorageService(items: items.provider)
+        let states = BookCloudStates()
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch", author: "George Eliot")]
+
+        await states.refresh(books.map(BookPackage.init), using: storage)
+
+        XCTAssertEqual(items.count, 1, "the location was worked out again for a package")
+        XCTAssertEqual(states.libraryLocation, .cloud(.iCloudDrive))
+        // Neither book's file is on this Mac yet.
+        XCTAssertEqual(states.state(of: books[0].id), .waitingForSync)
+        XCTAssertEqual(states.state(of: books[1].id), .waitingForSync)
+    }
+
     // MARK: - Events
 
     /// A Library window appearing refreshes the location and every book.
