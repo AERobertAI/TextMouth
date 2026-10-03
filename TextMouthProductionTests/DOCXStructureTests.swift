@@ -8,10 +8,11 @@ import XCTest
 /// or number read as a word; styles inherit heading levels through their
 /// `w:basedOn` chains; a paragraph's own outline level makes it a heading or
 /// body text; only current formatting counts, never the formatting a
-/// tracked change replaced; and a table nested in a cell keeps its rows
-/// apart from the row holding it. Each test builds a minimal DOCX package
-/// in memory and reads it through `DOCXParser`, the path every import
-/// takes, or parses one part with its production parser.
+/// tracked change replaced; a table nested in a cell keeps its rows apart
+/// from the row holding it; and every character of the text is read as
+/// written. Each test builds a minimal DOCX package in memory and reads it
+/// through `DOCXParser`, the path every import takes, or parses one part
+/// with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -292,11 +293,11 @@ final class DOCXStructureTests: XCTestCase {
         """)
 
         XCTAssertEqual(reading.markdown, """
-        Before planing:
+        Before planing\\:
         - Sharpen the iron
         - Set the depth
 
-        Then plane with the grain.
+        Then plane with the grain\\.
         """)
         XCTAssertEqual(reading.spoken, """
         Before planing:
@@ -396,7 +397,7 @@ final class DOCXStructureTests: XCTestCase {
         """)
 
         XCTAssertEqual(reading.markdown, """
-        Pick up where the last session ended:
+        Pick up where the last session ended\\:
 
         3. Glue the spine
         4. Clamp it overnight
@@ -584,7 +585,7 @@ final class DOCXStructureTests: XCTestCase {
         4. Soak the reed
         5. Shape the tip
 
-        Let it rest for an hour.
+        Let it rest for an hour\\.
 
         4. Test the tone
         """)
@@ -608,7 +609,7 @@ final class DOCXStructureTests: XCTestCase {
         """)
 
         XCTAssertEqual(reading.markdown, """
-        99. Ninety-ninth entry
+        99. Ninety\\-ninth entry
         100. Hundredth entry
              - A note on the hundredth
         """)
@@ -753,7 +754,7 @@ final class DOCXStructureTests: XCTestCase {
         <w:style w:type="paragraph" w:styleId=""><w:name w:val="List Bullet"/></w:style>
         """)
 
-        XCTAssertEqual(reading.markdown, "An ordinary paragraph.\n\nAnother one.")
+        XCTAssertEqual(reading.markdown, "An ordinary paragraph\\.\n\nAnother one\\.")
         XCTAssertEqual(reading.headings, [])
     }
 
@@ -786,7 +787,7 @@ final class DOCXStructureTests: XCTestCase {
         ], styles: Self.headingStyles)
 
         XCTAssertEqual(reading.headings, ["3 Rim Width", "1 Valve Types"])
-        XCTAssertTrue(reading.markdown.contains("\nMeasured inside the hooks.\n"), reading.markdown)
+        XCTAssertTrue(reading.markdown.contains("\nMeasured inside the hooks\\.\n"), reading.markdown)
     }
 
     // MARK: - Tracked Formatting Changes
@@ -823,10 +824,10 @@ final class DOCXStructureTests: XCTestCase {
         # Brake Pads
 
 
-        Check the wear line first.
+        Check the wear line first\\.
         1. Loosen the caliper
 
-        **Never** skip the test ride.
+        **Never** skip the test ride\\.
         """)
         XCTAssertEqual(reading.headings, ["1 Brake Pads"])
     }
@@ -965,8 +966,71 @@ final class DOCXStructureTests: XCTestCase {
         var diagnostics: [DOCXParserError] = []
         let markdown = try DOCXParser.extractMarkdown(from: docx) { diagnostics.append($0) }
 
-        XCTAssertEqual(markdown, "Joint chart:\n\nJoint Notes\n\nDovetail\n\nPins Tails\n\nRatio One to")
+        XCTAssertEqual(markdown, "Joint chart\\:\n\nJoint Notes\n\nDovetail\n\nPins Tails\n\nRatio One to")
         XCTAssertEqual(diagnostics.count, 1, "\(diagnostics)")
+    }
+
+    // MARK: - Literal Text
+
+    /// Every character of a document's text is read exactly as written.
+    /// Asterisks, underscores, and number signs, like every other ASCII
+    /// punctuation mark, never become emphasis, headings, list items,
+    /// quotations, links, code, HTML, or a rule, and quotes, dashes, and
+    /// ellipses keep the characters typed.
+    func testTextIsReadExactlyAsWritten() throws {
+        let lines = [
+            "# Not a heading",
+            "* Not a bullet *",
+            "_underscored_ and snake_case_name",
+            "2 * 3 * 4 = 24, not *emphasis* or __strong__",
+            "#hashtag and issue #12 ##",
+            "1. Not a numbered item",
+            "- Not a dash item",
+            "> Not a quotation",
+            "* * *",
+            "Fish & chips <b>not bold</b> [not a link](nowhere) `not code` ~~not struck~~ \\ a backslash",
+            "\"Quoted\" -- it's ... done"
+        ]
+
+        let reading = try read(body: lines.map { Self.paragraph(Self.xmlEscaped($0)) })
+
+        XCTAssertEqual(reading.spoken, lines.joined(separator: "\n\n"))
+        XCTAssertEqual(reading.headings, [])
+    }
+
+    /// Text stays literal wherever it stands: a heading's label, a table
+    /// cell, where a vertical bar stays inside its cell instead of dividing
+    /// it, a list item, and a link's label.
+    func testTextIsLiteralInHeadingsCellsListsAndLinks() throws {
+        let reading = try read(body: [
+            Self.paragraph(Self.xmlEscaped("Step #1: *Measure* twice"), style: "Heading1"),
+            Self.table(Self.row(Self.textCell("a | b"), Self.textCell("c"))),
+            Self.listItem("Use the 1/4 bit_ not the 3/8", numId: "1", level: 0),
+            "<w:p><w:hyperlink r:id=\"rId7\"><w:r><w:t>[Spec] *v2*</w:t></w:r></w:hyperlink></w:p>"
+        ], styles: Self.headingStyles, numbering: """
+        <w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        """, relationships: ["rId7": "https://example.org/spec"])
+
+        XCTAssertEqual(reading.headings, ["1 Step #1: *Measure* twice"])
+        XCTAssertTrue(reading.markdown.contains("| a \\| b | c |"), reading.markdown)
+        XCTAssertTrue(reading.spoken.contains("a | b"), reading.spoken)
+        XCTAssertTrue(reading.spoken.contains("\n\nUse the 1/4 bit_ not the 3/8\n\n"), reading.spoken)
+        XCTAssertTrue(reading.markdown.contains("[\\[Spec\\] \\*v2\\*](https://example.org/spec)"), reading.markdown)
+        XCTAssertTrue(reading.spoken.hasSuffix("\n\n[Spec] *v2*"), reading.spoken)
+    }
+
+    /// A line break inside a paragraph begins a Markdown line, and
+    /// indentation after two breaks would make that line a code block, read
+    /// verbatim with the backslashes that keep its characters literal. The
+    /// indentation is left out instead: it is never heard.
+    func testIndentedLineAfterTwoBreaksIsReadAsText() throws {
+        let reading = try read(body: [
+            "<w:p><w:r><w:t>Formula:</w:t><w:br/><w:br/><w:t xml:space=\"preserve\">    f(x) = x * 2</w:t></w:r></w:p>"
+        ])
+
+        XCTAssertEqual(reading.markdown, "Formula\\:\n\nf\\(x\\) \\= x \\* 2")
+        XCTAssertEqual(reading.spoken, "Formula:\n\nf(x) = x * 2")
     }
 
     // MARK: - Helpers
@@ -1018,10 +1082,34 @@ final class DOCXStructureTests: XCTestCase {
     private static func documentPart(_ body: [String]) -> String {
         """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <w:document xmlns:w="\(wordNamespace)"><w:body>
+        <w:document xmlns:w="\(wordNamespace)"
+         xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>
         \(body.joined(separator: "\n"))
         </w:body></w:document>
         """
+    }
+
+    /// The document's relationships part, holding a hyperlink to each
+    /// target in `targets` under its relationship ID.
+    private static func relationshipsPart(_ targets: [String: String]) -> String {
+        let relationships = targets.sorted { $0.key < $1.key }.map { id, target in
+            "<Relationship Id=\"\(id)\" Target=\"\(target)\" TargetMode=\"External\""
+                + " Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\"/>"
+        }
+        return """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        \(relationships.joined(separator: "\n"))
+        </Relationships>
+        """
+    }
+
+    /// `text` with the characters XML gives meaning to written as entity
+    /// references, ready to stand as an element's content.
+    private static func xmlEscaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
     }
 
     /// A numbering part holding `definitions`: abstract definitions and list instances.
@@ -1065,19 +1153,24 @@ final class DOCXStructureTests: XCTestCase {
     }
 
     /// Read a package whose text part holds the paragraphs and tables in
-    /// `body`, with a styles part holding `styles` and a numbering part
-    /// holding `numbering` when they are given, exactly as an import reads
-    /// it. Any damage report fails the test.
+    /// `body`, with a styles part holding `styles`, a numbering part holding
+    /// `numbering`, and a relationships part holding hyperlink
+    /// `relationships` when they are given, exactly as an import reads it.
+    /// Any damage report fails the test.
     private func read(
         body: [String],
         styles: String? = nil,
         numbering: String? = nil,
+        relationships: [String: String] = [:],
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws -> Reading {
         var parts = [DOCXParser.Part.document: Self.documentPart(body)]
         parts[DOCXParser.Part.styles] = styles.map(Self.stylesPart)
         parts[DOCXParser.Part.numbering] = numbering.map(Self.numberingPart)
+        if !relationships.isEmpty {
+            parts[DOCXParser.Part.documentRelationships] = Self.relationshipsPart(relationships)
+        }
         let docx = try makeTemporaryZip(prefix: "TextMouthDOCXStructure", entries: parts.mapValues { Data($0.utf8) })
         addTeardownBlock { try? FileManager.default.removeItem(at: docx) }
 

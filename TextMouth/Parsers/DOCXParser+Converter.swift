@@ -312,7 +312,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     /// Emit the completed paragraph as Markdown
     private func endParagraph() {
-        let text = currentParagraphText.trimmingCharacters(in: .whitespaces)
+        let text = Self.removingLineIndentation(currentParagraphText.trimmingCharacters(in: .whitespaces))
 
         // Inside a table, the paragraph's words belong to the cell being read
         if !tables.isEmpty {
@@ -367,6 +367,26 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         }
 
         isInParagraph = false
+    }
+
+    /// `text` without the spaces and tabs that begin its lines after the
+    /// first. A line break in a paragraph (`w:br`) starts a new Markdown
+    /// line, and after a blank line four spaces there begin a code block,
+    /// which is read verbatim, the backslashes that keep its characters
+    /// literal read aloud with them. Indentation is never heard, so leaving
+    /// it out loses nothing.
+    private static func removingLineIndentation(_ text: String) -> String {
+        var result = String.UnicodeScalarView()
+        var atLineStart = false
+        for scalar in text.unicodeScalars {
+            if atLineStart && (scalar == " " || scalar == "\t") {
+                continue
+            }
+            // CommonMark ends a line at a carriage return as well.
+            atLineStart = scalar == "\n" || scalar == "\r"
+            result.append(scalar)
+        }
+        return String(result)
     }
 
     // MARK: - List Items
@@ -461,7 +481,13 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         let text = runText
         guard !text.isEmpty else { return }
 
-        var formatted = text
+        // The run's characters are written as Markdown literals, so each is
+        // read exactly as written, as plain text and HTML are (TODO T02,
+        // T03): an asterisk, underscore, number sign, or bracket is never
+        // taken for emphasis, a heading, a list, or a link, and quotes,
+        // dashes, and ellipses are not turned typographic. Line breaks and
+        // tabs are not punctuation, so they pass through as they are.
+        var formatted = MarkdownLiteral.escaped(text)
 
         // Apply inline formatting markers.
         // Order matters: strikethrough wraps emphasis wraps bold.

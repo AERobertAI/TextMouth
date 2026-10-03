@@ -283,7 +283,8 @@ final class ArchiveEntryReaderTests: XCTestCase {
             try DOCXParser.extractMarkdown(from: docx)
         }
 
-        XCTAssertTrue(markdown.contains("Wax the thread before sewing the signatures."), markdown)
+        // DOCX text is written as Markdown literals, so its final period is escaped.
+        XCTAssertTrue(markdown.contains("Wax the thread before sewing the signatures\\."), markdown)
     }
 
     /// A Word document holding only its text part, one paragraph per entry

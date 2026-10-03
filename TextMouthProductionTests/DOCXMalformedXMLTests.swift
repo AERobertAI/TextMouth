@@ -376,7 +376,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
         let conversion = try convertIncomplete(docx)
 
         XCTAssertEqual(conversion.markdown, """
-        Paste strengths by volume:
+        Paste strengths by volume\\:
 
         | Paste | Water |
         | --- | --- |
