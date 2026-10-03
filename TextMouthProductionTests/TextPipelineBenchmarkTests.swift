@@ -65,6 +65,25 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF21: Word Counts
+
+    /// Counting the words of 5 MB of synthetic prose in one chapter, and of
+    /// the reading text of a 60-document converted EPUB.
+    func testPERF21WordCount() throws {
+        let prose = Chapter(text: TextPipelineFixtures.plainText(bytes: 5 * 1_048_576))
+        try benchmark("PERF21", "Chapter.wordCount, 5 MB of prose in one chapter") {
+            prose.wordCount
+        }
+        let converted = try TextPipelineFixtures.writeEPUB(
+            TextPipelineFixtures.convertedBookEPUB(documents: 60, paragraphs: 40), named: "converted-60.epub", for: self
+        )
+        let chapters = try EPUBParser.prepareBook(url: converted).chapters.map(\.chapter)
+        let megabytes = Double(chapters.reduce(0) { $0 + $1.text.utf8.count }) / 1_048_576
+        try benchmark("PERF21", String(format: "Chapter.wordCount, 60 EPUB chapters (%.2f MB)", megabytes)) {
+            chapters.reduce(0) { $0 + $1.wordCount }
+        }
+    }
+
     // MARK: - Measuring
 
     /// Run `body` `repetitions` times, then once more under a heap sampler,

@@ -252,6 +252,38 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertGreaterThan(checked, 100)
     }
 
+    // MARK: - Word Counts (PERF21)
+
+    /// The word count as it was counted before PERF21: the pieces a split
+    /// at every whitespace Character leaves.
+    private static func wordCountBefore(_ text: String) -> Int {
+        text.split(whereSeparator: { $0.isWhitespace }).count
+    }
+
+    /// Every chapter counts the words the split it replaces counted: on the
+    /// review's edge strings, five thousand random strings built from pieces
+    /// whose neighbors decide where Characters begin, the review's prose,
+    /// and the reading text of every TestData book and generated EPUB.
+    func testWordCountsMatchTheSplitTheyReplace() throws {
+        typealias Fixtures = TextPipelineFixtures
+        var texts = Fixtures.edgeTexts + Fixtures.randomTrickyTexts(count: 5_000, seed: 21)
+        texts.append(Fixtures.plainText(bytes: 131_072))
+        let books = try goldenBooks()
+        var chapters: [String] = []
+        for (_, url) in books {
+            let book = try Fixtures.imported(url, for: self)
+            chapters += try BookContentAnalysisService.load(book: book).content.chapters.map(\.text)
+        }
+        // Every book gave at least one chapter, so none was compared vacuously.
+        XCTAssertGreaterThanOrEqual(chapters.count, books.count)
+        for text in texts + chapters {
+            XCTAssertEqual(
+                Chapter(text: text).wordCount, Self.wordCountBefore(text),
+                text.unicodeScalars.prefix(40).map { String($0.value, radix: 16) }.joined(separator: " ")
+            )
+        }
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the

@@ -233,6 +233,46 @@ enum TextPipelineFixtures {
         return lines.joined(separator: "\n")
     }
 
+    // MARK: - Edge Strings
+
+    /// The review's strings where a fast path and the rule it replaces
+    /// could part: clusters that mix whitespace with marks, controls,
+    /// prepended scalars, emoji, and other scripts; a byte-order mark; and
+    /// lines whose letters change, or do not, when uppercased.
+    static let edgeTexts: [String] = [
+        "", " ", "a", " \u{301}a", "\t\u{301}a", "a\r\nb", "\r\n\u{301}x", "\u{600} a", "x\u{200D} y",
+        "\u{3000}\u{301}z", "e\u{301} f", "👍🏽 ok", "🇺🇸🇬🇧 x", "\u{85}\u{301}b", "\u{2028}\u{308}c",
+        "\u{A0}\u{20DD}d", "한국어 단어", "नमस्ते दुनिया", "مرحبا بالعالم", "a\u{903} b", " \u{903}c",
+        "word\u{FEFF}word", "“quoted” — dash…", "x \u{200B} y", "tab\there\u{0B}vt\u{0C}ff",
+        "\u{1F469}\u{200D}\u{1F4BB} coder", "a\r", "\r", "\n\n", " a ", "\u{0}\u{1} \u{7F}",
+        "a\u{FEFF}b\u{FEFF}",
+        "CHAPTER ONE\nSTRASSE\nstraße\nﬁNAL\nǅOKTOR\nÉCOLE\nΣΟΦΙΑ\n#HEADING\nA B C\nAB\n",
+    ]
+
+    /// Pieces of text whose neighbors decide where Characters begin and end:
+    /// every kind of whitespace, controls, combining and enclosing marks,
+    /// joiners, a prepended scalar, a spacing mark, Hangul jamo, regional
+    /// indicators, emoji and their modifiers, ASCII punctuation, and letters.
+    static let trickyPieces: [String] = [
+        "a", "Z", "7", " ", "  ", "\t", "\n", "\r", "\r\n", "\u{0B}", "\u{0C}", "\u{85}", "\u{A0}", "\u{1680}",
+        "\u{2000}", "\u{2028}", "\u{2029}", "\u{202F}", "\u{3000}", "\u{301}", "\u{308}", "\u{20DD}",
+        "\u{200C}", "\u{200D}", "\u{200B}", "\u{FEFF}", "\u{600}", "\u{903}", "é", "e\u{301}", "ß", "ǅ",
+        "\u{1100}", "\u{1161}", "\u{11A8}", "한", "日", "👍", "🏽", "🇺", "🇸", "\u{1F469}", "—", "“", "*",
+        "\\", "#", "<", "&", "\u{0}", "\u{7F}", "-", "=",
+    ]
+
+    /// `count` strings of up to `maximumPieces` pieces drawn from
+    /// `trickyPieces` by a generator seeded with `seed`.
+    static func randomTrickyTexts(count: Int, maximumPieces: Int = 24, seed: UInt64) -> [String] {
+        var random = SeededGenerator(state: seed)
+        return (0..<count).map { _ in
+            let pieces = Int(random.next() % UInt64(maximumPieces + 1))
+            return (0..<pieces).map { _ in
+                trickyPieces[Int(random.next() % UInt64(trickyPieces.count))]
+            }.joined()
+        }
+    }
+
     // MARK: - Generated EPUBs
 
     /// A file at `path` in a generated archive holding `text` as UTF-8.
