@@ -1,13 +1,14 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
 /// Saving edited EPUB metadata writes the library's copy of the EPUB file
 /// first and publishes only what was saved (TODO A09). After a write that
-/// fails, the library row, the book's record (bookInfo.json), and the file
-/// all stay as they were, and the failure names the file; after a success
-/// all of them hold the edit, the file's new content hash included.
-/// Fixtures are real packages in the hosted test root, each holding a copy
-/// of the Alice EPUB, removed when the test ends.
+/// fails, the reader, the library row, the book's record (bookInfo.json),
+/// and the file all stay as they were, and the failure names the file;
+/// after a success all of them hold the edit, the file's new content hash
+/// included. Fixtures are real packages in the hosted test root, each
+/// holding a copy of the Alice EPUB, removed when the test ends.
 @MainActor
 final class EPUBMetadataWritebackTests: XCTestCase {
     /// What a save reports when writing the library's copy of the fixture
@@ -80,6 +81,101 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         XCTAssertEqual(SavedMetadata(try BookInfo.load(from: book.tmbDirectory)), SavedMetadata(book))
     }
 
+    // MARK: - The Reader's Save
+
+    /// A write of the library's copy that fails changes nothing: the
+    /// reader's metadata and book, the library row, the record, and the file
+    /// all stay exactly as they were. The failure names the file and why, in
+    /// the outcome, in the reader's error alert, and in what VoiceOver hears.
+    func testAFailedWriteLeavesTheReaderTheLibraryTheRecordAndTheFileAsTheyWere() async throws {
+        let book = try makePackagedEPUB()
+        let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let metadataBefore = editableFields(of: reader.epubMetadata)
+        let fileBefore = try Data(contentsOf: book.bookFileURL)
+        let edited = try editedMetadata(of: book)
+
+        var outcome: OperationOutcome?
+        let recorder = recordingAnnouncements {
+            outcome = reader.saveEPUBMetadata(edited, writeToFile: true, writer: .refusingReplacement)
+        }
+
+        XCTAssertEqual(outcome, .failure(Self.refusedWriteMessage))
+        XCTAssertEqual(recorder.announcements.map(\.message), [Self.refusedWriteMessage])
+        XCTAssertEqual(reader.errorMessage, Self.refusedWriteMessage)
+        XCTAssertEqual(editableFields(of: reader.epubMetadata), metadataBefore)
+        XCTAssertEqual(try agreedMetadata(of: reader), SavedMetadata(book))
+        XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
+    }
+
+    /// A write that works saves the edit everywhere at once: the file, the
+    /// reader's metadata and book, the library row, and the record all hold
+    /// it with the file's new content hash, and VoiceOver hears which file
+    /// was written.
+    func testASuccessfulWriteUpdatesTheReaderTheLibraryTheRecordAndTheHash() async throws {
+        let book = try makePackagedEPUB()
+        let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let edited = try editedMetadata(of: book)
+
+        var outcome: OperationOutcome?
+        let recorder = recordingAnnouncements {
+            outcome = reader.saveEPUBMetadata(edited, writeToFile: true)
+        }
+
+        let saved = "Metadata saved to the library's copy of “alice.epub”."
+        XCTAssertEqual(outcome, .success(saved))
+        XCTAssertEqual(recorder.announcements.map(\.message), [saved])
+        let newHash = try FileImportService.md5Hash(of: book.bookFileURL)
+        XCTAssertNotEqual(newHash, book.md5Hash)
+        XCTAssertEqual(try agreedMetadata(of: reader), .edited(hash: newHash))
+        XCTAssertEqual(editableFields(of: reader.epubMetadata), editableFields(of: edited))
+        XCTAssertEqual(editableFields(of: try EPUBParser.readMetadata(url: book.bookFileURL)), editableFields(of: edited))
+    }
+
+    /// Saving to the library only leaves the EPUB file and its hash exactly
+    /// as they were, saves the edit to the reader, the library row, and the
+    /// record, and says that the file is unchanged.
+    func testALibraryOnlySaveLeavesTheFileAndItsHashUnchanged() async throws {
+        let book = try makePackagedEPUB()
+        let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let edited = try editedMetadata(of: book)
+        let fileBefore = try Data(contentsOf: book.bookFileURL)
+
+        var outcome: OperationOutcome?
+        let recorder = recordingAnnouncements {
+            outcome = reader.saveEPUBMetadata(edited, writeToFile: false)
+        }
+
+        let libraryOnly = "Metadata saved to the library only; the EPUB file is unchanged."
+        XCTAssertEqual(outcome, .success(libraryOnly))
+        XCTAssertEqual(recorder.announcements.map(\.message), [libraryOnly])
+        XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
+        XCTAssertEqual(try agreedMetadata(of: reader), .edited(hash: book.md5Hash))
+        XCTAssertEqual(editableFields(of: reader.epubMetadata), editableFields(of: edited))
+    }
+
+    /// A package that cannot be written makes the real write fail before it
+    /// changes anything. The failure names the library's copy and gives the
+    /// system's reason, and no write of the book's record was attempted, so
+    /// nothing reaches the failure banner either.
+    func testAPackageThatCannotBeWrittenFailsBeforeAnythingIsWritten() async throws {
+        let center = cleanSharedFailureCenter()
+        let book = try makePackagedEPUB()
+        let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
+        let edited = try editedMetadata(of: book)
+        let fileBefore = try Data(contentsOf: book.bookFileURL)
+        makeReadOnly(book.tmbDirectory)
+
+        let outcome = reader.saveEPUBMetadata(edited, writeToFile: true)
+
+        let failure = try XCTUnwrap(outcome.failureMessage)
+        XCTAssertTrue(failure.hasPrefix("Could not save metadata to the library's copy of “alice.epub”: "), failure)
+        XCTAssertTrue(failure.hasSuffix(" Nothing was changed."), failure)
+        XCTAssertEqual(reader.lastAnnouncement, failure)
+        XCTAssertEqual(try agreedMetadata(of: reader), SavedMetadata(book))
+        XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "\(center.outstandingFailures().map(\.sentence))")
+    }
+
     // MARK: - Fixtures
 
     /// The Alice EPUB in the repository's test data.
@@ -122,6 +218,28 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         return library
     }
 
+    /// A reader for `book`, returned once its content and metadata have
+    /// loaded and every write the load queued has reached the disk, so that
+    /// afterwards only the save under test changes anything. The reader is
+    /// closed when the test ends.
+    private func makeLoadedReader(for book: Book, in library: LibraryViewModel) async throws -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: library,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            notificationCenter: NotificationCenter()
+        )
+        addTeardownBlock { await reader.close() }
+        let loaded = expectation(description: "Content loaded")
+        let subscription = reader.$isLoading.filter { !$0 }.prefix(1).sink { _ in loaded.fulfill() }
+        defer { subscription.cancel() }
+        await fulfillment(of: [loaded], timeout: 10)
+        XCTAssertNil(reader.errorMessage, "the fixture did not load")
+        XCTAssertNotNil(reader.epubMetadata, "the fixture's metadata did not load")
+        LibraryPersistenceService.flushPendingSave()
+        return reader
+    }
+
     /// The metadata an editor opens with for `book`, edited as
     /// `SavedMetadata.edited(hash:)` describes.
     private func editedMetadata(of book: Book) throws -> EPUBMetadata {
@@ -153,6 +271,19 @@ final class EPUBMetadataWritebackTests: XCTestCase {
         let record = SavedMetadata(try BookInfo.load(from: book.tmbDirectory))
         XCTAssertEqual(record, row, "bookInfo.json disagrees with the library row", file: file, line: line)
         return row
+    }
+
+    /// The metadata the reader's book, the library row, and the book's
+    /// record all agree on, once every queued write has reached the disk.
+    /// Fails when any of them disagrees.
+    private func agreedMetadata(
+        of reader: ReaderViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> SavedMetadata {
+        let saved = try agreedMetadata(of: reader.book, in: reader.libraryViewModel, file: file, line: line)
+        XCTAssertEqual(SavedMetadata(reader.book), saved, "the reader's book disagrees with the library", file: file, line: line)
+        return saved
     }
 }
 
