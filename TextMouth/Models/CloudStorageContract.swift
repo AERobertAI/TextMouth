@@ -323,7 +323,8 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// The cloud state of `package`, read without downloading anything.
     func state(of package: BookPackage) -> BookCloudState
     /// Downloads every file of `package`. The stream yields progress as files
-    /// arrive and finishes once every file is on this Mac; it throws a
+    /// arrive, and as parts of them do where the sync service reports any,
+    /// and finishes once every file is on this Mac; it throws a
     /// `BookCloudError` when the download cannot finish. Ending the
     /// iteration, or cancelling the task that iterates, stops the waiting
     /// (the sync service may finish the download anyway).
