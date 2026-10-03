@@ -709,26 +709,19 @@ extension ReaderViewModel {
     // MARK: Chapters Without a Working Copy
 
     /// Whether the current chapter's files can be handed to the player: true
-    /// unless one is only in the cloud (FR02). AVPlayer would wait on the
-    /// network for such a file, so instead the book downloads, with the same
-    /// view, as a short pause, and the chapter plays once it is here; the
-    /// reader shows Playing meanwhile. Offline, the download fails at once
-    /// and the reader stops at the chapter with the reason and Try Again.
-    ///
-    /// Only a book in a cloud library without a working copy is checked: a
-    /// copy is on this Mac by construction. Each file is looked at with one
-    /// lstat(2) made with downloading switched off, so the check never waits
-    /// on the network either.
+    /// unless one is only in the cloud (FR02, `chapterHasFileOnlyInCloud(_:)`).
+    /// AVPlayer would wait on the network for such a file, so instead the
+    /// book downloads, with the same view, as a short pause, and the chapter
+    /// plays once it is here; the reader shows Playing meanwhile. Offline,
+    /// the download fails at once and the reader stops at the chapter with
+    /// the reason and Try Again.
     func chapterFilesReadyToPlay() -> Bool {
-        guard cloudSession.location?.isCloud == true, cloudSession.workingCopy == nil else { return true }
+        guard checksChapterFiles else { return true }
         // A chapter download under way plays the cursor's chapter when it
         // is done.
         guard cloudSession.downloadTask == nil else { return false }
 
-        let isDataless = cloudServices.isDataless
-        let inCloud = chapterAudioSource(forChapterAt: currentChapterIndex).files.contains {
-            LocalBookFiles.availability(of: $0, isDataless: isDataless) == .inCloud
-        }
+        let inCloud = chapterHasFileOnlyInCloud(currentChapterIndex)
         let justDownloaded = cloudSession.chapterJustDownloaded
         cloudSession.chapterJustDownloaded = false
         guard inCloud else { return true }
@@ -749,6 +742,29 @@ extension ReaderViewModel {
         isCurrentlyPaused = false
         startDownload(.chapter(chapterNumber))
         return false
+    }
+
+    /// Whether a file chapter `chapterIndex` plays from is only in the cloud,
+    /// where the player would wait on the network for it (FR02): the current
+    /// chapter's before it plays, and the next chapter's before it is named
+    /// to follow (TODO PERF09). Only a book in a cloud library without a
+    /// working copy can have one (`checksChapterFiles`): a copy is on this
+    /// Mac by construction. Each file is looked at with one lstat(2) made
+    /// with downloading switched off, so the check never waits on the
+    /// network either.
+    func chapterHasFileOnlyInCloud(_ chapterIndex: Int) -> Bool {
+        guard checksChapterFiles else { return false }
+        let isDataless = cloudServices.isDataless
+        return chapterAudioSource(forChapterAt: chapterIndex).files.contains {
+            LocalBookFiles.availability(of: $0, isDataless: isDataless) == .inCloud
+        }
+    }
+
+    /// Whether each chapter's files are checked for being only in the cloud
+    /// before the player is handed them: in a cloud library, for a book
+    /// without a working copy.
+    private var checksChapterFiles: Bool {
+        cloudSession.location?.isCloud == true && cloudSession.workingCopy == nil
     }
 
     /// Stops the reader at the current chapter, whose files could not be got

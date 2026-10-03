@@ -808,6 +808,99 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - The Next Chapter's File (PERF09)
+
+    /// Without a working copy, the next chapter's file is named to follow the
+    /// chapter playing, for the player to roll straight on into, only while
+    /// it is on this Mac (TODO PERF09): a file only in the cloud is never
+    /// queued, since the player would wait on the network for it, and its
+    /// chapter downloads first when its turn comes, as it always has.
+    func testNextChapterOnlyInTheCloudIsNotNamedToFollow() throws {
+        let cloud = try makeCloudReaders("Cloud Next Chapter File", clone: Self.failingClone)
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.cloudSession.workingCopy)
+        let files = reader.audioChapterFiles.map { Self.path($0) }
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+
+        reader.play()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "The first chapter did not play")
+        XCTAssertEqual(reader.audioPlaybackService.queuedFilePaths, [files[0]], "A file only in the cloud was queued")
+
+        reader.stop()
+        cloud.cloudOnly.clear()
+        reader.play()
+
+        XCTAssertEqual(
+            reader.audioPlaybackService.queuedFilePaths,
+            files,
+            "The next chapter's file, on this Mac now, was not queued"
+        )
+        reader.stop()
+    }
+
+    /// A working copy is on this Mac by construction, so the next chapter's
+    /// file in the copy is named to follow, whatever the package's own files
+    /// are doing in the cloud meanwhile.
+    func testNextChapterFileOfAWorkingCopyIsNamedToFollow() throws {
+        let cloud = try makeCloudReaders("Cloud Next Chapter Copy")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+
+        reader.play()
+
+        XCTAssertEqual(
+            reader.audioPlaybackService.queuedFilePaths,
+            reader.audioChapterFiles.map { Self.path(copy.location(of: URL(fileURLWithPath: $0))) },
+            "The next chapter's file in the working copy was not queued"
+        )
+        reader.stop()
+    }
+
+    /// A next chapter's file that goes back to the cloud after it was named
+    /// to follow, as when the sync service removes its download meanwhile,
+    /// never plays from the cloud: once the chapter before ends and the
+    /// player has rolled on into it, the reader finds it only in the cloud,
+    /// stops the player, and downloads the chapter first, showing Playing, as
+    /// for any chapter only in the cloud. The chapter then plays from its
+    /// start.
+    func testPlaybackThatRolledOnIntoAFileGoneToTheCloudStopsWhileItDownloads() throws {
+        let cloud = try makeCloudReaders("Cloud Next Chapter Gone", clone: Self.failingClone)
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [0.6, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let second = reader.audioChapterFiles[1]
+        cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+        reader.play()
+        XCTAssertEqual(
+            reader.audioPlaybackService.queuedFilePaths,
+            reader.audioChapterFiles.map { Self.path($0) },
+            "The second chapter's file was not named to follow"
+        )
+
+        cloud.cloudOnly.mark(second)
+
+        waitFor("the chapter's download") { reader.shownDownload?.progress == Self.halfway }
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "The player went on playing a file only in the cloud")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The player kept a file only in the cloud")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing while it waited")
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertLessThan(reader.currentCharacterOffset, 10, "The chapter did not play from its start")
+        reader.stop()
+    }
+
     // MARK: - Fixtures
 
     /// Progress of `files` of `totalFiles` files, `bytes` of `totalBytes`.

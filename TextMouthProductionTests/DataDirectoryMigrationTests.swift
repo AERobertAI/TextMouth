@@ -192,6 +192,93 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    // MARK: - Package Records (PERF15)
+
+    /// A move copies each package's contentIndex.json as it is, byte for
+    /// byte, and never decodes or writes it again: only analysis writes that
+    /// file, which can run to hundreds of kilobytes. The index here is
+    /// spelled as no encoder of this version spells it, pretty-printed with
+    /// a final line break, so any rewrite, however faithful, would show. The
+    /// copy's record still loads with that index, and bookInfo.json takes
+    /// none in.
+    func testMoveCopiesEachContentIndexFileByteForByte() throws {
+        let (source, destination) = try makeMoveLocations()
+        let library = try makeLibrary(at: source)
+        let sourcePackage = package(of: library.books[0], in: source)
+        let index = try XCTUnwrap(BookInfo.load(from: sourcePackage).contentIndex)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let unusualSpelling = try encoder.encode(index) + Data("\n".utf8)
+        try unusualSpelling.write(to: TextMouthPaths.contentIndexPath(in: sourcePackage))
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+
+        let copiedPackage = package(of: migrated.books[0], in: destination)
+        XCTAssertEqual(
+            try Data(contentsOf: TextMouthPaths.contentIndexPath(in: copiedPackage)),
+            unusualSpelling,
+            "The move wrote contentIndex.json again"
+        )
+        XCTAssertEqual(try BookInfo.load(from: copiedPackage).contentIndex, index)
+        XCTAssertNil(try recordKeys(in: copiedPackage)["contentIndex"], "bookInfo.json took the index in")
+    }
+
+    /// A package whose record an older version of TextMouth wrote, with the
+    /// index inside bookInfo.json, arrives laid out as its first save would
+    /// leave it: the index in a contentIndex.json of its own, and
+    /// bookInfo.json without it. The data directory it came from keeps its
+    /// record exactly as it was.
+    func testMoveGivesAnOldFormatRecordsIndexAFileOfItsOwn() throws {
+        let (source, destination) = try makeMoveLocations()
+        let library = try makeLibrary(at: source)
+        let sourcePackage = package(of: library.books[0], in: source)
+        var record = try BookInfo.load(from: sourcePackage)
+        let index = try XCTUnwrap(record.contentIndex)
+        record.contentIndex = nil
+        let olderRecord = try ContentIndexFileTests.olderVersionRecordBytes(record, index: index)
+        try olderRecord.write(to: TextMouthPaths.bookInfoPath(in: sourcePackage))
+        try FileManager.default.removeItem(at: TextMouthPaths.contentIndexPath(in: sourcePackage))
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+
+        let copiedPackage = package(of: migrated.books[0], in: destination)
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: TextMouthPaths.contentIndexPath(in: copiedPackage).path),
+            "The copy's index has no file of its own"
+        )
+        XCTAssertNil(try recordKeys(in: copiedPackage)["contentIndex"], "The copy's bookInfo.json still holds the index")
+        XCTAssertEqual(try BookInfo.load(from: copiedPackage).contentIndex, index)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: sourcePackage)), olderRecord)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.contentIndexPath(in: sourcePackage).path))
+    }
+
+    /// A move writes each copy's record as every save of a book writes one
+    /// (`Book.saveBookInfoThrowing`): one revision higher than the record it
+    /// replaces, so the book's revisions only rise, with the library row's
+    /// own fields, such as a title edited before the move, and with the
+    /// analysis fields that describe the index kept beside that index, even
+    /// when the row moved with it has not taken that analysis yet.
+    func testMoveWritesEachRecordAsASaveOfTheBookWould() throws {
+        let (source, destination) = try makeMoveLocations()
+        var library = try makeLibrary(at: source)
+        let sourcePackage = package(of: library.books[0], in: source)
+        var stored = try BookInfo.load(from: sourcePackage)
+        stored.state.revision = 7
+        try stored.save(to: sourcePackage)
+        library.books[0].title = "Renamed Before The Move"
+        library.books[0].contentAnalysisFields = Book.ContentAnalysisFields()
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+
+        let copied = try BookInfo.load(from: package(of: migrated.books[0], in: destination))
+        XCTAssertEqual(copied.state.revision, 8)
+        XCTAssertEqual(copied.metadata.title, "Renamed Before The Move")
+        XCTAssertEqual(copied.state.contentAnalysisFields, stored.state.contentAnalysisFields)
+        XCTAssertEqual(copied.state.totalWordCount, 1)
+        XCTAssertEqual(copied.contentIndex, stored.contentIndex)
+    }
+
     // MARK: - Linked Locations (S10)
 
     /// Acceptance (TODO S10): a data directory that is a link to a folder
@@ -731,6 +818,28 @@ final class DataDirectoryMigrationTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(Library.self, from: Data(contentsOf: root.appendingPathComponent("library.json")))
+    }
+
+    /// A data directory's location and a move's new location, both in a new
+    /// folder of the test's own (`makeMigrationBase()`); neither exists yet.
+    private func makeMoveLocations() throws -> (source: URL, destination: URL) {
+        let base = try makeMigrationBase()
+        return (
+            base.appendingPathComponent("Source", isDirectory: true),
+            base.appendingPathComponent("Destination", isDirectory: true)
+        )
+    }
+
+    /// The package of `book`, a book at the top of the library, in the data
+    /// directory at `root`.
+    private func package(of book: Book, in root: URL) -> URL {
+        root.appendingPathComponent("Library/\(book.tmbDirectoryName)", isDirectory: true)
+    }
+
+    /// The top-level keys of the bookInfo.json in `package`, as written.
+    private func recordKeys(in package: URL) throws -> [String: Any] {
+        let bytes = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: package))
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
     }
 
     /// A new, empty folder in the temporary directory for one test's

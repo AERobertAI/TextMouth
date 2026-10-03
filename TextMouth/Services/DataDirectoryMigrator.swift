@@ -479,7 +479,9 @@ enum DataDirectoryMigrator {
     /// Points every book in the data directory at its place in the new
     /// location, under the name the preferences will hold, writes the result
     /// as the staged copy's package records and library.json, and checks it
-    /// against the copy in `staging`.
+    /// against the copy in `staging`. Each record is written as a save of its
+    /// book writes one, so each package's content index stays as it was
+    /// copied.
     /// - Returns: The library the staged library.json holds.
     private static func stage(
         _ library: Library,
@@ -507,9 +509,14 @@ enum DataDirectoryMigrator {
                     .appendingPathComponent("Library", isDirectory: true)
                     .appendingPathComponent(migratedLibrary.books[index].folderPath, isDirectory: true)
                     .appendingPathComponent(migratedLibrary.books[index].tmbDirectoryName, isDirectory: true)
-                var info = migratedLibrary.books[index].makeBookInfo()
-                info.contentIndex = (try? BookInfo.load(from: stagedPackage))?.contentIndex
-                try info.save(to: stagedPackage)
+                // Written as every save of the book writes its record
+                // (PERF15), over the record copied with the package, reading
+                // bookInfo.json alone. The copied contentIndex.json stays as
+                // it is, byte for byte, beside the analysis fields that
+                // describe it: only analysis writes that file. An index an
+                // older version kept inside bookInfo.json moves into a file
+                // of its own, as the book's first save would move it.
+                try migratedLibrary.books[index].saveBookInfoThrowing(inPackageAt: stagedPackage)
             }
         }
 
