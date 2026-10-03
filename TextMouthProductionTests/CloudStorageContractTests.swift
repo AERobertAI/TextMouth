@@ -205,7 +205,8 @@ final class CloudStorageContractTests: XCTestCase {
     }
 
     /// With no provider known, each sentence says "the cloud service" where
-    /// it would name one, exactly as the contract words it.
+    /// it would name one, capitalized where it begins a sentence: a braille
+    /// display shows the difference.
     func testEveryExplanationWithoutAProviderSaysTheCloudService() {
         XCTAssertEqual(
             BookCloudError.offline.explanation(in: nil),
@@ -214,11 +215,11 @@ final class CloudStorageContractTests: XCTestCase {
         )
         XCTAssertEqual(
             BookCloudError.stalled(seconds: 45).explanation(in: nil),
-            "the cloud service hasn't downloaded anything for 45 seconds. It may be paused, signed out, or not running."
+            "The cloud service hasn't downloaded anything for 45 seconds. It may be paused, signed out, or not running."
         )
         XCTAssertEqual(
             BookCloudError.provider("Access denied.").explanation(in: nil),
-            "the cloud service couldn't download the book: Access denied."
+            "The cloud service couldn't download the book: Access denied."
         )
         XCTAssertEqual(
             BookCloudError.notUploaded.explanation(in: nil),
@@ -231,7 +232,7 @@ final class CloudStorageContractTests: XCTestCase {
         )
         XCTAssertEqual(
             BookCloudError.packageMissing.explanation(in: nil),
-            "The book's files aren't on this Mac yet. the cloud service may still be syncing them."
+            "The book's files aren't on this Mac yet. The cloud service may still be syncing them."
         )
     }
 

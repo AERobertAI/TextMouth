@@ -271,25 +271,27 @@ enum BookCloudError: Error, Equatable, Sendable {
     case packageMissing
 
     /// A sentence the interface shows and VoiceOver speaks, naming `provider`
-    /// (or "the cloud service" when it is unknown).
+    /// (or "the cloud service" when it is unknown, capitalized where it
+    /// begins a sentence, as a braille display shows).
     func explanation(in provider: CloudProvider?) -> String {
         let service = provider?.displayName ?? "the cloud service"
+        let serviceStartingSentence = provider?.displayName ?? "The cloud service"
         switch self {
         case .offline:
             return "This Mac is offline, so the book can't be downloaded from \(service). "
                 + "Connect to the internet and try again."
         case .stalled(let seconds):
-            return "\(service) hasn't downloaded anything for \(seconds) seconds. "
+            return "\(serviceStartingSentence) hasn't downloaded anything for \(seconds) seconds. "
                 + "It may be paused, signed out, or not running."
         case .provider(let message):
-            return "\(service) couldn't download the book: \(message)"
+            return "\(serviceStartingSentence) couldn't download the book: \(message)"
         case .notUploaded:
             return "Some changes to this book haven't been uploaded to \(service) yet, "
                 + "so its download can't be removed. Try again in a moment."
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
         case .packageMissing:
-            return "The book's files aren't on this Mac yet. \(service) may still be syncing them."
+            return "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them."
         }
     }
 }
