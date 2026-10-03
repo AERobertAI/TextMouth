@@ -254,6 +254,16 @@ final class ReadingStatsService: ObservableObject {
         return saved + uncreditedSessionTime(at: now, since: week.start)
     }
 
+    /// Listening time over all time at `now`: the saved grand total plus
+    /// the open session's time since its last checkpoint, which the next
+    /// checkpoint will add to it. Like Today and This Week it adds only that
+    /// remainder, since the checkpointed part is already in the total, so
+    /// All Time never lags Today while a book plays. Unlike them it needs
+    /// no split at midnight: every day counts.
+    func allTimeListeningTime(at now: Date) -> TimeInterval {
+        stats.totalListeningSeconds + uncreditedSessionTime(at: now)
+    }
+
     var booksFinishedThisYear: Int {
         let year = Calendar.current.component(.year, from: Date())
         return stats.finishedBooks.filter {

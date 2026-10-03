@@ -18,10 +18,12 @@ struct ReadingStatsView: View {
                 }
                 .accessibilityLabel("Listening time this week: \(TimeFormatting.format(statsService.thisWeekListeningTime))")
 
+                // The saved total plus the open session's time since its last
+                // checkpoint, as Today and This Week count it.
                 LabeledContent("All Time") {
-                    Text(TimeFormatting.format(statsService.stats.totalListeningSeconds))
+                    Text(TimeFormatting.format(statsService.allTimeListeningTime(at: Date())))
                 }
-                .accessibilityLabel("Total listening time: \(TimeFormatting.format(statsService.stats.totalListeningSeconds))")
+                .accessibilityLabel("Total listening time: \(TimeFormatting.format(statsService.allTimeListeningTime(at: Date())))")
             } header: {
                 Text("Listening Time")
                     .accessibilityAddTraits(.isHeader)
