@@ -1,4 +1,4 @@
-@preconcurrency import AVFoundation
+import AVFoundation
 import Combine
 
 /// Identifies rendered speech audio by everything that went into it, so audio
@@ -93,6 +93,15 @@ struct SpeechRenderRequest: Sendable {
 /// are compared by identity, and the completion's reference keeps its ticket
 /// alive, so no later render can ever hold the same one.
 private final class RenderTicket: Sendable {}
+
+/// Rendered speech the render queue hands over to the main queue, which
+/// installs it. `@unchecked Sendable` because `AVAudioPCMBuffer` is not
+/// `Sendable`, yet only one thread ever touches the buffer at a time: the
+/// render queue makes and fills it, then hands it over as its last act.
+private struct HandedOverBuffer: @unchecked Sendable {
+    /// The rendered speech, with its silence padding.
+    let buffer: AVAudioPCMBuffer
+}
 
 /// What the speech engine made of one report from its player node that a
 /// segment of rendered audio it scheduled has played back.
@@ -383,6 +392,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             }
             map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
             let completedMap = map
+            // This queue's last use of the buffer: from here on only the
+            // main queue touches it.
+            let handedOver = HandedOverBuffer(buffer: combinedBuffer)
 
             DispatchQueue.main.async {
                 // Recheck ownership on the queue that installs the buffer.
@@ -392,7 +404,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                     completion(false)
                     return
                 }
-                self.renderedBuffer = combinedBuffer
+                self.renderedBuffer = handedOver.buffer
                 self.renderedSignature = request.signature
                 self.renderFormat = audioFormat
                 self.wordFrameMap = completedMap
