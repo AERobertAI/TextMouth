@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -100,6 +101,49 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             model.library.books.count,
             "every package was measured once, however many derivations followed"
         )
+    }
+
+    // MARK: - PERF11: Live Reading Positions
+
+    /// How many times a minute of listening publishes the library model,
+    /// which re-renders every Library window's list and every reader
+    /// window's root, and what the model's own work costs.
+    ///
+    /// A playing reader reports its cursor about once a second and writes a
+    /// checkpoint every 30 seconds (`PlaybackCheckpointPolicy`). Each live
+    /// report set the book's row in the library, copying every row and
+    /// publishing the model: 60 publishes per listening minute.
+    func testLibraryPublishesPerListeningMinute() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = try LibraryBenchmarkFixture.library()
+        let bookID = model.library.books[model.library.books.count / 2].id
+        var publishes = 0
+        let subscription = model.objectWillChange.sink { publishes += 1 }
+        defer { subscription.cancel() }
+
+        let minute = LibraryBenchmarkClock.medianMilliseconds(runs: 1) {
+            Self.listen(seconds: 60, to: bookID, in: model)
+        }
+
+        LibraryBenchmarkClock.report("PERF11 library publishes per listening minute", count: publishes)
+        LibraryBenchmarkClock.report("PERF11 the model's own work per listening minute", minute, note: "643 books")
+        XCTAssertEqual(publishes, 60, "every live report and checkpoint published the library")
+    }
+
+    /// Reports `seconds` seconds of listening to `bookID` as a playing
+    /// reader does: a live position each second, and on every 30th second a
+    /// checkpoint instead, of which this sets what changes in memory (the
+    /// row's position, as `persistReadingPosition` sets it before saving).
+    static func listen(seconds: Int, to bookID: UUID, in model: LibraryViewModel) {
+        for second in 1...seconds {
+            let offset = second * 15
+            let position = ReadingPosition(chapterIndex: 0, characterOffset: offset, globalCharacterOffset: offset)
+            if second % 30 == 0 {
+                model.library.updateReadingPosition(bookID: bookID, position: position)
+            } else {
+                model.updateLiveReadingPosition(bookID: bookID, position: position)
+            }
+        }
     }
 
     // MARK: - Reading the List as LibraryView Does
