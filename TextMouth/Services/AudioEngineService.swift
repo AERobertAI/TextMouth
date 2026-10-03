@@ -94,6 +94,62 @@ struct SpeechRenderRequest: Sendable {
 /// alive, so no later render can ever hold the same one.
 private final class RenderTicket: Sendable {}
 
+/// What the speech engine made of one report from its player node that a
+/// segment of rendered audio it scheduled has played back.
+enum SpeechSegmentEndOutcome: Equatable, Sendable {
+    /// The segment under way played to its end, and playback finished.
+    case finishedPlayback
+    /// The segment under way played to its end just as the listener paused,
+    /// and its report came after the pause. It is held until playback
+    /// resumes, which finishes the play: the pause is never overridden by
+    /// moving on, and resuming never leaves an empty player playing nothing.
+    case heldUntilResume
+    /// The report came while paused short of the segment's end, as the
+    /// player node gives one when its output route disappears, although the
+    /// segment never reached its end. It ends nothing, and the pause stands.
+    case ignoredShortOfTheEnd
+    /// The segment was scheduled before a seek, a stop, or a new play
+    /// replaced it. The report was ignored.
+    case scheduledDuringEarlierPlay
+    /// Nothing was playing when the report was acted on. It was ignored.
+    case nothingPlaying
+}
+
+/// Decides what a report from the speech engine's player node, that a
+/// segment it scheduled has played back, means for the play under way.
+///
+/// The node reports on a thread of its own, and the report reaches the main
+/// queue a moment later, by which time the listener may have paused, or a
+/// seek, a stop, or a new play may have replaced the segment. A pause that
+/// came as the segment ended must not swallow its end, or resuming plays an
+/// empty node and the play never finishes. But the node also reports a
+/// paused segment played back when its output route disappears, which is no
+/// end at all. `AudioEndNoticePolicy` decides the same for audiobooks.
+enum SpeechSegmentEndPolicy {
+    /// What a report means for the play under way.
+    ///
+    /// - Parameters:
+    ///   - scheduledGeneration: The play generation that scheduled the
+    ///     segment.
+    ///   - currentGeneration: The generation of the play under way.
+    ///   - isPlaying: Whether the engine is playing, paused or not.
+    ///   - isPaused: Whether that playback is paused.
+    ///   - reachedSegmentEnd: Whether everything audible in the segment had
+    ///     played when playback paused. Only paused playback asks.
+    static func outcome(
+        scheduledGeneration: Int,
+        currentGeneration: Int,
+        isPlaying: Bool,
+        isPaused: Bool,
+        reachedSegmentEnd: Bool
+    ) -> SpeechSegmentEndOutcome {
+        guard scheduledGeneration == currentGeneration else { return .scheduledDuringEarlierPlay }
+        guard isPlaying else { return .nothingPlaying }
+        guard isPaused else { return .finishedPlayback }
+        return reachedSegmentEnd ? .heldUntilResume : .ignoredShortOfTheEnd
+    }
+}
+
 /// Pre-renders speech to audio buffers using AVSpeechSynthesizer.write(),
 /// then plays through AVAudioEngine with AVAudioUnitTimePitch for
 /// real-time speed adjustment and instant seeking.
@@ -119,6 +175,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var segmentStartFrame: AVAudioFramePosition = 0
     /// The number of frames in the currently scheduled segment
     private var segmentFrameCount: AVAudioFrameCount = 0
+
+    /// Where the last pause found playback, in frames of the full buffer, or
+    /// nil when that is unknown or playback has not paused since it last
+    /// started or resumed. Read by `pausedAtSegmentEnd`.
+    private var pausedFrame: AVAudioFramePosition?
+
+    /// The play generation whose segment played to its end as the listener
+    /// paused, held until `resume()` finishes it; nil when none is held.
+    private var segmentEndHeldUntilResume: Int?
 
     /// Increments each time we schedule new playback. Completion handlers from
     /// prior schedules check this to avoid falsely signaling "playback finished"
@@ -373,6 +438,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // This prevents seek() from falsely triggering "playback finished".
         playbackGeneration += 1
         let myGeneration = playbackGeneration
+        // A new play has not paused yet, and holds no earlier play's end.
+        pausedFrame = nil
+        segmentEndHeldUntilResume = nil
 
         // reset() clears all scheduled events AND resets playerTime.sampleTime to 0
         playerNode.reset()
@@ -392,27 +460,80 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             segmentFrameCount = remaining
 
             applyFadeIn(to: subBuffer, format: format)
-
-            playerNode.scheduleBuffer(subBuffer, completionCallbackType: .dataPlayedBack) { _ in
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.playbackGeneration == myGeneration else { return }
-                    self.handlePlaybackComplete()
-                }
-            }
+            schedule(subBuffer, generation: myGeneration)
         } else {
             segmentStartFrame = 0
             segmentFrameCount = buffer.frameLength
-            playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.playbackGeneration == myGeneration else { return }
-                    self.handlePlaybackComplete()
-                }
-            }
+            schedule(buffer, generation: myGeneration)
         }
 
         playerNode.play()
         isPlaying = true
         isPaused = false
+    }
+
+    /// Schedule `segment` on the player node as play `generation`. The
+    /// node's report that it played back, which it gives on a thread of its
+    /// own (and also when it is stopped), is carried to the main queue, where
+    /// `handleSegmentEnd(generation:)` decides what it means.
+    private func schedule(_ segment: AVAudioPCMBuffer, generation: Int) {
+        playerNode.scheduleBuffer(segment, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            guard let self else { return }
+            self._segmentPlayedBackForTesting?(self)
+            DispatchQueue.main.async { [weak self] in
+                self?.handleSegmentEnd(generation: generation)
+            }
+        }
+    }
+
+    /// Act on a report, now on the main queue, that the segment scheduled
+    /// as play `generation` has played back, as `SpeechSegmentEndPolicy`
+    /// decides. A finished play is reported through `onPlaybackFinished`; a
+    /// report that ends nothing is ignored with one trace line saying why.
+    ///
+    /// - Parameter knownToHaveReachedItsEnd: Whether the segment is already
+    ///   known to have played to its end, as an end held through a pause
+    ///   is. Otherwise where the last pause found playback decides.
+    /// - Returns: What the report came to.
+    @discardableResult
+    private func handleSegmentEnd(
+        generation: Int,
+        knownToHaveReachedItsEnd: Bool = false
+    ) -> SpeechSegmentEndOutcome {
+        let outcome = SpeechSegmentEndPolicy.outcome(
+            scheduledGeneration: generation,
+            currentGeneration: playbackGeneration,
+            isPlaying: isPlaying,
+            isPaused: isPaused,
+            reachedSegmentEnd: knownToHaveReachedItsEnd || pausedAtSegmentEnd
+        )
+        switch outcome {
+        case .finishedPlayback:
+            isPlaying = false
+            isPaused = false
+            onPlaybackFinished?()
+        case .heldUntilResume:
+            segmentEndHeldUntilResume = generation
+            DiagnosticLog.trace(
+                .playback,
+                "speech audio end held: playback was paused at the segment's end; resuming finishes the play"
+            )
+        case .ignoredShortOfTheEnd:
+            DiagnosticLog.trace(
+                .playback,
+                "speech audio end ignored: paused short of the segment's end, as when its output route disappears"
+            )
+        case .scheduledDuringEarlierPlay:
+            DiagnosticLog.trace(
+                .playback,
+                "speech audio end ignored: scheduled during an earlier play "
+                    + "(generation \(generation), now \(playbackGeneration))"
+            )
+        case .nothingPlaying:
+            DiagnosticLog.trace(.playback, "speech audio end ignored: nothing was playing")
+        }
+        _segmentEndHandledForTesting?(outcome)
+        return outcome
     }
 
     /// Apply a short linear fade-in (~10ms) to avoid clicks at playback start
@@ -427,8 +548,13 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         }
     }
 
+    /// Pause playback, keeping where it stood: the node's report that its
+    /// segment played back can reach the main queue after this pause, and
+    /// only a pause that found the segment played to its end makes that
+    /// report an end (`pausedAtSegmentEnd`).
     func pause() {
         guard isPlaying && !isPaused else { return }
+        pausedFrame = currentPlayerFrame()
         playerNode.pause()
         isPaused = true
     }
@@ -453,6 +579,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// macOS has stopped it during sleep or an output-device interruption.
     /// Returns false only when there is no paused playback or the engine
     /// cannot be restarted, allowing the caller to retain a recoverable state.
+    ///
+    /// Playback whose segment played to its end as it paused has nothing
+    /// left to play, so it finishes instead, once this call has returned
+    /// (`releaseHeldSegmentEnd()`).
     @discardableResult
     func resume() -> Bool {
         guard isPaused else { return false }
@@ -474,7 +604,24 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         engine.mainMixerNode.outputVolume = currentVolume
         playerNode.play()
         isPaused = false
+        pausedFrame = nil
+        releaseHeldSegmentEnd()
         return true
+    }
+
+    /// Finish, once `resume()` has returned, the play whose segment played
+    /// to its end as the listener paused, so the caller sees playback resume
+    /// before it ends, as `AudioPlaybackService.resume()` does. The node has
+    /// nothing left to play, so no other report of the end will come. By
+    /// then a stop, a seek, or a new play may have replaced the play, which
+    /// then ends nothing, or the listener may have paused again, which holds
+    /// the end once more.
+    private func releaseHeldSegmentEnd() {
+        guard let generation = segmentEndHeldUntilResume else { return }
+        segmentEndHeldUntilResume = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.handleSegmentEnd(generation: generation, knownToHaveReachedItsEnd: true)
+        }
     }
 
     func stop() {
@@ -575,26 +722,40 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// Get current character offset using the player node's actual playback position.
     /// This is accurate regardless of speed changes or timing drift.
     func currentCharOffset() -> Int {
-        guard totalFrames > 0, isPlaying || isPaused else {
+        guard totalFrames > 0, isPlaying || isPaused, let frame = currentPlayerFrame() else {
             return charOffsetForFrame(segmentStartFrame)
         }
+        return charOffsetForFrame(frame)
+    }
 
-        // Get how many frames the player has actually played in the current segment
+    /// Where the player node stands in the full buffer, in frames, from how
+    /// many frames it has actually played of the current segment; nil when
+    /// the node has no valid time, as before it first renders.
+    private func currentPlayerFrame() -> AVAudioFramePosition? {
         guard let nodeTime = playerNode.lastRenderTime,
               nodeTime.isSampleTimeValid,
               let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
-            return charOffsetForFrame(segmentStartFrame)
+            return nil
         }
 
         // `playerTime.sampleTime` is already on the player node timeline.
         // The time-pitch unit changes audible speed, not the player's sample
         // progression through the scheduled buffer, so do not scale it again.
-        let currentFrame = Self.currentFrame(
+        return Self.currentFrame(
             segmentStartFrame: segmentStartFrame,
             playerSampleTime: playerTime.sampleTime
         )
+    }
 
-        return charOffsetForFrame(currentFrame)
+    /// Whether the last pause found everything audible in the current
+    /// segment played: at or past its end, or inside the silence padding
+    /// that ends every render (`silencePaddingDuration`). False when where
+    /// it paused is unknown.
+    private var pausedAtSegmentEnd: Bool {
+        guard let pausedFrame, let format = renderFormat else { return false }
+        let segmentEnd = segmentStartFrame + AVAudioFramePosition(segmentFrameCount)
+        let padding = AVAudioFramePosition(Self.silencePaddingFrameCount(sampleRate: format.sampleRate))
+        return pausedFrame >= segmentEnd - padding
     }
 
     /// Combine the segment start and player-node sample time on the player
@@ -695,20 +856,27 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         self.totalFrames = totalFrames
     }
 
-    /// Installs a minimal deterministic buffer so tests can verify render
-    /// ownership and disposal without invoking the system speech synthesizer.
+    /// Installs a deterministic buffer of silence so tests can verify render
+    /// ownership, disposal, and playback without invoking the system speech
+    /// synthesizer. Its one character spans the whole buffer.
     ///
-    /// - Parameter signature: What the stand-in audio is said to have been
-    ///   rendered from, as a finished render would record it.
-    func _installRenderedAudioForTesting(signature: SpeechRenderSignature? = nil) {
+    /// - Parameters:
+    ///   - signature: What the stand-in audio is said to have been rendered
+    ///     from, as a finished render would record it.
+    ///   - duration: How long the buffer plays, in seconds; it is always at
+    ///     least one frame long.
+    func _installRenderedAudioForTesting(signature: SpeechRenderSignature? = nil, lasting duration: TimeInterval = 0) {
         let format = AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1)!
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1)!
-        buffer.frameLength = 1
+        let frameCount = AVAudioFrameCount(max(1, Int(duration * format.sampleRate)))
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        // Silence, whatever the allocation held.
+        buffer.floatChannelData?[0].update(repeating: 0, count: Int(frameCount))
         renderedBuffer = buffer
         renderedSignature = signature
         renderFormat = format
-        wordFrameMap = [(charOffset: 0, frame: 0), (charOffset: 1, frame: 1)]
-        totalFrames = 1
+        wordFrameMap = [(charOffset: 0, frame: 0), (charOffset: 1, frame: AVAudioFramePosition(frameCount))]
+        totalFrames = frameCount
     }
 
     /// Runs the same interpolation used by production seeking.
@@ -721,22 +889,23 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         charOffsetForFrame(frame)
     }
 
-    @discardableResult
-    private func handlePlaybackComplete() -> Bool {
-        // AVAudioPlayerNode can report a scheduled buffer as played back when an
-        // output route disappears, even if the node was paused. Treating that as
-        // natural completion advances to the next chapter and starts playback.
-        guard isPlaying, !isPaused else { return false }
-        isPlaying = false
-        isPaused = false
-        onPlaybackFinished?()
-        return true
-    }
+    /// Called with this engine, on the player node's own thread, each time
+    /// the node reports a scheduled segment played back, just before the
+    /// report is sent to the main queue, so a test can put work on the main
+    /// queue ahead of it.
+    var _segmentPlayedBackForTesting: (@Sendable (AudioEngineService) -> Void)?
 
-    /// Test support for deterministic playback-completion policy coverage.
+    /// Called on the main queue with what each report of a segment played
+    /// back came to (`SpeechSegmentEndPolicy`).
+    var _segmentEndHandledForTesting: ((SpeechSegmentEndOutcome) -> Void)?
+
+    /// Act on a report that the segment under way played back, as the
+    /// player node's own report is acted on.
+    ///
+    /// - Returns: Whether the report finished playback.
     @discardableResult
     func _handlePlaybackCompleteForTesting() -> Bool {
-        handlePlaybackComplete()
+        handleSegmentEnd(generation: playbackGeneration) == .finishedPlayback
     }
 
     deinit { stop() }
