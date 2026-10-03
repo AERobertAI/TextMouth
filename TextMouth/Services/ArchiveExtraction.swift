@@ -287,25 +287,33 @@ private struct ProgressReporter {
 
 // MARK: - Extraction Directories
 
-/// A directory a ZIP batch extracts its archive into (TODO I05), made in the
-/// "Archive Extraction" folder of the data directory, on the same disk as
-/// the library: the free-space check then speaks for the disk the books go
-/// to, and copying each book into its package clones it there instead of
-/// taking its space twice. The batch removes it on every exit.
+/// A directory a ZIP batch extracts its archive into (TODO I05), made in an
+/// "Archive Extraction" folder on the same disk as the library: the
+/// free-space check then speaks for the disk the books go to, and copying
+/// each book into its package clones it there instead of taking its space
+/// twice. The batch removes it on every exit.
+///
+/// The folder is this Mac's own (`MachineLocalPaths.archiveExtraction`)
+/// while the data directory is on its volume, the startup disk, which is
+/// still the disk the books go to; a data directory in a cloud folder then
+/// never uploads an archive being extracted. While the data directory is on
+/// another volume, the folder is the data directory's own, as before
+/// (`ImportScratchSpace`, FR02).
 ///
 /// Its name is `extract-<process>-<UUID>`: recognizable, so the sweep at
 /// startup removes only extraction directories, and naming the process that
 /// made it, so the sweep leaves alone one that another running copy of
-/// TextMouth is still using.
+/// TextMouth on this Mac is still using.
 final class ArchiveExtractionDirectory {
     /// The name of the folder extraction directories are made in.
     static let folderName = "Archive Extraction"
     /// What every extraction directory's name starts with.
     static let namePrefix = "extract-"
 
-    /// The folder extraction directories are made in, in the data directory.
+    /// The folder extraction directories are made in: this Mac's, or the
+    /// data directory's when that is on another volume.
     static var defaultParent: URL {
-        TextMouthPaths.root.appendingPathComponent(folderName, isDirectory: true)
+        ImportScratchSpace.archiveExtractionFolder()
     }
 
     /// The extraction directory.
@@ -334,8 +342,7 @@ final class ArchiveExtractionDirectory {
     /// what it holds lasts only as long as an import. The new name is
     /// marked in use before anything exists under it, so no sweep can take it.
     static func make(in parent: URL = defaultParent) throws -> ArchiveExtractionDirectory {
-        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
-        excludeFromBackups(parent)
+        try ImportScratchSpace.prepareFolder(parent)
         let made = ArchiveExtractionDirectory(
             directory: parent.appendingPathComponent("\(namePrefix)\(getpid())-\(UUID().uuidString)", isDirectory: true)
         )
@@ -360,21 +367,45 @@ final class ArchiveExtractionDirectory {
 
     // MARK: Sweeping Leftovers
 
+    /// Removes, at startup, the extraction directories that imports
+    /// interrupted by a crash or a forced quit left (FR02): in this Mac's
+    /// Archive Extraction folder, and in the data directory's own, where
+    /// earlier versions extracted and where extraction still happens while
+    /// the data directory is on another volume. The data directory's folder
+    /// is listed with dataless files left in the cloud, and while this Mac's
+    /// folder is the one in use it is removed once nothing is left in it, so
+    /// later launches find nothing there to list.
+    /// - Returns: How many directories were removed.
+    @discardableResult
+    static func removeLeftovers() -> Int {
+        let inLibrary = ImportScratchSpace.inLibraryArchiveExtraction
+        var removed = removeLeftovers(in: MachineLocalPaths.archiveExtraction)
+        DatalessFiles.withoutDownloading {
+            removed += removeLeftovers(in: inLibrary)
+            if ImportScratchSpace.isOnThisMac() {
+                // Removes the folder only when it is empty.
+                _ = rmdir(inLibrary.path)
+            }
+        }
+        return removed
+    }
+
     /// Removes the extraction directories in `parent` that no import is
     /// using, as a crash or a forced quit leaves them: those of processes no
     /// longer running, and this process's own that none of its imports is
     /// using (a process before it had the same identifier). An interrupted
     /// extraction is never resumed, so each goes with everything inside it,
     /// and the removal is logged, naming the directory by its path inside
-    /// the data directory (`DiagnosticLog.loggablePath`). A directory of
-    /// another running process is left alone, as is anything not named as
-    /// an extraction directory.
+    /// this Mac's TextMouth folder or the data directory
+    /// (`ImportScratchSpace.loggablePath`). A directory of another running
+    /// process is left alone, as is anything not named as an extraction
+    /// directory.
     /// - Parameter isRunning: whether the process with an identifier still
     ///   runs; tests supply their own answer.
     /// - Returns: How many directories were removed.
     @discardableResult
     static func removeLeftovers(
-        in parent: URL = defaultParent,
+        in parent: URL,
         isRunning: (Int32) -> Bool = isProcessRunning
     ) -> Int {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: parent.path)) ?? []
@@ -391,7 +422,7 @@ final class ArchiveExtractionDirectory {
                 removed += 1
                 DiagnosticLog.event(
                     .import,
-                    "ARCHIVE_EXTRACTION_REMOVED: \(DiagnosticLog.loggablePath(leftover)): left by an interrupted import"
+                    "ARCHIVE_EXTRACTION_REMOVED: \(ImportScratchSpace.loggablePath(leftover)): left by an interrupted import"
                 )
             }
         }
@@ -425,7 +456,8 @@ final class ArchiveExtractionDirectory {
 
     /// Removes `directory` with everything inside it and reports whether it
     /// is gone. One that could not be removed is logged, by its path inside
-    /// the data directory, so the next sweep is not its only record.
+    /// this Mac's TextMouth folder or the data directory, so the next sweep
+    /// is not its only record.
     @discardableResult
     private static func removeDirectory(_ directory: URL) -> Bool {
         do {
@@ -435,18 +467,10 @@ final class ArchiveExtractionDirectory {
             guard FileManager.default.fileExists(atPath: directory.path) else { return true }
             DiagnosticLog.event(
                 .import,
-                "ARCHIVE_EXTRACTION_LEFT: \(DiagnosticLog.loggablePath(directory)): could not be removed: "
+                "ARCHIVE_EXTRACTION_LEFT: \(ImportScratchSpace.loggablePath(directory)): could not be removed: "
                     + error.localizedDescription
             )
             return false
         }
-    }
-
-    /// Marks `folder` as excluded from backups; failing to is harmless.
-    private static func excludeFromBackups(_ folder: URL) {
-        var folder = folder
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        try? folder.setResourceValues(values)
     }
 }

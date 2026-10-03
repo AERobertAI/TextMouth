@@ -160,6 +160,16 @@ class CloudMaintenanceTestCase: XCTestCase {
     func logLineCount(_ text: String) -> Int {
         debugLogLines(containing: text).count
     }
+
+    /// A directory named `name` in `folder`, holding a file, as an
+    /// interrupted import leaves one. Removed when the test ends.
+    func makeLeftover(named name: String, in folder: URL) throws -> URL {
+        let leftover = folder.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: leftover, withIntermediateDirectories: true)
+        try Data("left".utf8).write(to: leftover.appendingPathComponent("book.txt"))
+        addTeardownBlock { try? FileManager.default.removeItem(at: leftover) }
+        return leftover
+    }
 }
 
 /// The IDs of the books a cache generation was told about
