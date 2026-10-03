@@ -69,6 +69,9 @@ struct StorageSettingsView: View {
     @State private var moveToTrash: Bool
     @State private var showDuplicateFinder = false
     @State private var showRedoExtractionConfirmation = false
+    /// Failed writes, so the status never says all is well while changes
+    /// are unsaved (TODO S09).
+    @ObservedObject private var failureCenter = PersistenceFailureCenter.shared
 
     init() {
         _importDeleteBehavior = State(initialValue: ConfigService.shared.config.importDeleteBehavior)
@@ -103,9 +106,12 @@ struct StorageSettingsView: View {
                 LabeledContent("Status") {
                     Text(Self.statusText(
                         isRecoveringIndex: isRecoveringIndex,
-                        directoryExists: TextMouthPaths.directoryExists
+                        directoryExists: TextMouthPaths.directoryExists,
+                        hasUnsavedChanges: hasUnsavedChanges
                     ))
-                    .foregroundColor(isRecoveringIndex || !TextMouthPaths.directoryExists ? .red : .green)
+                    .foregroundColor(
+                        isRecoveringIndex || hasUnsavedChanges || !TextMouthPaths.directoryExists ? .red : .green
+                    )
                 }
 
                 if isRecoveringIndex {
@@ -113,6 +119,17 @@ struct StorageSettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                } else if hasUnsavedChanges {
+                    // What is unsaved and why, and a way to try again here,
+                    // even when the Library window's notice was dismissed.
+                    Text(Self.unsavedExplanation(failureCenter.unsavedRows))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Retry Saving") {
+                        failureCenter.retryUnsavedChanges(announcing: true)
+                    }
+                    .accessibilityHint("Tries again to save every change that could not be saved")
                 }
 
                 // Moving or rebuilding the directory would act on the
@@ -341,6 +358,11 @@ struct StorageSettingsView: View {
         OriginalFileDeletionWording(movesToTrash: moveToTrash)
     }
 
+    /// Whether a failed write leaves changes unsaved, as last published.
+    private var hasUnsavedChanges: Bool {
+        !failureCenter.unsavedRows.isEmpty
+    }
+
     /// Whether the location and rebuild buttons are unavailable right now.
     private var maintenanceUnavailable: Bool {
         Self.maintenanceUnavailable(isRecoveringIndex: isRecoveringIndex, isRunning: runningOperation != nil)
@@ -357,12 +379,26 @@ struct StorageSettingsView: View {
 
     /// The data directory status, as shown and as VoiceOver reads it. An
     /// unreadable library index outranks "Active": the directory exists, but
-    /// its library index is not being saved.
-    nonisolated static func statusText(isRecoveringIndex: Bool, directoryExists: Bool) -> String {
+    /// its library index is not being saved. So do unsaved changes (TODO
+    /// S09): a directory whose writes fail is not working as it should.
+    nonisolated static func statusText(
+        isRecoveringIndex: Bool,
+        directoryExists: Bool,
+        hasUnsavedChanges: Bool = false
+    ) -> String {
         if isRecoveringIndex {
             return LibraryIndexRecoveryText.settingsStatus
         }
+        if hasUnsavedChanges {
+            return "Changes not saved"
+        }
         return directoryExists ? "Active" : "Not Created"
+    }
+
+    /// What the status explains while changes are unsaved: each unsaved
+    /// subsystem's sentence, as the Library window's notice words it.
+    nonisolated static func unsavedExplanation(_ rows: [PersistenceBannerRow]) -> String {
+        rows.map(\.text).joined(separator: " ")
     }
 
     // MARK: - Running Operations
@@ -370,7 +406,10 @@ struct StorageSettingsView: View {
     /// Runs `operation`. While it works the status line says so and the
     /// buttons are unavailable; afterwards the status line says what really
     /// happened, "Done" only after a success, VoiceOver announces it once,
-    /// and the buttons are available again for a retry (TODO A07).
+    /// and the buttons are available again for a retry (TODO A07). A success
+    /// counts only once the library's queued writes have reached the disk:
+    /// while changes are left unsaved it is reported as the failure it is
+    /// (TODO S09).
     private func start(_ operation: StorageOperation) {
         guard runningOperation == nil else { return }
         runningOperation = operation
@@ -380,7 +419,7 @@ struct StorageSettingsView: View {
             // it does. A short pause first lets the run loop draw the running
             // status and the unavailable buttons before the work begins.
             try? await Task.sleep(for: .milliseconds(50))
-            let outcome = perform(operation)
+            let outcome = libraryViewModel.outcomeConfirmingSaves(perform(operation))
             status = .announced(after: outcome)
             runningOperation = nil
         }

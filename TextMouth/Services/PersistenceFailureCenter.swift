@@ -493,6 +493,13 @@ final class PersistenceFailureCenter: ObservableObject {
         PersistenceBannerRow.rows(for: failures).filter { !dismissedSubsystems.contains($0.subsystem) }
     }
 
+    /// The rows of the published failures that leave changes unsaved,
+    /// dismissed or not: what any status that would say "saved" must
+    /// account for first.
+    var unsavedRows: [PersistenceBannerRow] {
+        PersistenceBannerRow.rows(for: failures.filter { $0.subsystem.holdsUnsavedChanges })
+    }
+
     /// Runs again every outstanding failure of `subsystem` that can be, then
     /// tells VoiceOver how it went: the subsystem is saved, or the row's
     /// sentence, now naming the latest failure. Each retry finishes before
@@ -500,18 +507,19 @@ final class PersistenceFailureCenter: ObservableObject {
     func retry(_ subsystem: PersistenceSubsystem) {
         rerun(outstandingFailures().filter { $0.subsystem == subsystem })
         publish()
-        if let row = PersistenceBannerRow.rows(for: failures).first(where: { $0.subsystem == subsystem }) {
-            VoiceOverAnnouncer.announce("Retry did not succeed. \(row.text)")
-        } else {
-            VoiceOverAnnouncer.announce(subsystem.retriedAnnouncement)
-        }
+        announceRetryOutcome(for: [subsystem])
     }
 
     /// Runs again every outstanding failure that leaves changes unsaved, as
-    /// the prompt shown on quitting asks, and publishes the result.
-    func retryUnsavedChanges() {
-        rerun(unsavedFailures())
+    /// the prompt shown on quitting and Storage settings ask, and publishes
+    /// the result. With `announcing`, VoiceOver then hears how it went.
+    func retryUnsavedChanges(announcing: Bool = false) {
+        let unsaved = unsavedFailures()
+        rerun(unsaved)
         publish()
+        if announcing {
+            announceRetryOutcome(for: Set(unsaved.map(\.subsystem)))
+        }
     }
 
     /// Hides `subsystem`'s banner row until the subsystem has no failure
@@ -552,6 +560,19 @@ final class PersistenceFailureCenter: ObservableObject {
 
     // MARK: Private
 
+    /// Tells VoiceOver how a retry of `subsystems` went, once publishing
+    /// has caught up: "Retry did not succeed." and the row of each that
+    /// still fails, or else that each is saved ("Settings saved.").
+    private func announceRetryOutcome(for subsystems: Set<PersistenceSubsystem>) {
+        // Nothing was waiting to run again, so there is nothing to tell.
+        guard !subsystems.isEmpty else { return }
+        let stillFailing = PersistenceBannerRow.rows(for: failures).filter { subsystems.contains($0.subsystem) }
+        let message = stillFailing.isEmpty
+            ? subsystems.sorted().map(\.retriedAnnouncement)
+            : ["Retry did not succeed."] + stillFailing.map(\.text)
+        VoiceOverAnnouncer.announce(message.joined(separator: " "))
+    }
+
     /// Runs the retry of each of `failures` that has one, oldest first.
     private func rerun(_ failures: [PersistenceFailure]) {
         for failure in failures {
@@ -574,5 +595,31 @@ final class PersistenceFailureCenter: ObservableObject {
         let line = message.components(separatedBy: .newlines).joined(separator: " ")
         print(line)
         TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+    }
+}
+
+// MARK: - Outcomes
+
+extension OperationOutcome {
+    /// This outcome as it may be reported while `unsaved` failures are
+    /// outstanding (TODO S09). "Done" would claim the work reached the disk,
+    /// so a success becomes a failure: its own message stays, without the
+    /// "Done." it starts with, then "Some changes are not saved." and the
+    /// sentence of each unsaved subsystem, as the banner words it. A failure,
+    /// or a success with nothing unsaved, is returned as it is.
+    func confirmingSaves(_ unsaved: [PersistenceFailure]) -> OperationOutcome {
+        guard succeeded, !unsaved.isEmpty else { return self }
+        let done = message.map(Self.withoutDoneClaim) ?? ""
+        let report = [done, "Some changes are not saved."] + PersistenceBannerRow.rows(for: unsaved).map(\.text)
+        return .failure(report.filter { !$0.isEmpty }.joined(separator: " "))
+    }
+
+    /// `message` without the "Done." that Storage settings' successes begin
+    /// with ("Done. 3 books in library."), which a report of unsaved changes
+    /// must not keep.
+    private static func withoutDoneClaim(_ message: String) -> String {
+        let claim = "Done."
+        guard message.hasPrefix(claim) else { return message }
+        return message.dropFirst(claim.count).trimmingCharacters(in: .whitespaces)
     }
 }
