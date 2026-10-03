@@ -58,7 +58,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make check-selftest - Test the gate script in seconds, without building"
+	@echo "  make check-selftest - Test the gate and baseline-recording scripts in seconds, without building"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
@@ -157,9 +157,11 @@ test:
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
 
-## Test the gate script itself: dry runs and stubbed build tools, no building
+## Test the gate script and the performance baselines' recording script
+## themselves: dry runs and stubbed build tools, no building
 check-selftest:
 	@Scripts/check-selftest.sh
+	@Scripts/perf-baselines-selftest.sh
 
 ## Rewrite TextMouthProductionTests/performance-baselines.json from a fresh
 ## run of PerformanceBaselineTests, which waits for a quiet Mac, printing
