@@ -426,7 +426,53 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertFalse(result.books.contains { $0.bookFileURL.lastPathComponent == "Collection.zip" })
     }
 
+    // MARK: - The Book's Own Package
+
+    /// The package a loose DAISY book was imported into checks out against
+    /// its record, as opening or importing a .tmb package requires: the
+    /// checksum the record holds is the package's. A copy of the package
+    /// imported as a .tmb reads in full, while a copy whose files changed is
+    /// refused.
+    func testImportedPackageChecksOutAgainstItsRecordAsATMBPackage() throws {
+        let folder = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sources)
+        let book = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath).book
+
+        let inspection = try FileImportService.inspectTMBPackage(at: book.tmbDirectory)
+        XCTAssertEqual(inspection.contentURL.lastPathComponent, "ncc.html")
+        XCTAssertEqual(inspection.info.metadata.md5Hash, book.md5Hash)
+
+        let exported = try copyOfPackage(book, into: "Exported")
+        let copy = try FileImportService.importTMBPackageWithReport(from: exported).book
+        addTeardownBlock { try? FileManager.default.removeItem(at: copy.tmbDirectory) }
+        XCTAssertEqual(copy.id, book.id)
+        XCTAssertEqual(copy.md5Hash, book.md5Hash)
+        XCTAssertEqual(try bookFiles(of: copy), Fixtures.navigationBookFiles)
+        try assertReadsInFull(copy, sentences: Fixtures.navigationBookSentences, headings: Fixtures.navigationBookHeadings)
+
+        let tampered = try copyOfPackage(book, into: "Tampered")
+        let audio = try FileHandle(forWritingTo: tampered.appendingPathComponent("audio/part1.mp3"))
+        try audio.seekToEnd()
+        try audio.write(contentsOf: Data(" and a little more".utf8))
+        try audio.close()
+        XCTAssertThrowsError(try FileImportService.inspectTMBPackage(at: tampered)) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                TMBPackageImportError.invalidPackage("the content hash does not match bookInfo.json").localizedDescription
+            )
+        }
+    }
+
     // MARK: - Helpers
+
+    /// A copy of `book`'s package, record and cache included, in a new
+    /// folder named `folder` among this test's sources, outside the library.
+    private func copyOfPackage(_ book: Book, into folder: String) throws -> URL {
+        let parent = sources.appendingPathComponent(folder, isDirectory: true)
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        let copy = parent.appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+        try FileManager.default.copyItem(at: book.tmbDirectory, to: copy)
+        return copy
+    }
 
     /// The archive the batch tests import: two DAISY books, each in a folder
     /// of its own beside files that are not books (notes, unused audio, a

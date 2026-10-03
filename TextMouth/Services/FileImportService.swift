@@ -259,7 +259,8 @@ enum FileImportService {
 
     /// Checks the content `info` names inside `packageURL`: a safe file name
     /// that exists, in the format `info` records, and, for a file, with the
-    /// checksum it records. Only an audio book's content may be a folder.
+    /// checksum it records (`content(at:hasChecksum:)`). Only an audio
+    /// book's content may be a folder.
     static func inspectContent(
         of packageURL: URL,
         describedBy info: BookInfo
@@ -285,13 +286,26 @@ enum FileImportService {
             guard BookFormat.detect(from: contentURL) == info.metadata.format else {
                 throw TMBPackageImportError.invalidPackage("the content format does not match bookInfo.json")
             }
-            let actualHash = try md5Hash(of: contentURL)
-            guard !info.metadata.md5Hash.isEmpty, actualHash == info.metadata.md5Hash else {
+            guard !info.metadata.md5Hash.isEmpty,
+                  try content(at: contentURL, hasChecksum: info.metadata.md5Hash) else {
                 throw TMBPackageImportError.invalidPackage("the content hash does not match bookInfo.json")
             }
         }
 
         return TMBPackageInspection(info: info, contentURL: contentURL)
+    }
+
+    /// Whether the book whose file in its package is `contentURL` still has
+    /// the checksum `recorded`: the MD5 of that file, or, for a DAISY book
+    /// kept as its package's files, those files' checksum
+    /// (`DAISYPackageInventory.contentHash()`), which the record of a loose
+    /// DAISY book's import holds (TODO I02).
+    private static func content(at contentURL: URL, hasChecksum recorded: String) throws -> Bool {
+        if try md5Hash(of: contentURL) == recorded {
+            return true
+        }
+        guard let package = try? DAISYPackageInventory.ofSource(contentURL) else { return false }
+        return (try? package.contentHash()) == recorded
     }
 
     /// Copy a validated external package into the managed library and return a
