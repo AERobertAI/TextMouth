@@ -235,8 +235,10 @@ enum TextMouthPaths {
 
     // MARK: - Debug Log
 
+    /// The main diagnostic log (`DiagnosticLog.File.debug`), which names
+    /// every log file.
     static var debugLogFile: URL {
-        logsDir.appendingPathComponent("textmouth_debug.log")
+        DiagnosticLog.File.debug.url
     }
 
     // MARK: - TMB Package Helpers
@@ -449,9 +451,10 @@ enum TextMouthPaths {
         qos: .utility
     )
 
-    /// Size at which a log file is rotated. Playback and VoiceOver focus
-    /// diagnostics are written many times per minute, so without a cap a log
-    /// grows for as long as the app is used.
+    /// Size at which a log file is rotated. `DiagnosticLog` keeps routine
+    /// chatter out unless tracing is on, but events accumulate for as long as
+    /// the app is used, and tracing writes many lines a minute, so every log
+    /// is capped.
     static let maxLogFileSize: UInt64 = 2 * 1024 * 1024
 
     /// Path extension of the single retained older generation of a log file,
@@ -461,6 +464,9 @@ enum TextMouthPaths {
     /// Append a timestamped line to a log file on a background queue.
     /// Safe to call from any thread including main — the actual I/O
     /// is dispatched to logQueue so it never blocks the caller.
+    ///
+    /// This is the writer beneath `DiagnosticLog`, which decides what a line
+    /// may say and whether it is written at all; log through that, not here.
     static func appendLog(to logFile: URL, message: String) {
         let line = "\(Date()): \(message)\n"
         guard let data = line.data(using: .utf8) else { return }
