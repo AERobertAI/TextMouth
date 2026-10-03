@@ -1205,7 +1205,16 @@ extension ReaderViewModel {
         // A chapter whose file is only in the cloud is downloaded first,
         // and plays once it is here: the player is never handed a file it
         // would wait on the network for (FR02).
-        guard chapterFilesReadyToPlay() else { return }
+        guard chapterFilesReadyToPlay() else {
+            // The player may have rolled straight on into this chapter's
+            // file, named to follow the chapter before while it was on this
+            // Mac and gone back to the cloud since (TODO PERF09): nothing
+            // plays while the reader waits for it.
+            if audioPlaybackService.isPlaying {
+                audioPlaybackService.stop()
+            }
+            return
+        }
         // Audio that cannot be played claims no Playing state.
         guard startCurrentChapterAudio(in: content) else { return }
 
@@ -1222,7 +1231,9 @@ extension ReaderViewModel {
         )
     }
 
-    /// Load the current chapter's audio and play it from the cursor.
+    /// Load the current chapter's audio and play it from the cursor, then
+    /// name the next chapter's file to follow it with no gap, where one may
+    /// (`nameFileAfterCurrentChapter()`, TODO PERF09).
     ///
     /// - Returns: Whether playback started. A missing or unreadable file is
     ///   refused before playing, after its failure handler has already
@@ -1281,7 +1292,85 @@ extension ReaderViewModel {
 
         // Play refuses an item it finds has already failed, and reports it
         // through the same failure handler.
-        return audioPlaybackService.play(fromTime: timeOffset)
+        guard audioPlaybackService.play(fromTime: timeOffset) else { return false }
+        nameFileAfterCurrentChapter()
+        return true
+    }
+
+    // MARK: - The Next Chapter's File (PERF09)
+
+    /// Names the file the audio service rolls straight on into once the
+    /// cursor's chapter's file plays to its end, or names none, as
+    /// `fileAfterCurrentChapter` decides now (TODO PERF09). Starting a
+    /// stopped player costs about a quarter of a second of silence, which a
+    /// file named ahead is spared: the service queues it behind the one
+    /// playing, and the next chapter takes it over as it begins.
+    ///
+    /// Called as each chapter's audio starts, and as this book's sleep timer
+    /// is set or cancelled, since a timer set for the end of the document
+    /// stops playback at the chapter's end. Only audio playing or paused in
+    /// the cursor's chapter's own file is given a file to follow: audio that
+    /// has stopped, or that still plays a file the library has moved since,
+    /// is given none.
+    private func nameFileAfterCurrentChapter() {
+        guard isAudioBook, audioPlaybackService.isPlaying,
+              case .file(let chapterFile) = chapterAudioSource(forChapterAt: currentChapterIndex),
+              audioPlaybackService.loadedURL == chapterFile.standardizedFileURL else { return }
+        audioPlaybackService.setFileAfterCurrent(fileAfterCurrentChapter)
+    }
+
+    /// The file to play straight on into once the cursor's chapter's file
+    /// ends (TODO PERF09): the next chapter's file, in a multi-file
+    /// audiobook, whose chapters are files of their own, each played whole
+    /// from its start. None where playback may have to stop or wait at that
+    /// end:
+    /// - at the last chapter, where the book's end-of-book behavior decides
+    ///   what comes next;
+    /// - while this book's sleep timer is set for the end of the document,
+    ///   which expires as every audiobook chapter ends
+    ///   (`sleepTimerStopsAtChapterEnd`);
+    /// - when the next chapter's file is only in the cloud, where the player
+    ///   would wait on the network, so the chapter downloads first instead
+    ///   (`chapterHasFileOnlyInCloud(_:)`).
+    /// None either in any other layout, whose chapters play a chain of clips
+    /// or a stretch of one file, ending where no file ends.
+    private var fileAfterCurrentChapter: URL? {
+        guard audioLayout == .multiFile, let content else { return nil }
+        let nextIndex = currentChapterIndex + 1
+        guard nextIndex < content.chapters.count, nextIndex < audioChapterFiles.count,
+              !sleepTimerStopsAtChapterEnd,
+              case .file(let nextFile) = chapterAudioSource(forChapterAt: nextIndex),
+              !chapterHasFileOnlyInCloud(nextIndex) else { return nil }
+        return nextFile
+    }
+
+    /// Whether this book's sleep timer is set for the end of the document,
+    /// which expires as every chapter of an audiobook ends: playback must
+    /// stop there rather than roll on into the next chapter.
+    private var sleepTimerStopsAtChapterEnd: Bool {
+        Self.sleepTimerStopsAtChapterEnd(
+            timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
+            timerIsActive: sleepTimerService.isActive,
+            timerDuration: sleepTimerService.duration
+        )
+    }
+
+    /// The decision behind `sleepTimerStopsAtChapterEnd`, from the sleep
+    /// timer's state: only this book's own timer counts, and only while it
+    /// is in effect, waiting for the end of the document or fading out
+    /// there. A timer that has expired stops nothing more.
+    ///
+    /// - Parameters:
+    ///   - timerBelongsToThisBook: Whether this book set the timer.
+    ///   - timerIsActive: Whether the timer is in effect.
+    ///   - timerDuration: What the timer was set for, which it keeps after
+    ///     expiring until it is stopped or replaced.
+    nonisolated static func sleepTimerStopsAtChapterEnd(
+        timerBelongsToThisBook: Bool,
+        timerIsActive: Bool,
+        timerDuration: SleepTimerDuration?
+    ) -> Bool {
+        timerBelongsToThisBook && timerIsActive && timerDuration == .endOfDocument
     }
 
     // MARK: - Audio Playback Failures
@@ -1651,6 +1740,10 @@ extension ReaderViewModel {
             },
             fadeOutDuration: fadeOutDuration
         )
+        // A timer for the end of the document stops playback at this
+        // chapter's end, where no file may follow on; any other timer lets
+        // the next chapter's file follow (TODO PERF09).
+        nameFileAfterCurrentChapter()
         if startPlaybackIfNeeded {
             startSleepTimerPlaybackIfNeeded()
         }
@@ -1661,6 +1754,9 @@ extension ReaderViewModel {
     /// user is in a different window from the one that started it.
     func cancelSleepTimer() {
         sleepTimerService.stop()
+        // Playback no longer has to stop at this chapter's end for a timer,
+        // so the next chapter's file may follow on again (TODO PERF09).
+        nameFileAfterCurrentChapter()
     }
 
     /// Restart the running timer with its original duration using the
