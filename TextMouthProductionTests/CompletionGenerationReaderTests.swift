@@ -114,6 +114,91 @@ final class CompletionGenerationReaderTests: XCTestCase {
         }
     }
 
+    // MARK: - Stress
+
+    /// The seed of the stress test's random counts, moments, and places, so
+    /// every run draws the same numbers. A failure names the actions made.
+    private static let stressSeed: UInt64 = 0x5EED_0000_0005
+
+    /// A short chapter, whose clip ends where its file does, played twenty
+    /// times with seeks to random places, seeks to its end, stops, stops
+    /// followed by Play, and pauses, made at moments chosen at random: each
+    /// time it plays through to its end the reader moves on exactly once,
+    /// never after a Stop, and never past the next chapter.
+    ///
+    /// Each moment is a number of ticks of the audio service's position
+    /// observer, which ticks four times a second while playing and once
+    /// more as the player stops at the file's end, so some actions fall in
+    /// the moment between the end tick and AVFoundation's end-of-file
+    /// notice. The rounds take the five kinds of action in turn, so every
+    /// kind is made whatever the random moments.
+    func testShortChapterPlayedTwentyTimesWithRandomSeeksAndStopsMovesOnOncePerPlaythrough() throws {
+        try withThreeChapterBook { audiobook in
+            let reader = audiobook.openReader()
+            let visits = ChapterVisits(of: reader)
+            let reports = PlayerReportLog(observing: reader.audioPlaybackService)
+            let chapterLength = try XCTUnwrap(reader.content?.chapters.first?.text.utf16Length)
+            var random = SeededGenerator(state: Self.stressSeed)
+            var playthroughs = 0
+            var choices: [String] = []
+
+            for round in 1...20 {
+                reader.stop()
+                reader.navigateTo(chapterIndex: 0, characterOffset: 0)
+                reader.play()
+                var stoppedForGood = false
+                for step in 0..<Int.random(in: 1...3, using: &random) {
+                    // Act once the position observer has ticked a number of
+                    // times chosen at random, or playback has moved on.
+                    let ticks = reports.tickCount + Int.random(in: 1...4, using: &random)
+                    _ = eventually(within: 3) {
+                        reader.currentChapterIndex != 0 || reports.tickCount >= ticks
+                    }
+                    guard reader.currentChapterIndex == 0, reader.isCurrentlyPlaying else { break }
+                    switch (round + step) % 5 {
+                    case 0:
+                        let offset = Int.random(in: 0..<chapterLength, using: &random)
+                        choices.append("\(round): seek to \(offset)")
+                        reader.navigateTo(chapterIndex: 0, characterOffset: offset)
+                    case 1:
+                        choices.append("\(round): seek to the end")
+                        reader.navigateTo(chapterIndex: 0, characterOffset: chapterLength)
+                    case 2:
+                        choices.append("\(round): stop and play again")
+                        reader.stop()
+                        reader.play()
+                    case 3:
+                        choices.append("\(round): pause and resume")
+                        reader.pause()
+                        reader.togglePlayPause()
+                    default:
+                        choices.append("\(round): stop")
+                        reader.stop()
+                        stoppedForGood = true
+                    }
+                    if stoppedForGood { break }
+                }
+                if stoppedForGood {
+                    XCTAssertEqual(reader.currentChapterIndex, 0, "Round \(round) moved on after Stop: \(choices)")
+                    continue
+                }
+                // Played through: the next chapter plays on well past the
+                // moment a second end of the first could have come.
+                playthroughs += 1
+                XCTAssertTrue(
+                    eventually(within: 10) { reader.currentChapterIndex == 1 && reader.currentCharacterOffset >= 2 },
+                    "Round \(round) never moved on: \(choices)"
+                )
+            }
+            reader.stop()
+
+            let moves = zip(visits.chapters, visits.chapters.dropFirst()).filter { $0 == (0, 1) }.count
+            XCTAssertEqual(moves, playthroughs, "Moves on from the first chapter: \(visits.chapters), choices: \(choices)")
+            XCTAssertEqual(Set(visits.chapters), [0, 1], "A chapter was skipped: \(visits.chapters), choices: \(choices)")
+            XCTAssertGreaterThan(playthroughs, 0, "No round played through: \(choices)")
+        }
+    }
+
     // MARK: - Speech
 
     /// The end of a chapter's speech reported after the reader moved to
@@ -184,6 +269,10 @@ final class CompletionGenerationReaderTests: XCTestCase {
     /// c.wav for a second each. The first heading's clip ends exactly where
     /// its file does. The book opens at its first heading and stops at its
     /// end.
+    ///
+    /// A section's text stands for at least a second, ten characters, so
+    /// the first heading's offsets from 5 on lie past its clip's end: moving
+    /// there seeks past the end of a.wav.
     private func withThreeChapterBook(_ body: (SegmentedAudioBook) throws -> Void) throws {
         try withSegmentedAudioBook(
             title: "Tidal Ledger",

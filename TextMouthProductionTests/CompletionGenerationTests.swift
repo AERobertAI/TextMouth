@@ -544,6 +544,15 @@ final class PlayerReportLog {
         reports.filter { $0 == .tickFromReleasedPlayer }.count
     }
 
+    /// How many ticks of the loaded player's position observer the service
+    /// has dealt with.
+    var tickCount: Int {
+        reports.filter { report in
+            guard case .tick = report else { return false }
+            return true
+        }.count
+    }
+
     /// What the service made of each end-of-file notice, in order.
     var endOfFileOutcomes: [AudioEndNoticeOutcome] {
         reports.compactMap { report in
