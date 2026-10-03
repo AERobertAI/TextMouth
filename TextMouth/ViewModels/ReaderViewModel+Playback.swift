@@ -514,7 +514,7 @@ extension ReaderViewModel {
     }
 
     /// The audio of `play` played to its end. Save the position, and play
-    /// the next chapter, or end the book after the last; this book's sleep
+    /// the next chapter, or end the book after the last; this reader's sleep
     /// timer set for the end of the chapter stops playback here instead
     /// (`stopForSleepTimerAtChapterEnd`).
     private func audioDidFinish(_ play: ChapterPlay) {
@@ -1656,8 +1656,8 @@ extension ReaderViewModel {
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
                 if sleepTimerEndsListening {
-                    // The next book would play on past this book's sleep
-                    // timer, which can pause only the book that set it.
+                    // The next book would play on past this reader's sleep
+                    // timer, which can pause only the reader that set it.
                     DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
                     finishListening(
                         announcing: "Finished: \(book.title). Next book not started because of the sleep timer."
