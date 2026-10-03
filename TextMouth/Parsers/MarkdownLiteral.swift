@@ -22,20 +22,42 @@
 enum MarkdownLiteral {
 
     /// The text with every character Markdown could interpret made literal.
+    ///
+    /// Written a UTF-8 byte at a time, which the scalars it escapes allow
+    /// (PERF23: one scalar at a time took seven times as long). Every
+    /// escaped scalar is ASCII, a single byte that UTF-8 never uses inside
+    /// another scalar's bytes, and U+FEFF is the only scalar whose bytes are
+    /// EF BB BF, since EF can only begin a scalar. Every other byte is
+    /// copied, so each other scalar is copied whole.
     static func escaped(_ text: String) -> String {
-        var result = String.UnicodeScalarView()
-        for scalar in text.unicodeScalars {
-            if isASCIIPunctuation(scalar) {
-                result.append("\\")
-                result.append(scalar)
-            } else if scalar == "\u{FEFF}" {
-                result.append(contentsOf: "&#xFEFF;".unicodeScalars)
-            } else {
-                result.append(scalar)
+        var source = text
+        return source.withUTF8 { bytes in
+            var output: [UInt8] = []
+            output.reserveCapacity(bytes.count + bytes.count / 8)
+            var index = 0
+            while index < bytes.count {
+                let byte = bytes[index]
+                if isASCIIPunctuation(Unicode.Scalar(byte)) {
+                    output.append(UInt8(ascii: "\\"))
+                    output.append(byte)
+                    index += 1
+                } else if byte == byteOrderMark[0], bytes[index...].starts(with: byteOrderMark) {
+                    output.append(contentsOf: byteOrderMarkReference)
+                    index += byteOrderMark.count
+                } else {
+                    output.append(byte)
+                    index += 1
+                }
             }
+            return String(decoding: output, as: UTF8.self)
         }
-        return String(result)
     }
+
+    /// U+FEFF in UTF-8.
+    private static let byteOrderMark = Array("\u{FEFF}".utf8)
+
+    /// The character reference written for U+FEFF, in UTF-8.
+    private static let byteOrderMarkReference = Array("&#xFEFF;".utf8)
 
     /// CommonMark's escapable characters: U+0021–U+002F, U+003A–U+0040,
     /// U+005B–U+0060, and U+007B–U+007E. A backslash before any other
