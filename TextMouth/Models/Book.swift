@@ -146,6 +146,11 @@ struct Book: Identifiable, Codable, Hashable {
     var cacheFormatVersion: String?
     /// Compact validity marker for the full index stored in bookInfo.json.
     var contentIndexVersion: String?
+    /// The fingerprints of the source and content.md the text cache was
+    /// written from (see `TextCacheFingerprint`), recorded with the analysis
+    /// that measured them; nil for audio and for a cache written before
+    /// fingerprints. Startup maintenance compares them with the files.
+    var textCacheFingerprint: TextCacheFingerprint?
 
     init(
         id: UUID = UUID(),
@@ -184,7 +189,8 @@ struct Book: Identifiable, Codable, Hashable {
         epubIdentifier: String? = nil,
         epubVersion: String? = nil,
         cacheFormatVersion: String? = nil,
-        contentIndexVersion: String? = nil
+        contentIndexVersion: String? = nil,
+        textCacheFingerprint: TextCacheFingerprint? = nil
     ) {
         self.id = id
         self.title = title
@@ -223,6 +229,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.epubVersion = epubVersion
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
+        self.textCacheFingerprint = textCacheFingerprint
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -278,6 +285,10 @@ struct Book: Identifiable, Codable, Hashable {
             cacheFormatVersion = nil
         }
         contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+        // A fingerprint that cannot be read counts as none: the cache is then
+        // checked as one written before fingerprints, instead of the whole
+        // library failing over one damaged field.
+        textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
     }
 
     /// The .tmb package directory URL
@@ -307,8 +318,9 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// The fields of a book that content analysis owns: the word and
-    /// character counts, the audio duration, and the versions of the content
-    /// index and text cache they were measured from. An analysis result
+    /// character counts, the audio duration, the versions of the content
+    /// index and text cache they were measured from, and the fingerprints of
+    /// the files that text cache was written from. An analysis result
     /// changes these and nothing else, whether it lands in the package
     /// record or on the library row. Every other field of a book is user
     /// state or metadata, which only the user's own actions change.
@@ -318,6 +330,7 @@ struct Book: Identifiable, Codable, Hashable {
         var audioDuration: TimeInterval?
         var contentIndexVersion: String?
         var cacheFormatVersion: String?
+        var textCacheFingerprint: TextCacheFingerprint? = nil
     }
 
     /// This book's analysis-owned fields. Setting them changes exactly those
@@ -330,7 +343,8 @@ struct Book: Identifiable, Codable, Hashable {
                 totalCharacterCount: totalCharacterCount,
                 audioDuration: audioDuration,
                 contentIndexVersion: contentIndexVersion,
-                cacheFormatVersion: cacheFormatVersion
+                cacheFormatVersion: cacheFormatVersion,
+                textCacheFingerprint: textCacheFingerprint
             )
         }
         set {
@@ -339,20 +353,25 @@ struct Book: Identifiable, Codable, Hashable {
             audioDuration = newValue.audioDuration
             contentIndexVersion = newValue.contentIndexVersion
             cacheFormatVersion = newValue.cacheFormatVersion
+            textCacheFingerprint = newValue.textCacheFingerprint
         }
     }
 
     /// Records a completed analysis of this book: the statistics and version
     /// of `index` and, when the analysis vouches for one, the version of the
     /// text cache it read or wrote. A nil `cacheFormatVersion` keeps the
-    /// book's own, since such an analysis says nothing about the cache.
+    /// book's own, since such an analysis says nothing about the cache. The
+    /// cache's fingerprints always come from `index`, which carries those of
+    /// the files it was made from, so a book never keeps fingerprints that
+    /// describe another index than the one recorded with them.
     mutating func applyContentAnalysis(_ index: BookContentIndex, cacheFormatVersion: String?) {
         contentAnalysisFields = ContentAnalysisFields(
             totalWordCount: index.totalWordCount,
             totalCharacterCount: index.totalCharacterCount,
             audioDuration: index.totalAudioDuration,
             contentIndexVersion: index.version,
-            cacheFormatVersion: cacheFormatVersion ?? self.cacheFormatVersion
+            cacheFormatVersion: cacheFormatVersion ?? self.cacheFormatVersion,
+            textCacheFingerprint: index.textCacheFingerprint
         )
     }
 
@@ -552,7 +571,8 @@ struct Book: Identifiable, Codable, Hashable {
                 manualSortOrder: manualSortOrder,
                 audioDuration: audioDuration,
                 cacheFormatVersion: cacheFormatVersion,
-                contentIndexVersion: contentIndexVersion
+                contentIndexVersion: contentIndexVersion,
+                textCacheFingerprint: textCacheFingerprint
             ),
             bookmarks: bookmarks
         )
@@ -602,7 +622,8 @@ struct Book: Identifiable, Codable, Hashable {
             epubIdentifier: metadata.epubIdentifier,
             epubVersion: metadata.epubVersion,
             cacheFormatVersion: state.cacheFormatVersion,
-            contentIndexVersion: state.contentIndexVersion
+            contentIndexVersion: state.contentIndexVersion,
+            textCacheFingerprint: state.textCacheFingerprint
         )
     }
 }

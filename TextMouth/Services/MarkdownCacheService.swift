@@ -96,6 +96,12 @@ enum MarkdownCacheService {
     /// through here, so each one writes a report with omissions to the debug
     /// log as a single `<FORMAT>_INCOMPLETE_CONTENT: <title>: <message>` line.
     /// Only an import presents it to the reader (see `FileImportService`).
+    ///
+    /// Each one also fingerprints the source and the content.md it writes
+    /// (TODO T07), so the index returned carries what a later load checks
+    /// the cache against. The source is fingerprinted before extraction
+    /// reads it: one replaced meanwhile then differs from its fingerprint
+    /// next time, instead of being recorded as the one this cache came from.
     /// - Returns: nil for a book with no text cache: an audio book, or one
     ///   without a package.
     /// - Throws: why no cache could be written. A cache written earlier is
@@ -103,9 +109,9 @@ enum MarkdownCacheService {
     static func generateReportedCacheContent(for book: Book) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
 
-        let tmbDir = book.tmbDirectory
-        let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
+        let cachePath = cacheURL(for: book)
         let fileURL = URL(fileURLWithPath: book.filePath)
+        let sourceFingerprint = FileFingerprint(of: fileURL, hasher: .md5)
 
         let extracted: ExtractedCache
         do {
@@ -117,9 +123,9 @@ enum MarkdownCacheService {
             throw EPUBParserError.noReadableChapters(report)
         }
 
-        let content: DocumentContent
+        let parsed: DocumentContent
         if let chapters = extracted.chapters, !chapters.isEmpty {
-            content = DocumentContent(
+            parsed = DocumentContent(
                 title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
                 author: book.author,
                 chapters: chapters,
@@ -128,26 +134,46 @@ enum MarkdownCacheService {
         } else {
             // Preserve the cache reader's empty-document and chapter-marker
             // behavior as well as its title fallback for non-EPUB formats.
-            let parsed = parseMultiChapterMarkdown(
+            let markdownContent = parseMultiChapterMarkdown(
                 extracted.markdown, bookTitle: book.title, bookAuthor: book.author
             )
-            content = DocumentContent(
-                title: parsed.title, author: parsed.author, chapters: parsed.chapters,
-                contentIndex: parsed.contentIndex.replacingFormat(book.format)
+            parsed = DocumentContent(
+                title: markdownContent.title, author: markdownContent.author, chapters: markdownContent.chapters,
+                contentIndex: markdownContent.contentIndex.replacingFormat(book.format)
             )
         }
-        try extracted.markdown.write(to: cachePath, atomically: true, encoding: .utf8)
+        // Write exactly the bytes that are digested, as UTF-8 without a
+        // byte-order mark, which is how a String's UTF-8 write stores them.
+        let bytes = Data(extracted.markdown.utf8)
+        try bytes.write(to: cachePath, options: .atomic)
+        var index = parsed.contentIndex
+        index.textCacheFingerprint = fingerprint(source: sourceFingerprint, written: bytes, to: cachePath)
+        let content = DocumentContent(
+            title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index
+        )
         logIncompleteContent(extracted.report, of: book)
         return GeneratedCache(content: content, report: extracted.report)
     }
 
-    /// Generate a cache and advance the stored format version only after the
+    /// The fingerprint of a cache just written as `bytes` to `cacheURL` from
+    /// a source fingerprinted as `source` before extraction read it. Nil
+    /// when either file could not be fingerprinted (the source could not be
+    /// read twice, say), so the cache counts as one written before
+    /// fingerprints and the next verified load fingerprints it.
+    private static func fingerprint(source: FileFingerprint?, written bytes: Data, to cacheURL: URL) -> TextCacheFingerprint? {
+        guard let source, let stamp = FileStamp(of: cacheURL) else { return nil }
+        return TextCacheFingerprint(
+            source: source,
+            cache: FileFingerprint(stamp: stamp, digest: FingerprintHasher.md5.digestOfData(bytes))
+        )
+    }
+
+    /// Generate a cache and advance the stored format version, with the
+    /// statistics and fingerprints recorded alongside it, only after the
     /// cache file has been written successfully.
     @discardableResult
     static func generateCacheAndStampVersion(for book: inout Book) -> Bool {
-        guard generateCache(for: book) else { return false }
-        book.cacheFormatVersion = currentCacheVersion
-        return true
+        generateCacheAnalyzeAndStamp(for: &book) != nil
     }
 
     /// Variant that also computes the persisted navigation index while
@@ -207,20 +233,22 @@ enum MarkdownCacheService {
         }
     }
 
+    /// Where `book`'s content.md is: in its package, whether or not one has
+    /// been written there yet.
+    static func cacheURL(for book: Book) -> URL {
+        TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
+    }
+
     /// Check whether a cached content.md exists for a book.
     static func cacheExists(for book: Book) -> Bool {
         guard !book.tmbDirectoryName.isEmpty else { return false }
-        let tmbDir = book.tmbDirectory
-        let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
-        return FileManager.default.fileExists(atPath: cachePath.path)
+        return FileManager.default.fileExists(atPath: cacheURL(for: book).path)
     }
 
     /// Delete the cached content.md for a book (used before re-extraction).
     static func deleteCache(for book: Book) {
         guard !book.tmbDirectoryName.isEmpty else { return }
-        let tmbDir = book.tmbDirectory
-        let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
-        try? FileManager.default.removeItem(at: cachePath)
+        try? FileManager.default.removeItem(at: cacheURL(for: book))
     }
 
     // MARK: - Cache Loading
@@ -232,9 +260,8 @@ enum MarkdownCacheService {
         for book: Book,
         contentIndex: BookContentIndex? = nil
     ) throws -> DocumentContent {
-        let tmbDir = book.tmbDirectory
-        let cachePath = TextMouthPaths.contentMarkdownPath(in: tmbDir)
-        let markdown = try String(contentsOf: cachePath, encoding: .utf8)
+        let url = cacheURL(for: book)
+        let markdown = try cacheText(from: Data(contentsOf: url), at: url)
 
         return parseMultiChapterMarkdown(
             markdown,
@@ -242,6 +269,18 @@ enum MarkdownCacheService {
             bookAuthor: book.author,
             contentIndex: contentIndex
         )
+    }
+
+    /// The text of a content.md whose bytes, read from `url`, are `bytes`.
+    /// They are decoded as UTF-8 exactly as reading the file as a string
+    /// decodes it, a leading byte-order mark dropped, so a load that needs
+    /// the bytes for their digest reads the file once. Bytes that are not
+    /// UTF-8 throw the error that reading the file as a string throws.
+    static func cacheText(from bytes: Data, at url: URL) throws -> String {
+        guard let text = String(data: bytes, encoding: .utf8) else {
+            throw CocoaError(.fileReadCorruptFile, userInfo: [NSURLErrorKey: url])
+        }
+        return text
     }
 
     // MARK: - Format-Specific Extraction

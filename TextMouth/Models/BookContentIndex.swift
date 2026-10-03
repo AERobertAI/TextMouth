@@ -33,6 +33,14 @@ struct BookContentIndex: Codable, Hashable {
     var totalAudioDuration: TimeInterval?
     var audioLayout: AudioLayout?
     var chapters: [BookContentChapterIndex]
+    /// The fingerprints of the source and content.md a text book's index was
+    /// made from, once a cache write or a verified load has recorded them;
+    /// nil for audio and for an index made before fingerprints (TODO T07).
+    /// The index carries them so every path that saves an analysis saves
+    /// them too (`Book.applyContentAnalysis(_:cacheFormatVersion:)`). They
+    /// describe the files, not the counts, so adding them leaves
+    /// `currentVersion` as it is.
+    var textCacheFingerprint: TextCacheFingerprint? = nil
 
     var isCurrent: Bool { version == Self.currentVersion }
 
@@ -132,16 +140,13 @@ struct BookContentIndex: Codable, Hashable {
 
         let chapterIndexes = chapters.enumerated().map { chapterIndex, chapter in
             let characterCount = chapter.text.utf16Length
-            let wordCount = isAudio ? 0 : chapter.text.split(whereSeparator: { $0.isWhitespace }).count
+            let wordCount = isAudio ? 0 : chapter.wordCount
             totalWords += wordCount
 
             let headings = chapter.headings.map { heading in
-                // A heading whose label adds no reading text (one made only of
-                // inline HTML, such as "# <br>") can be recorded past the end
-                // of its chapter's trimmed text. Keep it at the chapter's end,
-                // where validation expects every heading to lie. The ID is the
-                // one `Heading` derives, so it matches `allHeadings`.
-                let offset = min(max(0, heading.characterOffset), characterCount)
+                // The ID is the one `Heading` derives, so it matches
+                // `allHeadings`.
+                let offset = indexedHeadingOffset(heading.characterOffset, chapterLength: characterCount)
                 return BookContentHeadingIndex(
                     id: Heading(level: heading.level, text: heading.text, chapterIndex: chapterIndex, characterOffset: offset).id,
                     level: heading.level,
@@ -201,6 +206,18 @@ struct BookContentIndex: Codable, Hashable {
             audioLayout: layout,
             chapters: chapterIndexes
         )
+    }
+
+    /// Where the index records a heading that the parser placed at `offset`
+    /// in a chapter `chapterLength` UTF-16 code units long: there, kept
+    /// inside the chapter. A heading whose label adds no reading text (one
+    /// made only of inline HTML, such as "# <br>") can be placed past the end
+    /// of its chapter's trimmed text; it is recorded at the chapter's end,
+    /// where validation expects every heading to lie. The builder records
+    /// offsets through this and alignment compares through it, so the two
+    /// always agree about such a heading.
+    static func indexedHeadingOffset(_ offset: Int, chapterLength: Int) -> Int {
+        min(max(0, offset), chapterLength)
     }
 
     /// Reconstruct the lightweight placeholder document used by audio playback
@@ -351,20 +368,83 @@ extension BookContentIndex {
     }
 
     /// Why this index cannot describe `chapters`, the reading text it is
-    /// about to be paired with, or nil when it can: both must hold the same
-    /// number of chapters, each as long as the index records. A text book's
-    /// index and its content.md are written separately, so a sound index can
-    /// still describe other text. Once `validationFailure` passes, matching
-    /// lengths are all it takes for every offset in the index to point into
-    /// the same words as the chapters.
-    func alignmentFailure(with chapters: [Chapter]) -> String? {
+    /// about to be paired with, or nil when it can. A text book's index and
+    /// its content.md are written separately, so a sound index can still
+    /// describe other text, and matching lengths alone do not prove it does:
+    /// text edited to the same length can move, rename, add, or drop a
+    /// heading, or join and split words. Both must hold the same number of
+    /// chapters, and each chapter must have the length, the headings (the
+    /// same number, each at the same offset with the same label and level),
+    /// and the word count the index records, with the totals to match.
+    ///
+    /// The reason names the first mismatch by the field bookInfo.json spells,
+    /// for example
+    /// `chapters[1].headings[0].text is "Later", but the reading text has "Sooner"`.
+    ///
+    /// - Parameter countingWords: Whether to count each chapter's words, the
+    ///   one comparison that reads every character of the text (tens of
+    ///   milliseconds for a long book). Pass false only when the index is
+    ///   known to have been measured from these very chapters, as a load
+    ///   knows from the fingerprints the index records; every other
+    ///   comparison still runs.
+    func alignmentFailure(with chapters: [Chapter], countingWords: Bool = true) -> String? {
         guard self.chapters.count == chapters.count else {
             return "chapters has \(self.chapters.count) entries, but the reading text has \(chapters.count)"
         }
+        var characters = 0
+        var words = 0
         for (position, (stored, chapter)) in zip(self.chapters, chapters).enumerated() {
+            let field = "chapters[\(position)]"
             let length = chapter.text.utf16Length
             if stored.characterCount != length {
-                return "chapters[\(position)].characterCount is \(stored.characterCount), but the reading text holds \(length)"
+                return "\(field).characterCount is \(stored.characterCount), but the reading text holds \(length)"
+            }
+            if let failure = headingAlignmentFailure(of: stored, with: chapter, field: field) {
+                return failure
+            }
+            if countingWords {
+                let wordCount = chapter.wordCount
+                if stored.wordCount != wordCount {
+                    return "\(field).wordCount is \(stored.wordCount), but the reading text holds \(wordCount)"
+                }
+                words += wordCount
+            }
+            characters += length
+        }
+        if totalCharacterCount != characters {
+            return "totalCharacterCount is \(totalCharacterCount), but the reading text holds \(characters)"
+        }
+        if countingWords, totalWordCount != words {
+            return "totalWordCount is \(totalWordCount), but the reading text holds \(words)"
+        }
+        return nil
+    }
+
+    /// Why `stored`, the index's entry for one chapter, does not list the
+    /// headings of `chapter`, its reading text, or nil when it does: the
+    /// same number of headings, each at the offset the builder would record
+    /// (`indexedHeadingOffset`), with the same label and level. `field` names
+    /// the chapter in reasons. Called once the lengths match.
+    private func headingAlignmentFailure(
+        of stored: BookContentChapterIndex,
+        with chapter: Chapter,
+        field: String
+    ) -> String? {
+        guard stored.headings.count == chapter.headings.count else {
+            return "\(field).headings has \(stored.headings.count) entries, but the reading text has \(chapter.headings.count)"
+        }
+        for (position, (storedHeading, heading)) in zip(stored.headings, chapter.headings).enumerated() {
+            let field = "\(field).headings[\(position)]"
+            let offset = Self.indexedHeadingOffset(heading.characterOffset, chapterLength: stored.characterCount)
+            if storedHeading.characterOffset != offset {
+                return "\(field).characterOffset is \(storedHeading.characterOffset), but the reading text has it at \(offset)"
+            }
+            if storedHeading.text != heading.text {
+                return "\(field).text is \(String(reflecting: storedHeading.text)), "
+                    + "but the reading text has \(String(reflecting: heading.text))"
+            }
+            if storedHeading.level != heading.level {
+                return "\(field).level is \(storedHeading.level), but the reading text has \(heading.level)"
             }
         }
         return nil

@@ -146,6 +146,11 @@ struct BookState: Codable {
     var cacheFormatVersion: String?
     /// Version of the persisted BookContentIndex in this package.
     var contentIndexVersion: String?
+    /// The fingerprints of the source and content.md the text cache was
+    /// written from, kept with the cache's format version (see
+    /// `Book.textCacheFingerprint`). A load checks the package's files
+    /// against these before it trusts the cache or the index.
+    var textCacheFingerprint: TextCacheFingerprint?
     /// How many times this record has been written. Every write of
     /// bookInfo.json stores at least one more than the record it replaces
     /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`), so of two
@@ -172,6 +177,7 @@ struct BookState: Codable {
         audioDuration: TimeInterval? = nil,
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
+        textCacheFingerprint: TextCacheFingerprint? = nil,
         revision: Int? = nil
     ) {
         self.readingPosition = readingPosition
@@ -192,6 +198,7 @@ struct BookState: Codable {
         self.audioDuration = audioDuration
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
+        self.textCacheFingerprint = textCacheFingerprint
         self.revision = revision
     }
 
@@ -222,6 +229,10 @@ struct BookState: Codable {
         audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
         cacheFormatVersion = try container.decodeIfPresent(String.self, forKey: .cacheFormatVersion)
         contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+        // A fingerprint that cannot be read counts as none, so the cache is
+        // checked as one written before fingerprints and fingerprinted
+        // again, instead of the whole record failing.
+        textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
         // Like a count, a revision is never negative. One that cannot be
         // read counts as none, so the next write numbers from there instead
         // of the whole record failing over a bookkeeping field.
@@ -238,7 +249,8 @@ extension BookState {
             totalCharacterCount: totalCharacterCount,
             audioDuration: audioDuration,
             contentIndexVersion: contentIndexVersion,
-            cacheFormatVersion: cacheFormatVersion
+            cacheFormatVersion: cacheFormatVersion,
+            textCacheFingerprint: textCacheFingerprint
         )
     }
 
