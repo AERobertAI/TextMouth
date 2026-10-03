@@ -4,23 +4,33 @@ import Combine
 /// Manages customizable keyboard shortcuts using NSEvent monitoring.
 /// Posts notifications when shortcuts are triggered, so the rest of the app
 /// can respond via the same NotificationCenter pattern already in use.
+///
+/// The bindings live in the preferences store. The manager saves each change
+/// made through it there, and takes up every change made there by anyone
+/// else, such as the settings model applying an edit of config.json, which
+/// mirrors the shortcuts; key presses match the new bindings at once.
 @MainActor
 final class KeyboardShortcutManager: ObservableObject {
     @Published var bindings: [ShortcutAction: [KeyBinding]] = [:]
 
     private var eventMonitor: Any?
-    private let storageKey = "customKeyboardBindings"
     /// The store holding the custom bindings.
     private let userDefaults: UserDefaults
+    /// Reports changes to the bindings in the store.
+    private var storeObserver: PreferenceObserver?
 
-    /// Loads the bindings and, unless told not to, starts watching key presses.
+    /// Loads the bindings, follows their changes in the store from then on,
+    /// and, unless told not to, starts watching key presses.
     /// - Parameters:
     ///   - userDefaults: The store holding the custom bindings: this
     ///     process's preferences unless a test passes its own.
     ///   - installsEventMonitor: False leaves key presses alone, for tests.
     init(userDefaults: UserDefaults = TextMouthRuntime.current.preferences, installsEventMonitor: Bool = true) {
         self.userDefaults = userDefaults
-        loadBindings()
+        bindings = Self.bindingsPreference.read(from: userDefaults)
+        storeObserver = PreferenceObserver(keys: [Self.bindingsPreference.key], in: userDefaults) { [weak self] _ in
+            self?.takeBindingsFromStore()
+        }
         if installsEventMonitor {
             startMonitoring()
         }
@@ -28,44 +38,62 @@ final class KeyboardShortcutManager: ObservableObject {
 
     // MARK: - Persistence
 
-    private func loadBindings() {
-        if let data = userDefaults.data(forKey: storageKey),
-           let saved = try? JSONDecoder().decode([String: [KeyBinding]].self, from: data) {
-            var loaded: [ShortcutAction: [KeyBinding]] = [:]
-            for (rawValue, keys) in saved {
-                if let action = ShortcutAction(rawValue: rawValue) {
-                    loaded[action] = keys
-                }
+    /// The bindings of every action in the preferences store, saved as JSON
+    /// keyed by the actions' names under the key every release has used, so
+    /// saved shortcuts keep loading. An action the saved bindings leave out,
+    /// such as one added since they were saved, gets its defaults. The
+    /// settings model mirrors the bindings in config.json through this same
+    /// definition.
+    nonisolated static let bindingsPreference = StoredPreference<[ShortcutAction: [KeyBinding]]>(
+        key: "customKeyboardBindings",
+        read: { store, key in
+            guard let data = store.data(forKey: key),
+                  let saved = try? JSONDecoder().decode([String: [KeyBinding]].self, from: data) else {
+                return ShortcutAction.defaultBindings
             }
-            // Merge with defaults for any new actions not yet saved
-            let defaults = ShortcutAction.defaultBindings
-            var claimedBindings = Set(loaded.values.flatMap { $0 })
-            for action in ShortcutAction.allCases {
-                if loaded[action] == nil {
-                    // Preserve existing custom ownership during upgrades. A
-                    // newly introduced default must not duplicate an older
-                    // user-assigned binding because dictionary iteration would
-                    // otherwise make the action that fires nondeterministic.
-                    let availableDefaults = (defaults[action] ?? []).filter {
-                        !claimedBindings.contains($0)
-                    }
-                    loaded[action] = availableDefaults
-                    claimedBindings.formUnion(availableDefaults)
-                }
-            }
-            bindings = loaded
-        } else {
-            bindings = ShortcutAction.defaultBindings
+            return KeyboardShortcutManager.bindings(
+                addingDefaultsTo: [ShortcutAction: [KeyBinding]](keyedByRawValue: saved)
+            )
+        },
+        write: { bindings, store, key in
+            guard let data = try? JSONEncoder().encode(bindings.keyedByRawValue) else { return }
+            store.set(data, forKey: key)
         }
+    )
+
+    /// `saved` with each action it leaves out given its default bindings,
+    /// except any binding another action already uses.
+    nonisolated static func bindings(
+        addingDefaultsTo saved: [ShortcutAction: [KeyBinding]]
+    ) -> [ShortcutAction: [KeyBinding]] {
+        var loaded = saved
+        let defaults = ShortcutAction.defaultBindings
+        var claimedBindings = Set(loaded.values.flatMap { $0 })
+        for action in ShortcutAction.allCases where loaded[action] == nil {
+            // Preserve existing custom ownership during upgrades. A newly
+            // introduced default must not duplicate an older user-assigned
+            // binding because dictionary iteration would otherwise make the
+            // action that fires nondeterministic.
+            let availableDefaults = (defaults[action] ?? []).filter {
+                !claimedBindings.contains($0)
+            }
+            loaded[action] = availableDefaults
+            claimedBindings.formUnion(availableDefaults)
+        }
+        return loaded
     }
 
     private func saveBindings() {
-        var dict: [String: [KeyBinding]] = [:]
-        for (action, keys) in bindings {
-            dict[action.rawValue] = keys
-        }
-        if let data = try? JSONEncoder().encode(dict) {
-            userDefaults.set(data, forKey: storageKey)
+        Self.bindingsPreference.write(bindings, to: userDefaults)
+    }
+
+    /// Takes the bindings from the store when someone else changed them
+    /// there. Nothing is written back: `bindings` saves only through the
+    /// methods that change it.
+    private func takeBindingsFromStore() {
+        let stored = Self.bindingsPreference.read(from: userDefaults)
+        if stored != bindings {
+            bindings = stored
         }
     }
 

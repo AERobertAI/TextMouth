@@ -185,4 +185,40 @@ final class PreferenceStoreTests: XCTestCase {
 
         XCTAssertEqual(shared.isEnabled, !wasEnabled)
     }
+
+    // MARK: - Keyboard Shortcuts
+
+    /// Bindings written to the store by someone else take effect in the
+    /// manager at once, published once, so key presses match them.
+    func testShortcutsFollowChangesMadeInTheirStore() {
+        let store = makeSandboxedPreferences("shortcuts-follow")
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+        var changed = ShortcutAction.defaultBindings
+        changed[.whereAmI] = [KeyBinding(key: "w", option: true)]
+
+        KeyboardShortcutManager.bindingsPreference.write(changed, to: store)
+
+        XCTAssertEqual(manager.bindings, changed)
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
+        XCTAssertEqual(publications, 1)
+        subscription.cancel()
+    }
+
+    /// The bindings are saved where and as every release saved them: JSON
+    /// under customKeyboardBindings, keyed by each action's name, every
+    /// action included, so saved shortcuts keep loading.
+    func testShortcutsKeepTheirSavedKeyAndForm() throws {
+        let store = makeSandboxedPreferences("shortcuts-form")
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+
+        manager.updateBindings(for: .whereAmI, to: [KeyBinding(key: "w", option: true)])
+
+        let data = try XCTUnwrap(store.data(forKey: "customKeyboardBindings"))
+        let saved = try JSONDecoder().decode([String: [KeyBinding]].self, from: data)
+        XCTAssertEqual(saved["Where Am I?"], [KeyBinding(key: "w", option: true)])
+        XCTAssertEqual(saved["Play / Pause"], [KeyBinding(key: "space"), KeyBinding(key: "k")])
+        XCTAssertEqual(Set(saved.keys), Set(ShortcutAction.allCases.map(\.rawValue)))
+    }
 }
