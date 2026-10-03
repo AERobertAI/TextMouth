@@ -18,12 +18,13 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     // MARK: - Every Book Fixture
 
-    /// The books whose caches and readings are recorded: TestData's books,
-    /// the review's synthetic books at sizes a Debug build reads quickly,
-    /// and the generated EPUBs, by the name each is recorded under.
+    /// The books whose caches and readings are recorded: TestData's books
+    /// (`TextPipelineFixtures.testDataBooks()`), the review's synthetic books
+    /// at sizes a Debug build reads quickly, and the generated EPUBs, by the
+    /// name each is recorded under.
     private func goldenBooks() throws -> [(name: String, url: URL)] {
         typealias Fixtures = TextPipelineFixtures
-        var books = try Fixtures.testDataBooks().map { (name: $0.lastPathComponent, url: $0) }
+        var books = try Fixtures.testDataBooks()
         books += [
             ("synthetic-256k.txt", try Fixtures.writeText(Fixtures.plainText(bytes: 262_144), named: "Synthetic Prose.txt", for: self)),
             ("synthetic-256k.md", try Fixtures.writeText(Fixtures.markdownWithTables(bytes: 262_144), named: "Synthetic Tables.md", for: self)),
@@ -39,12 +40,15 @@ final class TextPipelineGoldenTests: XCTestCase {
     }
 
     /// content.md as the import writes it for each golden book, recorded on
-    /// main before PERF18.
+    /// main before PERF18: at a4d6e10, and for the two DAISY audio books
+    /// that only some checkouts hold, at 6cef1d0 with them present.
     private static let recordedCaches: [String: String] = [
         "alice.docx": "3cd03f3458bf2cb1",
         "alice.epub": "7693c954870e8e27",
+        "are-you-ready-d3-audio.zip": "d1d3f9c2159d5732",
         "converted-12.epub": "65ea3c4fb57ed662",
         "daisy202_test.zip": "73cbd773fe100236",
+        "fire-safety-d202-audio.zip": "38d5759450e06358",
         "frankenstein.html": "ca20689835e6a4af",
         "hyperion_daisy.zip": "538946f073739b22",
         "lathe_of_heaven_daisy.zip": "c64cfa237817b844",
@@ -62,12 +66,14 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     /// What each golden book opens to (`TextPipelineFixtures.digest(of:index:)`
     /// of the chapters and index `BookContentAnalysisService.load` returns),
-    /// recorded on main before PERF18.
+    /// recorded on main before PERF18, as `recordedCaches` was.
     private static let recordedReadings: [String: String] = [
         "alice.docx": "6a2383388d488ef7",
         "alice.epub": "98ad24b7bb26f619",
+        "are-you-ready-d3-audio.zip": "ac2c4fe996e672c4",
         "converted-12.epub": "a9fe607222334425",
         "daisy202_test.zip": "62d8163491526652",
+        "fire-safety-d202-audio.zip": "f473b2fbaff21ccb",
         "frankenstein.html": "33e7c31909a348d3",
         "hyperion_daisy.zip": "eaa1858c33d55019",
         "lathe_of_heaven_daisy.zip": "24cdd2a8c98160f0",
@@ -86,17 +92,52 @@ final class TextPipelineGoldenTests: XCTestCase {
     /// Every golden book imports to the content.md recorded for it, and
     /// opens to the recorded chapters, headings, and word counts.
     func testEveryBookKeepsItsRecordedCacheAndReading() throws {
-        for (name, url) in try goldenBooks() {
-            let book = try TextPipelineFixtures.imported(url, for: self)
-            let cache = try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
-            XCTAssertEqual(TextPipelineFixtures.digest(cache), Self.recordedCaches[name], "content.md of \(name)")
+        try compareWithRecordedOutput(try goldenBooks())
+    }
 
+    /// A book that cannot be imported fails by name, and so does one whose
+    /// output has no record, each with what the comparison found, rather
+    /// than as a mismatch with a missing record.
+    func testBooksThatCannotBeComparedFailByName() throws {
+        let unreadable = try TextPipelineFixtures.writeText("Not a ZIP archive.", named: "Unreadable.epub", for: self)
+        let unrecorded = try TextPipelineFixtures.writeText("Words no record names.", named: "Unrecorded.txt", for: self)
+        let cases = [
+            (name: "unreadable.epub", url: unreadable, failure: "unreadable.epub could not be imported"),
+            (name: "unrecorded.txt", url: unrecorded, failure: "unrecorded.txt has no recorded output"),
+        ]
+        for book in cases {
+            let options = XCTExpectedFailure.Options()
+            options.issueMatcher = { $0.compactDescription.contains(book.failure) }
+            try XCTExpectFailure("\(book.name) fails by name", options: options) {
+                try compareWithRecordedOutput([(book.name, book.url)])
+            }
+        }
+    }
+
+    /// Import each of `books` and compare its content.md and reading with
+    /// those recorded under its name. A book that cannot be imported, or
+    /// whose output has no record, fails by name and the rest are still
+    /// compared: an import can fail for a reason the pipeline has no part
+    /// in, such as a disk under the import's free-space reserve, and that is
+    /// not a change of output.
+    private func compareWithRecordedOutput(_ books: [(name: String, url: URL)]) throws {
+        for (name, url) in books {
+            let book: Book
+            do {
+                book = try TextPipelineFixtures.imported(url, for: self)
+            } catch {
+                XCTFail("\(name) could not be imported, so its output was not compared: \(error.localizedDescription)")
+                continue
+            }
+            let cache = TextPipelineFixtures.digest(try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)))
             let opened = try BookContentAnalysisService.load(book: book)
-            XCTAssertEqual(
-                TextPipelineFixtures.digest(of: opened.content.chapters, index: opened.index),
-                Self.recordedReadings[name],
-                "reading of \(name)"
-            )
+            let reading = TextPipelineFixtures.digest(of: opened.content.chapters, index: opened.index)
+            guard let recordedCache = Self.recordedCaches[name], let recordedReading = Self.recordedReadings[name] else {
+                XCTFail("\(name) has no recorded output (content.md \(cache), reading \(reading)): record both once that output is checked")
+                continue
+            }
+            XCTAssertEqual(cache, recordedCache, "content.md of \(name)")
+            XCTAssertEqual(reading, recordedReading, "reading of \(name)")
         }
     }
 
