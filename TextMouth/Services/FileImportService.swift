@@ -1292,6 +1292,11 @@ enum FileImportService {
         if let daisy = UTType("com.textmouth.daisy-book") {
             types.append(daisy)
         }
+        // A DAISY book kept as loose files can be chosen as its folder, as
+        // well as by its .opf or its ncc.html (an HTML file, allowed above).
+        // A folder that holds no DAISY book is refused when imported, saying
+        // why (TODO I02).
+        types.append(.folder)
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })
         if let tmb = UTType("com.textmouth.book-package") {

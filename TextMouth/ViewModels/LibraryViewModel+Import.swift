@@ -42,9 +42,23 @@ extension LibraryViewModel {
             } else if ext == "zip" {
                 importZipAsync(from: url, toFolder: "")
             } else {
-                importSingleFileAsync(from: url, toFolder: "", openAfterImport: true)
+                for source in Self.importSources(for: url) {
+                    importSingleFileAsync(from: source, toFolder: "", openAfterImport: true)
+                }
             }
         }
+    }
+
+    /// What the item `url`, chosen in the Open panel or dropped on
+    /// TextMouth, is imported from, each source one book: a folder whose top
+    /// level holds several DAISY books' package files gives each of those
+    /// files; any other item is imported as itself. A folder holding one
+    /// DAISY book is imported as that book's package with every file it
+    /// needs, and a folder holding none is refused, saying why
+    /// (`FileImportService.importFileWithReport`) (TODO I02).
+    nonisolated static func importSources(for url: URL) -> [URL] {
+        let packageFiles = DAISYParser.packageEntryPoints(in: url)
+        return packageFiles.count > 1 ? packageFiles : [url]
     }
 
     // MARK: - TMB Package Opening
@@ -322,14 +336,17 @@ extension LibraryViewModel {
         }
     }
 
-    /// Import one or more files from URLs into the specified folder.
+    /// Import one or more files from URLs into the specified folder. A
+    /// DAISY book's folder is imported as that book (`importSources(for:)`).
     func importFiles(urls: [URL], toFolder folderPath: String = "") {
         for url in urls {
             let ext = url.pathExtension.lowercased()
             if ext == "zip" {
                 importZipAsync(from: url, toFolder: folderPath)
             } else {
-                importSingleFileAsync(from: url, toFolder: folderPath)
+                for source in Self.importSources(for: url) {
+                    importSingleFileAsync(from: source, toFolder: folderPath)
+                }
             }
         }
     }

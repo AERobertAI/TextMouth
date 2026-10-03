@@ -1,3 +1,4 @@
+import UniformTypeIdentifiers
 import XCTest
 @testable import TextMouth
 
@@ -415,6 +416,86 @@ final class DAISYPackageImportTests: XCTestCase {
         let tides = try XCTUnwrap(result.books.first { $0.title == "The Manual of Tide Prediction" })
         XCTAssertEqual(tides.bookFileURL.lastPathComponent, "Tides.zip")
         XCTAssertFalse(result.books.contains { $0.bookFileURL.lastPathComponent == "Collection.zip" })
+    }
+
+    // MARK: - Choosing a Book in the Open Panel
+
+    /// The Open panel offers folders, so a DAISY book's folder can be
+    /// chosen, as well as its ncc.html, an HTML file it already offered.
+    func testOpenPanelOffersFoldersAndNavigationFiles() throws {
+        let types = FileImportService.supportedTypes
+        let navigationFile = try XCTUnwrap(UTType(filenameExtension: "html"))
+
+        XCTAssertTrue(types.contains(.folder))
+        XCTAssertTrue(types.contains { navigationFile.conforms(to: $0) })
+    }
+
+    /// A folder chosen or dropped whose top level holds several DAISY
+    /// books' package files is imported as each of those files, one book
+    /// each. Any other item, a folder holding one book or none included,
+    /// is imported as itself.
+    func testFolderOfSeveralBooksIsImportedAsEachPackageFile() throws {
+        let twoBooks = try Fixtures.writeFolder(Fixtures.twoBooksFolder, named: "Two Books", in: sources)
+        let oneBook = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sources)
+        let notes = try Fixtures.writeFolder(["notes.txt": "Nothing to read here."], named: "Harbor Notes", in: sources)
+        let epub = try requireFile("alice.epub")
+
+        XCTAssertEqual(LibraryViewModel.importSources(for: twoBooks).map(\.lastPathComponent), ["almanac.opf", "book.opf"])
+        XCTAssertEqual(LibraryViewModel.importSources(for: oneBook), [oneBook])
+        XCTAssertEqual(LibraryViewModel.importSources(for: notes), [notes])
+        XCTAssertEqual(LibraryViewModel.importSources(for: epub), [epub])
+    }
+
+    /// DAISY books' folders chosen in the Open panel import into the folder
+    /// being viewed, each book with every file it needs: one folder as its
+    /// one book, a folder of two package files as two books. No folder is
+    /// deleted, and no reader window opens.
+    @MainActor
+    func testFoldersChosenInTheOpenPanelImportTheirBooks() throws {
+        let navigationFolder = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sources)
+        let twoBooks = try Fixtures.writeFolder(Fixtures.twoBooksFolder, named: "Two Books", in: sources)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.importFiles(urls: [navigationFolder, twoBooks], toFolder: folderPath)
+            XCTAssertTrue(
+                eventually(within: 60) { model.library.books.count == 3 || model.showError },
+                "the imports never finished"
+            )
+        }
+
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(
+            Set(model.library.books.map(\.title)),
+            ["Notes on Rope Splicing", "Ferry Timetables of the Outer Sound", "Harbor Almanac"]
+        )
+        XCTAssertTrue(model.library.books.allSatisfy { $0.format == .daisy && $0.folderPath == folderPath })
+        let navigationBook = try XCTUnwrap(model.library.books.first { $0.title == "Notes on Rope Splicing" })
+        XCTAssertEqual(try bookFiles(of: navigationBook), Fixtures.navigationBookFiles)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: navigationFolder.appendingPathComponent("ncc.html").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: twoBooks.appendingPathComponent("almanac.opf").path))
+    }
+
+    /// A folder holding no DAISY book chosen in the Open panel is refused
+    /// through the library's alert, which says what is wrong, and nothing
+    /// is added.
+    @MainActor
+    func testFolderWithoutABookChosenInTheOpenPanelSaysWhy() throws {
+        let notes = try Fixtures.writeFolder(["notes.txt": "Nothing to read here."], named: "Harbor Notes", in: sources)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        model.importFiles(urls: [notes], toFolder: folderPath)
+
+        XCTAssertTrue(eventually(within: 20) { model.showError }, "the import never reported its failure")
+        XCTAssertEqual(
+            model.errorMessage,
+            "Could not import “Harbor Notes”. Checking its format failed: The folder is not a DAISY book: "
+                + "it has no ncc.html or .opf file at its top level."
+        )
+        XCTAssertTrue(model.library.books.isEmpty)
+        XCTAssertEqual(try folderEntries(), [])
     }
 
     // MARK: - The Book's Own Package
