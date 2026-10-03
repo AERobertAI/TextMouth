@@ -55,6 +55,7 @@ extension ConfigService.AppConfig {
         shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true)]
         shortcuts[.releaseMediaControls] = [KeyBinding(key: "escape", shift: true)]
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
+        config.logLocation = LogLocation.machine.rawValue
         return config
     }
 }

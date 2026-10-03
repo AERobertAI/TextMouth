@@ -732,25 +732,45 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Preferences other services keep
     //
-    // The sound effects service, the substitution service, and the shortcut
-    // manager keep their preferences in the same store as this model, and
-    // follow them there. The mirror reads and writes them there through each
-    // service's own definitions: a value applied from config.json reaches its
-    // service at once, and a change made through a service's controls is
-    // saved to config.json by the observer below.
+    // The sound effects service, the substitution service, the shortcut
+    // manager, and the log writer keep their preferences in the same store as
+    // this model, and follow them there. The mirror reads and writes them
+    // there through each service's own definitions: a value applied from
+    // config.json reaches its service at once, and a change made through a
+    // service's controls is saved to config.json by the observer below.
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
         SoundEffectService.preferenceKeys
             + TextSubstitutionService.preferenceKeys
-            + [KeyboardShortcutManager.bindingsPreference.key]
+            + [KeyboardShortcutManager.bindingsPreference.key, LogLocation.preference.key]
+    }
+
+    /// Where the diagnostic logs are written (Storage settings' Logs group).
+    /// The log writer reads it from the store for every line
+    /// (`LogLocation.preference`), so a change applies to the next line
+    /// written; config.json follows it through the observer below, which
+    /// also announces a change made anywhere else, such as in config.json,
+    /// so the picker always shows the choice in force.
+    var logLocation: LogLocation {
+        get { LogLocation.preference.read(from: preferences) }
+        set {
+            guard newValue != logLocation else { return }
+            objectWillChange.send()
+            LogLocation.preference.write(newValue, to: preferences)
+        }
     }
 
     /// Saves config.json whenever a preference another service keeps changes
     /// in the store. A change this model makes while applying config.json
-    /// saves nothing, like every other change made then.
+    /// saves nothing, like every other change made then. A change of the one
+    /// such preference this model shows, the log location, is announced, so
+    /// Storage settings follow it wherever it was made.
     private func saveServicePreferenceChanges() {
-        servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] _ in
+        servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] key in
+            if key == LogLocation.preference.key {
+                self?.objectWillChange.send()
+            }
             self?.syncToConfig()
         }
     }
@@ -770,6 +790,7 @@ final class SettingsViewModel: ObservableObject {
         config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
             KeyboardShortcutManager.bindingsPreference.read(from: preferences)
         )
+        config.logLocation = LogLocation.preference.read(from: preferences).rawValue
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -802,6 +823,8 @@ final class SettingsViewModel: ObservableObject {
             into: KeyboardShortcutManager.bindingsPreference,
             combining: KeyboardShortcutManager.bindings(_:adopting:)
         )
+        // An empty or unsupported choice leaves the current one alone.
+        adopt(SettingsPolicy.logLocation.requestedValue(fromConfig: config.logLocation), into: LogLocation.preference)
     }
 
     /// Writes a value config.json asks for into the store when it differs
