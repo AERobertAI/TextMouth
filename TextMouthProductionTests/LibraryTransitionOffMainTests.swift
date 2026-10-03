@@ -154,24 +154,28 @@ final class LibraryTransitionOffMainTests: XCTestCase {
         }
     }
 
-    /// While another operation holds the library's storage work, such as a
-    /// data-directory move, a folder edit is refused with the reason and
+    /// While another operation holds the library's storage work, a folder
+    /// edit is refused, saying what that operation is doing (#673): a
+    /// data-directory move, Rebuild Directory, or another folder edit. It
     /// changes nothing.
     @MainActor
     func testAFolderEditIsRefusedWhileStorageIsHeldElsewhere() async throws {
         let (model, folder) = try makeShelf(bookCount: 1)
         let before = model.library.books
-        let hold = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
-        defer { hold.release() }
+        let refusals: [(StorageHoldReason, String)] = [
+            (.movingDataDirectory, "TextMouth is already moving its data directory. Try again once that move is done."),
+            (.rebuildingDirectory, "TextMouth is rebuilding its data directory. Try again when that finishes."),
+            (.movingBooksBetweenFolders, "TextMouth is moving books between folders. Try again when that finishes."),
+        ]
 
-        let outcome = await model.renameFolderReturningOutcome(folder, to: uniqueFolder("Held"))
+        for (reason, refusal) in refusals {
+            let hold = try StorageBoundary.shared.holdWork(for: reason)
+            let outcome = await model.renameFolderReturningOutcome(folder, to: uniqueFolder("Held"))
+            hold.release()
 
-        XCTAssertEqual(
-            outcome.failureMessage,
-            "Could not rename folder: TextMouth is still moving books or its data directory. "
-                + "Try again once that is done."
-        )
-        XCTAssertEqual(model.library.books, before)
+            XCTAssertEqual(outcome.failureMessage, "Could not rename folder: \(refusal)", "held for \(reason)")
+            XCTAssertEqual(model.library.books, before, "held for \(reason)")
+        }
     }
 
     /// An empty folder has no packages to move, so renaming it holds no
