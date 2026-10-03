@@ -52,7 +52,31 @@ enum BookmarkPanelOperation: Equatable {
 /// cursor move together, and nothing extra is announced: the focused row's
 /// own label says where focus is.
 struct BookmarkPanelView: View {
-    @ObservedObject var viewModel: ReaderViewModel
+    /// What the panel shows of its reader: the book's title, its bookmarks,
+    /// and its headings, which name where each bookmark is (PERF30). The
+    /// panel draws again when these change, and only then, rather than with
+    /// each of the reader's publishes, eight a second while it plays. Its
+    /// body reads the reader itself, whose values these are by the time it
+    /// draws.
+    struct ReaderState: Equatable {
+        let title: String
+        let bookmarks: [Bookmark]
+        let headings: [Heading]
+
+        /// What `reader` shows the panel now.
+        @MainActor
+        init(of reader: ReaderViewModel) {
+            title = reader.book.title
+            bookmarks = reader.bookmarks
+            headings = reader.headings
+        }
+    }
+
+    /// The reader whose bookmarks the panel lists, goes to, and edits. Not
+    /// observed: the panel follows `shown` instead (PERF30).
+    let viewModel: ReaderViewModel
+    /// What the panel shows of the reader, republished only when it changes.
+    @StateObject private var shown: ReaderSnapshot<ReaderState>
     @Environment(\.dismiss) private var dismiss
     @State private var mode: BookmarkPanelMode = .list
     @State private var noteText = ""
@@ -70,7 +94,14 @@ struct BookmarkPanelView: View {
     @FocusState private var focusedControl: BookmarkPanelFocusTarget?
     @FocusState private var noteFieldFocused: Bool
 
+    /// A panel of `viewModel`'s bookmarks.
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        _shown = StateObject(wrappedValue: ReaderSnapshot(of: viewModel, ReaderState.init(of:)))
+    }
+
     var body: some View {
+        let _ = ViewBodyCounter.record("BookmarkPanelView")
         ScrollViewReader { list in
             VStack(spacing: 0) {
                 switch mode {
@@ -88,10 +119,10 @@ struct BookmarkPanelView: View {
                 rebuildRows()
                 requestFocus(Self.openingFocusTarget(for: viewModel), voiceOverDelay: Self.openingVoiceOverDelay)
             }
-            .onChange(of: viewModel.bookmarks) { _, _ in
+            .onChange(of: shown.value.bookmarks) { _, _ in
                 rebuildRows()
             }
-            .onChange(of: viewModel.headings) { _, _ in
+            .onChange(of: shown.value.headings) { _, _ in
                 rebuildRows()
             }
             // Keyboard focus follows each request once SwiftUI has drawn its

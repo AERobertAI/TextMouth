@@ -268,10 +268,10 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
         defer { reader.close() }
         _ = waitUntil(timeout: 60) { !reader.isLoading }
         let sheets: [(String, AnyView)] = [
-            ("headings", AnyView(SheetParentProbe(reader: reader) { HeadingNavigatorView(viewModel: $0) })),
-            ("voice", AnyView(SheetParentProbe(reader: reader) { BookVoicePickerView(viewModel: $0) })),
-            ("bookmarks", AnyView(SheetParentProbe(reader: reader) { BookmarkPanelView(viewModel: $0) })),
-            ("sleepTimer", AnyView(SheetParentProbe(reader: reader) {
+            ("headings", AnyView(ReaderSheetHost(reader: reader) { HeadingNavigatorView(viewModel: $0) })),
+            ("voice", AnyView(ReaderSheetHost(reader: reader) { BookVoicePickerView(viewModel: $0) })),
+            ("bookmarks", AnyView(ReaderSheetHost(reader: reader) { BookmarkPanelView(viewModel: $0) })),
+            ("sleepTimer", AnyView(ReaderSheetHost(reader: reader) {
                 SleepTimerView(
                     viewModel: $0,
                     sleepTimerService: $0.sleepTimerService,
@@ -406,21 +406,5 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
             result["derivations per publish"] = Double(model.listCache.derivationCount - derivationsBefore) / Double(count)
         }
         return result
-    }
-}
-
-/// Presents a reader sheet as ReaderView does: a parent observing the reader
-/// that builds the sheet again each time it redraws.
-private struct SheetParentProbe<Sheet: View>: View {
-    @ObservedObject var reader: ReaderViewModel
-    let sheet: (ReaderViewModel) -> Sheet
-
-    init(reader: ReaderViewModel, @ViewBuilder sheet: @escaping (ReaderViewModel) -> Sheet) {
-        self.reader = reader
-        self.sheet = sheet
-    }
-
-    var body: some View {
-        sheet(reader)
     }
 }

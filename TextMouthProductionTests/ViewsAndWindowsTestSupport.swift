@@ -74,15 +74,17 @@ extension XCTestCase {
 
     /// How many times the body of each view in `names` ran while `publish`
     /// was called `count` times, each followed by a flush of `view`, after
-    /// three warm-up publishes; by view name.
+    /// `warmUps` publishes that are not counted; by view name. A change made
+    /// once, such as a move into another heading, counts with no warm-up.
     @MainActor
     func bodyRuns(
         of names: [String],
         in view: NSView?,
         publishing count: Int = 10,
+        warmUps: Int = 3,
         _ publish: (Int) -> Void
     ) -> [String: Int] {
-        for warmUp in 0..<3 {
+        for warmUp in 0..<warmUps {
             publish(-1 - warmUp)
             flush(view)
         }
@@ -96,6 +98,23 @@ extension XCTestCase {
             runs[name] = ViewBodyCounter.count(of: name) - countBefore
         }
         return runs
+    }
+}
+
+/// Presents a reader's sheet as ReaderView presents it: a parent that
+/// observes the reader and makes the sheet again each time it draws, eight
+/// times a second while the reader plays.
+struct ReaderSheetHost<Sheet: View>: View {
+    @ObservedObject var reader: ReaderViewModel
+    let sheet: (ReaderViewModel) -> Sheet
+
+    init(reader: ReaderViewModel, @ViewBuilder sheet: @escaping (ReaderViewModel) -> Sheet) {
+        self.reader = reader
+        self.sheet = sheet
+    }
+
+    var body: some View {
+        sheet(reader)
     }
 }
 
