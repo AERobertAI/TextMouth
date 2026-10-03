@@ -449,4 +449,6 @@ main() {
   fi
 }
 
-main "$@"
+# bash reads a script as it runs it. Exiting on the same line as main means a
+# gate run never reads past this point, even if the file is edited mid-run.
+main "$@"; exit $?
