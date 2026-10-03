@@ -225,4 +225,28 @@ extension XCTestCase {
             line: line
         )
     }
+
+    /// Stops the app's one shared sleep timer now, and when the test ends
+    /// stops it again and puts back the duration it last used and the
+    /// preference that duration is kept in, so no timer a test sets
+    /// outlives the test. Call it before making the world whose readers set
+    /// a timer, so the readers are closed first.
+    @MainActor
+    func preserveSharedSleepTimer() {
+        let timer = SleepTimerService.shared
+        // Registered first, so it runs last: after the reset below, which
+        // removes the preference.
+        preservePreferences(["sleepTimer.lastUsedDuration"])
+        let savedDuration = timer.lastUsedDuration
+        timer.stop(reason: "integration test started")
+        addTeardownBlock {
+            timer._resetForTesting()
+            // Starting and stopping a timer is the one way to set the
+            // remembered duration; the stop clears everything else.
+            if let savedDuration {
+                timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
+                timer.stop(reason: "integration test ended")
+            }
+        }
+    }
 }
