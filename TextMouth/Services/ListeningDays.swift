@@ -35,6 +35,38 @@ struct ListeningDays: Sendable {
         ].joined(separator: "-")
     }
 
+    /// The seconds of a span of listening that fall on one local day.
+    struct Piece: Equatable, Sendable {
+        /// The key of the day the piece falls on.
+        let dayKey: String
+        /// The length of the piece.
+        let seconds: TimeInterval
+    }
+
+    /// Splits the span from `start` to `end` at every local midnight it
+    /// crosses, so each day gets exactly its own seconds of the span. Days
+    /// come from the calendar (`dateInterval(of: .day, for:)`), never as
+    /// 86,400 seconds, so the 23- or 25-hour day of a daylight-saving
+    /// change, or a day that begins at 1 a.m. because the change happens at
+    /// midnight, is split where it really begins and ends. The pieces come
+    /// in order, each within one day, and their lengths add up to the
+    /// span's. An empty or backward span has no pieces.
+    func split(from start: Date, to end: Date) -> [Piece] {
+        var pieces: [Piece] = []
+        var pieceStart = start
+        while pieceStart < end {
+            // The piece runs to the end of its day or of the span, whichever
+            // comes first. A day the calendar cannot place, or one that does
+            // not end after the piece starts, takes the rest of the span, so
+            // the loop always ends.
+            let dayEnd = calendar.dateInterval(of: .day, for: pieceStart)?.end ?? end
+            let pieceEnd = dayEnd > pieceStart ? min(dayEnd, end) : end
+            pieces.append(Piece(dayKey: key(for: pieceStart), seconds: pieceEnd.timeIntervalSince(pieceStart)))
+            pieceStart = pieceEnd
+        }
+        return pieces
+    }
+
     /// `value` in ASCII digits with leading zeros up to `width` digits.
     /// `String(_:)` of an integer never uses a locale, so neither the
     /// user's language nor their numbering system can change the digits.

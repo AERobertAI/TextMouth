@@ -109,7 +109,129 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
         XCTAssertEqual(losAngeles.todayListeningTime(at: moment + 1_800), 1_800)
     }
 
+    // MARK: - Midnight
+
+    /// A session across midnight credits each day exactly the seconds heard
+    /// on it, whether checkpoints credit it along the way or it is credited
+    /// whole when it ends: 100.25 s to the day before and 45.5 s to the new
+    /// day, in memory and on disk.
+    @MainActor
+    func testSessionAcrossMidnightCreditsEachDayExactlyItsSeconds() throws {
+        let berlin = try calendar(.gregorian, in: "Europe/Berlin")
+        let midnight = try time("2026-07-16T00:00:00+02:00")
+        let checkpointIntervals: [TimeInterval?] = [60, nil]
+        for interval in checkpointIntervals {
+            let context = interval == nil ? "Without checkpoints" : "With checkpoints"
+            let service = makeService(named: context, userCalendar: { berlin })
+            let book = UUID()
+            listen(with: service, book: book, from: midnight - 100.25, to: midnight + 45.5, checkpointingEvery: interval)
+
+            let expected = ["2026-07-15": 100.25, "2026-07-16": 45.5]
+            XCTAssertEqual(service.stats.dailyListeningSeconds, expected, context)
+            XCTAssertEqual(service.stats.totalListeningSeconds, 145.75, context)
+            XCTAssertEqual(service.stats.bookListeningSeconds, [book.uuidString: 145.75], context)
+            XCTAssertEqual(try savedStats(of: service).dailyListeningSeconds, expected, context)
+        }
+    }
+
+    /// A checkpoint made exactly at midnight leaves the new day nothing from
+    /// before it: the slice ending there belongs wholly to the day before,
+    /// and the new day gets an entry only once time is heard on it.
+    @MainActor
+    func testCheckpointExactlyAtMidnightCreditsItsSliceToTheDayBefore() throws {
+        let berlin = try calendar(.gregorian, in: "Europe/Berlin")
+        let service = makeService(userCalendar: { berlin })
+        let midnight = try time("2026-07-16T00:00:00+02:00")
+        service.startSession(bookID: UUID(), at: midnight - 60)
+
+        service.checkpointActiveSession(at: midnight)
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 60])
+
+        service.endSession(at: midnight + 30)
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 60, "2026-07-16": 30])
+    }
+
+    /// One slice can span several days, as when nothing checkpoints a
+    /// session for a long while: each day it crosses gets its share, and
+    /// each day wholly inside it a full 24 hours.
+    @MainActor
+    func testSliceSpanningSeveralDaysCreditsEveryDayItCrosses() throws {
+        let berlin = try calendar(.gregorian, in: "Europe/Berlin")
+        let service = makeService(userCalendar: { berlin })
+        let start = try time("2026-07-14T22:00:00+02:00")
+        let end = try time("2026-07-17T03:00:00+02:00")
+
+        listen(with: service, from: start, to: end, checkpointingEvery: nil)
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [
+            "2026-07-14": 7_200, "2026-07-15": 86_400, "2026-07-16": 86_400, "2026-07-17": 10_800,
+        ])
+        XCTAssertEqual(service.stats.totalListeningSeconds, end.timeIntervalSince(start))
+        XCTAssertEqual(service.currentStreak(at: end), 4)
+    }
+
+    /// While a session is open across midnight, Today counts only its
+    /// uncredited time since midnight and This Week all of it: the seconds
+    /// before midnight belong to the day before, where the next checkpoint
+    /// puts them, so both read the same before and after that checkpoint.
+    @MainActor
+    func testTodayCountsOnlyTheOpenSessionsTimeSinceMidnight() throws {
+        let berlin = try calendar(.gregorian, in: "Europe/Berlin")
+        let service = makeService(userCalendar: { berlin })
+        let midnight = try time("2026-07-16T00:00:00+02:00")
+        service.startSession(bookID: UUID(), at: midnight - 90)
+        service.checkpointActiveSession(at: midnight - 30)
+        let now = midnight + 45
+
+        XCTAssertEqual(service.uncreditedSessionTime(at: now), 75)
+        XCTAssertEqual(service.todayListeningTime(at: now), 45)
+        XCTAssertEqual(service.thisWeekListeningTime(at: now), 135)
+
+        service.checkpointActiveSession(at: now)
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 90, "2026-07-16": 45])
+        XCTAssertEqual(service.todayListeningTime(at: now), 45)
+        XCTAssertEqual(service.thisWeekListeningTime(at: now), 135)
+    }
+
+    /// Splitting a span gives its pieces in order, one per day, adding up
+    /// to the span; an empty or backward span has none.
+    func testSplitGivesEachDayItsPieceInOrder() throws {
+        let days = ListeningDays(timeZone: try zone("Europe/Berlin"))
+        let midnight = try time("2026-07-16T00:00:00+02:00")
+
+        XCTAssertEqual(days.split(from: midnight - 10, to: midnight + 5), [
+            ListeningDays.Piece(dayKey: "2026-07-15", seconds: 10),
+            ListeningDays.Piece(dayKey: "2026-07-16", seconds: 5),
+        ])
+        XCTAssertEqual(days.split(from: midnight, to: midnight), [])
+        XCTAssertEqual(days.split(from: midnight + 5, to: midnight), [])
+    }
+
     // MARK: - Helpers
+
+    /// Listens to `book` from `start` to `end` with `service`, as the
+    /// reader does: a session that the timer checkpoints every
+    /// `interval` seconds from its start, or not at all when `interval` is
+    /// nil, and that then ends.
+    @MainActor
+    private func listen(
+        with service: ReadingStatsService,
+        book: UUID = UUID(),
+        from start: Date,
+        to end: Date,
+        checkpointingEvery interval: TimeInterval?
+    ) {
+        service.startSession(bookID: book, at: start)
+        if let interval {
+            var checkpoint = start + interval
+            while checkpoint < end {
+                service.checkpointActiveSession(at: checkpoint)
+                checkpoint += interval
+            }
+        }
+        service.endSession(at: end)
+    }
 
     /// A service over a statistics file of this test's own, named `name`,
     /// whose user's calendar is whatever `userCalendar` returns when asked.

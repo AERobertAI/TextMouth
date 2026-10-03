@@ -59,7 +59,8 @@ final class ReadingStatsService: ObservableObject {
     ///
     /// The rule that keeps any second from being counted twice: the totals
     /// include `start..<creditedThrough` exactly once, in the grand total, in
-    /// `bookID`'s total, and in one day's total, and include nothing after
+    /// `bookID`'s total, and in the daily totals, where each second is in
+    /// the total of the local day it fell on, and include nothing after
     /// `creditedThrough`. Crediting, which each checkpoint and the final
     /// `endSession` do, adds only `creditedThrough..<time` and then moves
     /// `creditedThrough` up to `time`. It never moves backwards, so a clock
@@ -138,14 +139,19 @@ final class ReadingStatsService: ObservableObject {
 
     /// Credits the open session's time since its last checkpoint and saves,
     /// leaving the session open, so a crash afterwards loses only what
-    /// follows. The slice goes to the local day containing `time`, in the
-    /// time zone current now. Does nothing without an open session or while
-    /// it is too short to count.
+    /// follows. The slice is split at every local midnight it crosses, in
+    /// the time zone current now, so each day gets exactly the seconds
+    /// heard on it (`ListeningDays.split`). Does nothing without an open
+    /// session or while it is too short to count.
     func checkpointActiveSession(at time: Date = Date()) {
-        guard let session = activeSession else { return }
-        let seconds = uncreditedSessionTime(at: time)
-        guard seconds > 0 else { return }
-        stats.addListening(seconds, bookID: session.bookID, dayKey: listeningDays.key(for: time))
+        guard let session = activeSession, uncreditedSessionTime(at: time) > 0 else { return }
+        // Credit every piece to a copy and publish the result once, so no
+        // observer ever sees a slice half credited.
+        var credited = stats
+        for piece in listeningDays.split(from: session.creditedThrough, to: time) {
+            credited.addListening(piece.seconds, bookID: session.bookID, dayKey: piece.dayKey)
+        }
+        stats = credited
         activeSession?.creditedThrough = time
         save()
     }
@@ -159,6 +165,15 @@ final class ReadingStatsService: ObservableObject {
               time.timeIntervalSince(session.start) > Self.longestIgnoredSession
         else { return 0 }
         return max(0, time.timeIntervalSince(session.creditedThrough))
+    }
+
+    /// The part of the open session's uncredited time from `start` on: what
+    /// ending the session at `now` would credit to the days that begin at
+    /// `start`, since crediting splits time at midnight. Zero whenever
+    /// `uncreditedSessionTime(at:)` is.
+    private func uncreditedSessionTime(at now: Date, since start: Date) -> TimeInterval {
+        guard let session = activeSession, uncreditedSessionTime(at: now) > 0 else { return 0 }
+        return max(0, now.timeIntervalSince(max(session.creditedThrough, start)))
     }
 
     /// Whether a listening session is open.
@@ -185,10 +200,15 @@ final class ReadingStatsService: ObservableObject {
 
     /// Listening time on the local day containing `now`, in the time zone
     /// current now: that day's total plus the open session's time since its
-    /// last checkpoint. Its checkpointed time is already in the day's total,
-    /// so adding the whole session would count that part twice.
+    /// last checkpoint, as much of it as falls on that day. Its checkpointed
+    /// time is already in the day's total, so adding the whole session
+    /// would count that part twice, and time before midnight belongs to the
+    /// day before, where the next checkpoint will put it.
     func todayListeningTime(at now: Date) -> TimeInterval {
-        (stats.dailyListeningSeconds[listeningDays.key(for: now)] ?? 0) + uncreditedSessionTime(at: now)
+        let days = listeningDays
+        let today = days.calendar.startOfDay(for: now)
+        return (stats.dailyListeningSeconds[days.key(for: now)] ?? 0)
+            + uncreditedSessionTime(at: now, since: today)
     }
 
     /// Listening time over the last seven days, the open session included.
@@ -196,18 +216,21 @@ final class ReadingStatsService: ObservableObject {
         thisWeekListeningTime(at: Date())
     }
 
-    /// Listening time over the seven days ending with the one containing
-    /// `now`, plus the open session's time since its last checkpoint.
+    /// Listening time over the seven local days ending with the one
+    /// containing `now`, plus the open session's time since its last
+    /// checkpoint, as much of it as falls on those days.
     func thisWeekListeningTime(at now: Date) -> TimeInterval {
         // Days are counted back in the calendar that wrote their keys.
         let days = listeningDays
         var total: TimeInterval = 0
+        var earliestDay = now
         for dayOffset in 0..<7 {
             if let date = days.calendar.date(byAdding: .day, value: -dayOffset, to: now) {
                 total += stats.dailyListeningSeconds[days.key(for: date)] ?? 0
+                earliestDay = date
             }
         }
-        return total + uncreditedSessionTime(at: now)
+        return total + uncreditedSessionTime(at: now, since: days.calendar.startOfDay(for: earliestDay))
     }
 
     var booksFinishedThisYear: Int {
