@@ -267,6 +267,23 @@ extension LibraryViewModel {
             || book.totalWordCount == nil
             || book.totalCharacterCount == nil
             || (book.format.isAudio && book.audioDuration == nil)
+            || needsTextCacheFingerprint(book)
+    }
+
+    /// Whether `book` has a current text cache that was written before
+    /// caches were fingerprinted (TODO T07). The statistics pass loads such
+    /// a book once, and that load, once the cache passes every check,
+    /// fingerprints it and the pass saves the result, so the book's later
+    /// loads verify it by size and date alone. The pass reads one book at a
+    /// time at utility priority, after the cache batch, so a library of
+    /// hundreds of such books is never hashed at once; opening a book first
+    /// fingerprints it the same way. A book whose source is missing is
+    /// skipped by the pass and keeps its cache unfingerprinted.
+    nonisolated static func needsTextCacheFingerprint(_ book: Book) -> Bool {
+        !book.format.isAudio
+            && !book.tmbDirectoryName.isEmpty
+            && book.textCacheFingerprint == nil
+            && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
     }
 
     /// Generate content.md caches for any books that don't have one yet, or

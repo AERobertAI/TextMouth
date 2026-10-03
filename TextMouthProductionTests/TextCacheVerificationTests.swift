@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -362,6 +363,64 @@ final class TextCacheVerificationTests: XCTestCase {
 
         XCTAssertFalse(model.isExtracting)
         XCTAssertEqual(books.map { FileStamp(of: MarkdownCacheService.cacheURL(for: $0)) }, cacheStamps)
+    }
+
+    // MARK: - Fingerprinting Older Caches in the Background
+
+    /// Only a text book with a current cache and no fingerprints needs them:
+    /// not one already fingerprinted, nor an outdated cache (which the cache
+    /// batch rebuilds, fingerprinted), an audio book, or a book without a
+    /// package.
+    func testOnlyCurrentUnfingerprintedTextCachesNeedFingerprints() throws {
+        let legacy = try makeLegacyCachedBook()
+        XCTAssertTrue(LibraryViewModel.needsTextCacheFingerprint(legacy))
+        XCTAssertTrue(LibraryViewModel.needsContentAnalysis(legacy))
+
+        var fingerprinted = legacy
+        fingerprinted.textCacheFingerprint = TextCacheFingerprint(
+            source: FileFingerprint(stamp: FileStamp(byteCount: 1, modificationTimeNanoseconds: 1), digest: "source"),
+            cache: FileFingerprint(stamp: FileStamp(byteCount: 2, modificationTimeNanoseconds: 2), digest: "cache")
+        )
+        XCTAssertFalse(LibraryViewModel.needsTextCacheFingerprint(fingerprinted))
+        XCTAssertFalse(LibraryViewModel.needsContentAnalysis(fingerprinted))
+
+        var outdated = legacy
+        outdated.cacheFormatVersion = "3.0.3"
+        var audio = legacy
+        audio.format = .audio
+        var unpackaged = legacy
+        unpackaged.tmbDirectoryName = ""
+        for book in [outdated, audio, unpackaged] {
+            XCTAssertFalse(LibraryViewModel.needsTextCacheFingerprint(book))
+        }
+    }
+
+    /// The statistics pass fingerprints a cache written before fingerprints
+    /// in the background: the library row and the package record the
+    /// fingerprints of the files as they are, and the book then needs
+    /// nothing more.
+    @MainActor
+    func testStatisticsPassFingerprintsAnOlderCache() async throws {
+        let book = try makeLegacyCachedBook()
+        let model = makeModel(with: [book])
+        let fingerprinted = expectation(description: "The row received its fingerprints")
+        let subscription = model.$library
+            .first { $0.books.first?.textCacheFingerprint != nil }
+            .sink { _ in fingerprinted.fulfill() }
+        defer { subscription.cancel() }
+
+        model.calculateMissingBookStats()
+        await fulfillment(of: [fingerprinted], timeout: 10)
+        LibraryPersistenceService.flushPendingSave()
+
+        let row = try XCTUnwrap(model.bookByID(book.id))
+        let fingerprint = try XCTUnwrap(row.textCacheFingerprint)
+        try assertFingerprint(fingerprint, describesFilesOf: book)
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.state.textCacheFingerprint, fingerprint)
+        XCTAssertEqual(record.contentIndex?.textCacheFingerprint, fingerprint)
+        XCTAssertFalse(LibraryViewModel.needsContentAnalysis(row))
+        XCTAssertEqual(staleReports(for: book), [])
     }
 
     // MARK: - Fixtures
