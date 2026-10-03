@@ -17,8 +17,8 @@ import Foundation
 /// time already credited never moves. After a flight west, the day the
 /// user is now in may be the day before the one the open session last
 /// credited; that time stays where it was, and Today reads the key of the
-/// day that is current in the new zone, so the later day's listening is
-/// counted again once that day arrives there.
+/// day that is current in the new zone, so the later day's listening shows
+/// in Today once that day arrives there.
 struct ListeningDays: Sendable {
     /// The version of the rules above, saved with the statistics as
     /// `ReadingStats.dayKeyVersion`. Keys saved without it followed the

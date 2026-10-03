@@ -7,7 +7,8 @@ import Combine
 /// every `checkpointInterval` a timer adds the open session's time since the
 /// previous checkpoint to the totals and saves them, so a crash or force quit
 /// loses at most one interval. `ActiveSession` states the rule that keeps any
-/// second from being counted twice.
+/// second from being counted twice, and `ListeningDays` the rules for the
+/// local day each second is credited to and the key that day is saved under.
 @MainActor
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
