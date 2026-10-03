@@ -516,6 +516,13 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 /// is set and `onPlaybackFailed` is called. Playback halts, the player is
 /// released, and `currentTime` stays where it was, so the same position can
 /// be played again once the file is restored.
+///
+/// What plays ends once: `onPlaybackFinished` is called once each time
+/// playback runs to the end of its file, clip, or chain, however many ways
+/// AVFoundation reports that end, and never for a play that a load, a play
+/// from a time, a seek, or a stop has since replaced (see
+/// `AudioEndNoticePolicy`). An end that comes while playback is paused is
+/// held until it resumes.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var isPlaying = false
     @Published var isPaused = false
@@ -527,6 +534,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// successfully.
     @Published private(set) var failure: AudioPlaybackFailure?
 
+    /// Called on the main queue once each time playback runs to the end of
+    /// what it was asked to play, never while it is paused.
     var onPlaybackFinished: (() -> Void)?
     var onPositionUpdate: ((TimeInterval) -> Void)?
     /// Called on the main queue once for each failure, after `failure` is
