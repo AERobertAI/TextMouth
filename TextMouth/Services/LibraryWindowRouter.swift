@@ -278,6 +278,68 @@ enum GlobalAction: Equatable {
     }
 }
 
+/// App-wide actions waiting for a Library window to take them (TODO A05).
+///
+/// When no open window can take an action, the router keeps it here while
+/// a Library window opens, and hands it on once one has registered. Taking
+/// the actions removes them, so no later window takes them again. An action
+/// older than `lifetime` is thrown away instead of taken, so a window that
+/// never opened cannot leave an Open panel to appear, unasked, in a Library
+/// window opened much later. The limit holds in both directions, so a clock
+/// set back cannot keep an action waiting any longer either.
+struct PendingGlobalActions {
+    /// How long an action waits, in seconds. A Library window opens and
+    /// registers in well under a second, and on a cold launch as soon as
+    /// the library has loaded; the margin covers a slow launch. It is as
+    /// long as a Continue to Next Book autoplay request lasts
+    /// (`ReaderAutoplayRequests.lifetime`), so a waiting Continue to Next
+    /// Book still finds its request when its reader opens.
+    static let lifetime: TimeInterval = 30
+
+    /// One waiting action and when it began to wait.
+    private struct Entry {
+        let action: GlobalAction
+        let queuedAt: Date
+    }
+
+    /// The waiting actions, oldest first.
+    private var waiting: [Entry] = []
+
+    /// Whether no action is waiting.
+    var isEmpty: Bool { waiting.isEmpty }
+
+    /// The waiting actions, oldest first, including any too old to take.
+    var actions: [GlobalAction] { waiting.map(\.action) }
+
+    /// Keeps `action` waiting from `date` on.
+    mutating func add(_ action: GlobalAction, at date: Date) {
+        waiting.append(Entry(action: action, queuedAt: date))
+    }
+
+    /// Throws away every action too old to take at `date`.
+    ///
+    /// - Returns: The actions thrown away, oldest first, for the log.
+    @discardableResult
+    mutating func discardExpired(at date: Date) -> [GlobalAction] {
+        let expired = waiting.filter { !Self.isUsable($0, at: date) }
+        waiting.removeAll { !Self.isUsable($0, at: date) }
+        return expired.map(\.action)
+    }
+
+    /// Takes every waiting action, oldest first, leaving none. Call
+    /// `discardExpired(at:)` first, so nothing too old is taken.
+    mutating func takeAll() -> [GlobalAction] {
+        defer { waiting.removeAll() }
+        return actions
+    }
+
+    /// Whether `entry` may still be taken at `date`: no further than
+    /// `lifetime` from when it began to wait, in either direction.
+    private static func isUsable(_ entry: Entry, at date: Date) -> Bool {
+        abs(date.timeIntervalSince(entry.queuedAt)) <= lifetime
+    }
+}
+
 /// Who takes an app-wide action. Windows compare by identity, the equality
 /// `NSObject` gives them.
 enum GlobalActionHandler: Equatable {

@@ -363,4 +363,52 @@ final class LibraryWindowRouterTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Actions waiting for a Library window
+
+    /// Waiting actions are taken oldest first, and only once: whatever
+    /// takes them next finds nothing, as a second Library window
+    /// registering after the first must.
+    func testWaitingActionsAreTakenOnceOldestFirst() {
+        var pending = PendingGlobalActions()
+        let start = Date()
+        pending.add(.openBookFile, at: start)
+        pending.add(.importDAISYFolder, at: start.addingTimeInterval(1))
+
+        XCTAssertEqual(pending.actions, [.openBookFile, .importDAISYFolder])
+        XCTAssertEqual(pending.takeAll(), [.openBookFile, .importDAISYFolder])
+        XCTAssertTrue(pending.isEmpty)
+        XCTAssertEqual(pending.takeAll(), [])
+    }
+
+    /// An action waits for its lifetime and no longer: at the limit it is
+    /// still waiting, and just past it it is thrown away, while a younger
+    /// action keeps waiting.
+    func testWaitingActionExpiresAfterItsLifetime() {
+        var pending = PendingGlobalActions()
+        let start = Date()
+        pending.add(.openBookFile, at: start)
+        pending.add(.importDAISYFolder, at: start.addingTimeInterval(10))
+
+        XCTAssertEqual(pending.discardExpired(at: start.addingTimeInterval(PendingGlobalActions.lifetime)), [])
+        XCTAssertEqual(
+            pending.discardExpired(at: start.addingTimeInterval(PendingGlobalActions.lifetime + 1)),
+            [.openBookFile]
+        )
+        XCTAssertEqual(pending.takeAll(), [.importDAISYFolder])
+    }
+
+    /// A clock set back further than the lifetime throws a waiting action
+    /// away too, so it cannot wait indefinitely.
+    func testClockSetBackThrowsAWaitingActionAway() {
+        var pending = PendingGlobalActions()
+        let start = Date()
+        pending.add(.openBookFile, at: start)
+
+        XCTAssertEqual(
+            pending.discardExpired(at: start.addingTimeInterval(-PendingGlobalActions.lifetime - 1)),
+            [.openBookFile]
+        )
+        XCTAssertTrue(pending.isEmpty)
+    }
 }
