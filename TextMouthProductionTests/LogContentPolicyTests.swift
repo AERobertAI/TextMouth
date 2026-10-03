@@ -173,22 +173,8 @@ final class LogContentPolicyTests: XCTestCase {
         }
         let violations = calls.flatMap(LogCallScanner.violations(in:))
             + sources.flatMap { LogCallScanner.taggedLiteralViolations(in: $0.text, file: $0.name) }
-        XCTAssertEqual(
-            violations.filter { !Self.knownViolations.contains("\($0.file): \($0.found)") }.map(\.description),
-            []
-        )
+        XCTAssertEqual(violations.map(\.description), [])
     }
-
-    /// What the scan finds in code outside this change, to repair when that
-    /// code moves onto the policy, named by file and finding so that a new
-    /// line of the same kind elsewhere still fails. The archive extraction,
-    /// on main since the archive-bounds merge, names an abandoned or stuck
-    /// extraction directory by its absolute path in its two
-    /// ARCHIVE_EXTRACTION_ lines; `DiagnosticLog.loggablePath` would name it
-    /// by its path inside the data directory.
-    private static let knownViolations: Set<String> = [
-        "ArchiveExtraction.swift: .path in a tagged line",
-    ]
 
     /// The scanner finds what the policy forbids however a call is laid out,
     /// and lets through lengths, titles in events, loggable paths, and words
@@ -242,9 +228,10 @@ final class LogContentPolicyTests: XCTestCase {
         "CONTENT_INDEX_REJECTED", "EPUB_INCOMPLETE_CONTENT", "FOLDER_REPAIR", "IMPORT_FAILED",
         "LEGACY_MIGRATION", "READING_STATS_DAY_KEYS", "STORED_VALUE_REPAIRED", "TEXT_ENCODING_FALLBACK",
         // Every other tag the debug log's events begin with.
+        "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
         "DAISY_PACKAGE_MISSING", "DAISY_PACKAGE_WHOLE_FOLDER", "DOCX_DAMAGED_METADATA",
-        "DOCX_INCOMPLETE_CONTENT", "EPUB_METADATA_WRITE_FAILED", "IMPORT_STAGING_LEFT",
+        "DOCX_INCOMPLETE_CONTENT", "EPUB_METADATA_WRITE_FAILED", "IMPORT_CANCELLED", "IMPORT_STAGING_LEFT",
         "IMPORT_STAGING_REMOVED", "LIBRARY_INDEX", "LIBRARY_REMOVAL", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED",
         "TMB_RECONCILE", "TRACE_SUPPRESSED",
@@ -291,11 +278,11 @@ final class LogContentPolicyTests: XCTestCase {
     // MARK: - The Writer
 
     /// The files that still hand lines straight to the writer: code outside
-    /// this policy's change, to be moved onto `DiagnosticLog`. The last two
-    /// reached main with the archive-bounds and app-wide-action merges.
+    /// this policy's change, to be moved onto `DiagnosticLog`. The last one
+    /// reached main with the app-wide-action merge.
     private static let filesStillWritingDirectly: Set<String> = [
         "AppDelegate.swift", "BookContentAnalysisService.swift", "ConfigService.swift",
-        "ArchiveExtraction.swift", "LibraryWindowRouter.swift",
+        "LibraryWindowRouter.swift",
     ]
 
     /// Every other line goes through `DiagnosticLog`, the one place that

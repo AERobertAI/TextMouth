@@ -41,13 +41,10 @@ final class ImportCancellation: @unchecked Sendable {
 
     /// Records in the console and the debug log that the import of
     /// `fileName` was cancelled, and where it stopped:
-    /// `IMPORT_CANCELLED: <file>: <where>`, on one line.
+    /// `IMPORT_CANCELLED: <file>: <where>`, an event on one line
+    /// (`DiagnosticLog`).
     static func log(_ fileName: String, stopped place: String) {
-        let line = "IMPORT_CANCELLED: \(fileName): \(place)"
-            .components(separatedBy: .newlines)
-            .joined(separator: " ")
-        print(line)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        DiagnosticLog.event(.import, "IMPORT_CANCELLED: \(fileName): \(place)")
     }
 }
 
@@ -368,8 +365,10 @@ final class ArchiveExtractionDirectory {
     /// longer running, and this process's own that none of its imports is
     /// using (a process before it had the same identifier). An interrupted
     /// extraction is never resumed, so each goes with everything inside it,
-    /// and the removal is logged. A directory of another running process is
-    /// left alone, as is anything not named as an extraction directory.
+    /// and the removal is logged, naming the directory by its path inside
+    /// the data directory (`DiagnosticLog.loggablePath`). A directory of
+    /// another running process is left alone, as is anything not named as
+    /// an extraction directory.
     /// - Parameter isRunning: whether the process with an identifier still
     ///   runs; tests supply their own answer.
     /// - Returns: How many directories were removed.
@@ -390,7 +389,10 @@ final class ArchiveExtractionDirectory {
             guard values?.isDirectory == true, values?.isSymbolicLink != true else { continue }
             if removeDirectory(leftover) {
                 removed += 1
-                log("ARCHIVE_EXTRACTION_REMOVED: \(leftover.path): left by an interrupted import")
+                DiagnosticLog.event(
+                    .import,
+                    "ARCHIVE_EXTRACTION_REMOVED: \(DiagnosticLog.loggablePath(leftover)): left by an interrupted import"
+                )
             }
         }
         return removed
@@ -422,8 +424,8 @@ final class ArchiveExtractionDirectory {
     // MARK: Helpers
 
     /// Removes `directory` with everything inside it and reports whether it
-    /// is gone. One that could not be removed is logged, so the next sweep
-    /// is not its only record.
+    /// is gone. One that could not be removed is logged, by its path inside
+    /// the data directory, so the next sweep is not its only record.
     @discardableResult
     private static func removeDirectory(_ directory: URL) -> Bool {
         do {
@@ -431,7 +433,11 @@ final class ArchiveExtractionDirectory {
             return true
         } catch {
             guard FileManager.default.fileExists(atPath: directory.path) else { return true }
-            log("ARCHIVE_EXTRACTION_LEFT: \(directory.path): could not be removed: \(error.localizedDescription)")
+            DiagnosticLog.event(
+                .import,
+                "ARCHIVE_EXTRACTION_LEFT: \(DiagnosticLog.loggablePath(directory)): could not be removed: "
+                    + error.localizedDescription
+            )
             return false
         }
     }
@@ -442,12 +448,5 @@ final class ArchiveExtractionDirectory {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? folder.setResourceValues(values)
-    }
-
-    /// Records `line` in the console and the debug log, on one line.
-    private static func log(_ line: String) {
-        let entry = line.components(separatedBy: .newlines).joined(separator: " ")
-        print(entry)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: entry)
     }
 }
