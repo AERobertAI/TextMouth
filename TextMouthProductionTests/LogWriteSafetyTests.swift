@@ -136,16 +136,25 @@ final class LogWriteSafetyTests: XCTestCase {
     }
 
     /// VoiceOver focus diagnostics go through the shared writer into the
-    /// debug log, marked with their prefix, instead of a second private
-    /// writer that could interleave with, or crash independently of, it.
-    func testVoiceOverFocusLogWritesToTheSharedDebugLog() throws {
+    /// debug log, instead of a second private writer that could interleave
+    /// with, or crash independently of, it. A sheet writes dozens of them,
+    /// so they are trace: written, marked as focus lines, only while tracing
+    /// is on.
+    func testVoiceOverFocusLogWritesTraceLinesToTheSharedDebugLog() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
         try TextMouthPaths.ensureDirectoryStructure()
         let marker = "focus-check-\(UUID().uuidString)"
 
-        voiceOverFocusLog(marker)
-        TextMouthPaths.flushLogs()
+        setAppTracing(false)
+        voiceOverFocusLog("while off \(marker)")
+        setAppTracing(true)
+        voiceOverFocusLog("while on \(marker)")
 
-        let text = try String(contentsOf: TextMouthPaths.debugLogFile, encoding: .utf8)
-        XCTAssertTrue(text.contains(": \(voiceOverFocusLogPrefix): \(marker)\n"), "missing marker line")
+        let lines = debugLogLines(containing: marker)
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(lines.first?.hasSuffix(": TRACE focus: while on \(marker)") == true, "\(lines)")
     }
 }

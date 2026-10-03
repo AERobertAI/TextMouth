@@ -31,17 +31,75 @@ struct VoiceOverFocus: NSViewRepresentable {
     func updateNSView(_ nsView: VoiceOverFocusTriggerView, context: Context) {}
 }
 
-/// Prefix that marks VoiceOver focus diagnostics in the shared debug log.
-let voiceOverFocusLogPrefix = "[VoiceOverFocus]"
+/// Record a VoiceOver focus diagnostic in the debug log, as a `focus` trace
+/// line (`DiagnosticLog`). A sheet's focus request writes a few dozen lines,
+/// so they are written only while tracing is on, and the message, which may
+/// walk accessibility objects to describe them, is built only then. Describe
+/// what a line names with `VoiceOverFocusDiagnostics`, never by its label or
+/// title.
+func voiceOverFocusLog(_ message: @autoclosure () -> String) {
+    DiagnosticLog.trace(.focus, message())
+}
 
-/// Append a timestamped VoiceOver focus message to the debug log file.
-///
-/// Goes through the shared writer so focus diagnostics share one serial
-/// queue with every other log line (two queues appending to the same file
-/// could interleave lines), obey the same size cap, and can never crash the
-/// app when the disk is full.
-func voiceOverFocusLog(_ msg: String) {
-    TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: "\(voiceOverFocusLogPrefix): \(msg)")
+/// How VoiceOver focus diagnostics describe the elements, windows, and
+/// responders they act on, without any text the user reads: an
+/// accessibility label can be a heading, a bookmark note, or a passage of the
+/// book, and a window's title can be a book's title (`DiagnosticLog`'s
+/// content policy). A label is described by its length, and a window by its
+/// number and identifier. Main actor only, as the views it reads are.
+@MainActor
+enum VoiceOverFocusDiagnostics {
+    /// An accessibility element: its class, role, label length, and
+    /// identifier.
+    static func describe(_ element: Any) -> String {
+        if let view = element as? NSView {
+            let identifier = view.accessibilityIdentifier()
+            return "\(className(of: view)) role=\(view.accessibilityRole()?.rawValue ?? "nil") "
+                + "\(labelLength(view.accessibilityLabel())) id='\(identifier.isEmpty ? "nil" : identifier)'"
+        }
+        if let object = element as? NSObject {
+            let role = string(object, "accessibilityRole") ?? "nil"
+            let identifier = string(object, "accessibilityIdentifier") ?? "nil"
+            return "\(className(of: object)) role=\(role) "
+                + "\(labelLength(string(object, "accessibilityLabel"))) id='\(identifier)'"
+        }
+        return String(describing: type(of: element))
+    }
+
+    /// A window: whether it is a sheet, its window number, and its
+    /// identifier, but never its title.
+    static func describe(window: NSWindow) -> String {
+        let kind = window.sheetParent == nil ? "window" : "sheet"
+        return "\(kind) #\(window.windowNumber) id='\(window.identifier?.rawValue ?? "nil")'"
+    }
+
+    /// A first responder: the element it is, or its type when it is not a
+    /// view.
+    static func describe(responder: NSResponder?) -> String {
+        guard let responder else { return "nil" }
+        if let view = responder as? NSView {
+            return describe(view)
+        }
+        return String(describing: type(of: responder))
+    }
+
+    /// The last component of `object`'s class name.
+    private static func className(of object: NSObject) -> String {
+        NSStringFromClass(type(of: object)).components(separatedBy: ".").last ?? "?"
+    }
+
+    /// The string `object` returns for the accessibility getter `getter`, if
+    /// it answers it.
+    private static func string(_ object: NSObject, _ getter: String) -> String? {
+        let selector = Selector((getter))
+        guard object.responds(to: selector) else { return nil }
+        return object.perform(selector)?.takeUnretainedValue() as? String
+    }
+
+    /// How a label is named in a diagnostic: by its length alone.
+    private static func labelLength(_ label: String?) -> String {
+        "labelLength=\(label.map { String($0.count) } ?? "nil")"
+    }
 }
 
 /// Marks exactly one element as the target for a sheet's one-time VoiceOver
@@ -101,10 +159,10 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
         if let existing = Self.pendingWork[windowID] {
             existing.cancel()
-            voiceOverFocusLog("cancelled previous pending focus for '\(window.title)'")
+            voiceOverFocusLog("cancelled previous pending focus for \(VoiceOverFocusDiagnostics.describe(window: window))")
         }
 
-        voiceOverFocusLog("scheduled: delay=\(focusDelay)s window='\(window.title)'")
+        voiceOverFocusLog("scheduled: delay=\(focusDelay)s \(VoiceOverFocusDiagnostics.describe(window: window))")
 
         let work = DispatchWorkItem { [weak self] in
             Self.pendingWork.removeValue(forKey: windowID)
@@ -130,12 +188,11 @@ class StandardVoiceOverFocusTriggerView: NSView {
             return
         }
 
-        voiceOverFocusLog("searching (static) for identifier '\(voiceOverFocusID)' in '\(window.title)'...")
+        voiceOverFocusLog("searching (static) for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
         let helper = StandardVoiceOverFocusTriggerView()
         if let target = helper.findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
-            let desc = helper.describeElement(target)
-            voiceOverFocusLog("FOUND target: \(desc)")
+            voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             helper.postFocusNotifications(target: target, window: window)
         } else {
             voiceOverFocusLog("NOT FOUND in static search")
@@ -148,17 +205,15 @@ class StandardVoiceOverFocusTriggerView: NSView {
             return
         }
 
-        voiceOverFocusLog("searching for identifier '\(voiceOverFocusID)' in '\(window.title)'...")
+        voiceOverFocusLog("searching for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
         if let target = findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
-            let desc = describeElement(target)
-            voiceOverFocusLog("FOUND target: \(desc)")
+            voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             postFocusNotifications(target: target, window: window)
         } else {
             voiceOverFocusLog("identifier not found, trying fallback...")
             if let fallback = findFirstInteractiveElement(root: contentView, depth: 0) {
-                let desc = describeElement(fallback)
-                voiceOverFocusLog("FALLBACK target: \(desc)")
+                voiceOverFocusLog("FALLBACK target: \(VoiceOverFocusDiagnostics.describe(fallback))")
                 postFocusNotifications(target: fallback, window: window)
             } else {
                 voiceOverFocusLog("NO FALLBACK found either")
@@ -330,8 +385,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
     private func logTreeNode(_ node: Any, depth: Int, maxDepth: Int) {
         guard depth < maxDepth else { return }
         let indent = String(repeating: "  ", count: depth)
-        let desc = describeElement(node)
-        voiceOverFocusLog("\(indent)\(desc)")
+        voiceOverFocusLog("\(indent)\(VoiceOverFocusDiagnostics.describe(node))")
 
         let children: [Any]
         if let view = node as? NSView {
@@ -346,33 +400,6 @@ class StandardVoiceOverFocusTriggerView: NSView {
         for child in children {
             logTreeNode(child, depth: depth + 1, maxDepth: maxDepth)
         }
-    }
-
-    func describeElement(_ element: Any) -> String {
-        if let view = element as? NSView {
-            let cls = NSStringFromClass(type(of: view)).components(separatedBy: ".").last ?? "?"
-            let role = view.accessibilityRole()?.rawValue ?? "nil"
-            let label = view.accessibilityLabel() ?? "nil"
-            let id = view.accessibilityIdentifier()
-            return "\(cls) role=\(role) label='\(label)' id='\(id.isEmpty ? "nil" : id)'"
-        }
-        if let obj = element as? NSObject {
-            let cls = NSStringFromClass(type(of: obj)).components(separatedBy: ".").last ?? "?"
-            let role: String = {
-                guard obj.responds(to: Selector(("accessibilityRole"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityRole")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            let label: String = {
-                guard obj.responds(to: Selector(("accessibilityLabel"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            let id: String = {
-                guard obj.responds(to: Selector(("accessibilityIdentifier"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            return "\(cls) role=\(role) label='\(label)' id='\(id)'"
-        }
-        return String(describing: type(of: element))
     }
 }
 
@@ -395,10 +422,10 @@ final class VoiceOverFocusTriggerView: NSView {
 
         if let existing = Self.pendingWork[windowID] {
             existing.cancel()
-            voiceOverFocusLog("cancelled previous pending focus for '\(window.title)'")
+            voiceOverFocusLog("cancelled previous pending focus for \(VoiceOverFocusDiagnostics.describe(window: window))")
         }
 
-        voiceOverFocusLog("scheduled: delay=\(focusDelay)s window='\(window.title)'")
+        voiceOverFocusLog("scheduled: delay=\(focusDelay)s \(VoiceOverFocusDiagnostics.describe(window: window))")
 
         let work = DispatchWorkItem { [weak self] in
             Self.pendingWork.removeValue(forKey: windowID)
@@ -422,12 +449,11 @@ final class VoiceOverFocusTriggerView: NSView {
             return
         }
 
-        voiceOverFocusLog("searching (static) for identifier '\(voiceOverFocusID)' in '\(window.title)'...")
+        voiceOverFocusLog("searching (static) for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
         let helper = VoiceOverFocusTriggerView()
         if let target = helper.findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
-            let desc = helper.describeElement(target)
-            voiceOverFocusLog("FOUND target: \(desc)")
+            voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             helper.postFocusNotifications(target: target, window: window)
         } else {
             voiceOverFocusLog("NOT FOUND in static search")
@@ -440,17 +466,15 @@ final class VoiceOverFocusTriggerView: NSView {
             return
         }
 
-        voiceOverFocusLog("searching for identifier '\(voiceOverFocusID)' in '\(window.title)'...")
+        voiceOverFocusLog("searching for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
         if let target = findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
-            let desc = describeElement(target)
-            voiceOverFocusLog("FOUND target: \(desc)")
+            voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             postFocusNotifications(target: target, window: window)
         } else {
             voiceOverFocusLog("identifier not found, trying fallback...")
             if let fallback = findFirstInteractiveElement(root: contentView, depth: 0) {
-                let desc = describeElement(fallback)
-                voiceOverFocusLog("FALLBACK target: \(desc)")
+                voiceOverFocusLog("FALLBACK target: \(VoiceOverFocusDiagnostics.describe(fallback))")
                 postFocusNotifications(target: fallback, window: window)
             } else {
                 voiceOverFocusLog("NO FALLBACK found either")
@@ -462,7 +486,7 @@ final class VoiceOverFocusTriggerView: NSView {
         let isSheet = window.title.isEmpty
 
         if !isSheet && !window.isKeyWindow {
-            voiceOverFocusLog("SKIPPED: window '\(window.title)' is not key, won't steal focus")
+            voiceOverFocusLog("SKIPPED: \(VoiceOverFocusDiagnostics.describe(window: window)) is not key, won't steal focus")
             return
         }
 
@@ -485,14 +509,14 @@ final class VoiceOverFocusTriggerView: NSView {
                 }
                 if let targetView = target as? NSView {
                     window.makeFirstResponder(targetView)
-                    voiceOverFocusLog("attempt \(attempt + 1): made first responder \(self.describeElement(targetView))")
+                    voiceOverFocusLog("attempt \(attempt + 1): made first responder \(VoiceOverFocusDiagnostics.describe(targetView))")
                 }
                 AccessibilityNotification.ScreenChanged(target).post()
                 if attempt == 0 {
                     voiceOverFocusLog("posting focus attempts (4x at 300ms intervals)")
                 }
                 voiceOverFocusLog(
-                    "attempt \(attempt + 1): posted ScreenChanged to \(self.describeElement(target)); keyWindow=\(window.isKeyWindow); firstResponder=\(self.describeResponder(window.firstResponder))"
+                    "attempt \(attempt + 1): posted ScreenChanged to \(VoiceOverFocusDiagnostics.describe(target)); keyWindow=\(window.isKeyWindow); firstResponder=\(VoiceOverFocusDiagnostics.describe(responder: window.firstResponder))"
                 )
                 self.scheduleFocusChecks(
                     target: target,
@@ -510,10 +534,9 @@ final class VoiceOverFocusTriggerView: NSView {
         for checkDelay in Self.focusCheckDelays {
             let work = DispatchWorkItem { [weak self] in
                 guard let self else { return }
-                let focusedDescription = self.describeFocusedElement()
                 let matched = self.focusedElementMatches(target)
                 voiceOverFocusLog(
-                    "attempt \(attempt) check +\(String(format: "%.2f", checkDelay))s: matchedTarget=\(matched); focused=\(focusedDescription); firstResponder=\(self.describeResponder(window.firstResponder)); keyWindow=\(window.isKeyWindow)"
+                    "attempt \(attempt) check +\(String(format: "%.2f", checkDelay))s: matchedTarget=\(matched); focused=\(self.describeFocusedElement()); firstResponder=\(VoiceOverFocusDiagnostics.describe(responder: window.firstResponder)); keyWindow=\(window.isKeyWindow)"
                 )
                 if matched && !self.didReachTarget {
                     self.didReachTarget = true
@@ -555,15 +578,7 @@ final class VoiceOverFocusTriggerView: NSView {
 
     private func describeFocusedElement() -> String {
         guard let focused = NSApp.accessibilityFocusedUIElement else { return "nil" }
-        return describeElement(focused)
-    }
-
-    private func describeResponder(_ responder: NSResponder?) -> String {
-        guard let responder else { return "nil" }
-        if let view = responder as? NSView {
-            return describeElement(view)
-        }
-        return String(describing: type(of: responder))
+        return VoiceOverFocusDiagnostics.describe(focused)
     }
 
     private func accessibilityIdentifier(for value: Any) -> String? {
@@ -659,32 +674,5 @@ final class VoiceOverFocusTriggerView: NSView {
         }
 
         return nil
-    }
-
-    func describeElement(_ element: Any) -> String {
-        if let view = element as? NSView {
-            let cls = NSStringFromClass(type(of: view)).components(separatedBy: ".").last ?? "?"
-            let role = view.accessibilityRole()?.rawValue ?? "nil"
-            let label = view.accessibilityLabel() ?? "nil"
-            let id = view.accessibilityIdentifier()
-            return "\(cls) role=\(role) label='\(label)' id='\(id.isEmpty ? "nil" : id)'"
-        }
-        if let obj = element as? NSObject {
-            let cls = NSStringFromClass(type(of: obj)).components(separatedBy: ".").last ?? "?"
-            let role: String = {
-                guard obj.responds(to: Selector(("accessibilityRole"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityRole")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            let label: String = {
-                guard obj.responds(to: Selector(("accessibilityLabel"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityLabel")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            let id: String = {
-                guard obj.responds(to: Selector(("accessibilityIdentifier"))) else { return "nil" }
-                return obj.perform(Selector(("accessibilityIdentifier")))?.takeUnretainedValue() as? String ?? "nil"
-            }()
-            return "\(cls) role=\(role) label='\(label)' id='\(id)'"
-        }
-        return String(describing: type(of: element))
     }
 }

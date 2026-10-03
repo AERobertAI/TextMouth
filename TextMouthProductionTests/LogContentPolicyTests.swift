@@ -56,4 +56,61 @@ final class LogContentPolicyTests: XCTestCase {
 
         XCTAssertEqual(lines, [])
     }
+
+    // MARK: - VoiceOver Focus
+
+    /// A focus diagnostic names a view by its class, role, identifier, and
+    /// the length of its label, never the label: a row's label can be one
+    /// of the book's headings.
+    @MainActor
+    func testFocusDescriptionOfAViewGivesItsLabelsLengthNotItsText() {
+        let row = NSView()
+        row.setAccessibilityRole(.row)
+        row.setAccessibilityLabel("Chapter Seven: The Salt Road")
+        row.setAccessibilityIdentifier("heading-row")
+
+        XCTAssertEqual(
+            VoiceOverFocusDiagnostics.describe(row),
+            "NSView role=AXRow labelLength=28 id='heading-row'"
+        )
+        XCTAssertEqual(VoiceOverFocusDiagnostics.describe(responder: row), VoiceOverFocusDiagnostics.describe(row))
+        XCTAssertEqual(VoiceOverFocusDiagnostics.describe(responder: nil), "nil")
+    }
+
+    /// An accessibility element that is not a view, such as a search
+    /// result's, is described the same way, without its label's text.
+    @MainActor
+    func testFocusDescriptionOfAnElementGivesItsLabelsLengthNotItsText() {
+        let result = NSAccessibilityElement()
+        result.setAccessibilityRole(.staticText)
+        result.setAccessibilityLabel("the tide turned at noon")
+        result.setAccessibilityIdentifier("search-result")
+
+        XCTAssertEqual(
+            VoiceOverFocusDiagnostics.describe(result),
+            "NSAccessibilityElement role=AXStaticText labelLength=23 id='search-result'"
+        )
+    }
+
+    /// A focus diagnostic names a window by its number and identifier, never
+    /// by its title, which for a reader is the book's title. The window is
+    /// never shown.
+    @MainActor
+    func testFocusDescriptionOfAWindowLeavesOutItsTitle() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 120),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        window.title = "The Salt Road Atlas"
+        window.identifier = NSUserInterfaceItemIdentifier("focus-diagnostics-test-window")
+
+        let description = VoiceOverFocusDiagnostics.describe(window: window)
+
+        XCTAssertEqual(description, "window #\(window.windowNumber) id='focus-diagnostics-test-window'")
+        XCTAssertFalse(description.contains("Salt Road"), description)
+    }
 }
