@@ -229,7 +229,7 @@ final class LogContentPolicyTests: XCTestCase {
         "LEGACY_MIGRATION", "READING_STATS_DAY_KEYS", "STORED_VALUE_REPAIRED", "TEXT_ENCODING_FALLBACK",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
-        "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
+        "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
         "DAISY_PACKAGE_MISSING", "DAISY_PACKAGE_WHOLE_FOLDER", "DOCX_DAMAGED_METADATA",
         "DOCX_INCOMPLETE_CONTENT", "EPUB_METADATA_WRITE_FAILED", "IMPORT_CANCELLED", "IMPORT_STAGING_LEFT",
         "IMPORT_STAGING_REMOVED", "LIBRARY_INDEX", "LIBRARY_REMOVAL", "PERSISTENCE_FAILURE",
@@ -280,7 +280,7 @@ final class LogContentPolicyTests: XCTestCase {
     /// The files that still hand lines straight to the writer: code outside
     /// this policy's change, to be moved onto `DiagnosticLog`.
     private static let filesStillWritingDirectly: Set<String> = [
-        "BookContentAnalysisService.swift", "ConfigService.swift",
+        "ConfigService.swift",
     ]
 
     /// Every other line goes through `DiagnosticLog`, the one place that
