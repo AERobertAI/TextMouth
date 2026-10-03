@@ -9,9 +9,10 @@ enum DOCXParserError: LocalizedError {
     case invalidArchive
     case missingEntry(String)
     /// A part of the package is damaged: its markup breaks off or is not
-    /// well-formed, so reading on would silently yield a partial document.
-    /// `file` is the part's path inside the package; `reason` completes the
-    /// sentence "The file is damaged or incomplete: …".
+    /// well-formed, so reading on would silently yield a partial document,
+    /// or it holds more than TextMouth reads from one file. `file` is the
+    /// part's path inside the package; `reason` completes the sentence "The
+    /// file is damaged or incomplete: …".
     case malformedXML(file: String, reason: String)
 
     var errorDescription: String? {
@@ -183,13 +184,19 @@ enum DOCXParser {
     }
 
     /// Extract the raw data of the entry at `path`, or nil when the archive
-    /// has no such entry.
-    /// - Throws: the archive's error when the entry exists but cannot be unpacked.
+    /// has no such entry. The entry is read through the shared
+    /// `ArchiveEntryReader`, so a part larger than the most TextMouth reads
+    /// from one file is refused rather than read whole into memory (TODO I05).
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
+    ///   more than `ArchiveEntryLimits.current` allows, or the archive's
+    ///   error when the entry exists but cannot be unpacked.
     private static func extractOptionalData(from archive: Archive, path: String) throws -> Data? {
         guard let entry = archive[path] else { return nil }
-        var data = Data()
-        _ = try archive.extract(entry) { chunk in data.append(chunk) }
-        return data
+        do {
+            return try ArchiveEntryReader.read(entry, in: archive).data
+        } catch let overflow as ArchiveEntryOverflow {
+            throw DOCXParserError.malformedXML(file: path, reason: overflow.reason)
+        }
     }
 
     // MARK: - Structure Parts

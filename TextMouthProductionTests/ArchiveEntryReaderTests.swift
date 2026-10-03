@@ -251,6 +251,52 @@ final class ArchiveEntryReaderTests: XCTestCase {
         return try makeBookFile(named: "Roadside Repairs.epub", entries: entries)
     }
 
+    // MARK: - DOCX
+
+    /// A Word document whose text part holds more than the text limit fails,
+    /// naming the part and the limit in the DOCX damage sentence.
+    func testDOCXTextPartPastTheLimitIsNamedAsDamaged() throws {
+        let paragraph = String(repeating: "Wax the thread before sewing the signatures. ", count: 60)
+        let docx = try makeDOCX(paragraphs: ["Binding Notes", paragraph])
+
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: 1_000, text: 1_000)) {
+            XCTAssertThrowsError(try DOCXParser.extractMarkdown(from: docx)) { error in
+                guard case let .malformedXML(file, _)? = error as? DOCXParserError else {
+                    return XCTFail("Expected a damaged part, got \(error)")
+                }
+                XCTAssertEqual(file, DOCXParser.Part.document)
+                XCTAssertEqual(
+                    error.localizedDescription,
+                    "The file “word/document.xml” in this document is damaged or incomplete: it holds more than "
+                        + "\(ArchiveFigures.size(1_000)), the most TextMouth reads from one file. "
+                        + "Get a fresh copy of the document, then import it again."
+                )
+            }
+        }
+    }
+
+    /// A document within the limit reads as it always has.
+    func testDOCXWithinTheLimitStillReads() throws {
+        let docx = try makeDOCX(paragraphs: ["Binding Notes", "Wax the thread before sewing the signatures."])
+
+        let markdown = try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: 10_000, text: 10_000)) {
+            try DOCXParser.extractMarkdown(from: docx)
+        }
+
+        XCTAssertTrue(markdown.contains("Wax the thread before sewing the signatures."), markdown)
+    }
+
+    /// A Word document holding only its text part, one paragraph per entry
+    /// of `paragraphs`, in a file removed when the test ends.
+    private func makeDOCX(paragraphs: [String]) throws -> URL {
+        let body = paragraphs.map { "<w:p><w:r><w:t>\($0)</w:t></w:r></w:p>" }.joined()
+        let document = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>\(body)</w:body></w:document>
+        """
+        return try makeBookFile(named: "Binding Notes.docx", entries: [DOCXParser.Part.document: Data(document.utf8)])
+    }
+
     // MARK: - Fixtures
 
     /// An archive holding `entries`, opened for reading. Its file is removed
