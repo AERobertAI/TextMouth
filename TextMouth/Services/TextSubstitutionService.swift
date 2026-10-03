@@ -124,6 +124,10 @@ struct TextTransformation {
 }
 
 /// Manages text substitution rules and applies them to text before TTS.
+///
+/// It also keeps the repeated-symbol settings (Text settings, Repeated
+/// Symbols), which speech preparation applies just before the punctuation
+/// pauses and these rules; see `repeatedSymbolRule`.
 @MainActor
 final class TextSubstitutionService: ObservableObject {
     @Published var rules: [SubstitutionRule] = []
@@ -132,10 +136,61 @@ final class TextSubstitutionService: ObservableObject {
     /// settings model applying an edit of config.json, is taken up here at
     /// once, and published, so open readers prepare their speech again.
     @Published var isEnabled: Bool = true {
-        didSet {
-            guard !isFollowingStore, let preferences else { return }
-            Self.enabledPreference.write(isEnabled, to: preferences)
+        didSet { save(isEnabled, as: Self.enabledPreference) }
+    }
+
+    /// How speech reads a run of a repeated symbol. Saved and followed in
+    /// the preferences store exactly as `isEnabled` is, and independent of
+    /// it: switching the substitution rules off leaves this setting alone.
+    @Published var repeatedSymbolStyle: RepeatedSymbolStyle {
+        didSet { save(repeatedSymbolStyle, as: Self.repeatedSymbolStylePreference) }
+    }
+
+    /// The fewest symbols a run must have to be read as a count or left
+    /// out, from 2 to 99, or -1 to read every symbol. A value set here is
+    /// validated first, as `SettingsPolicy.repeatedSymbolThreshold` reads a
+    /// stored one, then saved and followed like `isEnabled`; setting the
+    /// value already in force publishes and saves nothing.
+    var repeatedSymbolThreshold: Int {
+        get { storedRepeatedSymbolThreshold }
+        set {
+            let validated = SettingsPolicy.repeatedSymbolThreshold.validated(newValue)
+            guard validated != storedRepeatedSymbolThreshold else { return }
+            storedRepeatedSymbolThreshold = validated
         }
+    }
+
+    /// The symbols that can form runs, each once, in the order the user
+    /// listed them. A value set here keeps only its punctuation and symbols,
+    /// each once, then is saved and followed like `isEnabled`; setting the
+    /// set already in force publishes and saves nothing.
+    var repeatedSymbolSet: String {
+        get { storedRepeatedSymbolSet }
+        set {
+            let validated = SettingsPolicy.repeatedSymbolSet.validated(newValue)
+            guard validated != storedRepeatedSymbolSet else { return }
+            storedRepeatedSymbolSet = validated
+        }
+    }
+
+    /// The validated threshold; use `repeatedSymbolThreshold`. Validation
+    /// happens in that setter because a published property's own observer
+    /// runs again when it assigns the property, so clamping there would
+    /// publish twice.
+    @Published private var storedRepeatedSymbolThreshold: Int {
+        didSet { save(storedRepeatedSymbolThreshold, as: Self.repeatedSymbolThresholdPreference) }
+    }
+
+    /// The validated symbol set; use `repeatedSymbolSet`.
+    @Published private var storedRepeatedSymbolSet: String {
+        didSet { save(storedRepeatedSymbolSet, as: Self.repeatedSymbolSetPreference) }
+    }
+
+    /// The repeated-symbol settings in force, as speech preparation applies
+    /// them. Built afresh from the three settings each time, so a reader
+    /// preparing its next chapter always uses the current ones.
+    var repeatedSymbolRule: RepeatedSymbolRule {
+        RepeatedSymbolRule(style: repeatedSymbolStyle, threshold: repeatedSymbolThreshold, symbols: repeatedSymbolSet)
     }
 
     /// The substitution switch in the preferences store: on until the user
@@ -144,14 +199,54 @@ final class TextSubstitutionService: ObservableObject {
     /// same definition.
     nonisolated static let enabledPreference = StoredPreference.flag("substitutionsEnabled", default: true)
 
-    /// The store `isEnabled` is saved to and followed in: this process's
-    /// preferences for the app's shared service, and for a test's own
-    /// service only a store the test passes. Nil saves and follows nothing.
+    /// The repeated-symbol style in the preferences store, saved as its raw
+    /// value ("repeat", "count", or "omit"); `SettingsPolicy` supplies the
+    /// key and the default, which an unsupported value also reads as.
+    nonisolated static let repeatedSymbolStylePreference = StoredPreference<RepeatedSymbolStyle>(
+        key: SettingsPolicy.repeatedSymbolStyle.key,
+        read: { store, key in SettingsPolicy.repeatedSymbolStyle.value(fromRaw: store.object(forKey: key) as? String) },
+        write: { style, store, key in store.set(style.rawValue, forKey: key) }
+    )
+
+    /// The repeated-symbol threshold in the preferences store, saved as a
+    /// whole number and read through `SettingsPolicy.repeatedSymbolThreshold`.
+    nonisolated static let repeatedSymbolThresholdPreference = StoredPreference<Int>(
+        key: SettingsPolicy.repeatedSymbolThreshold.key,
+        read: { store, _ in SettingsPolicy.repeatedSymbolThreshold.storedValue(in: store) },
+        write: { threshold, store, key in
+            store.set(SettingsPolicy.repeatedSymbolThreshold.validated(threshold), forKey: key)
+        }
+    )
+
+    /// The repeated-symbol set in the preferences store, saved as text and
+    /// read through `SettingsPolicy.repeatedSymbolSet`.
+    nonisolated static let repeatedSymbolSetPreference = StoredPreference<String>(
+        key: SettingsPolicy.repeatedSymbolSet.key,
+        read: { store, _ in SettingsPolicy.repeatedSymbolSet.storedValue(in: store) },
+        write: { symbols, store, key in store.set(SettingsPolicy.repeatedSymbolSet.validated(symbols), forKey: key) }
+    )
+
+    /// The keys of every preference this service keeps: the substitution
+    /// switch and the three repeated-symbol settings. The settings model
+    /// mirrors them all in config.json.
+    nonisolated static var preferenceKeys: [String] {
+        [
+            enabledPreference.key,
+            repeatedSymbolStylePreference.key,
+            repeatedSymbolThresholdPreference.key,
+            repeatedSymbolSetPreference.key,
+        ]
+    }
+
+    /// The store this service's preferences are saved to and followed in:
+    /// this process's preferences for the app's shared service, and for a
+    /// test's own service only a store the test passes. Nil saves and
+    /// follows nothing.
     private let preferences: UserDefaults?
-    /// Reports changes to the switch in `preferences`.
+    /// Reports changes to this service's preferences in `preferences`.
     private var storeObserver: PreferenceObserver?
-    /// True while `isEnabled` takes the store's value, which the store
-    /// already holds, so nothing is written back.
+    /// True while the service takes values from the store, which already
+    /// holds them, so nothing is written back.
     private var isFollowingStore = false
 
     /// Cached compiled regexes keyed by rule ID
@@ -166,21 +261,27 @@ final class TextSubstitutionService: ObservableObject {
 
     static let shared = TextSubstitutionService()
 
-    /// The app's service: `isEnabled` from this process's preferences, which
-    /// it then follows, and the rules from substitutions.json.
+    /// The app's service: `isEnabled` and the repeated-symbol settings from
+    /// this process's preferences, which it then follows, and the rules from
+    /// substitutions.json.
     private init() {
         let preferences = TextMouthRuntime.current.preferences
         self.preferences = preferences
         isEnabled = Self.storedIsEnabled(in: preferences)
+        repeatedSymbolStyle = Self.repeatedSymbolStylePreference.read(from: preferences)
+        storedRepeatedSymbolThreshold = Self.repeatedSymbolThresholdPreference.read(from: preferences)
+        storedRepeatedSymbolSet = Self.repeatedSymbolSetPreference.read(from: preferences)
         loadRules()
-        followSwitch(in: preferences)
+        followStore(in: preferences)
     }
 
     /// A service of the caller's own: for deterministic production-target
     /// tests, and for the rule editor's Test button, which shows what one
     /// rule does. It deliberately does not read or write the persisted rule
-    /// file, and it saves and follows `isEnabled` only in `preferences` when
-    /// given a store, so changing the switch leaves nothing behind.
+    /// file. Given a store, it saves and follows its preferences only there,
+    /// reading the repeated-symbol settings from it; without one, it saves
+    /// nothing and starts from the standard repeated-symbol settings, so
+    /// changing a setting leaves nothing behind.
     init(
         rules: [SubstitutionRule],
         isEnabled: Bool = true,
@@ -189,8 +290,13 @@ final class TextSubstitutionService: ObservableObject {
         self.preferences = preferences
         self.rules = rules
         self.isEnabled = isEnabled
+        let standard = RepeatedSymbolRule.standard
+        repeatedSymbolStyle = preferences.map { Self.repeatedSymbolStylePreference.read(from: $0) } ?? standard.style
+        storedRepeatedSymbolThreshold = preferences.map { Self.repeatedSymbolThresholdPreference.read(from: $0) }
+            ?? standard.threshold
+        storedRepeatedSymbolSet = preferences.map { Self.repeatedSymbolSetPreference.read(from: $0) } ?? standard.symbols
         if let preferences {
-            followSwitch(in: preferences)
+            followStore(in: preferences)
         }
     }
 
@@ -200,22 +306,45 @@ final class TextSubstitutionService: ObservableObject {
         enabledPreference.read(from: preferences)
     }
 
-    /// Takes up each change to the switch in `preferences` from then on.
-    private func followSwitch(in preferences: UserDefaults) {
-        storeObserver = PreferenceObserver(keys: [Self.enabledPreference.key], in: preferences) { [weak self] _ in
-            self?.takeSwitchFromStore()
+    /// Takes up each change to this service's preferences in `preferences`
+    /// from then on.
+    private func followStore(in preferences: UserDefaults) {
+        storeObserver = PreferenceObserver(keys: Self.preferenceKeys, in: preferences) { [weak self] _ in
+            self?.takePreferencesFromStore()
         }
     }
 
-    /// Sets `isEnabled` to the store's value when someone else changed it
-    /// there, writing nothing back.
-    private func takeSwitchFromStore() {
+    /// Sets each preference to the store's value where someone else changed
+    /// it there, writing nothing back. A preference that did not change is
+    /// not set, so it publishes nothing.
+    private func takePreferencesFromStore() {
         guard let preferences else { return }
-        let stored = Self.storedIsEnabled(in: preferences)
-        guard stored != isEnabled else { return }
         isFollowingStore = true
         defer { isFollowingStore = false }
-        isEnabled = stored
+        adopt(Self.enabledPreference, into: \.isEnabled, from: preferences)
+        adopt(Self.repeatedSymbolStylePreference, into: \.repeatedSymbolStyle, from: preferences)
+        adopt(Self.repeatedSymbolThresholdPreference, into: \.repeatedSymbolThreshold, from: preferences)
+        adopt(Self.repeatedSymbolSetPreference, into: \.repeatedSymbolSet, from: preferences)
+    }
+
+    /// Sets the property at `keyPath` to `preference`'s value in `store`
+    /// when the two differ.
+    private func adopt<Value>(
+        _ preference: StoredPreference<Value>,
+        into keyPath: ReferenceWritableKeyPath<TextSubstitutionService, Value>,
+        from store: UserDefaults
+    ) {
+        let stored = preference.read(from: store)
+        if self[keyPath: keyPath] != stored {
+            self[keyPath: keyPath] = stored
+        }
+    }
+
+    /// Saves a preference changed through this service to the store, unless
+    /// the change came from the store or the service keeps no store.
+    private func save<Value>(_ value: Value, as preference: StoredPreference<Value>) {
+        guard !isFollowingStore, let preferences else { return }
+        preference.write(value, to: preferences)
     }
 
     // MARK: - Rule Management
