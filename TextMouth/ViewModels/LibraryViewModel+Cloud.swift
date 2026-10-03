@@ -399,6 +399,8 @@ final class LibraryCloudCommands {
     /// refresh which read the files before the removal can't leave its
     /// older reading behind.
     private let refreshAfterRemoval: @MainActor () -> Void
+    /// Selects files in Finder.
+    private let revealInFinder: @MainActor ([URL]) -> Void
 
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
@@ -406,14 +408,45 @@ final class LibraryCloudCommands {
     ///   - storage: The book storage to act through, looked up when each
     ///     command runs, so a storage installed later is used.
     ///   - refreshAfterRemoval: Asks for a refresh after a removal.
+    ///   - revealInFinder: Selects files in Finder.
     init(
         states: BookCloudStates = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
-        refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() }
+        refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() },
+        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
     ) {
         self.states = states
         self.storage = storage
         self.refreshAfterRemoval = refreshAfterRemoval
+        self.revealInFinder = revealInFinder
+    }
+
+    /// Runs `command` for the Library window `window` shows, announcing
+    /// from it. Download Now returns as soon as it starts; its downloads go
+    /// on in the background.
+    /// - Returns: Remove Download's refusal for the window to show, if any.
+    @discardableResult
+    func perform(_ command: LibraryCloudCommand, in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
+        switch command.kind {
+        case .download:
+            download(command.books, in: library, from: window)
+            return nil
+        case .removeDownload:
+            return await removeDownloads(of: command.books, in: library, from: window)
+        case .showInFinder:
+            showInFinder(command.books)
+            return nil
+        }
+    }
+
+    // MARK: Show in Finder
+
+    /// Selects the packages of `books` in Finder (Show in Finder). Finder's
+    /// Keep Downloaded, Google Drive's Offline Access, and Dropbox's Make
+    /// available offline are there, for a book to stay on this Mac.
+    func showInFinder(_ books: [Book]) {
+        guard !books.isEmpty else { return }
+        revealInFinder(books.map { BookPackage($0).url })
     }
 
     // MARK: Download Now

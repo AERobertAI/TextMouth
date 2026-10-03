@@ -241,6 +241,12 @@ struct BookRow: View {
     /// always has. The list passes what `BookCloudStates` recorded, so a row
     /// never asks the file system anything.
     var cloudState: BookCloudState? = nil
+    /// The cloud commands of the row's context menu, which are also the
+    /// row's VoiceOver actions (VO-Command-Space), under the same names
+    /// (FR02).
+    var cloudCommands: [LibraryCloudCommand] = []
+    /// Runs one of `cloudCommands`.
+    var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -317,6 +323,17 @@ struct BookRow: View {
             ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
             : "Press Enter to open, Command I for info")
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
+        .accessibilityActions {
+            ForEach(cloudCommands) { command in
+                Button(command.title) { performCloudCommand(command) }
+            }
+        }
+    }
+
+    /// The names of the row's own VoiceOver actions, in the order VoiceOver
+    /// lists them.
+    var accessibilityActionNames: [String] {
+        cloudCommands.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.

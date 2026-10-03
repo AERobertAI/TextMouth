@@ -373,6 +373,75 @@ final class LibraryCloudCommandTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsRemoved, [])
     }
 
+    // MARK: - Show in Finder
+
+    /// Show in Finder selects each book's package: its .tmb folder, or the
+    /// file of an old book without one.
+    func testShowInFinderSelectsEachBooksPackage() {
+        var packaged = cloudTestBook("Moby-Dick")
+        packaged.tmbDirectoryName = "Moby-Dick-Herman Melville-1-abc.tmb"
+        let loose = cloudTestBook("Emma", author: "Jane Austen")
+        let fixture = CommandFixture(books: [packaged, loose], states: [:])
+
+        fixture.commands.showInFinder([packaged, loose])
+        fixture.commands.showInFinder([])
+
+        XCTAssertEqual(fixture.revealed.files, [[packaged.tmbDirectory, loose.bookFileURL]], "nothing is shown for no books")
+    }
+
+    // MARK: - Running From the List
+
+    /// The list runs each command by its kind: Download Now starts the
+    /// downloads, Remove Download hands back its refusal for the window,
+    /// and Show in Finder selects the packages.
+    func testPerformRunsEachKindOfCommand() async {
+        let inCloud = cloudTestBook("Moby-Dick")
+        let open = cloudTestBook("Emma", author: "Jane Austen")
+        let fixture = CommandFixture(books: [inCloud, open], states: [inCloud.id: .inCloud, open.id: .downloaded])
+        fixture.model.openBookIDs = [open.id]
+        let commands = LibraryCloudCommand.commands(for: [inCloud, open], isSelection: true, states: fixture.states)
+        XCTAssertEqual(commands.map(\.kind), [.download, .removeDownload, .showInFinder])
+
+        var refusals: [LibraryCloudRefusal?] = []
+        _ = await announcements {
+            for command in commands {
+                refusals.append(await fixture.commands.perform(command, in: fixture.model, from: nil))
+            }
+            await waitUntil(fixture.states, records: .downloaded, for: inCloud.id)
+        }
+
+        XCTAssertEqual(refusals, [
+            nil,
+            LibraryCloudRefusal(
+                title: "Download Not Removed",
+                message: BookCloudError.bookIsOpen.explanation(in: .iCloudDrive)
+            ),
+            nil,
+        ])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [inCloud.id])
+        XCTAssertEqual(fixture.revealed.files, [[inCloud.bookFileURL, open.bookFileURL]])
+    }
+
+    // MARK: - VoiceOver Actions
+
+    /// A row's VoiceOver actions are its cloud commands, under the names its
+    /// context menu gives them; a row without commands has none of its own.
+    ///
+    /// The row is checked through the list it builds: hosted offscreen
+    /// without a screen reader, SwiftUI exposes no custom actions to read
+    /// back (tried with `withHostedView`, a list, and a wait of 5 seconds).
+    func testRowsVoiceOverActionsAreItsCloudCommands() {
+        let book = cloudTestBook()
+        let states = cloudStates(recording: [book.id: .inCloud])
+        let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states)
+
+        XCTAssertEqual(
+            BookRow(book: book, cloudState: .inCloud, cloudCommands: commands).accessibilityActionNames,
+            ["Download Now", "Show in Finder"]
+        )
+        XCTAssertEqual(BookRow(book: book).accessibilityActionNames, [])
+    }
+
     // MARK: - Wording
 
     /// Titles in a sentence join as "A", "A and B", "A, B, and C".
@@ -434,21 +503,26 @@ final class CommandFixture {
     let commands: LibraryCloudCommands
     /// The refreshes the commands asked for.
     let refreshRequests: RequestCounter
+    /// What the commands showed in Finder, one list of files each time.
+    let revealed: RevealLog
 
     init(books: [Book], states recorded: [UUID: BookCloudState]) {
         let states = BookCloudStates()
         let fake = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
         let storage = CountingBookCloudStorage(fake)
         let refreshRequests = RequestCounter()
+        let revealed = RevealLog()
         self.states = states
         self.fake = fake
         self.storage = storage
         self.refreshRequests = refreshRequests
+        self.revealed = revealed
         model = LibraryViewModel(initializeServices: false)
         commands = LibraryCloudCommands(
             states: states,
             storage: { storage },
-            refreshAfterRemoval: { refreshRequests.count += 1 }
+            refreshAfterRemoval: { refreshRequests.count += 1 },
+            revealInFinder: { revealed.files.append($0) }
         )
         model.library = Library(books: books)
         states.setLibraryLocation(.cloud(.iCloudDrive))
@@ -484,4 +558,11 @@ final class CommandFixture {
 final class RequestCounter {
     /// How many requests were made.
     var count = 0
+}
+
+/// The files Show in Finder would have selected, instead of Finder.
+@MainActor
+final class RevealLog {
+    /// One list of files for each time Finder was asked.
+    var files: [[URL]] = []
 }
