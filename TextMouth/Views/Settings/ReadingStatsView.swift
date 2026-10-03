@@ -1,49 +1,30 @@
 import SwiftUI
 
+/// The Stats settings pane: how long the user has listened, and how many
+/// books they have finished.
+///
+/// Every figure is read at one instant (`ReadingStatsFigures`), so the
+/// tiles agree with one another, and each tile's words come from
+/// `ReadingStatsTile`, which words a figure once for the screen and for
+/// VoiceOver alike.
 struct ReadingStatsView: View {
     @ObservedObject var statsService = ReadingStatsService.shared
     @State private var refreshTick = 0
     private let refreshTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     var body: some View {
+        // One reading of every figure, shared by all the tiles.
+        let figures = ReadingStatsFigures(service: statsService, at: Date())
         Form {
             Section {
-                LabeledContent("Today") {
-                    Text(TimeFormatting.format(statsService.todayListeningTime))
-                }
-                .accessibilityLabel("Listening time today: \(TimeFormatting.format(statsService.todayListeningTime))")
-
-                LabeledContent("This Week") {
-                    Text(TimeFormatting.format(statsService.thisWeekListeningTime))
-                }
-                .accessibilityLabel("Listening time this week: \(TimeFormatting.format(statsService.thisWeekListeningTime))")
-
-                // The saved total plus the open session's time since its last
-                // checkpoint, as Today and This Week count it.
-                LabeledContent("All Time") {
-                    Text(TimeFormatting.format(statsService.allTimeListeningTime(at: Date())))
-                }
-                .accessibilityLabel("Total listening time: \(TimeFormatting.format(statsService.allTimeListeningTime(at: Date())))")
+                tiles(ReadingStatsTile.listeningTime, showing: figures)
             } header: {
                 Text("Listening Time")
                     .accessibilityAddTraits(.isHeader)
             }
 
             Section {
-                LabeledContent("Current Streak") {
-                    Text("\(statsService.currentStreak) \(statsService.currentStreak == 1 ? "day" : "days")")
-                }
-                .accessibilityLabel("Current listening streak: \(statsService.currentStreak) days")
-
-                LabeledContent("Books Finished This Year") {
-                    Text("\(statsService.booksFinishedThisYear)")
-                }
-                .accessibilityLabel("\(statsService.booksFinishedThisYear) books finished this year")
-
-                LabeledContent("Books Finished All Time") {
-                    Text("\(statsService.stats.finishedBooks.count)")
-                }
-                .accessibilityLabel("\(statsService.stats.finishedBooks.count) books finished all time")
+                tiles(ReadingStatsTile.progress, showing: figures)
             } header: {
                 Text("Progress")
                     .accessibilityAddTraits(.isHeader)
@@ -72,5 +53,30 @@ struct ReadingStatsView: View {
         .onReceive(refreshTimer) { _ in
             refreshTick += 1 // Force periodic refresh of time displays
         }
+    }
+
+    /// A row for each of `tiles` showing `figures`. Each row is identified
+    /// by its tile, never by its value, so new figures update it in place.
+    private func tiles(_ tiles: [ReadingStatsTile], showing figures: ReadingStatsFigures) -> some View {
+        ForEach(tiles) { tile in
+            ReadingStatsTileRow(tile: tile, wording: tile.wording(for: figures))
+        }
+    }
+}
+
+/// One tile of the Stats pane: its title beside its value. VoiceOver speaks
+/// the tile's wording as its label.
+struct ReadingStatsTileRow: View {
+    /// The figure this row shows.
+    let tile: ReadingStatsTile
+    /// That figure's words at the latest reading.
+    let wording: ReadingStatsTileWording
+
+    var body: some View {
+        LabeledContent(tile.title) {
+            Text(wording.value)
+        }
+        .accessibilityLabel(wording.accessibilityLabel)
+        .accessibilityIdentifier(tile.accessibilityIdentifier)
     }
 }
