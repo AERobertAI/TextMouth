@@ -11,6 +11,14 @@ import Foundation
 /// to the Buddhist calendar turned 2026 into "2569", which left every saved
 /// total unreachable and broke the streak. Days are the user's local days,
 /// though, so the one setting keys do follow is the time zone.
+///
+/// Travel: listening is attributed in the time zone that is current when
+/// it is credited, the whole slice since the last checkpoint included, and
+/// time already credited never moves. After a flight west, the day the
+/// user is now in may be the day before the one the open session last
+/// credited; that time stays where it was, and Today reads the key of the
+/// day that is current in the new zone, so the later day's listening is
+/// counted again once that day arrives there.
 struct ListeningDays: Sendable {
     /// The calendar every key and every day boundary is computed in:
     /// Gregorian, POSIX, in the time zone these days are local to.

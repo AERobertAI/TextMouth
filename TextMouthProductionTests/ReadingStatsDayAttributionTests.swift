@@ -319,6 +319,64 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
         XCTAssertEqual(ReadingStatsService.streak(in: listening, through: lastDayOfYear, timeZone: apia), 3)
     }
 
+    // MARK: - Travel
+
+    /// Moving west never moves what was credited. A listener in Berlin
+    /// starts at 11:30 p.m. on 15 July, and the checkpoint at 12:30 a.m.
+    /// gives half an hour each to the 15th and the 16th. Their Mac then
+    /// takes New York's time zone, where it is still 6:30 p.m. on the 15th:
+    /// the next half hour goes to the 15th, the 16th keeps its half hour,
+    /// and Today and the streak read New York's day. Back in Berlin's zone,
+    /// Today finds the 16th's half hour where it was left.
+    @MainActor
+    func testTravelWestNeverMovesListeningAlreadyCredited() throws {
+        var userCalendar = try calendar(.gregorian, in: "Europe/Berlin")
+        let service = makeService(userCalendar: { userCalendar })
+        let start = try time("2026-07-15T23:30:00+02:00")
+        service.startSession(bookID: UUID(), at: start)
+        service.checkpointActiveSession(at: start + 3_600)
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 1_800, "2026-07-16": 1_800])
+
+        userCalendar = try calendar(.gregorian, in: "America/New_York")
+        let landed = start + 3_600
+        XCTAssertEqual(service.todayListeningTime(at: landed), 1_800)
+        service.checkpointActiveSession(at: landed + 1_800)
+        service.endSession(at: landed + 1_800)
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 3_600, "2026-07-16": 1_800])
+        XCTAssertEqual(service.stats.totalListeningSeconds, 5_400)
+        XCTAssertEqual(service.todayListeningTime(at: landed + 1_800), 3_600)
+        XCTAssertEqual(service.currentStreak(at: landed + 1_800), 1)
+
+        userCalendar = try calendar(.gregorian, in: "Europe/Berlin")
+        XCTAssertEqual(service.todayListeningTime(at: landed + 1_800), 1_800)
+        XCTAssertEqual(service.currentStreak(at: landed + 1_800), 2)
+    }
+
+    /// Moving east, the slice since the last checkpoint is attributed in
+    /// the new zone when it is credited, the part heard before the move
+    /// included, since the move itself is not seen. A listener in New York
+    /// is credited 15 minutes on the 15th; then their Mac takes Tokyo's
+    /// zone, and the next slice, 11:45 p.m. to 12:15 a.m. in Tokyo, is
+    /// split at Tokyo's midnight, while the first 15 minutes stay put.
+    @MainActor
+    func testTravelEastSplitsTheNextSliceInTheNewZone() throws {
+        var userCalendar = try calendar(.gregorian, in: "America/New_York")
+        let service = makeService(userCalendar: { userCalendar })
+        let start = try time("2026-07-15T10:30:00-04:00")
+        service.startSession(bookID: UUID(), at: start)
+        service.checkpointActiveSession(at: start + 900)
+
+        userCalendar = try calendar(.gregorian, in: "Asia/Tokyo")
+        let tokyoMidnight = try time("2026-07-16T00:00:00+09:00")
+        XCTAssertEqual(tokyoMidnight, start + 1_800)
+        service.endSession(at: tokyoMidnight + 900)
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2026-07-15": 1_800, "2026-07-16": 900])
+        XCTAssertEqual(service.stats.totalListeningSeconds, 2_700)
+        XCTAssertEqual(service.todayListeningTime(at: tokyoMidnight + 900), 900)
+    }
+
     // MARK: - Helpers
 
     /// Listens to `book` from `start` to `end` with `service`, as the

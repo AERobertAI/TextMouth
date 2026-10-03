@@ -35,7 +35,10 @@ final class ReadingStatsService: ObservableObject {
     /// The user's calendar as the system reports it at this moment. Only its
     /// time zone bears on listening days: it decides which local day a
     /// credited second falls on. Its calendar system, locale, and digits
-    /// never reach a day key (`ListeningDays`).
+    /// never reach a day key (`ListeningDays`). It is asked afresh at every
+    /// credit and every reading of the totals, so a change of time zone,
+    /// as on a journey, applies from then on and moves nothing already
+    /// credited.
     private let userCalendar: () -> Calendar
 
     /// The days listening is attributed to at this moment: local days in
