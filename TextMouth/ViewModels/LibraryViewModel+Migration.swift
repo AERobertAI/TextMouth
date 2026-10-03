@@ -1089,6 +1089,73 @@ extension LibraryViewModel {
         }
     }
 
+    // MARK: - Using Another Library (FR02)
+
+    /// Words that begin each Use This Library failure, before the reason.
+    private static let switchFailureContext = "Failed to switch libraries"
+
+    /// Use This Library, and Start New Library while the library isn't
+    /// available (FR02): makes the library in `folder` the one TextMouth
+    /// uses, as it is, with nothing copied, and opens TextMouth again so its
+    /// startup runs on that library. Returns the outcome, presenting
+    /// nothing; on success TextMouth is quitting.
+    ///
+    /// Unsaved changes are written first
+    /// (`LibraryPersistenceService.flushPendingSave`). While the library is
+    /// available, a change that still can't be saved, as the failure center
+    /// lists it, refuses the switch, saying which: it could still be saved
+    /// with Retry Saving. While the library isn't available, such changes
+    /// can't be saved anywhere; the confirmation said that switching loses
+    /// them, so they are given up once the new TextMouth has opened.
+    ///
+    /// `TextMouthPaths.setCustomRoot` then records the location, a bookmark
+    /// of it, and the identity of the library in it; the default location is
+    /// recorded as no custom location at all. Nothing is created or changed
+    /// in either folder, and nothing at a location that is missing.
+    /// - Parameter relauncher: How TextMouth opens again: the app's own
+    ///   unless a test passes one that records the request.
+    func useLibraryReturningOutcome(
+        at folder: URL,
+        relaunching relauncher: TextMouthRelauncher = .live
+    ) async -> OperationOutcome {
+        guard dataDirectoryMove == nil else {
+            return .failure(Self.switchFailureContext, DataDirectoryMigrationError.moveInProgress)
+        }
+        LibraryPersistenceService.flushPendingSave()
+        let unsaved = failureCenter.unsavedFailures()
+        if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
+            let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)
+            let message = ["\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them."]
+                + reasons + ["Choose Retry Saving, then try again."]
+            return .failure(message.joined(separator: " "))
+        }
+
+        TextMouthPaths.setCustomRoot(
+            TextMouthPaths.isDefaultLocation(folder) ? nil : folder,
+            in: dataDirectoryEnvironment.preferences
+        )
+        DiagnosticLog.event(
+            .storage,
+            "DATA_DIRECTORY_SWITCH: TextMouth opens the library in \(DataDirectoryPaths.shortName(of: folder)) from now on"
+        )
+        do {
+            try await relauncher.openNewInstance()
+        } catch {
+            DiagnosticLog.event(.storage, "DATA_DIRECTORY_SWITCH: TextMouth couldn't open again: \(error.localizedDescription)")
+            return .failure(
+                "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again "
+                    + "by itself: \(error.localizedDescription) Quit TextMouth and open it again."
+            )
+        }
+        // The changes a library that isn't available couldn't take are given
+        // up, as the confirmation said, so quitting doesn't ask about them.
+        for failure in unsaved {
+            failureCenter.withdraw(failure.key)
+        }
+        relauncher.quit()
+        return .success("Opening the library in \(folder.path)…")
+    }
+
     // MARK: - Refresh Timer
 
     /// Start the periodic refresh timer that bumps refreshTick for time estimate updates
@@ -1118,5 +1185,49 @@ extension LibraryViewModel {
             }
         }
         return (total, known, unknown)
+    }
+}
+
+// MARK: - Opening TextMouth Again (FR02)
+
+/// How TextMouth opens again, so its startup runs on the library the
+/// preferences name now (FR02): a new instance of its bundle opens through
+/// NSWorkspace, and this one then quits, through the usual request to quit.
+/// Use This Library takes one; tests pass their own, so nothing opens or
+/// quits.
+struct TextMouthRelauncher {
+    /// Opens a new instance of TextMouth, returning once it has launched.
+    var openNewInstance: @MainActor () async throws -> Void
+    /// Quits this instance.
+    var quit: @MainActor () -> Void
+
+    /// The app's way. A process hosting tests never opens again or quits:
+    /// it logs the request instead, should a test forget to pass its own.
+    @MainActor static var live: TextMouthRelauncher {
+        guard !TextMouthRuntime.current.isHostedTest else {
+            return TextMouthRelauncher(
+                openNewInstance: {
+                    DiagnosticLog.event(.storage, "DATA_DIRECTORY_SWITCH: a process hosting tests does not open again")
+                },
+                quit: {}
+            )
+        }
+        return TextMouthRelauncher(
+            openNewInstance: {
+                let configuration = NSWorkspace.OpenConfiguration()
+                // A second instance, which starts while this one quits.
+                configuration.createsNewApplicationInstance = true
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume()
+                        }
+                    }
+                }
+            },
+            quit: { NSApplication.shared.terminate(nil) }
+        )
     }
 }
