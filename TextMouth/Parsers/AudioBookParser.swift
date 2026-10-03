@@ -308,17 +308,16 @@ enum AudioBookParser {
     /// them again. A clip's end can therefore lie past the encoded file's
     /// measured end by up to about a tenth of a second at the low sample
     /// rates audiobooks use, and by more where a producer rounds clip times
-    /// up. The DAISY
-    /// Consortium's own validator accepts audio whose duration differs
-    /// from the book's declared timing by up to half a second (DAISY
-    /// Pipeline 2, daisy202-validator, option timeToleranceMs, default 500:
-    /// "The duration of the audio files can deviate from the duration
-    /// declared in the DAISY 2.02 fileset by this many milliseconds"). One
-    /// second is twice that. The one percent covers timing that drifts
-    /// along a long file, as clip times computed from a nominal bit rate or
-    /// sample rate do: 36 seconds over an hour. An end beyond that is not
-    /// padding but navigation made for other audio, such as an end an hour
-    /// past the end of a ten-minute file.
+    /// up. The DAISY Consortium's own validator accepts audio whose
+    /// duration differs from the book's declared timing by up to half a
+    /// second (DAISY Pipeline 2, daisy202-validator, option
+    /// timeToleranceMs, default 500: "The duration of the audio files can
+    /// deviate from the duration declared in the DAISY 2.02 fileset by
+    /// this many milliseconds"). One second is twice that. The one percent
+    /// covers timing that drifts along a long file, as clip times computed
+    /// from a nominal bit rate or sample rate do: 36 seconds over an hour.
+    /// An end beyond that is not padding but navigation made for other
+    /// audio, such as an end an hour past the end of a ten-minute file.
     static func endTolerance(forFileLasting fileDuration: TimeInterval) -> TimeInterval {
         endToleranceSeconds + endToleranceFraction * fileDuration
     }
@@ -341,11 +340,11 @@ enum AudioBookParser {
     ///   reading order never goes back within a file, so a section that
     ///   does was timed against other audio or names the wrong file, and
     ///   the listener would hear the book out of order. Sections may
-    ///   overlap, though: the DAISY
-    ///   converter ends a heading at the last clip of its file in its SMIL
-    ///   file when the next heading plays from another file, so a later
-    ///   heading in the first file can start inside it. Overlap repeats
-    ///   audio but never loses any, and refusing it would refuse such books.
+    ///   overlap, though: the DAISY converter ends a heading at the last
+    ///   clip of its file in its SMIL file when the next heading plays from
+    ///   another file, so a later heading in the first file can start
+    ///   inside it. Overlap repeats audio but never loses any, and refusing
+    ///   it would refuse such books.
     private static func boundedSegments(
         _ segments: [AudioSegment],
         fileDurations: [TimeInterval]
