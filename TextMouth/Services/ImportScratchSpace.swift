@@ -82,16 +82,35 @@ enum ImportScratchSpace {
             : destination.deletingLastPathComponent()
     }
 
-    /// Creates the scratch folder `folder`, with the folders above it, when
-    /// it is not there yet, and keeps it out of Time Machine backups, since
-    /// what it holds lasts only as long as an import. Failing to keep it out
-    /// of backups is harmless.
+    /// Creates the scratch folder `folder` when it is not there yet, and
+    /// keeps it out of Time Machine backups, since what it holds lasts only
+    /// as long as an import. Failing to keep it out of backups is harmless.
+    ///
+    /// A folder elsewhere, such as this Mac's, is made with the folders
+    /// above it. One inside the data directory is made only inside folders
+    /// that are there, so an import never recreates a data directory that
+    /// vanished, as a cloud folder does when its service signs out.
+    /// - Throws: why the folder could not be made, such as a missing data
+    ///   directory.
     static func prepareFolder(_ folder: URL) throws {
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        if !isFolder(folder) {
+            let isInDataDirectory = StorageBoundary.shared.current.location.contains(folder.path)
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: !isInDataDirectory)
+            } catch let error as CocoaError where error.code == .fileWriteFileExists && isFolder(folder) {
+                // Another import made it meanwhile.
+            }
+        }
         var excluded = folder
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? excluded.setResourceValues(values)
+    }
+
+    /// Whether a folder is at `url`.
+    private static func isFolder(_ url: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
     // MARK: - Logging

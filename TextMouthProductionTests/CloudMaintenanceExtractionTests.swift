@@ -55,6 +55,34 @@ final class CloudMaintenanceExtractionTests: CloudMaintenanceTestCase {
         XCTAssertEqual(ArchiveExtractionDirectory.defaultParent.path, MachineLocalPaths.archiveExtraction.path)
     }
 
+    // MARK: - Making the Folders
+
+    /// A scratch folder inside the data directory is made only inside
+    /// folders that are there, so an import never recreates a data directory
+    /// that vanished, as a cloud folder does when its service signs out. One
+    /// elsewhere, such as this Mac's, is made with the folders above it, and
+    /// making a folder that is there already changes nothing.
+    func testScratchFolderInTheDataDirectoryIsNeverMadeWithItsParents() throws {
+        let vanished = TextMouthPaths.root.appendingPathComponent("Vanished \(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: vanished) }
+        let besideTheLibrary = TextMouthPaths.root.appendingPathComponent("Scratch \(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: besideTheLibrary) }
+        let deepOnThisMac = MachineLocalPaths.root
+            .appendingPathComponent("Deep \(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("Archive Extraction", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: deepOnThisMac.deletingLastPathComponent()) }
+
+        XCTAssertThrowsError(try ImportScratchSpace.prepareFolder(vanished.appendingPathComponent("Archive Extraction")))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: vanished.path), "a vanished folder was made again")
+        try ImportScratchSpace.prepareFolder(besideTheLibrary)
+        try ImportScratchSpace.prepareFolder(besideTheLibrary)
+        try ImportScratchSpace.prepareFolder(deepOnThisMac)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: besideTheLibrary.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: deepOnThisMac.path))
+        XCTAssertEqual(try besideTheLibrary.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+    }
+
     // MARK: - The Startup Sweep
 
     /// The startup sweep removes the extraction directories stopped imports
