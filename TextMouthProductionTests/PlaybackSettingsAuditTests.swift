@@ -406,6 +406,40 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         accessibleControls(in: view).filter { $0.role == .incrementor }
     }
 
+    // MARK: - Restart-timer gesture step pickers
+
+    /// VoiceOver hears each step picker of the restart-timer gesture by its
+    /// label, once, with the step's event as its value (board #242). A
+    /// picker's hidden title is spoken before its accessibility label, as a
+    /// stepper's is, so a hidden "Event for step 1" would be heard as
+    /// "Event for step 1, Step 1". A pop-up button's value is the title of
+    /// the item it has chosen.
+    func testGestureStepPickersSpeakTheirLabelsOnce() throws {
+        let settings = try makeIsolatedSettings()
+        // The pattern editor shows only while the gesture is on.
+        settings.restartTimerGestureEnabled = true
+        settings.restartTimerGesturePattern = "previousTrack,nextTrack,togglePlayPause"
+
+        withHostedView(
+            MiscellaneousSettingsView().environmentObject(settings),
+            size: NSSize(width: 600, height: 1200),
+            until: { popUpButtons(in: $0).count == 3 }
+        ) { hostingView in
+            let found = popUpButtons(in: hostingView)
+            XCTAssertEqual(found.map(\.label), ["Step 1", "Step 2", "Step 3"])
+            XCTAssertEqual(
+                found.map { $0.element.accessibilityValue() as? String },
+                ["Previous track", "Next track", "Play/Pause toggle"]
+            )
+        }
+    }
+
+    /// The pop-up buttons VoiceOver finds in `view`, in the order it reads
+    /// them.
+    private func popUpButtons(in view: NSView) -> [AccessibleControl] {
+        accessibleControls(in: view).filter { $0.role == .popUpButton }
+    }
+
     // MARK: - Keeping audio multipliers out of speech WPM
 
     /// Opening an audio book must not push its saved multiplier into the
