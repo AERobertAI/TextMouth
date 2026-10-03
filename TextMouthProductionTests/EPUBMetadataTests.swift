@@ -52,6 +52,37 @@ final class EPUBMetadataTests: XCTestCase {
         XCTAssertEqual(hash, try FileImportService.md5Hash(of: workingCopy))
     }
 
+    /// The hash returned describes the bytes the replacement installs, and
+    /// is taken before the original is replaced, so a write that has
+    /// replaced the file cannot then report a failure (TODO A09). Here the
+    /// replaced file is made unreadable at once; reading it back afterwards,
+    /// as the write once did, would throw.
+    func testHashIsTakenFromThePreparedCopyBeforeReplacing() throws {
+        let workingCopy = try makeWorkingCopy()
+        defer {
+            _ = chmod(workingCopy.path, 0o644)
+            try? FileManager.default.removeItem(at: workingCopy)
+        }
+        var metadata = try EPUBParser.readMetadata(url: workingCopy)
+        metadata.title = "Hashed Before Replacing"
+        var preparedHash: String?
+
+        let hash = try EPUBParser.writeMetadata(
+            metadata,
+            to: workingCopy,
+            replacingWith: { original, prepared in
+                preparedHash = try FileImportService.md5Hash(of: prepared)
+                _ = try FileManager.default.replaceItemAt(original, withItemAt: prepared)
+                XCTAssertEqual(chmod(original.path, 0o000), 0, "could not make the replaced file unreadable")
+            }
+        )
+
+        XCTAssertEqual(hash, preparedHash)
+        XCTAssertEqual(chmod(workingCopy.path, 0o644), 0)
+        XCTAssertEqual(hash, try FileImportService.md5Hash(of: workingCopy))
+        XCTAssertEqual(try EPUBParser.readMetadata(url: workingCopy).title, "Hashed Before Replacing")
+    }
+
     func testStoredPublisherAndDateOverrideUnchangedEPUBFile() throws {
         let workingCopy = try makeWorkingCopy()
         defer { try? FileManager.default.removeItem(at: workingCopy) }
