@@ -218,6 +218,75 @@ struct ZipImportResult {
     }
 }
 
+/// What a ZIP batch found in its archive (TODO I05): the books to import,
+/// each listed once, and the archives inside it that could not be searched,
+/// each with why. The batch lists those among its failures, so the original
+/// archive, the only complete copy of their books, is kept.
+struct ImportCandidates: Equatable {
+    /// The books to import.
+    var books: [URL] = []
+    /// The archives inside that could not be searched.
+    var failures: [ZipImportFailure] = []
+
+    /// Adds `other`'s books and failures to `candidates`'.
+    static func += (candidates: inout ImportCandidates, other: ImportCandidates) {
+        candidates.books += other.books
+        candidates.failures += other.failures
+    }
+}
+
+/// How a ZIP batch unpacks the archives it finds inside its archive (TODO
+/// I05): each into a folder of its own in `directory`, within the batch's
+/// budget, so archives inside count toward the same limits as the archive
+/// itself, and no deeper than `ArchiveLimits.maximumNestingDepth`: one
+/// found deeper is reported, not unpacked, since an archive can hold itself.
+struct NestedArchiveUnpacking {
+    /// Where each archive is unpacked, in a folder of its own.
+    let directory: URL
+    /// The batch's budget, shared by every archive it extracts.
+    let budget: ArchiveBudget
+    /// How deep the archives this unpacking opens lie: 1 for those inside
+    /// the archive being imported.
+    let depth: Int
+
+    /// The books in `archive`, unpacked within the budget and searched like
+    /// the archive itself, with whatever inside it could not be searched;
+    /// or a failure naming `archive` when it cannot be searched at all,
+    /// because it lies deeper than the batch unpacks, is damaged, or holds
+    /// paths or sizes that cannot be trusted. Its books are then not
+    /// imported, and the batch's other books still are.
+    /// - Throws: `ArchiveBudgetError` when the budget refuses `archive`,
+    ///   which stops the whole batch.
+    func candidates(inArchive archive: URL) throws -> ImportCandidates {
+        let name = archive.lastPathComponent
+        let maximumDepth = budget.limits.maximumNestingDepth
+        guard depth <= maximumDepth else {
+            return ImportCandidates(failures: [ZipImportFailure(fileName: name, message: Self.tooDeep(maximumDepth))])
+        }
+        let destination = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        do {
+            try ArchiveExtractor.extract(archiveAt: archive, into: destination, budget: budget, nestedArchive: name)
+        } catch let refusal as ArchiveBudgetError {
+            throw refusal
+        } catch {
+            // None of it will be imported, so its space is freed now.
+            try? FileManager.default.removeItem(at: destination)
+            let reason = ImportFailure(fileName: name, step: .extractingArchive, underlying: error).reason
+            return ImportCandidates(failures: [ZipImportFailure(fileName: name, message: reason)])
+        }
+        return try FileImportService.importCandidates(
+            in: destination,
+            unpacking: NestedArchiveUnpacking(directory: directory, budget: budget, depth: depth + 1)
+        )
+    }
+
+    /// Why an archive lying deeper than `maximumDepth` levels is not searched.
+    static func tooDeep(_ maximumDepth: Int) -> String {
+        "Not extracted: TextMouth extracts archives within an archive only "
+            + "\(maximumDepth) level\(maximumDepth == 1 ? "" : "s") deep."
+    }
+}
+
 enum FileImportService {
 
     /// Validate a .tmb package without trusting paths from its metadata.
@@ -838,47 +907,66 @@ enum FileImportService {
     /// Pass existingHashes to skip files whose content already exists in the library,
     /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns imported books together with any per-file failures.
+    ///
+    /// The archive and the archives found inside it are extracted within one
+    /// budget (`ArchiveLimits`, TODO I05): each is refused before anything of
+    /// it is written when its declared size, its entries, or the free space it
+    /// needs pass their limits, and each file is held to its recorded size as
+    /// it is written. Everything goes into one extraction directory in the
+    /// data directory (`ArchiveExtractionDirectory`), removed on every exit.
     /// - Throws: an `ImportFailure` naming the archive when it cannot be
-    ///   extracted at all. A book inside it that fails is listed in the
-    ///   result's failures instead, and the others still import.
+    ///   extracted at all, or the budget refuses it or an archive inside it.
+    ///   A book inside it that fails is listed in the result's failures
+    ///   instead, as is an archive inside it that cannot be searched, and the
+    ///   others still import.
     static func importZip(
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil
     ) throws -> ZipImportResult {
-        // The archive is extracted into one folder, and any archive inside
-        // it into another, so the search of the first never meets the second.
-        let workDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let extracted = workDirectory.appendingPathComponent("archive", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: workDirectory) }
+        // Every exit, returned or thrown, removes what was extracted; the
+        // books are copied out of it as they import.
+        var extraction: ArchiveExtractionDirectory?
+        defer { extraction?.remove() }
 
-        // Extraction is the one archive-wide step that can fail; each book
-        // in the archive then imports, or fails, on its own.
-        try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
+        // Extraction, of the archive and of the archives inside it, is the
+        // one archive-wide step that can fail; each book in the archive then
+        // imports, or fails, on its own.
+        let candidates: ImportCandidates = try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
             try run.begin(.extractingArchive)
             try TextMouthPaths.ensureDirectoryStructure()
-            try FileManager.default.createDirectory(at: extracted, withIntermediateDirectories: true)
-            try extractArchive(zipURL, into: extracted)
+            let directory = try ArchiveExtractionDirectory.make()
+            extraction = directory
+            let budget = ArchiveBudget()
+            try ArchiveExtractor.extract(archiveAt: zipURL, into: directory.archiveDirectory, budget: budget)
+            // Every book in the archive, each once, those in the archives it
+            // holds included. They are extracted into another folder, so the
+            // search of the archive never meets them.
+            return try importCandidates(
+                in: directory.archiveDirectory,
+                unpacking: NestedArchiveUnpacking(directory: directory.nestedDirectory, budget: budget, depth: 1)
+            )
         }
 
-        // First pass: every book in the archive, each once, those in the
-        // archives it holds included.
-        let books = importCandidates(
-            in: extracted,
-            unpackingNestedArchivesInto: workDirectory.appendingPathComponent("nested", isDirectory: true)
-        )
-
-        return importSupportedFiles(
-            books,
+        let result = importSupportedFiles(
+            candidates.books,
             toFolder: folderPath,
             existingHashes: existingHashes,
             progress: progress
         )
+        // An archive inside that could not be searched is a failure too, so
+        // the original, the only complete copy of its books, is kept.
+        return ZipImportResult(
+            books: result.books,
+            failures: candidates.failures + result.failures,
+            incompleteBooks: result.incompleteBooks
+        )
     }
 
     /// The books in `directory`, an extracted archive, each listed once and
-    /// in path order, for a batch import to import one by one (TODO I02):
+    /// in path order, for a batch import to import one by one (TODO I02),
+    /// with the archives inside it that could not be searched (TODO I05):
     ///
     /// - A DAISY book kept as loose files in a folder of its own is one
     ///   book, listed as that folder, and none of the files inside counts
@@ -887,22 +975,25 @@ enum FileImportService {
     ///   book, since neither folder names one book.
     /// - An archive whose own top level holds a DAISY book is that book.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
-    ///   unpacked into `nestedDirectory` and searched the same way, one
-    ///   level deep only, since an archive can hold itself; with
-    ///   `nestedDirectory` nil, other archives are passed over.
+    ///   unpacked through `nested`, within the batch's budget, and searched
+    ///   the same way; one that cannot be unpacked, or lies deeper than the
+    ///   batch unpacks (an archive can hold itself), is listed among the
+    ///   failures instead of being passed over in silence.
     /// - Any other file in a format TextMouth reads is a book. Hidden files
     ///   and the `__MACOSX` folder macOS adds to archives are passed over:
     ///   they hold copies of the archive's files that are not books.
-    static func importCandidates(in directory: URL, unpackingNestedArchivesInto nestedDirectory: URL?) -> [URL] {
+    /// - Throws: `ArchiveBudgetError` when the batch's budget refuses an
+    ///   archive inside.
+    static func importCandidates(in directory: URL, unpacking nested: NestedArchiveUnpacking) throws -> ImportCandidates {
         let topLevelBooks = DAISYParser.packageEntryPoints(in: directory)
-        guard topLevelBooks.isEmpty else { return topLevelBooks }
+        guard topLevelBooks.isEmpty else { return ImportCandidates(books: topLevelBooks) }
         guard let entries = FileManager.default.enumerator(
             at: directory,
             includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles]
-        ) else { return [] }
+        ) else { return ImportCandidates() }
 
-        var candidates: [URL] = []
+        var found = ImportCandidates()
         for case let url as URL in entries {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
                 guard url.lastPathComponent != "__MACOSX" else {
@@ -913,33 +1004,20 @@ enum FileImportService {
                 guard !packageFiles.isEmpty else { continue }
                 entries.skipDescendants()
                 let isOneBooksFolder = packageFiles.count == 1 && url.pathExtension.lowercased() != "tmb"
-                candidates += isOneBooksFolder ? [url] : packageFiles
+                found.books += isOneBooksFolder ? [url] : packageFiles
             } else if url.pathExtension.lowercased() == "zip" {
                 if DAISYParser.isDAISYZip(url: url) {
-                    candidates.append(url)
-                } else if let nestedDirectory, let unpacked = unpackNestedArchive(url, into: nestedDirectory) {
-                    candidates += importCandidates(in: unpacked, unpackingNestedArchivesInto: nil)
+                    found.books.append(url)
+                } else {
+                    found += try nested.candidates(inArchive: url)
                 }
             } else if BookFormat.detect(from: url) != nil {
-                candidates.append(url)
+                found.books.append(url)
             }
         }
-        return candidates.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
-    }
-
-    /// Unpacks `archive`, an archive found inside the one being imported,
-    /// into a new folder inside `parent`, and returns that folder; nil when
-    /// it cannot be unpacked, as it then holds no book the import can find,
-    /// and the archive's other books still import.
-    private static func unpackNestedArchive(_ archive: URL, into parent: URL) -> URL? {
-        let destination = parent.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        do {
-            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
-            try FileManager.default.unzipItem(at: archive, to: destination)
-            return destination
-        } catch {
-            return nil
-        }
+        found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        return found
     }
 
     /// Import files discovered inside a ZIP while retaining individual errors
