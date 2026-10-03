@@ -697,7 +697,9 @@ extension ReaderViewModel {
             // chapter markers, multi-file, and single-file uniformly.
             // Without this every layout other than multi-file/single-
             // file landed at the wrong absolute time when the user did
-            // a same-chapter skip.
+            // a same-chapter skip. A segmented chapter's time counts from
+            // its start; the audio service finds the clip, and loads its
+            // file, for a time in another of the chapter's clips.
             let timeOffset = Double(charOffset) / Self.audioCharsPerSecond
                 + chapterStartTime(currentChapterIndex)
             audioPlaybackService.seek(to: timeOffset)
@@ -778,7 +780,8 @@ extension ReaderViewModel {
                 // layouts (multi-file, segmented DAISY, m4b chapter
                 // markers, single-file). This was the same bug as in
                 // skipCharacters — same-chapter seeks landed at the
-                // wrong global time on m4b chapter books.
+                // wrong global time on m4b chapter books. A segmented
+                // chapter's clips are found by the audio service.
                 let timeOffset = Double(characterOffset) / Self.audioCharsPerSecond
                     + chapterStartTime(currentChapterIndex)
                 audioPlaybackService.seek(to: timeOffset)

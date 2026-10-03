@@ -696,8 +696,11 @@ extension ReaderViewModel {
     ///
     /// - `multiFile`: each chapter is its own audio file. Player time
     ///   is already chapter-relative; no offset needed.
-    /// - `segmented`: DAISY-style — chapters are time ranges within
-    ///   one shared file. Chapter start = `audioSegments[i].startTime`.
+    /// - `segmented`: DAISY-style — each chapter plays one or more
+    ///   clips, time ranges within one or more shared files
+    ///   (`audioSegments[i].clips`). The audio service plays them as one
+    ///   chain and reports the chapter's own time, so, as for
+    ///   `multiFile`, player time is chapter-relative.
     /// - `chaptersInOneFile`: an m4b (or similar) with chapter
     ///   metadata. Chapter start is the cumulative duration of all
     ///   preceding chapters' placeholder text divided by the
@@ -729,42 +732,47 @@ extension ReaderViewModel {
             return .singleFile
         }
 
+        /// Where the chapter at `chapterIndex` starts on the time line the
+        /// audio service reports: the sum of the chapters before it in one
+        /// file of chapters, and 0 for every other layout, whose player
+        /// time already counts from the chapter's start.
         func chapterStartTime(
             chapterIndex: Int,
-            chapterUTF16Lengths: [Int],
-            segmentStartTimes: [TimeInterval]
+            chapterUTF16Lengths: [Int]
         ) -> TimeInterval {
             guard chapterUTF16Lengths.indices.contains(chapterIndex) else { return 0 }
             switch self {
-            case .multiFile, .singleFile:
+            case .multiFile, .segmented, .singleFile:
                 return 0
-            case .segmented:
-                return segmentStartTimes.indices.contains(chapterIndex)
-                    ? segmentStartTimes[chapterIndex]
-                    : 0
             case .chaptersInOneFile:
                 return Double(chapterUTF16Lengths.prefix(chapterIndex).reduce(0, +))
                     / ReaderViewModel.audioCharsPerSecond
             }
         }
 
+        /// The chapter-relative character offset of `playerTime`, a time on
+        /// the line the audio service reports, for a chapter starting at
+        /// `chapterStartTime` on it.
         func relativeCharacterOffset(playerTime: TimeInterval, chapterStartTime: TimeInterval) -> Int {
             let relativeTime: TimeInterval
             switch self {
-            case .segmented, .chaptersInOneFile:
+            case .chaptersInOneFile:
                 relativeTime = max(0, playerTime - chapterStartTime)
-            case .multiFile, .singleFile:
+            case .multiFile, .segmented, .singleFile:
                 relativeTime = max(0, playerTime)
             }
             return AudioBookParser.characterOffset(forTime: relativeTime)
         }
 
+        /// The time on the line the audio service reports at which to play
+        /// chapter-relative `characterOffset`, for a chapter starting at
+        /// `chapterStartTime` on it.
         func absoluteSeekTime(characterOffset: Int, chapterStartTime: TimeInterval) -> TimeInterval {
             let relative = AudioBookParser.time(forCharacterOffset: characterOffset)
             switch self {
-            case .segmented, .chaptersInOneFile:
+            case .chaptersInOneFile:
                 return chapterStartTime + relative
-            case .multiFile, .singleFile:
+            case .multiFile, .segmented, .singleFile:
                 return relative
             }
         }
@@ -780,24 +788,35 @@ extension ReaderViewModel {
         )
     }
 
-    /// Absolute time (seconds) at which the given chapter starts in
-    /// the underlying audio file. Used both to translate
-    /// chapter-relative offsets into AVPlayer seek targets and to
-    /// translate the player's reported time back into a
-    /// chapter-relative offset.
+    /// Absolute time (seconds) at which the given chapter starts on the
+    /// time line the audio service reports. Used both to translate
+    /// chapter-relative offsets into seek targets and to translate the
+    /// player's reported time back into a chapter-relative offset.
     ///
-    /// For multi-file audio every chapter starts at 0 of its own
-    /// file. For DAISY segments, it's `audioSegments[idx].startTime`.
-    /// For an m4b with chapter metadata, it's the sum of preceding
-    /// chapter placeholder lengths converted from chars to seconds.
+    /// For multi-file audio every chapter starts at 0 of its own file,
+    /// and a DAISY segment's clips play as a chain timed from 0 at the
+    /// chapter's start. For an m4b with chapter metadata, it's the sum of
+    /// preceding chapter placeholder lengths converted from chars to
+    /// seconds.
     func chapterStartTime(_ chapterIndex: Int) -> TimeInterval {
         guard let content = content,
               chapterIndex >= 0,
               chapterIndex < content.chapters.count else { return 0 }
         return audioLayout.chapterStartTime(
             chapterIndex: chapterIndex,
-            chapterUTF16Lengths: content.chapters.map { $0.text.utf16Length },
-            segmentStartTimes: audioSegments.map(\.startTime)
+            chapterUTF16Lengths: content.chapters.map { $0.text.utf16Length }
+        )
+    }
+
+    /// The clips segmented chapter `chapterIndex` plays, as the audio
+    /// service chains them, each clip's file found in the book's audio
+    /// folder (the book's own path); nil when the book has no segment for
+    /// that chapter.
+    func audioClipChain(forChapterAt chapterIndex: Int) -> AudioClipChain? {
+        guard audioSegments.indices.contains(chapterIndex) else { return nil }
+        return AudioClipChain(
+            segment: audioSegments[chapterIndex],
+            folder: URL(fileURLWithPath: book.filePath, isDirectory: true)
         )
     }
 
@@ -817,19 +836,11 @@ extension ReaderViewModel {
             // wildly wrong skip targets. This was the root cause of
             // the user-reported "rewind 15s sometimes goes 60s+".
             switch self.audioLayout {
-            case .multiFile, .singleFile:
-                // Player time is chapter-relative directly.
+            case .multiFile, .segmented, .singleFile:
+                // Player time is chapter-relative directly: a DAISY
+                // segment's clips play as one chain, timed from the
+                // chapter's start whichever clip and file is playing.
                 self.currentCharacterOffset = Int(time * Self.audioCharsPerSecond)
-            case .segmented:
-                // DAISY: subtract the segment's start time so the
-                // stored offset is chapter-relative.
-                if self.currentChapterIndex < self.audioSegments.count {
-                    let segStart = self.audioSegments[self.currentChapterIndex].startTime
-                    let relativeTime = max(0, time - segStart)
-                    self.currentCharacterOffset = Int(relativeTime * Self.audioCharsPerSecond)
-                } else {
-                    self.currentCharacterOffset = Int(time * Self.audioCharsPerSecond)
-                }
             case .chaptersInOneFile:
                 // m4b-style: convert absolute time to a global character
                 // offset, then look up which chapter contains it. This
@@ -877,8 +888,10 @@ extension ReaderViewModel {
         }
     }
 
-    /// Start playing the current audio chapter file from the current character offset.
-    /// Handles multi-file audio books and DAISY segmented audio with clip boundaries.
+    /// Start playing the current audio chapter from the current character
+    /// offset. Handles multi-file audio books, single files with or without
+    /// chapter markers, and DAISY segmented audio, whose chapter plays its
+    /// clips one after another.
     ///
     /// A file that cannot be played is reported by the audio service before
     /// this returns, or later while it plays, and its failure handler stops
@@ -886,25 +899,56 @@ extension ReaderViewModel {
     func playAudioChapter() {
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
+        // Audio that cannot be played claims no Playing state.
+        guard startCurrentChapterAudio(in: content) else { return }
+
+        isCurrentlyPlaying = true
+        isCurrentlyPaused = false
+        // Audio that plays again resolves a failure its alert still shows,
+        // however playback was started.
+        if audioPlaybackFailure != nil {
+            dismissErrorAlert()
+        }
+
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: true
+        )
+    }
+
+    /// Load the current chapter's audio and play it from the cursor.
+    ///
+    /// - Returns: Whether playback started. A missing or unreadable file is
+    ///   refused before playing, after its failure handler has already
+    ///   stopped the reader and told the listener, and an item that has
+    ///   already failed is reported through the same handler.
+    private func startCurrentChapterAudio(in content: DocumentContent) -> Bool {
+        // A segmented chapter plays its clips, in one file or several, as
+        // one chain timed from the chapter's start, so the cursor's offset
+        // is the time to play from, whichever clip holds it.
+        if audioLayout == .segmented, let chain = audioClipChain(forChapterAt: currentChapterIndex) {
+            audioPlaybackService.setSpeed(audioSpeed)
+            return audioPlaybackService.playClips(
+                chain,
+                fromChapterTime: AudioBookParser.time(forCharacterOffset: currentCharacterOffset)
+            )
+        }
 
         let audioURL: URL
         if !audioChapterFiles.isEmpty && currentChapterIndex < audioChapterFiles.count {
-            // Multi-file audio book (or segmented DAISY audio)
+            // Multi-file audio book: each chapter is its own file.
             audioURL = URL(fileURLWithPath: audioChapterFiles[currentChapterIndex])
         } else {
             // Single audio file — use book file path
             audioURL = URL(fileURLWithPath: book.filePath)
         }
 
-        // A missing or unreadable file is refused here, after its failure
-        // handler has already stopped the reader and told the listener.
-        guard audioPlaybackService.load(url: audioURL) else { return }
+        guard audioPlaybackService.load(url: audioURL) else { return false }
         audioPlaybackService.setSpeed(audioSpeed)
 
         // Translate chapter-relative offset to an absolute seek target.
-        // chapterStartTime() handles all four layouts: 0 for multi-file
-        // and single-file, segment.startTime for DAISY, and cumulative
-        // preceding-chapter durations for an m4b with chapter markers.
+        // chapterStartTime() handles the file layouts: 0 for multi-file
+        // and single-file, and cumulative preceding-chapter durations for
+        // an m4b with chapter markers.
         var timeOffset = Double(currentCharacterOffset) / Self.audioCharsPerSecond
         timeOffset += chapterStartTime(currentChapterIndex)
 
@@ -918,41 +962,24 @@ extension ReaderViewModel {
         // advances it, so this is a defense-in-depth — the clip-end
         // callback is the canonical "chapter done" signal.)
         switch audioLayout {
-        case .segmented:
-            if currentChapterIndex < audioSegments.count {
-                let segment = audioSegments[currentChapterIndex]
-                if segment.endTime > segment.startTime {
-                    audioPlaybackService.setClipEndTime(segment.endTime)
-                }
-            }
         case .chaptersInOneFile:
             // Clip end = this chapter's absolute end time.
             let chapterChars = content.chapters[currentChapterIndex].text.utf16Length
             let clipEnd = chapterStartTime(currentChapterIndex)
                 + Double(chapterChars) / Self.audioCharsPerSecond
             audioPlaybackService.setClipEndTime(clipEnd)
-        case .multiFile, .singleFile:
+        case .multiFile, .segmented, .singleFile:
             // No clip end — the file's natural end IS the chapter's end
             // (or the whole book's end). Clear any clip end inherited
-            // from a previous load() call so it doesn't stale-trigger.
+            // from a previous load() call so it doesn't stale-trigger. A
+            // segmented book reaches here only for a chapter without a
+            // segment, which plays its file whole.
             audioPlaybackService.setClipEndTime(nil)
         }
 
         // Play refuses an item it finds has already failed, and reports it
         // through the same failure handler.
-        guard audioPlaybackService.play(fromTime: timeOffset) else { return }
-
-        isCurrentlyPlaying = true
-        isCurrentlyPaused = false
-        // Audio that plays again resolves a failure its alert still shows,
-        // however playback was started.
-        if audioPlaybackFailure != nil {
-            dismissErrorAlert()
-        }
-
-        nowPlayingService.updateNowPlayingInfo(
-            title: book.title, author: book.author, isPlaying: true
-        )
+        return audioPlaybackService.play(fromTime: timeOffset)
     }
 
     // MARK: - Audio Playback Failures

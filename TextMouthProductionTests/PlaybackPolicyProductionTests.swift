@@ -163,33 +163,37 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         XCTAssertEqual(layout(files: false, segments: false, chapters: 1), .singleFile)
     }
 
-    func testSegmentedChapterStartUsesSegmentMetadata() {
+    /// A segmented chapter's clips play as one chain timed from the
+    /// chapter's start (TODO I03), so its player time starts at 0, as a
+    /// file of its own does; the audio service finds each clip.
+    func testSegmentedChapterStartsAtZeroOfItsClipChain() {
         XCTAssertEqual(ReaderViewModel.AudioLayout.segmented.chapterStartTime(
-            chapterIndex: 1, chapterUTF16Lengths: [100, 100], segmentStartTimes: [10, 30]
-        ), 30)
+            chapterIndex: 1, chapterUTF16Lengths: [100, 100]
+        ), 0)
     }
 
     func testEmbeddedChapterStartSumsPrecedingDurations() {
         XCTAssertEqual(ReaderViewModel.AudioLayout.chaptersInOneFile.chapterStartTime(
-            chapterIndex: 2, chapterUTF16Lengths: [600, 1_200, 300], segmentStartTimes: []
+            chapterIndex: 2, chapterUTF16Lengths: [600, 1_200, 300]
         ), 180)
     }
 
     func testMultiFileChapterStartsAtZero() {
         XCTAssertEqual(ReaderViewModel.AudioLayout.multiFile.chapterStartTime(
-            chapterIndex: 1, chapterUTF16Lengths: [100, 100], segmentStartTimes: []
+            chapterIndex: 1, chapterUTF16Lengths: [100, 100]
         ), 0)
     }
 
     func testInvalidChapterStartReturnsZero() {
-        XCTAssertEqual(ReaderViewModel.AudioLayout.segmented.chapterStartTime(
-            chapterIndex: 9, chapterUTF16Lengths: [100], segmentStartTimes: [10]
+        XCTAssertEqual(ReaderViewModel.AudioLayout.chaptersInOneFile.chapterStartTime(
+            chapterIndex: 9, chapterUTF16Lengths: [100]
         ), 0)
     }
 
-    func testSegmentedPositionUpdateSubtractsSegmentStart() {
+    /// The chain reports the chapter's own time, which is stored as is.
+    func testSegmentedPositionUpdateStoresChapterTime() {
         XCTAssertEqual(ReaderViewModel.AudioLayout.segmented.relativeCharacterOffset(
-            playerTime: 35, chapterStartTime: 30
+            playerTime: 5, chapterStartTime: 30
         ), 50)
     }
 
@@ -199,16 +203,18 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         ), 50)
     }
 
-    func testSegmentedPositionClampsBeforeClipStart() {
-        XCTAssertEqual(ReaderViewModel.AudioLayout.segmented.relativeCharacterOffset(
+    func testEmbeddedChapterPositionClampsBeforeChapterStart() {
+        XCTAssertEqual(ReaderViewModel.AudioLayout.chaptersInOneFile.relativeCharacterOffset(
             playerTime: 20, chapterStartTime: 30
         ), 0)
     }
 
-    func testSegmentedSeekAddsClipStart() {
+    /// A seek within a segmented chapter asks the chain for the chapter's
+    /// own time; the chain finds the clip and its file.
+    func testSegmentedSeekIsChapterTime() {
         XCTAssertEqual(ReaderViewModel.AudioLayout.segmented.absoluteSeekTime(
             characterOffset: 50, chapterStartTime: 30
-        ), 35)
+        ), 5)
     }
 
     func testEmbeddedChapterSeekAddsChapterStart() {
