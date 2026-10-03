@@ -26,11 +26,13 @@ enum BookContentAnalysisService {
     /// it was written (TODO T07, see `loadExistingCache`): a cache whose
     /// source or content.md has changed since is rebuilt from the source.
     /// `hasher` computes the digests that check needs; tests pass one that
-    /// counts them.
+    /// counts them. `isDataless` says whether a file is dataless (FR02):
+    /// the maintenance access's check, or `DatalessFiles.isDataless`.
     static func load(
         book: Book,
         regenerateTextCache: Bool = false,
-        hasher: FingerprintHasher = .md5
+        hasher: FingerprintHasher = .md5,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
     ) throws -> Result {
         let url = URL(fileURLWithPath: book.filePath)
 
@@ -269,8 +271,13 @@ enum BookContentAnalysisService {
     /// cache whose source or content.md changed since it was written, by the
     /// fingerprints the package recorded (which is reported as
     /// `CACHE_STALE: <title>: <reason>`). A file with a new date but the
-    /// recorded size is read for its digest, which decides.
-    static func completedTextCacheIndex(for book: Book, hasher: FingerprintHasher = .md5) -> BookContentIndex? {
+    /// recorded size is read for its digest, which decides. `isDataless`
+    /// says whether a file is dataless (FR02).
+    static func completedTextCacheIndex(
+        for book: Book,
+        hasher: FingerprintHasher = .md5,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> BookContentIndex? {
         guard !book.format.isAudio,
               MarkdownCacheService.cacheExists(for: book),
               let info = book.storedBookInfo(),

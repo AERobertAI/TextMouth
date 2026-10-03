@@ -1640,10 +1640,12 @@ enum FileImportService {
     /// retained in place. Other records receive a complete recovery copy under
     /// the current UUID-based name, with derived content invalidated so startup
     /// analysis rebuilds it from that record's own source file.
+    /// `access` is how the repair reaches the packages' files (FR02).
     @discardableResult
     static func separateSharedTMBPackages(
         library: inout Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        access: MaintenanceFileAccess = .live
     ) -> Int {
         let fm = FileManager.default
         var packageReferences: [String: [Int]] = [:]
@@ -1662,7 +1664,9 @@ enum FileImportService {
                 .appendingPathComponent(firstBook.tmbDirectoryName, isDirectory: true)
             guard fm.fileExists(atPath: sharedPackage.path) else { continue }
 
-            let storedBookID = (try? BookInfo.load(from: sharedPackage))?.metadata.bookID
+            let storedBookID = (try? access.read(TextMouthPaths.bookInfoPath(in: sharedPackage)) {
+                try BookInfo.load(from: sharedPackage)
+            })?.metadata.bookID
             let keeper = indices.first { library.books[$0].id == storedBookID } ?? indices[0]
 
             for index in indices where index != keeper {
@@ -1913,10 +1917,13 @@ enum FileImportService {
     /// during index recovery, and on rebuild alike, even when a late write has
     /// left a readable bookInfo.json in it. Such a package is left untouched
     /// on disk for a deliberate re-import.
+    ///
+    /// `access` is how the repair reaches the packages' files (FR02).
     @discardableResult
     static func adoptOrphanedTMBPackages(
         library: inout Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        access: MaintenanceFileAccess = .live
     ) -> Int {
         let fm = FileManager.default
         let libraryDir = libraryDirectory
@@ -1946,7 +1953,9 @@ enum FileImportService {
             if knownTMBNames.contains(tmbName) { continue }
 
             // Try to load bookInfo.json from the orphaned .tmb
-            guard let info = try? BookInfo.load(from: url) else { continue }
+            guard let info = try? access.read(TextMouthPaths.bookInfoPath(in: url), {
+                try BookInfo.load(from: url)
+            }) else { continue }
 
             // The user removed this book from the library; it stays out.
             if RemovedFromLibraryMarker.retires(info.metadata.bookID, in: url) { continue }
@@ -1956,7 +1965,7 @@ enum FileImportService {
             // I02); for a record naming none there, the first entry that is
             // not metadata or cache (a removal marker naming some other book
             // included)
-            let tmbContents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
+            let tmbContents = (try? access.read(url) { try fm.contentsOfDirectory(atPath: url.path) }) ?? []
             let recordedName = info.metadata.originalFileName
             let bookFileName = tmbContents.contains(recordedName) && isPackageContentName(recordedName)
                 ? recordedName

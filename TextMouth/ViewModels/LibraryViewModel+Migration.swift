@@ -38,7 +38,10 @@ extension LibraryViewModel {
 
     /// Migrate any books still using old storage paths to .tmb packages,
     /// and fix any stale file paths pointing to old locations.
-    func migrateOldBooksIfNeeded() {
+    /// - Parameter access: How the repair reaches the books' files (FR02):
+    ///   `live` in the app; tests pass one that pretends files are in the
+    ///   cloud.
+    func migrateOldBooksIfNeeded(access: MaintenanceFileAccess = .live) {
         // Every repair below reconciles the index with the disk and then saves
         // the index. While the index cannot be read there is nothing to
         // reconcile, and saving would replace the evidence the user may still
@@ -107,7 +110,7 @@ extension LibraryViewModel {
 
         // Repair legacy package-name collisions before background parsing can
         // write two different books' caches and indexes into the same directory.
-        let separated = FileImportService.separateSharedTMBPackages(library: &library)
+        let separated = FileImportService.separateSharedTMBPackages(library: &library, access: access)
         if separated > 0 { needsSave = true }
 
         // Move .tmb packages that are at the root but should be in a subfolder.
@@ -118,7 +121,7 @@ extension LibraryViewModel {
 
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
         // This recovers books left behind by interrupted imports or crashes.
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access)
         if adopted > 0 { needsSave = true }
 
         if needsSave {
@@ -218,7 +221,10 @@ extension LibraryViewModel {
     /// waits for the one under way and holds the rest until it has published,
     /// and a book listed before the move is then analyzed in the new data
     /// directory.
-    func calculateMissingBookStats() {
+    /// - Parameter access: How the pass reaches the books' files (FR02):
+    ///   `live` in the app; tests pass one that pretends files are in the
+    ///   cloud.
+    func calculateMissingBookStats(access: MaintenanceFileAccess = .live) {
         let booksNeedingStats = library.books.filter(Self.needsContentAnalysis)
         guard !booksNeedingStats.isEmpty else { return }
 
@@ -234,7 +240,13 @@ extension LibraryViewModel {
                         guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
 
                         do {
-                            let analysis = try BookContentAnalysisService.load(book: book)
+                            let analysis = try access.read(book.bookFileURL) {
+                                try BookContentAnalysisService.load(
+                                    book: book,
+                                    hasher: access.hasher,
+                                    isDataless: access.isDataless
+                                )
+                            }
                             // `book` is the row as it was when this pass began. The
                             // result lands on the book's latest state; a dropped one
                             // leaves the row alone, so a later pass tries again.
@@ -266,9 +278,10 @@ extension LibraryViewModel {
 
     /// Bring every book's text cache and statistics up to date: caches first,
     /// then statistics, which can use them. Both run on background queues.
-    func updateContentCachesAndStatistics() {
-        extractMissingContentCaches(then: { [weak self] in
-            self?.calculateMissingBookStats()
+    /// - Parameter access: How both passes reach the books' files (FR02).
+    func updateContentCachesAndStatistics(access: MaintenanceFileAccess = .live) {
+        extractMissingContentCaches(access: access, then: { [weak self] in
+            self?.calculateMissingBookStats(access: access)
         })
     }
 
@@ -301,7 +314,11 @@ extension LibraryViewModel {
     /// or whose source or content.md has changed size since the cache was written.
     /// Runs in the background with progress tracking so the UI stays responsive.
     /// Calls the optional completion handler on the main actor when finished.
+    /// - Parameter access: How the batch reaches the books' files (FR02):
+    ///   `live` in the app; tests pass one that pretends files are in the
+    ///   cloud.
     func extractMissingContentCaches(
+        access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         // A second scene/action must not launch the same library migration again.
@@ -311,9 +328,9 @@ extension LibraryViewModel {
             // Needs cache if missing or if the stored version is outdated
             if !MarkdownCacheService.cacheExists(for: book) { return true }
             if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-            return Self.hasResizedTextCacheFile(book)
+            return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
         }
-        rebuildTextCaches(books: booksNeedingCache, force: false, completion: completion)
+        rebuildTextCaches(books: booksNeedingCache, force: false, access: access, completion: completion)
     }
 
     /// Whether `book`'s source or content.md now has another size than the
@@ -326,7 +343,12 @@ extension LibraryViewModel {
     /// a new date is left to the next open, which reads it for its digest
     /// and keeps a cache that did not change. A book without fingerprints
     /// has nothing to compare.
-    nonisolated static func hasResizedTextCacheFile(_ book: Book) -> Bool {
+    /// - Parameter isDataless: Whether a file is dataless (FR02): the
+    ///   maintenance access's check.
+    nonisolated static func hasResizedTextCacheFile(
+        _ book: Book,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
         guard let recorded = book.textCacheFingerprint else { return false }
         return recorded.hasResizedFile(
             sourceStamp: FileStamp(of: book.bookFileURL),
@@ -336,20 +358,23 @@ extension LibraryViewModel {
 
     /// Re-extract content.md caches for all non-audio books.
     /// Called from the "Redo Text Extraction" button in Storage Settings.
-    func redoAllTextExtraction() {
+    /// - Parameter access: How the pass reaches the books' files (FR02).
+    func redoAllTextExtraction(access: MaintenanceFileAccess = .live) {
         guard !isExtracting else { return }
         let booksToExtract = library.books.filter { book in
             !book.format.isAudio && !book.tmbDirectoryName.isEmpty
         }
-        rebuildTextCaches(books: booksToExtract, force: true)
+        rebuildTextCaches(books: booksToExtract, force: true, access: access)
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
     /// book and publishing each durable checkpoint before advancing progress.
     /// Bounded utility workers keep memory and CPU available for reading.
+    /// `access` is how each book's files are reached (FR02).
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
+        access: MaintenanceFileAccess,
         completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         guard !books.isEmpty else {
@@ -378,32 +403,41 @@ extension LibraryViewModel {
         TextCacheUpdateQueue.run(books: books, update: { book in
             let currentVersion = MarkdownCacheService.currentCacheVersion
             let summary: ContentAnalysisSummary? = autoreleasepool {
-                if !force, let savedIndex = BookContentAnalysisService.completedTextCacheIndex(for: book) {
-                    // An earlier run already committed this book; repairing
-                    // the library summary requires no source parsing or writes.
-                    // The package records this index with the current version.
-                    var recovered = book
-                    recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-                    return ContentAnalysisSummary(committed: recovered)
+                // A read that is refused leaves the book without a result,
+                // like any other failure.
+                let updated = try? access.read(book.bookFileURL) { () -> ContentAnalysisSummary? in
+                    if !force, let savedIndex = BookContentAnalysisService.completedTextCacheIndex(
+                        for: book,
+                        hasher: access.hasher,
+                        isDataless: access.isDataless
+                    ) {
+                        // An earlier run already committed this book; repairing
+                        // the library summary requires no source parsing or writes.
+                        // The package records this index with the current version.
+                        var recovered = book
+                        recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
+                        return ContentAnalysisSummary(committed: recovered)
+                    }
+                    var updatedBook = book
+                    guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &updatedBook) else {
+                        return nil
+                    }
+                    do {
+                        // `book` is the row as it was when the batch was queued. The
+                        // result lands on the book's latest state; a dropped one
+                        // leaves the library version unchanged, so a later pass
+                        // tries again.
+                        guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                            for: updatedBook, index: contentIndex, cacheFormatVersion: currentVersion
+                        ) else { return nil }
+                        return ContentAnalysisSummary(committed: committed)
+                    } catch {
+                        // Leave the library version unchanged so startup retries
+                        // a book whose new index could not be committed.
+                        return nil
+                    }
                 }
-                var updatedBook = book
-                guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &updatedBook) else {
-                    return nil
-                }
-                do {
-                    // `book` is the row as it was when the batch was queued. The
-                    // result lands on the book's latest state; a dropped one
-                    // leaves the library version unchanged, so a later pass
-                    // tries again.
-                    guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                        for: updatedBook, index: contentIndex, cacheFormatVersion: currentVersion
-                    ) else { return nil }
-                    return ContentAnalysisSummary(committed: committed)
-                } catch {
-                    // Leave the library version unchanged so startup retries
-                    // a book whose new index could not be committed.
-                    return nil
-                }
+                return updated ?? nil
             }
             releaseBatchParserMemory()
             DispatchQueue.main.async { updateProgress(summary) }
