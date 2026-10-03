@@ -92,8 +92,10 @@ final class DataDirectoryVerificationTests: XCTestCase {
         let center = NotificationCenter()
         let requests = CallLog<String>()
         let observer = center.addObserver(forName: .dataDirectoryChangeRequested, object: nil, queue: nil) { note in
-            // Delivered on the posting thread, the main one, inside the edit.
-            MainActor.assumeIsolated { requests.record(note.userInfo?["path"] as? String ?? "") }
+            // Delivered on the posting thread, the main one, inside the edit;
+            // the path is read first, so only a string crosses to the actor.
+            let path = note.userInfo?["path"] as? String ?? ""
+            MainActor.assumeIsolated { requests.record(path) }
         }
         addTeardownBlock { center.removeObserver(observer) }
         let url = try makeConfigFileURL()

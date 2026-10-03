@@ -98,7 +98,9 @@ final class DataDirectoryConfigTests: XCTestCase {
         let center = NotificationCenter()
         let requested = CallLog<String>()
         let observer = center.addObserver(forName: .dataDirectoryChangeRequested, object: nil, queue: nil) { note in
-            MainActor.assumeIsolated { requested.record(note.userInfo?["path"] as? String ?? "") }
+            // Read first, so only a string crosses to the main actor.
+            let path = note.userInfo?["path"] as? String ?? ""
+            MainActor.assumeIsolated { requested.record(path) }
         }
         defer { center.removeObserver(observer) }
         let settings = SettingsViewModel(
