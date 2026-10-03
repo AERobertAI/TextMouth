@@ -226,10 +226,10 @@ struct LoneStepper: View {
 
     var body: some View {
         Form {
-            // SwiftUI draws a stepper's title beside the AppKit stepper
-            // without naming the stepper by it, so the settings panes name
-            // each stepper with an accessibility label, and forgetting that
-            // label is how a stepper comes to have none.
+            // A stepper's title does not become the AppKit stepper's
+            // accessibility label, which stays empty, so the settings panes
+            // give each stepper an accessibility label of its own; forgetting
+            // that label is how a stepper comes to have none.
             let stepper = Stepper(value: .constant(1), in: 0...2) { EmptyView() }
             if let label {
                 stepper.accessibilityLabel(label)
