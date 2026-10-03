@@ -335,7 +335,8 @@ enum LibraryPersistenceService {
             return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)"
         }
         if latest.filePath != analyzed.filePath {
-            return "its source file moved from \(analyzed.filePath) to \(latest.filePath)"
+            return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) "
+                + "to \(DiagnosticLog.loggablePath(latest.filePath))"
         }
         return nil
     }
@@ -352,12 +353,10 @@ enum LibraryPersistenceService {
         )
     }
 
-    /// Records `line` in the console and the debug log as one line: a line
-    /// break in a title or a path becomes a space.
+    /// Records `line` as a storage event: in the debug log and the console,
+    /// on one line, a line break in a title or a path becoming a space.
     private static func logLine(_ line: String) {
-        let singleLine = line.components(separatedBy: .newlines).joined(separator: " ")
-        print(singleLine)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: singleLine)
+        DiagnosticLog.event(.storage, line)
     }
 
     /// Save all bookInfo.json files (for bulk operations like migration/rebuild).
@@ -402,7 +401,7 @@ enum LibraryPersistenceService {
             guard !packageWasMovedOrRemoved(book) else {
                 logLine(
                     "BOOK_METADATA_DROPPED: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
-                        + "no package at \(book.tmbDirectory.path); the book moved or left the library "
+                        + "no package at \(DiagnosticLog.loggablePath(book.tmbDirectory)); the book moved or left the library "
                         + "after this write was queued"
                 )
                 return

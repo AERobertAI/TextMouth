@@ -274,14 +274,15 @@ enum StoredValueRepair {
         return validated
     }
 
-    /// Appends one repair line to the debug log. Logging runs on a background
-    /// queue, so this is safe from any thread and never blocks decoding.
+    /// Records one repair as a storage event in the debug log. Logging runs
+    /// on a background queue, so this is safe from any thread and never
+    /// blocks decoding.
     static func log(source: String, codingPath: [CodingKey], detail: String, supported: String? = nil) {
         var message = "STORED_VALUE_REPAIRED \(source) \(pathDescription(codingPath)): \(detail)"
         if let supported {
             message += " (supported: \(supported))"
         }
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: message)
+        DiagnosticLog.event(.storage, message)
     }
 
     /// A value as log lines show it: text is quoted, so an empty string is
