@@ -265,6 +265,29 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         }
     }
 
+    // MARK: - Default Recognizer
+
+    /// Callers that name no recognizer, as imports and cache rebuilds do,
+    /// read pictures with the default one: Vision's in the app, which a
+    /// test can replace and put back.
+    func testExtractionWithoutARecognizerUsesTheDefaultOne() throws {
+        XCTAssertTrue(PDFTextParser.defaultRecognizer is VisionPDFTextRecognizer)
+        let url = try Self.captionedPicture(for: self)
+        let recognizer = ScriptedTextRecognizer { _ in Self.signLines }
+
+        let markdown = try PDFFixtures.withDefaultRecognizer(recognizer) {
+            try PDFTextParser.extractMarkdown(from: url)
+        }
+        let unavailable = try PDFFixtures.withDefaultRecognizer(nil) {
+            try PDFTextParser.extract(from: url).report.pdf?.ocrUnavailableReason
+        }
+
+        XCTAssertEqual(markdown, "PIER 2\nNO MOORING\n\n\(Self.caption)")
+        XCTAssertEqual(recognizer.requests.count, 1)
+        XCTAssertEqual(unavailable, "text recognition is not available")
+        XCTAssertTrue(PDFTextParser.defaultRecognizer is VisionPDFTextRecognizer)
+    }
+
     // MARK: - Line Positions
 
     /// The parser finds its lines again in the page's text as the ranges

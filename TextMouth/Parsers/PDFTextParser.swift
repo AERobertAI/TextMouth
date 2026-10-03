@@ -1,6 +1,7 @@
 import Foundation
 import PDFKit
 import AppKit
+import os
 
 // MARK: - Error Types
 
@@ -51,11 +52,26 @@ enum PDFTextParser {
         return DocumentContent(title: title, author: author, chapters: content.chapters)
     }
 
-    /// Extract Markdown from a PDF file, reading pictures with Vision OCR.
-    /// Main entry point for MarkdownCacheService.
+    /// Extract Markdown from a PDF file, reading pictures with the default
+    /// recognizer (Vision's in the app).
     static func extractMarkdown(from url: URL) throws -> String {
         try extract(from: url).markdown
     }
+
+    /// The recognizer `extract(from:)` reads pictures with when its caller
+    /// names none, as imports and cache rebuilds do: Vision's in the app;
+    /// nil when OCR is not available. Tests replace it, and put it back, to
+    /// see how a PDF whose pictures cannot be read is imported and cached.
+    static var defaultRecognizer: (any PDFPageTextRecognizer)? {
+        get { defaultRecognizerStore.withLock { $0 } }
+        set { defaultRecognizerStore.withLock { $0 = newValue } }
+    }
+
+    /// Holds `defaultRecognizer` under a lock, since extractions on any
+    /// thread read it.
+    private static let defaultRecognizerStore = OSAllocatedUnfairLock<(any PDFPageTextRecognizer)?>(
+        initialState: VisionPDFTextRecognizer()
+    )
 
     /// A PDF's Markdown and the report of how each of its pages was read.
     struct Extraction {
@@ -69,14 +85,15 @@ enum PDFTextParser {
     /// Extract Markdown from a PDF file with the report of how each page was
     /// read. Uses PDFKit text extraction with font-based heading detection,
     /// or the outline's headings when the PDF has one.
-    /// - Parameter recognizer: reads text in pictures; nil when OCR is not
-    ///   available, so pictures go unread and the report says why.
+    /// - Parameter recognizer: reads text in pictures (by default,
+    ///   `defaultRecognizer`); nil when OCR is not available, so pictures go
+    ///   unread and the report says why.
     /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
     ///   and OCR could not run, `.noTextContent` when there is no text at
     ///   all, or why the file could not be opened.
     static func extract(
         from url: URL,
-        recognizer: (any PDFPageTextRecognizer)? = VisionPDFTextRecognizer()
+        recognizer: (any PDFPageTextRecognizer)? = defaultRecognizer
     ) throws -> Extraction {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)

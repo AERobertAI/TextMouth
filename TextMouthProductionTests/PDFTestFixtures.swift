@@ -111,6 +111,22 @@ enum PDFFixtures {
     static func line(_ text: String, at bounds: CGRect) -> PDFRecognizedLine {
         PDFRecognizedLine(text: text, bounds: bounds)
     }
+
+    // MARK: - Default Recognizer
+
+    /// Runs `body` with `PDFTextParser.defaultRecognizer`, which imports
+    /// and cache rebuilds read pictures with, set to `recognizer` (nil: OCR
+    /// unavailable), and puts the app's recognizer back afterwards, even
+    /// when `body` throws.
+    static func withDefaultRecognizer<Result>(
+        _ recognizer: (any PDFPageTextRecognizer)?,
+        _ body: () throws -> Result
+    ) rethrows -> Result {
+        let previous = PDFTextParser.defaultRecognizer
+        PDFTextParser.defaultRecognizer = recognizer
+        defer { PDFTextParser.defaultRecognizer = previous }
+        return try body()
+    }
 }
 
 // MARK: - Hand-Written PDFs
