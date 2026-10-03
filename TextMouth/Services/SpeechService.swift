@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import os
 
 /// Whether a render succeeded, kept by the render's completion for the
 /// render coordinator, which waits for that completion before it reports.
@@ -97,6 +98,46 @@ struct ReportedUtterance: @unchecked Sendable {
 
     /// The utterance's identity, which no other live object shares.
     var id: ObjectIdentifier { ObjectIdentifier(utterance) }
+}
+
+/// One piece of a text that direct speech hands the synthesizer as a single
+/// utterance. Kept independent of AVFoundation so its boundaries can be
+/// tested on any text.
+struct DirectSpeechChunk: Equatable {
+    /// Where the chunk begins in the text, in UTF-16 units: the offset asked
+    /// for, moved back to the start of the character it falls in.
+    let start: Int
+    /// Where the chunk ends: just past a word, never inside one, or at the
+    /// end of the text.
+    let end: Int
+    /// Whether the rest of the text was longer than one chunk, so speech
+    /// goes on from `end`.
+    let isPartial: Bool
+
+    /// The chunk of `text` that begins at UTF-16 offset `offset` and holds
+    /// at most `maximumLength` units, extended to the end of the word that
+    /// limit would cut; the whole rest of the text when that is no longer
+    /// than `maximumLength`.
+    static func starting(at offset: Int, in text: String, maximumLength: Int) -> DirectSpeechChunk {
+        let startIndex = text.index(atUTF16Offset: max(0, min(offset, text.utf16Length)))
+        let start = text.utf16Offset(of: startIndex)
+        let length = text.utf16Length
+        guard length - start > maximumLength else {
+            return DirectSpeechChunk(start: start, end: length, isPartial: false)
+        }
+        var endIndex = text.index(atUTF16Offset: start + maximumLength)
+        // Advance to the end of the current word so no word is cut.
+        while endIndex < text.endIndex && !text[endIndex].isWhitespace {
+            endIndex = text.index(after: endIndex)
+        }
+        return DirectSpeechChunk(start: start, end: text.utf16Offset(of: endIndex), isPartial: true)
+    }
+
+    /// The chunk's part of `text`, the text it was made from.
+    func words(of text: String) -> String {
+        guard start > 0 || end < text.utf16Length else { return text }
+        return String(text[text.index(atUTF16Offset: start)..<text.index(atUTF16Offset: end)])
+    }
 }
 
 /// A short, pre-volume-adjusted utterance used to fade direct speech.
@@ -211,10 +252,12 @@ enum DirectSpeechFadePlanner {
 
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
-/// Current-chapter and look-ahead renders must therefore never overlap.
+/// Current-chapter and look-ahead renders must therefore never overlap, and
+/// neither must the one-word renders that load a voice ahead of Play.
 ///
-/// It holds nothing but its serial queue, so the compiler checks that it is
-/// `Sendable`; state added later needs a lock or an actor.
+/// It holds its serial queue and, under a lock, the voices it has warmed up,
+/// so the compiler checks that it is `Sendable`; state added later needs a
+/// lock or an actor too.
 final class SpeechRenderCoordinator: Sendable {
     static let shared = SpeechRenderCoordinator()
     static let maximumTextLength = 100_000
@@ -223,6 +266,47 @@ final class SpeechRenderCoordinator: Sendable {
         label: "com.textmouth.speech-render",
         qos: .userInitiated
     )
+
+    /// The voices warmed up so far, by identifier, the system's default
+    /// voice as the empty string; read and changed only under this lock.
+    private let warmedVoices = OSAllocatedUnfairLock<Set<String>>(initialState: [])
+
+    /// Load `voice` into the system synthesizer ahead of the first Play, by
+    /// rendering one word with it and dropping the audio (PERF03).
+    func warmUp(_ voice: AVSpeechSynthesisVoice?) {
+        warmUp(voice) { voice, finished in
+            VoiceWarmUp.writeOneWord(in: voice, finished: finished)
+        }
+    }
+
+    /// Warm `voice` up with `write`, which renders one word in a voice and
+    /// calls its completion once, from any thread, with whether it finished;
+    /// tests pass a stand-in.
+    ///
+    /// The process's first utterance in a voice waits while the synthesizer
+    /// loads that voice: a session's first Play waited 3 to 4.5 s for its
+    /// first word. A silent write() pays that once, after which a spoken
+    /// utterance starts in about 15 ms. The write takes its turn on this
+    /// queue like any render, so it never overlaps one, and each voice is
+    /// warmed once, the first time it is asked for.
+    func warmUp(
+        _ voice: AVSpeechSynthesisVoice?,
+        writing write: @escaping @MainActor @Sendable (AVSpeechSynthesisVoice?, @escaping @Sendable (Bool) -> Void) -> Void
+    ) {
+        let name = voice?.identifier ?? ""
+        guard warmedVoices.withLock({ $0.insert(name).inserted }) else { return }
+        enqueue(
+            textLength: VoiceWarmUp.word.utf16Length,
+            shouldStart: { true },
+            start: { finished in write(voice, finished) },
+            completion: { finished in
+                DiagnosticLog.trace(
+                    .playback,
+                    "VOICE_WARM_UP: \(name.isEmpty ? "default voice" : name) \(finished ? "loaded" : "did not finish")"
+                )
+            }
+        )
+    }
 
     /// Render `request` into `engine` once every earlier render has finished.
     ///
@@ -302,9 +386,70 @@ protocol SpeechRenderScheduling: AnyObject {
         shouldStart: @escaping @MainActor @Sendable () -> Bool,
         completion: @escaping @MainActor @Sendable (Bool) -> Void
     )
+
+    /// Load `voice` into the system synthesizer ahead of the first Play, as
+    /// `SpeechRenderCoordinator.warmUp(_:)` does.
+    func warmUp(_ voice: AVSpeechSynthesisVoice?)
+}
+
+extension SpeechRenderScheduling {
+    /// Warms nothing: a stand-in that renders nothing has no voice to load.
+    func warmUp(_ voice: AVSpeechSynthesisVoice?) {}
 }
 
 extension SpeechRenderCoordinator: SpeechRenderScheduling {}
+
+/// Renders one word in a voice and drops the audio, so that the system
+/// synthesizer loads the voice before anything has to be spoken in it
+/// (PERF03). `write()` never plays anything.
+enum VoiceWarmUp {
+    /// The word rendered: short, so that once the voice has loaded the
+    /// render itself takes a moment.
+    static let word = "Ready."
+
+    /// How long a warm-up may hold the render queue before its turn ends
+    /// anyway, so a voice that never answers cannot stop every later render.
+    static let timeout: DispatchTimeInterval = .seconds(30)
+
+    /// Render `word` in `voice` with a synthesizer of its own, dropping the
+    /// audio, and call `finished` exactly once, from any thread: true when
+    /// the synthesizer delivered its last buffer, false when `timeout`
+    /// passed first.
+    @MainActor
+    static func writeOneWord(in voice: AVSpeechSynthesisVoice?, finished: @escaping @Sendable (Bool) -> Void) {
+        let report = reportingOnce(finished)
+        let synthesizer = AVSpeechSynthesizer()
+        let utterance = AVSpeechUtterance(string: word)
+        utterance.voice = voice
+        utterance.prefersAssistiveTechnologySettings = false
+        synthesizer.write(utterance) { buffer in
+            // The synthesizer ends its output with an empty buffer. Holding
+            // the synthesizer here keeps it alive until then.
+            guard let pcm = buffer as? AVAudioPCMBuffer, pcm.frameLength == 0 else { return }
+            withExtendedLifetime(synthesizer) {
+                report(true)
+            }
+        }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+            report(false)
+        }
+    }
+
+    /// `finished`, made to run only the first time it is called: the last
+    /// buffer and the timeout race to report one warm-up.
+    static func reportingOnce(_ finished: @escaping @Sendable (Bool) -> Void) -> @Sendable (Bool) -> Void {
+        let reported = OSAllocatedUnfairLock(initialState: false)
+        return { succeeded in
+            let isFirst = reported.withLock { alreadyReported in
+                defer { alreadyReported = true }
+                return !alreadyReported
+            }
+            if isFirst {
+                finished(succeeded)
+            }
+        }
+    }
+}
 
 /// Manages TTS playback using two modes:
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
@@ -317,7 +462,32 @@ extension SpeechRenderCoordinator: SpeechRenderScheduling {}
 /// reading any of it (see the delegate extension), its timers run on the
 /// main run loop, and the position queue works only on a copy of the text.
 final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
-    let audioEngine = AudioEngineService()
+    /// The engine that renders speech and plays the rendered audio, made the
+    /// first time speech needs one: its first render, or the first chapter
+    /// it plays from audio rendered ahead (PERF08). The first engine of a
+    /// session cost 142 ms, and 2.5 s with the audio system cold, which every
+    /// reader paid as it opened, even an audiobook's, which never speaks a
+    /// chapter. Nil until then: whatever only asks about the engine reads
+    /// this, and never makes one.
+    private var madeAudioEngine: AudioEngineService?
+
+    /// The speech engine, made now if speech has not needed one yet. Only
+    /// what needs an engine reads this: a render, rendered playback, and the
+    /// tests.
+    var audioEngine: AudioEngineService {
+        if let madeAudioEngine { return madeAudioEngine }
+        let engine = AudioEngineService()
+        engine.onPlaybackFinished = { [weak self] in
+            self?.handleEngineFinished()
+        }
+        madeAudioEngine = engine
+        return engine
+    }
+
+    /// Whether speech has made its engine yet (`audioEngine`).
+    var hasAudioEngine: Bool {
+        madeAudioEngine != nil
+    }
 
     /// Fallback direct synthesizer
     private let directSynth = AVSpeechSynthesizer()
@@ -366,8 +536,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
             // persist global defaults; per-book overrides must stay local.
-            if !usingDirectMode && audioEngine.isPlaying {
-                audioEngine.setSpeed(wpm: wordsPerMinute)
+            if !usingDirectMode, let engine = madeAudioEngine, engine.isPlaying {
+                engine.setSpeed(wpm: wordsPerMinute)
             }
         }
     }
@@ -375,8 +545,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var pitchMultiplier: Double = 1.0 {
         didSet {
             // Applying a book's pitch must not overwrite the global setting.
-            if !usingDirectMode && (audioEngine.isPlaying || audioEngine.isPaused) {
-                audioEngine.setPitch(multiplier: pitchMultiplier)
+            if !usingDirectMode, let engine = madeAudioEngine, engine.isPlaying || engine.isPaused {
+                engine.setPitch(multiplier: pitchMultiplier)
             }
         }
     }
@@ -384,8 +554,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var onWordSpoken: ((NSRange, String) -> Void)?
     var onUtteranceFinished: (() -> Void)?
 
-    /// The full text currently being spoken
-    private var currentText: String = ""
+    /// The full text currently being spoken, kept after a stop for a later
+    /// seek or resume until `releaseSpeech()`. Readable outside this class
+    /// so tests can tell that it was let go.
+    private(set) var currentText: String = ""
 
     /// Whether the engine holds audio rendered from exactly the text being
     /// spoken, in the voice chosen now.
@@ -399,7 +571,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// ends, since switching mid-playback is never seamless.
     private var renderedAudioMatchesSpeech: Bool {
         // Most direct speech has no rendered audio yet; skip hashing the text.
-        guard let rendered = audioEngine.renderedSignature else { return false }
+        guard let rendered = madeAudioEngine?.renderedSignature else { return false }
         return rendered == SpeechRenderSignature(text: currentText, voiceIdentifier: currentVoice?.identifier)
     }
 
@@ -414,9 +586,21 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// keep the requested offset here and restart from it on resume
     /// instead of immediately speaking a new utterance.
     private var pendingDirectSeekOffset: Int?
-    /// Max characters to pass to direct-mode TTS at once. Keeps startup latency low
-    /// while providing enough audio buffer for the engine to render in the background.
-    private static let directModeChunkSize = 5000
+    /// The chunk handed to the synthesizer to follow the one speaking, so
+    /// it goes straight on; nil when none is queued. It becomes the one
+    /// speaking when the one before it ends, or when it starts, whichever
+    /// the main queue hears first.
+    private var queuedDirectChunk: QueuedDirectChunk?
+    /// Most UTF-16 units direct speech hands the synthesizer first, at Play,
+    /// a seek, a skip, or a restart: the synthesizer reads a whole utterance
+    /// before its first word, which took 111 ms at 5,000 units and 66 ms at
+    /// 1,000 (PERF06).
+    static let directModeFirstChunkSize = 1_000
+    /// Most UTF-16 units of each later chunk, queued while the one before it
+    /// speaks, so its length delays nothing. Keeps the utterances few while
+    /// providing enough audio buffer for the engine to render in the
+    /// background.
+    static let directModeChunkSize = 5_000
     /// Polls AVFoundation's own playback state after direct speech has started.
     /// Two consecutive idle observations leave time for a normal `didFinish`
     /// callback to reach the main queue before recovery is attempted.
@@ -483,10 +667,6 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         NotificationCenter.default.publisher(for: .speechSettingsChanged)
             .sink { [weak self] _ in self?.reloadSettings() }
             .store(in: &settingsCancellables)
-
-        audioEngine.onPlaybackFinished = { [weak self] in
-            self?.handleEngineFinished()
-        }
     }
 
     /// Re-reads the global speech defaults after Settings changes them,
@@ -542,7 +722,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         // buffer for ordinary pause/resume flows. This call begins unrelated
         // text, so keeping that buffer would let seek/resume play audio from
         // the previous chapter when the new text is too large to render.
-        if audioEngine.discardRenderedAudio() {
+        if madeAudioEngine?.discardRenderedAudio() == true {
             transitionLog(.trace, "RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
         }
         currentText = text
@@ -591,48 +771,91 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         )
     }
 
+    /// Speak `text` directly from `charOffset`, starting with a short chunk
+    /// so the first word comes quickly; each later chunk is queued as the
+    /// one before it starts (`queueNextDirectChunk()`).
     private func speakDirect(_ text: String, fromCharOffset charOffset: Int) {
         usingDirectMode = true
-        let startOffset = max(0, min(charOffset, text.utf16Length))
-        let startIdx = text.index(atUTF16Offset: startOffset)
-        let normalizedStartOffset = text.utf16Offset(of: startIdx)
-        let remainingCount = text.utf16Length - normalizedStartOffset
-
-        let speakText: String
-        if remainingCount > Self.directModeChunkSize {
-            // Chunk: take only directModeChunkSize chars, snapped to a word boundary
-            var endIdx = text.index(atUTF16Offset: normalizedStartOffset + Self.directModeChunkSize)
-            // Advance to end of current word so we don't cut mid-word
-            while endIdx < text.endIndex && !text[endIdx].isWhitespace {
-                endIdx = text.index(after: endIdx)
-            }
-            speakText = String(text[startIdx..<endIdx])
-            directModeBaseOffset = normalizedStartOffset
-            directModeChunkEnd = text.utf16Offset(of: endIdx)
-            directModeChunked = true
-            transitionLog(.trace, "CHUNK_START: offset=\(normalizedStartOffset) len=\(speakText.utf16Length) end=\(directModeChunkEnd) totalText=\(text.utf16Length)")
-        } else if normalizedStartOffset > 0 {
-            speakText = String(text[startIdx...])
-            directModeBaseOffset = normalizedStartOffset
-            directModeChunkEnd = text.utf16Length
-            directModeChunked = false
-        } else {
-            speakText = text
-            directModeBaseOffset = 0
-            directModeChunkEnd = text.utf16Length
-            directModeChunked = false
+        let chunk = DirectSpeechChunk.starting(
+            at: charOffset,
+            in: text,
+            maximumLength: Self.directModeFirstChunkSize
+        )
+        directModeBaseOffset = chunk.start
+        directModeChunkEnd = chunk.end
+        directModeChunked = chunk.isPartial
+        if chunk.isPartial {
+            transitionLog(.trace, "CHUNK_START: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end) totalText=\(text.utf16Length)")
         }
 
-        let utterance = AVSpeechUtterance(string: speakText)
-        utterance.voice = currentVoice
-        utterance.rate = Self.rateForWPM(wordsPerMinute)
-        utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
-        utterance.prefersAssistiveTechnologySettings = false
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: text))
         // Mark this utterance as live BEFORE handing it to the synth.
         // The didFinish delegate compares against `liveDirectUtterance`
         // to filter callbacks for previously-stopped utterances.
         liveDirectUtterance = utterance
-        directSynth.speak(utterance)
+        handToSynthesizer(utterance)
+    }
+
+    /// Hand the synthesizer the chunk after the one that just started, so
+    /// it goes straight on when that one ends (PERF06). Starting a chunk only
+    /// once the end of the one before had reached the main queue kept the
+    /// synthesizer waiting on the main thread at every boundary, often
+    /// mid-sentence, for as long as the main thread was busy; queued, the
+    /// next chunk follows after the synthesizer's own pause between
+    /// utterances. Nothing is queued after the last chunk, or a second time,
+    /// or during a sleep fade, which queues its own segments.
+    private func queueNextDirectChunk() {
+        guard usingDirectMode, directModeChunked, queuedDirectChunk == nil, !isDirectSleepFadeActive,
+              directModeChunkEnd < currentText.utf16Length else { return }
+        let chunk = DirectSpeechChunk.starting(
+            at: directModeChunkEnd,
+            in: currentText,
+            maximumLength: Self.directModeChunkSize
+        )
+        let utterance = makeDirectUtterance(speaking: chunk.words(of: currentText))
+        queuedDirectChunk = QueuedDirectChunk(utterance: utterance, chunk: chunk)
+        transitionLog(.trace, "CHUNK_QUEUED: offset=\(chunk.start) len=\(chunk.end - chunk.start) end=\(chunk.end)")
+        handToSynthesizer(utterance)
+    }
+
+    /// Make the queued chunk the one speaking: the synthesizer has gone on
+    /// to it, so its words, its end, and its finish are the ones that count.
+    private func promoteQueuedDirectChunk() {
+        guard let queued = queuedDirectChunk else { return }
+        queuedDirectChunk = nil
+        liveDirectUtterance = queued.utterance
+        directModeBaseOffset = queued.chunk.start
+        directModeChunkEnd = queued.chunk.end
+        directModeChunked = queued.chunk.isPartial
+    }
+
+    /// A chunk handed to the synthesizer to follow the one speaking.
+    private struct QueuedDirectChunk {
+        /// The utterance speaking it, told apart from every other by identity.
+        let utterance: AVSpeechUtterance
+        /// Where it lies in the text being spoken.
+        let chunk: DirectSpeechChunk
+    }
+
+    /// An utterance of `text` in the voice, speed, and pitch chosen now.
+    private func makeDirectUtterance(speaking text: String) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = currentVoice
+        utterance.rate = Self.rateForWPM(wordsPerMinute)
+        utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
+        utterance.prefersAssistiveTechnologySettings = false
+        return utterance
+    }
+
+    /// Hand `utterance` to the direct synthesizer, which speaks it after
+    /// any it is speaking already; in tests, to the recorder standing in for
+    /// the synthesizer (`_directUtteranceRecorderForTesting`).
+    private func handToSynthesizer(_ utterance: AVSpeechUtterance) {
+        if let record = _directUtteranceRecorderForTesting {
+            record(utterance)
+        } else {
+            directSynth.speak(utterance)
+        }
     }
 
     /// Monitor a direct utterance after AVFoundation confirms that it started.
@@ -759,6 +982,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     private func stopDirectSynthesizer() {
         stopDirectPlaybackWatchdog()
         liveDirectUtterance = nil
+        // Stopping the synthesizer drops the chunk queued behind the live
+        // one too; any callback for it is then for no chunk at all.
+        queuedDirectChunk = nil
         clearDirectSleepFadeState()
         directSynth.stopSpeaking(at: .immediate)
     }
@@ -819,7 +1045,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         }
 
         if !usingDirectMode {
-            audioEngine.setVolume(volume)
+            madeAudioEngine?.setVolume(volume)
         }
     }
 
@@ -852,11 +1078,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         isDirectSleepFadeActive = true
 
         let utterances = segments.map { segment -> AVSpeechUtterance in
-            let utterance = AVSpeechUtterance(string: segment.text)
-            utterance.voice = currentVoice
-            utterance.rate = Self.rateForWPM(wordsPerMinute)
-            utterance.pitchMultiplier = Float(Self.clampedPitch(pitchMultiplier))
-            utterance.prefersAssistiveTechnologySettings = false
+            let utterance = makeDirectUtterance(speaking: segment.text)
             utterance.volume = segment.volume
             let identifier = ObjectIdentifier(utterance)
             directFadeOffsets[identifier] = segment.baseUTF16Offset
@@ -874,14 +1096,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 + "plannedEnd=\(directModeChunkEnd) duration=\(duration)"
         )
         for utterance in utterances {
-            directSynth.speak(utterance)
+            handToSynthesizer(utterance)
         }
     }
 
     /// Restore normal-volume direct speech when a running fade is cancelled.
     /// Rendered playback only needs its mixer volume restored.
     func cancelSleepTimerFade() {
-        audioEngine.restoreVolume()
+        madeAudioEngine?.restoreVolume()
         guard isDirectSleepFadeActive else { return }
 
         let offset = max(
@@ -918,8 +1140,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // later resume recreates normal-volume speech at this cursor.
         } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
-        } else if audioEngine.isPlaying {
-            audioEngine.pause()
+        } else if let engine = madeAudioEngine, engine.isPlaying {
+            engine.pause()
         }
         // Always set isPaused — even if engine hasn't started yet (still rendering)
         // The render completion checks isPaused before starting playback
@@ -934,7 +1156,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// final full-volume tail.
     func pauseForSleepTimerFadeCompletion() {
         defer {
-            audioEngine.restoreVolume()
+            madeAudioEngine?.restoreVolume()
         }
 
         guard isSpeaking && !isPaused else { return }
@@ -943,8 +1165,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // The helper stopped the fade queue before engine volume is reset.
         } else if usingDirectMode {
             directSynth.pauseSpeaking(at: .immediate)
-        } else if audioEngine.isPlaying || audioEngine.isPaused {
-            let offset = audioEngine.stopAfterFadePreservingPosition()
+        } else if let engine = madeAudioEngine, engine.isPlaying || engine.isPaused {
+            let offset = engine.stopAfterFadePreservingPosition()
             currentWordRange = NSRange(location: offset, length: 0)
         }
 
@@ -959,7 +1181,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     func resume() -> Bool {
         guard isPaused else { return false }
 
-        let offset = currentWordRange?.location ?? audioEngine.currentCharOffset()
+        let offset = currentWordRange?.location ?? madeAudioEngine?.currentCharOffset() ?? 0
         let action = SpeechResumePolicy.action(
             usingDirectMode: usingDirectMode,
             pendingDirectSeekOffset: pendingDirectSeekOffset,
@@ -967,8 +1189,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             // audio is never switched to. A paused engine resumes its own
             // audio whatever this says.
             engineHasRenderedAudio: renderedAudioMatchesSpeech,
-            engineIsPaused: audioEngine.isPaused,
-            engineIsPlaying: audioEngine.isPlaying,
+            engineIsPaused: madeAudioEngine?.isPaused ?? false,
+            engineIsPlaying: madeAudioEngine?.isPlaying ?? false,
             directSynthIsPaused: directSynth.isPaused,
             currentOffset: offset,
             hasText: !currentText.isEmpty
@@ -1063,8 +1285,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopDirectSynthesizer()
         // Cancel any in-progress background render so it doesn't compete
         // with the next direct-mode TTS for system resources
-        audioEngine.cancelRender()
-        audioEngine.stop()
+        madeAudioEngine?.cancelRender()
+        madeAudioEngine?.stop()
         isSpeaking = false
         isPaused = false
         currentWordRange = nil
@@ -1080,6 +1302,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return isSpeaking || isPaused
     }
 
+    /// Restore the speech engine's full volume after a sleep-timer fade;
+    /// speech that never made an engine has no volume to restore.
+    func restoreEngineVolume() {
+        madeAudioEngine?.restoreVolume()
+    }
+
+    /// Stop, then let go of what a stopped speech service keeps for a later
+    /// seek or resume: the text it was speaking and the engine's rendered
+    /// audio, without making an engine to do it. For a reader that has
+    /// closed, whose window SwiftUI may keep alive (PERF27).
+    func releaseSpeech() {
+        stop()
+        currentText = ""
+        madeAudioEngine?.discardRenderedAudio()
+    }
+
     /// Start playback using a pre-rendered AudioEngineService (for seamless chapter transitions).
     /// Swaps the pre-rendered engine in and starts playing immediately — no direct mode, no rendering delay.
     /// The caller has checked that `preEngine` holds audio rendered from exactly
@@ -1090,8 +1328,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         currentText = text
         renderGeneration += 1
 
-        // Swap the pre-rendered engine's buffers into our engine
-        // We can't swap the engine object itself since it's a let, so copy the rendered data
+        // Move the pre-rendered engine's audio into this service's engine,
+        // which is made now if speech has not needed one before, and which
+        // keeps its own volume, speed, and pitch.
         audioEngine.adoptRenderedAudio(from: preEngine)
 
         isSpeaking = true
@@ -1145,10 +1384,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
                 // before the voice changed: restart direct speech here.
                 speakDirect(currentText, fromCharOffset: offset)
             }
-        } else if audioEngine.hasRenderedAudio {
+        } else if let engine = madeAudioEngine, engine.hasRenderedAudio {
             // Rendered audio is the backend already: seek within it.
-            audioEngine.seek(toCharOffset: offset)
-            if audioEngine.isPlaying {
+            engine.seek(toCharOffset: offset)
+            if engine.isPlaying {
                 startPositionTracking()
             }
         }
@@ -1186,7 +1425,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         if usingDirectMode {
             return currentWordRange?.location ?? 0
         }
-        return audioEngine.currentCharOffset()
+        return madeAudioEngine?.currentCharOffset() ?? 0
     }
 
     /// Background queue for position tracking string operations.
@@ -1207,11 +1446,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopPositionTracking()
         let myGeneration = positionGeneration
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, !self.usingDirectMode,
-                  self.audioEngine.isPlaying || self.audioEngine.isPaused else { return }
+            guard let self = self, !self.usingDirectMode, let engine = self.madeAudioEngine,
+                  engine.isPlaying || engine.isPaused else { return }
             // currentCharOffset() reads the audio node's render time,
             // which is safe from the main thread (the timer's thread)
-            let offset = self.audioEngine.currentCharOffset()
+            let offset = engine.currentCharOffset()
             let range = NSRange(location: offset, length: 1)
             // Capture the text for background processing. The text
             // doesn't change during playback so this reference is safe.
@@ -1311,6 +1550,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         directModeBaseOffset = baseOffset
         liveDirectUtterance = utterance
     }
+
+    /// Takes every utterance direct speech would hand the synthesizer, in
+    /// its place, so hosted tests can follow the chunks speech is made of and
+    /// deliver the synthesizer's callbacks for them without a sound. Nil, as
+    /// in the app, hands them to the synthesizer.
+    var _directUtteranceRecorderForTesting: ((AVSpeechUtterance) -> Void)?
 
     deinit {
         stop()
@@ -1416,6 +1661,16 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 self.isPaused = false
                 return
             }
+            // The chunk queued after the one speaking may report its start
+            // before that one's end reaches the main queue. The synthesizer
+            // has gone on to it, so it is the one speaking now, and the end
+            // of the one before is then for a chunk no longer live.
+            if self.usingDirectMode,
+               let queued = self.queuedDirectChunk,
+               Self.isLiveDirectUtterance(started.utterance, liveUtterance: queued.utterance) {
+                self.transitionLog(.trace, "CHUNK_CONTINUE: queued chunk started at offset \(queued.chunk.start)")
+                self.promoteQueuedDirectChunk()
+            }
             guard Self.isLiveDirectUtterance(started.utterance, liveUtterance: self.liveDirectUtterance),
                   self.usingDirectMode else {
                 self.transitionLog(.trace, "DIRECT_START_IGNORED: stale utterance or direct mode inactive")
@@ -1427,6 +1682,8 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             self.isSpeaking = true
             self.isPaused = false
             self.startDirectPlaybackWatchdog(for: started.utterance)
+            // The next chunk waits in the synthesizer while this one speaks.
+            self.queueNextDirectChunk()
         }
     }
 
@@ -1504,7 +1761,18 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             // own didFinish twice.
             self.liveDirectUtterance = nil
 
-            // If this was a chunked utterance, continue with the next direct chunk.
+            // The synthesizer goes straight on to the chunk queued after this
+            // one, which is the one speaking now; its start re-arms the
+            // watchdog and queues the chunk after it.
+            if let queued = self.queuedDirectChunk {
+                self.transitionLog(.trace, "CHUNK_CONTINUE: queued chunk at offset \(queued.chunk.start)")
+                self.promoteQueuedDirectChunk()
+                return
+            }
+
+            // A chunked utterance whose successor was never queued, because
+            // its start never reached the main queue, continues with a new
+            // utterance from where it ended.
             if self.directModeChunked {
                 let nextOffset = self.directModeChunkEnd
                 if nextOffset < self.currentText.utf16Length {

@@ -241,6 +241,10 @@ final class ReaderViewModel: ObservableObject {
     /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
     var lookAhead: LookAhead?
+    /// The speech prepared for recent chapters, and the look-ahead's, each
+    /// used again while everything it was prepared from stays the same
+    /// (PERF02). Accessed from the Playback extension.
+    var chapterSpeechCache = ChapterSpeechCache()
     /// The playback generation. Every chapter play (see `ChapterPlay`), and
     /// every move to another chapter or loop, begins a new one. The end the
     /// speech or audio service reports for a play ends it only while the

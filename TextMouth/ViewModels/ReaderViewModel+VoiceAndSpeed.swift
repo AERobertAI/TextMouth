@@ -52,19 +52,32 @@ extension ReaderViewModel {
     }
 
     /// Set voice for this book only. The next chapter, if already rendered
-    /// ahead in the old voice, is rendered again in this one.
+    /// ahead in the old voice, is rendered again in this one, and the voice
+    /// is loaded ahead of Play.
     func setLocalVoice(_ voice: AVSpeechSynthesisVoice) {
         speechService.currentVoice = voice
         book.localVoiceID = voice.identifier
         saveLocalVoiceSettings()
         refreshLookAhead()
+        warmUpVoice()
         announceToVoiceOver("Voice changed to \(voice.name)")
+    }
+
+    /// Have the render queue load the voice speech uses now into the system
+    /// synthesizer, ahead of Play: a session's first word otherwise waited
+    /// 3 to 4.5 s while the voice loaded (PERF03). Each voice is loaded once
+    /// per process, so asking again costs nothing. An audiobook speaks no
+    /// chapters, so it loads nothing.
+    func warmUpVoice() {
+        guard !isAudioBook else { return }
+        renderScheduler.warmUp(speechService.currentVoice)
     }
 
     /// Apply this book's saved voice, speed, and pitch overrides to the speech
     /// engine. Runs when the reader opens and again after global speech
     /// settings change, because per-book overrides take priority. A voice
-    /// that changed either way also brings the look-ahead up to date.
+    /// that changed either way also brings the look-ahead up to date, and the
+    /// voice in effect is loaded ahead of Play.
     ///
     /// Audio books store their playback multiplier in `localWPM`, so their
     /// saved speed must never reach the speech engine: 1.25 would clamp to
@@ -81,7 +94,19 @@ extension ReaderViewModel {
            let voice = AVSpeechSynthesisVoice(identifier: localVoiceID) {
             speechService.currentVoice = voice
         }
-        refreshLookAhead()
+        // Speed and pitch are applied as the audio plays, so only a voice
+        // other than the one the next chapter renders in makes the look-ahead
+        // stale: each speed or pitch step in Settings, which every playing
+        // reader hears, leaves a look-ahead in the voice in effect alone
+        // (PERF02). The global voice may have changed before this runs, so
+        // the look-ahead's own voice is what is compared.
+        let lookAheadVoiceIsCurrent = lookAhead.map {
+            $0.signature.voiceIdentifier == speechService.currentVoice?.identifier
+        } ?? false
+        if !lookAheadVoiceIsCurrent {
+            refreshLookAhead()
+        }
+        warmUpVoice()
     }
 
     /// Persist all local voice settings (voice, speed, pitch) to library and bookInfo
@@ -140,6 +165,7 @@ extension ReaderViewModel {
             speechService.currentVoice = voice
         }
         refreshLookAhead()
+        warmUpVoice()
         announceToVoiceOver("Using global voice and speed settings")
     }
 
@@ -176,28 +202,12 @@ extension ReaderViewModel {
         libraryViewModel.updateSkippedHeadings(bookID: book.id, skippedIDs: ids)
         refreshLookAhead()
     }
-
-    /// Remove text under skipped headings from a chapter's text.
-    /// Returns the filtered text and an OffsetMap tracking which characters were removed,
-    /// so downstream offset conversions can map back to original-text positions.
-    func filterSkippedSections(chapterIndex: Int, text: String) -> (text: String, offsetMap: OffsetMap) {
-        // Most books skip nothing, and then the text is unchanged.
-        let skippedIDs = skippedHeadingIDs
-        guard content != nil, !skippedIDs.isEmpty else { return (text, .identity) }
-        // `headings` always equals `content.allHeadings`. Reading it avoids
-        // rebuilding every heading of the book for each chapter, which adds
-        // up when playback passes over many silent chapters in a row.
-        let chapterHeadings = headings.filter { $0.chapterIndex == chapterIndex }
-        return SkippedSectionFilter.apply(
-            text: text,
-            headings: chapterHeadings,
-            skippedIDs: skippedIDs
-        )
-    }
 }
 
 /// Removes excluded heading ranges while preserving the source/filtered offset
-/// relationship required by seeking and playback highlighting.
+/// relationship required by seeking and playback highlighting. Speech
+/// preparation applies it to each chapter with the chapter's own headings
+/// (`ChapterSpeechInputs.prepare()`).
 enum SkippedSectionFilter {
     static func apply(
         text: String,
