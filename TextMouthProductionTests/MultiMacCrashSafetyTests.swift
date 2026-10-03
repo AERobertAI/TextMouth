@@ -400,6 +400,75 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         }
     }
 
+    /// Statistics only in the cloud are not read on the main thread, which
+    /// would wait on the network: the sync service is asked for them, and
+    /// this session's listening stands in. No save replaces the file
+    /// meanwhile; the first save that finds it on this Mac adds that
+    /// listening to what it holds.
+    func testStatisticsOnlyInTheCloudAreNeverSavedOver() throws {
+        let file = try makeSandboxDirectory("StatsInCloud").appendingPathComponent("reading_stats.json")
+        let theirs = try statsData(totalSeconds: 9_000)
+        try theirs.write(to: file)
+        let provider = FakeCloudItemStatusProvider()
+        installItemStatus(provider)
+        let reader = CloudFileReader()
+        let service = ReadingStatsService(fileURL: file, readFile: { try reader.read($0) })
+        addTeardownBlock { @MainActor in service.shutdown() }
+
+        XCTAssertTrue(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 0)
+        XCTAssertEqual(provider.downloadRequests, [file])
+
+        let book = UUID()
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: book, at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the stand-ins were saved over the file in the cloud")
+
+        // The file is on this Mac now: the next save adds to what it holds.
+        reader.isInCloud = false
+        service.startSession(bookID: book, at: start.addingTimeInterval(200))
+        service.endSession(at: start.addingTimeInterval(260))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 9_180)
+        XCTAssertEqual(service.stats.bookListeningSeconds[book.uuidString], 180)
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_180)
+    }
+
+    /// Statistics that stood in for a file add to what the file holds: each
+    /// day's, each book's, and the total listening, and the books finished
+    /// that the file doesn't list yet.
+    func testStandInStatisticsAddToTheFilesOwn() {
+        let shared = UUID()
+        let other = UUID()
+        let finished = FinishedBookEntry(
+            bookID: shared.uuidString,
+            title: "Moby-Dick",
+            dateFinished: Date(timeIntervalSince1970: 1_790_000_000)
+        )
+        var file = ReadingStats()
+        file.addListening(100, bookID: shared, dayKey: "2026-10-01")
+        file.finishedBooks = [finished]
+        var standIn = ReadingStats()
+        standIn.addListening(30, bookID: shared, dayKey: "2026-10-01")
+        standIn.addListening(20, bookID: other, dayKey: "2026-10-03")
+        standIn.finishedBooks = [
+            finished,
+            FinishedBookEntry(bookID: other.uuidString, title: "Emma", dateFinished: Date(timeIntervalSince1970: 1_790_100_000)),
+        ]
+
+        let sum = file.adding(standIn)
+
+        XCTAssertEqual(sum.totalListeningSeconds, 150)
+        XCTAssertEqual(sum.dailyListeningSeconds, ["2026-10-01": 130, "2026-10-03": 20])
+        XCTAssertEqual(sum.bookListeningSeconds, [shared.uuidString: 130, other.uuidString: 20])
+        XCTAssertEqual(sum.finishedBooks.map(\.title), ["Moby-Dick", "Emma"])
+        XCTAssertEqual(sum.dayKeyVersion, file.dayKeyVersion)
+    }
+
     // MARK: - substitutions.json
 
     /// Conflict copies beside the substitution rules are never read.
@@ -556,6 +625,21 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         return try encoder.encode(stats)
     }
 
+    /// The statistics in reading_stats.json at `file`.
+    private func decodedStats(at file: URL) throws -> ReadingStats {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(ReadingStats.self, from: Data(contentsOf: file))
+    }
+
+    /// Makes `provider` the app's file-level cloud service until the test
+    /// ends, when the one in use now is put back.
+    private func installItemStatus(_ provider: any CloudItemStatusProviding) {
+        let previous = CloudServices.itemStatus
+        CloudServices.itemStatus = provider
+        addTeardownBlock { @MainActor in CloudServices.itemStatus = previous }
+    }
+
     /// substitutions.json's bytes for plain rules with the names given.
     private func rulesData(named names: [String]) throws -> Data {
         try JSONEncoder().encode(names.map {
@@ -582,4 +666,20 @@ final class MultiMacCrashSafetyTests: XCTestCase {
 private final class WriteCounter {
     /// How many writes were made.
     var count = 0
+}
+
+/// Reads a file as the app does, except that while `isInCloud` it refuses
+/// as a read of a dataless file does with downloading off (`EDEADLK`): only
+/// a sync service makes real dataless files.
+private final class CloudFileReader {
+    /// Whether the file's content is only in the cloud.
+    var isInCloud = true
+
+    /// The file's bytes, or the refusal while it is in the cloud.
+    func read(_ url: URL) throws -> Data {
+        if isInCloud {
+            throw POSIXError(.EDEADLK)
+        }
+        return try Data(contentsOf: url)
+    }
 }
