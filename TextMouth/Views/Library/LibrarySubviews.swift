@@ -267,6 +267,7 @@ struct BookRow: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("BookRow")
         HStack(spacing: 8) {
             // Selection indicator in edit mode
             if isEditMode {
@@ -397,6 +398,210 @@ struct BookRow: View {
     static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
         return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
+    }
+}
+
+// MARK: - Library List Row
+
+/// Whether a book can move up, and whether it can move down, in the manual
+/// order the list shows (TODO A06), read from the list's own order rather
+/// than by sorting the folder again for every row (PERF28).
+struct LibraryManualMoves: Equatable {
+    /// Whether Move Up is offered: the book is not first.
+    let canMoveUp: Bool
+    /// Whether Move Down is offered: the book is not last.
+    let canMoveDown: Bool
+
+    /// Whether either move is offered, so the menu shows them apart.
+    var canMove: Bool {
+        canMoveUp || canMoveDown
+    }
+
+    /// Each book's moves in `ordered`, a folder's books in their manual
+    /// order as the list shows it, by ID: every book but the first can move
+    /// up, and every book but the last can move down, as
+    /// `ManualBookOrder.canMove` decides. A book listed twice keeps its
+    /// first place, as it does there.
+    static func moves(in ordered: [Book]) -> [UUID: LibraryManualMoves] {
+        var moves: [UUID: LibraryManualMoves] = [:]
+        moves.reserveCapacity(ordered.count)
+        for (index, book) in ordered.enumerated() where moves[book.id] == nil {
+            moves[book.id] = LibraryManualMoves(
+                canMoveUp: index > 0,
+                canMoveDown: index < ordered.count - 1
+            )
+        }
+        return moves
+    }
+}
+
+/// What a library row's commands do, supplied by the list. Each closure acts
+/// on the list's state as it is when the command runs, so rows never compare
+/// them (PERF28).
+struct LibraryBookRowActions {
+    /// Opens a book in its reader.
+    let open: (Book) -> Void
+    /// Shows a book's Book Info.
+    let showInfo: (Book) -> Void
+    /// Enters edit mode with a book selected.
+    let select: (Book) -> Void
+    /// Selects or deselects a book in edit mode.
+    let toggleSelection: (Book) -> Void
+    /// Asks where to move books, and moves them there.
+    let moveToFolder: ([Book]) -> Void
+    /// Moves a book one place up (-1) or down (+1) in the folder's manual
+    /// order.
+    let moveInManualOrder: (Book, Int) -> Void
+    /// Runs a cloud command (FR02).
+    let performCloudCommand: (LibraryCloudCommand) -> Void
+    /// Removes books, as the removal preferences say.
+    let remove: ([Book]) -> Void
+}
+
+/// One book's row in the library list: the row, its context menu, its
+/// default action, and its cloud commands as VoiceOver actions, which act on
+/// the same books (FR02).
+///
+/// Equatable on everything it shows (PERF28). When a change to the library
+/// draws the list again, SwiftUI skips every row the change left as it was,
+/// so one changed book redraws one row; and SwiftUI builds a row's context
+/// menu each time the row draws, which now happens only when the row has
+/// something new to show. The comparison lives here, not in `BookRow`,
+/// which observes its live position: what a row observes cannot be read by
+/// a comparison, which runs outside the main actor.
+struct LibraryBookListRow: View, Equatable {
+    /// The row's book.
+    let book: Book
+    /// Whether a reader window has the book open.
+    let isOpenInWindow: Bool
+    /// The speed the time left is figured at.
+    let wpm: Double
+    /// Whether the list is in edit mode.
+    let isEditMode: Bool
+    /// Whether the book is selected in edit mode.
+    let isEditSelected: Bool
+    /// The book's cloud state, when the library is in a cloud location
+    /// (FR02).
+    let cloudState: BookCloudState?
+    /// The books the commands act on: the selection, in list order, when
+    /// the row belongs to a selection of several books; otherwise the row's
+    /// own book.
+    let targets: [Book]
+    /// The cloud commands for `targets` (FR02).
+    let cloudCommands: [LibraryCloudCommand]
+    /// Move Up and Move Down, offered for the row's own book while the list
+    /// shows its folder's manual order; nil otherwise.
+    let manualMoves: LibraryManualMoves?
+    /// Whether removing asks first and where deleted files go, so Remove
+    /// says what it will do.
+    let removalPreferences: RemovalPreferences
+    /// The book's live position while a reader plays it (TODO PERF11): one
+    /// object for the book all session, compared by identity. `BookRow`
+    /// observes it, so its changes redraw the row's progress alone.
+    let livePosition: LiveReadingPosition
+    /// What the commands do. Never compared.
+    let actions: LibraryBookRowActions
+
+    /// Whether two rows show the same thing: every input but `actions`.
+    nonisolated static func == (lhs: LibraryBookListRow, rhs: LibraryBookListRow) -> Bool {
+        lhs.book == rhs.book
+            && lhs.isOpenInWindow == rhs.isOpenInWindow
+            && lhs.wpm == rhs.wpm
+            && lhs.isEditMode == rhs.isEditMode
+            && lhs.isEditSelected == rhs.isEditSelected
+            && lhs.cloudState == rhs.cloudState
+            && lhs.targets == rhs.targets
+            && lhs.cloudCommands == rhs.cloudCommands
+            && lhs.manualMoves == rhs.manualMoves
+            && lhs.removalPreferences == rhs.removalPreferences
+            && lhs.livePosition === rhs.livePosition
+    }
+
+    var body: some View {
+        let _ = ViewBodyCounter.record("LibraryBookListRow")
+        BookRow(
+            book: book,
+            isOpenInWindow: isOpenInWindow,
+            wpm: wpm,
+            isEditMode: isEditMode,
+            isEditSelected: isEditSelected,
+            cloudState: cloudState,
+            cloudCommands: cloudCommands,
+            performCloudCommand: actions.performCloudCommand,
+            livePosition: livePosition
+        )
+        .accessibilityAction(.default) {
+            if isEditMode {
+                actions.toggleSelection(book)
+            } else {
+                actions.open(book)
+            }
+        }
+        .contextMenu {
+            menu
+        }
+    }
+
+    /// The row's context menu. Its commands act on `targets`: the selection
+    /// when the row belongs to one, otherwise the row's book. The cloud
+    /// commands (FR02) are also the row's VoiceOver actions.
+    @ViewBuilder
+    private var menu: some View {
+        let isMulti = targets.count > 1
+
+        if !isMulti {
+            Button("Open") {
+                actions.open(book)
+            }
+            Button("Book Info") {
+                actions.showInfo(book)
+            }
+        }
+        if !isEditMode {
+            Button("Select") {
+                actions.select(book)
+            }
+        }
+        Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
+            actions.moveToFolder(targets)
+        }
+        // Manual order move commands: single book only, where
+        // the list shows one folder's manual order (TODO A06)
+        if let manualMoves, manualMoves.canMove {
+            Divider()
+            if manualMoves.canMoveUp {
+                Button("Move Up") {
+                    actions.moveInManualOrder(book, -1)
+                }
+            }
+            if manualMoves.canMoveDown {
+                Button("Move Down") {
+                    actions.moveInManualOrder(book, 1)
+                }
+            }
+        }
+        // Download Now and Remove Download in a cloud library, and Show in
+        // Finder in every library (FR02).
+        if !cloudCommands.isEmpty {
+            Divider()
+            ForEach(cloudCommands) { command in
+                Button(command.title) {
+                    actions.performCloudCommand(command)
+                }
+            }
+        }
+        Divider()
+        // Says what removal will do: ask first, or
+        // move the files to the Trash, or delete them.
+        Button(
+            LibraryRemoveCommandWording(
+                preferences: removalPreferences,
+                books: targets
+            ).menuTitle,
+            role: .destructive
+        ) {
+            actions.remove(targets)
+        }
     }
 }
 
