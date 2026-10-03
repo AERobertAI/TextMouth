@@ -933,6 +933,13 @@ final class ReaderViewModel: ObservableObject {
             } catch {
                 DispatchQueue.main.async { [weak self] in
                     guard let self, !self.hasClosed else { return }
+                    // The library moved the book while it loaded, so the
+                    // files the load read may have gone from under it: load
+                    // it again from where the book is now (TODO P10).
+                    if self.book.filePath != filePath {
+                        self.loadContent()
+                        return
+                    }
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                     // A book that cannot load cannot play for a finished

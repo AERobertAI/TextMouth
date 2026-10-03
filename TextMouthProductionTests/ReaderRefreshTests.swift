@@ -517,6 +517,33 @@ final class ReaderRefreshTests: XCTestCase {
         XCTAssertEqual(reader.epubMetadata?.author, Self.revisedAuthor)
     }
 
+    /// The library moves an audiobook in the moment between a reader
+    /// opening it and its content arriving, while the load reads its files
+    /// in the background. Whichever finishes first, the reader ends up
+    /// loaded, with no error, naming the book's chapter files where they
+    /// are now, and plays from there.
+    func testABookMovedWhileItLoadsOpensFromWhereItIsNow() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Move While Loading")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [2, 2])
+        let reader = world.openReader(for: book)
+
+        XCTAssertTrue(reader.isLoading)
+        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        waitForReaderToLoad(reader)
+
+        XCTAssertNil(reader.errorMessage, "The moved book did not open")
+        XCTAssertEqual(reader.content?.chapters.count, 2)
+        let stale = staleFields(of: reader, in: world.library, after: "the move while loading")
+        XCTAssertTrue(stale.isEmpty, Self.report(stale))
+        reader.play()
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: book, in: world.library).filePath)
+        )
+        reader.stop()
+    }
+
     // MARK: - Stale Fields
 
     /// Every field of `reader` that no longer matches `library`'s row for
