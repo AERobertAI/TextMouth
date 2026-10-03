@@ -213,16 +213,26 @@ The tests are one XCTest bundle, TextMouthProductionTests, hosted by the app its
 
 A process hosting tests never touches your data. When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps its data directory, this Mac's own folders (its Logs folder, the working copies, and the import folders), and its preferences in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory. In that process, VoiceOver announcements made through the app's announcer are recorded instead of spoken, and a test that leaves a reader window open fails.
 
+Each run deletes its sandbox as it finishes, and, as it starts, deletes in the background the sandboxes that earlier runs left behind, such as one that crashed. The system reuses process numbers, so a sandbox counts as left behind once no process with its number is running, or the one that is started more than an hour after the sandbox was made. With TEST_RUNNER_TEXTMOUTH_KEEP_SANDBOX=1, a run keeps its sandbox for you to look inside, with a KEPT-SANDBOX.txt file in it that keeps later sweeps away; a later run given the same process number moves it aside, adding -kept- and a short suffix to its name. Delete a kept sandbox when you are done with it.
+
 - `make test` runs the whole suite. It runs `swift run` in TextMouthTests/, whose small runner calls:
   - With `TEST_DERIVED_DATA=<folder>`, as in `make test TEST_DERIVED_DATA=build/DerivedData`, the runner builds in that folder, counted from the repository root, instead of Xcode's default DerivedData folder.
   - `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO`
 - Every target checks concurrency completely: `project.yml` sets `SWIFT_STRICT_CONCURRENCY` to `complete` for the whole project, so Xcode, `make build`, `make test`, and `make check` all report the same warnings. The project's coding agents run the suite without parallel testing and with a build folder of their own; the `SWIFT_STRICT_CONCURRENCY=complete` in their command is now redundant, and harmless:
   - `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO SWIFT_STRICT_CONCURRENCY=complete -derivedDataPath /tmp/TextMouth-DerivedData`
 - To run one test class, add `-only-testing:TextMouthProductionTests/` followed by the class name, such as `-only-testing:TextMouthProductionTests/CountWordingTests`.
-- A full run compiles the app and takes four to five minutes. A few tests skip in an ordinary run:
+- A full run compiles the app and takes four to five minutes. Some tests skip in an ordinary run:
   - Opt-in tests that need a copied book or a library to profile, set up as TextMouthTests/README.md describes. That file also explains the playback profiling script, Scripts/profile-production-playback.sh.
   - Tests that read the accessibility structure SwiftUI builds, which it builds only while an assistive client such as VoiceOver is running.
   - The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
+  - The opt-in benchmarks of the performance work (below).
+- The benchmarks of the performance work of October 3, 2026, time what each change made faster and print their figures in the test log. They are opt-in, since they take minutes or need a run of their own, and each group runs when its variable is 1; xcodebuild hands a variable whose name starts with TEST_RUNNER_ to the test host without that prefix:
+  - TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS: the speech-preparation benchmarks at the sizes too slow to time in every run, and four that time the system synthesizer, muted, and the first speech engine. Three of those four mean something only when each runs alone, named with -only-testing, in a process of its own.
+  - TEST_RUNNER_TEXTMOUTH_VIEW_BENCHMARKS: ViewsAndWindowsBenchmarks, which measure what a change of the library costs the list, what a playing reader costs its sheets, what a closed reader still holds, and how many test sandboxes the temporary folder holds.
+  - TEST_RUNNER_TEXTMOUTH_BENCHMARKS: TextPipelineBenchmarkTests, which time the text pipeline's old and new code side by side, best in a Release build, as in `xcodebuild test -configuration Release ENABLE_TESTABILITY=YES -only-testing:TextMouthProductionTests/TextPipelineBenchmarkTests` with the rest of the usual arguments.
+  - TEST_RUNNER_TEXTMOUTH_RENDER_BENCHMARK: what rendering a chapter's speech costs in memory and main-thread time. It takes about half a minute, and nothing is heard.
+  - TEST_RUNNER_TEXTMOUTH_TRACK_CHANGE_BENCHMARK: how long an audiobook's next file takes to start playing, timed with silent files.
+  - PersistenceCostTests and LibraryModelBenchmarkTests run in every run instead. They check what a change costs in counts that follow from the code alone, such as bytes written, file-system calls, and publishes of the library, never in time, which a busy Mac would change, and print their figures on lines beginning PERSISTENCE_COST: and PERFMODEL:.
 
 ### Testing on real cloud drives
 
