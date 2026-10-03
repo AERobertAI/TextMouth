@@ -758,6 +758,59 @@ class WatchTests(BoardTestCase):
         self.assertIn("unknown agent", self.fails("watch", "nobody", "--once"))
 
 
+class HousekeepingTests(BoardTestCase):
+    """purge and reset."""
+
+    def count_rows(self, table: str) -> int:
+        """Count the rows of one board table, read straight from the file."""
+        with contextlib.closing(sqlite3.connect(str(self.board_dir / "board.sqlite"))) as conn:
+            return conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+
+    def test_purge_deletes_old_messages_and_agents_with_what_belongs_to_them(self) -> None:
+        with self.clock(NOON - dt.timedelta(days=5)):
+            self.register("gone", "TextMouth/Old.swift")
+            self.register("alpha")
+            self.ok("post", "alpha", "--topic", "old news", "--file", "TextMouth/Old.swift")
+            self.ok("inbox", "gone")
+        with self.clock(NOON - dt.timedelta(hours=1)):
+            self.ok("heartbeat", "alpha")
+            self.ok("post", "alpha", "--topic", "recent", "--reply-to", "1")
+        with self.clock(NOON):
+            data = self.ok_json("purge", "--older-than", "2")
+        self.assertEqual((data["messages"], data["agents"]), (1, 1))
+        self.assertEqual([m["topic"] for m in self.ok_json("read")], ["recent"])
+        self.assertEqual([a["name"] for a in self.ok_json("agents")], ["alpha"])
+        for table in ("claims", "message_files", "reads"):
+            with self.subTest(table=table):
+                self.assertEqual(self.count_rows(table), 0, "rows belonging to purged messages and agents go too")
+        self.assertIn("(it answers #1, which was purged)", self.ok("thread", "2"))
+
+    def test_ids_keep_increasing_after_a_purge(self) -> None:
+        self.register("alpha")
+        with self.clock(NOON - dt.timedelta(days=3)):
+            for number in range(3):
+                self.ok("post", "alpha", "--topic", f"old {number}")
+        with self.clock(NOON):
+            self.ok("heartbeat", "alpha")
+            self.assertIn("Purged 3 messages and 0 agents older than 1 day.", self.ok("purge", "--older-than", "1"))
+            self.assertEqual(self.ok_json("post", "alpha", "--topic", "new")["id"], 4)
+
+    def test_purge_needs_a_positive_age(self) -> None:
+        self.fails("purge")
+        self.fails("purge", "--older-than", "0")
+        self.fails("purge", "--older-than", "-2")
+
+    def test_reset_needs_yes_and_then_empties_the_board(self) -> None:
+        self.register("alpha", "TextMouth/A.swift")
+        self.ok("post", "alpha", "--topic", "hello")
+        self.assertIn("add --yes to confirm", self.fails("reset"))
+        self.assertEqual(len(self.ok_json("agents")), 1, "nothing is deleted without --yes")
+        self.assertEqual(self.ok_json("reset", "--yes"), {"agents": 1, "claims": 1, "messages": 1})
+        self.assertEqual((self.ok_json("agents"), self.ok_json("read")), ([], []))
+        self.register("alpha")
+        self.assertEqual(self.ok_json("post", "alpha", "--topic", "again")["id"], 2, "ids are never reused")
+
+
 class ConcurrencyTests(BoardTestCase):
     """Several processes using the board at the same moment."""
 

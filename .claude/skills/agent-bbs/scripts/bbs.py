@@ -1448,6 +1448,51 @@ def cmd_watch(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Housekeeping
+# ---------------------------------------------------------------------------
+
+
+def cmd_purge(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Delete messages posted, and agents last seen, before a cutoff.
+
+    A message's files and read marks go with it; an agent's claims and read
+    marks go with it. Ids are never reused, so new messages keep counting
+    up from the highest id the board has ever given.
+    """
+    cutoff = to_utc_text(utc_now() - dt.timedelta(days=args.older_than))
+    with write_transaction(conn):
+        messages = conn.execute("DELETE FROM messages WHERE posted_at < ?", (cutoff,)).rowcount
+        agents = conn.execute("DELETE FROM agents WHERE last_seen < ?", (cutoff,)).rowcount
+    days = f"{args.older_than:g} day{'' if args.older_than == 1 else 's'}"
+    text = f"Purged {plural(messages, 'message')} and {plural(agents, 'agent')} older than {days}."
+    return Outcome({"messages": messages, "agents": agents, "cutoff": cutoff}, text)
+
+
+def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Delete every agent, claim, and message; refuses without --yes.
+
+    Message ids keep counting up afterwards, so an id that an agent
+    remembers for --since never hides a newer message.
+    """
+    if not args.yes:
+        raise UserError("reset deletes every agent, claim, and message on the board; add --yes to confirm")
+    with write_transaction(conn):
+        counts = {
+            table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in ("agents", "claims", "messages")
+        }
+        # Foreign keys cascade: files and read marks go with the messages,
+        # claims and read marks with the agents.
+        conn.execute("DELETE FROM messages")
+        conn.execute("DELETE FROM agents")
+    text = (
+        f"Reset the board: removed {plural(counts['agents'], 'agent')}, "
+        f"{plural(counts['claims'], 'claim')}, and {plural(counts['messages'], 'message')}."
+    )
+    return Outcome(counts, text)
+
+
+# ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
 
@@ -1475,14 +1520,14 @@ def positive_int(text: str) -> int:
     return value
 
 
-def positive_seconds(text: str) -> float:
-    """argparse type for a finite number of seconds greater than zero."""
+def positive_number(text: str) -> float:
+    """argparse type for a finite number greater than zero, such as seconds or days."""
     try:
         value = float(text)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"expected a number of seconds, got {text!r}") from None
+        raise argparse.ArgumentTypeError(f"expected a number, got {text!r}") from None
     if not (math.isfinite(value) and value > 0):
-        raise argparse.ArgumentTypeError(f"expected a number of seconds above 0, got {text!r}")
+        raise argparse.ArgumentTypeError(f"expected a number above 0, got {text!r}")
     return value
 
 
@@ -1613,15 +1658,27 @@ def build_parser() -> BoardArgumentParser:
     )
     watch.add_argument(
         "--interval",
-        type=positive_seconds,
+        type=positive_number,
         default=DEFAULT_WATCH_INTERVAL,
         metavar="SECONDS",
         help=f"how often to check for new messages (default {DEFAULT_WATCH_INTERVAL:g})",
     )
     watch.add_argument(
-        "--timeout", type=positive_seconds, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
+        "--timeout", type=positive_number, metavar="SECONDS", help="stop after this long (default: run until interrupted)"
     )
     watch.add_argument("--peek", action="store_true", help="leave the messages printed unread")
+
+    purge = command("purge", cmd_purge, "delete old messages and agents not seen for a while")
+    purge.add_argument(
+        "--older-than",
+        type=positive_number,
+        required=True,
+        metavar="DAYS",
+        help="delete messages posted, and agents last seen, more than DAYS days ago (fractions allowed)",
+    )
+
+    reset = command("reset", cmd_reset, "delete every agent, claim, and message")
+    reset.add_argument("--yes", action="store_true", help="confirm that everything should go")
     return parser
 
 
