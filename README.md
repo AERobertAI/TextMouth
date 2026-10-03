@@ -37,11 +37,13 @@ This file is the guide to using, building, and testing TextMouth. ARCHITECTURE.m
   - Sort by title, author, date added, last opened, file size, or your own manual order. Each folder and category remembers its own sort.
   - In manual order, Move Book Up and Move Book Down (Library menu), or dragging, rearrange a folder.
   - Edit Mode selects several books at once to move or remove them.
-  - A summary line gives each location's book count and its listening time remaining at the current speed.
+  - A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), include Show in Finder, which selects the book's package in Finder. In a library in the cloud they also offer Download Now and Remove Download (see Keeping your library in the cloud).
+  - A summary line gives each location's book count and its listening time remaining at the current speed, and, in a library in the cloud, how many of its books are in the cloud.
   - If a file cannot be saved (a full disk or a missing volume, for example), a banner in the Library window says what is unsaved, with Retry and Dismiss buttons. Quitting while something is unsaved asks first.
 - Reader windows:
   - Each book opens in its own window, and several can be open at once.
-  - An open book follows what the library does to it elsewhere: a new title or author, a move to another folder, a renamed folder, or a moved data directory. Nothing reloads and speech carries on; an audiobook playing while its files move stops for a moment and plays on from the same place.
+  - In a library in the cloud, a book whose files are only in the cloud downloads in its reader window before it opens (see Keeping your library in the cloud).
+  - An open book follows what the library does to it elsewhere: a new title or author, a move to another folder, or a renamed folder. Nothing reloads and speech carries on; an audiobook playing while its files move stops for a moment and plays on from the same place, and one playing from its working copy in a library in the cloud doesn't stop at all. The data directory itself can't move while any book is open.
   - The Playback menu holds Play / Pause, Skip Forward and Skip Backward, speed, Where Am I?, Copy Reading Position, Search in Book, and Release Media Controls.
   - The Navigate menu holds Go to Library, Next Heading and Previous Heading, Show Headings, Show Sleep Timer, and Book Info.
   - The Bookmarks menu holds Toggle Bookmark, Show Bookmarks, and Next Bookmark and Previous Bookmark.
@@ -55,26 +57,90 @@ This file is the guide to using, building, and testing TextMouth. ARCHITECTURE.m
 
 ## Where TextMouth keeps your library
 
-TextMouth keeps everything in one data directory: .TextMouth in your home folder unless you chose another place in Storage settings. That choice itself is kept in TextMouth's preferences, because config.json lives inside the directory it names. Moving the directory copies everything into a hidden folder beside the new location, checks the copy, then renames it into place in one step and switches to it. The new location must be an empty folder or one that does not exist yet. If anything else appears there, or the location is changed to lead somewhere else, while the copy is made, the move stops: TextMouth deletes only its own copy, leaves what appeared alone, keeps using the old folder, and says what appeared and where. A location that is a symbolic link counts as the folder it leads to, and messages name that folder too. The old folder is left where it was.
+TextMouth keeps everything in one data directory: .TextMouth in your home folder unless you chose another folder in Storage settings. Any folder can hold it, hidden or not: on this Mac, on an external or network drive, or in a cloud folder such as iCloud Drive, Dropbox, or Google Drive (see Keeping your library in the cloud). That choice itself is kept in TextMouth's preferences, with a bookmark of the folder and the identity of the library in it, because config.json lives inside the directory it names.
+
+- Choosing a location:
+  - Change Location… in Storage settings opens a folder chooser that shows hidden folders and can make a new folder; its button says Choose Location. The folder you choose becomes the data directory itself, with nothing added to its name.
+  - TextMouth first looks at the folder, reading only what the file system says about it and downloading nothing, while the status line says "Checking" and the folder's path. Then it offers what the folder can hold, and VoiceOver announces each status line as it appears:
+    - Move Library Here, for an empty folder, such as one just made in the chooser. The confirmation says that the library is copied there, checked, and used, with the current folder kept as recovery data, and what the place means: in a cloud folder, that the library, with its size, uploads in the background, and that a book only in the cloud needs an internet connection to open; on another drive, that the drive must be connected to open the library.
+    - Use This Library, for a folder that holds a TextMouth library: its library-identity.json, or a library.json beside a Library folder. TextMouth switches to that library as it is, copying nothing, then quits and opens again on it. This is how another Mac restores a library from the cloud. The confirmation names both libraries, and says when the folder holds another copy of the library in use, such as the folder an earlier move left behind, which may lack the latest changes. Changes not yet saved are written first, and the switch is refused while some still can't be saved: choose Retry Saving, then try again.
+    - For the folder the library is in already, the status line says it is the library TextMouth is using.
+    - Anything else is refused, with the reason: a file rather than a folder, a folder holding other items, which it names, a folder inside the library, a folder in the Trash, one TextMouth can't read or isn't allowed to change, a cloud folder that isn't on this Mac yet, a missing folder whose enclosing folder is missing too, or another drive without room for the library.
+  - Reset to Default moves a library in another folder back to ~/.TextMouth, the same way.
+- Moving the library:
+  - A move is refused while any book is open, naming the open books, and while books in a library in the cloud aren't downloaded: "3 books aren't downloaded. Download them first: select them in the library, then choose Download Now."
+  - An import, text extraction, or book analysis under way finishes first, and the move's progress says which it waits for; any that start meanwhile wait until the move is over.
+  - Moving copies everything into a hidden folder beside the new location, a book at a time, checks the copy, then renames it into place in one step and switches to it. The new location must be an empty folder or one that does not exist yet. If anything else appears there, or the location is changed to lead somewhere else, while the copy is made, the move stops: TextMouth deletes only its own copy, leaves what appeared alone, keeps using the old folder, and says what appeared and where. A location that is a symbolic link counts as the folder it leads to, and messages name that folder too. The old folder is left where it was.
+  - While the library moves, every Library window shows a sheet with its progress, as in "Moving the library… 40 percent", and Cancel, which Escape also presses; Storage settings show the same. VoiceOver moves to the progress bar, and announces what the move waits for, where the library is going as the copy starts, each quarter of the copy, and how the move ended. Books can't be opened or added meanwhile; a book opened from Finder is imported once the move is over.
+  - Cancel deletes the partial copy and leaves the library where it was, with no setting changed, and the status then says so, as in "Move cancelled. The library is still at /Users/you/.TextMouth." Once every item is copied, the move can only finish.
+  - Quitting during the copy stops the move first, as Cancel does, or lets it finish once every item is copied, and then quits. A move still waiting to start its copy doesn't hold up quitting.
+- When the library isn't available:
+  - TextMouth checks the data directory at launch, before it creates or loads anything, reading only metadata. It checks again when the drive holding it is unmounted, or when a save finds its folder gone.
+  - The default location is always available: it is created when it is missing, as on a first launch. A folder you chose is never created, nor any folder above it: a missing one is an unplugged drive, a signed-out cloud service, or a folder that was moved or deleted, and creating it would start an empty library in its place. A folder that was renamed, or a drive that mounted under another name, is found again through its bookmark, unless that leads into the Trash or to another library.
+  - Otherwise every Library window shows Library Not Available in place of the library: the reason, such as "The drive “Backup” isn't connected." or "The folder is there, but it holds a different TextMouth library.", the folder's full path, which you can select and copy, and two buttons, Try Again, which Return presses, and Quit TextMouth. VoiceOver moves to the reason and announces it once. Meanwhile the library index isn't saved, and no book can be opened or added.
+  - When library.json is only in the cloud, the reason says so, and TextMouth asks the sync service to download it; Try Again opens the library once it has arrived.
+  - Try Again opens the library once it is back. When the library went missing while TextMouth was open, library.json is read afresh, and the session's newer reading positions are carried into it.
+  - Storage settings say Library Not Available, with the same reason, and offer the ways out: Choose Another Library…, for a folder that holds a TextMouth library, and Use Default Location…, which uses the library in ~/.TextMouth or starts a new, empty one there. Either quits and opens TextMouth again on that library, and the confirmation lists the changes that couldn't be saved, which switching loses. Nothing is created at the missing location.
+
+The data directory holds:
 
 - library.json: the library index. It lists every book (title, author, format, folder, file path, reading position, bookmarks, and per-book settings), every folder, and each location's sort.
 - library.json.unreadable- followed by a date and time: a preserved copy of an index that could not be read. When library.json cannot be read, TextMouth never overwrites it, and the Library window's Recovery Options… offer Try Again and Rebuild Library Index, which rebuilds the index from the books on disk.
-- config.json: your settings, which you can edit by hand (see the next section).
+- library-identity.json: which library this is, an identifier and the date the library was given it. It is written once, when TextMouth creates the library or first opens one an earlier version made, and never overwritten, so the library keeps its identity wherever its folder goes. TextMouth remembers the identifier it expects, so a folder that only has the right name, such as another drive called Backup, is never taken for your library.
+- config.json: your settings, which you can edit by hand (see Editing settings in config.json).
 - substitutions.json: the text substitution rules from the Text tab of Settings.
 - reading_stats.json: listening statistics, kept by day.
-- Logs: diagnostic logs. They never hold your substitution rules, and they name files by their place inside the data directory. They hold none of your books' text either, with one known exception: a CONTENT_INDEX_REJECTED line, written when a book's saved index is set aside and rebuilt, can quote the words of a heading.
+- Sessions: in a library on another drive or in a cloud folder, a small file for each Mac that has the library open, holding the computer's name, when TextMouth was last active there, and its version. TextMouth writes this Mac's when the library opens, refreshes it every minute, and removes it at quit, and it removes any left untouched for 30 days (see Keeping your library in the cloud).
+- Library: your books. Its folders are the library's folders, and each book is a package: a folder named after the book's title, author, date added, and identifier, ending in .tmb. A package holds:
+  - The book's own file, under its original name. An audiobook made of several tracks keeps them in a folder instead; one converted from a DAISY audio ZIP also has a manifest.json listing its sections and the stretches of audio each one plays.
+  - bookInfo.json: the book's record, with its metadata, reading position, bookmarks, per-book settings, and the index of its chapters and headings. It can rebuild a book's library entry if library.json is lost. While a record is only in the cloud, TextMouth neither reads nor writes it, and the book's changes are saved in library.json alone until the record is on this Mac again.
+  - content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again. TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better.
+  - removedFromLibrary.json: present only when you chose Remove from Library Only. It keeps the package on disk without the book returning to the library.
+  - A folder whose name starts with .import- is an import in progress. Imports build their packages here only while the data directory is on another drive than this Mac's own folders (below), and otherwise in this Mac's Import Staging folder. Nothing else in TextMouth treats such a folder as a book. The next import into the same library folder removes one that an interrupted import, or an earlier version, left behind, and each import that builds in this Mac's folder clears what interrupted imports left there.
+- Archive Extraction: the working folder of ZIP imports while the data directory is on another drive than this Mac's own folders; otherwise ZIPs are extracted in this Mac's Archive Extraction folder (below). Each import removes its own folder when it ends. At startup TextMouth removes any left over, here and in this Mac's folder, and, while this Mac's folder is the one in use, removes this one once it is empty.
+- Logs, in a data directory an earlier version used: that version's diagnostic logs, which you can delete. TextMouth now keeps its logs on this Mac (below).
+
+TextMouth also keeps folders of this Mac's own, which never sync and keep working while the data directory isn't available:
+
+- ~/Library/Logs/TextMouth: diagnostic logs. They never hold your substitution rules, and they name files by their place inside the data directory or this Mac's TextMouth folder. They hold none of your books' text either, with one known exception: a CONTENT_INDEX_REJECTED line, written when a book's saved index is set aside and rebuilt, can quote the words of a heading.
   - textmouth_debug.log, the main log.
   - textmouth_timer.log, the sleep timer's log.
   - textmouth_transition.log, the speech engine's log.
   - Routine trace lines are written only while tracing is on: set the TEXTMOUTH_TRACE_LOG environment variable for one launch, or run `defaults write com.textmouth.TextMouth diagnosticTraceLogging -bool YES` until you turn it off again with `-bool NO`.
   - A log that reaches 2 MB is renamed with .previous added to its name, and a fresh one starts, so each log keeps at most two generations.
-- Library: your books. Its folders are the library's folders, and each book is a package: a folder named after the book's title, author, date added, and identifier, ending in .tmb. A package holds:
-  - The book's own file, under its original name. An audiobook made of several tracks keeps them in a folder instead; one converted from a DAISY audio ZIP also has a manifest.json listing its sections and the stretches of audio each one plays.
-  - bookInfo.json: the book's record, with its metadata, reading position, bookmarks, per-book settings, and the index of its chapters and headings. It can rebuild a book's library entry if library.json is lost.
-  - content.md: the text cache, the book's text as Markdown, so a text book opens without parsing its source again. TextMouth rebuilds it when the source file changes or when a newer version of TextMouth reads that format better.
-  - removedFromLibrary.json: present only when you chose Remove from Library Only. It keeps the package on disk without the book returning to the library.
-  - A folder whose name starts with .import- is an import in progress. Nothing else in TextMouth treats it as a book, and a later import into the same folder removes one that an interrupted import left behind.
-- Archive Extraction: a temporary working folder for ZIP imports. Each import removes its own folder when it ends, and TextMouth removes any it finds left over at startup.
+- ~/Library/Application Support/com.textmouth.TextMouth:
+  - Working Copies: the copies that open audiobooks in a library in the cloud play from. Each is deleted when its reader window closes, and any that a crash left behind are removed the next time a copy is made.
+  - Import Staging: the packages imports are building, while the data directory is on the same disk as this folder: the startup disk, which also holds the folders of iCloud Drive and other cloud drives. A data directory on another drive keeps them in its own library folders instead, so a new book is always put in place with one rename on one disk.
+  - Archive Extraction: the working folders of ZIP imports, under the same condition.
+
+## Keeping your library in the cloud
+
+A data directory in iCloud Drive, Dropbox, Google Drive (streaming), or another cloud drive that macOS keeps in ~/Library/CloudStorage works as any other, and lets the sync service keep books only in the cloud to free space on this Mac: macOS removes the downloads of files it can fetch again when it needs space, and you can remove a book's download yourself. TextMouth recognizes such a folder from its path, tells each book's state from file-system metadata without downloading anything, and downloads a book when you open it. To put your library there, choose a folder in the drive with Change Location… and then Move Library Here; on another Mac signed in to the same drive, choose that folder and Use This Library (see Where TextMouth keeps your library). CLOUD-STORAGE-RESEARCH-2026-10-03.md and CLOUD-STORAGE-PLAN-2026-10-03.md, in the same folder as this file, explain the design.
+
+- In the Library window:
+  - Each book's row shows and speaks its state after the New or Now Reading badge: Downloaded, In Cloud, Downloading 40%, Download Failed, or Waiting for Sync, which means the book's package hasn't arrived on this Mac yet. While a row speaks a download's percentage, it speaks the reading progress as "42 percent read", so the two never sound alike. A library on this Mac or on another drive looks and reads as before.
+  - The summary line adds how many of the books shown are in the cloud, as in "3 books in the cloud": those not wholly on this Mac.
+  - The states are read again when a Library window opens, when TextMouth becomes the active app, after books are added, moved, or removed, every minute while a Library window is open, and every 2 seconds while any book downloads, even one Finder started.
+  - A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), offer Download Now for a book in the cloud or one whose download failed, Remove Download for a downloaded book, and Show in Finder, which selects the book's package. Each cloud service's own command for keeping a book on this Mac is in Finder: Keep Downloaded for iCloud Drive, Offline Access for Google Drive, and Make available offline for Dropbox.
+  - With several books selected, these commands act on the selection and count the books they act on: "Download 3 Books", "Remove Downloads of 3 Books", "Show 3 Books in Finder".
+  - Download Now downloads the books one at a time, each showing Downloading 0% until its turn. It announces when it starts, and gives one summary when every book has ended, naming any book that wasn't downloaded and why.
+  - Remove Download frees the space a downloaded book takes on this Mac, leaving it in the cloud. It deletes nothing from the cloud, so it doesn't ask first. It refuses a book open in a reader, and one with changes not yet uploaded, and says why in an announcement and an alert.
+  - Book Info never waits for a download. For a book only in the cloud, it shows the details the library keeps, with "Some details appear once the book is downloaded.", and refuses to write changes into the book's EPUB file until the book is downloaded.
+- Opening a book:
+  - A downloaded book opens at once. A book with files only in the cloud downloads first, in its reader window: "Downloading" and the book's title, the sync service's name, and a progress bar that VoiceOver moves to and reads as "2 of 3 files, 40 percent". While a single file is left and nothing has been counted yet, the bar gives that file's size and the time waited instead.
+  - VoiceOver hears the download start, then 25, 50, and 75 percent (or, while there is no percentage, the time waited, every 30 seconds), then "Downloaded. Loading."
+  - Cancel, which Escape also presses, stops waiting, and the window then says the book isn't downloaded, with two buttons: Download, which Return presses, and Close.
+  - A failure shows the reason with Try Again, which Return presses, and Close. Offline, the download fails at once: "This Mac is offline, so the book can't be downloaded from Dropbox. Connect to the internet and try again." A sync service that downloads nothing for 60 seconds is reported as perhaps paused, signed out, or not running. A book whose package hasn't arrived on this Mac yet says so.
+  - The book is then read without ever waiting on the network. A file that went back to the cloud meanwhile is downloaded once more; if it has gone again, the reader says that part of the book isn't on this Mac.
+- Playing an audiobook:
+  - An open audiobook plays from a working copy: a copy of its package in this Mac's Working Copies folder, which on the same disk takes almost no extra space. So it keeps playing offline, or after the sync service removes the book's download. The copy is deleted when the reader window closes, and positions and bookmarks still save to the library.
+  - When no copy can be made, a chapter whose file is only in the cloud downloads before it plays, in the same view, while the reader shows Playing. Pausing, with Play/Pause or when the sleep timer runs out, stops waiting, so the chapter doesn't start by itself later; it downloads again when you next play it, if it still has to. A failure stops at that chapter with a Chapter Not Downloaded alert offering Try Again.
+  - A text book is read into memory when it opens, so it needs no copy.
+- Background maintenance never downloads a book. The startup repair, the text cache and statistics passes, and Redo Text Extraction leave a book whose files are in the cloud as it is, decide nothing from what only the cloud knows, and catch the book up once its files are on this Mac; opening a book also rebuilds its text cache when that is out of date. Each pass that skipped books writes one MAINTENANCE_SKIPPED_IN_CLOUD line in the debug log, saying how many, and Redo Text Extraction says so in Storage settings too, as in "Done. 12 books in the cloud were skipped."
+- Two Macs:
+  - Use a library on one Mac at a time. While a library on another drive or in a cloud folder is open, TextMouth keeps a file for this Mac in its Sessions folder. When another Mac's file was refreshed in the last three minutes, TextMouth warns, once a session: "TextMouth is also open on “Study iMac” (active 2 minutes ago). Using one library on two Macs at the same time can lose reading positions and changes." Continue, which Return presses, keeps the library open here, and Quit TextMouth quits. It is only a warning: nothing is locked.
+  - config.json travels with the library, so a dataDirectoryPath that another Mac wrote is ignored when it names a folder this Mac doesn't have (see Editing settings in config.json).
+- What was tested: the opt-in tests in Testing on real cloud drives, below, passed against Dropbox, and CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md lists the checks, with VoiceOver steps, still to be made by hand on each drive.
 
 ## Building and testing
 
@@ -104,7 +170,7 @@ Run these from the repository root:
 
 The tests are one XCTest bundle, TextMouthProductionTests, hosted by the app itself: Xcode launches TextMouth.app and runs the tests inside it, so they exercise the real code through `@testable import TextMouth`. New tests belong in TextMouthProductionTests/. The files under TextMouthTests/Sources/Tests are older scenario groups that project.yml lists one by one.
 
-A process hosting tests never touches your data. When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps its data directory and its preferences in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory. In that process, VoiceOver announcements made through the app's announcer are recorded instead of spoken, and a test that leaves a reader window open fails.
+A process hosting tests never touches your data. When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps its data directory, this Mac's own folders (the logs, the working copies, and the import folders), and its preferences in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory. In that process, VoiceOver announcements made through the app's announcer are recorded instead of spoken, and a test that leaves a reader window open fails.
 
 - `make test` runs the whole suite. It runs `swift run` in TextMouthTests/, whose small runner calls:
   - `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO`
@@ -114,6 +180,23 @@ A process hosting tests never touches your data. When the XCTestConfigurationFil
 - A full run compiles the app and takes four to five minutes. A few tests skip in an ordinary run:
   - Opt-in tests that need a copied book or a library to profile, set up as TextMouthTests/README.md describes. That file also explains the playback profiling script, Scripts/profile-production-playback.sh.
   - Tests that read the accessibility structure SwiftUI builds, which it builds only while an assistive client such as VoiceOver is running.
+  - The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
+
+### Testing on real cloud drives
+
+CloudDriveIntegrationTests runs the cloud services against real sync services. It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
+
+- Make a folder named TextMouth Cloud Tests in each drive to test, and list the folders' full paths, separated by colons. xcodebuild hands a variable to the test host when you set it with the prefix TEST_RUNNER_, as in:
+  - `TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_ROOTS="$HOME/Library/CloudStorage/Dropbox/TextMouth Cloud Tests" xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -only-testing:TextMouthProductionTests/CloudDriveIntegrationTests`
+- When any entry isn't the full path of an existing folder with that name inside a cloud drive, or is listed twice, the tests fail and use no folder at all. CloudDriveTestSupportTests checks these rules in every ordinary run.
+- Each test works only inside a new folder of its own, writes small files of random bytes there (the small-library test uses the repository's TestData books), and deletes the folder when it ends, even after a failure. Nothing else on the drive is read or changed, and the app's library stays in the test sandbox. With TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY=1, the small library stays on the drive, for the checks made by hand. A run moves about 36 MB up and 10 MB down for each drive.
+- On October 3, 2026, every test passed against Dropbox, which showed that:
+  - Download and removal requests work: a test book's files uploaded within 5 seconds, their downloads were removed at once, and they downloaded again within a second through TextMouth's book service.
+  - A file whose download was removed reports its real size, and a clone made before the removal stays readable.
+  - A package renamed into the drive, as an import puts a new book in place, syncs as one book, and a hidden folder syncs within 4 seconds.
+  - Remove Download refuses a book whose new file hasn't finished uploading.
+  - Progress is reported only at 0 and 100 percent for small files, and a file's modification time moves by up to 118 nanoseconds when it downloads again, which is why TextMouth compares the times of a text cache's files to the microsecond.
+- iCloud Drive and Google Drive haven't been run yet. CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md, in the same folder as this file, gives the commands for every drive and the matrix of checks to make by hand, with VoiceOver steps, for what these tests can't reach: TextMouth's own screens and commands on a real drive, and a drive that is paused, signed out, or offline.
 
 ### The make check gate
 
@@ -127,8 +210,9 @@ config.json, in the data directory, mirrors TextMouth's settings so you can read
   - At launch, TextMouth applies the file first, because it may have been edited while TextMouth was closed.
   - While TextMouth runs, it notices a saved edit within a moment and applies it.
   - Every change you make in Settings saves the file again.
+  - While the library isn't available, TextMouth neither reads, writes, nor watches the file, which may hold another library's settings. Once the library is back, a setting changed meanwhile keeps its new value, and every other one takes the file's.
 - How values are checked:
-  - Each field is read on its own, so one mistake never discards the rest of the file. A number out of range is moved to the nearest allowed value, a value that cannot be read counts as missing, and each repair is noted in the debug log (Logs/textmouth_debug.log).
+  - Each field is read on its own, so one mistake never discards the rest of the file. A number out of range is moved to the nearest allowed value, a value that cannot be read counts as missing, and each repair is noted in the debug log (textmouth_debug.log, in ~/Library/Logs/TextMouth).
   - If the whole file is not valid JSON, TextMouth leaves it alone at launch and notes why in the debug log. The next settings change saves a fresh file over it.
   - An empty text field, an empty or unknown choice, and a speed or pitch of 0 all leave the current setting as it is.
   - A missing field also leaves its setting as it is, except for these, which are read as their defaults, so applying the file sets the default: rewindSmartMode, rewindSmartThreshold, sleepFadeOutDuration, sleepTimerAutoClose, punctuationPauseLevel, autoPlayOnNavigate, bluetoothMonitoringEnabled, bluetoothDisconnectDelay, restartTimerGestureEnabled, restartTimerGesturePattern, restartTimerGestureWindow, importDeleteBehavior, confirmBeforeDelete, and moveToTrashInsteadOfDeleting.
@@ -141,9 +225,9 @@ config.json, in the data directory, mirrors TextMouth's settings so you can read
   - Storage: importDeleteBehavior ("Keep Original", "Delete After Import", or "Ask Each Time"), confirmBeforeDelete, and moveToTrashInsteadOfDeleting. config.json is the only place these three are kept.
   - Miscellaneous: bluetoothMonitoringEnabled, bluetoothDisconnectDelay (1 to 10 seconds), restartTimerGestureEnabled, restartTimerGesturePattern, and restartTimerGestureWindow (0.5 to 10 seconds).
 - Two fields describe this Mac rather than your preferences:
-  - dataDirectoryPath: where the data directory is, empty for the default location. TextMouth always writes the folder in use. Changing it asks TextMouth to move the library there, exactly as Storage settings do, so emptying or deleting it while the library is elsewhere asks for a move to the default location. A move needs an empty destination; a value TextMouth cannot read keeps the folder in use.
+  - dataDirectoryPath: where the data directory is, empty for the default location. TextMouth always writes the folder in use. Changing it asks TextMouth to move the library there, exactly as Storage settings do, and emptying or deleting it names the default location. config.json can come from another Mac with a library in the cloud, so a request is ignored, with one CONFIG_FILE line in the debug log, when the folder it names doesn't exist on this Mac or already holds a TextMouth library: emptying the field moves the library back only when ~/.TextMouth exists and holds no library. A move needs an empty destination; a value TextMouth cannot read keeps the folder in use.
   - lastOpenedBookID: the book opened most recently, which TextMouth records itself.
-- What stays out of config.json: window positions, the last sleep timer you used, the preference that records the data directory's location, and the hidden switch for trace logging.
+- What stays out of config.json: window positions, the last sleep timer you used, the preferences that record where the data directory is (its path, a bookmark of its folder, and the identity of the library expected there), this Mac's identifier for the Sessions folder, and the hidden switch for trace logging.
 
 ## Working on TextMouth with coding agents
 
