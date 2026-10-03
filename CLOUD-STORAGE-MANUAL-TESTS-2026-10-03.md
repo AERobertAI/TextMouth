@@ -47,7 +47,7 @@ xcodebuild test ... -only-testing:TextMouthProductionTests/CloudDriveIntegration
 - [ ] **9. External drive.** Move the library to the drive (row 1's steps). Quit TextMouth, eject the drive (Command-E in Finder), unplug it, and launch TextMouth. Expect "Library Not Available", the reason, the path, and Try Again (Return) and Quit TextMouth buttons, with focus on the message. Plug the drive back in and press Return. Expect the library to open, and `ls /Volumes` to show nothing created for the missing drive.
 - [ ] **10. Sign out of Dropbox, or move the library folder to the Trash, and launch.** Expect "Library Not Available" and nothing new under `~/Library/CloudStorage`. A plain rename may instead be followed by the library's bookmark and open normally; that is by design.
 - [ ] **11. Two Macs open the same library.** Expect the second to show "TextMouth is also open on "<Mac>" (active ...)." and nothing deleted on either.
-- [ ] **12. Optimize Mac Storage (iCloud Drive).** In part. Remove the downloads of most books, then relaunch TextMouth. Expect those books to read "In Cloud" and nothing to download at launch. Check `grep MAINTENANCE_SKIPPED_IN_CLOUD ~/Library/Logs/TextMouth/textmouth_debug.log`.
+- [ ] **12. Optimize Mac Storage (iCloud Drive).** In part. Remove the downloads of most books, then relaunch TextMouth. Expect those books to read "In Cloud" and nothing to download at launch. Check `grep MAINTENANCE_SKIPPED_IN_CLOUD "<data directory>/Logs/textmouth_debug.log"` (or `~/Library/Logs/TextMouth/textmouth_debug.log` when Storage settings put the logs on this Mac).
 
 ## What the Dropbox run answered
 
