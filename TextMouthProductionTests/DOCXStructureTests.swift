@@ -6,10 +6,11 @@ import XCTest
 /// values, restart rules, and per-instance overrides; list items nest so
 /// that each is heard once, apart from the text around it, with no bullet
 /// or number read as a word; styles inherit heading levels through their
-/// `w:basedOn` chains; and a paragraph's own outline level makes it a
-/// heading or body text. Each test builds a minimal DOCX package in memory
-/// and reads it through `DOCXParser`, the path every import takes, or
-/// parses one part with its production parser.
+/// `w:basedOn` chains; a paragraph's own outline level makes it a heading or
+/// body text; and only current formatting counts, never the formatting a
+/// tracked change replaced. Each test builds a minimal DOCX package in
+/// memory and reads it through `DOCXParser`, the path every import takes,
+/// or parses one part with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -785,6 +786,48 @@ final class DOCXStructureTests: XCTestCase {
 
         XCTAssertEqual(reading.headings, ["3 Rim Width", "1 Valve Types"])
         XCTAssertTrue(reading.markdown.contains("\nMeasured inside the hooks.\n"), reading.markdown)
+    }
+
+    // MARK: - Tracked Formatting Changes
+
+    /// A tracked formatting change records how a paragraph or run was
+    /// formatted before the change; only the current formatting counts. The
+    /// heading that was body text stays a heading, the paragraph that was a
+    /// heading stays body text, the list item keeps its own list and level,
+    /// and the run made bold is bold, not also italic as it once was.
+    func testTrackedFormattingChangesDoNotOverrideCurrentFormatting() throws {
+        let change = "w:id=\"1\" w:author=\"Reviewer\" w:date=\"2026-01-05T09:00:00Z\""
+        let reading = try read(body: [
+            "<w:p><w:pPr><w:pStyle w:val=\"Heading1\"/><w:pPrChange \(change)><w:pPr><w:pStyle w:val=\"Normal\"/>"
+                + "</w:pPr></w:pPrChange></w:pPr><w:r><w:t>Brake Pads</w:t></w:r></w:p>",
+            "<w:p><w:pPr><w:pPrChange \(change)><w:pPr><w:outlineLvl w:val=\"0\"/></w:pPr></w:pPrChange></w:pPr>"
+                + "<w:r><w:t>Check the wear line first.</w:t></w:r></w:p>",
+            "<w:p><w:pPr><w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"1\"/></w:numPr><w:pPrChange \(change)><w:pPr>"
+                + "<w:numPr><w:ilvl w:val=\"1\"/><w:numId w:val=\"2\"/></w:numPr></w:pPr></w:pPrChange></w:pPr>"
+                + "<w:r><w:t>Loosen the caliper</w:t></w:r></w:p>",
+            "<w:p><w:r><w:rPr><w:b/><w:rPrChange \(change)><w:rPr><w:i/></w:rPr></w:rPrChange></w:rPr><w:t>Never</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\"> skip the test ride.</w:t></w:r></w:p>"
+        ], styles: Self.headingStyles, numbering: """
+        <w:abstractNum w:abstractNumId="0">
+        <w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl><w:lvl w:ilvl="1"><w:numFmt w:val="decimal"/></w:lvl>
+        </w:abstractNum>
+        <w:abstractNum w:abstractNumId="1">
+        <w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl><w:lvl w:ilvl="1"><w:numFmt w:val="bullet"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        <w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num>
+        """)
+
+        XCTAssertEqual(reading.markdown, """
+        # Brake Pads
+
+
+        Check the wear line first.
+        1. Loosen the caliper
+
+        **Never** skip the test ride.
+        """)
+        XCTAssertEqual(reading.headings, ["1 Brake Pads"])
     }
 
     // MARK: - Helpers

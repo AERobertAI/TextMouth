@@ -27,6 +27,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     // Element stack for tracking nesting context
     private var elementStack: [String] = []
 
+    /// How many records of tracked formatting changes (`w:pPrChange`,
+    /// `w:rPrChange`, and the like) enclose the element being read. Inside
+    /// one, properties are the formatting from before the change.
+    private var trackedChangeDepth = 0
+
     // Paragraph-level state (reset at each <w:p>)
     private var currentParagraphStyle = ""
     private var currentParagraphText = ""
@@ -114,6 +119,13 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
         elementStack.append(localName)
+
+        // Formatting from before a tracked change says nothing about the
+        // text as it now stands: read as current, it would undo the change.
+        if Self.recordsTrackedChange(localName) {
+            trackedChangeDepth += 1
+        }
+        guard trackedChangeDepth == 0 else { return }
 
         switch localName {
         case "p":
@@ -234,6 +246,21 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// Emit the Markdown that ends the element named `localName` (without
     /// its namespace prefix) and pop it from the element stack.
     private func endElement(_ localName: String) {
+        defer {
+            if !elementStack.isEmpty {
+                elementStack.removeLast()
+            }
+        }
+
+        // Inside a tracked change's record nothing started as content, so
+        // nothing ends as content either; only the record itself closes.
+        if trackedChangeDepth > 0 {
+            if Self.recordsTrackedChange(localName) {
+                trackedChangeDepth -= 1
+            }
+            return
+        }
+
         switch localName {
         case "r":
             // End of a text run -- apply formatting and append to paragraph text
@@ -262,10 +289,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         default:
             break
         }
+    }
 
-        if !elementStack.isEmpty {
-            elementStack.removeLast()
-        }
+    /// Whether the element named `localName` records a tracked formatting
+    /// change: `w:pPrChange`, `w:rPrChange`, `w:sectPrChange`, the table
+    /// property changes, and `w:numberingChange`. Each holds the properties
+    /// as they were before the change, and never any text.
+    private static func recordsTrackedChange(_ localName: String) -> Bool {
+        localName.hasSuffix("Change")
     }
 
     // MARK: - Paragraph Processing
