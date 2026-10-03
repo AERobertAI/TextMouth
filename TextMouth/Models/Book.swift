@@ -595,20 +595,26 @@ struct Book: Identifiable, Codable, Hashable {
     /// describes, reading bookInfo.json alone: the package keeps its content
     /// index file unless `contentIndex` replaces it (PERF15).
     func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil) throws {
-        try bookInfo(replacing: storedRecord(), contentIndex: contentIndex).saveRecord(to: tmbDirectory)
+        try saveBookInfoThrowing(contentIndex: contentIndex, inPackageAt: tmbDirectory)
+    }
+
+    /// Writes this book's record over the record in the package at `tmbDir`,
+    /// exactly as `saveBookInfoThrowing(contentIndex:)` writes over the one
+    /// in the book's own package: for a copy of that package, as a
+    /// data-directory move writes each staged copy's record
+    /// (`DataDirectoryMigrator`). The record it replaces is read without its
+    /// content index (`StoredBookRecord`), or is nil when there is none or
+    /// it cannot be read, and the package keeps its content index file as
+    /// it is unless `contentIndex` replaces it.
+    func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil, inPackageAt tmbDir: URL) throws {
+        let stored = try? StoredBookRecord.read(from: tmbDir)
+        try bookInfo(replacing: stored, contentIndex: contentIndex).saveRecord(to: tmbDir)
     }
 
     /// The record now in this book's package, with its content index, or
     /// nil when there is none or it cannot be read.
     func storedBookInfo() -> BookInfo? {
         try? BookInfo.load(from: tmbDirectory)
-    }
-
-    /// The record now in this book's package as a save that replaces it
-    /// finds it, without reading its content index (`StoredBookRecord`), or
-    /// nil when there is none or it cannot be read.
-    func storedRecord() -> StoredBookRecord? {
-        try? StoredBookRecord.read(from: tmbDirectory)
     }
 
     /// The record this book writes over `stored`, the record now in its
