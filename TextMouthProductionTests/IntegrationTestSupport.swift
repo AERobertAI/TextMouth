@@ -250,3 +250,83 @@ extension XCTestCase {
         }
     }
 }
+
+// MARK: - Fixture EPUBs
+
+/// One chapter of a fixture EPUB: an XHTML document in the reading order.
+struct IntegrationEPUBChapter {
+    /// The document's file name, beside the package document.
+    let fileName: String
+    /// The markup inside the document's body.
+    let body: String
+}
+
+/// One entry of a fixture EPUB's table of contents.
+struct IntegrationTOCEntry {
+    /// What the entry says, which the reader lists as a heading.
+    let label: String
+    /// Where it leads: a chapter's file name, with a fragment when it leads
+    /// to a place inside the chapter.
+    let target: String
+}
+
+/// Writes small EPUB 3 books the way a publisher packages them: a package
+/// document listing every chapter in reading order, and a navigation
+/// document whose table of contents leads into them.
+enum IntegrationEPUB {
+    /// Writes the book `title`, holding `chapters` in reading order and a
+    /// table of contents of `contents`, as an EPUB file at `url`.
+    static func write(
+        title: String,
+        chapters: [IntegrationEPUBChapter],
+        contents: [IntegrationTOCEntry],
+        to url: URL
+    ) throws {
+        let manifest = chapters.enumerated().map { number, chapter in
+            "<item id=\"c\(number + 1)\" href=\"\(chapter.fileName)\" media-type=\"application/xhtml+xml\"/>"
+        }.joined()
+        let spine = chapters.indices.map { "<itemref idref=\"c\($0 + 1)\"/>" }.joined()
+        let tableOfContents = contents.map { "<li><a href=\"\($0.target)\">\($0.label)</a></li>" }.joined()
+
+        var entries: [String: Data] = [
+            "mimetype": Data("application/epub+zip".utf8),
+            "META-INF/container.xml": Data("""
+            <?xml version="1.0"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+            <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+            </container>
+            """.utf8),
+            "OEBPS/content.opf": Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id">
+            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <dc:identifier id="id">urn:uuid:\(UUID().uuidString)</dc:identifier>
+            <dc:title>\(title)</dc:title><dc:creator>Odalys Pretorius</dc:creator><dc:language>en</dc:language>
+            </metadata>
+            <manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>\(manifest)</manifest>
+            <spine>\(spine)</spine>
+            </package>
+            """.utf8),
+            "OEBPS/nav.xhtml": Data(page(
+                title: "Contents",
+                body: "<nav epub:type=\"toc\" id=\"toc\"><h1>Contents</h1><ol>\(tableOfContents)</ol></nav>"
+            ).utf8),
+        ]
+        for chapter in chapters {
+            entries["OEBPS/\(chapter.fileName)"] = Data(page(title: title, body: chapter.body).utf8)
+        }
+
+        let archive = try makeTemporaryZip(prefix: "IntegrationEPUB", entries: entries)
+        try FileManager.default.moveItem(at: archive, to: url)
+    }
+
+    /// An XHTML document titled `title` whose body is `body`.
+    private static func page(title: String, body: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+        <head><title>\(title)</title></head>
+        <body>\(body)</body></html>
+        """
+    }
+}
