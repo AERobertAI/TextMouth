@@ -135,8 +135,16 @@ extension ReaderViewModel {
         return clamped(adjusted)
     }
 
-    /// Add a bookmark at the current reading position with an optional label
-    func addBookmarkAtCurrentPosition(label: String = "") {
+    /// Add a bookmark at the current reading position with an optional label.
+    ///
+    /// - Returns: The bookmark added, so the bookmarks panel can move focus
+    ///   to its row; nil when the library holds no record of this book and
+    ///   so added nothing.
+    @discardableResult
+    func addBookmarkAtCurrentPosition(label: String = "") -> Bookmark? {
+        // The bookmarks saved before this one. Whichever bookmark is new
+        // afterwards is the one added here, wherever the library placed it.
+        let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
         libraryViewModel.addBookmark(
             bookID: book.id,
             chapterIndex: currentChapterIndex,
@@ -145,6 +153,7 @@ extension ReaderViewModel {
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
         announceToVoiceOver("Bookmark \(bookmarks.count) added")
+        return bookmarks.first { !existingIDs.contains($0.id) }
     }
 
     /// Update the user-facing label on an existing bookmark
