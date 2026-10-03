@@ -109,6 +109,30 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(try bookFiles(of: book), Fixtures.navigationBookFiles)
     }
 
+    /// A package file whose name holds characters a reference reads
+    /// otherwise ("#" a fragment, "%" an escape, ":" a scheme) is still the
+    /// book's own file: it is listed and copied with the book, which reads.
+    func testPackageFileNamedWithReferenceCharactersIsTheBooksOwnFile() throws {
+        let opf = Fixtures.packageBook["book.opf", default: ""]
+            .replacingOccurrences(of: "<item id=\"opf\" href=\"book.opf\" media-type=\"text/xml\"/>\n", with: "")
+        for (name, folderName) in [
+            ("Timetables #2 (100%).opf", "Numbered Timetables"),
+            ("Ferry: Timetables.opf", "Ferry Timetables")
+        ] {
+            let files = Fixtures.files(Fixtures.packageBook, changing: [name: opf], removing: ["book.opf"])
+            let folder = try Fixtures.writeFolder(files, named: folderName, in: sources)
+
+            let inventory = try DAISYPackageInventory.make(for: folder)
+            let book = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath).book
+
+            XCTAssertEqual(inventory.entryPath, name)
+            XCTAssertEqual(inventory.paths, files.keys.sorted(), name)
+            XCTAssertEqual(book.bookFileURL.lastPathComponent, name)
+            XCTAssertEqual(try bookFiles(of: book), files.keys.sorted(), name)
+            try assertReadsInFull(book, sentences: Fixtures.packageBookSentences, headings: Fixtures.packageBookHeadings)
+        }
+    }
+
     // MARK: - Failures
 
     /// A manifest entry leading out of the book's folder fails the import

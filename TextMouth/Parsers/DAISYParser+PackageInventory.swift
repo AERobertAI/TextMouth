@@ -238,8 +238,11 @@ struct DAISYPackageInventory {
         let root = entry.deletingLastPathComponent()
         let entryPath = entry.lastPathComponent
 
+        // The entry file is added by its name, not read as a reference: a
+        // file name may hold "#", "%", or ":", which a reference gives
+        // other meanings.
         var collector = PackageFileCollector(root: root)
-        try collector.add(entryPath, in: entryPath)
+        try collector.addPath(entryPath, referredToAs: entryPath, in: entryPath)
         let entryData = try Data(contentsOf: collector.source(of: entryPath) ?? entry)
         let wholeFolderReason: String?
         if DAISYParser.isNCCFileName(entryPath) {
@@ -622,16 +625,27 @@ private struct PackageFileCollector {
     /// Adds the file `reference`, made in the book's file `file`, names,
     /// and returns its path; nil for a reference to no file of the book
     /// (`DAISYPackageInventory.packagePath(of:in:)`), or to a path no book
-    /// file can have (`DAISYPackageInventory.isBookPath(_:)`). A path that
-    /// names nothing is noted as missing, and one naming a folder is kept
-    /// out of the files.
+    /// file can have (`addPath(_:referredToAs:in:)`).
     /// - Throws: `DAISYPackageError.referenceOutsidePackage` naming the
     ///   reference when it, or a symbolic link it leads to, leaves the
     ///   book's folder.
     @discardableResult
     mutating func add(_ reference: String, in file: String) throws -> String? {
-        guard let path = try DAISYPackageInventory.packagePath(of: reference, in: file),
-              DAISYPackageInventory.isBookPath(path) else { return nil }
+        guard let path = try DAISYPackageInventory.packagePath(of: reference, in: file) else { return nil }
+        return try addPath(path, referredToAs: reference, in: file)
+    }
+
+    /// Adds the file at `path` inside the book's folder, which `reference`
+    /// in the book's file `file` names, and returns `path`; nil when no
+    /// book file can have that path (`DAISYPackageInventory.isBookPath(_:)`).
+    /// A path that names nothing is noted as missing, and one naming a
+    /// folder is kept out of the files.
+    /// - Throws: `DAISYPackageError.referenceOutsidePackage` naming
+    ///   `reference` when the path is a symbolic link leading out of the
+    ///   book's folder.
+    @discardableResult
+    mutating func addPath(_ path: String, referredToAs reference: String, in file: String) throws -> String? {
+        guard DAISYPackageInventory.isBookPath(path) else { return nil }
         guard checked.insert(path).inserted else { return path }
 
         let url = root.appendingPathComponent(path)
