@@ -121,10 +121,12 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
 
     /// "page 3", "pages 3 and 7", or "pages 1 to 4, 7, and 9": the pages,
     /// in order and without repeats, with each run of three or more
-    /// consecutive pages said as a range. Ranges use "to" rather than a
-    /// dash, which speech may read as "minus".
+    /// consecutive pages said as a range, or "no pages" when there are
+    /// none. Ranges use "to" rather than a dash, which speech may read as
+    /// "minus".
     static func pagePhrase(_ pageNumbers: [Int]) -> String {
         let numbers = Array(Set(pageNumbers)).sorted()
+        guard !numbers.isEmpty else { return "no pages" }
         var items: [String] = []
         var start = 0
         while start < numbers.count {

@@ -38,8 +38,10 @@ final class PDFExtractionDiagnosticsTests: XCTestCase {
     // MARK: - Page Phrases
 
     /// Pages are said in order without repeats, with runs of three or more
-    /// said as ranges in words a speech synthesizer cannot misread.
+    /// said as ranges in words a speech synthesizer cannot misread, and no
+    /// pages said plainly.
     func testPagePhraseSaysRunsAsRanges() {
+        XCTAssertEqual(PDFExtractionDiagnostics.pagePhrase([]), "no pages")
         XCTAssertEqual(PDFExtractionDiagnostics.pagePhrase([3]), "page 3")
         XCTAssertEqual(PDFExtractionDiagnostics.pagePhrase([7, 3]), "pages 3 and 7")
         XCTAssertEqual(PDFExtractionDiagnostics.pagePhrase([5, 6]), "pages 5 and 6")
