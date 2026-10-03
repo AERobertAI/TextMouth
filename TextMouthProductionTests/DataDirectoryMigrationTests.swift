@@ -158,7 +158,7 @@ final class DataDirectoryMigrationTests: XCTestCase {
         let source = base.appendingPathComponent("Source", isDirectory: true)
         let destination = base.appendingPathComponent("Destination", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: base) }
-        var library = try makeLibrary(at: source)
+        let library = try makeLibrary(at: source)
         try FileManager.default.removeItem(atPath: library.books[0].filePath)
 
         XCTAssertThrowsError(
