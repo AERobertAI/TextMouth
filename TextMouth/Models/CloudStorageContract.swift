@@ -604,4 +604,11 @@ enum MachineLocalPaths {
     static var importStaging: URL {
         root.appendingPathComponent("Import Staging", isDirectory: true)
     }
+
+    /// The books this Mac keeps downloaded (Keep on This Mac, `KeptBooks`):
+    /// a choice of this Mac's own, which another Mac sharing the library
+    /// never reads, so it is kept here rather than in the data directory.
+    static var keptBooks: URL {
+        root.appendingPathComponent("Kept Books.json", isDirectory: false)
+    }
 }
