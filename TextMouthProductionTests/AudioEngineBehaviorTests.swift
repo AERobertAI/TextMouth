@@ -571,6 +571,253 @@ final class AudioEngineBehaviorTests: XCTestCase {
         return SilentTracks(directory: directory, urls: urls)
     }
 
+    // MARK: - Rendered Speech in Blocks
+
+    /// The synthesizer's pieces land in the render's blocks in order,
+    /// however their sizes fall against the blocks' edges, followed by the
+    /// silence padding; and the last block keeps no room past the audio.
+    func testRenderedAudioKeepsEveryPieceInOrderAcrossBlocks() throws {
+        let builder = RenderedSpeechAudio.Builder(blockFrameCount: 4)
+        var next = 0
+        for size in [3, 6, 1, 5] {
+            builder.append(try Self.makePiece((next..<next + size).map(Self.sample)))
+            next += size
+        }
+
+        let audio = try XCTUnwrap(builder.finish(paddingFrameCount: 2))
+
+        XCTAssertEqual(audio.speechFrameCount, 15)
+        XCTAssertEqual(audio.frameCount, 17)
+        XCTAssertEqual(try Self.samples(of: audio, in: 0..<17), (0..<15).map(Self.sample) + [0, 0])
+        // A stretch beginning and ending inside blocks comes out whole.
+        XCTAssertEqual(try Self.samples(of: audio, in: 3..<10), (3..<10).map(Self.sample))
+        XCTAssertEqual(audio.byteCount, 17 * MemoryLayout<Float>.stride)
+    }
+
+    /// A piece whose channels are interleaved is kept channel by channel,
+    /// and plays in the standard format, with a buffer for each channel.
+    func testInterleavedPiecesAreKeptChannelByChannel() throws {
+        let format = try XCTUnwrap(
+            AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 22_050, channels: 2, interleaved: true)
+        )
+        let piece = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 3))
+        let frames = [1, -1, 2, -2, 3, -3].map(Self.sample)
+        let channels = try XCTUnwrap(piece.floatChannelData)
+        for (index, value) in frames.enumerated() {
+            channels[0][index] = value
+        }
+        piece.frameLength = 3
+        let builder = RenderedSpeechAudio.Builder(blockFrameCount: 2)
+
+        builder.append(piece)
+        let audio = try XCTUnwrap(builder.finish(paddingFrameCount: 1))
+
+        XCTAssertFalse(audio.format.isInterleaved)
+        XCTAssertEqual(audio.format.channelCount, 2)
+        let out = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: audio.format, frameCapacity: 4))
+        audio.copyFrames(0..<4, into: out)
+        let outChannels = try XCTUnwrap(out.floatChannelData)
+        XCTAssertEqual(Array(UnsafeBufferPointer(start: outChannels[0], count: 4)), [1, 2, 3, 0].map(Self.sample))
+        XCTAssertEqual(Array(UnsafeBufferPointer(start: outChannels[1], count: 4)), [-1, -2, -3, 0].map(Self.sample))
+    }
+
+    /// A piece in another sample rate than the rest cannot join them, so
+    /// the render fails rather than play at the wrong speed.
+    func testAPieceInAnotherSampleRateFailsTheRender() throws {
+        let builder = RenderedSpeechAudio.Builder()
+
+        builder.append(try Self.makePiece([1, 2].map(Self.sample)))
+        builder.append(try Self.makePiece([3].map(Self.sample), sampleRate: 44_100))
+
+        XCTAssertNotNil(builder.failure)
+        XCTAssertNil(builder.finish(paddingFrameCount: 4))
+    }
+
+    /// A render of nothing installs nothing.
+    func testARenderOfNothingBuildsNoAudio() {
+        XCTAssertNil(RenderedSpeechAudio.Builder().finish(paddingFrameCount: 4))
+    }
+
+    // MARK: - Feeding the Player Node
+
+    /// A play is fed to the player node in order, a few slices at a time,
+    /// from the render's first frame through its padding, never holding
+    /// more than its slices ahead, and ends once.
+    @MainActor
+    func testAPlayFeedsItsSegmentInOrderedSlicesEndingWithThePadding() throws {
+        let engine = AudioEngineService(sliceFrameCount: 2_205, slicesAhead: 2)
+        engine.setVolume(0)
+        defer { engine.stop() }
+        let speech = Self.quietRamp(frameCount: 13_230)
+        engine._installRenderedAudioForTesting(samples: speech)
+        let slices = SliceLog()
+        engine._observeScheduledSlicesForTesting { slices.append($0) }
+        defer { engine._observeScheduledSlicesForTesting(nil) }
+        var finishCount = 0
+        engine.onPlaybackFinished = { finishCount += 1 }
+
+        engine.play()
+        XCTAssertTrue(engine.isPlaying, "the engine could not start")
+        XCTAssertTrue(eventually(within: 5) { finishCount > 0 }, "the play never finished")
+        spinMainRunLoop(for: 0.1)
+
+        let padding = AudioEngineService.silencePaddingFrameCount(sampleRate: 22_050)
+        let frameCount = speech.count + padding
+        let scheduled = slices.all
+        XCTAssertEqual(scheduled.map(\.frames.lowerBound), Array(stride(from: 0, to: frameCount, by: 2_205)))
+        XCTAssertEqual(scheduled.last?.frames.upperBound, frameCount)
+        XCTAssertEqual(scheduled.flatMap(\.samples), speech + [Float](repeating: 0, count: padding))
+        XCTAssertLessThanOrEqual(scheduled.map(\.bytesScheduled).max() ?? 0, 2 * 2_205 * MemoryLayout<Float>.stride)
+        XCTAssertEqual(finishCount, 1)
+    }
+
+    /// A play that starts part-way through fades in its first slice from
+    /// silence over 10 milliseconds, and leaves the rest of it, and every
+    /// slice after it, as rendered.
+    @MainActor
+    func testAPlayFromPartWayFadesInOnlyItsFirstSlice() throws {
+        let engine = AudioEngineService(sliceFrameCount: 2_205, slicesAhead: 2)
+        engine.setVolume(0)
+        defer { engine.stop() }
+        let speech = Self.quietRamp(frameCount: 8_820)
+        engine._installRenderedAudioForTesting(samples: speech)
+        // A hundred characters over the speech: the fiftieth starts halfway.
+        engine._configureFrameMapForTesting([(0, 0), (100, 8_820)], totalFrames: 8_820)
+        let slices = SliceLog()
+        engine._observeScheduledSlicesForTesting { slices.append($0) }
+        defer { engine._observeScheduledSlicesForTesting(nil) }
+
+        engine.play(fromCharOffset: 50)
+        // A play schedules its first slices before it returns.
+        let scheduled = slices.all
+        engine.stop()
+
+        XCTAssertEqual(scheduled.map(\.frames), [4_410..<6_615, 6_615..<8_820])
+        let first = try XCTUnwrap(scheduled.first)
+        let fadeFrames = 220
+        for index in [0, 1, 110, fadeFrames - 1] {
+            XCTAssertEqual(first.samples[index], speech[4_410 + index] * (Float(index) / Float(fadeFrames)))
+        }
+        XCTAssertEqual(Array(first.samples[fadeFrames...]), Array(speech[(4_410 + fadeFrames)..<6_615]))
+        XCTAssertEqual(scheduled.last?.samples, Array(speech[6_615..<8_820]))
+    }
+
+    /// A seek while playing schedules a few slices from where it lands, not
+    /// a copy of the rest of the chapter, as starting part-way through once
+    /// did (TODO PERF04). Stopping leaves nothing scheduled.
+    @MainActor
+    func testASeekWhilePlayingSchedulesOnlyAFewSlices() throws {
+        let sliceFrames = 4_096
+        let engine = AudioEngineService(sliceFrameCount: sliceFrames, slicesAhead: 3)
+        engine.setVolume(0)
+        defer { engine.stop() }
+        engine._installRenderedAudioForTesting(lasting: 20)
+        engine._configureFrameMapForTesting([(0, 0), (100, 441_000)], totalFrames: 441_000)
+        let slices = SliceLog()
+        engine._observeScheduledSlicesForTesting { slices.append($0) }
+        defer { engine._observeScheduledSlicesForTesting(nil) }
+        engine.play()
+        XCTAssertTrue(engine.isPlaying, "the engine could not start")
+
+        slices.removeAll()
+        engine.seek(toCharOffset: 50)
+        let scheduledBytes = engine.scheduledSegmentAudioByteCount
+        let firstAfterSeek = slices.all.first
+        XCTAssertTrue(engine.isPlaying)
+        engine.stop()
+
+        XCTAssertEqual(firstAfterSeek?.frames.lowerBound, 220_500)
+        XCTAssertGreaterThan(scheduledBytes, 0)
+        XCTAssertLessThanOrEqual(scheduledBytes, 3 * sliceFrames * MemoryLayout<Float>.stride)
+        // The rest of the chapter from the seek, padding included, which a
+        // seek used to copy whole, is more than ten times as much.
+        let restOfChapterBytes = (441_000 + 4_410 - 220_500) * MemoryLayout<Float>.stride
+        XCTAssertLessThan(scheduledBytes * 10, restOfChapterBytes)
+        XCTAssertEqual(engine.scheduledSegmentAudioByteCount, 0)
+    }
+
+    /// The position runs on unbroken across a play's slices: it never steps
+    /// back, and it reaches the end of the speech.
+    @MainActor
+    func testThePositionRunsOnAcrossSlices() {
+        let engine = AudioEngineService(sliceFrameCount: 2_205, slicesAhead: 2)
+        engine.setVolume(0)
+        defer { engine.stop() }
+        engine._installRenderedAudioForTesting(lasting: 0.8)
+        engine._configureFrameMapForTesting([(0, 0), (100, 17_640)], totalFrames: 17_640)
+        var finished = false
+        engine.onPlaybackFinished = { finished = true }
+        var offsets: [Int] = []
+
+        engine.play()
+        let ended = eventually(within: 5) {
+            if engine.isPlaying {
+                offsets.append(engine.currentCharOffset())
+            }
+            return finished
+        }
+
+        XCTAssertTrue(ended, "the play never finished")
+        XCTAssertEqual(offsets, offsets.sorted(), "the position stepped back")
+        XCTAssertGreaterThanOrEqual(offsets.max() ?? 0, 90, "the position stopped short")
+    }
+
+    /// Once a play is stopped, the reports its slices bring schedule
+    /// nothing more.
+    @MainActor
+    func testAStoppedPlaySchedulesNothingMore() {
+        let engine = AudioEngineService(sliceFrameCount: 1_024, slicesAhead: 2)
+        engine.setVolume(0)
+        defer { engine.stop() }
+        engine._installRenderedAudioForTesting(lasting: 1)
+        let slices = SliceLog()
+        engine._observeScheduledSlicesForTesting { slices.append($0) }
+        defer { engine._observeScheduledSlicesForTesting(nil) }
+        engine.play()
+        spinMainRunLoop(for: 0.1)
+
+        engine.stop()
+        let scheduledAtStop = slices.all.count
+        spinMainRunLoop(for: 0.3)
+
+        XCTAssertEqual(slices.all.count, scheduledAtStop)
+        XCTAssertEqual(engine.scheduledSegmentAudioByteCount, 0)
+    }
+
+    /// A sample `index` steps of a 16-bit sample's size from silence, so it
+    /// keeps its exact value through any sample format the audio is kept in.
+    private static func sample(_ index: Int) -> Float {
+        Float(index) / 32_767
+    }
+
+    /// `frameCount` samples of a quiet sawtooth that is never silent, so
+    /// slices of it are told apart from the padding. At about -54 dBFS, and
+    /// played at volume 0, nothing is heard.
+    private static func quietRamp(frameCount: Int) -> [Float] {
+        (0..<frameCount).map { sample($0 % 64 + 1) }
+    }
+
+    /// A piece of `values`, one channel of 32-bit floats, as the synthesizer
+    /// writes one.
+    private static func makePiece(_ values: [Float], sampleRate: Double = 22_050) throws -> AVAudioPCMBuffer {
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1))
+        let piece = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(values.count)))
+        let channel = try XCTUnwrap(piece.floatChannelData?[0])
+        for (index, value) in values.enumerated() {
+            channel[index] = value
+        }
+        piece.frameLength = AVAudioFrameCount(values.count)
+        return piece
+    }
+
+    /// The first channel's samples of frames `frames` of `audio`.
+    private static func samples(of audio: RenderedSpeechAudio, in frames: Range<Int>) throws -> [Float] {
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: audio.format, frameCapacity: AVAudioFrameCount(frames.count)))
+        audio.copyFrames(frames, into: buffer)
+        let channel = try XCTUnwrap(buffer.floatChannelData?[0])
+        return Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+    }
+
     // MARK: - Memory Benchmark
 
     /// The environment variable that asks for the rendered speech benchmark.
@@ -716,6 +963,27 @@ final class AudioEngineBehaviorTests: XCTestCase {
     private static func rounded(_ value: Double, places: Int = 2) -> Double {
         let scale = pow(10, Double(places))
         return (value * scale).rounded() / scale
+    }
+}
+
+/// The slices an engine reports scheduling, kept under a lock, since the
+/// player node's own thread reports most of them.
+private final class SliceLog: Sendable {
+    private let slices = OSAllocatedUnfairLock<[ScheduledSpeechSlice]>(initialState: [])
+
+    /// Every slice reported so far, in order.
+    var all: [ScheduledSpeechSlice] {
+        slices.withLock { $0 }
+    }
+
+    /// Keep `slice`.
+    func append(_ slice: ScheduledSpeechSlice) {
+        slices.withLock { $0.append(slice) }
+    }
+
+    /// Forget every slice reported so far.
+    func removeAll() {
+        slices.withLock { $0.removeAll() }
     }
 }
 

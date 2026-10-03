@@ -94,15 +94,6 @@ struct SpeechRenderRequest: Sendable {
 /// alive, so no later render can ever hold the same one.
 private final class RenderTicket: Sendable {}
 
-/// Rendered speech the render queue hands over to the main queue, which
-/// installs it. `@unchecked Sendable` because `AVAudioPCMBuffer` is not
-/// `Sendable`, yet only one thread ever touches the buffer at a time: the
-/// render queue makes and fills it, then hands it over as its last act.
-private struct HandedOverBuffer: @unchecked Sendable {
-    /// The rendered speech, with its silence padding.
-    let buffer: AVAudioPCMBuffer
-}
-
 /// What the speech engine made of one report from its player node that a
 /// segment of rendered audio it scheduled has played back.
 enum SpeechSegmentEndOutcome: Equatable, Sendable {
@@ -159,6 +150,475 @@ enum SpeechSegmentEndPolicy {
     }
 }
 
+// MARK: - Rendered Speech
+
+/// Rendered speech as an `AudioEngineService` keeps it: the synthesizer's
+/// audio, then the silence padding every render ends with
+/// (`AudioEngineService.silencePaddingDuration`), in blocks of
+/// `blockFrameCount` frames.
+///
+/// The synthesizer writes a render in pieces of about a hundredth of a
+/// second, some 89,000 for a 40,000-unit chapter. They used to be kept
+/// until the render finished and then joined into one buffer, holding the
+/// speech twice over at that moment, and every play that began part-way
+/// through copied the rest of the chapter once more (TODO PERF04). Each
+/// piece is now copied into the blocks as it arrives, and a play copies out
+/// only the few seconds it is about to schedule (`RenderedSpeechFeeder`).
+///
+/// Immutable once built, so the render queue can hand it to the main queue
+/// and engines can share it, as the look-ahead's engine shares its render
+/// with the speech service's.
+final class RenderedSpeechAudio: Sendable {
+    /// Frames in a full block: about three seconds at the synthesizer's
+    /// 22,050 Hz. With the 32 bytes Swift keeps ahead of an array's
+    /// elements, a block's allocation ends at or just short of a whole
+    /// number of the 16 KB granules the allocator rounds blocks this large
+    /// up to; 65,536 frames would waste most of a granule on every block.
+    static let defaultBlockFrameCount = 65_520
+
+    /// The format the audio plays in: the render's sample rate and channel
+    /// count, as 32-bit floats with a buffer for each channel, the standard
+    /// format of an audio engine's nodes.
+    let format: AVAudioFormat
+    /// Frames in each block but the last, which may hold fewer.
+    let blockFrameCount: Int
+    /// Frames of speech, before the padding.
+    let speechFrameCount: Int
+    /// Every frame: the speech, then the padding.
+    let frameCount: Int
+    /// Bytes the samples take.
+    let byteCount: Int
+    /// The samples, `blockFrameCount` frames to a block, each frame's
+    /// samples for its channels side by side.
+    private let blocks: [[Float]]
+
+    /// The audio `Builder.finish(paddingFrameCount:)` built.
+    fileprivate init(
+        format: AVAudioFormat,
+        blockFrameCount: Int,
+        blocks: [[Float]],
+        speechFrameCount: Int,
+        frameCount: Int
+    ) {
+        self.format = format
+        self.blockFrameCount = blockFrameCount
+        self.blocks = blocks
+        self.speechFrameCount = speechFrameCount
+        self.frameCount = frameCount
+        byteCount = blocks.reduce(0) { $0 + $1.count * MemoryLayout<Float>.stride }
+    }
+
+    /// The number of channels each frame holds.
+    private var channelCount: Int { Int(format.channelCount) }
+
+    /// Copy frames `frames` of the audio into `buffer`, from its first frame
+    /// on, and set its frame length to how many they are. The buffer must
+    /// be in `format`, with room for them.
+    func copyFrames(_ frames: Range<Int>, into buffer: AVAudioPCMBuffer) {
+        precondition(frames.lowerBound >= 0 && frames.upperBound <= frameCount, "frames outside the audio")
+        precondition(Int(buffer.frameCapacity) >= frames.count, "no room for the frames")
+        guard let destination = buffer.floatChannelData else { return }
+        var frame = frames.lowerBound
+        var copied = 0
+        while frame < frames.upperBound {
+            let block = blocks[frame / blockFrameCount]
+            let offset = frame % blockFrameCount
+            // A run ends where the frames end or the block does.
+            let run = min(frames.upperBound - frame, block.count / channelCount - offset)
+            block.withUnsafeBufferPointer { samples in
+                guard let first = samples.baseAddress else { return }
+                for channel in 0..<channelCount {
+                    Self.copySamples(
+                        from: first + offset * channelCount + channel, stride: channelCount,
+                        to: destination[channel] + copied, stride: 1,
+                        count: run
+                    )
+                }
+            }
+            frame += run
+            copied += run
+        }
+        buffer.frameLength = AVAudioFrameCount(copied)
+    }
+
+    /// Copy `count` samples, taking every `sourceStride`th from `source` and
+    /// writing every `destinationStride`th of `destination`.
+    fileprivate static func copySamples(
+        from source: UnsafePointer<Float>,
+        stride sourceStride: Int,
+        to destination: UnsafeMutablePointer<Float>,
+        stride destinationStride: Int,
+        count: Int
+    ) {
+        guard sourceStride != 1 || destinationStride != 1 else {
+            destination.update(from: source, count: count)
+            return
+        }
+        for index in 0..<count {
+            destination[index * destinationStride] = source[index * sourceStride]
+        }
+    }
+}
+
+extension RenderedSpeechAudio {
+    /// Builds rendered speech from the pieces the synthesizer writes,
+    /// copying each into the blocks as it arrives, so no piece outlives the
+    /// callback that delivers it.
+    ///
+    /// Used on one thread at a time: the synthesizer's callback appends the
+    /// pieces, and the render queue finishes the audio once the synthesizer
+    /// has signalled its last piece (`AudioEngineService.render`).
+    final class Builder {
+        /// The audio's format: as given, or the first piece's.
+        private(set) var format: AVAudioFormat?
+        /// Frames appended so far.
+        private(set) var frameCount = 0
+        /// Why a piece could not be kept, which fails the whole render, or
+        /// nil while every piece has been kept.
+        private(set) var failure: String?
+
+        /// Frames in each full block.
+        private let blockFrameCount: Int
+        /// The blocks filled so far; the last may have room for more.
+        private var blocks: [[Float]] = []
+        /// Frames in the last block.
+        private var framesInLastBlock = 0
+
+        /// - Parameters:
+        ///   - format: The audio's format when it is known before any piece
+        ///     arrives, as for silence; otherwise the first piece's is used.
+        ///   - blockFrameCount: Frames in each full block.
+        init(format: AVAudioFormat? = nil, blockFrameCount: Int = RenderedSpeechAudio.defaultBlockFrameCount) {
+            precondition(blockFrameCount > 0, "a block holds at least one frame")
+            self.format = format
+            self.blockFrameCount = blockFrameCount
+        }
+
+        /// Copy `piece`'s frames to the end of the audio. A piece in another
+        /// sample rate or channel count than the audio's, or of samples
+        /// other than 32-bit floats, cannot be kept: it fails the render,
+        /// and speech carries on without rendered audio.
+        func append(_ piece: AVAudioPCMBuffer) {
+            guard failure == nil, piece.frameLength > 0 else { return }
+            let pieceFormat = piece.format
+            if format == nil {
+                format = AVAudioFormat(
+                    standardFormatWithSampleRate: pieceFormat.sampleRate,
+                    channels: pieceFormat.channelCount
+                )
+            }
+            guard let format,
+                  pieceFormat.sampleRate == format.sampleRate,
+                  pieceFormat.channelCount == format.channelCount else {
+                failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")"
+                return
+            }
+            guard pieceFormat.commonFormat == .pcmFormatFloat32, let source = piece.floatChannelData else {
+                failure = "a piece of samples other than 32-bit floats: \(pieceFormat)"
+                return
+            }
+            let channelCount = Int(format.channelCount)
+            // Each channel's samples lie `sampleStride` apart: 1 in a buffer
+            // of its own, the channel count when the piece interleaves them.
+            let sampleStride = piece.stride
+            appendFrames(Int(piece.frameLength)) { destination, run, done in
+                for channel in 0..<channelCount {
+                    RenderedSpeechAudio.copySamples(
+                        from: source[channel] + done * sampleStride, stride: sampleStride,
+                        to: destination + channel, stride: channelCount,
+                        count: run
+                    )
+                }
+            }
+        }
+
+        /// Append `count` frames of silence. New blocks start out silent,
+        /// so nothing need be written.
+        func appendSilence(frameCount count: Int) {
+            appendFrames(count) { _, _, _ in }
+        }
+
+        /// The rendered speech: everything appended, then
+        /// `paddingFrameCount` frames of silence. Nil when nothing was
+        /// appended or a piece could not be kept. Finish a builder once.
+        func finish(paddingFrameCount: Int) -> RenderedSpeechAudio? {
+            guard failure == nil, let format, frameCount > 0 else { return nil }
+            let speechFrameCount = frameCount
+            appendSilence(frameCount: paddingFrameCount)
+            // Give back the room the last block kept for frames that never
+            // came.
+            if let last = blocks.last, framesInLastBlock < blockFrameCount {
+                blocks[blocks.count - 1] = Array(last.prefix(framesInLastBlock * Int(format.channelCount)))
+            }
+            return RenderedSpeechAudio(
+                format: format,
+                blockFrameCount: blockFrameCount,
+                blocks: blocks,
+                speechFrameCount: speechFrameCount,
+                frameCount: frameCount
+            )
+        }
+
+        /// Append `count` frames, starting a block whenever the last is
+        /// full. `fill` writes each run of them into its block: it is given
+        /// where the run's first frame goes (each frame's channels side by
+        /// side), how many frames the run holds, and how many of the `count`
+        /// came before it. Nothing is appended before the format is known.
+        private func appendFrames(
+            _ count: Int,
+            fill: (_ destination: UnsafeMutablePointer<Float>, _ run: Int, _ done: Int) -> Void
+        ) {
+            guard let format else { return }
+            let channelCount = Int(format.channelCount)
+            var done = 0
+            while done < count {
+                if blocks.isEmpty || framesInLastBlock == blockFrameCount {
+                    blocks.append([Float](repeating: 0, count: blockFrameCount * channelCount))
+                    framesInLastBlock = 0
+                }
+                let run = min(count - done, blockFrameCount - framesInLastBlock)
+                let start = framesInLastBlock * channelCount
+                blocks[blocks.count - 1].withUnsafeMutableBufferPointer { samples in
+                    if let first = samples.baseAddress {
+                        fill(first + start, run, done)
+                    }
+                }
+                framesInLastBlock += run
+                done += run
+            }
+            frameCount += count
+        }
+    }
+}
+
+// MARK: - Feeding the Player Node
+
+/// One slice of rendered speech an `AudioEngineService` scheduled on its
+/// player node, as hosted tests are told of it
+/// (`AudioEngineService._observeScheduledSlicesForTesting(_:)`).
+struct ScheduledSpeechSlice: Equatable, Sendable {
+    /// The frames of the render it holds.
+    let frames: Range<Int>
+    /// Its first channel's samples as scheduled: faded in when it begins a
+    /// play part-way through the render.
+    let samples: [Float]
+    /// Bytes of audio scheduled on the node and not yet done with, this
+    /// slice's included.
+    let bytesScheduled: Int
+}
+
+/// Feeds one play of rendered speech to the speech engine's player node a
+/// few slices at a time, so the audio waiting in the node stays a few
+/// seconds long however long the chapter is (TODO PERF04).
+///
+/// A play schedules its first `slicesAhead` slices at once. Each time the
+/// node reports a slice consumed, the next one is filled from the render
+/// and scheduled, off the main thread, so a busy main thread can never
+/// leave the node without audio. The last slice, which ends with the
+/// render's silence padding, reports when it has played back: the end of
+/// the play's segment, which the engine judges on the main queue.
+///
+/// The node's header asks that calls made on it from its completion
+/// handlers be synchronised to the same queue as every other call on it,
+/// and warns that stopping it from a handler can deadlock. So every call
+/// here on the node runs on `queue`, which main-thread callers enter
+/// synchronously and the node's handlers enter only asynchronously: a
+/// handler never waits on the feeder, and a stop never waits on a handler
+/// that waits on it.
+///
+/// `@unchecked Sendable`: its variables, and every call it makes on the
+/// player node, are confined to `queue`, a serial queue that never waits
+/// on the main thread or on the node's completion thread.
+private final class RenderedSpeechFeeder: @unchecked Sendable {
+    /// Told of each slice scheduled, by hosted tests only.
+    typealias SliceObserver = @Sendable (ScheduledSpeechSlice) -> Void
+
+    /// One play of a render: what to feed the node, and whom to tell when
+    /// its last slice has played back.
+    struct Play: Sendable {
+        /// The render the play takes its frames from.
+        let audio: RenderedSpeechAudio
+        /// The frames it plays: from where it starts to the render's end.
+        let frames: Range<Int>
+        /// Whether its first slice fades in, as a play that begins part-way
+        /// through does, to avoid a click.
+        let fadesIn: Bool
+        /// Called on the node's completion thread when the last slice has
+        /// played back, or has been dropped by a stop after it was
+        /// scheduled, as the node reports both.
+        let onSegmentPlayedBack: @Sendable () -> Void
+    }
+
+    /// Where everything here happens, one thing at a time.
+    private let queue = DispatchQueue(label: "com.textmouth.speech-feeder", qos: .userInteractive)
+    private let node: AVAudioPlayerNode
+    /// Frames in each slice but a play's last.
+    private let sliceFrameCount: Int
+    /// How many slices of a play stand scheduled at a time.
+    private let slicesAhead: Int
+
+    /// The play being fed, or nil when none is.
+    private var play: Play?
+    /// Counts the plays begun and ended. A slice's report carries its
+    /// play's number and acts only while that play is being fed.
+    private var playNumber = 0
+    /// The first frame of the play not yet scheduled.
+    private var nextFrame = 0
+    /// Bytes of audio scheduled for the play and not yet done with.
+    private var bytesScheduled = 0
+    /// Told of each slice scheduled; set by hosted tests only.
+    private var sliceObserver: SliceObserver?
+
+    init(node: AVAudioPlayerNode, sliceFrameCount: Int, slicesAhead: Int) {
+        precondition(sliceFrameCount > 0 && slicesAhead > 0, "a play schedules at least one frame at a time")
+        self.node = node
+        self.sliceFrameCount = sliceFrameCount
+        self.slicesAhead = slicesAhead
+    }
+
+    /// Feed `play` to the node from its first frame, and start the node.
+    ///
+    /// - Returns: False when not even the first slice could be made; then
+    ///   nothing was scheduled, and the node was not started.
+    func start(_ play: Play) -> Bool {
+        let (slices, observer) = queue.sync { () -> ([ScheduledSpeechSlice], SliceObserver?) in
+            playNumber += 1
+            self.play = play
+            nextFrame = play.frames.lowerBound
+            bytesScheduled = 0
+            var slices: [ScheduledSpeechSlice] = []
+            while slices.count < slicesAhead, let slice = scheduleNextSlice(of: playNumber) {
+                slices.append(slice)
+            }
+            guard !slices.isEmpty else {
+                self.play = nil
+                return ([], nil)
+            }
+            node.play()
+            return (slices, sliceObserver)
+        }
+        slices.forEach { observer?($0) }
+        return !slices.isEmpty
+    }
+
+    /// Stop the node, ending the play being fed first, so the reports the
+    /// stop brings from slices still scheduled schedule nothing more.
+    func stopNode() {
+        queue.sync {
+            endPlay()
+            node.stop()
+        }
+    }
+
+    /// Reset the node, clearing anything scheduled and setting its clock
+    /// back to 0, ending the play being fed first.
+    func resetNode() {
+        queue.sync {
+            endPlay()
+            node.reset()
+        }
+    }
+
+    /// Pause the node where it stands.
+    func pauseNode() {
+        queue.sync { node.pause() }
+    }
+
+    /// Start the node again where it paused.
+    func resumeNode() {
+        queue.sync { node.play() }
+    }
+
+    /// How many frames the node has played since it last started from a
+    /// stop, or nil while it has no valid time, as before it first renders.
+    func playedFrameCount() -> AVAudioFramePosition? {
+        queue.sync {
+            guard let nodeTime = node.lastRenderTime,
+                  nodeTime.isSampleTimeValid,
+                  let playerTime = node.playerTime(forNodeTime: nodeTime) else {
+                return nil
+            }
+            return playerTime.sampleTime
+        }
+    }
+
+    /// Bytes of audio scheduled on the node for the play being fed and not
+    /// yet done with.
+    var scheduledByteCount: Int {
+        queue.sync { bytesScheduled }
+    }
+
+    /// Tell `observer` of each slice scheduled from now on, or no one when
+    /// it is nil. It is told on the main thread of a play's first slices
+    /// and on `queue` of the rest, and must not call back into the feeder.
+    func observeSlices(_ observer: SliceObserver?) {
+        queue.sync { sliceObserver = observer }
+    }
+
+    /// On `queue`: end the play being fed. Nothing more of it is scheduled,
+    /// and no report of a slice already scheduled acts on anything.
+    private func endPlay() {
+        playNumber += 1
+        play = nil
+        bytesScheduled = 0
+    }
+
+    /// On `queue`: fill the next slice of play `number` from its render and
+    /// schedule it.
+    ///
+    /// - Returns: What a test observing slices is told of it, its samples
+    ///   left out when none is, or nil when the play is not being fed, has
+    ///   no frames left, or the slice could not be made.
+    private func scheduleNextSlice(of number: Int) -> ScheduledSpeechSlice? {
+        guard number == playNumber, let play, nextFrame < play.frames.upperBound else { return nil }
+        let frames = nextFrame..<min(nextFrame + sliceFrameCount, play.frames.upperBound)
+        let format = play.audio.format
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames.count)) else {
+            return nil
+        }
+        play.audio.copyFrames(frames, into: buffer)
+        if play.fadesIn, frames.lowerBound == play.frames.lowerBound {
+            AudioEngineService.applyFadeIn(to: buffer)
+        }
+        // Copied for a test before the node can read the buffer.
+        let samples = sliceObserver == nil
+            ? []
+            : buffer.floatChannelData.map { Array(UnsafeBufferPointer(start: $0[0], count: frames.count)) } ?? []
+        nextFrame = frames.upperBound
+        let bytes = frames.count * Int(format.channelCount) * MemoryLayout<Float>.stride
+        bytesScheduled += bytes
+        // The node reports on a thread of its own; each report hops onto
+        // `queue` without waiting for it.
+        if frames.upperBound == play.frames.upperBound {
+            // The last slice: once it has played back, so has the segment.
+            let onSegmentPlayedBack = play.onSegmentPlayedBack
+            node.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+                onSegmentPlayedBack()
+                guard let self else { return }
+                self.queue.async { self.sliceDone(of: number, bytes: bytes) }
+            }
+        } else {
+            node.scheduleBuffer(buffer, completionCallbackType: .dataConsumed) { [weak self] _ in
+                guard let self else { return }
+                self.queue.async { self.sliceDone(of: number, bytes: bytes) }
+            }
+        }
+        return ScheduledSpeechSlice(frames: frames, samples: samples, bytesScheduled: bytesScheduled)
+    }
+
+    /// On `queue`: the node is done with a slice of play `number`. It
+    /// consumed it, played it back, or dropped it in a stop. While that play
+    /// is being fed, its bytes leave the count and the next slice takes its
+    /// place.
+    private func sliceDone(of number: Int, bytes: Int) {
+        guard number == playNumber else { return }
+        bytesScheduled -= bytes
+        if let slice = scheduleNextSlice(of: number) {
+            sliceObserver?(slice)
+        }
+    }
+}
+
 /// Pre-renders speech to audio buffers using AVSpeechSynthesizer.write(),
 /// then plays through AVAudioEngine with AVAudioUnitTimePitch for
 /// real-time speed adjustment and instant seeking.
@@ -170,32 +630,38 @@ enum SpeechSegmentEndPolicy {
 /// main thread, where its owners, the speech service and the reader's
 /// look-ahead, call it, except `currentRender`, which the render queue
 /// shares under `renderLock`. The render queue otherwise works on a
-/// synthesizer and buffers of its own and hands the result over
-/// (`HandedOverBuffer`), and the player node's reports hop to the main
-/// queue, reading only the test hook `_segmentPlayedBackForTesting` first.
+/// synthesizer and a builder of its own and hands over the finished,
+/// immutable `RenderedSpeechAudio`. The feeder, which the player node's
+/// completion thread also reaches, keeps its state on its own queue, and
+/// the node's report that a segment played back hops to the main queue,
+/// reading only the test hook `_segmentPlayedBackForTesting` first.
 final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var engine = AVAudioEngine()
-    private var playerNode = AVAudioPlayerNode()
+    private let playerNode: AVAudioPlayerNode
     private var timePitch = AVAudioUnitTimePitch()
+    /// Feeds each play to `playerNode` a few slices at a time.
+    private let feeder: RenderedSpeechFeeder
 
-    private var renderedBuffer: AVAudioPCMBuffer?
-    private var renderFormat: AVAudioFormat?
-    /// Everything the audio in `renderedBuffer` was rendered from, or nil
-    /// while the engine holds no rendered audio. Set, cleared, and adopted
-    /// together with the buffer, so the audio always carries its signature.
+    /// The rendered speech the engine holds, or nil.
+    private var renderedAudio: RenderedSpeechAudio?
+    /// Everything `renderedAudio` was rendered from, or nil while the engine
+    /// holds no rendered audio. Set, cleared, and adopted together with the
+    /// audio, so the audio always carries its signature.
     private(set) var renderedSignature: SpeechRenderSignature?
 
     private var wordFrameMap: [(charOffset: Int, frame: AVAudioFramePosition)] = []
     private var totalFrames: AVAudioFrameCount = 0
 
-    /// The frame in the full buffer where current playback segment starts
+    /// The frame of the rendered audio where the current play's segment
+    /// starts.
     private var segmentStartFrame: AVAudioFramePosition = 0
-    /// The number of frames in the currently scheduled segment
+    /// The number of frames in the current play's segment: from its start
+    /// to the end of the rendered audio, padding included.
     private var segmentFrameCount: AVAudioFrameCount = 0
 
-    /// Where the last pause found playback, in frames of the full buffer, or
-    /// nil when that is unknown or playback has not paused since it last
-    /// started or resumed. Read by `pausedAtSegmentEnd`.
+    /// Where the last pause found playback, in frames of the rendered
+    /// audio, or nil when that is unknown or playback has not paused since
+    /// it last started or resumed. Read by `pausedAtSegmentEnd`.
     private var pausedFrame: AVAudioFramePosition?
 
     /// The play generation whose segment played to its end as the listener
@@ -229,6 +695,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// clipping the last word. 200ms provides enough runway at any rate.
     static let silencePaddingDuration: Double = 0.2
 
+    /// Frames in each slice of a play the engine schedules on its player
+    /// node: about a second and a half at the synthesizer's 22,050 Hz.
+    static let defaultSliceFrameCount = 32_768
+
+    /// How many slices of a play stand scheduled at a time: about nine
+    /// seconds at 22,050 Hz, over six at the fastest speech, so the player
+    /// node's report that it needs another can come late with time to spare.
+    static let defaultSlicesAhead = 6
+
     /// The render in progress, or nil, read and written under `renderLock`.
     /// Its synthesizer is kept so we can cancel stale renders: without
     /// cancellation, old write() calls keep synthesizing in the background,
@@ -238,7 +713,18 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var currentRender: (synth: AVSpeechSynthesizer, ticket: RenderTicket)?
     private let renderLock = NSLock()
 
-    init() {
+    /// - Parameters:
+    ///   - sliceFrameCount: Frames in each slice of a play scheduled on the
+    ///     player node. Hosted tests make slices short, to watch a play cross
+    ///     many of them.
+    ///   - slicesAhead: How many slices of a play stand scheduled at a time.
+    init(
+        sliceFrameCount: Int = AudioEngineService.defaultSliceFrameCount,
+        slicesAhead: Int = AudioEngineService.defaultSlicesAhead
+    ) {
+        let node = AVAudioPlayerNode()
+        playerNode = node
+        feeder = RenderedSpeechFeeder(node: node, sliceFrameCount: sliceFrameCount, slicesAhead: slicesAhead)
         setupEngine()
     }
 
@@ -276,8 +762,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return true
     }
 
-    /// Render `request` into this engine's buffer, replacing any audio it
-    /// held, then report on the main queue whether the audio was installed.
+    /// Render `request` into this engine, replacing any audio it held, then
+    /// report on the main queue whether the audio was installed.
     ///
     /// Everything rendering reads comes from `request`, and the installed
     /// audio carries `request.signature` as `renderedSignature`. Speech is
@@ -290,7 +776,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         let text = request.text
         isRendering = true
         wordFrameMap = []
-        renderedBuffer = nil
+        renderedAudio = nil
         renderedSignature = nil
         // Render at 0.7 rate (~457 WPM empirically) for a good balance of speed and quality
         renderWPM = 457.0
@@ -314,15 +800,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             utterance.rate = 0.7
             utterance.prefersAssistiveTechnologySettings = false
 
-            var buffers: [AVAudioPCMBuffer] = []
-            var format: AVAudioFormat?
+            // Each piece is copied into the audio's blocks as it arrives,
+            // so no piece outlives the callback that delivers it.
+            let builder = RenderedSpeechAudio.Builder()
             let semaphore = DispatchSemaphore(value: 0)
 
             renderSynth.write(utterance) { buffer in
                 guard let pcm = buffer as? AVAudioPCMBuffer else { return }
                 if pcm.frameLength > 0 {
-                    buffers.append(pcm)
-                    if format == nil { format = pcm.format }
+                    builder.append(pcm)
                 } else {
                     semaphore.signal()
                 }
@@ -335,107 +821,99 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             let wasCancelled = self.currentRender?.ticket !== ticket
             self.renderLock.unlock()
 
-            guard result == .success, !wasCancelled, !buffers.isEmpty, let audioFormat = format else {
+            // Reports on the main queue that the render installed nothing.
+            let reportFailure = {
                 DispatchQueue.main.async {
                     if self.claimRenderCompletion(for: ticket) {
                         self.isRendering = false
                     }
                     completion(false)
                 }
+            }
+            // A render that timed out may still be writing pieces, so its
+            // builder is left alone.
+            guard result == .success, !wasCancelled else {
+                reportFailure()
                 return
             }
-
-            // Concatenate buffers, then append silence padding so the
-            // timePitch node can flush its internal processing buffer
-            // before the .dataPlayedBack completion fires. Without this,
-            // the last fraction-of-a-second of each chapter gets clipped
-            // because the playerNode reports "done" while timePitch still
-            // has unplayed samples queued.
-            let speechFrameCount = buffers.reduce(0) { $0 + Int($1.frameLength) }
-            let paddingFrames = Self.silencePaddingFrameCount(sampleRate: audioFormat.sampleRate)
-            let totalFrameCount = speechFrameCount + paddingFrames
-            guard let combinedBuffer = AVAudioPCMBuffer(
-                pcmFormat: audioFormat,
-                frameCapacity: AVAudioFrameCount(totalFrameCount)
-            ) else {
-                DispatchQueue.main.async {
-                    if self.claimRenderCompletion(for: ticket) {
-                        self.isRendering = false
-                    }
-                    completion(false)
-                }
+            // The synthesizer has signalled its last piece: the builder is
+            // this queue's alone now. The speech is followed by silence
+            // padding, so the time-pitch unit can flush its internal buffer
+            // before the player node reports the audio played back; without
+            // it the last fraction of a second of each chapter was clipped.
+            if let failure = builder.failure {
+                DiagnosticLog.trace(.playback, "speech render kept no audio: \(failure)")
+            }
+            guard let format = builder.format,
+                  let audio = builder.finish(
+                      paddingFrameCount: Self.silencePaddingFrameCount(sampleRate: format.sampleRate)
+                  ) else {
+                reportFailure()
                 return
             }
-
-            var offset: AVAudioFrameCount = 0
-            for buf in buffers {
-                guard let dst = combinedBuffer.floatChannelData,
-                      let src = buf.floatChannelData else { continue }
-                for ch in 0..<Int(audioFormat.channelCount) {
-                    dst[ch].advanced(by: Int(offset)).update(from: src[ch], count: Int(buf.frameLength))
-                }
-                offset += buf.frameLength
-            }
-            // Zero-fill the padding region (silence). The buffer was
-            // allocated with frameCapacity covering both speech + padding,
-            // and AVAudioPCMBuffer zero-initializes its storage, but we
-            // explicitly zero here for clarity and safety.
-            if let channelData = combinedBuffer.floatChannelData {
-                for ch in 0..<Int(audioFormat.channelCount) {
-                    let padStart = channelData[ch].advanced(by: Int(offset))
-                    padStart.initialize(repeating: 0, count: paddingFrames)
-                }
-            }
-            combinedBuffer.frameLength = AVAudioFrameCount(totalFrameCount)
-
-            // Build char-to-frame mapping using only the speech frames
-            // (not the silence padding). Characters map to real audio;
-            // the padding exists solely to let timePitch flush.
-            let charCount = text.utf16Length
-            let framesPerChar = charCount > 0 ? Double(speechFrameCount) / Double(charCount) : 0
-            var map: [(charOffset: Int, frame: AVAudioFramePosition)] = []
-            let step = max(1, charCount / 200)
-            for i in stride(from: 0, to: charCount, by: step) {
-                map.append((charOffset: i, frame: AVAudioFramePosition(Double(i) * framesPerChar)))
-            }
-            map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
-            let completedMap = map
-            // This queue's last use of the buffer: from here on only the
-            // main queue touches it.
-            let handedOver = HandedOverBuffer(buffer: combinedBuffer)
+            let completedMap = Self.frameMap(utf16Length: text.utf16Length, speechFrameCount: audio.speechFrameCount)
 
             DispatchQueue.main.async {
-                // Recheck ownership on the queue that installs the buffer.
+                // Recheck ownership on the queue that installs the audio.
                 // A stop/new chapter can occur after the background render's
                 // earlier cancellation check but before this closure executes.
                 guard self.claimRenderCompletion(for: ticket) else {
                     completion(false)
                     return
                 }
-                self.renderedBuffer = handedOver.buffer
-                self.renderedSignature = request.signature
-                self.renderFormat = audioFormat
-                self.wordFrameMap = completedMap
-                // totalFrames tracks only the speech portion for position
-                // calculations. The buffer is longer (includes silence
-                // padding) but characters only map to speech frames.
-                self.totalFrames = AVAudioFrameCount(speechFrameCount)
+                self.install(audio, signature: request.signature, wordFrameMap: completedMap)
                 self.isRendering = false
                 completion(true)
             }
         }
     }
 
+    /// The map from offsets into a text `charCount` UTF-16 units long to
+    /// frames of the `speechFrameCount` frames of speech rendered from it:
+    /// a point every two-hundredth of the text, with frames spread evenly
+    /// over the characters, and the text's end at the speech's end. The
+    /// silence padding after the speech maps to no character.
+    private static func frameMap(
+        utf16Length charCount: Int,
+        speechFrameCount: Int
+    ) -> [(charOffset: Int, frame: AVAudioFramePosition)] {
+        let framesPerChar = charCount > 0 ? Double(speechFrameCount) / Double(charCount) : 0
+        var map: [(charOffset: Int, frame: AVAudioFramePosition)] = []
+        let step = max(1, charCount / 200)
+        for i in stride(from: 0, to: charCount, by: step) {
+            map.append((charOffset: i, frame: AVAudioFramePosition(Double(i) * framesPerChar)))
+        }
+        map.append((charOffset: charCount, frame: AVAudioFramePosition(speechFrameCount)))
+        return map
+    }
+
+    /// Hold `audio`, rendered from what `signature` describes, in place of
+    /// any audio held before, with `map` taking its text's offsets to its
+    /// frames.
+    private func install(
+        _ audio: RenderedSpeechAudio,
+        signature: SpeechRenderSignature?,
+        wordFrameMap map: [(charOffset: Int, frame: AVAudioFramePosition)]
+    ) {
+        renderedAudio = audio
+        renderedSignature = signature
+        wordFrameMap = map
+        // totalFrames tracks only the speech portion for position
+        // calculations. The audio is longer (it includes the silence
+        // padding), but characters map only to speech frames.
+        totalFrames = AVAudioFrameCount(audio.speechFrameCount)
+    }
+
     // MARK: - Playback
 
     func play(fromCharOffset charOffset: Int = 0) {
-        guard let buffer = renderedBuffer, let format = renderFormat else { return }
+        guard let audio = renderedAudio else { return }
 
-        playerNode.stop()
+        feeder.stopNode()
         engine.disconnectNodeOutput(playerNode)
         engine.disconnectNodeOutput(timePitch)
-        engine.connect(playerNode, to: timePitch, format: format)
-        engine.connect(timePitch, to: engine.mainMixerNode, format: format)
+        engine.connect(playerNode, to: timePitch, format: audio.format)
+        engine.connect(timePitch, to: engine.mainMixerNode, format: audio.format)
 
         if !engine.isRunning {
             do { try engine.start() } catch {
@@ -450,10 +928,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // volume set by the sleep timer or other callers.
         engine.mainMixerNode.outputVolume = currentVolume
 
-        scheduleAndPlay(buffer: buffer, format: format, fromCharOffset: charOffset)
+        scheduleAndPlay(audio, fromCharOffset: charOffset)
     }
 
-    private func scheduleAndPlay(buffer: AVAudioPCMBuffer, format: AVAudioFormat, fromCharOffset charOffset: Int) {
+    /// Begin a new play of `audio` from the frame `charOffset` maps to. Its
+    /// segment runs from there to the audio's end, padding included, and is
+    /// fed to the player node a few slices at a time; a play that begins
+    /// part-way through fades in. Nothing plays when not even the first
+    /// slice can be made.
+    private func scheduleAndPlay(_ audio: RenderedSpeechAudio, fromCharOffset charOffset: Int) {
         // Increment generation so completion handlers from prior schedules are ignored.
         // This prevents seek() from falsely triggering "playback finished".
         playbackGeneration += 1
@@ -463,47 +946,33 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         segmentEndHeldUntilResume = nil
 
         // reset() clears all scheduled events AND resets playerTime.sampleTime to 0
-        playerNode.reset()
+        feeder.resetNode()
 
-        let startFrame = frameForCharOffset(charOffset)
-        segmentStartFrame = startFrame
+        // Text offsets map no further than the speech's end, so a play
+        // always keeps the padding after it; the bounds only guard the map.
+        let startFrame = min(max(0, Int(frameForCharOffset(charOffset))), audio.frameCount - 1)
+        segmentStartFrame = AVAudioFramePosition(startFrame)
+        segmentFrameCount = AVAudioFrameCount(audio.frameCount - startFrame)
 
-        if startFrame > 0 && startFrame < AVAudioFramePosition(buffer.frameLength) {
-            let remaining = AVAudioFrameCount(AVAudioFramePosition(buffer.frameLength) - startFrame)
-            guard let subBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: remaining),
-                  let src = buffer.floatChannelData,
-                  let dst = subBuffer.floatChannelData else { return }
-            for ch in 0..<Int(format.channelCount) {
-                dst[ch].update(from: src[ch].advanced(by: Int(startFrame)), count: Int(remaining))
+        // The node reports the segment's last slice played back on a thread
+        // of its own (and also when it is stopped); the report is carried to
+        // the main queue, where `handleSegmentEnd(generation:)` decides what
+        // it means.
+        let started = feeder.start(RenderedSpeechFeeder.Play(
+            audio: audio,
+            frames: startFrame..<audio.frameCount,
+            fadesIn: startFrame > 0,
+            onSegmentPlayedBack: { [weak self] in
+                guard let self else { return }
+                self._segmentPlayedBackForTesting?(self)
+                DispatchQueue.main.async { [weak self] in
+                    self?.handleSegmentEnd(generation: myGeneration)
+                }
             }
-            subBuffer.frameLength = remaining
-            segmentFrameCount = remaining
-
-            applyFadeIn(to: subBuffer, format: format)
-            schedule(subBuffer, generation: myGeneration)
-        } else {
-            segmentStartFrame = 0
-            segmentFrameCount = buffer.frameLength
-            schedule(buffer, generation: myGeneration)
-        }
-
-        playerNode.play()
+        ))
+        guard started else { return }
         isPlaying = true
         isPaused = false
-    }
-
-    /// Schedule `segment` on the player node as play `generation`. The
-    /// node's report that it played back, which it gives on a thread of its
-    /// own (and also when it is stopped), is carried to the main queue, where
-    /// `handleSegmentEnd(generation:)` decides what it means.
-    private func schedule(_ segment: AVAudioPCMBuffer, generation: Int) {
-        playerNode.scheduleBuffer(segment, completionCallbackType: .dataPlayedBack) { [weak self] _ in
-            guard let self else { return }
-            self._segmentPlayedBackForTesting?(self)
-            DispatchQueue.main.async { [weak self] in
-                self?.handleSegmentEnd(generation: generation)
-            }
-        }
     }
 
     /// Act on a report, now on the main queue, that the segment scheduled
@@ -557,7 +1026,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     }
 
     /// Apply a short linear fade-in (~10ms) to avoid clicks at playback start
-    private func applyFadeIn(to buffer: AVAudioPCMBuffer, format: AVAudioFormat) {
+    fileprivate static func applyFadeIn(to buffer: AVAudioPCMBuffer) {
+        let format = buffer.format
         let fadeFrames = min(Int(format.sampleRate * 0.01), Int(buffer.frameLength))
         guard fadeFrames > 0, let channelData = buffer.floatChannelData else { return }
         for ch in 0..<Int(format.channelCount) {
@@ -575,7 +1045,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func pause() {
         guard isPlaying && !isPaused else { return }
         pausedFrame = currentPlayerFrame()
-        playerNode.pause()
+        feeder.pauseNode()
         isPaused = true
     }
 
@@ -587,7 +1057,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func stopAfterFadePreservingPosition() -> Int {
         let offset = currentCharOffset()
         playbackGeneration += 1
-        playerNode.stop()
+        feeder.stopNode()
         if engine.isRunning { engine.stop() }
         segmentStartFrame = frameForCharOffset(offset)
         isPlaying = false
@@ -595,7 +1065,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return offset
     }
 
-    /// Resume a scheduled buffer, restarting the audio engine first when
+    /// Resume the play under way, restarting the audio engine first when
     /// macOS has stopped it during sleep or an output-device interruption.
     /// Returns false only when there is no paused playback or the engine
     /// cannot be restarted, allowing the caller to retain a recoverable state.
@@ -609,7 +1079,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
         // A player node cannot resume while its containing engine is stopped.
         // This state can arise after the Mac sleeps for several hours even
-        // though our scheduled buffer and logical pause state remain intact.
+        // though our scheduled slices and logical pause state remain intact.
         if !engine.isRunning {
             do {
                 try engine.start()
@@ -622,7 +1092,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // Engine restarts can reset mixer state, so preserve the user's
         // current volume just as the normal play path does.
         engine.mainMixerNode.outputVolume = currentVolume
-        playerNode.play()
+        feeder.resumeNode()
         isPaused = false
         pausedFrame = nil
         releaseHeldSegmentEnd()
@@ -646,7 +1116,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     func stop() {
         playbackGeneration += 1  // Invalidate pending completion handlers
-        playerNode.stop()
+        feeder.stopNode()
         if engine.isRunning { engine.stop() }
         isPlaying = false
         isPaused = false
@@ -654,14 +1124,13 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// Stops playback and releases all audio and position data retained from a
     /// completed render. Starting unrelated text must call this before direct
-    /// speech so seek/resume cannot reuse the preceding chapter's buffer.
+    /// speech so seek/resume cannot reuse the preceding chapter's audio.
     @discardableResult
     func discardRenderedAudio() -> Bool {
-        let discardedAudio = renderedBuffer != nil
+        let discardedAudio = renderedAudio != nil
         stop()
-        renderedBuffer = nil
+        renderedAudio = nil
         renderedSignature = nil
-        renderFormat = nil
         wordFrameMap = []
         totalFrames = 0
         segmentStartFrame = 0
@@ -721,15 +1190,16 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     var playbackRate: Float { timePitch.rate }
     var playbackPitchCents: Float { timePitch.pitch }
 
-    /// Seek within the current rendered buffer. No re-rendering, no engine restart.
+    /// Seek within the current rendered audio. No re-rendering, no engine
+    /// restart, and no copy beyond the few slices the new play schedules.
     func seek(toCharOffset charOffset: Int) {
-        guard let buffer = renderedBuffer, let format = renderFormat else { return }
+        guard let audio = renderedAudio else { return }
         let wasPlaying = isPlaying && !isPaused
 
-        playerNode.stop()
+        feeder.stopNode()
 
         if wasPlaying {
-            scheduleAndPlay(buffer: buffer, format: format, fromCharOffset: charOffset)
+            scheduleAndPlay(audio, fromCharOffset: charOffset)
         } else {
             segmentStartFrame = frameForCharOffset(charOffset)
             isPlaying = false
@@ -748,23 +1218,17 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         return charOffsetForFrame(frame)
     }
 
-    /// Where the player node stands in the full buffer, in frames, from how
-    /// many frames it has actually played of the current segment; nil when
-    /// the node has no valid time, as before it first renders.
+    /// Where the player node stands in the rendered audio, in frames, from
+    /// how many frames it has actually played of the current segment; nil
+    /// when the node has no valid time, as before it first renders.
     private func currentPlayerFrame() -> AVAudioFramePosition? {
-        guard let nodeTime = playerNode.lastRenderTime,
-              nodeTime.isSampleTimeValid,
-              let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else {
-            return nil
-        }
-
-        // `playerTime.sampleTime` is already on the player node timeline.
-        // The time-pitch unit changes audible speed, not the player's sample
-        // progression through the scheduled buffer, so do not scale it again.
-        return Self.currentFrame(
-            segmentStartFrame: segmentStartFrame,
-            playerSampleTime: playerTime.sampleTime
-        )
+        // The node's sample time is already on its own timeline, and runs on
+        // unbroken across the segment's slices, which are scheduled back to
+        // back. The time-pitch unit changes audible speed, not the player's
+        // sample progression through what is scheduled, so do not scale it
+        // again.
+        guard let playedFrames = feeder.playedFrameCount() else { return nil }
+        return Self.currentFrame(segmentStartFrame: segmentStartFrame, playerSampleTime: playedFrames)
     }
 
     /// Whether the last pause found everything audible in the current
@@ -772,9 +1236,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// that ends every render (`silencePaddingDuration`). False when where
     /// it paused is unknown.
     private var pausedAtSegmentEnd: Bool {
-        guard let pausedFrame, let format = renderFormat else { return false }
+        guard let pausedFrame, let audio = renderedAudio else { return false }
         let segmentEnd = segmentStartFrame + AVAudioFramePosition(segmentFrameCount)
-        let padding = AVAudioFramePosition(Self.silencePaddingFrameCount(sampleRate: format.sampleRate))
+        let padding = AVAudioFramePosition(audio.frameCount - audio.speechFrameCount)
         return pausedFrame >= segmentEnd - padding
     }
 
@@ -789,36 +1253,35 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     }
 
     var renderedDuration: TimeInterval {
-        guard let format = renderFormat, totalFrames > 0 else { return 0 }
-        return Double(totalFrames) / format.sampleRate
+        guard let audio = renderedAudio, totalFrames > 0 else { return 0 }
+        return Double(totalFrames) / audio.format.sampleRate
     }
 
-    var hasRenderedAudio: Bool { renderedBuffer != nil }
+    var hasRenderedAudio: Bool { renderedAudio != nil }
 
     /// Current retained PCM size. Used by the opt-in production profiling
     /// harness to distinguish document-memory growth from rendered audio.
     var renderedAudioByteCount: Int {
-        guard let buffer = renderedBuffer else { return 0 }
-        return Int(buffer.frameLength) * Int(buffer.format.streamDescription.pointee.mBytesPerFrame)
+        renderedAudio?.byteCount ?? 0
     }
 
-    /// Size of the segment currently scheduled on the player node. After a
-    /// nonzero seek this is a separate PCM allocation in addition to the full
-    /// rendered buffer; the profiling harness reports both sizes explicitly.
+    /// Bytes of audio scheduled on the player node for the play under way
+    /// and not yet consumed: the few slices filled from the rendered audio
+    /// ahead of the playhead, a separate allocation from the rendered audio
+    /// itself, whatever the chapter's length or where a seek landed (TODO
+    /// PERF04). The profiling harness reports both sizes.
     var scheduledSegmentAudioByteCount: Int {
-        guard let format = renderFormat else { return 0 }
-        return Int(segmentFrameCount) * Int(format.streamDescription.pointee.mBytesPerFrame)
+        feeder.scheduledByteCount
     }
 
     /// Adopt pre-rendered audio from another AudioEngineService instance.
     /// Used for seamless chapter transitions where the next chapter was pre-rendered.
     /// The audio's signature comes with it, so this engine can still tell
-    /// what its audio was rendered from.
+    /// what its audio was rendered from. The audio is shared, not copied.
     func adoptRenderedAudio(from other: AudioEngineService) {
         stop()
-        renderedBuffer = other.renderedBuffer
+        renderedAudio = other.renderedAudio
         renderedSignature = other.renderedSignature
-        renderFormat = other.renderFormat
         wordFrameMap = other.wordFrameMap
         totalFrames = other.totalFrames
         renderWPM = other.renderWPM
@@ -876,27 +1339,61 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         self.totalFrames = totalFrames
     }
 
-    /// Installs a deterministic buffer of silence so tests can verify render
-    /// ownership, disposal, and playback without invoking the system speech
-    /// synthesizer. Its one character spans the whole buffer.
+    /// Installs deterministic silence standing for rendered speech, so tests
+    /// can verify render ownership, disposal, and playback without invoking
+    /// the system speech synthesizer. Like a render, it is followed by the
+    /// silence padding, and its one character spans the speech.
     ///
     /// - Parameters:
     ///   - signature: What the stand-in audio is said to have been rendered
     ///     from, as a finished render would record it.
-    ///   - duration: How long the buffer plays, in seconds; it is always at
-    ///     least one frame long.
+    ///   - duration: How long the speech lasts, in seconds, before the
+    ///     padding; it is always at least one frame long.
     func _installRenderedAudioForTesting(signature: SpeechRenderSignature? = nil, lasting duration: TimeInterval = 0) {
-        let format = AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1)!
-        let frameCount = AVAudioFrameCount(max(1, Int(duration * format.sampleRate)))
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
-        buffer.frameLength = frameCount
-        // Silence, whatever the allocation held.
-        buffer.floatChannelData?[0].update(repeating: 0, count: Int(frameCount))
-        renderedBuffer = buffer
-        renderedSignature = signature
-        renderFormat = format
-        wordFrameMap = [(charOffset: 0, frame: 0), (charOffset: 1, frame: AVAudioFramePosition(frameCount))]
-        totalFrames = frameCount
+        let frameCount = max(1, Int(duration * Self.testSampleRate))
+        _installRenderedAudioForTesting(samples: [Float](repeating: 0, count: frameCount), signature: signature)
+    }
+
+    /// Installs `samples`, one channel at 22,050 Hz, as rendered speech built
+    /// the way a render builds it, in blocks of `blockFrameCount` frames and
+    /// followed by the silence padding. Its one character spans the speech.
+    /// No samples install nothing, as a render of nothing installs nothing.
+    func _installRenderedAudioForTesting(
+        samples: [Float],
+        signature: SpeechRenderSignature? = nil,
+        blockFrameCount: Int = RenderedSpeechAudio.defaultBlockFrameCount
+    ) {
+        guard !samples.isEmpty,
+              let format = AVAudioFormat(standardFormatWithSampleRate: Self.testSampleRate, channels: 1),
+              let piece = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(samples.count)),
+              let channel = piece.floatChannelData?[0] else { return }
+        samples.withUnsafeBufferPointer { source in
+            if let first = source.baseAddress {
+                channel.update(from: first, count: samples.count)
+            }
+        }
+        piece.frameLength = AVAudioFrameCount(samples.count)
+        let builder = RenderedSpeechAudio.Builder(blockFrameCount: blockFrameCount)
+        builder.append(piece)
+        guard let audio = builder.finish(
+            paddingFrameCount: Self.silencePaddingFrameCount(sampleRate: Self.testSampleRate)
+        ) else { return }
+        install(
+            audio,
+            signature: signature,
+            wordFrameMap: [(charOffset: 0, frame: 0), (charOffset: 1, frame: AVAudioFramePosition(audio.speechFrameCount))]
+        )
+    }
+
+    /// The sample rate of the audio tests install, the synthesizer's own.
+    private static let testSampleRate: Double = 22_050
+
+    /// Tell `observer` of each slice of rendered speech scheduled on the
+    /// player node from now on, or no one when it is nil. It is told on the
+    /// main thread of a play's first slices and on the feeder's own queue of
+    /// the rest, and must not call back into the engine.
+    func _observeScheduledSlicesForTesting(_ observer: (@Sendable (ScheduledSpeechSlice) -> Void)?) {
+        feeder.observeSlices(observer)
     }
 
     /// Runs the same interpolation used by production seeking.
