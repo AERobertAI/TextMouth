@@ -63,7 +63,10 @@ struct LibraryIdentity: Codable, Equatable, Sendable {
         if let existing = try read(in: root) {
             return (existing, false)
         }
-        let identity = LibraryIdentity(id: UUID(), created: now)
+        // The marker keeps the date to the second, as ISO 8601 writes it, so
+        // the identity returned is the very one a later read returns.
+        let wholeSeconds = Date(timeIntervalSince1970: now.timeIntervalSince1970.rounded(.down))
+        let identity = LibraryIdentity(id: UUID(), created: wholeSeconds)
         do {
             // Exclusive creation: refused when any file is already there.
             try encoder.encode(identity).write(to: markerURL(in: root), options: .withoutOverwriting)

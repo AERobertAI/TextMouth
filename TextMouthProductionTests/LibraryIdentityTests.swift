@@ -28,6 +28,17 @@ final class LibraryIdentityTests: XCTestCase {
         XCTAssertEqual(try LibraryIdentity.read(in: root), first.identity)
     }
 
+    /// A new identity is the one a later read returns, even when it was
+    /// given partway through a second: the marker keeps whole seconds.
+    func testANewIdentityEqualsTheOneReadBack() throws {
+        let root = try makeSandboxDirectory("WholeSeconds")
+
+        let adopted = try LibraryIdentity.adopt(in: root, now: Date(timeIntervalSince1970: 1_790_000_000.75))
+
+        XCTAssertEqual(adopted.identity.created, Date(timeIntervalSince1970: 1_790_000_000))
+        XCTAssertEqual(try LibraryIdentity.read(in: root), adopted.identity)
+    }
+
     /// A marker already there is never replaced: adopting returns it and
     /// leaves its bytes exactly as they were.
     func testAdoptingNeverOverwritesAMarker() throws {
