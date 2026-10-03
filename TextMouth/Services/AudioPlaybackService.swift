@@ -72,6 +72,10 @@ enum AudioEndNoticeOutcome: Equatable, Sendable {
     /// The notice ended the play under way: a clip chain moved on to its
     /// next clip, or playback finished.
     case endedPlay
+    /// The notice ends the play under way, which was paused when it came.
+    /// It is held until playback resumes, which finishes the play, so the
+    /// listener's pause is never overridden by moving on.
+    case heldUntilResume
     /// The notice was posted during an earlier play, before a load, a play
     /// from a time, a seek, a stop, or a finish began the one under way. It
     /// was ignored.
@@ -112,6 +116,7 @@ enum AudioEndNoticePolicy {
     ///     the notice.
     ///   - currentGeneration: The generation of the play under way.
     ///   - isPlaying: Whether the service is playing, paused or not.
+    ///   - isPaused: Whether that playback is paused.
     ///   - playhead: Where the item's playhead stood when the notice was
     ///     posted, in seconds into the file, or nil when it is unknown.
     ///   - playStart: Where the play under way began, in seconds into the
@@ -125,6 +130,7 @@ enum AudioEndNoticePolicy {
         postedGeneration: Int,
         currentGeneration: Int,
         isPlaying: Bool,
+        isPaused: Bool,
         playhead: TimeInterval?,
         playStart: TimeInterval,
         fileDuration: TimeInterval?,
@@ -140,7 +146,7 @@ enum AudioEndNoticePolicy {
         ) {
             return .lateForEarlierPlaythrough
         }
-        return .endedPlay
+        return isPaused ? .heldUntilResume : .endedPlay
     }
 
     /// Whether a notice posted with the playhead at `playhead` is the late
@@ -598,6 +604,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// playthrough as it began; nil when it was not.
     private var restartedAfterLateEndFrom: TimeInterval?
 
+    /// The generation of a play whose end AVFoundation reported while it
+    /// was paused, or nil. Resuming finishes that play, unless a seek, a
+    /// load, or a stop has begun another since.
+    private var endHeldUntilResume: Int?
+
     /// Tracks the intended output volume independently of the AVPlayer
     /// instance. When load() creates a new AVPlayer for a chapter
     /// transition, the new player defaults to volume 1.0, discarding
@@ -800,6 +811,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         playGeneration.advance()
         playStartFileTime = clampedTime
         restartedAfterLateEndFrom = nil
+        endHeldUntilResume = nil
         let seekToken = seekGate.begin()
         player.seek(
             to: CMTime(seconds: clampedTime, preferredTimescale: 600),
@@ -823,17 +835,50 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// failed. Returning false lets the reader reload the chapter after
     /// route changes, player loss, or a failure still on its way to the
     /// main queue; reloading reports a file that cannot play.
+    ///
+    /// Playback paused at the end of its file finishes instead, once this
+    /// call has returned, so the caller sees it resume before it ends: its
+    /// end came while it was paused and was held, or it was paused there
+    /// first. AVFoundation reports no end again for a player asked to play
+    /// on from its end, which then stays where it is.
     @discardableResult
     func resume() -> Bool {
         guard isPaused, let player, let item = player.currentItem,
               player.error == nil, item.status != .failed else {
             return false
         }
-        player.rate = Float(playbackSpeed)
         isPaused = false
         isPlaying = true
+        let generation = playGeneration.current
+        // A seek still on its way decides where playback stands; AVFoundation
+        // reports the end itself when it lands there and plays on.
+        let pausedAtTheEnd = !seekGate.isSeeking && Self.isAtEndOfFile(item)
+        if endHeldUntilResume == generation || pausedAtTheEnd {
+            endHeldUntilResume = nil
+            DispatchQueue.main.async { [weak self] in
+                self?.finishResumedPlayAtItsEnd(generation: generation)
+            }
+            return true
+        }
+        player.rate = Float(playbackSpeed)
         scheduleProgressCheck()
         return true
+    }
+
+    /// Finish the play of `generation`, resumed at its end, unless that
+    /// play has given way to another since: a seek, a load, or a stop began
+    /// one. A pause made in the meantime holds the end until the next
+    /// resume.
+    private func finishResumedPlayAtItsEnd(generation: Int) {
+        guard generation == playGeneration.current, isPlaying else {
+            DiagnosticLog.trace(.playback, "audio play resumed at its end gave way to another before it finished")
+            return
+        }
+        guard !isPaused else {
+            endHeldUntilResume = generation
+            return
+        }
+        reachedEnd()
     }
 
     func stop() {
@@ -865,6 +910,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         // posted that is still on its way to the main queue ends nothing.
         playGeneration.advance()
         restartedAfterLateEndFrom = nil
+        endHeldUntilResume = nil
     }
 
     /// Halt playback because of `failure`, then publish it and tell
@@ -1263,6 +1309,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             postedGeneration: notice.generation,
             currentGeneration: playGeneration.current,
             isPlaying: isPlaying,
+            isPaused: isPaused,
             playhead: notice.playhead,
             playStart: playStartFileTime,
             fileDuration: loadedFileDuration,
@@ -1271,6 +1318,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         switch outcome {
         case .endedPlay:
             reachedEnd()
+        case .heldUntilResume:
+            DiagnosticLog.trace(.playback, "audio end of file held: playback was paused when it came; resuming finishes the play")
+            endHeldUntilResume = notice.generation
         case .postedDuringEarlierPlay:
             DiagnosticLog.trace(
                 .playback,
@@ -1343,8 +1393,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// The clip's end is kept, so the player's ticks at or past it once it
     /// has stopped report no time beyond the clip. Loading a file, or a
     /// chain's clip, sets the end afresh.
+    ///
+    /// Paused playback never finishes here: its end is held until it
+    /// resumes, so the listener's pause is never overridden by moving on.
     private func finishPlayback() {
-        guard isPlaying else { return }
+        guard isPlaying, !isPaused else { return }
         playGeneration.advance()
         player?.pause()
         isPlaying = false
@@ -1476,15 +1529,19 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         guard item === playerItem, let player, let url = loadedURL else { return }
         // Only the newest check runs; scheduling another cancelled this one.
         progressCheck = nil
-        let reachedEndOfFile = item.duration.isNumeric
-            && CMTimeCompare(item.currentTime(), item.duration) >= 0
         guard AudioStallPolicy.isStalled(
             isPlaying: isPlaying,
             isPaused: isPaused,
             playerIsAdvancing: player.timeControlStatus == .playing,
-            reachedEndOfFile: reachedEndOfFile
+            reachedEndOfFile: Self.isAtEndOfFile(item)
         ) else { return }
         reportFailure(AudioPlaybackFailure(reason: .stalled, url: url))
+    }
+
+    /// Whether `item`'s playhead stands at or past the end of its file, as
+    /// far as its length is known.
+    private static func isAtEndOfFile(_ item: AVPlayerItem) -> Bool {
+        item.duration.isNumeric && CMTimeCompare(item.currentTime(), item.duration) >= 0
     }
 
     private func removeObservers() {

@@ -297,6 +297,84 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(finishedCount, 2)
     }
 
+    // MARK: - Pausing as the End Comes
+
+    /// A pause in the moment between the playhead reaching the file's end
+    /// and AVFoundation posting that end holds the end: nothing finishes
+    /// while paused, and resuming finishes the play once, though
+    /// AVFoundation reports nothing more for a player resumed at its end.
+    func testPauseJustAsTheEndIsReachedHoldsTheEndUntilResume() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        playback.onPositionUpdate = { [unowned playback] time in
+            if time >= 0.4 - 0.001 { playback.pause() }
+        }
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.heldUntilResume])
+        XCTAssertEqual(events.finishedCount, 0, "Paused playback finished")
+        XCTAssertTrue(playback.isPaused)
+
+        XCTAssertTrue(playback.resume())
+        XCTAssertEqual(events.finishedCount, 0, "Resuming finished before it returned")
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "Resuming never finished the play")
+        XCTAssertFalse(playback.isPlaying)
+        XCTAssertEqual(reports.endOfFileOutcomes, [.heldUntilResume])
+    }
+
+    /// A pause between AVFoundation posting the file's end and the service
+    /// acting on it holds the end as well, and resuming finishes the play
+    /// once.
+    func testPauseBetweenTheEndAndItsHandlingHoldsTheEnd() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        playback._endNoticeArrivedForTesting = { [unowned playback] in playback.pause() }
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.heldUntilResume])
+        XCTAssertEqual(events.finishedCount, 0, "Paused playback finished")
+
+        XCTAssertTrue(playback.resume())
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "Resuming never finished the play")
+    }
+
+    /// An end held while paused ends nothing once a seek moves playback
+    /// away from it: resuming plays on from there, and the play finishes
+    /// once, at the end it reaches next.
+    func testHeldEndGivesWayToASeekMadeWhilePaused() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        var hasPaused = false
+        playback._endNoticeArrivedForTesting = { [unowned playback] in
+            guard !hasPaused else { return }
+            hasPaused = true
+            playback.pause()
+        }
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes == [.heldUntilResume] }, "The file's end was never held")
+
+        playback.seek(to: 0.1)
+        XCTAssertTrue(playback.resume())
+
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes.count == 2 }, "Playback never reached the end again")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.heldUntilResume, .endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+    }
+
     // MARK: - End Notice Policy
 
     /// A notice posted during an earlier play ends nothing, wherever the
@@ -304,7 +382,7 @@ final class CompletionGenerationTests: XCTestCase {
     func testPolicyIgnoresANoticePostedDuringAnEarlierPlay() {
         XCTAssertEqual(
             AudioEndNoticePolicy.outcome(
-                postedGeneration: 3, currentGeneration: 4, isPlaying: true,
+                postedGeneration: 3, currentGeneration: 4, isPlaying: true, isPaused: false,
                 playhead: 10, playStart: 0, fileDuration: 10, restartedFrom: nil
             ),
             .postedDuringEarlierPlay
@@ -315,7 +393,7 @@ final class CompletionGenerationTests: XCTestCase {
     func testPolicyIgnoresANoticeWhenNothingPlays() {
         XCTAssertEqual(
             AudioEndNoticePolicy.outcome(
-                postedGeneration: 4, currentGeneration: 4, isPlaying: false,
+                postedGeneration: 4, currentGeneration: 4, isPlaying: false, isPaused: false,
                 playhead: 10, playStart: 0, fileDuration: 10, restartedFrom: nil
             ),
             .nothingPlaying
@@ -327,7 +405,7 @@ final class CompletionGenerationTests: XCTestCase {
     func testPolicyEndsThePlayThatReachedTheEnd() {
         func outcome(playhead: TimeInterval?, playStart: TimeInterval, fileDuration: TimeInterval?) -> AudioEndNoticeOutcome {
             AudioEndNoticePolicy.outcome(
-                postedGeneration: 1, currentGeneration: 1, isPlaying: true,
+                postedGeneration: 1, currentGeneration: 1, isPlaying: true, isPaused: false,
                 playhead: playhead, playStart: playStart, fileDuration: fileDuration, restartedFrom: nil
             )
         }
@@ -345,7 +423,7 @@ final class CompletionGenerationTests: XCTestCase {
     func testPolicyRecognizesTheLateEndOfAnEarlierPlaythrough() {
         func outcome(playhead: TimeInterval, fileDuration: TimeInterval?) -> AudioEndNoticeOutcome {
             AudioEndNoticePolicy.outcome(
-                postedGeneration: 1, currentGeneration: 1, isPlaying: true,
+                postedGeneration: 1, currentGeneration: 1, isPlaying: true, isPaused: false,
                 playhead: playhead, playStart: 3, fileDuration: fileDuration, restartedFrom: nil
             )
         }
@@ -356,6 +434,19 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(outcome(playhead: 3 + 2 * tolerance, fileDuration: 10), .endedPlay)
     }
 
+    /// The end of a paused play is held until it resumes; the late end of
+    /// an earlier playthrough is told apart while paused too.
+    func testPolicyHoldsTheEndOfAPausedPlay() {
+        func outcome(playhead: TimeInterval) -> AudioEndNoticeOutcome {
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 1, currentGeneration: 1, isPlaying: true, isPaused: true,
+                playhead: playhead, playStart: 3, fileDuration: 10, restartedFrom: nil
+            )
+        }
+        XCTAssertEqual(outcome(playhead: 10), .heldUntilResume)
+        XCTAssertEqual(outcome(playhead: 3), .lateForEarlierPlaythrough)
+    }
+
     /// A play already started again on a new player after a late notice is
     /// not started again: another notice with the playhead at its start is
     /// a real end, as at the true end of a file whose length was
@@ -363,7 +454,7 @@ final class CompletionGenerationTests: XCTestCase {
     func testPolicyNeverRestartsAPlayTwice() {
         XCTAssertEqual(
             AudioEndNoticePolicy.outcome(
-                postedGeneration: 2, currentGeneration: 2, isPlaying: true,
+                postedGeneration: 2, currentGeneration: 2, isPlaying: true, isPaused: false,
                 playhead: 3, playStart: 3, fileDuration: 10, restartedFrom: 3
             ),
             .endedPlay
