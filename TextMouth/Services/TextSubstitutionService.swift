@@ -426,55 +426,86 @@ final class TextSubstitutionService: ObservableObject {
         var stages: [OffsetMap] = []
 
         for rule in enabledRules {
-            // Only map replacements that can actually be applied to this
-            // string; an invalid Unicode range must not shift later offsets.
-            let replacements = findReplacements(in: current, rule: rule).filter {
-                Range($0.range, in: current) != nil
-            }
-            guard !replacements.isEmpty else { continue }
-
-            // Track offset shifts from this rule's replacements (in forward order)
-            var shift = 0
-            var totalDelta = 0
-            var points: [(targetPos: Int, cumulativeDelta: Int)] = []
-            for rep in replacements {
-                let adjustedStart = rep.range.location + shift
-                let replacementLength = rep.replacement.utf16Length
-                let lenDiff = rep.range.length - replacementLength
-                totalDelta += lenDiff
-                let afterInModified = adjustedStart + replacementLength
-                points.append((targetPos: afterInModified, cumulativeDelta: totalDelta))
-                shift -= lenDiff
-            }
-
-            // Apply replacements in reverse order so indices stay valid.
-            // NSRegularExpression returns ranges in UTF-16 code units, while
-            // `String.index(_:offsetBy:)` walks `Character` (grapheme
-            // clusters). Using offsetBy on an NSRange would crash on any
-            // text containing emoji or other surrogate-pair characters
-            // (e.g. "🙂 cat"). Range(_:in:) handles the unit conversion.
-            // If the conversion fails (would be a regex bug), skip the
-            // replacement rather than crash.
-            var newText = current
-            for rep in replacements.reversed() {
-                guard let stringRange = Range(rep.range, in: newText) else { continue }
-                newText.replaceSubrange(stringRange, with: rep.replacement)
-            }
-            current = newText
-            stages.append(OffsetMap(points: points))
+            guard let stage = Self.applying(findReplacements(in: current, rule: rule), to: current) else { continue }
+            current = stage.text
+            stages.append(stage.offsetMap)
         }
 
         return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
     }
 
+    /// `text` with one rule's `replacements` made, and the map between
+    /// offsets in `text` and in the result; nil when none can be made.
+    ///
+    /// `replacements` are a rule's matches in `text`, in text order and not
+    /// overlapping, as the matchers find them. Their ranges count UTF-16 code
+    /// units, as `NSRegularExpression` and `NSString` report them. A range
+    /// that does not convert to indices of `text` is left out, from the text
+    /// and from the map alike, so an invalid Unicode range never shifts later
+    /// offsets; a matcher that broke its promise of order is treated the same
+    /// way rather than trapping.
+    ///
+    /// The result is built in one forward pass: the text between matches,
+    /// then each replacement, appended in turn, with every range converted
+    /// against `text`, which never changes, so finding where its UTF-16
+    /// offsets fall is paid for once. Making the replacements in place, back
+    /// to front, rescanned the changed text for every match on non-ASCII
+    /// text, so time grew with the chapter's length times its matches
+    /// (PERF01: 3.4 s for a chapter of a million UTF-16 units). Both make the
+    /// same replacements: that pass changed only text after the range it
+    /// converted next, and Foundation converts a range on Unicode scalar
+    /// boundaries, so each range met the same characters there as it does
+    /// here.
+    nonisolated static func applying(
+        _ replacements: [Replacement],
+        to text: String
+    ) -> (text: String, offsetMap: OffsetMap)? {
+        var result = ""
+        // Most rules change little, so the result is about as long as `text`.
+        result.reserveCapacity(text.utf8.count)
+        var copiedUpTo = text.startIndex
+        // The map has a breakpoint after each replacement, in the result:
+        // there, a result offset plus the total change in length so far is
+        // the offset in `text`. `shift` is how far the result's offsets have
+        // moved from `text`'s by then.
+        var shift = 0
+        var totalDelta = 0
+        var points: [(targetPos: Int, cumulativeDelta: Int)] = []
+        points.reserveCapacity(replacements.count)
+
+        for replacement in replacements {
+            guard let bounds = Range(replacement.range, in: text),
+                  bounds.lowerBound >= copiedUpTo else { continue }
+            result += text[copiedUpTo..<bounds.lowerBound]
+            result += replacement.replacement
+            copiedUpTo = bounds.upperBound
+
+            let replacementLength = replacement.replacement.utf16Length
+            let lengthChange = replacement.range.length - replacementLength
+            totalDelta += lengthChange
+            points.append((targetPos: replacement.range.location + shift + replacementLength, cumulativeDelta: totalDelta))
+            shift -= lengthChange
+        }
+
+        guard !points.isEmpty else { return nil }
+        result += text[copiedUpTo...]
+        return (result, OffsetMap(points: points))
+    }
+
     // MARK: - Pattern Matching
 
-    private struct Replacement {
+    /// One match of a rule: the UTF-16 range it covers in the text it was
+    /// found in, and the text to put there, with any group references of a
+    /// regular expression already filled in.
+    struct Replacement {
         let range: NSRange
         let replacement: String
     }
 
-    private func findReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
+    /// Every match of `rule` in `text`, in text order. Internal rather than
+    /// private so the oracle tests (SpeechPreparationSubstitutionTests) can
+    /// make the same matches the way substitutions were made before PERF01.
+    func findReplacements(in text: String, rule: SubstitutionRule) -> [Replacement] {
         if rule.isRegex {
             return findRegexReplacements(in: text, rule: rule)
         }
