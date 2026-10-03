@@ -218,6 +218,22 @@ enum TextPipelineFixtures {
         return markdown
     }
 
+    /// A content.md of `chapters` chapters, each its marker line and
+    /// `paragraphs` one-line paragraphs of a dozen words with blank lines
+    /// between them: shaped like the cache of a large anthology, whose
+    /// opening splits hundreds of thousands of lines into its chapters.
+    static func multiChapterCache(chapters: Int, paragraphs: Int) -> String {
+        var prose = Prose(seed: 19)
+        var cache = ""
+        for chapter in 1...chapters {
+            cache += "<!-- chapter: Story \(chapter) -->\n# Story \(chapter)\n\n"
+            for _ in 0..<paragraphs {
+                cache += prose.words(12).joined(separator: " ") + "\n\n"
+            }
+        }
+        return cache
+    }
+
     /// `words` joined by spaces, with a line break before any word that
     /// would pass `width` columns.
     static func wrapped(_ words: [String], width: Int) -> String {

@@ -101,6 +101,9 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         try benchmark("PERF21", "Chapter.wordCount, 5 MB of prose in one chapter") {
             prose.wordCount
         }
+        try benchmark("PERF21", "before: split and count, 5 MB of prose in one chapter") {
+            TextPipelineBefore.wordCount(prose.text)
+        }
         let converted = try TextPipelineFixtures.writeEPUB(
             TextPipelineFixtures.convertedBookEPUB(documents: 60, paragraphs: 40), named: "converted-60.epub", for: self
         )
@@ -127,7 +130,22 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         try benchmark("PERF22", "BookContentAnalysisService.load, 60-chapter EPUB") {
             try BookContentAnalysisService.load(book: book)
         }
+        let anthology = TextPipelineFixtures.multiChapterCache(chapters: 1_500, paragraphs: 50)
+        let lines = anthology.utf8.reduce(0) { $0 + ($1 == 10 ? 1 : 0) }
+        let label = String(format: "1,500-chapter cache (%.1f MB, %d lines)", Double(anthology.utf8.count) / 1_048_576, lines)
+        try benchmark("PERF22", "before: splitChapters, \(label)") {
+            TextPipelineBefore.splitChapters(anthology)
+        }
+        try benchmark("PERF22", "after: splitChapters, \(label)") {
+            MarkdownCacheService.splitChapters(anthology)
+        }
         let text = PlainTextParser.markdown(text: TextPipelineFixtures.plainText(bytes: 20 * 1_048_576))
+        try benchmark("PERF22", "before: splitChapters, 20 MB plain-text cache (no markers)", repetitions: 2) {
+            TextPipelineBefore.splitChapters(text)
+        }
+        try benchmark("PERF22", "after: splitChapters, 20 MB plain-text cache (no markers)", repetitions: 2) {
+            MarkdownCacheService.splitChapters(text)
+        }
         try benchmark("PERF22", "parseMultiChapterMarkdown, 20 MB plain-text cache", repetitions: 1) {
             MarkdownCacheService.parseMultiChapterMarkdown(text, bookTitle: "T", bookAuthor: "A")
         }
@@ -139,8 +157,14 @@ final class TextPipelineBenchmarkTests: XCTestCase {
     /// TestData's Pride and Prejudice, into headings and paragraphs.
     func testPERF23EscapingAndHeadings() throws {
         let text = TextPipelineFixtures.plainText(bytes: 20 * 1_048_576)
+        try benchmark("PERF23", "before: MarkdownLiteral.escaped, 20 MB", repetitions: 2) {
+            TextPipelineBefore.escaped(text)
+        }
         try benchmark("PERF23", "MarkdownLiteral.escaped, 20 MB", repetitions: 2) {
             MarkdownLiteral.escaped(text)
+        }
+        try benchmark("PERF23", "before: PlainTextParser.blocks, 20 MB", repetitions: 2) {
+            TextPipelineBefore.PlainText.blocks(in: text)
         }
         try benchmark("PERF23", "PlainTextParser.blocks, 20 MB", repetitions: 2) {
             PlainTextParser.blocks(in: text)
@@ -149,6 +173,9 @@ final class TextPipelineBenchmarkTests: XCTestCase {
             PlainTextParser.markdown(text: text)
         }
         let pride = try TextFileDecoder.readText(at: try requireFile("pride.txt"), format: .txt)
+        try benchmark("PERF23", "before: PlainTextParser.blocks, pride.txt", repetitions: 5) {
+            TextPipelineBefore.PlainText.blocks(in: pride)
+        }
         try benchmark("PERF23", "PlainTextParser.blocks, pride.txt", repetitions: 5) {
             PlainTextParser.blocks(in: pride)
         }
@@ -191,6 +218,9 @@ final class TextPipelineBenchmarkTests: XCTestCase {
     func testPERF25WhitespaceNormalization() throws {
         for megabytes in [1, 5] {
             let markdown = TextPipelineFixtures.markdownWithTables(bytes: megabytes * 1_048_576)
+            try benchmark("PERF25", "before: normalizeMarkdownWhitespace, \(megabytes) MB", repetitions: 3) {
+                TextPipelineBefore.normalizedWhitespace(markdown)
+            }
             try benchmark("PERF25", "ParserUtilities.normalizeMarkdownWhitespace, \(megabytes) MB", repetitions: 3) {
                 ParserUtilities.normalizeMarkdownWhitespace(markdown)
             }
