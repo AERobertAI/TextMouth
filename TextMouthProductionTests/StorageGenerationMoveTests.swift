@@ -247,7 +247,103 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept.filePath))
     }
 
+    // MARK: - Removal and the Move
+
+    /// A book removed, with its package deleted, while the move waits for
+    /// an import is not in the moved data directory, and nothing there
+    /// brings it back.
+    func testBookRemovedWhileTheMoveWaitsIsNotInTheMovedDataDirectory() async throws {
+        let world = try makeIntegrationWorld("Storage Move Removal")
+        let model = world.library
+        let removed = try world.importBook(from: try makeTextSource(named: "Old Moorings.txt"))
+        let kept = try world.importBook(from: try makeTextSource(named: "New Moorings.txt"))
+        let destination = try makeDataDirectoryMoveDestination("RemovalDuringMove")
+        let held = holdFirstImport(of: model, at: .copying)
+        model.importSingleFileAsync(from: try makeTextSource(named: "Buoyage.txt"), toFolder: world.folder.path)
+        await fulfillment(of: [held.reached], timeout: 10)
+
+        var removal: OperationOutcome?
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination) { work in
+            guard work == .importing else { return }
+            removal = model.removeBooksAndDeleteReturningOutcome([removed], deletePackage: Self.deletePermanently)
+            held.gate.signal()
+        }
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(removal?.succeeded, true, removal?.failureMessage ?? "the removal did not run")
+        XCTAssertFalse(model.library.books.contains { $0.id == removed.id })
+        XCTAssertTrue(try XCTUnwrap(model.library.books.first { $0.id == kept.id }).filePath.hasPrefix(destination.path + "/"))
+        let movedFolder = Self.folder(world.folder.path, under: destination)
+        XCTAssertFalse(Self.entries(of: movedFolder).contains(removed.tmbDirectoryName), "The removed package was copied")
+        XCTAssertEqual(Self.adoptedPackages(of: model, in: Self.folder(world.folder.path, under: destination)), 0, "A removed book came back")
+    }
+
+    /// A book removed from the library only while the move waits keeps its
+    /// package, which moves with its removal marker and stays out of the
+    /// moved library.
+    func testBookRemovedFromTheLibraryOnlyWhileTheMoveWaitsStaysOut() async throws {
+        let world = try makeIntegrationWorld("Storage Move Retirement")
+        let model = world.library
+        let retired = try world.importBook(from: try makeTextSource(named: "Laid-Up Hulls.txt"))
+        let destination = try makeDataDirectoryMoveDestination("RetirementDuringMove")
+        let held = holdFirstImport(of: model, at: .copying)
+        model.importSingleFileAsync(from: try makeTextSource(named: "Slipway Notes.txt"), toFolder: world.folder.path)
+        await fulfillment(of: [held.reached], timeout: 10)
+
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination) { work in
+            guard work == .importing else { return }
+            model.removeBooksFromLibraryOnly([retired])
+            held.gate.signal()
+        }
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertFalse(model.library.books.contains { $0.id == retired.id })
+        let movedPackage = Self.folder(world.folder.path, under: destination).appendingPathComponent(retired.tmbDirectoryName)
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: TextMouthPaths.removedFromLibraryMarkerPath(in: movedPackage).path),
+            "The package did not move with its removal marker"
+        )
+        XCTAssertEqual(Self.adoptedPackages(of: model, in: Self.folder(world.folder.path, under: destination)), 0, "A book removed from the library came back")
+    }
+
+    /// A removal confirmed after the move, of books the confirmation took
+    /// before it, removes each book where the move put it: its moved
+    /// package is deleted, and nothing brings the book back.
+    func testRemovalConfirmedAfterTheMoveDeletesTheMovedPackage() async throws {
+        let world = try makeIntegrationWorld("Storage Move Confirmation")
+        let model = world.library
+        let book = try world.importBook(from: try makeTextSource(named: "Wreck Chart.txt"))
+        // What the removal confirmation holds while the user reads it.
+        let confirmed = [book]
+        let destination = try makeDataDirectoryMoveDestination("RemovalAfterMove")
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination)
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+
+        let removal = model.removeBooksAndDeleteReturningOutcome(confirmed, deletePackage: Self.deletePermanently)
+
+        XCTAssertTrue(removal.succeeded, removal.failureMessage ?? "")
+        XCTAssertFalse(model.library.books.contains { $0.id == book.id })
+        let movedPackage = Self.folder(world.folder.path, under: destination).appendingPathComponent(book.tmbDirectoryName)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: movedPackage.path), "The moved package was not deleted")
+        XCTAssertEqual(Self.adoptedPackages(of: model, in: Self.folder(world.folder.path, under: destination)), 0, "The removed book came back")
+    }
+
     // MARK: - Fixtures
+
+    /// Deletes a book's package as Remove & Delete does, after the same
+    /// checks, but permanently: no test reaches the user's Trash.
+    private static let deletePermanently: (Book) throws -> Void = { book in
+        let package = try FileImportService.managedPackageURLForDeletion(book)
+        try FileManager.default.removeItem(at: package)
+    }
+
+    /// How many packages in `folder`, a library folder of the test's own,
+    /// orphan adoption would bring back into `model`'s library, as a launch
+    /// or Rebuild Directory adopts them.
+    private static func adoptedPackages(of model: LibraryViewModel, in folder: URL) -> Int {
+        var library = model.library
+        return FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: folder)
+    }
 
     /// A plain-text book file, `name`, in a scratch folder of the test's
     /// own. Its text begins with its name, so no two are copies of one book.

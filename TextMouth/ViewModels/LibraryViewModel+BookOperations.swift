@@ -128,6 +128,13 @@ extension LibraryViewModel {
     /// package is deleted first, through the Trash-aware path unless a test
     /// injects `deletePackage`, and a book whose package cannot be deleted
     /// stays. Returns the outcome in the words of the deleting mode in force.
+    ///
+    /// Each book is removed as the library holds it now, found by its ID: a
+    /// confirmation or a sheet may have captured it before a data-directory
+    /// move published, or before another change, and its package is where
+    /// the library says now (TODO S04). A book no longer listed needs
+    /// nothing. Removals run on the main actor, as a move's copy and
+    /// publication do, so the two never interleave.
     private func removeBooksReturningOutcome(
         _ books: [Book],
         deletingPackages: Bool,
@@ -138,7 +145,7 @@ extension LibraryViewModel {
         }
         var removed: [Book] = []
         var failures: [String] = []
-        for book in books {
+        for book in books.compactMap({ bookByID($0.id) }) {
             if deletingPackages {
                 do {
                     try deletePackage(book)
