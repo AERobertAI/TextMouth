@@ -343,16 +343,24 @@ extension LibraryViewModel {
     /// a new date is left to the next open, which reads it for its digest
     /// and keeps a cache that did not change. A book without fingerprints
     /// has nothing to compare.
-    /// - Parameter isDataless: Whether a file is dataless (FR02): the
-    ///   maintenance access's check.
+    ///
+    /// A dataless file is never resized by the size it reports (FR02): an
+    /// evicted iCloud Drive file reports 0 bytes, which would otherwise call
+    /// its cache stale and have it rebuilt from a source downloaded for it.
+    /// - Parameter isDataless: Whether a file is dataless: the maintenance
+    ///   access's check.
     nonisolated static func hasResizedTextCacheFile(
         _ book: Book,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless
     ) -> Bool {
         guard let recorded = book.textCacheFingerprint else { return false }
+        let source = book.bookFileURL
+        let cache = MarkdownCacheService.cacheURL(for: book)
         return recorded.hasResizedFile(
-            sourceStamp: FileStamp(of: book.bookFileURL),
-            cacheStamp: FileStamp(of: MarkdownCacheService.cacheURL(for: book))
+            sourceStamp: FileStamp(of: source),
+            cacheStamp: FileStamp(of: cache),
+            sourceIsDataless: isDataless(source),
+            cacheIsDataless: isDataless(cache)
         )
     }
 
