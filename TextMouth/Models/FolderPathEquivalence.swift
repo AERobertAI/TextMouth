@@ -126,9 +126,12 @@ extension FolderPathEquivalence {
 
     /// `withLibraryRule(_:_:)` for work that awaits, such as a folder edit
     /// whose packages move off the main actor (PERF14): every rule lookup
-    /// made while `body` runs, on any thread, returns `rule`.
+    /// made while `body` runs, on any thread, returns `rule`. `body` runs in
+    /// the caller's isolation (`isolation`), so it can use what the caller
+    /// holds, such as a main-actor library model, without sending it away.
     static func withLibraryRule<Value>(
         _ rule: FolderPathEquivalence,
+        isolation: isolated (any Actor)? = #isolation,
         _ body: () async throws -> Value
     ) async rethrows -> Value {
         let store = FolderPathEquivalenceStore.shared

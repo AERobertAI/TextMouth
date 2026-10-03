@@ -7,7 +7,6 @@ import os
 /// storage work that holds imports and extractions back, and publishes the
 /// library once that is done. The library can change meanwhile, and keeps
 /// every such change.
-@MainActor
 final class LibraryTransitionOffMainTests: XCTestCase {
     /// The hosted test root's library index, put back after each test.
     private var sandbox: LibraryIndexSandbox!
@@ -33,6 +32,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
 
     /// Every package move and record write of a folder rename runs off the
     /// main thread, and the library holds the new rows afterwards.
+    @MainActor
     func testAFolderRenameMovesItsPackagesOffTheMainThread() async throws {
         let (model, folder) = try makeShelf(bookCount: 3)
         let calls = DiskCallLog()
@@ -70,6 +70,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     /// A reader's checkpoint made while the packages move is kept: the row
     /// holds the new place and the new position, and the record at the new
     /// place holds the position too.
+    @MainActor
     func testACheckpointMadeWhileThePackagesMoveIsKept() async throws {
         let (model, folder) = try makeShelf(bookCount: 2)
         let reading = try XCTUnwrap(model.library.books.first)
@@ -116,6 +117,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
 
     /// A failed move is put back off the main thread: every package is where
     /// it was, the library is unchanged, and the edit says why.
+    @MainActor
     func testAFailedMoveIsPutBackAndChangesNothing() async throws {
         let (model, folder) = try makeShelf(bookCount: 3)
         let before = model.library.books
@@ -155,6 +157,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     /// While another operation holds the library's storage work, such as a
     /// data-directory move, a folder edit is refused with the reason and
     /// changes nothing.
+    @MainActor
     func testAFolderEditIsRefusedWhileStorageIsHeldElsewhere() async throws {
         let (model, folder) = try makeShelf(bookCount: 1)
         let before = model.library.books
@@ -174,6 +177,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     /// An empty folder has no packages to move, so renaming it holds no
     /// storage work and waits for none: it is renamed at once even while
     /// another operation holds the library's storage work.
+    @MainActor
     func testAnEmptyFolderIsRenamedAtOnceEvenWhileStorageIsHeld() async throws {
         let (model, folder) = try makeShelf(bookCount: 0)
         let renamed = uniqueFolder("Renamed Empty")
@@ -192,6 +196,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     /// with the transition's changes made to it: the moved books' places,
     /// and the folders and sort settings the transition added, changed, or
     /// removed. Every other change made meanwhile stays.
+    @MainActor
     func testThePublishedLibraryKeepsChangesMadeMeanwhile() throws {
         let shelf = BookFolder(name: "Shelf")
         let other = BookFolder(name: "Other")
@@ -245,6 +250,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
 
     /// Only a transition that moves many packages, and so can take a while,
     /// says when it is done; a small one finishes before anyone could wonder.
+    @MainActor
     func testOnlyALongTransitionAnnouncesItsEnd() {
         XCTAssertNil(LibraryTransitionWording.completion(movingPackagesOf: 0))
         XCTAssertNil(LibraryTransitionWording.completion(movingPackagesOf: LibraryTransitionWording.announcedPackageCount - 1))
@@ -255,6 +261,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
 
     /// A folder of this test's own holding `bookCount` packaged books, and a
     /// library model listing them.
+    @MainActor
     private func makeShelf(bookCount: Int) throws -> (LibraryViewModel, BookFolder) {
         let name = uniqueFolder("Shelf")
         try TextMouthPaths.ensureLibrarySubfolder(name)
@@ -282,6 +289,7 @@ final class LibraryTransitionOffMainTests: XCTestCase {
     }
 
     /// A library folder name no other test uses, removed when this test ends.
+    @MainActor
     private func uniqueFolder(_ prefix: String) -> String {
         let name = "\(prefix) \(UUID().uuidString.prefix(8))"
         createdFolders.append(name)
