@@ -131,6 +131,34 @@ final class MarkdownTableReadingTests: XCTestCase {
         XCTAssertEqual(chapter.headings.map(\.characterOffset), [0, utf16Offset(of: "Wind", in: chapter.text)])
     }
 
+    /// A table reads exactly alike whether it reaches the cache as HTML, as
+    /// an EPUB or HTML book's does (`HTMLToMarkdownConverter`, TODO T03),
+    /// or as a Markdown table, as a DOCX or Markdown book's does: the same
+    /// rows as paragraphs, the same cells as words, an empty cell adding
+    /// nothing, and the same separation from the paragraphs around it.
+    func testATableReadsAsTheSameTableInHTMLReads() throws {
+        let html = "<p>Barometer notes.</p><table>"
+            + "<tr><th>Reading (hPa)</th><th>Trend</th></tr>"
+            + "<tr><td>1013-1023</td><td>Steady</td></tr>"
+            + "<tr><td></td><td>Falling</td></tr>"
+            + "</table><p>Check twice daily.</p>"
+        let markdown = """
+        Barometer notes.
+
+        | Reading (hPa) | Trend |
+        | --- | --- |
+        | 1013-1023 | Steady |
+        | | Falling |
+
+        Check twice daily.
+        """
+
+        let fromHTML = try read(HTMLToMarkdownConverter.convert(html))
+
+        XCTAssertEqual(fromHTML, "Barometer notes.\n\nReading (hPa) Trend\n\n1013-1023 Steady\n\nFalling\n\nCheck twice daily.")
+        XCTAssertEqual(try read(markdown), fromHTML)
+    }
+
     // MARK: - Through the Cache
 
     /// The DOCX fixture's table, read through its cache as the reader reads
