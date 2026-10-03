@@ -951,13 +951,13 @@ extension ReaderViewModel {
 
     /// The clips segmented chapter `chapterIndex` plays, as the audio
     /// service chains them, each clip's file found in the book's audio
-    /// folder (the book's own path); nil when the book has no segment for
-    /// that chapter.
+    /// folder (the book's own path), in its working copy when the reader
+    /// has one (FR02); nil when the book has no segment for that chapter.
     func audioClipChain(forChapterAt chapterIndex: Int) -> AudioClipChain? {
         guard audioSegments.indices.contains(chapterIndex) else { return nil }
         return AudioClipChain(
             segment: audioSegments[chapterIndex],
-            folder: URL(fileURLWithPath: book.filePath, isDirectory: true)
+            folder: playbackURL(for: URL(fileURLWithPath: book.filePath, isDirectory: true))
         )
     }
 
@@ -982,18 +982,18 @@ extension ReaderViewModel {
 
     /// Where chapter `chapterIndex`'s audio plays from: a segmented
     /// chapter's clips, a multi-file book's chapter file, or the book's one
-    /// file. A segmented book's chapter without a segment plays its file
-    /// whole.
+    /// file, each in the book's working copy when the reader has one (FR02).
+    /// A segmented book's chapter without a segment plays its file whole.
     func chapterAudioSource(forChapterAt chapterIndex: Int) -> ChapterAudioSource {
         if audioLayout == .segmented, let chain = audioClipChain(forChapterAt: chapterIndex) {
             return .clips(chain)
         }
         if !audioChapterFiles.isEmpty && chapterIndex < audioChapterFiles.count {
             // Multi-file audio book: each chapter is its own file.
-            return .file(URL(fileURLWithPath: audioChapterFiles[chapterIndex]))
+            return .file(playbackURL(for: URL(fileURLWithPath: audioChapterFiles[chapterIndex])))
         }
         // Single audio file — use book file path
-        return .file(URL(fileURLWithPath: book.filePath))
+        return .file(playbackURL(for: URL(fileURLWithPath: book.filePath)))
     }
 
     /// Wire up audio playback service callbacks for position tracking and chapter advancement.

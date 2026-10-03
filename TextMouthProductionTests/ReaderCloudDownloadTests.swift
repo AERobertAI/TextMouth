@@ -6,8 +6,8 @@ import XCTest
 /// Opening a book that is in a cloud library (FR02): the reader checks the
 /// book's state before reading it, downloads it first when any of its files
 /// is only in the cloud, shows and speaks the download, and can cancel it or
-/// try again; it never lets a read wait on the network, and checks each
-/// chapter's file before it plays.
+/// try again; it never lets a read wait on the network, plays an audiobook
+/// from a working copy, and checks each chapter's file when it has none.
 ///
 /// Every reader here is real, on real packages in a library folder of the
 /// test's own; only the cloud is a fake (`FakeBookCloudStorage`), so each
@@ -53,6 +53,8 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(cloud.storage.downloadsStarted, [])
         XCTAssertEqual(cloud.states.libraryLocation, .cloud(.iCloudDrive))
         XCTAssertEqual(cloud.states.state(of: book.id), .downloaded)
+        XCTAssertNil(reader.cloudSession.workingCopy, "A text book, read into memory, needs no working copy")
+        XCTAssertEqual(Self.entries(of: cloud.copiesFolder), [])
     }
 
     /// A book with a file only in the cloud, one whose last download
@@ -369,16 +371,168 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertNotNil(reader.content, "Try Again did not open the book")
     }
 
-    // MARK: - Chapters Only in the Cloud
+    // MARK: - The Working Copy
 
-    /// A chapter whose file is only in the cloud is downloaded before it
-    /// plays, in the same view, as a short pause: the player is never
-    /// handed the file meanwhile, and the chapter plays once it is here.
+    /// A multi-file audiobook plays every chapter from its working copy,
+    /// while the reader still names its files where the library has them;
+    /// the copy is deleted when the reader closes.
+    func testAudiobookPlaysFromItsWorkingCopyUntilItCloses() throws {
+        let cloud = try makeCloudReaders("Cloud Working Copy")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
+
+        XCTAssertEqual(Self.entries(of: cloud.copiesFolder), [copy.folder.lastPathComponent])
+        XCTAssertEqual(Self.path(copy.source), Self.path(book.tmbDirectory))
+        XCTAssertEqual(reader.audioChapterFiles.count, 2)
+        for file in reader.audioChapterFiles {
+            XCTAssertTrue(Self.path(file).hasPrefix(Self.path(book.filePath) + "/"), "\(file) is not in the package")
+        }
+
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(copy.location(of: URL(fileURLWithPath: reader.audioChapterFiles[0])))
+        )
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(copy.location(of: URL(fileURLWithPath: reader.audioChapterFiles[1])))
+        )
+        reader.stop()
+
+        reader.close()
+
+        waitFor("the copy to be deleted") { !FileManager.default.fileExists(atPath: copy.folder.path) }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath), "The package went with the copy")
+    }
+
+    /// A single-file audiobook plays its one file from the working copy.
+    func testSingleFileAudiobookPlaysFromItsWorkingCopy() throws {
+        let cloud = try makeCloudReaders("Cloud Single File Copy")
+        let book = try makeSingleFileAudioBook("Lantern Hours", in: cloud)
+
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
+        reader.play()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(copy.root.appendingPathComponent("Lantern Hours.wav"))
+        )
+        reader.stop()
+    }
+
+    /// A segmented audiobook plays each chapter's clips from the working
+    /// copy's audio folder.
+    func testSegmentedAudiobookPlaysItsClipsFromItsWorkingCopy() throws {
+        let cloud = try makeCloudReaders("Cloud Segmented Copy")
+        let book = try cloud.world.makeSegmentedAudioBook(
+            title: "Weir Songs",
+            files: ["intro.wav": 1, "a.wav": 1],
+            sections: [
+                AudioSegment(title: "Opening", file: "intro.wav", startTime: 0, endTime: 1),
+                AudioSegment(title: "Weir", file: "a.wav", startTime: 0, endTime: 1),
+            ]
+        )
+
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
+        let audioFolder = URL(fileURLWithPath: book.filePath, isDirectory: true)
+
+        XCTAssertEqual(
+            reader.chapterAudioSource(forChapterAt: 1).files.map { Self.path($0) },
+            [Self.path(copy.location(of: audioFolder.appendingPathComponent("a.wav")))]
+        )
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(copy.location(of: audioFolder.appendingPathComponent("intro.wav")))
+        )
+        reader.stop()
+    }
+
+    /// When the clone fails, the audiobook plays from its package, as it
+    /// always did.
+    func testAudiobookPlaysFromItsPackageWhenCloningFails() throws {
+        let cloud = try makeCloudReaders("Cloud Clone Fails", clone: { _, _ in throw CocoaError(.fileWriteOutOfSpace) })
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2])
+
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        reader.play()
+
+        XCTAssertNil(reader.cloudSession.workingCopy)
+        XCTAssertEqual(Self.entries(of: cloud.copiesFolder), [])
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(reader.audioChapterFiles[0])
+        )
+        reader.stop()
+    }
+
+    /// The library moves the package of an audiobook playing from its
+    /// working copy: playback goes on from the copy through the move,
+    /// without stopping, and the copy now comes from where the package is,
+    /// so the next chapter, named where the book is now, plays from it too.
+    func testPackageMoveKeepsPlaybackOnTheCopy() throws {
+        let cloud = try makeCloudReaders("Cloud Move While Copy Plays")
+        let book = try cloud.world.makeSilentAudioBook(
+            title: "Ferry Timetable",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let copy = try XCTUnwrap(reader.cloudSession.workingCopy, "No working copy was made")
+        reader.play()
+        let playing = try XCTUnwrap(reader.audioPlaybackService.loadedURL)
+        let duringMove = PlayerDuringMove()
+
+        try cloud.world.library.commitLibraryTransition(
+            Self.library(cloud.world.library.library, moving: book.id, to: "\(cloud.world.folder.path)/Shelf"),
+            affectedBookIDs: [book.id],
+            disk: observingDisk(reader, into: duringMove)
+        )
+
+        XCTAssertEqual(duringMove.moves, 1)
+        XCTAssertTrue(duringMove.wasPlaying, "Playback stopped while its package moved")
+        XCTAssertEqual(duringMove.loadedURL, playing, "The player left the copy while the package moved")
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the move")
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL, playing)
+
+        let moved = try XCTUnwrap(cloud.world.library.bookByID(book.id))
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.cloudSession.workingCopy).source), Self.path(moved.tmbDirectory))
+        XCTAssertTrue(Self.path(reader.audioChapterFiles[1]).hasPrefix(Self.path(moved.filePath) + "/"))
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        XCTAssertEqual(
+            Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)),
+            Self.path(copy.root.appendingPathComponent("Tracks/02.wav"))
+        )
+        reader.stop()
+    }
+
+    // MARK: - Chapters Without a Working Copy
+
+    /// Without a working copy, a chapter whose file is only in the cloud is
+    /// downloaded before it plays, in the same view, as a short pause: the
+    /// player is never handed the file meanwhile, and the chapter plays
+    /// once it is here.
     func testChapterOnlyInTheCloudDownloadsBeforeItPlays() throws {
-        let cloud = try makeCloudReaders("Cloud Chapter Download")
+        let cloud = try makeCloudReaders("Cloud Chapter Download", clone: Self.failingClone)
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
+        XCTAssertNil(reader.cloudSession.workingCopy)
         let second = reader.audioChapterFiles[1]
         let step = Self.progress(1, of: 2, bytes: 100, of: 200)
         cloud.cloudOnly.mark(second)
@@ -414,7 +568,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// with the offline explanation and Try Again, which plays it once it
     /// is here.
     func testChapterOnlyInTheCloudStopsAtTheChapterOffline() throws {
-        let cloud = try makeCloudReaders("Cloud Chapter Offline")
+        let cloud = try makeCloudReaders("Cloud Chapter Offline", clone: Self.failingClone)
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
@@ -450,7 +604,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// A chapter still only in the cloud right after its download stops the
     /// reader there rather than download again and again.
     func testChapterStillInTheCloudAfterItsDownloadStopsThere() throws {
-        let cloud = try makeCloudReaders("Cloud Chapter Still Missing")
+        let cloud = try makeCloudReaders("Cloud Chapter Still Missing", clone: Self.failingClone)
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
@@ -468,7 +622,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
 
     /// Cancel during a chapter's download stops the reader at that chapter.
     func testCancellingAChaptersDownloadStopsAtTheChapter() throws {
-        let cloud = try makeCloudReaders("Cloud Chapter Cancel")
+        let cloud = try makeCloudReaders("Cloud Chapter Cancel", clone: Self.failingClone)
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
@@ -492,7 +646,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// In a library that is not in a cloud location, chapters play without
     /// any check, exactly as before.
     func testLocalLibraryPlaysChaptersWithoutCheckingThem() throws {
-        let cloud = try makeCloudReaders("Cloud Local Chapters", location: .local)
+        let cloud = try makeCloudReaders("Cloud Local Chapters", location: .local, clone: Self.failingClone)
         let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
         let reader = cloud.open(book)
         waitForReaderToLoad(reader)
@@ -517,12 +671,77 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// A four-file download at 0, 25, 50, and 75 percent.
     private static let quarterSteps = (0...3).map { progress($0, of: 4, bytes: Int64($0) * 100, of: 400) }
 
+    /// A cloner that always fails, so a reader has no working copy.
+    private static let failingClone: ReaderWorkingCopies.Cloner = { _, _ in throw CocoaError(.fileWriteUnknown) }
+
     /// A text book titled `title`, imported into `cloud`'s library folder.
     private func makeTextBook(_ title: String, in cloud: CloudReaders) throws -> Book {
         let source = try makeSandboxDirectory("\(title) Source").appendingPathComponent("\(title).txt")
         try "\(title)\n\nThe tide came in over the mudflats and lifted the moored boats one by one."
             .write(to: source, atomically: true, encoding: .utf8)
         return try cloud.world.importBook(from: source)
+    }
+
+    /// A single-file audiobook titled `title`: one silent WAV file in a
+    /// package of its own in `cloud`'s library folder, indexed as an import
+    /// indexes it and listed in the library.
+    private func makeSingleFileAudioBook(_ title: String, in cloud: CloudReaders) throws -> Book {
+        let world = cloud.world
+        let packageName = "\(UUID().uuidString).tmb"
+        let file = TextMouthPaths.tmbPath(folderPath: world.folder.path, tmbName: packageName)
+            .appendingPathComponent("\(title).wav")
+        try AudioTestFixtures.writeSilence(to: file, duration: 2)
+        let book = Book(
+            title: title,
+            format: .audio,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            folderPath: world.folder.path,
+            tmbDirectoryName: packageName,
+            localEndOfBookBehavior: EndOfBookBehavior.stop.rawValue
+        )
+        let analysis = try BookContentAnalysisService.load(book: book)
+        try book.saveBookInfoThrowing(contentIndex: analysis.index)
+        world.library.library.addBook(book)
+        return book
+    }
+
+    /// `library` with the book `bookID` in the folder `folderPath`, as Move
+    /// to Folder… proposes it to the library's transition.
+    private static func library(_ library: Library, moving bookID: UUID, to folderPath: String) -> Library {
+        var proposed = library
+        for index in proposed.books.indices where proposed.books[index].id == bookID {
+            proposed.books[index].folderPath = folderPath
+        }
+        return proposed
+    }
+
+    /// What a reader's player was doing as a package moved. Main-actor
+    /// isolated, as the transition's disk operations are.
+    @MainActor
+    private final class PlayerDuringMove {
+        /// How many packages moved.
+        var moves = 0
+        /// Whether the player was playing at the last move.
+        var wasPlaying = false
+        /// The file it held at the last move.
+        var loadedURL: URL?
+    }
+
+    /// The disk operations of a library transition, noting into `observation`
+    /// what `reader`'s player does as each package moves.
+    private func observingDisk(_ reader: ReaderViewModel, into observation: PlayerDuringMove) -> LibraryTransitionDisk {
+        LibraryTransitionDisk(
+            moveItem: { source, destination in
+                observation.moves += 1
+                observation.wasPlaying = reader.audioPlaybackService.isPlaying
+                observation.loadedURL = reader.audioPlaybackService.loadedURL
+                try FileManager.default.moveItem(at: source, to: destination)
+            },
+            writeRecord: { book in
+                try book.saveBookInfoThrowing()
+            }
+        )
     }
 
     // MARK: - Helpers
@@ -549,6 +768,11 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: timeout, condition), "Timed out waiting for \(what)", file: file, line: line)
     }
 
+    /// The names in `folder`, or none when it does not exist.
+    private static func entries(of folder: URL) -> [String] {
+        (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+    }
+
     /// `path` with symbolic links resolved and standardized, so spellings of
     /// one place compare equal.
     private static func path(_ path: String) -> String {
@@ -565,8 +789,8 @@ final class ReaderCloudDownloadTests: XCTestCase {
 
 /// Readers on books in a cloud library of one test's own (FR02): a world of
 /// readers (`IntegrationWorld`), a fake book storage saying where the library
-/// is and how each download goes, a store of cloud states, and the files
-/// the test says are only in the cloud.
+/// is and how each download goes, a store of cloud states, a Working Copies
+/// folder, and the files the test says are only in the cloud.
 @MainActor
 private final class CloudReaders {
     /// The readers' surroundings and the library folder of their books.
@@ -575,6 +799,10 @@ private final class CloudReaders {
     let storage: FakeBookCloudStorage
     /// What the readers record for the library list.
     let states = BookCloudStates()
+    /// The Working Copies folder.
+    let copiesFolder: URL
+    /// The working copies made there.
+    let copies: ReaderWorkingCopies
     /// The files only in the cloud.
     let cloudOnly = CloudOnlyFiles()
     /// How often the readers announce a download without a percentage.
@@ -582,9 +810,12 @@ private final class CloudReaders {
     /// Every reader opened, closed when the test ends.
     private(set) var readers: [ReaderViewModel] = []
 
-    init(world: IntegrationWorld, location: StorageLocation) {
+    init(world: IntegrationWorld, location: StorageLocation, copiesFolder: URL, clone: ReaderWorkingCopies.Cloner?) {
         self.world = world
         storage = FakeBookCloudStorage(location: location)
+        self.copiesFolder = copiesFolder
+        copies = clone.map { ReaderWorkingCopies(folder: copiesFolder, clone: $0) }
+            ?? ReaderWorkingCopies(folder: copiesFolder)
     }
 
     /// The sync service of the library's location.
@@ -605,6 +836,7 @@ private final class CloudReaders {
                 storage: storage,
                 states: states,
                 isDataless: cloudOnly.check,
+                workingCopies: copies,
                 quietAnnouncementInterval: quietAnnouncementInterval
             )
         )
@@ -622,15 +854,18 @@ private final class CloudReaders {
 
 extension XCTestCase {
     /// A cloud library of this test's own, named after `label`, at
-    /// `location`. Its readers are closed when the test ends, before its
-    /// folders are removed.
+    /// `location`, whose working copies `clone` makes (the app's clone when
+    /// nil). Its readers are closed when the test ends, before its folders
+    /// are removed.
     @MainActor
     fileprivate func makeCloudReaders(
         _ label: String,
-        location: StorageLocation = .cloud(.iCloudDrive)
+        location: StorageLocation = .cloud(.iCloudDrive),
+        clone: ReaderWorkingCopies.Cloner? = nil
     ) throws -> CloudReaders {
         let world = try makeIntegrationWorld(label)
-        let cloud = CloudReaders(world: world, location: location)
+        let copiesFolder = try makeSandboxDirectory("\(label) Working Copies")
+        let cloud = CloudReaders(world: world, location: location, copiesFolder: copiesFolder, clone: clone)
         addTeardownBlock { cloud.closeReaders() }
         return cloud
     }

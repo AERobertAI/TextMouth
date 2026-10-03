@@ -4,7 +4,8 @@ import Foundation
 // MARK: - FR02: Opening a Book That Is in the Cloud
 
 /// The cloud services a reader uses to get a book in a cloud library ready
-/// to read (FR02). The app's readers use `app`; tests pass fakes.
+/// to read and keep it playing (FR02). The app's readers use `app`; tests
+/// pass fakes.
 struct ReaderCloudServices {
     /// Where the library lives, each book's cloud state, and downloads.
     let storage: any BookCloudStorage
@@ -13,20 +14,25 @@ struct ReaderCloudServices {
     let states: BookCloudStates
     /// Whether a file's content is only in the cloud.
     let isDataless: @Sendable (URL) -> Bool
+    /// Where audiobooks' working copies are made.
+    let workingCopies: ReaderWorkingCopies
     /// How often a download without a percentage is announced, in seconds.
     let quietAnnouncementInterval: TimeInterval
 
     /// The services `storage` and `states` give, with the app's dataless
-    /// check and 30-second announcements unless a test passes its own.
+    /// check, Working Copies folder, and 30-second announcements unless a
+    /// test passes its own.
     init(
         storage: any BookCloudStorage,
         states: BookCloudStates,
         isDataless: @escaping @Sendable (URL) -> Bool = { DatalessFiles.isDataless($0) },
+        workingCopies: ReaderWorkingCopies = .shared,
         quietAnnouncementInterval: TimeInterval = 30
     ) {
         self.storage = storage
         self.states = states
         self.isDataless = isDataless
+        self.workingCopies = workingCopies
         self.quietAnnouncementInterval = quietAnnouncementInterval
     }
 
@@ -109,6 +115,8 @@ struct ReaderCloudSession {
     /// How many reads after a download were refused because a file was only
     /// in the cloud again; the second ends the opening.
     var refusedReads = 0
+    /// The working copy an audiobook plays from, when it has one.
+    var workingCopy: ReaderWorkingCopy?
     /// Whether the chapter about to play has just been downloaded, so a file
     /// still only in the cloud fails instead of downloading again.
     var chapterJustDownloaded = false
@@ -314,47 +322,87 @@ extension ReaderViewModel {
     /// Loads the book, which is on this Mac now, without ever letting a read
     /// wait on the network (FR02): every read runs with downloading switched
     /// off, after a check that none of the book's files is only in the cloud.
-    /// A read refused because a file was only in the cloud again goes back to
-    /// the download step once; a second refusal ends the opening.
+    /// An audiobook is first cloned into a working copy, which playback then
+    /// reads. A read refused because a file was only in the cloud again goes
+    /// back to the download step once; a second refusal ends the opening.
     func loadDownloadedBook() {
         isLoading = true
         cloudPhase = nil
         let bookCopy = book
         let package = BookPackage(bookCopy)
         let isDataless = cloudServices.isDataless
+        // Text books are read into memory when they open, so only an
+        // audiobook goes on reading its files and needs a copy.
+        let workingCopies = bookCopy.format.isAudio ? cloudServices.workingCopies : nil
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let read = ReaderViewModel.readDownloadedBook(bookCopy, package: package, isDataless: isDataless)
+            let read = ReaderViewModel.readDownloadedBook(
+                bookCopy,
+                package: package,
+                workingCopies: workingCopies,
+                isDataless: isDataless
+            )
             DispatchQueue.main.async { [weak self] in
-                guard let self, !self.hasClosed else { return }
+                guard let self, !self.hasClosed else {
+                    // Nothing will play from a copy made for a reader that
+                    // is gone.
+                    if let copy = read.workingCopy?.copy {
+                        try? copy.remove()
+                    }
+                    return
+                }
                 self.finishLoadingDownloadedBook(read, readFrom: bookCopy.filePath)
             }
         }
     }
 
+    /// What loading a downloaded book read: the content or the error, and,
+    /// for an audiobook, what became of its working copy.
+    struct DownloadedBookRead {
+        /// The content, or why it could not be read.
+        let content: Result<LoadedContent, Error>
+        /// The working copy made or skipped; nil for a text book, and when
+        /// reading failed, which leaves no copy.
+        let workingCopy: ReaderWorkingCopyResult?
+    }
+
     /// Reads `book`, whose package is `package`, with downloading switched
     /// off on this thread: first a check that none of its files is only in
-    /// the cloud, then the content, as `loadContent()` reads it. Runs on a
-    /// background queue.
+    /// the cloud, then, given `workingCopies`, its working copy, then the
+    /// content, as `loadContent()` reads it. An audiobook's tags are read
+    /// from its working copy when it has one. Runs on a background queue.
     nonisolated static func readDownloadedBook(
         _ book: Book,
         package: BookPackage,
+        workingCopies: ReaderWorkingCopies?,
         isDataless: @Sendable (URL) -> Bool
-    ) -> Result<LoadedContent, Error> {
-        Result {
+    ) -> DownloadedBookRead {
+        var workingCopy: ReaderWorkingCopyResult?
+        let content = Result {
             try DatalessFiles.withoutDownloading {
                 try LocalBookFiles.requireOnThisMac(package.url, isDataless: isDataless)
-                return try readContent(of: book)
+                workingCopy = workingCopies?.makeCopy(of: package, isDataless: isDataless)
+                return try readContent(
+                    of: book,
+                    audioTagsFrom: workingCopy?.copy?.location(of: book.bookFileURL)
+                )
             }
         }
+        // A copy made for a read that then failed is of no use.
+        if case .failure = content, let copy = workingCopy?.copy {
+            try? copy.remove()
+            workingCopy = nil
+        }
+        return DownloadedBookRead(content: content, workingCopy: workingCopy)
     }
 
-    /// Shows the book once `loadDownloadedBook()` has read it, or handles why
-    /// it could not be read: a refused read goes back to the download step
-    /// once, and any other error is shown as for any book
-    /// (`showLoadFailure(_:readFrom:)`).
-    private func finishLoadingDownloadedBook(_ read: Result<LoadedContent, Error>, readFrom filePath: String) {
-        switch read {
+    /// Shows the book once `loadDownloadedBook()` has read it, keeping its
+    /// working copy, or handles why it could not be read: a refused read
+    /// goes back to the download step once, and any other error is shown
+    /// as for any book (`showLoadFailure(_:readFrom:)`).
+    private func finishLoadingDownloadedBook(_ read: DownloadedBookRead, readFrom filePath: String) {
+        switch read.content {
         case .success(let loaded):
+            adoptWorkingCopy(read.workingCopy)
             cloudSession.refusedReads = 0
             showLoadedContent(loaded, readFrom: filePath)
         case .failure(let error) where DatalessFiles.isDownloadRefusal(error):
@@ -374,6 +422,22 @@ extension ReaderViewModel {
             }
         case .failure(let error):
             showLoadFailure(error, readFrom: filePath)
+        }
+    }
+
+    /// Keeps the working copy `result` made, pointed at where the package is
+    /// now (the library may have moved it while the book loaded), and logs
+    /// what became of it.
+    private func adoptWorkingCopy(_ result: ReaderWorkingCopyResult?) {
+        switch result {
+        case .made(var copy):
+            copy.sourceMoved(to: BookPackage(book).url)
+            cloudSession.workingCopy = copy
+            DiagnosticLog.event(.storage, "WORKING_COPY_MADE: \(book.title)")
+        case .skipped(let reason):
+            DiagnosticLog.event(.storage, "WORKING_COPY_SKIPPED: \(book.title): \(reason)")
+        case nil:
+            break
         }
     }
 
@@ -605,7 +669,7 @@ extension ReaderViewModel {
         announceCloud(ReaderCloudWording.stillDownloading(elapsed: elapsed), priority: .medium)
     }
 
-    // MARK: Chapters Only in the Cloud
+    // MARK: Chapters Without a Working Copy
 
     /// Whether the current chapter's files can be handed to the player: true
     /// unless one is only in the cloud (FR02). AVPlayer would wait on the
@@ -614,11 +678,12 @@ extension ReaderViewModel {
     /// reader shows Playing meanwhile. Offline, the download fails at once
     /// and the reader stops at the chapter with the reason and Try Again.
     ///
-    /// Only a book in a cloud library is checked. Each file is looked at with
-    /// one lstat(2) made with downloading switched off, so the check never
-    /// waits on the network either.
+    /// Only a book in a cloud library without a working copy is checked: a
+    /// copy is on this Mac by construction. Each file is looked at with one
+    /// lstat(2) made with downloading switched off, so the check never waits
+    /// on the network either.
     func chapterFilesReadyToPlay() -> Bool {
-        guard cloudSession.location?.isCloud == true else { return true }
+        guard cloudSession.location?.isCloud == true, cloudSession.workingCopy == nil else { return true }
         // A chapter download under way plays the cursor's chapter when it
         // is done.
         guard cloudSession.downloadTask == nil else { return false }
@@ -659,6 +724,26 @@ extension ReaderViewModel {
         announceCloud(message)
     }
 
+    // MARK: Working Copy
+
+    /// The file playback reads for the book's file at `url`: its working
+    /// copy, when the reader has one, and otherwise `url` itself.
+    func playbackURL(for url: URL) -> URL {
+        cloudSession.workingCopy?.location(of: url) ?? url
+    }
+
+    /// Whether playback reads the book's working copy.
+    var playsFromWorkingCopy: Bool {
+        cloudSession.workingCopy != nil
+    }
+
+    /// Notes, after the library moved the book's files, that the working
+    /// copy now came from where the package is. The copy itself did not
+    /// move, so playback reading it goes on undisturbed.
+    func workingCopyFollowsMovedPackage() {
+        cloudSession.workingCopy?.sourceMoved(to: BookPackage(book).url)
+    }
+
     // MARK: Closing
 
     /// Stops waiting for a download as the reader closes, recording the
@@ -669,6 +754,25 @@ extension ReaderViewModel {
         guard let purpose else { return }
         DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose)): the reader closed")
         recordStateFoundAfterDownload()
+    }
+
+    /// Deletes the working copy, off the main thread, once nothing plays from
+    /// it.
+    func removeWorkingCopy() {
+        guard let copy = cloudSession.workingCopy else { return }
+        cloudSession.workingCopy = nil
+        let title = book.title
+        DispatchQueue.global(qos: .utility).async {
+            do {
+                try copy.remove()
+                DiagnosticLog.event(.storage, "WORKING_COPY_REMOVED: \(title)")
+            } catch {
+                DiagnosticLog.event(
+                    .storage,
+                    "WORKING_COPY_LEFT: \(title): \(ReaderWorkingCopies.describe(error)); the next session sweeps it away"
+                )
+            }
+        }
     }
 
     // MARK: Helpers

@@ -69,9 +69,18 @@ extension ReaderViewModel {
     /// directory move, or a repair. A single-file book and a segmented
     /// book's clips are found from the book's own path when they play; a
     /// multi-file book's chapter files are found again here.
+    ///
+    /// An audiobook playing from its working copy (FR02) plays on from it
+    /// undisturbed, since the copy did not move; the copy now came from the
+    /// package where it is, so the files named by the book's new path still
+    /// find their copies.
     private func followMovedFiles() {
         if !audioChapterFiles.isEmpty, let index = content?.contentIndex {
             audioChapterFiles = audioChapterFilesAtCurrentLocation(audioChapterFiles, index: index)
+        }
+        if playsFromWorkingCopy {
+            workingCopyFollowsMovedPackage()
+            return
         }
         retargetAudioPlayback()
     }
@@ -106,9 +115,11 @@ extension ReaderViewModel {
     /// playing stops now, releasing the file it plays, so nothing reads the
     /// book's files while they move or after they are gone; the reader goes
     /// on showing Playing, its cursor where the audio stopped. Paused audio
-    /// reads nothing and is left alone. Speech reads no files as it plays.
+    /// reads nothing and is left alone. Speech reads no files as it plays,
+    /// and audio playing from the book's working copy (FR02) reads none of
+    /// the package's files, so it plays on through the move.
     private func pauseAudioForPackageMove() {
-        guard isAudioBook, audioPausedForMove == nil,
+        guard isAudioBook, audioPausedForMove == nil, !playsFromWorkingCopy,
               audioPlaybackService.isPlaying, !audioPlaybackService.isPaused else { return }
         audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
         audioPlaybackService.stop()

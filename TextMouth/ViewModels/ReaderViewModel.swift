@@ -134,8 +134,8 @@ final class ReaderViewModel: ObservableObject {
     /// library is in a cloud location (FR02): the app's, unless the reader
     /// was created with its own, as tests do.
     let cloudServices: ReaderCloudServices
-    /// The reader's cloud work: its download, and where the library was
-    /// found to be (FR02).
+    /// The reader's cloud work: its download, its working copy, and where
+    /// the library was found to be (FR02).
     var cloudSession = ReaderCloudSession()
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
@@ -865,12 +865,14 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Reads `book`'s content, with the metadata its files hold: an EPUB's
-    /// package metadata, or an audiobook's tags. Runs on a background queue.
+    /// package metadata, or an audiobook's tags, from `tagsURL` when given
+    /// (the same file in the book's working copy) and otherwise from the
+    /// book's own file. Runs on a background queue.
     ///
     /// The book's own edits are laid over the metadata back on the main
     /// actor, from the reader's copy of the book as it is by then, so an
     /// edit the library makes while the book loads is shown too (TODO P10).
-    nonisolated static func readContent(of book: Book) throws -> LoadedContent {
+    nonisolated static func readContent(of book: Book, audioTagsFrom tagsURL: URL? = nil) throws -> LoadedContent {
         let url = book.bookFileURL
         let format = book.format
         let cacheOutdated = !format.isAudio
@@ -886,7 +888,8 @@ final class ReaderViewModel: ObservableObject {
         }
         var audioTags: AudioMetadata?
         if format.isAudio {
-            audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+            let tagged = tagsURL ?? url
+            audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
         }
 
         return LoadedContent(
@@ -1348,6 +1351,9 @@ final class ReaderViewModel: ObservableObject {
         if sleepTimerService.ownerID == book.id {
             sleepTimerService.stop()
         }
+        // Playback has stopped, so nothing reads the working copy any more
+        // (FR02).
+        removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
     }
