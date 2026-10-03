@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import os
 
 /// Whether a render succeeded, kept by the render's completion for the
 /// render coordinator, which waits for that completion before it reports.
@@ -211,10 +212,12 @@ enum DirectSpeechFadePlanner {
 
 /// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
 /// macOS resource even when callers use different synthesizer instances.
-/// Current-chapter and look-ahead renders must therefore never overlap.
+/// Current-chapter and look-ahead renders must therefore never overlap, and
+/// neither must the one-word renders that load a voice ahead of Play.
 ///
-/// It holds nothing but its serial queue, so the compiler checks that it is
-/// `Sendable`; state added later needs a lock or an actor.
+/// It holds its serial queue and, under a lock, the voices it has warmed up,
+/// so the compiler checks that it is `Sendable`; state added later needs a
+/// lock or an actor too.
 final class SpeechRenderCoordinator: Sendable {
     static let shared = SpeechRenderCoordinator()
     static let maximumTextLength = 100_000
@@ -223,6 +226,47 @@ final class SpeechRenderCoordinator: Sendable {
         label: "com.textmouth.speech-render",
         qos: .userInitiated
     )
+
+    /// The voices warmed up so far, by identifier, the system's default
+    /// voice as the empty string; read and changed only under this lock.
+    private let warmedVoices = OSAllocatedUnfairLock<Set<String>>(initialState: [])
+
+    /// Load `voice` into the system synthesizer ahead of the first Play, by
+    /// rendering one word with it and dropping the audio (PERF03).
+    func warmUp(_ voice: AVSpeechSynthesisVoice?) {
+        warmUp(voice) { voice, finished in
+            VoiceWarmUp.writeOneWord(in: voice, finished: finished)
+        }
+    }
+
+    /// Warm `voice` up with `write`, which renders one word in a voice and
+    /// calls its completion once, from any thread, with whether it finished;
+    /// tests pass a stand-in.
+    ///
+    /// The process's first utterance in a voice waits while the synthesizer
+    /// loads that voice: a session's first Play waited 3 to 4.5 s for its
+    /// first word. A silent write() pays that once, after which a spoken
+    /// utterance starts in about 15 ms. The write takes its turn on this
+    /// queue like any render, so it never overlaps one, and each voice is
+    /// warmed once, the first time it is asked for.
+    func warmUp(
+        _ voice: AVSpeechSynthesisVoice?,
+        writing write: @escaping @MainActor @Sendable (AVSpeechSynthesisVoice?, @escaping @Sendable (Bool) -> Void) -> Void
+    ) {
+        let name = voice?.identifier ?? ""
+        guard warmedVoices.withLock({ $0.insert(name).inserted }) else { return }
+        enqueue(
+            textLength: VoiceWarmUp.word.utf16Length,
+            shouldStart: { true },
+            start: { finished in write(voice, finished) },
+            completion: { finished in
+                DiagnosticLog.trace(
+                    .playback,
+                    "VOICE_WARM_UP: \(name.isEmpty ? "default voice" : name) \(finished ? "loaded" : "did not finish")"
+                )
+            }
+        )
+    }
 
     /// Render `request` into `engine` once every earlier render has finished.
     ///
@@ -302,9 +346,70 @@ protocol SpeechRenderScheduling: AnyObject {
         shouldStart: @escaping @MainActor @Sendable () -> Bool,
         completion: @escaping @MainActor @Sendable (Bool) -> Void
     )
+
+    /// Load `voice` into the system synthesizer ahead of the first Play, as
+    /// `SpeechRenderCoordinator.warmUp(_:)` does.
+    func warmUp(_ voice: AVSpeechSynthesisVoice?)
+}
+
+extension SpeechRenderScheduling {
+    /// Warms nothing: a stand-in that renders nothing has no voice to load.
+    func warmUp(_ voice: AVSpeechSynthesisVoice?) {}
 }
 
 extension SpeechRenderCoordinator: SpeechRenderScheduling {}
+
+/// Renders one word in a voice and drops the audio, so that the system
+/// synthesizer loads the voice before anything has to be spoken in it
+/// (PERF03). `write()` never plays anything.
+enum VoiceWarmUp {
+    /// The word rendered: short, so that once the voice has loaded the
+    /// render itself takes a moment.
+    static let word = "Ready."
+
+    /// How long a warm-up may hold the render queue before its turn ends
+    /// anyway, so a voice that never answers cannot stop every later render.
+    static let timeout: DispatchTimeInterval = .seconds(30)
+
+    /// Render `word` in `voice` with a synthesizer of its own, dropping the
+    /// audio, and call `finished` exactly once, from any thread: true when
+    /// the synthesizer delivered its last buffer, false when `timeout`
+    /// passed first.
+    @MainActor
+    static func writeOneWord(in voice: AVSpeechSynthesisVoice?, finished: @escaping @Sendable (Bool) -> Void) {
+        let report = reportingOnce(finished)
+        let synthesizer = AVSpeechSynthesizer()
+        let utterance = AVSpeechUtterance(string: word)
+        utterance.voice = voice
+        utterance.prefersAssistiveTechnologySettings = false
+        synthesizer.write(utterance) { buffer in
+            // The synthesizer ends its output with an empty buffer. Holding
+            // the synthesizer here keeps it alive until then.
+            guard let pcm = buffer as? AVAudioPCMBuffer, pcm.frameLength == 0 else { return }
+            withExtendedLifetime(synthesizer) {
+                report(true)
+            }
+        }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+            report(false)
+        }
+    }
+
+    /// `finished`, made to run only the first time it is called: the last
+    /// buffer and the timeout race to report one warm-up.
+    static func reportingOnce(_ finished: @escaping @Sendable (Bool) -> Void) -> @Sendable (Bool) -> Void {
+        let reported = OSAllocatedUnfairLock(initialState: false)
+        return { succeeded in
+            let isFirst = reported.withLock { alreadyReported in
+                defer { alreadyReported = true }
+                return !alreadyReported
+            }
+            if isFirst {
+                finished(succeeded)
+            }
+        }
+    }
+}
 
 /// Manages TTS playback using two modes:
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
