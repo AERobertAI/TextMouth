@@ -25,8 +25,12 @@ struct LibraryIndexSandbox {
     let indexURL: URL
     /// The legacy Application Support index, isolated by `TextMouthPaths`.
     let legacyURL: URL
+    /// The reading checkpoint journal beside the index (PERF15), which a
+    /// test that stands for a crash leaves behind.
+    let checkpointJournalURL: URL
     private let originalIndex: Data?
     private let originalLegacy: Data?
+    private let originalCheckpointJournal: Data?
     private let legacyDirectoryExisted: Bool
     private let copiesBefore: Set<URL>
 
@@ -37,11 +41,14 @@ struct LibraryIndexSandbox {
         try TextMouthPaths.ensureDirectoryStructure()
         let indexURL = TextMouthPaths.libraryIndexFile
         let legacyURL = try XCTUnwrap(TextMouthPaths.oldLibraryFile)
+        let checkpointJournalURL = TextMouthPaths.readingCheckpointsFile
         return LibraryIndexSandbox(
             indexURL: indexURL,
             legacyURL: legacyURL,
+            checkpointJournalURL: checkpointJournalURL,
             originalIndex: try? Data(contentsOf: indexURL),
             originalLegacy: try? Data(contentsOf: legacyURL),
+            originalCheckpointJournal: try? Data(contentsOf: checkpointJournalURL),
             legacyDirectoryExisted: FileManager.default.fileExists(
                 atPath: legacyURL.deletingLastPathComponent().path
             ),
@@ -65,6 +72,7 @@ struct LibraryIndexSandbox {
         }
         Self.put(originalIndex, at: indexURL)
         Self.put(originalLegacy, at: legacyURL)
+        Self.put(originalCheckpointJournal, at: checkpointJournalURL)
         if !legacyDirectoryExisted {
             try? FileManager.default.removeItem(at: legacyURL.deletingLastPathComponent())
         }

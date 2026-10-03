@@ -443,12 +443,24 @@ extension LibraryViewModel {
 
     /// Persists a reading checkpoint to both the library index and the book's
     /// package metadata. This is intentionally separate from live publication.
+    ///
+    /// The book's record takes the checkpoint within half a second, and
+    /// holds it durably; library.json, half a megabyte, takes it within five
+    /// minutes, or sooner when anything else is saved, when the book's reader
+    /// closes, or when TextMouth quits (PERF15,
+    /// `LibraryPersistenceService.saveReadingCheckpoint`). A launch after a
+    /// crash takes the newer position from the record
+    /// (`adoptNewerRecordedPositions`). A book without a package has no
+    /// record, so library.json takes its checkpoint as soon as any change.
     func persistReadingPosition(bookID: UUID, position: ReadingPosition) {
         library.updateReadingPosition(bookID: bookID, position: position)
-        save()
-        if let book = library.books.first(where: { $0.id == bookID }) {
-            LibraryPersistenceService.saveBookInfo(for: book)
+        guard let book = bookByID(bookID) else { return }
+        guard !book.tmbDirectoryName.isEmpty else {
+            save()
+            return
         }
+        LibraryPersistenceService.saveReadingCheckpoint(library, of: bookID)
+        LibraryPersistenceService.saveBookInfo(for: book)
     }
 
     /// Compatibility name for navigation and bookmark call sites that expect
@@ -606,8 +618,12 @@ extension LibraryViewModel {
         config.saveToDisk()
     }
 
+    /// Notes that the book `id`'s reader closed. Its last reading checkpoint,
+    /// saved as it closed, reaches library.json now rather than at the
+    /// checkpoint's deadline (PERF15).
     func unregisterOpenBook(_ id: UUID) {
         openBookIDs.remove(id)
+        LibraryPersistenceService.writePendingIndexSoon()
     }
 
     /// The most recently opened book (for quick-resume on launch)

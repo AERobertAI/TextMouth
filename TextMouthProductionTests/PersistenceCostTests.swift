@@ -38,6 +38,11 @@ final class PersistenceCostTests: XCTestCase {
     /// large as the user's largest (about 690 KB, most of it the content
     /// index). Each checkpoint's line names every file it rewrote and its
     /// size.
+    ///
+    /// Before PERF15 every checkpoint rewrote library.json and the whole
+    /// record, index included: 1,305,075 bytes. Now it writes the record
+    /// alone, under 4 KB, and the journal the first time; library.json takes
+    /// the checkpoints at their deadline, or when TextMouth quits.
     @MainActor
     func testReadingCheckpointCost() throws {
         let book = try makePackagedBook(headingCount: 2_700)
@@ -49,6 +54,7 @@ final class PersistenceCostTests: XCTestCase {
         Self.report("PERF15 library.json holds \(model.library.books.count) books in \(Self.size(of: sandbox.indexURL)) bytes")
 
         var bytesPerCheckpoint: [Int] = []
+        var rewroteIndex = false
         for checkpoint in 1...3 {
             let before = files.map(Self.identity(of:))
             model.persistReadingPosition(
@@ -61,11 +67,27 @@ final class PersistenceCostTests: XCTestCase {
             bytesPerCheckpoint.append(bytes)
             let names = rewritten.map { "\($0.lastPathComponent) (\(Self.size(of: $0)) bytes)" }
             Self.report("PERF15 checkpoint \(checkpoint) rewrote \(names.joined(separator: ", ")): \(bytes) bytes")
+            XCTAssertFalse(rewritten.contains(TextMouthPaths.contentIndexPath(in: book.tmbDirectory)), "checkpoint \(checkpoint)")
+            rewroteIndex = rewroteIndex || rewritten.contains(TextMouthPaths.libraryIndexFile)
         }
-        // A listening hour holds 120 checkpoints, one every 30 seconds.
-        let perHour = Double(bytesPerCheckpoint.max() ?? 0) * 120 / 1_000_000
-        Self.report("PERF15 checkpoints write about \(String(format: "%.1f", perHour)) MB per listening hour")
-        XCTAssertGreaterThan(bytesPerCheckpoint.min() ?? 0, 0, "a checkpoint wrote nothing")
+        // A listening hour holds 120 checkpoints, one every 30 seconds, and
+        // library.json takes them once per checkpoint deadline.
+        let indexWritesPerHour = rewroteIndex ? 120 : 3_600 / LibraryPersistenceService.readingCheckpointDelay
+        let perHour = (Double(bytesPerCheckpoint.max() ?? 0) * 120
+            + (rewroteIndex ? 0 : indexWritesPerHour * Double(Self.size(of: sandbox.indexURL)))) / 1_000_000
+        Self.report(
+            "PERF15 checkpoints write about \(String(format: "%.1f", perHour)) MB per listening hour "
+                + "(library.json \(Int(indexWritesPerHour)) times)"
+        )
+        XCTAssertFalse(rewroteIndex, "a checkpoint rewrote library.json")
+        XCTAssertLessThan(bytesPerCheckpoint.max() ?? 0, 4_096, "a checkpoint wrote more than its record")
+
+        // Quitting writes the last checkpoint into library.json.
+        LibraryPersistenceService.flushPendingSave()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let saved = try decoder.decode(Library.self, from: Data(contentsOf: sandbox.indexURL))
+        XCTAssertEqual(saved.books.first { $0.id == book.id }?.readingPosition?.characterOffset, 300)
     }
 
     // MARK: - Fixtures
@@ -182,14 +204,14 @@ final class PersistenceCostTests: XCTestCase {
 
     // MARK: - Files
 
-    /// The files a reading checkpoint of `book` can rewrite: library.json
-    /// and the book's package record, with every file beside the record
-    /// that holds part of it.
+    /// The files a reading checkpoint of `book` can rewrite: library.json,
+    /// the checkpoint journal beside it, and the book's package record, with
+    /// every file beside the record that holds part of it.
     private static func checkpointFiles(of book: Book) -> [URL] {
         let package = book.tmbDirectory
         let names = (try? FileManager.default.contentsOfDirectory(atPath: package.path)) ?? []
         let recordFiles = names.filter { $0.hasSuffix(".json") }.sorted().map { package.appendingPathComponent($0) }
-        return [TextMouthPaths.libraryIndexFile] + recordFiles
+        return [TextMouthPaths.libraryIndexFile, TextMouthPaths.readingCheckpointsFile] + recordFiles
     }
 
     /// Which file is at `url` now: its inode, which an atomic write replaces,

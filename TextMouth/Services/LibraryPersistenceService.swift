@@ -36,6 +36,14 @@ import Foundation
 /// wait on the network: a save of its book goes to the library index alone
 /// until the record is on this Mac again, with one `BOOK_RECORD_IN_CLOUD`
 /// line saying so, and an analysis result for it is dropped.
+///
+/// A reading checkpoint, which the reader makes every 30 seconds of
+/// playback, is written to the book's record at once but to library.json
+/// within five minutes (`saveReadingCheckpoint(_:of:writingWithin:)`,
+/// PERF15): the record, about a kilobyte, holds it durably, while
+/// library.json is half a megabyte. A journal names the books whose records
+/// are ahead of library.json, so a launch after a crash takes their newer
+/// positions from the records.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -165,6 +173,16 @@ enum LibraryPersistenceService {
         saveQueue.sync { indexWritesSuspended }
     }
 
+    /// How long a snapshot waits before library.json is written: newer
+    /// snapshots arriving meanwhile replace it, so a burst of changes is
+    /// written once.
+    private static let saveDelay: TimeInterval = 0.5
+
+    /// How long library.json may wait to take a reading checkpoint
+    /// (`saveReadingCheckpoint(_:of:writingWithin:)`, PERF15): five minutes,
+    /// so 30-second checkpoints write the index a tenth as often.
+    static let readingCheckpointDelay: TimeInterval = 5 * 60
+
     /// Save the library index to disk. Does NOT write individual bookInfo.json files —
     /// use saveBookInfo(for:in:) for that when a specific book changes.
     static func save(_ library: Library) {
@@ -176,15 +194,74 @@ enum LibraryPersistenceService {
                 noteSkippedIndexWrite(hold)
                 return
             }
-            pendingLibrary = library
-            saveGeneration &+= 1
-            let generation = saveGeneration
+            scheduleIndexWrite(of: library, after: saveDelay)
+        }
+    }
 
-            saveQueue.asyncAfter(deadline: .now() + 0.5) {
-                guard generation == saveGeneration, let library = pendingLibrary else { return }
-                write(library)
-                pendingLibrary = nil
+    /// Saves `library`, whose only change since it was last saved is a
+    /// reading checkpoint of the book `bookID` (PERF15). That checkpoint is
+    /// durable once the book's record holds it, which the caller saves as
+    /// well, so library.json, about half a megabyte, need not be rewritten
+    /// for it every 30 seconds: it takes the snapshot within `delay`, or
+    /// sooner, with the next ordinary save, when a reader closes or a record
+    /// cannot take its checkpoint (`writePendingIndexSoon()`), or when
+    /// TextMouth quits (`flushPendingSave()`). A snapshot already waiting
+    /// keeps its time and is replaced by this newer one.
+    ///
+    /// Until library.json holds the checkpoint, the checkpoint journal names
+    /// the book (`ReadingCheckpointJournal`), so a launch after a crash
+    /// takes the newer position from the record
+    /// (`booksWithCheckpointsAhead()`). The journal is noted before the
+    /// record is written, so a crash between the two finds no record newer
+    /// than library.json, and nothing to take.
+    /// - Parameter delay: How long library.json may wait: tests pass a short
+    ///   one.
+    static func saveReadingCheckpoint(
+        _ library: Library,
+        of bookID: UUID,
+        writingWithin delay: TimeInterval = readingCheckpointDelay
+    ) {
+        saveQueue.async {
+            if let hold = indexWriteHold() {
+                noteSkippedIndexWrite(hold)
+                return
             }
+            ReadingCheckpointJournal.note(bookID)
+            guard pendingLibrary == nil else {
+                pendingLibrary = library
+                return
+            }
+            scheduleIndexWrite(of: library, after: delay)
+        }
+    }
+
+    /// Brings forward the write of a snapshot waiting for its checkpoint
+    /// deadline, so library.json takes it within half a second: when a
+    /// reader closes, and when a book's record could not take a checkpoint,
+    /// being only in the cloud or failing to be written, so the index holds
+    /// the position instead. Does nothing when no snapshot waits.
+    static func writePendingIndexSoon() {
+        saveQueue.async {
+            guard let library = pendingLibrary else { return }
+            scheduleIndexWrite(of: library, after: saveDelay)
+        }
+    }
+
+    /// Makes `library` the snapshot waiting to be written, and writes it
+    /// `delay` from now unless a newer schedule replaces this one first: only
+    /// the latest schedule's block writes (`saveGeneration`), and it writes
+    /// whatever snapshot is waiting then. Must run on saveQueue.
+    private static func scheduleIndexWrite(of library: Library, after delay: TimeInterval) {
+        pendingLibrary = library
+        saveGeneration &+= 1
+        let generation = saveGeneration
+
+        saveQueue.asyncAfter(deadline: .now() + delay) {
+            guard generation == saveGeneration, let library = pendingLibrary else { return }
+            // Nothing waits once this is written, which lets the write clear
+            // the checkpoint journal (`writeIndexFile`).
+            pendingLibrary = nil
+            write(library)
         }
     }
 
@@ -202,8 +279,8 @@ enum LibraryPersistenceService {
                 return
             }
             guard let library = pendingLibrary else { return }
-            write(library)
             pendingLibrary = nil
+            write(library)
         }
         bookInfoSaveQueue.sync {
             let pending = pendingBookInfos
@@ -273,6 +350,11 @@ enum LibraryPersistenceService {
     /// root first, so the snapshot is written in the current data directory
     /// and names its books there; the old library.json is never written
     /// again, nor its folder recreated (TODO S04).
+    ///
+    /// A write that leaves no newer snapshot waiting holds every reading
+    /// checkpoint made so far, so it clears the checkpoint journal (PERF15).
+    /// The retry of an older failed snapshot, made while a newer one waits,
+    /// leaves the journal for that newer one to clear.
     private static func writeIndexFile(_ library: Library) throws {
         var library = library
         let moved = StorageBoundary.shared.rebaseToCurrent(&library)
@@ -286,6 +368,9 @@ enum LibraryPersistenceService {
         failureCenter.recordSuccess(.libraryIndex)
         // Writing again: a later hold is logged afresh.
         loggedIndexWriteHolds.remove(.dataDirectoryUnavailable)
+        if pendingLibrary == nil {
+            ReadingCheckpointJournal.clear()
+        }
     }
 
     /// Runs `body` while no library index or package record write is under
@@ -517,6 +602,9 @@ enum LibraryPersistenceService {
             ) { failureID in
                 retryBookInfoWrite(book, contentIndex: contentIndex, failureID: failureID)
             }
+            // The record did not take the book's state, so library.json
+            // takes it now rather than at a checkpoint's deadline (PERF15).
+            writePendingIndexSoon()
             reportIfDataDirectoryVanished()
         }
     }
@@ -589,6 +677,10 @@ enum LibraryPersistenceService {
             switch storedRecord(of: book) {
             case .inCloud(let item):
                 noteRecordInCloud(of: book, at: item)
+                // library.json is the save's only home now, so it takes the
+                // book's state at once rather than at a checkpoint's
+                // deadline (PERF15).
+                writePendingIndexSoon()
                 return false
             case .readable(let record):
                 replaced = record
@@ -665,6 +757,75 @@ enum LibraryPersistenceService {
             let previous = recordAccess
             recordAccess = access
             return previous
+        }
+    }
+
+    // MARK: - Reading Checkpoints (PERF15)
+
+    /// The books whose records hold reading checkpoints that library.json
+    /// may not hold, as the journal a crash left names them, for launch to
+    /// take their newer positions from their records (the library model's
+    /// startup repair). Read on saveQueue, so it sees every journal write
+    /// queued before it; empty when there is no journal. Call it before the
+    /// launch's first index write, which clears the journal.
+    static func booksWithCheckpointsAhead() -> Set<UUID> {
+        saveQueue.sync { ReadingCheckpointJournal.books() }
+    }
+
+    /// Forgets the snapshot waiting to be written without writing it, as a
+    /// crash would, leaving the checkpoint journal as it is. Tests use it to
+    /// stand for the crash a launch recovers from.
+    static func _discardPendingIndexSaveForTesting() {
+        saveQueue.sync {
+            pendingLibrary = nil
+            saveGeneration &+= 1
+        }
+    }
+
+    /// The checkpoint journal: a small file in the data directory naming the
+    /// books whose package records hold reading checkpoints newer than
+    /// library.json (`TextMouthPaths.readingCheckpointsFile`), as
+    /// `{"books": [<book ID>, ...]}`. A checkpoint adds its book when the
+    /// journal does not name it yet, so listening to one book writes the
+    /// journal once per index write, and every index write that holds all
+    /// checkpoints removes it. The file is the only state, read afresh each
+    /// time, so another Mac's launch removing it after taking the positions
+    /// costs this Mac nothing but the next checkpoint's note.
+    ///
+    /// A journal that cannot be written loses only what it would have
+    /// recovered after a crash, the last few minutes of position, so failures
+    /// pass silently, as for any cache. Every function must run on saveQueue.
+    private enum ReadingCheckpointJournal {
+        /// What the file holds.
+        struct Contents: Codable {
+            /// The books named, in order of their IDs.
+            var books: [UUID]
+        }
+
+        /// Names `bookID` in the journal, unless it does already.
+        static func note(_ bookID: UUID) {
+            var named = books()
+            guard named.insert(bookID).inserted else { return }
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            let contents = Contents(books: named.sorted { $0.uuidString < $1.uuidString })
+            try? encoder.encode(contents).write(to: TextMouthPaths.readingCheckpointsFile, options: .atomic)
+        }
+
+        /// The books the journal names; none when there is no journal or it
+        /// cannot be read, read with dataless files left in the cloud, so
+        /// saveQueue never waits on the network for it.
+        static func books() -> Set<UUID> {
+            let data = DatalessFiles.withoutDownloading {
+                try? Data(contentsOf: TextMouthPaths.readingCheckpointsFile)
+            }
+            guard let data, let contents = try? JSONDecoder().decode(Contents.self, from: data) else { return [] }
+            return Set(contents.books)
+        }
+
+        /// Removes the journal: library.json holds every checkpoint now.
+        static func clear() {
+            try? FileManager.default.removeItem(at: TextMouthPaths.readingCheckpointsFile)
         }
     }
 

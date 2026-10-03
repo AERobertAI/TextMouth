@@ -151,6 +151,14 @@ enum TextMouthPaths {
         root.appendingPathComponent("library.json")
     }
 
+    /// The books whose package records hold reading checkpoints newer than
+    /// library.json (PERF15): written while library.json waits to take a
+    /// checkpoint, removed once it has, and read at launch to take those
+    /// positions from the records after a crash.
+    static var readingCheckpointsFile: URL {
+        root.appendingPathComponent("reading-checkpoints.json")
+    }
+
     static var substitutionsFile: URL {
         root.appendingPathComponent("substitutions.json")
     }
