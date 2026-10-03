@@ -67,6 +67,35 @@ struct ListeningDays: Sendable {
         return pieces
     }
 
+    /// A moment on the day before the one containing `date`: `date` one
+    /// calendar day earlier (`date(byAdding: .day, value: -1, to:)`), which
+    /// keeps its time of day across a 23- or 25-hour day where subtracting
+    /// 86,400 seconds would skip or repeat a day. Should that not land on an
+    /// earlier day, as where a time zone once skipped a whole day, the last
+    /// second before this day began is used, so walking back always moves
+    /// to the previous day and ends.
+    func dayBefore(_ date: Date) -> Date {
+        let startOfDay = calendar.startOfDay(for: date)
+        if let earlier = calendar.date(byAdding: .day, value: -1, to: date), earlier < startOfDay {
+            return earlier
+        }
+        return startOfDay.addingTimeInterval(-1)
+    }
+
+    /// The `count` consecutive days ending with the one containing `date`:
+    /// their keys, latest first, and the moment the earliest of them began.
+    func span(ofDays count: Int, endingWith date: Date) -> (keys: [String], start: Date) {
+        var keys: [String] = []
+        var day = date
+        var earliestDay = date
+        for _ in 0..<count {
+            keys.append(key(for: day))
+            earliestDay = day
+            day = dayBefore(day)
+        }
+        return (keys, calendar.startOfDay(for: earliestDay))
+    }
+
     /// `value` in ASCII digits with leading zeros up to `width` digits.
     /// `String(_:)` of an integer never uses a locale, so neither the
     /// user's language nor their numbering system can change the digits.

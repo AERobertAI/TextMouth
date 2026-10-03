@@ -208,6 +208,117 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
         XCTAssertEqual(days.split(from: midnight + 5, to: midnight), [])
     }
 
+    // MARK: - Daylight saving
+
+    /// A day that a clock change makes other than 24 hours long, with a
+    /// session that runs from 11:30 p.m. the day before to 12:30 a.m. the
+    /// day after.
+    private struct ClockChangeDay: Sendable {
+        /// The time zone whose clocks change.
+        let zone: String
+        /// When the session starts, half an hour before the day begins.
+        let start: String
+        /// When the session ends, half an hour after the day ends.
+        let end: String
+        /// The keys of the day before, the day itself, and the day after.
+        let keys: [String]
+        /// How long the day itself is.
+        let hours: Double
+    }
+
+    /// Clock changes of every kind: New York's 23-hour spring day and
+    /// 25-hour autumn day, Santiago's spring day that begins at 1 a.m.
+    /// because its clocks jump at midnight, and Lord Howe Island's
+    /// 23.5-hour day from its half-hour change.
+    private static let clockChangeDays = [
+        ClockChangeDay(
+            zone: "America/New_York", start: "2026-03-07T23:30:00-05:00", end: "2026-03-09T00:30:00-04:00",
+            keys: ["2026-03-07", "2026-03-08", "2026-03-09"], hours: 23
+        ),
+        ClockChangeDay(
+            zone: "America/New_York", start: "2026-10-31T23:30:00-04:00", end: "2026-11-02T00:30:00-05:00",
+            keys: ["2026-10-31", "2026-11-01", "2026-11-02"], hours: 25
+        ),
+        ClockChangeDay(
+            zone: "America/Santiago", start: "2026-09-05T23:30:00-04:00", end: "2026-09-07T00:30:00-03:00",
+            keys: ["2026-09-05", "2026-09-06", "2026-09-07"], hours: 23
+        ),
+        ClockChangeDay(
+            zone: "Australia/Lord_Howe", start: "2026-10-03T23:30:00+10:30", end: "2026-10-05T00:30:00+11:00",
+            keys: ["2026-10-03", "2026-10-04", "2026-10-05"], hours: 23.5
+        ),
+    ]
+
+    /// A day a clock change makes 23, 23.5, or 25 hours long, or starts at
+    /// 1 a.m., gets exactly its own length of a session that spans it, with
+    /// hourly checkpoints and without, and its neighbors their half hours;
+    /// the three days keep a streak and fill This Week.
+    @MainActor
+    func testClockChangeDaysCreditTheirTrueLengthAndKeepTheStreak() throws {
+        for day in Self.clockChangeDays {
+            let userCalendar = try calendar(.gregorian, in: day.zone)
+            let start = try time(day.start)
+            let end = try time(day.end)
+            let checkpointIntervals: [TimeInterval?] = [3_600, nil]
+            for interval in checkpointIntervals {
+                let context = "\(day.keys[1]) in \(day.zone) \(interval == nil ? "without" : "with") checkpoints"
+                let service = makeService(named: UUID().uuidString, userCalendar: { userCalendar })
+                listen(with: service, from: start, to: end, checkpointingEvery: interval)
+
+                XCTAssertEqual(service.stats.dailyListeningSeconds, [
+                    day.keys[0]: 1_800, day.keys[1]: day.hours * 3_600, day.keys[2]: 1_800,
+                ], context)
+                XCTAssertEqual(service.stats.totalListeningSeconds, end.timeIntervalSince(start), context)
+                XCTAssertEqual(service.todayListeningTime(at: end), 1_800, context)
+                XCTAssertEqual(service.thisWeekListeningTime(at: end), end.timeIntervalSince(start), context)
+                XCTAssertEqual(service.currentStreak(at: end), 3, context)
+            }
+        }
+    }
+
+    /// Counting back across a clock change goes one calendar day at a
+    /// time. Just after the midnight that ends a 23-hour day, going back
+    /// 86,400 seconds would skip that day altogether. With listening on ten
+    /// days in a row, the streak is ten and This Week holds seven of them,
+    /// counted from either side of each kind of change.
+    @MainActor
+    func testStreakAndWeekCountEveryClockChangeDayOnce() throws {
+        let moments = [
+            (zone: "America/New_York", now: "2026-03-09T00:30:00-04:00", today: "2026-03-09"),
+            (zone: "America/New_York", now: "2026-03-08T23:30:00-04:00", today: "2026-03-08"),
+            (zone: "America/New_York", now: "2026-11-02T00:30:00-05:00", today: "2026-11-02"),
+            (zone: "America/New_York", now: "2026-11-01T23:30:00-05:00", today: "2026-11-01"),
+            (zone: "America/Santiago", now: "2026-09-07T00:30:00-03:00", today: "2026-09-07"),
+            (zone: "Australia/Lord_Howe", now: "2026-10-05T00:15:00+11:00", today: "2026-10-05"),
+        ]
+        for moment in moments {
+            let userCalendar = try calendar(.gregorian, in: moment.zone)
+            let service = makeService(named: UUID().uuidString, userCalendar: { userCalendar })
+            let tenDays = try keys(ofDays: 10, endingWith: moment.today)
+            service.stats.dailyListeningSeconds = Dictionary(uniqueKeysWithValues: tenDays.map { ($0, 100) })
+            let now = try time(moment.now)
+
+            let context = "\(moment.now) in \(moment.zone)"
+            XCTAssertEqual(service.currentStreak(at: now), 10, context)
+            XCTAssertEqual(service.thisWeekListeningTime(at: now), 700, context)
+            XCTAssertEqual(service.todayListeningTime(at: now), 100, context)
+        }
+    }
+
+    /// Samoa skipped 30 December 2011 when it moved across the date line.
+    /// Walking back from the 31st reaches the 29th, the day before that
+    /// existed, and a streak runs through the missing day unbroken.
+    func testWalkingBackCrossesADayATimeZoneSkipped() throws {
+        let apia = try zone("Pacific/Apia")
+        let days = ListeningDays(timeZone: apia)
+        let lastDayOfYear = try time("2011-12-31T12:00:00+14:00")
+        XCTAssertEqual(days.key(for: lastDayOfYear), "2011-12-31")
+
+        XCTAssertEqual(days.key(for: days.dayBefore(lastDayOfYear)), "2011-12-29")
+        let listening = ["2011-12-28": 120.0, "2011-12-29": 120, "2011-12-31": 120]
+        XCTAssertEqual(ReadingStatsService.streak(in: listening, through: lastDayOfYear, timeZone: apia), 3)
+    }
+
     // MARK: - Helpers
 
     /// Listens to `book` from `start` to `end` with `service`, as the
@@ -282,5 +393,16 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
     /// from UTC, such as "2026-07-15T12:00:00+02:00".
     private func time(_ iso: String) throws -> Date {
         try XCTUnwrap(ISO8601DateFormatter().date(from: iso), "Not an ISO 8601 time: \(iso)")
+    }
+
+    /// The keys of `count` consecutive days ending with the day `lastKey`
+    /// names, latest first. They are counted in UTC, where every day is
+    /// 24 hours long, with an ISO 8601 formatter, so the expected keys owe
+    /// nothing to the code under test.
+    private func keys(ofDays count: Int, endingWith lastKey: String) throws -> [String] {
+        let lastNoon = try time("\(lastKey)T12:00:00Z")
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate] // "yyyy-MM-dd" in UTC
+        return (0..<count).map { formatter.string(from: lastNoon - Double($0) * 86_400) }
     }
 }

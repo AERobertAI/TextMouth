@@ -221,16 +221,9 @@ final class ReadingStatsService: ObservableObject {
     /// checkpoint, as much of it as falls on those days.
     func thisWeekListeningTime(at now: Date) -> TimeInterval {
         // Days are counted back in the calendar that wrote their keys.
-        let days = listeningDays
-        var total: TimeInterval = 0
-        var earliestDay = now
-        for dayOffset in 0..<7 {
-            if let date = days.calendar.date(byAdding: .day, value: -dayOffset, to: now) {
-                total += stats.dailyListeningSeconds[days.key(for: date)] ?? 0
-                earliestDay = date
-            }
-        }
-        return total + uncreditedSessionTime(at: now, since: days.calendar.startOfDay(for: earliestDay))
+        let week = listeningDays.span(ofDays: 7, endingWith: now)
+        let saved = week.keys.reduce(0) { $0 + (stats.dailyListeningSeconds[$1] ?? 0) }
+        return saved + uncreditedSessionTime(at: now, since: week.start)
     }
 
     var booksFinishedThisYear: Int {
@@ -251,6 +244,10 @@ final class ReadingStatsService: ObservableObject {
         Self.streak(in: stats.dailyListeningSeconds, through: now, timeZone: userCalendar().timeZone)
     }
 
+    /// A day joins a streak once it has more listening than this, a minute,
+    /// so a stray play and pause does not keep a streak alive.
+    nonisolated private static let streakDayMinimum: TimeInterval = 60
+
     /// The number of consecutive local days, in `timeZone`, with more than
     /// a minute of listening, ending with the day containing `now` or, while
     /// that day has no such listening yet, with the day before.
@@ -259,34 +256,21 @@ final class ReadingStatsService: ObservableObject {
         through now: Date,
         timeZone: TimeZone = .current
     ) -> Int {
-        // Days are counted back in the calendar that wrote their keys.
+        // Days are counted back in the calendar that wrote their keys, one
+        // calendar day at a time, so a 23- or 25-hour day is neither
+        // skipped nor counted twice.
         let days = ListeningDays(timeZone: timeZone)
-        let calendar = days.calendar
+        /// Whether the day containing `date` has enough listening to count.
+        func counts(_ date: Date) -> Bool {
+            (dailyListeningSeconds[days.key(for: date)] ?? 0) > streakDayMinimum
+        }
+        // Today joins the streak once it counts; until then the streak may
+        // still run through yesterday.
+        var day = counts(now) ? now : days.dayBefore(now)
         var streak = 0
-        var date = now
-        // Check today and each preceding day
-        while true {
-            let key = days.key(for: date)
-            if (dailyListeningSeconds[key] ?? 0) > 60 { // At least 1 minute counts
-                streak += 1
-                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                date = prev
-            } else if streak == 0 {
-                // Today might not have listening yet, check yesterday
-                guard let prev = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                date = prev
-                // Only allow one skip (today)
-                let key2 = days.key(for: date)
-                if (dailyListeningSeconds[key2] ?? 0) > 60 {
-                    streak += 1
-                    guard let prev2 = calendar.date(byAdding: .day, value: -1, to: date) else { break }
-                    date = prev2
-                } else {
-                    break
-                }
-            } else {
-                break
-            }
+        while counts(day) {
+            streak += 1
+            day = days.dayBefore(day)
         }
         return streak
     }
