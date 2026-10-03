@@ -10,8 +10,6 @@ struct LibraryWindowView: View {
 
     @State private var currentFolderPath = ""
     @State private var category: LibraryCategory = .folders
-    @State private var sortField: LibrarySortField = .title
-    @State private var sortAscending: Bool = true
     @State private var showFileImporter = false
     @State private var zipFolderName = ""
     /// The NSWindow hosting this library view, captured via WindowAccessor
@@ -19,8 +17,6 @@ struct LibraryWindowView: View {
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
-    /// Suppresses saving sort settings back to the library when loading from a folder change
-    @State private var isLoadingFolderSort = false
     /// The removal preferences, observed so the Remove Book dialog's words
     /// follow a change made in Settings, even while the dialog is open.
     @ObservedObject private var removal = RemovalPreferencesModel.shared
@@ -30,8 +26,6 @@ struct LibraryWindowView: View {
             LibraryView(
                 currentFolderPath: $currentFolderPath,
                 category: $category,
-                sortField: $sortField,
-                sortAscending: $sortAscending,
                 showFileImporter: $showFileImporter,
                 onOpenBook: { book in
                     openWindow(id: "book-reader", value: book.id)
@@ -214,22 +208,12 @@ struct LibraryWindowView: View {
                 currentFolderPath = parent
             }
         }
-        // Record folder changes into the navigation history, load sort settings, and announce
+        // Record folder changes into the navigation history and announce them.
+        // The sort shown follows the location without any loading: the window
+        // title and the list restore it from the library whenever they draw.
         .onChange(of: currentFolderPath) { _, newPath in
             folderNav.recordVisit(to: newPath)
-            loadSortSettingsForCurrentView()
             announceFolderChange(newPath)
-        }
-        // Load sort settings when switching categories (e.g. Folders -> Recent)
-        .onChange(of: category) { _, _ in
-            loadSortSettingsForCurrentView()
-        }
-        // Save sort settings back to the library when the user changes them
-        .onChange(of: sortField) { _, _ in
-            saveSortSettings()
-        }
-        .onChange(of: sortAscending) { _, _ in
-            saveSortSettings()
         }
         .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
             // Exactly one Library window opens the next book's reader, or
@@ -251,51 +235,13 @@ struct LibraryWindowView: View {
         )
     }
 
+    /// The window title: the location and the sort it shows, restored from
+    /// the setting saved for the location by the same function the list
+    /// sorts with, so the title agrees with the order and the Sort menu from
+    /// the first frame (TODO A06).
     private var windowTitle: String {
-        let locationName: String
-        switch category {
-        case .folders:
-            locationName = currentFolderPath.isEmpty ? "All Folders" : currentFolderPath.components(separatedBy: "/").last ?? "All Folders"
-        case .allItems:
-            locationName = "All Items"
-        case .noFolder:
-            locationName = "No Folder"
-        case .recent:
-            locationName = "Recent"
-        }
-        let direction = sortAscending ? "Ascending" : "Descending"
-        return "Library: \(locationName) (\(sortField.rawValue) \(direction))"
-    }
-
-    /// The sort settings key for the current view — category key for non-folder
-    /// categories, folder path for the Folders category.
-    private var currentSortSettingsKey: String {
-        category.sortSettingsKey ?? currentFolderPath
-    }
-
-    /// Load sort settings for the current category/folder combination.
-    private func loadSortSettingsForCurrentView() {
-        let setting = libraryViewModel.library.sortSetting(
-            for: currentSortSettingsKey,
-            default: category.defaultSortSetting
-        )
-        // Keep the guard flag raised until the next run-loop iteration.
-        // SwiftUI coalesces synchronous true→false state changes, so
-        // onChange(of: sortField/sortAscending) would see false and
-        // spuriously save the loaded setting back under the wrong key.
-        isLoadingFolderSort = true
-        sortField = setting.sortField
-        sortAscending = setting.sortAscending
-        DispatchQueue.main.async {
-            isLoadingFolderSort = false
-        }
-    }
-
-    /// Save the current sort field/direction for the current view.
-    private func saveSortSettings() {
-        guard !isLoadingFolderSort else { return }
-        let setting = FolderSortSetting(sortField: sortField, sortAscending: sortAscending)
-        libraryViewModel.setFolderSortSetting(setting, for: currentSortSettingsKey)
+        let location = LibraryLocation(category: category, folderPath: currentFolderPath)
+        return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
     }
 
     /// Announce the new folder name and book count to VoiceOver when navigating.

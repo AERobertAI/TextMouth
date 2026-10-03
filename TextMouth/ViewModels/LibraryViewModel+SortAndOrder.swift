@@ -35,11 +35,43 @@ enum ManualBookOrder {
             newIndex: newIndex
         )
         books.swapAt(currentIndex, newIndex)
-        for (order, book) in books.enumerated() {
-            guard let index = library.books.firstIndex(where: { $0.id == book.id }) else { continue }
-            library.books[index].manualSortOrder = order
-        }
+        renumber(books, in: &library)
         return result
+    }
+
+    /// Moves the books at `source` to `destination` in the folder's manual
+    /// order, as a drag in the list does. The offsets are positions in
+    /// `orderedBooks(in:folderPath:)`, which is the order the list shows
+    /// while it shows the folder in manual order. Returns false, changing
+    /// nothing, when an offset is outside the folder.
+    @discardableResult
+    static func reorder(
+        library: inout Library,
+        folderPath: String,
+        from source: IndexSet,
+        to destination: Int
+    ) -> Bool {
+        var books = orderedBooks(in: library, folderPath: folderPath)
+        guard !source.isEmpty,
+              source.allSatisfy({ books.indices.contains($0) }),
+              (0...books.count).contains(destination) else { return false }
+        books.move(fromOffsets: source, toOffset: destination)
+        renumber(books, in: &library)
+        return true
+    }
+
+    /// Numbers the books of one folder 0, 1, 2… in the order of `ordered`,
+    /// which becomes the folder's manual order.
+    private static func renumber(_ ordered: [Book], in library: inout Library) {
+        let positions = Dictionary(
+            ordered.enumerated().map { ($0.element.id, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for index in library.books.indices {
+            if let position = positions[library.books[index].id] {
+                library.books[index].manualSortOrder = position
+            }
+        }
     }
 
     static func canMove(
@@ -67,6 +99,31 @@ extension LibraryViewModel {
         return folderBooks[nextIndex]
     }
 
+    // MARK: - Sorting a Location
+
+    /// The sort `location` shows, restored from the setting saved for it.
+    /// Showing a sort never saves it (TODO A06).
+    func sortState(at location: LibraryLocation) -> LibrarySortState {
+        library.sortState(at: location)
+    }
+
+    /// Makes a change the user chose in the Sort menu at `location`, and
+    /// saves the result under that location's key: the one path that saves
+    /// a sort (TODO A06). The key is the one the change was made in, so no
+    /// change can land on a folder or category shown before it, however
+    /// fast the window moved on. A change that leaves the sort as it was,
+    /// such as reversing manual order, saves nothing. Returns the sort now
+    /// shown.
+    @discardableResult
+    func userChangedSort(_ change: LibrarySortChange, at location: LibraryLocation) -> LibrarySortState {
+        let shown = sortState(at: location)
+        let changed = shown.applying(change)
+        if changed != shown {
+            setFolderSortSetting(changed.setting, for: location.sortSettingsKey)
+        }
+        return changed
+    }
+
     /// Update the sort setting for a specific folder path and persist.
     func setFolderSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
         library.setSortSetting(setting, for: folderPath)
@@ -79,18 +136,13 @@ extension LibraryViewModel {
         save()
     }
 
-    /// Update manual sort order for a book within its folder.
-    func updateManualSortOrder(bookID: UUID, order: Int) {
-        updateBook(id: bookID) { $0.manualSortOrder = order }
-    }
-
-    /// Reorder books in a folder by moving from source indices to destination.
+    /// Reorder books in a folder by moving from source indices to destination,
+    /// as a drag in the list does: the indices are positions in the folder's
+    /// manual order as the list shows it. Saves the new order at once.
     func reorderBooksInFolder(folderPath: String, from source: IndexSet, to destination: Int) {
-        var folderBooks = sortedBooksInFolder(folderPath)
-        folderBooks.move(fromOffsets: source, toOffset: destination)
-        // Assign new sort orders
-        for (i, book) in folderBooks.enumerated() {
-            updateManualSortOrder(bookID: book.id, order: i)
+        let before = manualPositions(in: folderPath)
+        if ManualBookOrder.reorder(library: &library, folderPath: folderPath, from: source, to: destination) {
+            saveManualOrder(in: folderPath, changedFrom: before)
         }
     }
 
@@ -102,13 +154,16 @@ extension LibraryViewModel {
     /// Returns a MoveResult for VoiceOver announcement, or nil if the move was not possible.
     @discardableResult
     func moveBookInManualOrder(bookID: UUID, direction: Int, folderPath: String) -> MoveResult? {
+        let before = manualPositions(in: folderPath)
         let result = ManualBookOrder.move(
             library: &library,
             bookID: bookID,
             direction: direction,
             folderPath: folderPath
         )
-        if result != nil { save() }
+        if result != nil {
+            saveManualOrder(in: folderPath, changedFrom: before)
+        }
         return result
     }
 
@@ -120,5 +175,29 @@ extension LibraryViewModel {
             direction: direction,
             folderPath: folderPath
         )
+    }
+
+    // MARK: - Saving Manual Order
+
+    /// Each book's manual position in `folderPath`, by ID, to tell after a
+    /// rearrangement which books it moved.
+    private func manualPositions(in folderPath: String) -> [UUID: Int?] {
+        Dictionary(
+            library.booksInFolder(folderPath).map { ($0.id, $0.manualSortOrder) },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
+    /// Saves a rearranged folder at once, the same way whether the user
+    /// dragged or used Move Book Up and Move Book Down (TODO A06): the
+    /// library index, and the record (bookInfo.json) of each book whose
+    /// position changed, so the order also survives an index rebuilt from
+    /// the books. Rearranging never touches a sort setting, so the folder
+    /// stays in manual order.
+    private func saveManualOrder(in folderPath: String, changedFrom before: [UUID: Int?]) {
+        save()
+        for book in library.booksInFolder(folderPath) where before[book.id] != .some(book.manualSortOrder) {
+            LibraryPersistenceService.saveBookInfo(for: book)
+        }
     }
 }

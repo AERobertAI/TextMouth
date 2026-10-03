@@ -1,15 +1,86 @@
 import Foundation
 
-/// Per-folder sort configuration. Stored in library.json keyed by folder path.
+/// Per-folder sort configuration. Stored in library.json keyed by folder
+/// path, or by a category's reserved key (see `LibraryLocation`). A window
+/// shows it through `LibrarySortState`, which applies the rule for manual
+/// order (TODO A06).
 struct FolderSortSetting: Codable, Equatable {
     var sortField: LibrarySortField
+    /// The direction of `sortField`. Manual order has no direction, so a
+    /// setting whose field is manual ignores this value.
     var sortAscending: Bool
+    /// The direction (true for ascending) the location last showed each of
+    /// its other fields in, so choosing one again shows it the same way.
+    /// Settings saved before TODO A06 have none, and an empty one is not
+    /// written, so they read and write exactly as before.
+    var rememberedDirections: [LibrarySortField: Bool]
+
+    /// A setting that shows `sortField` in the given direction, remembering
+    /// `rememberedDirections` for the other fields.
+    init(
+        sortField: LibrarySortField,
+        sortAscending: Bool,
+        rememberedDirections: [LibrarySortField: Bool] = [:]
+    ) {
+        self.sortField = sortField
+        self.sortAscending = sortAscending
+        self.rememberedDirections = rememberedDirections
+    }
 
     /// Default sort: title ascending
     static let defaultSort = FolderSortSetting(sortField: .title, sortAscending: true)
 
     /// Default sort for the Recent category: last opened descending (newest first)
     static let recentDefault = FolderSortSetting(sortField: .lastOpened, sortAscending: false)
+
+    /// The setting in the one form a location shows it: manual order is
+    /// ascending, because it has no direction, and no direction is
+    /// remembered for the field shown or for manual order.
+    var normalized: FolderSortSetting {
+        FolderSortSetting(
+            sortField: sortField,
+            sortAscending: sortField.hasDirection ? sortAscending : true,
+            rememberedDirections: rememberedDirections.filter { field, _ in
+                field != sortField && field.hasDirection
+            }
+        )
+    }
+
+    // MARK: Coding
+
+    private enum CodingKeys: String, CodingKey {
+        case sortField, sortAscending, rememberedDirections
+    }
+
+    /// Reads a saved setting. Remembered directions are only a convenience,
+    /// so a field this version does not know, or a value it cannot read, is
+    /// skipped instead of failing the whole library index.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sortField = try container.decode(LibrarySortField.self, forKey: .sortField)
+        sortAscending = try container.decode(Bool.self, forKey: .sortAscending)
+        let saved = (try? container.decodeIfPresent([String: Bool].self, forKey: .rememberedDirections)) ?? [:]
+        rememberedDirections = Dictionary(
+            saved.compactMap { name, ascending in
+                LibrarySortField(rawValue: name).map { ($0, ascending) }
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
+    /// Writes the setting with remembered directions keyed by field name,
+    /// and leaves them out when there are none.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(sortField, forKey: .sortField)
+        try container.encode(sortAscending, forKey: .sortAscending)
+        if !rememberedDirections.isEmpty {
+            let byName = Dictionary(
+                uniqueKeysWithValues: rememberedDirections.map { ($0.key.rawValue, $0.value) }
+            )
+            try container.encode(byName, forKey: .rememberedDirections)
+        }
+    }
 }
 
 /// What `Library.mergeEquivalentFolders` changed, for logging and for
@@ -64,14 +135,20 @@ struct Library: Codable {
     }
 
     /// Apply a sort setting to a folder and all its subfolders recursively.
+    /// Every folder gets the setting in the form a location shows it
+    /// (`normalized`), so each sorts, and switches fields, exactly as the
+    /// folder does. For manual order that copies only the choice of manual
+    /// order, never the order of the books: each folder holds different
+    /// books and keeps its own order (TODO A06).
     mutating func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
-        folderSortSettings[folderPath] = setting
+        let applied = setting.normalized
+        folderSortSettings[folderPath] = applied
         for folder in folders {
             let path = folder.fullPath
             if path == folderPath || path.hasPrefix(folderPath.isEmpty ? "" : folderPath + "/") {
                 // For root (empty folderPath), apply to all folders
                 if folderPath.isEmpty || path != folderPath {
-                    folderSortSettings[path] = setting
+                    folderSortSettings[path] = applied
                 }
             }
         }

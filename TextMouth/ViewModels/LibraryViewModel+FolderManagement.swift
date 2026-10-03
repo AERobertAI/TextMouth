@@ -259,11 +259,13 @@ extension LibraryViewModel {
         library.subfolders(of: path)
     }
 
-    /// Sort books by the given field and direction
-    func sortedBooks(_ books: [Book], by field: LibrarySortField, ascending: Bool) -> [Book] {
+    /// Sort books as `sort` orders them (TODO A06): the comparator the
+    /// location's sort derives, which keeps manual order in the order the
+    /// user arranged.
+    func sortedBooks(_ books: [Book], by sort: LibrarySortState) -> [Book] {
         // Pre-compute file sizes to avoid O(N log N) disk I/O in the sort comparator
         var sizeCache: [UUID: Int] = [:]
-        if field == .fileSize {
+        if sort.field == .fileSize {
             for book in books {
                 sizeCache[book.id] = LibraryBookSorter.recursiveFileSize(
                     at: URL(fileURLWithPath: book.filePath)
@@ -271,12 +273,7 @@ extension LibraryViewModel {
             }
         }
 
-        return LibraryBookSorter.sorted(
-            books,
-            by: field,
-            ascending: ascending,
-            fileSizes: sizeCache
-        )
+        return sort.sorted(books, fileSizes: sizeCache)
     }
 
     /// Return books matching the given library category within a folder path
