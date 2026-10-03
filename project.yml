@@ -6,16 +6,24 @@ options:
   xcodeVersion: "16.0"
   minimumXcodeGenVersion: "2.30"
 
+# Swift package versions are locked deliberately. Each direct dependency is
+# an exactVersion requirement, so regenerating the project can never float to
+# an untested release, and the committed Package.resolved under
+# TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ pins exact
+# revisions plus the transitive swift-cmark package. `make check` fails when
+# resolution would change that file. To upgrade a package, change its version
+# here, run `make update-packages`, review the Package.resolved diff, run
+# `make check`, and commit both files together.
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
-    from: "0.9.19"
+    exactVersion: "0.9.20"
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
-    from: "2.7.5"
+    exactVersion: "2.13.9"
   swift-markdown:
     url: https://github.com/swiftlang/swift-markdown.git
-    from: "0.5.0"
+    exactVersion: "0.9.0"
 
 targets:
   TextMouth:
