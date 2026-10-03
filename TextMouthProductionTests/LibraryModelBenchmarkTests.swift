@@ -110,24 +110,38 @@ final class LibraryModelBenchmarkTests: XCTestCase {
     /// window's root, and what the model's own work costs.
     ///
     /// A playing reader reports its cursor about once a second and writes a
-    /// checkpoint every 30 seconds (`PlaybackCheckpointPolicy`). Each live
-    /// report set the book's row in the library, copying every row and
-    /// publishing the model: 60 publishes per listening minute.
+    /// checkpoint every 30 seconds (`PlaybackCheckpointPolicy`). Before
+    /// PERF11 each live report set the book's row in the library, copying
+    /// every row and publishing the model: 60 publishes per listening
+    /// minute (Debug: 63.8 ms of the model's own work). Now live reports go
+    /// to `livePositions`, which redraws only the book's row and the
+    /// summary bar, and only the two checkpoints publish the library.
     func testLibraryPublishesPerListeningMinute() throws {
         let model = LibraryViewModel(initializeServices: false)
         model.library = try LibraryBenchmarkFixture.library()
         let bookID = model.library.books[model.library.books.count / 2].id
+        let entry = model.livePositions.entry(for: bookID)
+        let otherEntry = model.livePositions.entry(for: model.library.books[0].id)
         var publishes = 0
-        let subscription = model.objectWillChange.sink { publishes += 1 }
-        defer { subscription.cancel() }
+        var rowPublishes = 0
+        var otherRowPublishes = 0
+        let subscriptions = [
+            model.objectWillChange.sink { publishes += 1 },
+            entry.objectWillChange.sink { rowPublishes += 1 },
+            otherEntry.objectWillChange.sink { otherRowPublishes += 1 }
+        ]
+        defer { subscriptions.forEach { $0.cancel() } }
 
         let minute = LibraryBenchmarkClock.medianMilliseconds(runs: 1) {
             Self.listen(seconds: 60, to: bookID, in: model)
         }
 
         LibraryBenchmarkClock.report("PERF11 library publishes per listening minute", count: publishes)
+        LibraryBenchmarkClock.report("PERF11 the playing book's row redraws per listening minute", count: rowPublishes)
         LibraryBenchmarkClock.report("PERF11 the model's own work per listening minute", minute, note: "643 books")
-        XCTAssertEqual(publishes, 60, "every live report and checkpoint published the library")
+        XCTAssertEqual(publishes, 2, "only the two checkpoints publish the library")
+        XCTAssertEqual(rowPublishes, 58, "one per live report")
+        XCTAssertEqual(otherRowPublishes, 0, "another book's row redrew")
     }
 
     /// Reports `seconds` seconds of listening to `bookID` as a playing

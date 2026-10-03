@@ -60,10 +60,19 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// Where readers are between checkpoints (TODO PERF11), which the rows
+    /// and the summary bar show: `updateLiveReadingPosition` reports there
+    /// instead of changing the library, so a playing reader no longer
+    /// publishes this model once a second.
+    let livePositions = LiveReadingPositions()
     @Published var errorMessage: String?
     @Published var showError = false
-    /// Book IDs currently open in a reader window
-    @Published var openBookIDs: Set<UUID> = []
+    /// Book IDs currently open in a reader window. A book that leaves it
+    /// drops its live position (TODO PERF11): its reader saved its position
+    /// to the library as it closed, and the row shows that one again.
+    @Published var openBookIDs: Set<UUID> = [] {
+        didSet { livePositions.keepOnly(openBookIDs) }
+    }
     /// Incremented periodically to force library views to refresh time estimates
     @Published var refreshTick: UInt = 0
 

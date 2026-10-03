@@ -427,18 +427,19 @@ extension LibraryViewModel {
 
     // MARK: - Metadata and State Updates
 
-    /// Updates the shared in-memory snapshot used by library rows without
-    /// writing to disk. Reader windows call this at a throttled cadence so the
-    /// library and reader calculate remaining time from the same cursor.
+    /// Reports where a reader is now, for the library's rows and summary
+    /// bar, without changing the library or writing to disk. Reader windows
+    /// call this at a throttled cadence (about once a second) so the library
+    /// and the reader calculate remaining time from the same cursor.
+    ///
+    /// The position goes to `livePositions` (TODO PERF11), which redraws only
+    /// the book's row and the summary bar; the library takes the reader's
+    /// position at its next checkpoint (`persistReadingPosition`). A book no
+    /// longer in the library, or a cursor that has not moved, changes
+    /// nothing.
     func updateLiveReadingPosition(bookID: UUID, position: ReadingPosition) {
-        guard let index = library.books.firstIndex(where: { $0.id == bookID }) else { return }
-        let existing = library.books[index].readingPosition
-        guard existing?.chapterIndex != position.chapterIndex
-                || existing?.characterOffset != position.characterOffset
-                || existing?.globalCharacterOffset != position.globalCharacterOffset else {
-            return
-        }
-        library.books[index].readingPosition = position
+        guard let book = bookByID(bookID) else { return }
+        livePositions.update(position, of: book)
     }
 
     /// Persists a reading checkpoint to both the library index and the book's

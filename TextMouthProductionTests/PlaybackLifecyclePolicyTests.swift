@@ -36,7 +36,11 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         ))
     }
 
-    func testLivePositionUpdatesSharedLibrarySnapshot() {
+    /// A reader's live position reaches what the library's rows show
+    /// (`livePositions`) without changing the library: no library publish,
+    /// and the row keeps its checkpointed position until the next
+    /// checkpoint (TODO PERF11).
+    func testLivePositionReachesTheRowsWithoutChangingTheLibrary() {
         let book = Book(
             title: "Live Position",
             format: .txt,
@@ -50,10 +54,15 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
             characterOffset: 75,
             globalCharacterOffset: 1_275
         )
+        var libraryPublishes = 0
+        let subscription = libraryViewModel.objectWillChange.sink { libraryPublishes += 1 }
+        defer { subscription.cancel() }
 
         libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
 
-        XCTAssertEqual(libraryViewModel.bookByID(book.id)?.readingPosition, position)
+        XCTAssertEqual(libraryPublishes, 0, "a live position published the library")
+        XCTAssertNil(libraryViewModel.bookByID(book.id)?.readingPosition, "a live position changed the library")
+        XCTAssertEqual(libraryViewModel.livePositions.applied(to: book).readingPosition, position)
     }
 
     func testClosingStoppedReaderPersistsLatestCursor() throws {

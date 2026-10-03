@@ -255,7 +255,8 @@ struct LibraryView: View {
                 wpm: settingsViewModel.wordsPerMinute,
                 booksInCloud: cloudStates.countInTheCloud(summarizedBooks),
                 focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
-                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
+                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary,
+                livePositions: libraryViewModel.livePositions
             )
 
             // Main list with native selection
@@ -833,7 +834,8 @@ struct LibraryView: View {
             isEditSelected: editSelection.contains(book.id),
             cloudState: cloudStates.listedState(of: book.id),
             cloudCommands: cloudCommands,
-            performCloudCommand: performCloudCommand
+            performCloudCommand: performCloudCommand,
+            livePosition: libraryViewModel.livePositions.entry(for: book.id)
         )
         .tag(book.id)
         .accessibilityAction(.default) {
