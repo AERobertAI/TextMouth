@@ -693,6 +693,59 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(announcements(since: mark), ["Sleep timer expired. Playback paused."])
     }
 
+    /// The library moves the package of a book whose chapter's files are
+    /// downloading: the reader stops waiting before anything moves, since
+    /// the download reads the package's files and plays them once they are
+    /// here, and once the move is over it downloads the chapter again, from
+    /// the package's new place, and plays it from there.
+    func testPackageMoveDuringAChaptersDownloadDownloadsItAgainFromTheNewPlace() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Move", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+        let duringMove = PlayerDuringMove()
+        let storage = cloud.storage
+        let cloudOnly = cloud.cloudOnly
+        let disk = LibraryTransitionDisk(
+            moveItem: { source, destination in
+                duringMove.moves += 1
+                duringMove.loadedURL = reader.audioPlaybackService.loadedURL
+                duringMove.wasShowingDownload = reader.shownDownload != nil
+                duringMove.downloadsCancelled = storage.downloadsCancelled
+                try FileManager.default.moveItem(at: source, to: destination)
+                // A move within a cloud drive leaves the files in the cloud.
+                cloudOnly.markEverything()
+            },
+            writeRecord: { book in
+                try book.saveBookInfoThrowing()
+            }
+        )
+
+        try cloud.world.library.commitLibraryTransition(
+            Self.library(cloud.world.library.library, moving: book.id, to: "\(cloud.world.folder.path)/Shelf"),
+            affectedBookIDs: [book.id],
+            disk: disk
+        )
+
+        XCTAssertEqual(duringMove.moves, 1)
+        XCTAssertEqual(duringMove.downloadsCancelled, [book.id], "The reader still waited while the package moved")
+        XCTAssertFalse(duringMove.wasShowingDownload)
+        XCTAssertNil(duringMove.loadedURL)
+        waitFor("the chapter's download from the new place") { reader.shownDownload?.progress == Self.halfway }
+        XCTAssertEqual(cloud.storage.downloadsStarted, [book.id, book.id])
+        XCTAssertEqual(reader.shownDownload?.chapterNumber, 2)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+
+        let moved = try XCTUnwrap(cloud.world.library.bookByID(book.id))
+        let playing = try XCTUnwrap(reader.audioPlaybackService.loadedURL)
+        XCTAssertTrue(Self.path(playing).hasPrefix(Self.path(moved.filePath) + "/"), "\(playing.path)")
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        reader.stop()
+    }
+
     /// In a library that is not in a cloud location, chapters play without
     /// any check, exactly as before.
     func testLocalLibraryPlaysChaptersWithoutCheckingThem() throws {
@@ -814,6 +867,11 @@ final class ReaderCloudDownloadTests: XCTestCase {
         var wasPlaying = false
         /// The file it held at the last move.
         var loadedURL: URL?
+        /// Whether the reader showed a chapter's download at the last move.
+        var wasShowingDownload = false
+        /// The books whose downloads the storage had seen cancelled by the
+        /// last move.
+        var downloadsCancelled: [UUID] = []
     }
 
     /// The disk operations of a library transition, noting into `observation`
