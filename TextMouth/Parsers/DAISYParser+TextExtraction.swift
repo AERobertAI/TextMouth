@@ -37,6 +37,10 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
     // Skip elements (head, prodnote content, etc.)
     private var skipDepth = 0
 
+    /// How many tables enclose the text being read. Text inside a table is
+    /// written as the table's paragraphs hold it (see `tableText(_:)`).
+    private var tableDepth = 0
+
     /// Whether any readable character data has been written. Damage after
     /// this point leaves text worth keeping; damage before it leaves none.
     private var producedText = false
@@ -161,13 +165,20 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             ensureNewline()
             markdown += "[Page "
 
-        // Table elements
+        // Tables read as HTML tables are read (TODO T03), with no Markdown
+        // table syntax: each row is a paragraph of its own, and each cell
+        // at least a word of its own, so two cells' words never run
+        // together. A caption, which comes before the rows, is therefore a
+        // paragraph of its own too, and a table in a cell is a block between
+        // the words of the row holding it. The end tags write the same
+        // boundaries (`endElement(_:)`).
         case "table":
             ensureBlankLine()
+            tableDepth += 1
         case "tr":
-            markdown += "| "
+            ensureBlankLine()
         case "th", "td":
-            break // text will be captured
+            separateWords()
 
         // Structural containers — just pass through
         case "dtbook", "book", "frontmatter", "bodymatter", "rearmatter",
@@ -192,7 +203,7 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard skipDepth == 0 else { return }
-        markdown += string
+        markdown += tableDepth > 0 ? tableText(string) : string
         if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             lastOutputWasBlock = false
             producedText = true
@@ -273,11 +284,17 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             }
             currentLinkHref = ""
 
+        // A table, and each of its rows, ends its paragraph; a cell's words
+        // stay apart from whatever follows them in the row.
+        case "table":
+            tableDepth = max(0, tableDepth - 1)
+            ensureBlankLine()
+
         case "tr":
-            markdown += "\n"
+            ensureBlankLine()
 
         case "th", "td":
-            markdown += " | "
+            separateWords()
 
         case "line":
             markdown += "\n"
@@ -314,6 +331,39 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         if !markdown.hasSuffix("\n") {
             markdown += "\n"
         }
+    }
+
+    /// Whether the next text begins a word: at the start of the Markdown, of
+    /// a line, or after a space. Unicode scalars decide, since a combining
+    /// mark after a space makes one `Character` with it.
+    private var isAtWordStart: Bool {
+        guard let last = markdown.unicodeScalars.last else { return true }
+        return last == " " || last == "\n"
+    }
+
+    /// Keep the words on either side of a table cell's edge apart, with a
+    /// space unless one is already there: so an empty cell adds no doubled
+    /// space, and a row's first cell no space before its words.
+    private func separateWords() {
+        if !isAtWordStart {
+            markdown += " "
+        }
+    }
+
+    /// `text` from inside a table, as the table's paragraphs hold it. Each
+    /// run of whitespace is one space, as HTML reads a table's text, and
+    /// none is written where a word begins, so the line breaks and
+    /// indentation a file puts between its rows and cells never split a
+    /// row or double a space. Every character is written as a Markdown
+    /// literal (`MarkdownLiteral`): a row begins its own line, where words
+    /// such as "# of copies" or "1. Introduction" would otherwise be read
+    /// as a heading or a list.
+    private func tableText(_ text: String) -> String {
+        var words = HTMLReadingText.collapsingWhitespace(text)
+        if words.unicodeScalars.first == " ", isAtWordStart {
+            words.unicodeScalars.removeFirst()
+        }
+        return MarkdownLiteral.escaped(words)
     }
 
     /// Clean up excessive blank lines and trailing whitespace
