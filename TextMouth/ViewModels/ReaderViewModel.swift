@@ -79,6 +79,10 @@ final class ReaderViewModel: ObservableObject {
     /// Cached visible text window for the reader surface.
     @Published private(set) var displayVisibleTextWindow = ""
     @Published var isLoading = true
+    /// What the reader shows in place of its book while it gets the book
+    /// from the cloud (FR02): a download, or why the book isn't ready. Nil
+    /// while it shows the book, or Loading.
+    @Published var cloudPhase: ReaderCloudPhase?
     @Published var errorMessage: String?
     /// The audio failure `errorMessage` reports, kept while the message is
     /// shown so its alert can offer Retry. Nil for every other error.
@@ -126,6 +130,13 @@ final class ReaderViewModel: ObservableObject {
     /// Renders the look-ahead's audio: the shared render queue, unless the
     /// reader was created with its own, as tests do to hold renders.
     let renderScheduler: any SpeechRenderScheduling
+    /// The cloud services the reader gets its book ready with when the
+    /// library is in a cloud location (FR02): the app's, unless the reader
+    /// was created with its own, as tests do.
+    let cloudServices: ReaderCloudServices
+    /// The reader's cloud work: its download, and where the library was
+    /// found to be (FR02).
+    var cloudSession = ReaderCloudSession()
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -279,6 +290,8 @@ final class ReaderViewModel: ObservableObject {
     ///   - renderScheduler: Renders the next chapter ahead of time. Nil uses
     ///     the shared render queue; tests pass one that holds each render
     ///     until they let it start and finish.
+    ///   - cloud: The cloud services that get a book in a cloud library ready
+    ///     to read (FR02). Nil uses the app's; tests pass fakes.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -286,7 +299,8 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         notificationCenter: NotificationCenter = .default,
-        renderScheduler: (any SpeechRenderScheduling)? = nil
+        renderScheduler: (any SpeechRenderScheduling)? = nil,
+        cloud: ReaderCloudServices? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -297,6 +311,7 @@ final class ReaderViewModel: ObservableObject {
         self.autoplayRequests = autoplayRequests ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
+        self.cloudServices = cloud ?? .app
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -819,13 +834,29 @@ final class ReaderViewModel: ObservableObject {
         let cacheFormatVersion: String?
     }
 
-    /// Start getting the book ready to read, showing Loading meanwhile: its
-    /// files are read on a background queue, then what they hold is shown,
-    /// or why they could not be read.
-    private func loadContent() {
+    /// Start getting the book ready to read, showing Loading meanwhile.
+    ///
+    /// The book's library is checked first, off the main thread, since that
+    /// reads file-system metadata (FR02). A book in a library that is not in
+    /// a cloud location is read right away, in the same background step, as
+    /// it always was. A book in a cloud location goes on through its cloud
+    /// state (`continueOpening(in:found:)`): downloaded first when any of its
+    /// files is only in the cloud, and then read without ever waiting on the
+    /// network.
+    func loadContent() {
         isLoading = true
         let bookCopy = book
+        let storage = cloudServices.storage
+        let package = BookPackage(bookCopy)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let location = storage.libraryLocation()
+            if location.isCloud {
+                let state = storage.state(of: package)
+                DispatchQueue.main.async { [weak self] in
+                    self?.continueOpening(in: location, found: state)
+                }
+                return
+            }
             let result = Result { try ReaderViewModel.readContent(of: bookCopy) }
             DispatchQueue.main.async { [weak self] in
                 self?.finishLoading(result, readFrom: bookCopy.filePath)
@@ -889,7 +920,7 @@ final class ReaderViewModel: ObservableObject {
     /// headings, its metadata, and its audio files, with the saved position
     /// kept within the book. Saves a new index, and starts playing for a
     /// finished book that continued to this one while it loaded.
-    private func showLoadedContent(_ loaded: LoadedContent, readFrom filePath: String) {
+    func showLoadedContent(_ loaded: LoadedContent, readFrom filePath: String) {
         let parsed = loaded.content
         if let audioFiles = loaded.audioFiles {
             // A move the library made while the book loaded left
@@ -943,7 +974,7 @@ final class ReaderViewModel: ObservableObject {
 
     /// Shows why the book at `filePath` could not be read, in place of the
     /// reader.
-    private func showLoadFailure(_ error: Error, readFrom filePath: String) {
+    func showLoadFailure(_ error: Error, readFrom filePath: String) {
         // The library moved the book while it loaded, so the
         // files the load read may have gone from under it: load
         // it again from where the book is now (TODO P10).
@@ -1278,6 +1309,9 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
+        // A download the reader waits for is stopped, and the book's state
+        // found afterwards recorded for the library list (FR02).
+        endCloudWorkForClose()
         playbackUIRefreshWorkItem?.cancel()
         livePositionWorkItem?.cancel()
         livePositionWorkItem = nil
