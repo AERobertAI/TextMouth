@@ -163,6 +163,73 @@ final class LibraryModelBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF12: The Startup Extraction Batch
+
+    /// How many books the extraction batch benchmark brings up to date.
+    static let batchBookCount = 60
+
+    /// How many times the extraction batch publishes the library model, and
+    /// changes the library, while it brings `batchBookCount` books' text
+    /// caches up to date, as the next install's first launch does for
+    /// about 632 books. Each book's summary changed its row (a library
+    /// update, which re-renders every Library window's list) and saved the
+    /// index, and its progress changed two more published properties.
+    func testLibraryUpdatesPerExtractionBatch() async throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let books = try (0..<Self.batchBookCount).map { try makeOutdatedTextBook(number: $0) }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books)
+        var libraryUpdates = 0
+        var modelPublishes = 0
+        let watchers = [
+            model.$library.dropFirst().sink { _ in libraryUpdates += 1 },
+            model.objectWillChange.sink { modelPublishes += 1 }
+        ]
+        defer { watchers.forEach { $0.cancel() } }
+        let finished = expectation(description: "The batch finished")
+        let clock = ContinuousClock()
+        let start = clock.now
+
+        model.extractMissingContentCaches { finished.fulfill() }
+        await fulfillment(of: [finished], timeout: 120)
+        let elapsed = clock.now - start
+
+        LibraryBenchmarkClock.report(
+            "PERF12 library updates for a batch of \(books.count) books",
+            count: libraryUpdates,
+            note: "over \(elapsed.formatted(.units(allowed: [.milliseconds])))"
+        )
+        LibraryBenchmarkClock.report("PERF12 model publishes for the batch", count: modelPublishes)
+        XCTAssertEqual(libraryUpdates, books.count, "one library update per book")
+        XCTAssertTrue(model.library.books.allSatisfy {
+            $0.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
+        })
+    }
+
+    /// A book in a package of its own whose library row predates the
+    /// current text cache format, so the batch extracts it, with a Markdown
+    /// source of twenty paragraphs. The package is removed when the test
+    /// ends.
+    private func makeOutdatedTextBook(number: Int) throws -> Book {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let name = "Batch Benchmark \(number)-\(UUID().uuidString).tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: "", tmbName: name)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let file = package.appendingPathComponent("source.md")
+        let paragraphs = (1...20).map { "Paragraph \($0) of book \(number), with a few more words to count." }
+        try (["# Book \(number)"] + paragraphs).joined(separator: "\n\n").write(to: file, atomically: true, encoding: .utf8)
+        return Book(
+            title: "Batch Benchmark \(number)",
+            format: .markdown,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            tmbDirectoryName: name,
+            cacheFormatVersion: "3.0.3"
+        )
+    }
+
     // MARK: - Reading the List as LibraryView Does
 
     /// The sorts the list benchmark measures: the developer's saved sort
