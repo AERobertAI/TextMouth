@@ -119,6 +119,66 @@ where Value: RawRepresentable & CaseIterable & Sendable, Value.RawValue == Strin
     }
 }
 
+// MARK: - Preferences keyed by enum cases
+
+/// Validation rule for a preference that gives each case of an enum a value
+/// of its own, such as a sound for each playback event.
+///
+/// `config.json` holds such a preference as an object keyed by the cases'
+/// raw values, each value in a readable form (`FileValue`) that the rule
+/// reads into the value the app uses (`Value`) and writes back. The file may
+/// name any of the cases: each entry replaces its case's value, and a case it
+/// leaves out keeps the current one. So does an entry that names no case or
+/// holds a value the rule cannot read.
+struct KeyedSettingRule<Case, FileValue, Value>: Sendable
+where Case: RawRepresentable & Hashable & Sendable, Case.RawValue == String,
+      FileValue: Sendable, Value: Sendable {
+    /// The `config.json` field.
+    let key: String
+    /// What the entries may hold, for log lines.
+    let supportedDescription: String
+    /// Reads one entry's value, or returns nil when it is unsupported.
+    private let parse: @Sendable (FileValue) -> Value?
+    /// Writes one value the way TextMouth saves it.
+    private let format: @Sendable (Value) -> FileValue
+
+    /// A rule for the field `key`, reading each entry's value with `parse`
+    /// and writing it with `format`.
+    init(
+        key: String,
+        supportedDescription: String,
+        parse: @escaping @Sendable (FileValue) -> Value?,
+        format: @escaping @Sendable (Value) -> FileValue
+    ) {
+        self.key = key
+        self.supportedDescription = supportedDescription
+        self.parse = parse
+        self.format = format
+    }
+
+    /// Whether `name` names a case, and so can key an entry.
+    func names(_ name: String) -> Bool {
+        Case(rawValue: name) != nil
+    }
+
+    /// Validates one entry's value from `config.json`: the value as
+    /// TextMouth writes it, or nil when the rule cannot read it.
+    func validatedConfigValue(_ value: FileValue) -> FileValue? {
+        parse(value).map(format)
+    }
+
+    /// The values `config.json`'s entries ask the app to adopt: those of the
+    /// entries that name a case and hold a value the rule can read.
+    func requestedValues(fromConfig entries: [String: FileValue]) -> [Case: Value] {
+        [Case: FileValue](keyedByRawValue: entries).compactMapValues(parse)
+    }
+
+    /// `values` as `config.json` holds them.
+    func fileEntries(_ values: [Case: Value]) -> [String: FileValue] {
+        values.mapValues(format).keyedByRawValue
+    }
+}
+
 // MARK: - The table
 
 /// The single table of validated preferences. Each rule states a key, the
@@ -188,6 +248,20 @@ enum SettingsPolicy {
     /// `config.json`, not in `UserDefaults`.
     static let importDeleteBehavior = EnumSettingRule(
         key: "importDeleteBehavior", defaultValue: ImportDeleteBehavior.keepOriginal
+    )
+
+    // MARK: Keyed by enum cases
+
+    /// The sound each playback event plays (Sounds settings pickers): one of
+    /// the system sounds those pickers offer, named in any letter case and
+    /// written as the pickers name it, or None for no sound.
+    static let soundEffectAssignments = KeyedSettingRule<SoundEvent, String, String>(
+        key: "soundEffectAssignments",
+        supportedDescription: "playback events as Settings names them, each with a system sound's name or \"None\"",
+        parse: { name in
+            SoundEffectService.availableSounds().first { $0.caseInsensitiveCompare(name) == .orderedSame }
+        },
+        format: { $0 }
     )
 
     // MARK: Integer

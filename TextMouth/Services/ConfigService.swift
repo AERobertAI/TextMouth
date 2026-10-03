@@ -244,6 +244,15 @@ final class ConfigService: ObservableObject {
         var showBookmarkInPlaybackControls: Bool?
         /// Whether the playback bar shows the speed controls.
         var showSpeedInPlaybackControls: Bool?
+        /// Whether sound effects play.
+        var soundEffectsEnabled: Bool?
+        /// How loud sound effects play, from 0 to 1, written to the
+        /// hundredth: the precision Settings shows, as a percentage.
+        var soundEffectsVolume: Double?
+        /// The sound each playback event plays, keyed by the event's name as
+        /// Settings shows it; "None" plays nothing. TextMouth writes every
+        /// event; an event the file leaves out keeps its sound.
+        var soundEffectAssignments: [String: String] = [:]
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -310,6 +319,12 @@ final class ConfigService: ObservableObject {
             )
             showBookmarkInPlaybackControls = fields.optionalFlag(.showBookmarkInPlaybackControls)
             showSpeedInPlaybackControls = fields.optionalFlag(.showSpeedInPlaybackControls)
+            soundEffectsEnabled = fields.optionalFlag(.soundEffectsEnabled)
+            soundEffectsVolume = fields.optionalNumber(.soundEffectsVolume, rule: SettingsPolicy.soundEffectsVolume)
+            soundEffectAssignments = fields.entries(
+                .soundEffectAssignments,
+                rule: SettingsPolicy.soundEffectAssignments
+            )
         }
 
         init() {}

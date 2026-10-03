@@ -148,6 +148,12 @@ class SoundEffectService: ObservableObject {
         ]
     }
 
+    /// `assignments` with every event named. An event they leave out plays
+    /// no sound, so it is named None, as the Sounds settings show it.
+    static func assignmentsNamingEveryEvent(_ assignments: [SoundEvent: String]) -> [SoundEvent: String] {
+        Dictionary(uniqueKeysWithValues: SoundEvent.allCases.map { ($0, assignments[$0] ?? "None") })
+    }
+
     /// Play the sound effect for a given event
     func play(for event: SoundEvent) {
         guard soundsEnabled else { return }

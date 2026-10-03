@@ -159,6 +159,30 @@ final class SettingsPolicyTests: XCTestCase {
         XCTAssertNil(rule.requestedValue(fromConfig: "heading"), "raw values are case-sensitive")
     }
 
+    // MARK: - Keyed preferences
+
+    /// Sound assignments keep only the playback events TextMouth knows, each
+    /// with a sound the Sounds settings offer, named as they name it.
+    func testSoundAssignmentRuleKeepsKnownEventsAndOfferedSounds() {
+        let rule = SettingsPolicy.soundEffectAssignments
+
+        XCTAssertEqual(
+            rule.requestedValues(fromConfig: [
+                "Play": "glass", "Pause": "none", "Fanfare": "Glass", "Skip Forward": "Pope",
+            ]),
+            [.play: "Glass", .pause: "None"]
+        )
+        XCTAssertEqual(rule.validatedConfigValue("PURR"), "Purr")
+        XCTAssertNil(rule.validatedConfigValue("Pope"))
+        XCTAssertNil(rule.validatedConfigValue(""))
+        XCTAssertTrue(rule.names("Where Am I (Start)"))
+        XCTAssertFalse(rule.names("where am i (start)"), "event names are case-sensitive")
+        XCTAssertEqual(
+            rule.fileEntries([.play: "Glass", .whereAmIEnd: "None"]),
+            ["Play": "Glass", "Where Am I (End)": "None"]
+        )
+    }
+
     // MARK: - Saved book state
 
     /// A text book's saved speed is words per minute, clamped to the global

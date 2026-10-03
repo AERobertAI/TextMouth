@@ -502,6 +502,70 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "config.json showBookmarkInPlaybackControls: could not be read").isEmpty)
     }
 
+    // MARK: - Sound effects
+
+    /// Sound preferences applied from config.json reach the sound service at
+    /// once, through the store it follows: an event the file names takes
+    /// its sound and the others keep theirs. They are saved back with every
+    /// event named.
+    func testSoundPreferencesReachTheSoundServiceAndAreSaved() throws {
+        let store = try isolatedDefaults()
+        let sounds = SoundEffectService(preferences: store)
+        let viewModel = makeIsolatedViewModel(store)
+        var config = ConfigService.AppConfig()
+        config.soundEffectsEnabled = false
+        config.soundEffectsVolume = 0.8
+        config.soundEffectAssignments = ["Play": "Glass"]
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertFalse(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.8)
+        XCTAssertEqual(sounds.assignments[.play], "Glass")
+        XCTAssertEqual(sounds.assignments[.pause], "Tink", "an event the file leaves out keeps its sound")
+
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(saved.soundEffectsEnabled, false)
+        XCTAssertEqual(saved.soundEffectsVolume, 0.8)
+        XCTAssertEqual(saved.soundEffectAssignments["Play"], "Glass")
+        XCTAssertEqual(Set(saved.soundEffectAssignments.keys), Set(SoundEvent.allCases.map(\.rawValue)))
+    }
+
+    /// Sound preferences config.json holds in a form TextMouth cannot use
+    /// leave the current ones as they are and are logged, while the usable
+    /// entries beside them are applied, named as the Sounds settings name
+    /// them.
+    func testUnusableSoundPreferencesKeepTheCurrentOnesAndAreLogged() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let sounds = SoundEffectService(preferences: store)
+        let viewModel = makeIsolatedViewModel(store)
+        let missingSound = "Pope-\(UUID().uuidString)"
+        let unknownEvent = "Fanfare-\(UUID().uuidString)"
+
+        let config = try decodeConfig("""
+        {
+          "soundEffectsEnabled": "off",
+          "soundEffectsVolume": "loud",
+          "soundEffectAssignments": {
+            "Play": "\(missingSound)", "Pause": 7, "\(unknownEvent)": "Glass", "Skip Forward": "funk"
+          }
+        }
+        """)
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertNil(config.soundEffectsEnabled)
+        XCTAssertNil(config.soundEffectsVolume)
+        XCTAssertEqual(config.soundEffectAssignments, ["Skip Forward": "Funk"])
+        XCTAssertTrue(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.5)
+        XCTAssertEqual(sounds.assignments, SoundEffectService.defaultAssignments.merging([.skipForward: "Funk"]) { $1 })
+        XCTAssertEqual(debugLogLines(containing: missingSound).count, 1)
+        XCTAssertEqual(debugLogLines(containing: unknownEvent).count, 1)
+        XCTAssertFalse(debugLogLines(containing: "config.json soundEffectAssignments.Pause: could not be read").isEmpty)
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or

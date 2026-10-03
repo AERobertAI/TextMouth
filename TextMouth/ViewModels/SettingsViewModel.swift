@@ -284,6 +284,12 @@ final class SettingsViewModel: ObservableObject {
     /// reconciles the preferences with the file: preference changes made
     /// then are not saved back to the file one at a time.
     private var isSyncingFromConfig = false
+    /// The store holding every preference, the ones other services keep
+    /// included; the mirror reads and writes theirs there.
+    private let preferences: UserDefaults
+    /// Saves config.json when a preference another service keeps changes in
+    /// the store through that service's own controls.
+    private var servicePreferencesObserver: PreferenceObserver?
 
     // MARK: - Validated numeric preferences
     //
@@ -391,7 +397,7 @@ final class SettingsViewModel: ObservableObject {
     ///   - userDefaults: The store holding every preference: this process's
     ///     preferences, which are the standard store in the app and the
     ///     sandboxed one under hosted tests. Tests may pass a suite of their
-    ///     own to start from known values.
+    ///     own to start from known values, and services of their own on it.
     ///   - configService: The config.json mirror to keep in step with the
     ///     preferences. Tests pass one bound to a file of their own.
     init(
@@ -402,6 +408,7 @@ final class SettingsViewModel: ObservableObject {
     ) {
         self.notificationCenter = notificationCenter
         self.configService = configService
+        preferences = userDefaults
         // Bind every preference to `userDefaults` before anything reads one.
         // The keys are the ones every release has used, so saved preferences
         // keep loading.
@@ -441,6 +448,7 @@ final class SettingsViewModel: ObservableObject {
             store: userDefaults
         )
         _storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.appStorage(in: userDefaults)
+        saveServicePreferenceChanges()
         guard initializeServices else { return }
         startConfigSync()
     }
@@ -509,10 +517,11 @@ final class SettingsViewModel: ObservableObject {
         configService.saveToDisk()
     }
 
-    /// Copies the mirrored preferences into `config`, leaving fields that
-    /// other screens manage (import and deletion choices, the last opened
-    /// book) as they are. Every value is the validated one consumers see, so
-    /// a value injected with `defaults write` is written in its repaired form.
+    /// Copies the mirrored preferences into `config`, this model's own and
+    /// those other services keep, leaving fields that other screens manage
+    /// (import and deletion choices, the last opened book) as they are.
+    /// Every value is the validated one consumers see, so a value injected
+    /// with `defaults write` is written in its repaired form.
     func writePreferences(into config: inout ConfigService.AppConfig) {
         config.selectedVoiceID = selectedVoiceID
         config.wordsPerMinute = wordsPerMinute
@@ -538,6 +547,7 @@ final class SettingsViewModel: ObservableObject {
         config.playbackNavigationUnitControlMode = playbackNavigationUnitControlMode.rawValue
         config.showBookmarkInPlaybackControls = showBookmarkInPlaybackControls
         config.showSpeedInPlaybackControls = showSpeedInPlaybackControls
+        writeServicePreferences(into: &config)
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
     }
@@ -628,6 +638,7 @@ final class SettingsViewModel: ObservableObject {
             )
             adopt(config.showBookmarkInPlaybackControls, into: \.showBookmarkInPlaybackControls)
             adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
+            adoptServicePreferences(from: config)
             // Handle external change to dataDirectoryPath
             if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
                 notificationCenter.post(
@@ -668,6 +679,79 @@ final class SettingsViewModel: ObservableObject {
         into keyPath: ReferenceWritableKeyPath<SettingsViewModel, String>
     ) {
         adopt(rule.requestedValue(fromConfig: configRawValue)?.rawValue, into: keyPath)
+    }
+
+    // MARK: - Preferences other services keep
+    //
+    // The sound effects service keeps its preferences in the same store as
+    // this model, and follows them there. The mirror reads and writes them
+    // there through the service's own definitions: a value applied from
+    // config.json reaches the service at once, and a change made through the
+    // service's controls is saved to config.json by the observer below.
+
+    /// The store keys of the preferences other services keep.
+    static var servicePreferenceKeys: [String] {
+        SoundEffectService.preferenceKeys
+    }
+
+    /// Saves config.json whenever a preference another service keeps changes
+    /// in the store. A change this model makes while applying config.json
+    /// saves nothing, like every other change made then.
+    private func saveServicePreferenceChanges() {
+        servicePreferencesObserver = PreferenceObserver(keys: Self.servicePreferenceKeys, in: preferences) { [weak self] _ in
+            self?.syncToConfig()
+        }
+    }
+
+    /// Copies the preferences other services keep into `config`, in the
+    /// readable forms config.json holds them in.
+    private func writeServicePreferences(into config: inout ConfigService.AppConfig) {
+        config.soundEffectsEnabled = SoundEffectService.enabledPreference.read(from: preferences)
+        config.soundEffectsVolume = Self.fileVolume(SoundEffectService.volumePreference.read(from: preferences))
+        config.soundEffectAssignments = SettingsPolicy.soundEffectAssignments.fileEntries(
+            SoundEffectService.assignmentsNamingEveryEvent(SoundEffectService.assignmentsPreference.read(from: preferences))
+        )
+    }
+
+    /// Writes the values config.json asks for into the store, where their
+    /// services take them up, through the same rules the decoder applies.
+    private func adoptServicePreferences(from config: ConfigService.AppConfig) {
+        adopt(config.soundEffectsEnabled, into: SoundEffectService.enabledPreference)
+        let volume = config.soundEffectsVolume.flatMap { SettingsPolicy.soundEffectsVolume.requestedValue(fromConfig: $0) }
+        adopt(volume.map { Float($0) }, into: SoundEffectService.volumePreference)
+        adopt(
+            entries: SettingsPolicy.soundEffectAssignments.requestedValues(fromConfig: config.soundEffectAssignments),
+            into: SoundEffectService.assignmentsPreference
+        )
+    }
+
+    /// Writes a value config.json asks for into the store when it differs
+    /// from the one there; nil leaves the preference alone.
+    private func adopt<Value>(_ requested: Value?, into preference: StoredPreference<Value>) {
+        guard let requested, preference.read(from: preferences) != requested else { return }
+        preference.write(requested, to: preferences)
+    }
+
+    /// Writes the entries config.json sets for a preference keyed by enum
+    /// cases: `combine` puts them in place of the current values, by default
+    /// replacing each case they name, so every case they leave out keeps its
+    /// value. No entries leave the preference alone.
+    private func adopt<Case: Hashable & Sendable, Value: Equatable & Sendable>(
+        entries requested: [Case: Value],
+        into preference: StoredPreference<[Case: Value]>,
+        combining combine: (_ current: [Case: Value], _ requested: [Case: Value]) -> [Case: Value] = {
+            $0.merging($1) { _, requested in requested }
+        }
+    ) {
+        guard !requested.isEmpty else { return }
+        adopt(combine(preference.read(from: preferences), requested), into: preference)
+    }
+
+    /// The sound effects volume as config.json holds it: to the hundredth,
+    /// the precision Settings shows as a percentage, so the file reads 0.65
+    /// where the stored Float would print as 0.6499999761581421.
+    private static func fileVolume(_ volume: Float) -> Double {
+        (Double(volume) * 100).rounded() / 100
     }
 
     private func broadcastChanges() {

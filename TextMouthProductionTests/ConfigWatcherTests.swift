@@ -573,6 +573,63 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(counter.writes, 0)
     }
 
+    /// An edit of the sound preferences, noticed through the watcher's
+    /// handler, is applied once and reaches the sound service at once, each
+    /// changed preference published once; nothing is written back.
+    func testExternalEditOfTheSoundsReachesTheSoundServiceOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let sounds = SoundEffectService(preferences: defaults)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = sounds.objectWillChange.sink { publications += 1 }
+
+        edit.soundEffectsEnabled = true
+        edit.soundEffectsVolume = 0.9
+        edit.soundEffectAssignments[SoundEvent.play.rawValue] = "Ping"
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertTrue(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.9)
+        XCTAssertEqual(sounds.assignments[.play], "Ping")
+        XCTAssertEqual(sounds.assignments[.pause], "None")
+        XCTAssertEqual(publications, 3)
+        XCTAssertEqual(counter.writes, 0)
+        withExtendedLifetime(settings) {}
+    }
+
+    /// A sound preference changed through the sound service, as the Sounds
+    /// settings change it, is saved to config.json at once, and that save
+    /// is never applied back as an edit.
+    func testSoundChangeMadeInSettingsIsSavedToConfig() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let sounds = SoundEffectService(preferences: defaults)
+        let recorder = EditRecorder(service)
+
+        sounds.volume = 0.65
+        sounds.assignments[.whereAmIEnd] = "Sosumi"
+        settle()
+
+        XCTAssertEqual(counter.writes, 2, "one save for each change")
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.soundEffectsVolume, 0.65)
+        XCTAssertEqual(saved.soundEffectAssignments[SoundEvent.whereAmIEnd.rawValue], "Sosumi")
+        XCTAssertEqual(recorder.edits, [])
+        withExtendedLifetime(settings) {}
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the

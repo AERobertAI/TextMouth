@@ -38,6 +38,13 @@ extension ConfigService.AppConfig {
         config.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.separate.rawValue
         config.showBookmarkInPlaybackControls = true
         config.showSpeedInPlaybackControls = false
+        config.soundEffectsEnabled = false
+        config.soundEffectsVolume = 0.35
+        // Every event, as TextMouth writes them, each with another sound.
+        config.soundEffectAssignments = ([
+            .play: "Glass", .pause: "None", .skipForward: "Funk",
+            .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
+        ] as [SoundEvent: String]).keyedByRawValue
         return config
     }
 }
