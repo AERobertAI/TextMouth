@@ -437,6 +437,151 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    // MARK: - Chapters of several clips (TODO I03)
+
+    /// The builder's index of a chapter playing three clips passes, with or
+    /// without its folder, and so does its total.
+    func testBuiltSeveralClipIndexIsValid() throws {
+        let index = try severalClipIndex()
+
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: try audioFolder()))
+        XCTAssertEqual(index.totalAudioDuration, 18.5)
+    }
+
+    /// Every clip must name its file; a missing or empty path is the
+    /// failure, as for a chapter.
+    func testClipWithoutPathIsRejected() throws {
+        for path in [nil, ""] {
+            var index = try severalClipIndex()
+            index.chapters[1].audio?.clips?[1].relativeFilePath = path
+
+            XCTAssertEqual(
+                index.validationFailure(for: .audio, audioBaseURL: nil),
+                "chapters[1].audio.clips[1].relativeFilePath is missing",
+                String(describing: path)
+            )
+        }
+    }
+
+    /// A clip cannot last less than no time.
+    func testNegativeClipDurationIsRejected() throws {
+        var index = try severalClipIndex()
+        index.chapters[1].audio?.clips?[2].duration = -1
+
+        XCTAssertEqual(
+            index.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[2].duration is -1.0, expected a finite number of seconds, 0 or more"
+        )
+    }
+
+    /// Nor start, or last, for a time that is not a number of seconds.
+    func testNonFiniteClipTimingIsRejected() throws {
+        var start = try severalClipIndex()
+        start.chapters[1].audio?.clips?[0].startTime = .nan
+        var duration = try severalClipIndex()
+        duration.chapters[1].audio?.clips?[1].duration = .infinity
+
+        XCTAssertEqual(
+            start.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[0].startTime is nan, expected a finite number of seconds, 0 or more"
+        )
+        XCTAssertEqual(
+            duration.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[1].duration is inf, expected a finite number of seconds, 0 or more"
+        )
+    }
+
+    /// A clip of no length would be restored as ending where it starts, and
+    /// one starting at 0 as playing its whole file.
+    func testClipOfNoLengthIsRejected() throws {
+        var index = try severalClipIndex()
+        index.chapters[1].audio?.clips?[1].duration = 0
+
+        XCTAssertEqual(
+            index.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[1].duration is 0.0, but every clip a chapter plays lasts some time"
+        )
+    }
+
+    /// A clip list names at least one clip.
+    func testEmptyClipListIsRejected() throws {
+        var index = try severalClipIndex()
+        index.chapters[1].audio?.clips = []
+
+        XCTAssertEqual(index.validationFailure(for: .audio, audioBaseURL: nil), "chapters[1].audio.clips is empty")
+    }
+
+    /// Only a segmented book's chapters play clips; the builder writes none
+    /// for a book of whole files.
+    func testClipListOutsideASegmentedBookIsRejected() {
+        let clip = BookContentAudioClipIndex(relativeFilePath: "02.wav", startTime: 0, duration: 20)
+        var multiFile = multiFileIndex()
+        multiFile.chapters[1].audio?.clips = [clip]
+        var singleFile = singleFileIndex()
+        singleFile.chapters[0].audio?.clips = [clip]
+
+        XCTAssertEqual(
+            multiFile.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips is present in a multiFile index"
+        )
+        XCTAssertEqual(
+            singleFile.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[0].audio.clips is present in a singleFile index"
+        )
+    }
+
+    /// A chapter's own fields describe its first clip: its file and start.
+    func testChapterMustStartWhereItsFirstClipDoes() throws {
+        var file = try severalClipIndex()
+        file.chapters[1].audio?.relativeFilePath = "Disc 2/03.wav"
+        var start = try severalClipIndex()
+        start.chapters[1].audio?.startTime = 6
+
+        XCTAssertEqual(
+            file.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.relativeFilePath is \"Disc 2/03.wav\", but its first clip's is \"book.wav\""
+        )
+        XCTAssertEqual(
+            start.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.startTime is 6.0, but its first clip's is 5.0"
+        )
+    }
+
+    /// A chapter lasts as long as its clips together (13.5 seconds), within
+    /// the same millisecond the book's total is allowed.
+    func testChapterMustLastAsLongAsItsClipsTogether() throws {
+        var longer = try severalClipIndex()
+        longer.chapters[1].audio?.duration = 15
+        longer.totalAudioDuration = 20
+        var rounded = try severalClipIndex()
+        rounded.chapters[1].audio?.duration = 13.5005
+        rounded.totalAudioDuration = 18.5005
+
+        XCTAssertEqual(
+            longer.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.duration is 15.0, expected 13.5, its clips' together"
+        )
+        XCTAssertNil(rounded.validationFailure(for: .audio, audioBaseURL: nil))
+    }
+
+    /// Each clip's path has the form a chapter's must have.
+    func testClipPathsAreChecked() throws {
+        var climbing = try severalClipIndex()
+        climbing.chapters[1].audio?.clips?[1].relativeFilePath = "../03.wav"
+        var absolute = try severalClipIndex()
+        absolute.chapters[1].audio?.clips?[2].relativeFilePath = "/etc/hosts"
+
+        XCTAssertEqual(
+            climbing.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[1].relativeFilePath \"../03.wav\" contains a \"..\" component"
+        )
+        XCTAssertEqual(
+            absolute.validationFailure(for: .audio, audioBaseURL: nil),
+            "chapters[1].audio.clips[2].relativeFilePath \"/etc/hosts\" is absolute"
+        )
+    }
+
     // MARK: - Audio files on disk
 
     /// Files present in the folder pass, including one in a subfolder and a
@@ -577,6 +722,36 @@ final class ContentIndexValidationTests: XCTestCase {
         try FileManager.default.removeItem(at: folder.appendingPathComponent("book.wav"))
 
         XCTAssertNil(segmentedIndex().validationFailure(for: .audio, audioBaseURL: folder))
+    }
+
+    /// So does a clip's missing file: playback names it when the chapter
+    /// reaches that clip, while the chapter keeps every other clip.
+    func testMissingClipFileKeepsTheIndexValid() throws {
+        let folder = try audioFolder()
+        try FileManager.default.removeItem(at: folder.appendingPathComponent("Disc 2/03.wav"))
+
+        XCTAssertNil(try severalClipIndex().validationFailure(for: .audio, audioBaseURL: folder))
+    }
+
+    /// A clip's file is looked up as a chapter's is: a link leading out of
+    /// the folder is rejected, and so is a folder in place of a file.
+    func testClipFilesOnDiskAreChecked() throws {
+        let folder = try audioFolder()
+        let outside = try scratchFolder("ContentIndexOutsideClip").appendingPathComponent("elsewhere.wav")
+        XCTAssertTrue(FileManager.default.createFile(atPath: outside.path, contents: Data()))
+        var namingAFolder = try severalClipIndex()
+        namingAFolder.chapters[1].audio?.clips?[1].relativeFilePath = "Disc 2"
+
+        XCTAssertEqual(
+            namingAFolder.validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.clips[1].relativeFilePath \"Disc 2\" is not a regular file"
+        )
+
+        try replaceWithLink("Disc 2/03.wav", in: folder, to: outside)
+        XCTAssertEqual(
+            try severalClipIndex().validationFailure(for: .audio, audioBaseURL: folder),
+            "chapters[1].audio.clips[1].relativeFilePath \"Disc 2/03.wav\" resolves outside the audio folder"
+        )
     }
 
     /// Without a folder nothing is looked up on disk: a track linked to a
@@ -918,6 +1093,73 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// A saved index whose chapter plays several clips keeps the fast path:
+    /// opening the book restores every clip, exactly as parsing gave them.
+    func testSoundSeveralClipIndexIsReused() throws {
+        let book = try makeSegmentedAudioBook(sections: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 0.5),
+            try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+                AudioClip(file: "a.wav", startTime: 0.5, endTime: 1),
+                AudioClip(file: "b.wav", startTime: 0, endTime: 1),
+                AudioClip(file: "Disc 2/c.wav", startTime: 0, endTime: 0)
+            ]))
+        ])
+        let saved = try savedIndex(of: book)
+        XCTAssertEqual(saved.chapters[1].audio?.clips?.map(\.duration), [0.5, 1, 1])
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(result.index, saved)
+        XCTAssertEqual(result.audioSegments?.map { $0.clips.map(\.file) }, [["a.wav"], ["a.wav", "b.wav", "Disc 2/c.wav"]])
+        XCTAssertEqual(result.audioSegments?[1].clips.last?.endTime, 1)
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
+    /// A clip that lost its file in bookInfo.json sets the index aside: the
+    /// folder is analyzed again, the reason names the clip, and the repaired
+    /// index is reused from then on.
+    func testIndexWithAClipMissingItsFileIsRebuiltAndReplaced() throws {
+        let book = try makeSegmentedAudioBook(sections: [try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+            AudioClip(file: "a.wav", startTime: 0, endTime: 1),
+            AudioClip(file: "b.wav", startTime: 0, endTime: 1)
+        ]))])
+        var damaged = try savedIndex(of: book)
+        damaged.chapters[0].audio?.clips?[1].relativeFilePath = nil
+        try book.saveBookInfoThrowing(contentIndex: damaged)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertFalse(result.usedPersistedIndex)
+        assertAligned(result, for: book)
+        XCTAssertEqual(result.audioSegments?.first?.clips.map(\.file), ["a.wav", "b.wav"])
+        XCTAssertEqual(
+            rejections(of: book),
+            ["CONTENT_INDEX_REJECTED: \(book.title): chapters[0].audio.clips[1].relativeFilePath is missing"]
+        )
+        try assertRepairIsReused(result, for: book)
+    }
+
+    /// A book whose sections each play one clip saves its index exactly as
+    /// before, without clip lists, and opens through the fast path.
+    func testOneClipSegmentedIndexKeepsTheFastPath() throws {
+        let book = try makeSegmentedAudioBook(sections: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 0.5),
+            AudioSegment(title: "Survey", file: "b.wav", startTime: 0, endTime: 0)
+        ])
+        let savedText = try String(
+            contentsOf: TextMouthPaths.bookInfoPath(in: book.tmbDirectory),
+            encoding: .utf8
+        )
+        XCTAssertFalse(savedText.contains("\"clips\""), savedText)
+
+        let result = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(result.usedPersistedIndex)
+        XCTAssertEqual(result.audioSegments?.map(\.clips.count), [1, 1])
+        XCTAssertTrue(rejections(of: book).isEmpty)
+    }
+
     /// An absurd chapter length is rejected before the placeholder text is
     /// allocated; without validation this load would request a terabyte.
     func testOversizedAudioIndexIsRebuiltWithoutAllocating() throws {
@@ -1085,6 +1327,28 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// A converted DAISY book whose second heading plays three clips: an
+    /// opening of 5 seconds of book.wav, then 7.5 seconds of book.wav, 4 of
+    /// Disc 2/03.wav, and 2 more of book.wav, later in the file (13.5 in
+    /// all). The files are those of `audioFolder()`.
+    private func severalClipIndex() throws -> BookContentIndex {
+        BookContentIndex.build(
+            fromChapters: [
+                Chapter(title: "Opening", text: placeholder(50), headings: [Heading(level: 1, text: "Opening")]),
+                Chapter(title: "Middle", text: placeholder(135), headings: [Heading(level: 1, text: "Middle", chapterIndex: 1)]),
+            ],
+            format: .audio,
+            audioSegments: [
+                AudioSegment(title: "Opening", file: "book.wav", startTime: 0, endTime: 5),
+                try XCTUnwrap(AudioSegment(title: "Middle", clips: [
+                    AudioClip(file: "book.wav", startTime: 5, endTime: 12.5),
+                    AudioClip(file: "Disc 2/03.wav", startTime: 0, endTime: 4),
+                    AudioClip(file: "book.wav", startTime: 20, endTime: 22),
+                ])),
+            ]
+        )
+    }
+
     /// Placeholder text of `length` spaces, as the audio parser writes.
     private func placeholder(_ length: Int) -> String {
         String(repeating: " ", count: length)
@@ -1173,6 +1437,27 @@ final class ContentIndexValidationTests: XCTestCase {
         for track in tracks {
             try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(track))
         }
+        let book = Book(
+            title: "Index Fixture \(UUID().uuidString)", format: .audio, filePath: folder.path,
+            md5Hash: UUID().uuidString, tmbDirectoryName: package.name
+        )
+        let analysis = try BookContentAnalysisService.load(book: book)
+        XCTAssertFalse(analysis.usedPersistedIndex)
+        try LibraryPersistenceService.saveContentAnalysis(for: book, index: analysis.index, cacheFormatVersion: nil)
+        return book
+    }
+
+    /// A segmented audiobook as a DAISY audio import leaves it: one-second
+    /// silent WAVs for every file the sections' clips name, a manifest.json
+    /// of `sections`, and the index of its first analysis saved.
+    private func makeSegmentedAudioBook(sections: [AudioSegment]) throws -> Book {
+        let package = try makePackage("ContentIndexSegmented")
+        let folder = package.url.appendingPathComponent("audio", isDirectory: true)
+        for file in Set(sections.flatMap(\.clips).map(\.file)) {
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent(file))
+        }
+        try JSONEncoder().encode(AudioManifest(segments: sections))
+            .write(to: folder.appendingPathComponent("manifest.json"))
         let book = Book(
             title: "Index Fixture \(UUID().uuidString)", format: .audio, filePath: folder.path,
             md5Hash: UUID().uuidString, tmbDirectoryName: package.name

@@ -159,6 +159,10 @@ struct BookContentIndex: Codable, Hashable {
             let audio: BookContentAudioChapterIndex? = {
                 guard isAudio else { return nil }
                 let segment = audioSegments.flatMap { chapterIndex < $0.count ? $0[chapterIndex] : nil }
+                // A section of several clips records every clip.
+                if let segment, segment.clips.count > 1 {
+                    return BookContentAudioChapterIndex(severalClipsOf: segment)
+                }
                 let path = audioFilePaths.flatMap { chapterIndex < $0.count ? $0[chapterIndex] : nil }
                 let relativePath: String?
                 if let segment {
@@ -250,9 +254,10 @@ struct BookContentIndex: Codable, Hashable {
 
     /// One absolute audio file path per chapter, resolved against `bookURL`,
     /// for layouts whose chapters name their own files; nil for a single-file
-    /// book. All or nothing: if any chapter names no file the result is nil,
-    /// because a shorter list would shift every later chapter onto the file
-    /// of the chapter before it.
+    /// book. A chapter of several clips gives the file it starts in, its
+    /// first clip's, as the parser lists it. All or nothing: if any chapter
+    /// names no file the result is nil, because a shorter list would shift
+    /// every later chapter onto the file of the chapter before it.
     func resolvedAudioFilePaths(relativeTo bookURL: URL) -> [String]? {
         guard audioLayout?.namesChapterFiles == true else { return nil }
         let relativePaths = chapters.compactMap(\.audioFilePath)
@@ -260,19 +265,35 @@ struct BookContentIndex: Codable, Hashable {
         return relativePaths.map { bookURL.appendingPathComponent($0).path }
     }
 
-    /// The segments a segmented book plays, one per chapter, or nil for any
-    /// other layout or when a chapter lacks its timing or file (again all or
-    /// nothing, so segments never shift onto the wrong chapter).
+    /// The segments a segmented book plays, one per chapter with every clip
+    /// it plays, or nil for any other layout or when a chapter or any of its
+    /// clips lacks its timing or file (again all or nothing, so segments
+    /// never shift onto the wrong chapter). Each clip ends at its start plus
+    /// its length.
     func restoredAudioSegments() -> [AudioSegment]? {
         guard audioLayout == .segmented else { return nil }
         let restored = chapters.compactMap { chapter -> AudioSegment? in
             guard let audio = chapter.audio, let file = chapter.audioFilePath else { return nil }
-            return AudioSegment(
-                title: chapter.title,
-                file: file,
-                startTime: audio.startTime,
-                endTime: audio.startTime + audio.duration
-            )
+            // A chapter without a clip list plays one clip, which its own
+            // fields describe, as every chapter did before chapters could
+            // play several.
+            guard let clips = audio.clips else {
+                return AudioSegment(
+                    title: chapter.title,
+                    file: file,
+                    startTime: audio.startTime,
+                    endTime: audio.startTime + audio.duration
+                )
+            }
+            let restoredClips = clips.compactMap { clip in
+                clip.audioFilePath.map {
+                    AudioClip(file: $0, startTime: clip.startTime, endTime: clip.startTime + clip.duration)
+                }
+            }
+            // A clip without its file loses the whole chapter, not just
+            // that clip; an empty list restores no section either.
+            guard restoredClips.count == clips.count else { return nil }
+            return AudioSegment(title: chapter.title, clips: restoredClips)
         }
         return restored.count == chapters.count ? restored : nil
     }
@@ -555,10 +576,10 @@ extension BookContentIndex {
         return nil
     }
 
-    /// The audio layout, each chapter's placeholder length, timing, and (for
-    /// layouts that name a file per chapter) file, and the duration total.
-    /// `audioBaseURL` is the folder those files must stay inside, as for
-    /// `validationFailure(for:audioBaseURL:)`.
+    /// The audio layout, each chapter's placeholder length, timing, (for
+    /// layouts that name a file per chapter) file, and clips, and the
+    /// duration total. `audioBaseURL` is the folder those files must stay
+    /// inside, as for `validationFailure(for:audioBaseURL:)`.
     private func audioFailure(audioBaseURL: URL?) -> String? {
         guard let audioLayout else { return "audioLayout is missing" }
         var files = audioLayout.namesChapterFiles ? AudioFileCheck(folder: audioBaseURL) : nil
@@ -580,6 +601,10 @@ extension BookContentIndex {
             if let failure = files?.failure(for: chapter.audioFilePath, field: "\(field).audio.relativeFilePath") {
                 return failure
             }
+            if let clips = audio.clips,
+               let failure = clipFailure(clips, of: audio, layout: audioLayout, field: "\(field).audio", files: &files) {
+                return failure
+            }
             duration += audio.duration
         }
         guard let totalAudioDuration else {
@@ -588,6 +613,60 @@ extension BookContentIndex {
         // A NaN total fails `isFinite`; comparing it would always pass.
         if !totalAudioDuration.isFinite || abs(totalAudioDuration - duration) > Self.audioDurationTolerance {
             return "totalAudioDuration is \(totalAudioDuration), expected \(duration)"
+        }
+        return nil
+    }
+
+    /// Why `clips`, the clips a chapter whose audio is `audio` plays one
+    /// after another, cannot be trusted, or nil when they can. `field` names
+    /// the chapter's audio in reasons, and `files` checks each clip's file
+    /// exactly as the chapter's own file is checked.
+    ///
+    /// Only a segmented book's chapters play clips, and a list names at
+    /// least one. Every clip has a finite start, 0 or more, and a finite
+    /// length of more than 0: a clip is restored as ending at its start plus
+    /// its length, and a clip ending at 0 would play its whole file. The
+    /// chapter's own fields describe the whole chapter, as they did before
+    /// chapters played several clips: the file and start of its first clip,
+    /// and a length equal to its clips' together.
+    private func clipFailure(
+        _ clips: [BookContentAudioClipIndex],
+        of audio: BookContentAudioChapterIndex,
+        layout: AudioLayout,
+        field: String,
+        files: inout AudioFileCheck?
+    ) -> String? {
+        guard layout == .segmented else {
+            return "\(field).clips is present in a \(layout.rawValue) index"
+        }
+        guard let first = clips.first else {
+            return "\(field).clips is empty"
+        }
+        var duration: TimeInterval = 0
+        for (number, clip) in clips.enumerated() {
+            let clipField = "\(field).clips[\(number)]"
+            if let failure = Self.timeFailure(clip.startTime, field: "\(clipField).startTime")
+                ?? Self.timeFailure(clip.duration, field: "\(clipField).duration") {
+                return failure
+            }
+            if clip.duration == 0 {
+                return "\(clipField).duration is 0.0, but every clip a chapter plays lasts some time"
+            }
+            if let failure = files?.failure(for: clip.audioFilePath, field: "\(clipField).relativeFilePath") {
+                return failure
+            }
+            duration += clip.duration
+        }
+        // Both paths were checked above, so neither is missing here.
+        if audio.relativeFilePath != first.relativeFilePath {
+            return "\(field).relativeFilePath is \(String(reflecting: audio.relativeFilePath ?? "")), "
+                + "but its first clip's is \(String(reflecting: first.relativeFilePath ?? ""))"
+        }
+        if audio.startTime != first.startTime {
+            return "\(field).startTime is \(audio.startTime), but its first clip's is \(first.startTime)"
+        }
+        if abs(audio.duration - duration) > Self.audioDurationTolerance {
+            return "\(field).duration is \(audio.duration), expected \(duration), its clips' together"
         }
         return nil
     }
@@ -718,8 +797,63 @@ struct BookContentHeadingIndex: Codable, Hashable {
     var globalCharacterOffset: Int
 }
 
+/// Where an audio chapter's sound comes from. For a chapter that plays
+/// several clips (a DAISY heading whose narration continues into other
+/// files), `clips` lists them all and the other fields describe the whole
+/// chapter: where it starts and how long it lasts.
 struct BookContentAudioChapterIndex: Codable, Hashable {
+    /// The file the chapter starts in, relative to the book's audio folder:
+    /// its first clip's file. Nil for a single-file book, whose chapters
+    /// play the book's own file.
     var relativeFilePath: String?
+    /// Where the chapter starts in that file, in seconds.
     var startTime: TimeInterval
+    /// How long the chapter plays, in seconds: its clips' lengths together
+    /// for a chapter of several clips.
     var duration: TimeInterval
+    /// Every clip the chapter plays, in order, for a chapter of several
+    /// clips. Nil for a chapter of one clip, which the fields above
+    /// describe, as in every index written before chapters could play
+    /// several; such indexes stay current and need no rebuilding.
+    var clips: [BookContentAudioClipIndex]? = nil
+}
+
+extension BookContentAudioChapterIndex {
+    /// The entry for `segment`, a section of several clips: every clip
+    /// with its length, and the chapter starting where its first clip does
+    /// and lasting as long as its clips together. Each clip must have an
+    /// end, as `AudioBookParser` gives every clip of such a section; one
+    /// without would be recorded as lasting no time.
+    init(severalClipsOf segment: AudioSegment) {
+        let clips = segment.clips.map { clip in
+            BookContentAudioClipIndex(
+                relativeFilePath: clip.file,
+                startTime: clip.startTime,
+                duration: max(0, clip.endTime - clip.startTime)
+            )
+        }
+        self.init(
+            relativeFilePath: segment.file,
+            startTime: segment.startTime,
+            duration: clips.reduce(0) { $0 + $1.duration },
+            clips: clips
+        )
+    }
+}
+
+/// One clip of an audio chapter that plays several: a stretch of one file.
+struct BookContentAudioClipIndex: Codable, Hashable {
+    /// The clip's file, relative to the book's audio folder.
+    var relativeFilePath: String?
+    /// Where the clip starts in its file, in seconds.
+    var startTime: TimeInterval
+    /// How long the clip plays, in seconds.
+    var duration: TimeInterval
+
+    /// The clip's file, or nil when it names none. An empty path names no
+    /// file either, as for a chapter's own path.
+    var audioFilePath: String? {
+        guard let relativeFilePath, !relativeFilePath.isEmpty else { return nil }
+        return relativeFilePath
+    }
 }
