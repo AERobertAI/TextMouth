@@ -97,6 +97,24 @@ final class AudioClipChainTests: XCTestCase {
         XCTAssertNil(AudioClipChain(clips: []))
     }
 
+    /// The time left in the chapter runs from a time in it to the end of its
+    /// last clip, never below nothing. A last clip that plays to its file's
+    /// end is measured by that file's length, and without it the time left
+    /// is not known (TODO P01: a sleep timer's fade before the chapter's
+    /// end).
+    func testTimeLeftRunsToTheEndOfTheLastClip() throws {
+        let chain = try makeChain([("a.wav", 10, 15), ("b.wav", 0, 2.5), ("c.wav", 3, 7)])
+
+        XCTAssertEqual(chain.timeLeft(fromChapterTime: 0, lastClipFileLength: nil), 11.5)
+        XCTAssertEqual(chain.timeLeft(fromChapterTime: 8, lastClipFileLength: nil), 3.5)
+        XCTAssertEqual(chain.timeLeft(fromChapterTime: 20, lastClipFileLength: nil), 0)
+
+        let endless = try makeChain([("a.wav", 0, 2), ("b.wav", 1, nil)])
+        XCTAssertNil(endless.timeLeft(fromChapterTime: 1, lastClipFileLength: nil))
+        XCTAssertEqual(endless.timeLeft(fromChapterTime: 1, lastClipFileLength: 9), 9)
+        XCTAssertEqual(endless.timeLeft(fromChapterTime: 4, lastClipFileLength: 9), 6)
+    }
+
     // MARK: - Playing a Chain
 
     /// A chapter whose clips lie in three files plays each file in turn,

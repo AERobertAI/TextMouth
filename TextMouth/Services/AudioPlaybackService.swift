@@ -337,6 +337,19 @@ struct AudioClipChain: Equatable, Sendable {
         }
         return startTimes[clipIndex] + elapsed
     }
+
+    /// How long the chapter plays on from `chapterTime` seconds into it to
+    /// the end of its last clip, or nil when that end is not known: the last
+    /// clip plays to the end of its file, and `lastClipFileLength`, that
+    /// file's length in seconds, is not given. Never less than nothing.
+    func timeLeft(fromChapterTime chapterTime: TimeInterval, lastClipFileLength: TimeInterval?) -> TimeInterval? {
+        // A chain holds at least one clip, and only its last may lack an end.
+        let lastIndex = clips.count - 1
+        let lastClip = clips[lastIndex]
+        guard let lastClipEnd = lastClip.end ?? lastClipFileLength else { return nil }
+        let chapterLength = startTimes[lastIndex] + max(0, lastClipEnd - lastClip.start)
+        return max(0, chapterLength - chapterTime)
+    }
 }
 
 // MARK: - Audio Speed Rules
@@ -1240,9 +1253,31 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// Intended volume and the current player's applied volume. These internal
-    /// read-only values let hosted tests verify chapter-load fade persistence.
+    /// read-only values let hosted tests verify chapter-load fade persistence,
+    /// and the reader tell a sleep-timer fade that no longer applies, whose
+    /// volume it puts back.
     var intendedVolume: Float { currentVolume }
     var outputVolume: Float { player?.volume ?? currentVolume }
+
+    /// Seconds of audio left, at normal speed, before what the service plays
+    /// now runs to its end and `onPlaybackFinished` is called: the rest of
+    /// the clip chain, of the clip it stops at, or of the loaded file. Nil
+    /// with nothing loaded, and while that end is not known yet: a file's
+    /// length is learned a moment after it loads, and a chain's last clip
+    /// that plays to the end of its file is measured only while that file is
+    /// the one loaded. The reader fades the audio out over the last of it
+    /// when its sleep timer stops playback there (TODO P01).
+    var timeLeftToPlay: TimeInterval? {
+        guard player != nil else { return nil }
+        let loadedFileLength = duration > 0 ? duration : nil
+        if let chained {
+            let lastClip = chained.chain.clips[chained.chain.clips.count - 1]
+            let lastClipFileLength = lastClip.url.standardizedFileURL == loadedURL ? loadedFileLength : nil
+            return chained.chain.timeLeft(fromChapterTime: currentTime, lastClipFileLength: lastClipFileLength)
+        }
+        guard let end = clipEndTime ?? loadedFileLength else { return nil }
+        return max(0, end - currentTime)
+    }
 
     /// The item being played, or nil when no player exists. Hosted tests
     /// read its status and post the notifications AVFoundation posts for it.

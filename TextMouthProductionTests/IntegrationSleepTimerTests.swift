@@ -215,6 +215,113 @@ final class IntegrationSleepTimerTests: XCTestCase {
         }
     }
 
+    // MARK: - Fading Out Before the Stop (TODO P01)
+
+    /// With a fade-out time set, an audiobook stays at full volume until
+    /// that much of the chapter is left where an End of chapter timer stops
+    /// it, then fades evenly with the time left, so the stop at the chapter's
+    /// end comes in silence. The volume is back to full for the next chapter.
+    func testEndOfChapterTimerFadesAnAudiobookOutOverTheLastSecondsOfTheChapter() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Chapter Fade")
+        let fadeSeconds: TimeInterval = 1
+        world.settings.sleepFadeOutDuration = fadeSeconds
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        let samples = try recordVolumes(of: reader)
+        defer { reader.stop() }
+
+        let recorder = recordingAnnouncements {
+            reader.startSleepTimer(duration: .endOfChapter)
+            reader.play()
+            XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "The first chapter never ended")
+        }
+
+        let beforeTheFade = samples().filter { $0.secondsLeft > fadeSeconds + 0.05 }
+        let duringTheFade = samples().filter { $0.secondsLeft < fadeSeconds }
+        XCTAssertFalse(beforeTheFade.isEmpty, "No position was reported before the fade")
+        XCTAssertTrue(beforeTheFade.allSatisfy { $0.volume == 1 }, "The audio faded too soon: \(beforeTheFade)")
+        XCTAssertGreaterThanOrEqual(duringTheFade.count, 2, "Too few positions were reported during the fade: \(samples())")
+        for sample in duringTheFade {
+            XCTAssertEqual(sample.volume, Float(sample.secondsLeft / fadeSeconds), accuracy: 0.001, "\(sample)")
+        }
+        XCTAssertLessThan(duringTheFade.map(\.volume).min() ?? 1, 0.5, "The audio never faded below half volume")
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Sleep timer expired at the end of the chapter. Playback paused."]
+        )
+        XCTAssertFalse(timer.isActive)
+        XCTAssertFalse(service.isPlaying, "The next chapter played")
+        XCTAssertEqual(service.intendedVolume, 1, "The volume was not put back for the next chapter")
+    }
+
+    /// Cancelling an End of chapter timer while it fades an audiobook out
+    /// puts the volume back to full at once, and the next chapter plays on.
+    func testCancellingTheTimerDuringItsFadeRestoresTheVolumeAndPlaysOn() throws {
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Chapter Fade Cancel")
+        world.settings.sleepFadeOutDuration = 2
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2.5, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        defer { reader.stop() }
+
+        reader.startSleepTimer(duration: .endOfChapter)
+        reader.play()
+        XCTAssertTrue(eventually(within: 10) { service.intendedVolume < 1 }, "The audio never began to fade")
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+
+        reader.cancelSleepTimer()
+
+        XCTAssertEqual(service.intendedVolume, 1, "Cancelling the timer left the audio faded")
+        XCTAssertEqual(service.outputVolume, 1)
+        XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "The first chapter never ended")
+        XCTAssertTrue(service.isPlaying, "The next chapter did not play on")
+        XCTAssertEqual(service.intendedVolume, 1)
+    }
+
+    /// Pausing while an End of chapter timer fades the audio out keeps the
+    /// timer, which waits for a place rather than counting time: playing
+    /// again goes on fading from where the fade was, and stops at the
+    /// chapter's end.
+    func testPausingDuringTheFadeKeepsTheTimerAndPlayingAgainStopsAtTheEnd() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Chapter Fade Pause")
+        world.settings.sleepFadeOutDuration = 2
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2.5, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        defer { reader.stop() }
+
+        let recorder = recordingAnnouncements {
+            reader.startSleepTimer(duration: .endOfChapter)
+            reader.play()
+            XCTAssertTrue(eventually(within: 10) { service.intendedVolume < 1 }, "The audio never began to fade")
+            reader.pause()
+            let volumeWhenPaused = service.intendedVolume
+            XCTAssertTrue(timer.isActive, "Pausing during the fade ended the timer")
+            XCTAssertLessThan(volumeWhenPaused, 1, "Pausing put the volume back")
+
+            reader.togglePlayPause()
+            XCTAssertEqual(service.intendedVolume, volumeWhenPaused, accuracy: 0.001, "Playing again did not go on fading")
+            XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "The first chapter never ended")
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Sleep timer expired at the end of the chapter. Playback paused."]
+        )
+        XCTAssertFalse(timer.isActive)
+        XCTAssertFalse(service.isPlaying, "The next chapter played")
+        XCTAssertEqual(service.intendedVolume, 1)
+    }
+
     // MARK: - Stopping Where the Book Ends (TODO P01)
 
     /// A timer set for the end of the book lets an audiobook play on from
@@ -433,6 +540,31 @@ final class IntegrationSleepTimerTests: XCTestCase {
         )
         XCTAssertEqual(saved.chapterIndex, chapter, "The saved chapter", file: file, line: line)
         XCTAssertEqual(saved.characterOffset, offset, "The saved offset", file: file, line: line)
+    }
+
+    /// What an audiobook's reader left its audio service playing at one
+    /// reported position.
+    private struct VolumeSample {
+        /// Seconds of listening left before what the service plays ends.
+        let secondsLeft: TimeInterval
+        /// The volume it plays at.
+        let volume: Float
+    }
+
+    /// Record, from now on, the time left and the volume each time `reader`'s
+    /// audio service reports a position, once the reader has handled it.
+    ///
+    /// - Returns: A function reading the samples so far, oldest first.
+    private func recordVolumes(of reader: ReaderViewModel) throws -> () -> [VolumeSample] {
+        let service = reader.audioPlaybackService
+        let readerHandles = try XCTUnwrap(service.onPositionUpdate, "The reader takes no position reports")
+        var samples: [VolumeSample] = []
+        service.onPositionUpdate = { [weak service] time in
+            readerHandles(time)
+            guard let service, let left = service.timeLeftToPlay, service.playbackSpeed > 0 else { return }
+            samples.append(VolumeSample(secondsLeft: left / service.playbackSpeed, volume: service.intendedVolume))
+        }
+        return { samples }
     }
 
     /// Record every `.continueToNextBook` posted in `world` from now on.

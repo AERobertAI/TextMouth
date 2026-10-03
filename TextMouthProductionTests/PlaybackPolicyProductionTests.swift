@@ -304,6 +304,32 @@ final class PlaybackPolicyProductionTests: XCTestCase {
         XCTAssertEqual(SleepTimerService.fadeStepCount(duration: 10), 100)
     }
 
+    /// Audio fading toward a sleep timer's stop at a chapter's end (TODO
+    /// P01) plays at full volume until the last seconds of the fade-out time,
+    /// then falls evenly to silence at the stop. With no fade-out time, or a
+    /// time left that is not a number, it stays at full volume.
+    func testFadeBeforeTheTimersStopFallsEvenlyOverTheLastSeconds() {
+        let cases: [(secondsLeft: TimeInterval, fadeSeconds: TimeInterval, volume: Float)] = [
+            (30, 5, 1),
+            (5, 5, 1),
+            (2.5, 5, 0.5),
+            (1, 5, 0.2),
+            (0, 5, 0),
+            (-1, 5, 0),
+            (0.5, 0, 1),
+            (.nan, 5, 1),
+            (.infinity, 5, 1),
+        ]
+        for fade in cases {
+            XCTAssertEqual(
+                ReaderViewModel.sleepTimerFadeVolume(secondsLeft: fade.secondsLeft, fadeSeconds: fade.fadeSeconds),
+                fade.volume,
+                accuracy: 0.0001,
+                "\(fade.secondsLeft) seconds left of a \(fade.fadeSeconds)-second fade"
+            )
+        }
+    }
+
     func testBluetoothSettingsDefaultToEnabled() {
         XCTAssertTrue(ConfigService.AppConfig().bluetoothMonitoringEnabled)
     }

@@ -86,6 +86,10 @@ extension ReaderViewModel {
             playAudioChapter()
             return
         }
+        // Resume at the volume the place calls for, should this reader's
+        // sleep timer have been cancelled or replaced during the pause, in
+        // this window or another (TODO P01).
+        fadeOutBeforeSleepTimerStop()
         if audioPlaybackService.resume() {
             isCurrentlyPaused = false
             nowPlayingService.updateNowPlayingInfo(
@@ -550,7 +554,9 @@ extension ReaderViewModel {
     /// to pause or fade. A text book stops its finished speech and lets go
     /// of the next chapter rendered ahead, unplayed. An audiobook lets go of
     /// its player, together with any next chapter's file it may already
-    /// have rolled on into, one named to follow before the timer was set.
+    /// have rolled on into, one named to follow before the timer was set,
+    /// and of its fade toward this end (`fadeOutBeforeSleepTimerStop()`),
+    /// so the next chapter plays at full volume.
     /// Either way the reader shows playback stopped, ends its listening
     /// session, and tells Now Playing, as a pause does.
     ///
@@ -584,6 +590,62 @@ extension ReaderViewModel {
         recordPlaybackStopped()
         savePosition()
         announceToVoiceOver(Self.sleepTimerStoppedAtChapterEndAnnouncement)
+    }
+
+    // MARK: - Fading Out Before the Timer's Stop
+
+    /// Fade an audiobook out over the sleep timer's fade-out time as the
+    /// chapter playing nears the end where this reader's timer stops
+    /// playback, so that the stop comes in silence (TODO P01).
+    ///
+    /// The volume follows the time left in the chapter, at the speed it
+    /// plays (`sleepTimerFadeVolume(secondsLeft:fadeSeconds:)`), so a pause
+    /// holds it where it is, a move back raises it again, and the chapter's
+    /// end, where the timer stops playback, comes at silence. Called as the
+    /// audio's position is reported, as a chapter starts or resumes, and as
+    /// the timer is set or cancelled. Once no such fade applies, because the
+    /// timer was cancelled, replaced, or has ended, or playback moved away
+    /// from the end, the volume returns to full, unless this reader's timer
+    /// is fading the audio out on its own clock, as one counting minutes does
+    /// when it runs out. Speech is not faded: a text book stops at the
+    /// chapter's end as it is.
+    func fadeOutBeforeSleepTimerStop() {
+        guard isAudioBook else { return }
+        if let volume = sleepTimerFadeVolumeBeforeStop {
+            audioPlaybackService.setVolume(volume)
+        } else if audioPlaybackService.intendedVolume < 1, !isOwnSleepTimerFading {
+            audioPlaybackService.restoreVolume()
+        }
+    }
+
+    /// The volume for the audio now, as it fades toward the end of the
+    /// chapter where this reader's sleep timer stops playback; nil when no
+    /// such fade applies: no fade-out time is set, the timer does not stop
+    /// at this chapter's end, the time left is not known yet, or more than
+    /// the fade-out time is left.
+    private var sleepTimerFadeVolumeBeforeStop: Float? {
+        let fadeSeconds = sleepTimerService.fadeOutDuration
+        guard fadeSeconds > 0, let content,
+              sleepTimerService.stopsPlaybackAtChapterEnd(
+                  endingTheBook: currentChapterIndex + 1 >= content.chapters.count,
+                  ownedBy: readerID
+              ),
+              let mediaSecondsLeft = audioPlaybackService.timeLeftToPlay,
+              audioPlaybackService.playbackSpeed > 0 else { return nil }
+        let volume = Self.sleepTimerFadeVolume(
+            secondsLeft: mediaSecondsLeft / audioPlaybackService.playbackSpeed,
+            fadeSeconds: fadeSeconds
+        )
+        return volume < 1 ? volume : nil
+    }
+
+    /// The volume of audio fading out toward a sleep timer's stop with
+    /// `secondsLeft` seconds of listening to go: full until the last
+    /// `fadeSeconds`, then falling evenly to silence at the stop. Full with
+    /// no fade-out time, and for a time left that is not a number.
+    nonisolated static func sleepTimerFadeVolume(secondsLeft: TimeInterval, fadeSeconds: TimeInterval) -> Float {
+        guard fadeSeconds > 0, secondsLeft.isFinite else { return 1 }
+        return Float(min(1, max(0, secondsLeft / fadeSeconds)))
     }
 
     // MARK: - Look-ahead
@@ -1234,6 +1296,9 @@ extension ReaderViewModel {
                     self.currentCharacterOffset = absoluteOffset
                 }
             }
+            // The audio fades out as the chapter nears the end where this
+            // reader's sleep timer stops playback (TODO P01).
+            self.fadeOutBeforeSleepTimerStop()
         }
 
         // Each chapter's audio, once it starts, reports its end for its own
@@ -1280,6 +1345,10 @@ extension ReaderViewModel {
         }
         // Audio that cannot be played claims no Playing state.
         guard startCurrentChapterAudio(in: content) else { return }
+        // The chapter starts at the volume its place calls for: full, or
+        // already fading toward the end where this reader's sleep timer
+        // stops playback (TODO P01).
+        fadeOutBeforeSleepTimerStop()
 
         isCurrentlyPlaying = true
         isCurrentlyPaused = false
@@ -1541,6 +1610,9 @@ extension ReaderViewModel {
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
         let sleepTimerStoppedHere = sleepTimerService.expireAtChapterEnd(endingTheBook: true, by: readerID)
+        // Audio faded out toward this end, where the timer stopped it, plays
+        // at full volume again next time.
+        fadeOutBeforeSleepTimerStop()
         // Determine behavior: per-book override or global setting
         var behavior = effectiveEndOfBookBehavior
         // Looping restarts speech at the first chapter with anything to say.
@@ -1801,8 +1873,11 @@ extension ReaderViewModel {
         )
         // A timer for the end of the chapter stops playback at this
         // chapter's end, where no file may follow on; any other timer lets
-        // the next chapter's file follow (TODO PERF09).
+        // the next chapter's file follow (TODO PERF09). Audio already near
+        // that end fades from now on, and a fade toward an end the new timer
+        // does not stop at is undone (TODO P01).
         nameFileAfterCurrentChapter()
+        fadeOutBeforeSleepTimerStop()
         if startPlaybackIfNeeded {
             startSleepTimerPlaybackIfNeeded()
         }
@@ -1814,8 +1889,10 @@ extension ReaderViewModel {
     func cancelSleepTimer() {
         sleepTimerService.stop()
         // Playback no longer has to stop at this chapter's end for a timer,
-        // so the next chapter's file may follow on again (TODO PERF09).
+        // so the next chapter's file may follow on again (TODO PERF09), and
+        // audio fading toward that end returns to full volume (TODO P01).
         nameFileAfterCurrentChapter()
+        fadeOutBeforeSleepTimerStop()
     }
 
     /// Restart the running timer with its original duration using the
