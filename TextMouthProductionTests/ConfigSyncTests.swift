@@ -566,6 +566,31 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(debugLogLines(containing: "config.json soundEffectAssignments.Pause: could not be read").isEmpty)
     }
 
+    // MARK: - Text substitutions
+
+    /// The substitution switch applied from config.json reaches a
+    /// substitution service following the same store at once and is saved
+    /// back; a file without the switch, or with something other than true
+    /// or false, leaves it alone.
+    func testSubstitutionSwitchReachesItsServiceAndIsSaved() throws {
+        let store = try isolatedDefaults()
+        let substitutions = TextSubstitutionService(rules: [], isEnabled: true, preferences: store)
+        let viewModel = makeIsolatedViewModel(store)
+        var config = ConfigService.AppConfig()
+        config.substitutionsEnabled = false
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertFalse(substitutions.isEnabled)
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(saved.substitutionsEnabled, false)
+
+        viewModel.applyConfigChanges(try decodeConfig("{}"))
+        viewModel.applyConfigChanges(try decodeConfig(#"{"substitutionsEnabled": "on"}"#))
+        XCTAssertFalse(substitutions.isEnabled)
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or

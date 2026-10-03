@@ -45,6 +45,7 @@ extension ConfigService.AppConfig {
             .play: "Glass", .pause: "None", .skipForward: "Funk",
             .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
         ] as [SoundEvent: String]).keyedByRawValue
+        config.substitutionsEnabled = false
         return config
     }
 }

@@ -253,6 +253,9 @@ final class ConfigService: ObservableObject {
         /// Settings shows it; "None" plays nothing. TextMouth writes every
         /// event; an event the file leaves out keeps its sound.
         var soundEffectAssignments: [String: String] = [:]
+        /// Whether the text substitution rules apply. The rules themselves
+        /// are kept in substitutions.json, beside this file.
+        var substitutionsEnabled: Bool?
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -325,6 +328,7 @@ final class ConfigService: ObservableObject {
                 .soundEffectAssignments,
                 rule: SettingsPolicy.soundEffectAssignments
             )
+            substitutionsEnabled = fields.optionalFlag(.substitutionsEnabled)
         }
 
         init() {}

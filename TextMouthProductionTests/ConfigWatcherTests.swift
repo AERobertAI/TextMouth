@@ -630,6 +630,42 @@ final class ConfigWatcherTests: XCTestCase {
         withExtendedLifetime(settings) {}
     }
 
+    /// An edit of the substitution switch, noticed through the watcher's
+    /// handler, is applied once and reaches the substitution service at
+    /// once, published once, which is what open readers re-prepare their
+    /// speech on; turning it back in the Text settings saves the file once.
+    func testSubstitutionSwitchFollowsEditsAndIsSavedFromSettings() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let substitutions = TextSubstitutionService(rules: [], isEnabled: false, preferences: defaults)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = substitutions.objectWillChange.sink { publications += 1 }
+
+        edit.substitutionsEnabled = true
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertTrue(substitutions.isEnabled)
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(counter.writes, 0)
+
+        substitutions.isEnabled = false
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(counter.writes, 1)
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).substitutionsEnabled, false)
+        XCTAssertEqual(recorder.edits.count, 1, "TextMouth's own save is not applied back")
+        withExtendedLifetime(settings) {}
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the
