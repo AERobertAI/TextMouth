@@ -64,7 +64,7 @@ struct VoiceSettingsView: View {
                         .tag(lang)
                 }
             }
-            .onChange(of: settingsViewModel.selectedLanguage) { _ in
+            .onChange(of: settingsViewModel.selectedLanguage) { _, _ in
                 settingsViewModel.refreshVoices()
             }
             .accessibilityLabel("Voice language")

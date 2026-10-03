@@ -489,7 +489,7 @@ struct SubstitutionRuleEditorView: View {
                 TextField("Pattern", text: $rule.pattern)
                     .font(.system(.body, design: .monospaced))
                     .accessibilityLabel("Search pattern")
-                    .onChange(of: rule.pattern) { _ in validatePattern() }
+                    .onChange(of: rule.pattern) { _, _ in validatePattern() }
 
                 TextField("Replacement (empty to skip)", text: $rule.replacement)
                     .font(.system(.body, design: .monospaced))
@@ -506,7 +506,7 @@ struct SubstitutionRuleEditorView: View {
                 Toggle("Regular expression", isOn: $rule.isRegex)
                     .accessibilityLabel("Use regular expression matching")
                     .accessibilityHint("When enabled, use \\b in the pattern for word boundaries")
-                    .onChange(of: rule.isRegex) { _ in validatePattern() }
+                    .onChange(of: rule.isRegex) { _, _ in validatePattern() }
 
                 Toggle("Case sensitive", isOn: $rule.caseSensitive)
                     .accessibilityLabel("Case sensitive matching")
