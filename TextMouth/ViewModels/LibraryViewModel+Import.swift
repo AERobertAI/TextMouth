@@ -4,14 +4,47 @@ import ZIPFoundation
 
 /// Serial background executor for imports. Activity callbacks are delivered on
 /// the main queue, while operations always run off the UI thread.
+///
+/// Each import is storage work (TODO S04): a data-directory move waits for
+/// the import under way to finish, adding its book to the library, and
+/// holds the imports queued after it until the move has published, so they
+/// choose their destinations in the new data directory.
 final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
+    /// Where each import runs as storage work.
+    private let boundary: StorageBoundary
     private let stateLock = NSLock()
     private var activeCount = 0
     /// The cancellation the imports enqueued since the last
     /// `cancelEnqueued()` share (TODO I05).
     private var cancellation = ImportCancellation()
+    /// Backs `stepObserver`; guarded by `stateLock`.
+    private var storedStepObserver: (@Sendable (ImportStep, URL) throws -> Void)?
     var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+
+    /// A queue whose imports run as storage work of `boundary`: the app's,
+    /// unless a test passes its own.
+    init(boundary: StorageBoundary = .shared) {
+        self.boundary = boundary
+    }
+
+    /// Told as each step of a queued single-file or text import begins on
+    /// its staged package (see `ImportStepObserver`), on the import queue;
+    /// nil in the app. Tests set it before enqueueing to hold an import at
+    /// a step of their choosing. ZIP, audio ZIP, DAISY ZIP, and package
+    /// imports do not report their steps.
+    var stepObserver: (@Sendable (ImportStep, URL) throws -> Void)? {
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return storedStepObserver
+        }
+        set {
+            stateLock.lock()
+            storedStepObserver = newValue
+            stateLock.unlock()
+        }
+    }
 
     /// The cancellation an import enqueued now shares with every import
     /// already waiting or running: `cancelEnqueued()` cancels it.
@@ -32,10 +65,16 @@ final class SerialImportQueue: @unchecked Sendable {
         cancelled.cancel()
     }
 
-    func enqueue(_ operation: @escaping @Sendable () -> Void) {
+    /// Queues `operation`, one import, behind those already queued. It runs
+    /// as storage work: while a data-directory move holds such work, it
+    /// tells `whileHeld` and waits for the move to finish.
+    func enqueue(whileHeld: (@Sendable () -> Void)? = nil, _ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
+        let boundary = self.boundary
         queue.async { [weak self] in
-            operation()
+            boundary.perform(.importing, whileHeld: whileHeld) { _ in
+                operation()
+            }
             self?.updateCount(by: -1)
         }
     }
@@ -101,6 +140,22 @@ extension LibraryViewModel {
         }
     }
 
+    /// What the import overlay says while a data-directory move holds an
+    /// import back (TODO S04).
+    nonisolated static let importWaitingForMoveMessage = "Waiting for the data directory move to finish..."
+
+    /// Queues `operation`, one import, on the import queue. While a
+    /// data-directory move holds imports back, the overlay says why this one
+    /// waits, until it starts and says what it imports.
+    private func enqueueImport(_ operation: @escaping @Sendable () -> Void) {
+        importOperationQueue.enqueue(whileHeld: { [weak self] in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.importProgressMessage = Self.importWaitingForMoveMessage
+            }
+        }, operation)
+    }
+
     /// The request for an import queued now from the Library window
     /// `origin`: it joins the batch of every import queued so far, which the
     /// overlay's Cancel stops along with the batch's questions (TODO I05,
@@ -153,7 +208,7 @@ extension LibraryViewModel {
     /// from Library Only retained is taken back where it is, and any other
     /// is copied into the library (`FileImportService.importTMBPackage`).
     func openTMBPackage(from url: URL) {
-        importOperationQueue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
@@ -237,7 +292,9 @@ extension LibraryViewModel {
 
     /// Check if a ZIP file contains audio files (for audio book ZIP import).
     nonisolated static func isAudioZip(url: URL) -> Bool {
-        guard let archive = Archive(url: url, accessMode: .read) else { return false }
+        // Naming the path encoding selects ZIPFoundation's throwing initializer;
+        // an archive that cannot be opened is still nil.
+        guard let archive = try? Archive(url: url, accessMode: .read, pathEncoding: nil) else { return false }
         let audioExtensions = Set(BookFormat.audio.fileExtensions)
         var hasAudio = false
         var hasNonAudio = false
@@ -286,7 +343,7 @@ extension LibraryViewModel {
     func importZipAsync(from url: URL, toFolder folderPath: String, origin: ImportOrigin? = nil) {
         let request = importRequest(from: origin)
         let cancellation = request.batch
-        importOperationQueue.enqueue { [weak self] in
+        enqueueImport { [weak self] in
             guard let self = self else { return }
             // A ZIP import cancelled while it waited never starts, and says
             // nothing: the batch that was running reports the cancel.
@@ -300,7 +357,7 @@ extension LibraryViewModel {
             do {
                 if DAISYParser.isDAISYZip(url: url) {
                     let imported: ImportedBook
-                    if let archive = try? Archive(url: url, accessMode: .read),
+                    if let archive = try? Archive(url: url, accessMode: .read, pathEncoding: nil),
                        DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)) {
                         imported = try FileImportService.importDAISYAudioZipWithReport(from: url, toFolder: folderPath)
                     } else {
@@ -374,13 +431,18 @@ extension LibraryViewModel {
         origin: ImportOrigin? = nil
     ) {
         let request = importRequest(from: origin, opensAfterImport: openAfterImport)
-        importOperationQueue.enqueue { [weak self] in
+        let queue = importOperationQueue
+        enqueueImport { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
             do {
-                let imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                let imported = try FileImportService.importFileWithReport(
+                    from: url,
+                    toFolder: folderPath,
+                    observer: queue.stepObserver
+                )
                 DispatchQueue.main.sync {
                     self.completeSingleImportedBook(imported, originalURL: url, request: request)
                 }
@@ -501,7 +563,8 @@ extension LibraryViewModel {
         let bookTitle = TextImportPolicy.resolvedTitle(title)
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
         let request = importRequest(from: origin)
-        importOperationQueue.enqueue { [weak self] in
+        let queue = importOperationQueue
+        enqueueImport { [weak self] in
             guard let self else { return }
             do {
                 let imported = try FileImportService.importText(
@@ -509,9 +572,12 @@ extension LibraryViewModel {
                     title: bookTitle,
                     author: author,
                     fileName: fileName,
-                    toFolder: folderPath
+                    toFolder: folderPath,
+                    observer: queue.stepObserver
                 )
-                DispatchQueue.main.async {
+                // Synchronously, as every import adds its book: before the
+                // import's storage work ends (TODO S04).
+                DispatchQueue.main.sync {
                     if self.addBookCheckingDuplicate(imported.book, request: request) {
                         self.save()
                     }

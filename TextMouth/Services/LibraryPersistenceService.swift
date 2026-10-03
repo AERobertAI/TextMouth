@@ -216,9 +216,34 @@ enum LibraryPersistenceService {
     /// Writes `library` as library.json and tells the failure center that
     /// the index is saved, which settles any earlier failed write of it.
     /// Must run on saveQueue.
+    ///
+    /// A snapshot taken before a data-directory move published names its
+    /// books under the old root. Their paths are moved under the current
+    /// root first, so the snapshot is written in the current data directory
+    /// and names its books there; the old library.json is never written
+    /// again, nor its folder recreated (TODO S04).
     private static func writeIndexFile(_ library: Library) throws {
+        var library = library
+        let moved = StorageBoundary.shared.rebaseToCurrent(&library)
+        if moved > 0 {
+            logIndexEvent(
+                "\(moved) book path(s) in a snapshot taken before the data directory moved "
+                    + "were moved to its new location before writing"
+            )
+        }
         try encodeAndWrite(library, to: libraryFileURL)
         failureCenter.recordSuccess(.libraryIndex)
+    }
+
+    /// Runs `body` while no library index or package record write is under
+    /// way, so each of those writes happens wholly before it or wholly after
+    /// it. A data-directory move publishes its new location this way
+    /// (TODO S04): no write can resolve its file under the old root and then
+    /// write after the new one is in use. Never call it from either queue.
+    static func betweenWrites(_ body: () -> Void) {
+        saveQueue.sync {
+            bookInfoSaveQueue.sync(execute: body)
+        }
     }
 
     /// Encode `library` the way every index write does and replace `url`
@@ -283,7 +308,13 @@ enum LibraryPersistenceService {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
         return try bookInfoSaveQueue.sync { () throws -> Book? in
-            let pending = pendingBookInfos[analyzed.id]?.book
+            // A book captured before a data-directory move published names
+            // its file under the old root: both copies get their place under
+            // the current one, where this write resolves the package, so a
+            // move alone never makes the analysis look like other content
+            // (TODO S04).
+            let analyzed = StorageBoundary.shared.rebasedToCurrent(analyzed)
+            let pending = pendingBookInfos[analyzed.id].map { StorageBoundary.shared.rebasedToCurrent($0.book) }
             let stored = pending == nil ? analyzed.storedBookInfo() : nil
             // The record was read from the analyzed book's package, so that
             // is where the book it describes lives.

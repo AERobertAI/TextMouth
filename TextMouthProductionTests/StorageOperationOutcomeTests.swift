@@ -39,7 +39,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
 
     /// Change Location while the library index cannot be read returns the
     /// refusal before anything is copied.
-    func testMoveWhileTheIndexIsUnreadableReturnsTheRefusal() throws {
+    func testMoveWhileTheIndexIsUnreadableReturnsTheRefusal() async throws {
         protectDataDirectoryPreferences()
         let sandbox = try captureIndexSandbox()
         try sandbox.stage(.truncated, at: sandbox.indexURL)
@@ -48,7 +48,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
         let destination = try makeNonEmptyDestination()
         let rootBefore = TextMouthPaths.root
 
-        let outcome = model.moveDataDirectoryReturningOutcome(to: destination.directory)
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
 
         XCTAssertEqual(
             outcome,
@@ -66,7 +66,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
     /// config.json keeps naming the directory in use. The plain form, used
     /// for a location edited in config.json, still explains the same
     /// failure, in the same words, through the library's error alert.
-    func testMoveIntoAFolderThatIsNotEmptyReturnsTheReason() throws {
+    func testMoveIntoAFolderThatIsNotEmptyReturnsTheReason() async throws {
         protectDataDirectoryPreferences()
         _ = try captureIndexSandbox()
         let model = LibraryViewModel(initializeServices: false)
@@ -74,7 +74,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
         let destination = try makeNonEmptyDestination()
         let rootBefore = TextMouthPaths.root
 
-        let outcome = model.moveDataDirectoryReturningOutcome(to: destination.directory)
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
 
         let expected = "Failed to move directory: \(DataDirectoryMigrationError.destinationNotEmpty.localizedDescription)"
         XCTAssertEqual(outcome, .failure(expected))
@@ -86,7 +86,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
             ConfigService.AppConfig.currentDataDirectoryPath
         )
 
-        model.moveDataDirectory(to: destination.directory)
+        await model.moveDataDirectory(to: destination.directory).value
 
         XCTAssertTrue(model.showError)
         XCTAssertEqual(model.errorMessage, expected)
@@ -117,15 +117,16 @@ final class StorageOperationOutcomeTests: XCTestCase {
     /// After a move blocked by a folder that is not empty, the status line
     /// shows why as a failure, and Change Location is available again to
     /// try another folder.
-    func testStatusAfterABlockedMoveAllowsARetry() throws {
+    func testStatusAfterABlockedMoveAllowsARetry() async throws {
         protectDataDirectoryPreferences()
         _ = try captureIndexSandbox()
         let model = LibraryViewModel(initializeServices: false)
         let destination = try makeNonEmptyDestination()
         var status: StorageStatus?
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
 
         let recorder = recordingAnnouncements {
-            status = .announced(after: model.moveDataDirectoryReturningOutcome(to: destination.directory))
+            status = .announced(after: outcome)
         }
 
         let expected = "Failed to move directory: \(DataDirectoryMigrationError.destinationNotEmpty.localizedDescription)"
@@ -150,6 +151,46 @@ final class StorageOperationOutcomeTests: XCTestCase {
         XCTAssertTrue(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: false, isRunning: true))
         XCTAssertTrue(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: true, isRunning: false))
         XCTAssertFalse(StorageSettingsView.maintenanceUnavailable(isRecoveringIndex: false, isRunning: false))
+    }
+
+    /// While a move waits for storage work to finish before it copies
+    /// anything, the status line says what it waits for (TODO S04), never
+    /// as a failure, and VoiceOver hears each such status once.
+    func testStatusWhileAMoveWaits() {
+        XCTAssertEqual(
+            StorageStatus.waiting(for: .importing),
+            StorageStatus(message: "Waiting for the current import to finish...", isFailure: false)
+        )
+        XCTAssertEqual(StorageStatus.waiting(for: .textExtraction).message, "Waiting for text extraction to finish...")
+        XCTAssertEqual(StorageStatus.waiting(for: .contentAnalysis).message, "Waiting for book analysis to finish...")
+
+        let recorder = recordingAnnouncements {
+            _ = StorageStatus.waiting(for: .importing).announced()
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Waiting for the current import to finish..."])
+    }
+
+    /// A move asked for while another is under way is refused before
+    /// anything is copied, saying so, and the data directory stays where
+    /// it is.
+    func testASecondMoveIsRefusedWhileOneIsUnderWay() async throws {
+        protectDataDirectoryPreferences()
+        _ = try captureIndexSandbox()
+        let model = LibraryViewModel(initializeServices: false)
+        let destination = try makeNonEmptyDestination()
+        let rootBefore = TextMouthPaths.root
+        let otherMove = try XCTUnwrap(StorageBoundary.shared.holdWork(), "another move held the storage work")
+        defer { otherMove.release() }
+
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
+
+        XCTAssertEqual(
+            outcome,
+            .failure("Failed to move directory: TextMouth is already moving its data directory. Try again once that move is done.")
+        )
+        XCTAssertEqual(TextMouthPaths.root, rootBefore)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.directory.path), ["keep.txt"])
     }
 
     /// A success shows its own "Done" sentence, which is never shown as a

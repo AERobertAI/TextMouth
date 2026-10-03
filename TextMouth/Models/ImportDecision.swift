@@ -98,10 +98,36 @@ struct ImportDecision: Identifiable {
     /// Tells this question from every other, so an answer meant for it is
     /// never applied to the question asked after it.
     let id = UUID()
-    /// What the question is about.
-    let kind: Kind
+    /// What the question is about. Only `mappingBooks(_:)` changes it.
+    private(set) var kind: Kind
     /// What its import was asked to do.
     let request: ImportRequest
+
+    /// This question, the same one, with every book it holds passed through
+    /// `transform`: a duplicate's new copy and the library's copy it
+    /// matched, or a ZIP archive's books. A data-directory move gives them
+    /// their file paths in the new data directory this way (TODO S04).
+    func mappingBooks(_ transform: (Book) -> Book) -> ImportDecision {
+        var mapped = self
+        switch kind {
+        case .duplicate(let duplicate):
+            mapped.kind = .duplicate(DuplicateBook(
+                book: transform(duplicate.book),
+                existing: transform(duplicate.existing),
+                originalURL: duplicate.originalURL,
+                warning: duplicate.warning
+            ))
+        case .originalFile:
+            break
+        case .zipFolder(let batch):
+            mapped.kind = .zipFolder(ZipBatch(
+                archiveURL: batch.archiveURL,
+                books: batch.books.map(transform),
+                folderPath: batch.folderPath
+            ))
+        }
+        return mapped
+    }
 
     /// The book the question is about, which opens once the question is
     /// settled with the book in the library, when its import asked for that;

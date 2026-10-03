@@ -102,14 +102,28 @@ enum MarkdownCacheService {
     /// the cache against. The source is fingerprinted before extraction
     /// reads it: one replaced meanwhile then differs from its fingerprint
     /// next time, instead of being recorded as the one this cache came from.
+    /// Every generation is storage work (TODO S04): a data-directory move
+    /// waits for it, so its cache lands where it chose to write it, and one
+    /// started during a move waits until the move has published. A book
+    /// captured before a move is read and cached in the new data directory.
     /// - Returns: nil for a book with no text cache: an audio book, or one
     ///   without a package.
     /// - Throws: why no cache could be written. A cache written earlier is
     ///   left as it was, so a failed rebuild never empties a readable book.
     static func generateReportedCacheContent(for book: Book) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
+        let boundary = StorageBoundary.shared
+        return try boundary.perform(.textExtraction) { _ in
+            try writeCache(for: boundary.rebasedToCurrent(book))
+        }
+    }
 
+    /// The work of `generateReportedCacheContent(for:)` for a book with a
+    /// package, whose paths are in the current data directory: extracts the
+    /// source, writes content.md, and indexes and fingerprints the result.
+    private static func writeCache(for book: Book) throws -> GeneratedCache {
         let cachePath = cacheURL(for: book)
+        extractionObserver?(book)
         let fileURL = URL(fileURLWithPath: book.filePath)
         let sourceFingerprint = FileFingerprint(of: fileURL, hasher: .md5)
 
@@ -199,6 +213,30 @@ enum MarkdownCacheService {
         book.applyContentIndexSummary(generated.content.contentIndex)
         return generated
     }
+
+    // MARK: - Test Seam
+
+    /// Told, with the book, once a cache generation has chosen where its
+    /// content.md goes and before it reads the source, on the thread doing
+    /// the work; nil in the app. Tests set it to hold a rebuild there.
+    static var extractionObserver: (@Sendable (Book) -> Void)? {
+        get {
+            extractionObserverLock.lock()
+            defer { extractionObserverLock.unlock() }
+            return storedExtractionObserver
+        }
+        set {
+            extractionObserverLock.lock()
+            storedExtractionObserver = newValue
+            extractionObserverLock.unlock()
+        }
+    }
+
+    /// Guards `storedExtractionObserver`, which any cache generation reads.
+    private static let extractionObserverLock = NSLock()
+    // Access is confined by extractionObserverLock. `nonisolated(unsafe)`
+    // documents that contract to Swift's global-state checker.
+    nonisolated(unsafe) private static var storedExtractionObserver: (@Sendable (Book) -> Void)?
 
     // MARK: - Generation Diagnostics
 
