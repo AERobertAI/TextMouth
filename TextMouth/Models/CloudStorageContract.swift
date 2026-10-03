@@ -459,7 +459,13 @@ final class BookCloudStates: ObservableObject {
     func refresh(_ packages: [BookPackage], using storage: any BookCloudStorage) async {
         let eventsBeforeReading = downloadEvents
         let (location, results) = await Task.detached(priority: .utility) {
-            (storage.libraryLocation(), packages.map { ($0.bookID, storage.state(of: $0)) })
+            () -> (StorageLocation, [(UUID, BookCloudState)]) in
+            // Where the library lives is read first, and once (PERF16): a
+            // library outside the cloud holds only local books, so none of
+            // its packages is read.
+            let location = storage.libraryLocation()
+            guard location.isCloud else { return (location, []) }
+            return (location, packages.map { ($0.bookID, storage.state(of: $0)) })
         }.value
         setLibraryLocation(location)
         guard location.isCloud else { return }

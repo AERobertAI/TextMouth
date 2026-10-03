@@ -255,7 +255,7 @@ final class PersistenceCostTests: XCTestCase {
     ///
     /// Before PERF16 each refresh worked out where the library lives once,
     /// and once more for every package: 644 location reads in either
-    /// library.
+    /// library. Now a local library's refresh reads it once and stops.
     @MainActor
     func testCloudRefreshCost() async throws {
         let packages = (0..<643).map { number in
@@ -298,6 +298,7 @@ final class PersistenceCostTests: XCTestCase {
             } else {
                 XCTAssertEqual(states.libraryLocation, .local)
                 XCTAssertEqual(states.states, [:], "a local library recorded cloud states")
+                XCTAssertEqual(readsPerRefresh, [1, 1, 1, 1, 1], "a local library's refresh read more than its location")
             }
         }
     }

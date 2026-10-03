@@ -47,6 +47,40 @@ final class LibraryCloudRefreshTests: XCTestCase {
         )
     }
 
+    // MARK: - What a Refresh Reads
+
+    /// A refresh of a library outside the cloud reads where it lives once
+    /// and no package (PERF16): every book of it is local, which the list
+    /// does not say, so reading the packages would be wasted.
+    func testARefreshOfALocalLibraryReadsNoPackage() async {
+        let storage = CountingBookCloudStorage(FakeBookCloudStorage(location: .local))
+        let states = BookCloudStates()
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch", author: "George Eliot")]
+
+        await states.refresh(books.map(BookPackage.init), using: storage)
+
+        XCTAssertEqual(storage.refreshCount, 1, "the library's location was not read once")
+        XCTAssertEqual(storage.statesRead, [], "a package of a local library was read")
+        XCTAssertEqual(states.libraryLocation, .local)
+        XCTAssertEqual(states.states, [:])
+    }
+
+    /// A refresh of a library in the cloud reads where it lives once, then
+    /// each package once, and records every state.
+    func testARefreshOfACloudLibraryReadsEachPackageOnce() async {
+        let storage = CountingBookCloudStorage(FakeBookCloudStorage(location: .cloud(.dropbox)))
+        let states = BookCloudStates()
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch", author: "George Eliot")]
+        storage.fake.setState(.inCloud, of: books[0].id)
+
+        await states.refresh(books.map(BookPackage.init), using: storage)
+
+        XCTAssertEqual(storage.refreshCount, 1)
+        XCTAssertEqual(storage.statesRead, books.map(\.id))
+        XCTAssertEqual(states.state(of: books[0].id), .inCloud)
+        XCTAssertEqual(states.state(of: books[1].id), .downloaded)
+    }
+
     // MARK: - Events
 
     /// A Library window appearing refreshes the location and every book.

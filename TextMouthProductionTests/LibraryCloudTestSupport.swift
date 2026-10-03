@@ -10,9 +10,10 @@ import XCTest
 // books made for them. Nothing here waits a fixed time.
 
 /// Book storage that passes every call to a `FakeBookCloudStorage`, counts
-/// the refreshes that read it and the calls made on the main thread, and
-/// can hold one refresh's reading until the test lets it go. A refresh
-/// reads `libraryLocation()` exactly once.
+/// the refreshes that read it and the calls made on the main thread, notes
+/// the books whose states were read, and can hold one refresh's reading
+/// until the test lets it go. A refresh reads `libraryLocation()` exactly
+/// once.
 final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// The scripted storage behind this one.
     let fake: FakeBookCloudStorage
@@ -21,6 +22,8 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     private let lock = NSLock()
     /// How many times `libraryLocation()` was read.
     private var locationReads = 0
+    /// The books whose states were read, in the order read.
+    private var stateReads: [UUID] = []
     /// How many calls of any kind were made on the main thread, where
     /// none belongs: each can wait on the network in a real cloud folder.
     private var callsOnMainThread = 0
@@ -46,6 +49,11 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// How many calls were made on the main thread; it should stay 0.
     var mainThreadCalls: Int {
         lock.withLock { callsOnMainThread }
+    }
+
+    /// The books whose states every refresh so far read, in the order read.
+    var statesRead: [UUID] {
+        lock.withLock { stateReads }
     }
 
     /// Counts a call made on the main thread.
@@ -110,9 +118,10 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
         return fake.libraryLocation()
     }
 
-    /// The fake's state.
+    /// Notes the book, then answers with the fake's state.
     func state(of package: BookPackage) -> BookCloudState {
         noteThread()
+        lock.withLock { stateReads.append(package.bookID) }
         return fake.state(of: package)
     }
 
