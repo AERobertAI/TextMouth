@@ -1192,6 +1192,12 @@ enum FileImportService {
     /// every import: the audio is converted into a hidden package and read
     /// as the reader will, and the package is published only once its
     /// bookInfo.json is on disk.
+    ///
+    /// The archive is admitted to a budget (`ArchiveLimits`, TODO I05) before
+    /// any audio is converted, and every file the converter reads is held to
+    /// the size the archive records for it. The converter carries on past an
+    /// audio file it cannot copy, so a file refused for its size is kept on
+    /// the budget and fails the import once conversion ends.
     /// - Parameter observer: told as each step on the staged package begins.
     /// - Throws: an `ImportFailure` naming the archive and the step that
     ///   failed; whatever was staged is removed first.
@@ -1203,7 +1209,9 @@ enum FileImportService {
         try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
             try run.begin(.readingSource)
             let hash = try md5Hash(of: zipURL)
-            let provider = ArchiveFileProvider(archive: try Archive(url: zipURL, accessMode: .read))
+            let archive = try ArchiveExtractor.open(zipURL)
+            let budget = ArchiveBudget()
+            let provider = ArchiveFileProvider(archive: archive, budget: budget)
             let metadata = ImportedFileMetadata.read(from: zipURL, format: .daisy)
             let bookID = UUID()
             let dateAdded = Date()
@@ -1220,6 +1228,7 @@ enum FileImportService {
 
             try run.begin(.convertingAudio, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
+            try budget.admit(ArchiveInspection(of: archive), extractingInto: audioDirectory)
             // DAISY 2.02 books are navigated by ncc.html, DAISY 3 by an OPF.
             let isDAISY202 = provider.listFiles().contains { path in
                 let lowercased = path.lowercased()
@@ -1230,6 +1239,9 @@ enum FileImportService {
                 version: isDAISY202 ? .daisy202 : .daisy3,
                 toDirectory: audioDirectory
             )
+            if let violation = budget.violation {
+                throw violation
+            }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(manifest).write(to: audioDirectory.appendingPathComponent("manifest.json"))
@@ -1259,7 +1271,10 @@ enum FileImportService {
     /// import: the archive is extracted into a hidden package and its audio
     /// read as the reader will, so an archive without one playable track is
     /// never published, and the package is published only once its
-    /// bookInfo.json is on disk.
+    /// bookInfo.json is on disk. The archive is extracted entry by entry
+    /// within a budget (`ArchiveLimits`, TODO I05): one past the limits is
+    /// refused before anything is written, and one whose sizes lie stops at
+    /// its first excess byte.
     /// - Parameter observer: told as each step on the staged package begins.
     /// - Throws: an `ImportFailure` naming the archive and the step that
     ///   failed; whatever was staged is removed first.
@@ -1287,7 +1302,7 @@ enum FileImportService {
 
             try run.begin(.extractingArchive, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            try extractArchive(zipURL, into: audioDirectory)
+            try ArchiveExtractor.extract(archiveAt: zipURL, into: audioDirectory, budget: ArchiveBudget())
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName
@@ -1314,20 +1329,6 @@ enum FileImportService {
                 source: zipURL
             )
             return try publishReadableBook(staged, from: staging, run: &run)
-        }
-    }
-
-    /// Extracts the ZIP archive at `archive` into `directory`. ZIPFoundation's
-    /// own errors have no description a listener could use, so they are
-    /// told in plain words; other errors, such as a missing archive or a
-    /// full disk, already describe themselves.
-    private static func extractArchive(_ archive: URL, into directory: URL) throws {
-        do {
-            try FileManager.default.unzipItem(at: archive, to: directory)
-        } catch Archive.ArchiveError.uncontainedSymlink {
-            throw FileImportError.archiveLinksOutside
-        } catch is Archive.ArchiveError {
-            throw FileImportError.unreadableArchive
         }
     }
 

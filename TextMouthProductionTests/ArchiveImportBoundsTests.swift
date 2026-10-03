@@ -228,7 +228,128 @@ final class ArchiveImportBoundsTests: XCTestCase {
         XCTAssertEqual(leftoverExtractionDirectories(), [])
     }
 
+    // MARK: - Audio Archives
+
+    /// An audio archive past its budget is refused before anything is
+    /// written into its package, the reason stating its total and the limit.
+    func testAudioArchivePastItsBudgetIsRefused() throws {
+        let tracks = [try silence(seconds: 1), try silence(seconds: 1)]
+        let archive = try makeArchive("Lecture Series", [TestZIPEntry("01.wav", tracks[0]), TestZIPEntry("02.wav", tracks[1])])
+        let declared = Int64(tracks[0].count + tracks[1].count)
+        let limits = ArchiveBudgetTests.limits(audio: declared - 1)
+
+        assertImportFails(
+            archive,
+            at: .extractingArchive,
+            because: "The archive expands to \(ArchiveFigures.size(declared)), more than the "
+                + "\(ArchiveFigures.size(declared - 1)) TextMouth extracts from archives holding audio or other archives."
+        ) {
+            _ = try withLimits(limits) { try FileImportService.importAudioZipWithReport(from: archive, toFolder: folderPath) }
+        }
+    }
+
+    /// An audio archive whose recorded size lies is stopped at the first
+    /// excess chunk, naming the track, and nothing is published.
+    func testLyingAudioArchiveIsStoppedNamingTheTrack() throws {
+        let archive = try makeArchive("Lecture Series", [TestZIPEntry("01.wav", try silence(seconds: 1))], compression: .deflate)
+        try setRecordedSize(of: "01.wav", in: archive, to: 10)
+
+        assertImportFails(
+            archive,
+            at: .extractingArchive,
+            because: "The file “01.wav” in this archive is damaged or incomplete: it holds more than the "
+                + "\(ArchiveFigures.size(10)) the archive records for it. Get a fresh copy of the archive, then import it again."
+        ) {
+            _ = try FileImportService.importAudioZipWithReport(from: archive, toFolder: folderPath)
+        }
+    }
+
+    /// A DAISY audio book past its budget is refused before any audio is
+    /// converted, the reason stating its total and the limit.
+    func testDAISYAudioBookPastItsBudgetIsRefused() throws {
+        let book = try makeDAISYAudioBook("Harbor Soundings")
+        let limits = ArchiveBudgetTests.limits(audio: book.declared - 1)
+
+        assertImportFails(
+            book.archive,
+            at: .convertingAudio,
+            because: "The archive expands to \(ArchiveFigures.size(book.declared)), more than the "
+                + "\(ArchiveFigures.size(book.declared - 1)) TextMouth extracts from archives holding audio or other archives."
+        ) {
+            _ = try withLimits(limits) {
+                try FileImportService.importDAISYAudioZipWithReport(from: book.archive, toFolder: folderPath)
+            }
+        }
+    }
+
+    /// A DAISY audio file whose recorded size lies fails the import, named
+    /// in the DAISY damage sentence, although the converter carries on past
+    /// an audio file it cannot copy.
+    func testDAISYAudioFileLyingAboutItsSizeFailsTheImport() throws {
+        let book = try makeDAISYAudioBook("Harbor Soundings", compression: .deflate)
+        try setRecordedSize(of: "part1.wav", in: book.archive, to: 10)
+
+        assertImportFails(
+            book.archive,
+            at: .convertingAudio,
+            because: "The file “part1.wav” in this DAISY book is damaged or incomplete: it holds more than the "
+                + "\(ArchiveFigures.size(10)) the archive records for it. Get a fresh copy of the book, then import it again."
+        ) {
+            _ = try FileImportService.importDAISYAudioZipWithReport(from: book.archive, toFolder: folderPath)
+        }
+    }
+
+    /// A DAISY audio book exactly at its budget still imports.
+    func testDAISYAudioBookWithinItsBudgetImports() throws {
+        let book = try makeDAISYAudioBook("Harbor Soundings", compression: .deflate)
+
+        let imported = try withLimits(ArchiveBudgetTests.limits(audio: book.declared)) {
+            try FileImportService.importDAISYAudioZipWithReport(from: book.archive, toFolder: folderPath)
+        }
+
+        XCTAssertEqual(try folderEntries(), [imported.book.tmbDirectoryName])
+        XCTAssertEqual(try BookInfo.load(from: imported.book.tmbDirectory).contentIndex?.chapters.map(\.title), ["Leadline Readings"])
+    }
+
     // MARK: - Fixtures
+
+    /// The bytes of a silent WAVE file lasting `seconds`.
+    private func silence(seconds: TimeInterval) throws -> Data {
+        let file = sources.appendingPathComponent("\(UUID().uuidString).wav")
+        try AudioTestFixtures.writeSilence(to: file, duration: seconds)
+        return try Data(contentsOf: file)
+    }
+
+    /// A DAISY 2.02 talking book as a ZIP archive named `name`.zip: one
+    /// heading, read from one SMIL file and a second of silence in one WAVE
+    /// file, with the total its entries declare.
+    private func makeDAISYAudioBook(
+        _ name: String,
+        compression: CompressionMethod = .none
+    ) throws -> (archive: URL, declared: Int64) {
+        let navigation = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><head>
+        <meta name="dc:title" content="Harbor Soundings"/>
+        <meta name="dc:creator" content="Folasade Nyberg"/>
+        </head><body>
+        <h1 id="h1"><a href="part1.smil#p1">Leadline Readings</a></h1>
+        </body></html>
+        """
+        let smil = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <smil><body><seq>
+        <par id="p1"><text src="text.html#t1"/><audio src="part1.wav" clip-begin="npt=0.000s" clip-end="npt=1.000s"/></par>
+        </seq></body></smil>
+        """
+        let entries = [
+            TestZIPEntry("ncc.html", Data(navigation.utf8)),
+            TestZIPEntry("part1.smil", Data(smil.utf8)),
+            TestZIPEntry("part1.wav", try silence(seconds: 1))
+        ]
+        let archive = try makeArchive(name, entries, compression: compression)
+        return (archive, Int64(entries.map(\.data.count).reduce(0, +)))
+    }
 
     /// A short note about `subject`, readable as a plain-text book.
     private static func notes(_ subject: String) -> Data {
@@ -244,21 +365,23 @@ final class ArchiveImportBoundsTests: XCTestCase {
         return archive
     }
 
+    /// Runs `body` with `limits` bound, when given.
+    private func withLimits<Value>(_ limits: ArchiveLimits?, _ body: () throws -> Value) rethrows -> Value {
+        guard let limits else { return try body() }
+        return try ArchiveLimits.$current.withValue(limits, operation: body)
+    }
+
     /// Imports the batch `archive` into this test's folder, with `limits`
     /// bound when given.
     private func importBatch(_ archive: URL, limits: ArchiveLimits? = nil) throws -> ZipImportResult {
-        guard let limits else {
-            return try FileImportService.importZip(from: archive, toFolder: folderPath)
-        }
-        return try ArchiveLimits.$current.withValue(limits) {
+        try withLimits(limits) {
             try FileImportService.importZip(from: archive, toFolder: folderPath)
         }
     }
 
-    /// Imports the batch `archive` and asserts that it fails while extracting
-    /// because of `problem`: the failure names the archive and the step, the
-    /// debug log records it once, nothing is left in the folder or extracted,
-    /// and the archive keeps its bytes.
+    /// Imports the batch `archive`, with `limits` bound when given, and
+    /// asserts that it fails while extracting because of `problem` (see
+    /// `assertImportFails`).
     @discardableResult
     private func assertBatchFails(
         _ archive: URL,
@@ -267,22 +390,40 @@ final class ArchiveImportBoundsTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> ImportFailure? {
-        let bytes = try? Data(contentsOf: archive)
-        let reason = "Extracting the archive failed: \(problem)"
-        let logLine = "IMPORT_FAILED: \(archive.lastPathComponent): \(reason)"
+        assertImportFails(archive, at: .extractingArchive, because: problem, file: file, line: line) {
+            _ = try importBatch(archive, limits: limits)
+        }
+    }
+
+    /// Runs `attempt`, an import of `source`, and asserts that it fails at
+    /// `step` because of `problem`: the failure names the source and the
+    /// step, the debug log records it once, nothing is left in the folder or
+    /// extracted, and the source keeps its bytes.
+    @discardableResult
+    private func assertImportFails(
+        _ source: URL,
+        at step: ImportStep,
+        because problem: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        attempt: () throws -> Void
+    ) -> ImportFailure? {
+        let bytes = try? Data(contentsOf: source)
+        let reason = "\(step.activity) failed: \(problem)"
+        let logLine = "IMPORT_FAILED: \(source.lastPathComponent): \(reason)"
         let logged = debugLogLines(containing: logLine).count
         var failure: ImportFailure?
 
-        XCTAssertThrowsError(try importBatch(archive, limits: limits), file: file, line: line) { error in
+        XCTAssertThrowsError(try attempt(), file: file, line: line) { error in
             failure = error as? ImportFailure
         }
 
-        XCTAssertEqual(failure?.fileName, archive.lastPathComponent, file: file, line: line)
-        XCTAssertEqual(failure?.step, .extractingArchive, file: file, line: line)
+        XCTAssertEqual(failure?.fileName, source.lastPathComponent, file: file, line: line)
+        XCTAssertEqual(failure?.step, step, file: file, line: line)
         XCTAssertEqual(failure?.reason, reason, file: file, line: line)
         XCTAssertEqual(debugLogLines(containing: logLine).count, logged + 1, file: file, line: line)
         XCTAssertEqual((try? folderEntries()) ?? [], [], "left in the library", file: file, line: line)
-        XCTAssertEqual(try? Data(contentsOf: archive), bytes, "the source must be untouched", file: file, line: line)
+        XCTAssertEqual(try? Data(contentsOf: source), bytes, "the source must be untouched", file: file, line: line)
         XCTAssertEqual(leftoverExtractionDirectories(), [], "left extracted", file: file, line: line)
         return failure
     }

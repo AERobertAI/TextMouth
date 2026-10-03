@@ -87,9 +87,17 @@ class CachingFileProvider: DAISYFileProvider {
 /// (TODO I05).
 class ArchiveFileProvider: DAISYFileProvider {
     let archive: Archive
+    /// The budget of an import that extracts the book's audio, or nil when
+    /// the book is only read. With one, each file is also held to the size
+    /// the archive records for it, and every file refused is kept on the
+    /// budget: the DAISY audio converter carries on past an audio file it
+    /// cannot copy, so the import learns of the refusal from the budget.
+    let budget: ArchiveBudget?
 
-    init(archive: Archive) {
+    /// A provider of `archive`'s files, read within `budget` when given.
+    init(archive: Archive, budget: ArchiveBudget? = nil) {
         self.archive = archive
+        self.budget = budget
     }
 
     func listFiles() -> [String] {
@@ -104,15 +112,18 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// else the first file whose path matches it without regard to case.
     /// - Throws: `DAISYParserError.missingContent` when no entry matches,
     ///   and `DAISYParserError.malformedXML` naming the file when it holds
-    ///   more than `ArchiveEntryLimits.current` allows.
+    ///   more than `ArchiveEntryLimits.current` allows or, within a budget,
+    ///   more than the archive records for it.
     func readFile(at path: String) throws -> Data {
         guard let entry = archive[path] ?? caseInsensitiveFile(at: path) else {
             throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
         do {
-            return try ArchiveEntryReader.read(entry, in: archive).data
+            return try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: budget != nil).data
         } catch let overflow as ArchiveEntryOverflow {
-            throw DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
+            let damage = DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
+            budget?.record(damage)
+            throw damage
         }
     }
 
