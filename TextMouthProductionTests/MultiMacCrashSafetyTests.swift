@@ -301,6 +301,24 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: theirs), half)
     }
 
+    /// A conflict copy of this Mac's own lease, which a sync service makes
+    /// when this Mac's newer lease meets an older one on its way back
+    /// ("<ID> 2.json", "<ID> (1).json"), is not another Mac: TextMouth never
+    /// warns that it is open on this very Mac, and the copies stay.
+    func testAConflictCopyOfThisMacsOwnLeaseIsNotAnotherMac() throws {
+        let harness = try LeaseHarness(test: self)
+        harness.lease.refresh()
+        let own = harness.sessions.appendingPathComponent("\(harness.lease.macID).json")
+        let copies = try writeConflictCopies(of: own, holding: Data(contentsOf: own))
+
+        harness.lease.refresh()
+
+        XCTAssertEqual(harness.warnings, [], "this Mac was warned about itself")
+        for copy in copies {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: copy.path), copy.lastPathComponent)
+        }
+    }
+
     // MARK: - config.json
 
     /// Conflict copies beside config.json are never read, and a save writes

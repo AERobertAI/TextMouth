@@ -250,8 +250,15 @@ final class LibrarySessionLease {
 
     /// The other Macs active in the library at `root` in the last three
     /// minutes at `now`, removing the leases untouched for 30 days.
+    ///
+    /// A sync service's conflict copy of this Mac's own lease, made when the
+    /// file this Mac writes meets an older version on its way back, keeps
+    /// the lease's name before its suffix ("<ID> 2.json", "<ID> (1).json"),
+    /// so it is told apart by that name: it never counts as another Mac,
+    /// and ages out as any lease does.
     private func otherMacs(in root: URL, at now: Date) -> [OtherMac] {
         let ownName = ownFile(in: root).lastPathComponent
+        let ownID = macID
         return DatalessFiles.withoutDownloading {
             let folder = Self.folder(in: root)
             let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
@@ -262,7 +269,7 @@ final class LibrarySessionLease {
                 let age = now.timeIntervalSince(lease.lastActive)
                 if age > Self.staleAge {
                     try? FileManager.default.removeItem(at: file)
-                } else if age <= Self.activeWindow {
+                } else if age <= Self.activeWindow, !name.hasPrefix(ownID) {
                     active.append(OtherMac(computerName: lease.computerName, minutesAgo: max(0, Int(age / 60))))
                 }
             }
