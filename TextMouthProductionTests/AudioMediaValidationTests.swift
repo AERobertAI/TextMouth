@@ -83,6 +83,28 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(content.chapters.map(\.text.count), [20])
     }
 
+    /// A single file with chapter markers is one section per marker, in the
+    /// markers' order, titled by them, and timed as they are, ten
+    /// placeholder characters per second (TODO Q06 pins this before the
+    /// markers are read through AVFoundation's asynchronous API).
+    func testChapteredSingleFileParsesOneSectionPerMarker() async throws {
+        let file = folder.appendingPathComponent("Harbor Lectures.m4a")
+        try await AudioTestFixtures.writeChapteredAAC(to: file, duration: 3, chapters: [
+            AudioTestFixtures.ChapterMarker(title: "Harbor Approach", start: 0, duration: 1),
+            AudioTestFixtures.ChapterMarker(title: "Breakwater Survey", start: 1, duration: 2)
+        ])
+
+        let markers = await AudioPlaybackService.extractChapters(from: file)
+        XCTAssertEqual(markers.map(\.title), ["Harbor Approach", "Breakwater Survey"])
+        XCTAssertEqual(markers.map(\.startTime), [0, 1])
+        XCTAssertEqual(markers.map(\.duration), [1, 2])
+
+        let content = try await AudioBookParser.parse(url: file)
+        XCTAssertEqual(content.title, "Harbor Lectures")
+        XCTAssertEqual(content.chapters.map(\.title), ["Harbor Approach", "Breakwater Survey"])
+        XCTAssertEqual(content.chapters.map(\.text.count), [10, 20])
+    }
+
     // MARK: - Probing One File
 
     /// A valid file plays exactly as long as its samples last, whether

@@ -87,6 +87,166 @@ enum AudioTestFixtures {
         withExtendedLifetime(sourceAssets) {}
     }
 
+    /// One chapter marker of a chaptered audio file: its title, and when it
+    /// starts and how long it lasts, in seconds.
+    struct ChapterMarker {
+        let title: String
+        let start: TimeInterval
+        let duration: TimeInterval
+    }
+
+    /// Write `duration` seconds of AAC silence to `url` (name it ".m4a" or
+    /// ".m4b") with `chapters` as its chapter markers, stored as audiobooks
+    /// store them: a disabled timed-text track whose samples are the titles,
+    /// which the audio track names as its chapter list. AVFoundation reads
+    /// them back as the file's chapter metadata groups.
+    static func writeChapteredAAC(to url: URL, duration: TimeInterval, chapters: [ChapterMarker]) async throws {
+        let sources = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: sources) }
+
+        // The audio is copied unchanged (passthrough) from a plain AAC file.
+        let source = sources.appendingPathComponent("audio.m4a")
+        try writeAACSilence(to: source, duration: duration)
+        let asset = AVURLAsset(url: source)
+        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        let audioTrack = try XCTUnwrap(audioTracks.first)
+        let audioFormats = try await audioTrack.load(.formatDescriptions)
+        let audioFormat = try XCTUnwrap(audioFormats.first)
+        let reader = try AVAssetReader(asset: asset)
+        let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
+        reader.add(audioOutput)
+
+        try createFolder(for: url)
+        let writer = try AVAssetWriter(outputURL: url, fileType: .m4a)
+        let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: audioFormat)
+        let textFormat = try chapterTextFormat()
+        let chapterInput = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: textFormat)
+        chapterInput.marksOutputTrackAsEnabled = false
+        writer.add(audioInput)
+        writer.add(chapterInput)
+        audioInput.addTrackAssociation(withTrackOf: chapterInput, type: AVAssetTrack.AssociationType.chapterList.rawValue)
+
+        guard reader.startReading() else { throw try XCTUnwrap(reader.error) }
+        guard writer.startWriting() else { throw try XCTUnwrap(writer.error) }
+        writer.startSession(atSourceTime: .zero)
+        for chapter in chapters {
+            try await append(try chapterSample(chapter, format: textFormat), to: chapterInput, of: writer)
+        }
+        chapterInput.markAsFinished()
+        while let sample = audioOutput.copyNextSampleBuffer() {
+            try await append(sample, to: audioInput, of: writer)
+        }
+        audioInput.markAsFinished()
+        await writer.finishWriting()
+        if let error = writer.error {
+            throw error
+        }
+    }
+
+    /// Append `sample` to `input` once it is ready for more, throwing the
+    /// writer's error when it refuses the sample.
+    private static func append(
+        _ sample: CMSampleBuffer,
+        to input: AVAssetWriterInput,
+        of writer: AVAssetWriter
+    ) async throws {
+        while !input.isReadyForMoreMediaData {
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        guard input.append(sample) else { throw try XCTUnwrap(writer.error) }
+    }
+
+    /// The description of a chapter track's samples: 3GPP timed text with
+    /// one font and plain colors, since the titles are read, never shown.
+    /// AVAssetWriter needs every one of these fields; without them it fails
+    /// with "Media format - invalid parameter".
+    private static func chapterTextFormat() throws -> CMFormatDescription {
+        let black: [String: Any] = [
+            kCMTextFormatDescriptionColor_Red as String: 0,
+            kCMTextFormatDescriptionColor_Green as String: 0,
+            kCMTextFormatDescriptionColor_Blue as String: 0,
+            kCMTextFormatDescriptionColor_Alpha as String: 255
+        ]
+        let extensions: [String: Any] = [
+            kCMTextFormatDescriptionExtension_DisplayFlags as String: 0,
+            kCMTextFormatDescriptionExtension_BackgroundColor as String: black,
+            kCMTextFormatDescriptionExtension_DefaultTextBox as String: [
+                kCMTextFormatDescriptionRect_Top as String: 0,
+                kCMTextFormatDescriptionRect_Left as String: 0,
+                kCMTextFormatDescriptionRect_Bottom as String: 0,
+                kCMTextFormatDescriptionRect_Right as String: 0
+            ],
+            kCMTextFormatDescriptionExtension_DefaultStyle as String: [
+                kCMTextFormatDescriptionStyle_StartChar as String: 0,
+                kCMTextFormatDescriptionStyle_EndChar as String: 0,
+                kCMTextFormatDescriptionStyle_Font as String: 1,
+                kCMTextFormatDescriptionStyle_FontFace as String: 0,
+                kCMTextFormatDescriptionStyle_FontSize as String: 12,
+                kCMTextFormatDescriptionStyle_ForegroundColor as String: black
+            ],
+            kCMTextFormatDescriptionExtension_HorizontalJustification as String: 0,
+            kCMTextFormatDescriptionExtension_VerticalJustification as String: 0,
+            kCMTextFormatDescriptionExtension_FontTable as String: ["1": "Helvetica"]
+        ]
+        var format: CMFormatDescription?
+        let status = CMFormatDescriptionCreate(
+            allocator: nil,
+            mediaType: kCMMediaType_Text,
+            mediaSubType: kCMTextFormatType_3GText,
+            extensions: extensions as CFDictionary,
+            formatDescriptionOut: &format
+        )
+        guard status == noErr else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
+        return try XCTUnwrap(format)
+    }
+
+    /// `chapter`'s title as one timed-text sample, shown from the chapter's
+    /// start for its duration: the title's UTF-8 byte count as a big-endian
+    /// 16-bit number, then the bytes.
+    private static func chapterSample(_ chapter: ChapterMarker, format: CMFormatDescription) throws -> CMSampleBuffer {
+        let title = Array(chapter.title.utf8)
+        var bytes = [UInt8(title.count >> 8), UInt8(title.count & 0xFF)] + title
+        var block: CMBlockBuffer?
+        var status = CMBlockBufferCreateWithMemoryBlock(
+            allocator: nil,
+            memoryBlock: nil,
+            blockLength: bytes.count,
+            blockAllocator: nil,
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: bytes.count,
+            flags: kCMBlockBufferAssureMemoryNowFlag,
+            blockBufferOut: &block
+        )
+        guard status == noErr, let block else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
+        status = CMBlockBufferReplaceDataBytes(with: &bytes, blockBuffer: block, offsetIntoDestination: 0, dataLength: bytes.count)
+        guard status == noErr else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
+
+        var timing = CMSampleTimingInfo(
+            duration: CMTime(seconds: chapter.duration, preferredTimescale: 600),
+            presentationTimeStamp: CMTime(seconds: chapter.start, preferredTimescale: 600),
+            decodeTimeStamp: .invalid
+        )
+        var size = bytes.count
+        var sample: CMSampleBuffer?
+        status = CMSampleBufferCreate(
+            allocator: nil,
+            dataBuffer: block,
+            dataReady: true,
+            makeDataReadyCallback: nil,
+            refcon: nil,
+            formatDescription: format,
+            sampleCount: 1,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timing,
+            sampleSizeEntryCount: 1,
+            sampleSizeArray: &size,
+            sampleBufferOut: &sample
+        )
+        guard status == noErr else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
+        return try XCTUnwrap(sample)
+    }
+
     /// Write `duration` seconds of 16-bit mono silence to `url`, stored as
     /// `encoding` describes (`AVAudioFile` settings), or as the samples are
     /// (linear PCM) when it is nil.
