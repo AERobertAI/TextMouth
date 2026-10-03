@@ -428,9 +428,11 @@ extension ReaderViewModel {
     /// Whether the end reported for `play` ends the play under way.
     ///
     /// The end of a play the reader has left is stale: a later play began,
-    /// or the reader moved to another chapter, since the generation then
-    /// moved on; or the reader closed. A stale end is ignored, with one
-    /// trace line, so no chapter is advanced from twice or skipped.
+    /// which advances the generation, as moving a text book to another
+    /// chapter does too (moving an audiobook stops its audio service, which
+    /// then reports no end at all); or the reader closed. A stale end is
+    /// ignored, with one trace line, so no chapter is advanced from twice or
+    /// skipped.
     ///
     /// - Parameters:
     ///   - play: The play whose end was reported.
