@@ -227,6 +227,27 @@ class RegistrationTests(BoardTestCase):
             self.assertIn("No agents active in the last 5 minutes.", self.ok("agents", "--active-within", "5"))
         self.assertEqual(len(self.ok_json("agents")), 2)
 
+    def test_activity_is_shown_by_agents_until_replaced(self) -> None:
+        with self.clock(NOON):
+            self.register("alpha")
+        building_at = NOON + dt.timedelta(minutes=3)
+        with self.clock(building_at):
+            text = self.ok("activity", "alpha", "building", "--note", "xcodebuild  test")
+        self.assertEqual(text, "alpha is building: xcodebuild test.\n")
+        agent = self.ok_json("agents")[0]
+        self.assertEqual((agent["activity"], agent["activity_note"]), ("building", "xcodebuild test"))
+        self.assertEqual(agent["activity_since"], bbs.to_utc_text(building_at))
+        self.assertEqual(agent["last_seen"], bbs.to_utc_text(building_at), "setting an activity shows the agent is alive")
+        self.assertIn(f"alpha: building since {bbs.local_label(agent['activity_since'])} (xcodebuild test)", self.ok("agents"))
+        agent = self.ok_json("activity", "alpha", "idle")
+        self.assertEqual((agent["activity"], agent["activity_note"]), ("idle", ""), "a new activity clears the note")
+
+    def test_activity_accepts_only_known_states_and_agents(self) -> None:
+        self.register("alpha")
+        self.assertIn("invalid choice: 'compiling'", self.fails("activity", "alpha", "compiling"))
+        self.fails("activity", "nobody", "idle")
+        self.fails("activity", "alpha", "testing", "--note", "n" * 201)
+
     def test_json_flag_is_accepted_before_or_after_the_command(self) -> None:
         self.register("alpha")
         before = json.loads(self.ok("--json", "agents"))

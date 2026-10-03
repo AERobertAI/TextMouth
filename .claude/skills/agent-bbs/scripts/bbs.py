@@ -74,6 +74,9 @@ MAX_LINE_LENGTH = 200
 #: Kinds of message; `notice` is the default.
 TAGS = ("build", "commit", "finding", "question", "notice", "merge")
 
+#: What an agent can say it is doing; shown by `agents`.
+ACTIVITIES = ("building", "testing", "committing", "idle", "merging")
+
 #: Largest accepted message body, in bytes of UTF-8 (16 KB).
 MAX_BODY_BYTES = 16 * 1024
 
@@ -919,6 +922,19 @@ def cmd_agents(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
     return Outcome(agents, text)
 
 
+def cmd_activity(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Record what an agent is doing now; a new activity replaces the old note."""
+    note = "" if args.note is None else one_line(args.note, "note", allow_empty=True)
+    with write_transaction(conn):
+        name = require_agent(conn, args.name)
+        conn.execute(
+            "UPDATE agents SET activity = ?, activity_note = ?, activity_since = ? WHERE name = ?",
+            (args.activity, note, to_utc_text(utc_now()), name),
+        )
+        agent = load_agents(conn, name=name)[0]
+    return Outcome(agent, f"{name} is {args.activity}{': ' + note if note else ''}.")
+
+
 # ---------------------------------------------------------------------------
 # Claims
 # ---------------------------------------------------------------------------
@@ -1455,6 +1471,11 @@ def build_parser() -> BoardArgumentParser:
         metavar="MINUTES",
         help="only agents seen in the last MINUTES minutes",
     )
+
+    activity = command("activity", cmd_activity, "say what you are doing now")
+    activity.add_argument("name", help="your agent name")
+    activity.add_argument("activity", choices=ACTIVITIES, help="what you are doing")
+    activity.add_argument("--note", help="one line of detail, such as the command being run")
 
     claim = command("claim", cmd_claim, "claim paths or globs you are editing")
     claim.add_argument("name", help="your agent name")
