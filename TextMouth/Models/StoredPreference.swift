@@ -100,7 +100,11 @@ final class PreferenceObserver: NSObject, @unchecked Sendable {
 
     /// Starts observing `keys` in `store`, calling `handler` with each key
     /// that changes.
+    ///
+    /// Key-value observing reads a dot in a key as a key path, so a key such
+    /// as "sleepTimer.lastUsedDuration" cannot be observed this way.
     init(keys: [String], in store: UserDefaults, handler: @escaping @MainActor (_ key: String) -> Void) {
+        assert(keys.allSatisfy { !$0.contains(".") }, "Key-value observing would read a dotted key as a key path")
         self.store = store
         self.keys = keys
         self.handler = handler
