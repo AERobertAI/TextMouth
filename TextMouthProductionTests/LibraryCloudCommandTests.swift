@@ -14,35 +14,45 @@ final class LibraryCloudCommandTests: XCTestCase {
 
     // MARK: - Commands Offered
 
-    /// A local library offers only Show in Finder, whatever was recorded.
+    /// A local library offers only Show in Finder, whatever was recorded,
+    /// and whether or not the book is kept.
     func testLocalLibraryOffersOnlyShowInFinder() {
         let book = cloudTestBook()
         let states = BookCloudStates()
         states.record(.inCloud, for: book.id)
 
-        XCTAssertEqual(titles(of: LibraryCloudCommand.commands(for: [book], isSelection: false, states: states)), ["Show in Finder"])
+        XCTAssertEqual(
+            titles(of: LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [])),
+            ["Show in Finder"]
+        )
+        XCTAssertEqual(
+            titles(of: LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [book.id])),
+            ["Show in Finder"]
+        )
     }
 
     /// In a cloud library each state offers its commands: Download Now for
     /// a book in the cloud or whose download failed, Remove Download for a
-    /// downloaded one, and Show in Finder for every book whose package is on
-    /// this Mac. A book not checked yet offers only Show in Finder.
+    /// downloaded one, Keep on This Mac for every book this Mac doesn't keep
+    /// yet, and Show in Finder for every book whose package is on this Mac.
+    /// A book not checked yet offers only Keep on This Mac and Show in
+    /// Finder.
     func testCloudLibraryOffersCommandsByState() {
         let expected: [(BookCloudState?, [String])] = [
-            (nil, ["Show in Finder"]),
-            (.downloaded, ["Remove Download", "Show in Finder"]),
-            (.inCloud, ["Download Now", "Show in Finder"]),
-            (.downloadFailed("It failed."), ["Download Now", "Show in Finder"]),
-            (.downloading(partway), ["Show in Finder"]),
-            (.waitingForSync, []),
-            (.local, ["Show in Finder"]),
+            (nil, ["Keep on This Mac", "Show in Finder"]),
+            (.downloaded, ["Remove Download", "Keep on This Mac", "Show in Finder"]),
+            (.inCloud, ["Download Now", "Keep on This Mac", "Show in Finder"]),
+            (.downloadFailed("It failed."), ["Download Now", "Keep on This Mac", "Show in Finder"]),
+            (.downloading(partway), ["Keep on This Mac", "Show in Finder"]),
+            (.waitingForSync, ["Keep on This Mac"]),
+            (.local, ["Keep on This Mac", "Show in Finder"]),
         ]
         for (state, commandTitles) in expected {
             let book = cloudTestBook()
             let states = cloudStates(recording: state.map { [book.id: $0] } ?? [:])
 
             XCTAssertEqual(
-                titles(of: LibraryCloudCommand.commands(for: [book], isSelection: false, states: states)),
+                titles(of: LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [])),
                 commandTitles,
                 "\(String(describing: state))"
             )
@@ -65,18 +75,27 @@ final class LibraryCloudCommandTests: XCTestCase {
             books[3].id: .waitingForSync,
         ])
 
-        let commands = LibraryCloudCommand.commands(for: books, isSelection: true, states: states)
+        let commands = LibraryCloudCommand.commands(for: books, isSelection: true, states: states, kept: [books[2].id])
 
-        XCTAssertEqual(titles(of: commands), ["Download 2 Books", "Remove Download of 1 Book", "Show 3 Books in Finder"])
+        XCTAssertEqual(titles(of: commands), [
+            "Download 2 Books",
+            "Remove Download of 1 Book",
+            "Keep 3 Books on This Mac",
+            "Stop Keeping 1 Book on This Mac",
+            "Show 3 Books in Finder",
+        ])
         XCTAssertEqual(commands.map { $0.books.map(\.title) }, [
             ["Moby-Dick", "Middlemarch"],
+            ["Bleak House"],
+            ["Moby-Dick", "Middlemarch", "Cranford"],
             ["Bleak House"],
             ["Moby-Dick", "Middlemarch", "Bleak House"],
         ])
     }
 
     /// A selection of downloaded books removes all their downloads, and a
-    /// selection of books in the cloud downloads them all.
+    /// selection of books in the cloud downloads them all; either can be
+    /// kept on this Mac, or stop being kept, all together.
     func testSelectionTitlesCountEveryBook() {
         let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch"), cloudTestBook("Bleak House")]
         let downloaded = cloudStates(recording: Dictionary(uniqueKeysWithValues: books.map {
@@ -87,12 +106,12 @@ final class LibraryCloudCommandTests: XCTestCase {
         }))
 
         XCTAssertEqual(
-            titles(of: LibraryCloudCommand.commands(for: books, isSelection: true, states: downloaded)),
-            ["Remove Downloads of 3 Books", "Show 3 Books in Finder"]
+            titles(of: LibraryCloudCommand.commands(for: books, isSelection: true, states: downloaded, kept: [])),
+            ["Remove Downloads of 3 Books", "Keep 3 Books on This Mac", "Show 3 Books in Finder"]
         )
         XCTAssertEqual(
-            titles(of: LibraryCloudCommand.commands(for: books, isSelection: true, states: inCloud)),
-            ["Download 3 Books", "Show 3 Books in Finder"]
+            titles(of: LibraryCloudCommand.commands(for: books, isSelection: true, states: inCloud, kept: Set(books.map(\.id)))),
+            ["Download 3 Books", "Stop Keeping 3 Books on This Mac", "Show 3 Books in Finder"]
         )
     }
 
@@ -298,8 +317,8 @@ final class LibraryCloudCommandTests: XCTestCase {
         let explanation = BookCloudError.bookIsOpen.explanation(in: .iCloudDrive)
 
         XCTAssertEqual(
-            LibraryCloudCommand.commands(for: [book], isSelection: false, states: fixture.states).map(\.kind),
-            [.removeDownload, .showInFinder]
+            LibraryCloudCommand.commands(for: [book], isSelection: false, states: fixture.states, kept: []).map(\.kind),
+            [.removeDownload, .keepOnThisMac, .showInFinder]
         )
         var refusal: LibraryCloudRefusal?
         let said = await announcements {
@@ -458,14 +477,24 @@ final class LibraryCloudCommandTests: XCTestCase {
 
     /// The list runs each command by its kind: Download Now starts the
     /// downloads, Remove Download hands back its refusal for the window,
-    /// and Show in Finder selects the packages.
+    /// Keep on This Mac and Stop Keeping on This Mac change which books are
+    /// kept, and Show in Finder selects the packages.
     func testPerformRunsEachKindOfCommand() async {
         let inCloud = cloudTestBook("Moby-Dick")
         let open = cloudTestBook("Emma", author: "Jane Austen")
         let fixture = CommandFixture(books: [inCloud, open], states: [inCloud.id: .inCloud, open.id: .downloaded])
         fixture.model.openBookIDs = [open.id]
-        let commands = LibraryCloudCommand.commands(for: [inCloud, open], isSelection: true, states: fixture.states)
-        XCTAssertEqual(commands.map(\.kind), [.download, .removeDownload, .showInFinder])
+        fixture.kept.keep([open.id])
+        let commands = LibraryCloudCommand.commands(
+            for: [inCloud, open],
+            isSelection: true,
+            states: fixture.states,
+            kept: fixture.kept.bookIDs
+        )
+        XCTAssertEqual(
+            commands.map(\.kind),
+            [.download, .removeDownload, .keepOnThisMac, .stopKeepingOnThisMac, .showInFinder]
+        )
 
         var refusals: [LibraryCloudRefusal?] = []
         _ = await announcements {
@@ -482,8 +511,11 @@ final class LibraryCloudCommandTests: XCTestCase {
                 message: BookCloudError.bookIsOpen.explanation(in: .iCloudDrive)
             ),
             nil,
+            nil,
+            nil,
         ])
-        XCTAssertEqual(fixture.fake.downloadsStarted, [inCloud.id])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [inCloud.id], "keeping a book downloading already starts no second download")
+        XCTAssertEqual(fixture.kept.bookIDs, [inCloud.id])
         XCTAssertEqual(fixture.revealed.files, [[inCloud.bookFileURL, open.bookFileURL]])
     }
 
@@ -498,11 +530,11 @@ final class LibraryCloudCommandTests: XCTestCase {
     func testRowsVoiceOverActionsAreItsCloudCommands() {
         let book = cloudTestBook()
         let states = cloudStates(recording: [book.id: .inCloud])
-        let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states)
+        let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [])
 
         XCTAssertEqual(
             BookRow(book: book, cloudState: .inCloud, cloudCommands: commands).accessibilityActionNames,
-            ["Download Now", "Show in Finder"]
+            ["Download Now", "Keep on This Mac", "Show in Finder"]
         )
         XCTAssertEqual(BookRow(book: book).accessibilityActionNames, [])
     }

@@ -112,6 +112,186 @@ final class KeepOnThisMacTests: XCTestCase {
         )
     }
 
+    // MARK: - Keep on This Mac
+
+    /// Keeping a book that is only in the cloud downloads it at once, as
+    /// Download Now does: its row shows "Downloading 0%" first, then
+    /// "Downloaded", and VoiceOver hears one sentence for the keep and the
+    /// download, then how the download ended.
+    func testKeepingABookInTheCloudDownloadsItAtOnce() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+
+        var recorded: [BookCloudState?] = []
+        let said = await announcements {
+            recorded = await fixture.recordedStates(of: book.id) {
+                await fixture.commands.keep([book], in: fixture.model, from: nil)?.value
+            }
+        }
+
+        XCTAssertEqual(fixture.kept.bookIDs, [book.id])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+        XCTAssertEqual(recorded, [.downloading(.notStarted), .downloaded])
+        XCTAssertEqual(said, ["Keeping Moby-Dick on this Mac. Downloading it now", "Moby-Dick downloaded"])
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0, "the download is asked for off the main thread")
+    }
+
+    /// Keeping a downloaded book downloads nothing; VoiceOver hears that it
+    /// is kept.
+    func testKeepingADownloadedBookDownloadsNothing() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+
+        var task: Task<Void, Never>?
+        let said = await announcements {
+            task = fixture.commands.keep([book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertNil(task)
+        XCTAssertEqual(fixture.kept.bookIDs, [book.id])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+        XCTAssertEqual(said, ["Keeping Moby-Dick on this Mac"])
+    }
+
+    /// Keeping a selection keeps every book and downloads those whose state
+    /// lets them download, in the cloud or left there by a failed download;
+    /// one waiting for sync is kept for when it arrives.
+    func testKeepingASelectionDownloadsTheBooksInTheCloud() async {
+        let books = [
+            cloudTestBook("Moby-Dick"),
+            cloudTestBook("Middlemarch", author: "George Eliot"),
+            cloudTestBook("Bleak House", author: "Charles Dickens"),
+            cloudTestBook("Cranford", author: "Elizabeth Gaskell"),
+        ]
+        let fixture = CommandFixture(books: books, states: [
+            books[0].id: .inCloud,
+            books[1].id: .downloadFailed("It failed."),
+            books[2].id: .downloaded,
+            books[3].id: .waitingForSync,
+        ])
+
+        let said = await announcements {
+            await fixture.commands.keep(books, in: fixture.model, from: nil)?.value
+        }
+
+        XCTAssertEqual(fixture.kept.bookIDs, Set(books.map(\.id)))
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id, books[1].id])
+        XCTAssertEqual(said, ["Keeping 4 books on this Mac. Downloading 2 of them now", "Downloaded 2 books"])
+    }
+
+    /// Keeping books kept already changes nothing and says nothing.
+    func testKeepingAgainChangesNothing() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.keep([book.id])
+
+        var task: Task<Void, Never>?
+        let said = await announcements {
+            task = fixture.commands.keep([book], in: fixture.model, from: nil)
+        }
+
+        XCTAssertNil(task)
+        XCTAssertEqual(said, [])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+    }
+
+    /// Stopping keeping a book leaves its download where it is, says so to
+    /// VoiceOver, and lets Remove Download remove it again.
+    func testStoppingKeepingReleasesTheBook() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.keep([book.id])
+
+        let said = await announcements {
+            fixture.commands.stopKeeping([book], from: nil)
+            fixture.commands.stopKeeping([book], from: nil)
+        }
+
+        XCTAssertEqual(said, ["Stopped keeping Moby-Dick on this Mac"], "a book not kept says nothing more")
+        XCTAssertTrue(fixture.kept.bookIDs.isEmpty)
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [], "stopping removes no download")
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+
+        let refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+
+        XCTAssertNil(refusal)
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [book.id])
+    }
+
+    /// A kept book offers Stop Keeping on This Mac in its row's menu and
+    /// VoiceOver actions, and a book not kept offers Keep on This Mac.
+    func testTheRowOffersTheCommandForItsChoice() {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+
+        let notKept = LibraryCloudCommand.commands(for: [book], isSelection: false, states: fixture.states, kept: [])
+        let kept = LibraryCloudCommand.commands(for: [book], isSelection: false, states: fixture.states, kept: [book.id])
+
+        XCTAssertEqual(
+            BookRow(book: book, cloudState: .downloaded, cloudCommands: notKept).accessibilityActionNames,
+            ["Remove Download", "Keep on This Mac", "Show in Finder"]
+        )
+        XCTAssertEqual(
+            BookRow(book: book, cloudState: .downloaded, cloudCommands: kept).accessibilityActionNames,
+            ["Remove Download", "Stop Keeping on This Mac", "Show in Finder"]
+        )
+    }
+
+    /// Keeping and stopping are logged under KEEP_ON_MAC, and the downloads
+    /// a keep starts under tags of their own, apart from Download Now's.
+    func testKeepingLogsUnderItsOwnTags() async {
+        let marker = UUID().uuidString
+        let arriving = cloudTestBook("Arriving \(marker)")
+        let failing = cloudTestBook("Failing \(marker)")
+        let fixture = CommandFixture(books: [arriving, failing], states: [arriving.id: .inCloud, failing.id: .inCloud])
+        fixture.fake.scriptDownload(of: failing.id, steps: [], failingWith: .offline)
+
+        _ = await announcements {
+            await fixture.commands.keep([arriving, failing], in: fixture.model, from: nil)?.value
+            fixture.commands.stopKeeping([arriving], from: nil)
+        }
+
+        let lines = debugLogLines(containing: marker)
+        for tag in ["KEEP_ON_MAC", "KEPT_BOOK_DOWNLOAD_STARTED", "KEPT_BOOK_DOWNLOAD_FAILED"] {
+            XCTAssertTrue(lines.contains { $0.contains(": \(tag): ") }, "\(tag) is missing from \(lines)")
+        }
+        XCTAssertEqual(lines.filter { $0.contains(": KEEP_ON_MAC: ") }.count, 2, "one line to keep, one to stop")
+        XCTAssertFalse(lines.contains { $0.contains("DOWNLOAD_NOW") }, "a keep's downloads are not Download Now's")
+    }
+
+    // MARK: - Wording
+
+    /// The commands' titles name one book plainly and count a selection's.
+    func testTheTitlesCountASelection() {
+        XCTAssertEqual(LibraryCloudWording.keepTitle(count: 1, forSelection: false), "Keep on This Mac")
+        XCTAssertEqual(LibraryCloudWording.keepTitle(count: 1, forSelection: true), "Keep 1 Book on This Mac")
+        XCTAssertEqual(LibraryCloudWording.keepTitle(count: 3, forSelection: true), "Keep 3 Books on This Mac")
+        XCTAssertEqual(LibraryCloudWording.stopKeepingTitle(count: 1, forSelection: false), "Stop Keeping on This Mac")
+        XCTAssertEqual(LibraryCloudWording.stopKeepingTitle(count: 2, forSelection: true), "Stop Keeping 2 Books on This Mac")
+    }
+
+    /// Keeping says which books, and how many of them download now.
+    func testTheKeepAnnouncementSaysWhatDownloads() {
+        XCTAssertEqual(LibraryCloudWording.keepStarted(titles: ["Emma"], downloading: 0), "Keeping Emma on this Mac")
+        XCTAssertEqual(
+            LibraryCloudWording.keepStarted(titles: ["Emma"], downloading: 1),
+            "Keeping Emma on this Mac. Downloading it now"
+        )
+        XCTAssertEqual(
+            LibraryCloudWording.keepStarted(titles: ["Emma", "Dracula"], downloading: 2),
+            "Keeping 2 books on this Mac. Downloading them now"
+        )
+        XCTAssertEqual(
+            LibraryCloudWording.keepStarted(titles: ["Emma", "Dracula", "Cranford"], downloading: 1),
+            "Keeping 3 books on this Mac. Downloading 1 of them now"
+        )
+        XCTAssertEqual(LibraryCloudWording.stoppedKeeping(titles: ["Emma"]), "Stopped keeping Emma on this Mac")
+        XCTAssertEqual(
+            LibraryCloudWording.stoppedKeeping(titles: ["Emma", "Dracula"]),
+            "Stopped keeping 2 books on this Mac"
+        )
+    }
+
     // MARK: - Remove Download
 
     /// Remove Download refuses a kept book without asking the storage: the

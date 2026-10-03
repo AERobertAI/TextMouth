@@ -168,6 +168,9 @@ struct LibraryView: View {
     /// Every book's cloud state (FR02), observed so the rows' notes follow
     /// each refresh and download. Rows read only what it recorded.
     @ObservedObject private var cloudStates = BookCloudStates.shared
+    /// The books this Mac keeps downloaded (Keep on This Mac), observed so
+    /// the rows' commands follow every change.
+    @ObservedObject private var keptBooks = KeptBooks.shared
     /// This window's token for the cloud refresher, which keeps refreshing
     /// while any Library window is visible (FR02).
     @State private var cloudRefreshToken = UUID()
@@ -849,7 +852,8 @@ struct LibraryView: View {
         let selectionCloudCommands = LibraryCloudCommand.commands(
             for: selection,
             isSelection: selection.count > 1,
-            states: cloudStates
+            states: cloudStates,
+            kept: keptBooks.bookIDs
         )
         // Every book's moves in the folder's manual order, read from the
         // order shown rather than by sorting the folder again for each row.
@@ -898,7 +902,12 @@ struct LibraryView: View {
             targets: targets,
             cloudCommands: isSelectionRow
                 ? selectionCloudCommands
-                : LibraryCloudCommand.commands(for: targets, isSelection: false, states: cloudStates),
+                : LibraryCloudCommand.commands(
+                    for: targets,
+                    isSelection: false,
+                    states: cloudStates,
+                    kept: keptBooks.bookIDs
+                ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
             manualMoves: isSelectionRow ? nil : manualMoves[book.id],
             removalPreferences: removalPreferences,
