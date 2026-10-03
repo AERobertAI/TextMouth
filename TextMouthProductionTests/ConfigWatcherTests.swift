@@ -720,6 +720,75 @@ final class ConfigWatcherTests: XCTestCase {
         withExtendedLifetime(settings) {}
     }
 
+    // MARK: - Open Settings Follow Edits
+
+    /// While the Storage settings are open, an edit of config.json reaches
+    /// what their controls are bound to: the removal preferences model
+    /// publishes the edit's removal choices once, and the settings model
+    /// announces the edit's import choice once and reads it.
+    func testStorageChoicesFollowAnExternalEdit() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let removal = RemovalPreferencesModel(configService: service)
+        var publishedRemoval: [RemovalPreferences] = []
+        let removalSubscription = removal.$preferences.dropFirst().sink { publishedRemoval.append($0) }
+        var settingsAnnouncements = 0
+        let settingsSubscription = settings.objectWillChange.sink { settingsAnnouncements += 1 }
+
+        edit.confirmBeforeDelete = true
+        edit.moveToTrashInsteadOfDeleting = true
+        edit.importDeleteBehavior = .deleteAfterImport
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        removalSubscription.cancel()
+        settingsSubscription.cancel()
+
+        let edited = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        XCTAssertEqual(publishedRemoval, [edited])
+        XCTAssertEqual(removal.preferences, edited)
+        XCTAssertEqual(settings.importDeleteBehavior, .deleteAfterImport)
+        XCTAssertEqual(settingsAnnouncements, 1)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
+    /// A Storage control changed after an edit of config.json starts from
+    /// the edit's value and saves only its own choice, so the edit's other
+    /// choices stay in force; no control writes back a copy taken when the
+    /// window opened.
+    func testStorageControlsChangeOnlyTheirOwnChoiceAfterAnEdit() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let removal = RemovalPreferencesModel(configService: service)
+
+        edit.confirmBeforeDelete = true
+        edit.importDeleteBehavior = .deleteAfterImport
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        // The user turns off confirmation, which the window shows as on.
+        removal.setConfirmsFirst(!removal.preferences.confirmsFirst)
+        removal.setMovesToTrash(true)
+        settings.importDeleteBehavior = .keepOriginal
+        settle()
+
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertFalse(saved.confirmBeforeDelete)
+        XCTAssertTrue(saved.moveToTrashInsteadOfDeleting)
+        XCTAssertEqual(saved.importDeleteBehavior, .keepOriginal)
+        XCTAssertEqual(removal.preferences, RemovalPreferences(confirmsFirst: false, movesToTrash: true))
+        XCTAssertEqual(counter.writes, 3, "one save for each change")
+
+        removal.setMovesToTrash(true)
+        settings.importDeleteBehavior = .keepOriginal
+        XCTAssertEqual(counter.writes, 3, "choosing a value already in force saves nothing")
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the

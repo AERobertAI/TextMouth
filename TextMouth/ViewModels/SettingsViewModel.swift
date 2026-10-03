@@ -290,6 +290,8 @@ final class SettingsViewModel: ObservableObject {
     /// Saves config.json when a preference another service keeps changes in
     /// the store through that service's own controls.
     private var servicePreferencesObserver: PreferenceObserver?
+    /// Announces each change of a choice config.json alone holds.
+    private var fileOnlyChoicesCancellable: AnyCancellable?
 
     // MARK: - Validated numeric preferences
     //
@@ -383,6 +385,32 @@ final class SettingsViewModel: ObservableObject {
         set { rewindOnResumeUnitRaw = newValue.rawValue }
     }
 
+    // MARK: - Choices config.json alone holds
+
+    /// What happens to an original file after its book is imported (Storage
+    /// settings). config.json is this choice's only store, so it is read
+    /// from the configuration and saved there; the model announces every
+    /// change to it, an edit of config.json included, so a control bound to
+    /// it always shows the choice in force.
+    var importDeleteBehavior: ImportDeleteBehavior {
+        get { configService.config.importDeleteBehavior }
+        set {
+            guard newValue != configService.config.importDeleteBehavior else { return }
+            configService.config.importDeleteBehavior = newValue
+            configService.saveToDisk()
+        }
+    }
+
+    /// Announces each change of a choice config.json alone holds, wherever
+    /// it came from, as this model announces changes to its own preferences.
+    private func announceFileOnlyChoiceChanges() {
+        fileOnlyChoicesCancellable = configService.$config
+            .map(\.importDeleteBehavior)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+    }
+
     /// Publish one coalescible settings-model change for open playback bars.
     /// The revision also gives tests a deterministic signal independent of
     /// SwiftUI's rendering schedule.
@@ -449,6 +477,7 @@ final class SettingsViewModel: ObservableObject {
         )
         _storedRestartTimerGestureWindow = SettingsPolicy.restartTimerGestureWindow.appStorage(in: userDefaults)
         saveServicePreferenceChanges()
+        announceFileOnlyChoiceChanges()
         guard initializeServices else { return }
         startConfigSync()
     }

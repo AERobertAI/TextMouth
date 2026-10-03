@@ -420,10 +420,11 @@ struct RemovalPreferences: Equatable {
 }
 
 /// The removal preferences as config.json holds them, published only when
-/// one of the two changes. The library's views, its Remove Book dialog, and
-/// the menu bar all word removal from this one model, so none of them is
-/// left promising the old behavior after a preference changes in Settings,
-/// and other settings changes redraw none of them.
+/// one of the two changes. The library's views, its Remove Book dialog, the
+/// menu bar, and the Storage settings' own toggles all take the preferences
+/// from this one model, so none of them is left showing or promising the old
+/// behavior after a preference changes, in Settings or by an edit of
+/// config.json, and other settings changes redraw none of them.
 @MainActor
 final class RemovalPreferencesModel: ObservableObject {
     /// The model the app's windows and menus share.
@@ -432,10 +433,15 @@ final class RemovalPreferencesModel: ObservableObject {
     /// The removal preferences now in force.
     @Published private(set) var preferences: RemovalPreferences
 
+    /// The configuration the preferences are kept in.
+    private let configService: ConfigService
     /// Keeps `preferences` in step with config.json.
     private var subscription: AnyCancellable?
 
-    private init(configService: ConfigService = .shared) {
+    /// A model following `configService`'s removal preferences: the app's
+    /// own configuration, unless a test passes one of its own.
+    init(configService: ConfigService = .shared) {
+        self.configService = configService
         preferences = RemovalPreferences(configService.config)
         subscription = configService.$config
             .map { RemovalPreferences($0) }
@@ -445,6 +451,33 @@ final class RemovalPreferencesModel: ObservableObject {
                 guard let self, self.preferences != current else { return }
                 self.preferences = current
             }
+    }
+
+    // MARK: Changing the Preferences
+
+    /// Turns "Confirm before removing a book" on or off and saves
+    /// config.json. `preferences` hears of it from the configuration, as of
+    /// any other change.
+    func setConfirmsFirst(_ confirmsFirst: Bool) {
+        save { $0.confirmBeforeDelete = confirmsFirst }
+    }
+
+    /// Turns "Move to Trash instead of deleting" on or off and saves
+    /// config.json. `preferences` hears of it from the configuration, as of
+    /// any other change.
+    func setMovesToTrash(_ movesToTrash: Bool) {
+        save { $0.moveToTrashInsteadOfDeleting = movesToTrash }
+    }
+
+    /// Makes `change` to the configuration and saves it, when that changes
+    /// anything. Only the one field changes, so the save keeps every other
+    /// value in force, those of an edit of config.json included.
+    private func save(_ change: (inout ConfigService.AppConfig) -> Void) {
+        var config = configService.config
+        change(&config)
+        guard config != configService.config else { return }
+        configService.config = config
+        configService.saveToDisk()
     }
 }
 
