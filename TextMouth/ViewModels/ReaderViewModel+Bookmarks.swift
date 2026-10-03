@@ -248,15 +248,18 @@ extension ReaderViewModel {
 
     /// Saves edited EPUB metadata through the library, which writes the
     /// library's copy of the EPUB file first when `writeToFile` asks (TODO
-    /// A09), and returns what happened.
+    /// A09), and returns what happened for the metadata editor: it closes
+    /// after a success, and otherwise stays open with the user's edits beside
+    /// the reason, so the user can save to the library only or try again.
     ///
     /// Only a save that succeeded changes this reader: its metadata, its
     /// book, and Now Playing then show exactly what the library row and the
     /// book's record hold, content hash included. After a failure all of them
-    /// stay as they were, and `errorMessage` gives the reason in the reader's
-    /// alert, since the editor has already closed. Either way VoiceOver hears
-    /// the outcome, which names the library's copy of the EPUB file whenever
-    /// that file was, or could not be, written.
+    /// stay as they were. Either way VoiceOver hears the outcome, which names
+    /// the library's copy of the EPUB file whenever that file was, or could
+    /// not be, written. A failure is not also set as `errorMessage`: the open
+    /// editor shows it, and the reader's alert, waiting behind the editor,
+    /// would report it again after the user had already acted on it.
     ///
     /// - Parameters:
     ///   - metadata: The edited metadata.
@@ -282,8 +285,6 @@ extension ReaderViewModel {
                 author: book.author,
                 isPlaying: isCurrentlyPlaying && !isCurrentlyPaused
             )
-        } else {
-            errorMessage = save.message
         }
         announceToVoiceOver(save.message)
         return save.outcome

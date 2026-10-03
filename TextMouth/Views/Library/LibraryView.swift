@@ -593,20 +593,13 @@ struct LibraryView: View {
                     metadata: metadata,
                     isEPUB: true,
                     onSave: { updated, writeToFile in
-                        var updatedBook = book
-                        updatedBook.title = updated.title
-                        updatedBook.author = updated.author
-                        updatedBook.epubPublisher = updated.publisher
-                        updatedBook.epubPublicationDate = updated.publicationDate
-                        libraryViewModel.updateBookMetadata(updatedBook)
-                        if writeToFile {
-                            let url = URL(fileURLWithPath: book.filePath)
-                            if let newHash = try? EPUBParser.writeMetadata(updated, to: url) {
-                                var hashBook = updatedBook
-                                hashBook.md5Hash = newHash
-                                libraryViewModel.updateBookMetadata(hashBook)
-                            }
-                        }
+                        // The library's copy of the EPUB is written first when
+                        // asked, and nothing changes if that fails: the editor
+                        // then stays open and shows why (TODO A09). VoiceOver
+                        // hears the outcome from the editor, which has focus.
+                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
+                        VoiceOverAnnouncer.announce(save.message)
+                        return save.outcome
                     }
                 )
             } else if book.format.isAudio, let audioMeta = richInfoAudioMetadata {

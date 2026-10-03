@@ -86,7 +86,8 @@ final class EPUBMetadataWritebackTests: XCTestCase {
     /// A write of the library's copy that fails changes nothing: the
     /// reader's metadata and book, the library row, the record, and the file
     /// all stay exactly as they were. The failure names the file and why, in
-    /// the outcome, in the reader's error alert, and in what VoiceOver hears.
+    /// the outcome the editor shows and in what VoiceOver hears, and is not
+    /// raised again as the reader's error alert behind the editor.
     func testAFailedWriteLeavesTheReaderTheLibraryTheRecordAndTheFileAsTheyWere() async throws {
         let book = try makePackagedEPUB()
         let reader = try await makeLoadedReader(for: book, in: makeLibrary(with: book))
@@ -101,7 +102,7 @@ final class EPUBMetadataWritebackTests: XCTestCase {
 
         XCTAssertEqual(outcome, .failure(Self.refusedWriteMessage))
         XCTAssertEqual(recorder.announcements.map(\.message), [Self.refusedWriteMessage])
-        XCTAssertEqual(reader.errorMessage, Self.refusedWriteMessage)
+        XCTAssertNil(reader.errorMessage, "the open editor shows the failure; no alert waits behind it")
         XCTAssertEqual(editableFields(of: reader.epubMetadata), metadataBefore)
         XCTAssertEqual(try agreedMetadata(of: reader), SavedMetadata(book))
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), fileBefore)
