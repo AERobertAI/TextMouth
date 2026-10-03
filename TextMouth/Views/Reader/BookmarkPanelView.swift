@@ -127,41 +127,7 @@ struct BookmarkPanelView: View {
                         // Identified by bookmark, so a row keeps its identity,
                         // and with it focus, when the list changes around it.
                         ForEach(rows, id: \.bookmark.id) { row in
-                            let bookmark = row.bookmark
-                            let isFirst = bookmark.id == rows.first?.bookmark.id
-
-                            Button {
-                                viewModel.navigateToBookmark(bookmark)
-                                dismiss()
-                            } label: {
-                                row
-                                    .padding(.horizontal)
-                                    .padding(.vertical, 6)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                                .buttonStyle(.plain)
-                                .focusable(isFirst)
-                                .focused($focusedBookmarkID, equals: isFirst ? bookmark.id : nil)
-                                .accessibilityLabel(row.bookmarkAccessibilityLabel)
-                                .accessibilityHint(row.accessibilityHintText)
-                                .modifier(InitialVoiceOverFocusModifier(
-                                    isTarget: isFirst,
-                                    delay: 1.2
-                                ))
-                                .contextMenu {
-                                    Button("Go To") {
-                                        viewModel.navigateToBookmark(bookmark)
-                                        dismiss()
-                                    }
-                                    Button("Edit Note") {
-                                        noteText = bookmark.label
-                                        mode = .edit(bookmark)
-                                    }
-                                    Button("Delete", role: .destructive) {
-                                        viewModel.removeBookmark(bookmark)
-                                    }
-                                }
+                            bookmarkRowView(row)
                             Divider()
                         }
                     }
@@ -173,6 +139,99 @@ struct BookmarkPanelView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Rows
+
+    /// One bookmark's row: a button that goes to the bookmark, with Edit Note
+    /// and Delete buttons beside it.
+    ///
+    /// Every row's button can take keyboard focus (with keyboard navigation
+    /// on, as for any button), and Space or Return on it goes to the
+    /// bookmark. For VoiceOver the row is a container named after its
+    /// bookmark, holding the three buttons as separate controls. The row and
+    /// its main button both offer all three commands as VoiceOver actions,
+    /// so they are at hand wherever the VoiceOver cursor is in the row.
+    /// Pointer users find them in the row's context menu as well.
+    private func bookmarkRowView(_ row: BookmarkRow) -> some View {
+        let bookmark = row.bookmark
+        return HStack(spacing: 8) {
+            Button {
+                perform(.goTo, on: bookmark)
+            } label: {
+                row
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .focused($focusedBookmarkID, equals: bookmark.id)
+            // A focused button presses on Space by itself. Return, which
+            // would otherwise look for a default button, goes to the
+            // bookmark too; a held key does not repeat the navigation.
+            .onKeyPress(keys: [.return], phases: .down) { _ in
+                perform(.goTo, on: bookmark)
+                return .handled
+            }
+            .accessibilityLabel(row.bookmarkAccessibilityLabel)
+            .accessibilityHint(row.accessibilityHintText)
+            .accessibilityActions { commandActions(for: bookmark) }
+            .modifier(InitialVoiceOverFocusModifier(
+                isTarget: bookmark.id == rows.first?.bookmark.id,
+                delay: 1.2
+            ))
+
+            ForEach(BookmarkCommand.rowButtons, id: \.self) { command in
+                commandButton(command, for: bookmark)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(command.buttonLabel(forBookmarkNumber: bookmark.number))
+                    .help(command.title)
+            }
+        }
+        .padding(.horizontal)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(row.bookmarkAccessibilityLabel)
+        .accessibilityActions { commandActions(for: bookmark) }
+        .contextMenu {
+            ForEach(BookmarkCommand.allCases, id: \.self) { command in
+                commandButton(command, for: bookmark)
+            }
+        }
+    }
+
+    /// A button that runs `command` on `bookmark`, named and pictured as the
+    /// command: beside a row and in its context menu.
+    private func commandButton(_ command: BookmarkCommand, for bookmark: Bookmark) -> some View {
+        Button(role: command.role) {
+            perform(command, on: bookmark)
+        } label: {
+            Label(command.title, systemImage: command.systemImage)
+        }
+    }
+
+    /// The commands on `bookmark` as VoiceOver actions, each under its name.
+    private func commandActions(for bookmark: Bookmark) -> some View {
+        ForEach(BookmarkCommand.allCases, id: \.self) { command in
+            Button(command.title) {
+                perform(command, on: bookmark)
+            }
+        }
+    }
+
+    /// Carry out `command` on `bookmark`, whichever control asked for it:
+    /// the row, a button beside it, a VoiceOver action, or the context menu.
+    private func perform(_ command: BookmarkCommand, on bookmark: Bookmark) {
+        switch command {
+        case .goTo:
+            viewModel.navigateToBookmark(bookmark)
+            dismiss()
+        case .editNote:
+            noteText = bookmark.label
+            mode = .edit(bookmark)
+        case .delete:
+            viewModel.removeBookmark(bookmark)
         }
     }
 
@@ -363,6 +422,60 @@ extension BookmarkPanelView {
     /// The first bookmark listed, or the Add button when none is.
     private nonisolated static func firstBookmarkOrAddButton(in listed: [Bookmark]) -> BookmarkPanelFocusTarget {
         listed.first.map { .bookmark($0.id) } ?? .addButton
+    }
+}
+
+// MARK: - Bookmark commands
+
+/// A command on one bookmark. Every row offers each command three ways,
+/// always under the same name: as a button (Go To is the row itself; Edit
+/// Note and Delete sit beside it), as a VoiceOver action, and in the row's
+/// context menu.
+enum BookmarkCommand: CaseIterable {
+    case goTo
+    case editNote
+    case delete
+
+    /// The commands drawn as buttons beside each row. Go To needs none: the
+    /// row itself is its button.
+    static let rowButtons: [BookmarkCommand] = [.editNote, .delete]
+
+    /// The command's name: its VoiceOver action and its context menu item.
+    var title: String {
+        switch self {
+        case .goTo: return "Go To"
+        case .editNote: return "Edit Note"
+        case .delete: return "Delete"
+        }
+    }
+
+    /// The SF Symbol drawn for the command, on its button beside a row and
+    /// in the context menu.
+    var systemImage: String {
+        switch self {
+        case .goTo: return "arrow.forward"
+        case .editNote: return "pencil"
+        case .delete: return "trash"
+        }
+    }
+
+    /// Delete removes the bookmark for good, so its button and menu item are
+    /// marked destructive.
+    var role: ButtonRole? {
+        self == .delete ? .destructive : nil
+    }
+
+    /// What VoiceOver calls a button running the command on bookmark
+    /// `number`. Each names its bookmark, so it makes sense on its own: "Go
+    /// to bookmark 3", "Edit note for bookmark 3", "Delete bookmark 3". The
+    /// panel names the buttons beside a row this way; the row's own button
+    /// speaks its bookmark's full label instead.
+    func buttonLabel(forBookmarkNumber number: Int) -> String {
+        switch self {
+        case .goTo: return "Go to bookmark \(number)"
+        case .editNote: return "Edit note for bookmark \(number)"
+        case .delete: return "Delete bookmark \(number)"
+        }
     }
 }
 

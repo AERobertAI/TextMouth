@@ -205,7 +205,127 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertNil(BookmarkPanelView.neighbor(of: UUID(), offset: 1, in: listed))
     }
 
+    // MARK: - Bookmark commands
+
+    /// The commands come in a fixed order under fixed names, each pictured
+    /// by an SF Symbol that exists, so no button or menu item is drawn
+    /// blank. Only Delete is destructive, and Edit Note and Delete are the
+    /// buttons drawn beside each row.
+    func testCommandsHaveFixedNamesSymbolsAndRoles() {
+        XCTAssertEqual(BookmarkCommand.allCases.map(\.title), ["Go To", "Edit Note", "Delete"])
+        for command in BookmarkCommand.allCases {
+            XCTAssertNotNil(
+                NSImage(systemSymbolName: command.systemImage, accessibilityDescription: nil),
+                command.title
+            )
+        }
+        XCTAssertEqual(BookmarkCommand.allCases.map(\.role), [nil, nil, .destructive])
+        XCTAssertEqual(BookmarkCommand.rowButtons, [.editNote, .delete])
+    }
+
+    /// Each command's button names its bookmark by number.
+    func testCommandButtonsNameTheirBookmarkByNumber() {
+        XCTAssertEqual(BookmarkCommand.goTo.buttonLabel(forBookmarkNumber: 3), "Go to bookmark 3")
+        XCTAssertEqual(BookmarkCommand.editNote.buttonLabel(forBookmarkNumber: 3), "Edit note for bookmark 3")
+        XCTAssertEqual(BookmarkCommand.delete.buttonLabel(forBookmarkNumber: 12), "Delete bookmark 12")
+    }
+
     // MARK: - Rendered panel
+
+    /// For VoiceOver each row holds three buttons: the row itself, named
+    /// after its bookmark, and Edit Note and Delete buttons naming the
+    /// bookmark by number. The row offers all three commands as actions.
+    ///
+    /// SwiftUI builds these accessibility elements only for a connected
+    /// assistive app such as VoiceOver. Without one the test is skipped;
+    /// the wording tests above still cover every label.
+    func testRenderedRowsExposeGoToEditNoteAndDeleteToAccessibility() throws {
+        let reader = makeReader(bookmarks: makeBookmarks(count: 3))
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            let buttonLabels = accessibleControls(in: hostingView)
+                .filter { $0.role == .button }
+                .map(\.label)
+            guard !buttonLabels.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no button to accessibility without an assistive app")
+            }
+
+            for bookmark in reader.bookmarks {
+                let rowLabel = "Bookmark \(bookmark.number)"
+                for label in [rowLabel] + BookmarkCommand.rowButtons.map({ $0.buttonLabel(forBookmarkNumber: bookmark.number) }) {
+                    XCTAssertTrue(buttonLabels.contains(label), "\(label) is not among \(buttonLabels)")
+                }
+                let offersEveryCommand = accessibilityElements(labelled: rowLabel, in: hostingView).contains { element in
+                    let actions = Set((element.accessibilityCustomActions() ?? []).map(\.name))
+                    return actions.isSuperset(of: BookmarkCommand.allCases.map(\.title))
+                }
+                XCTAssertTrue(offersEveryCommand, "\(rowLabel) offers Go To, Edit Note, and Delete as actions")
+            }
+        }
+    }
+
+    /// Every row draws its Edit Note and Delete buttons, the rows out of
+    /// view too: the list keeps every row alive, so each can take focus.
+    func testEveryRowDrawsItsButtonsEvenOutOfView() throws {
+        // Far more rows than the panel shows at once. A lazy list draws only
+        // the rows near the visible ones (two dozen of these, offscreen),
+        // so a shorter list could not tell the two apart.
+        let count = 60
+        let reader = makeReader(bookmarks: makeBookmarks(count: count))
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertTrue(waitUntil { renderedRowButtons(in: hostingView).count == count })
+            XCTAssertEqual(
+                renderedRowButtons(in: hostingView).map(\.count),
+                Array(repeating: BookmarkCommand.rowButtons.count, count: count)
+            )
+        }
+    }
+
+    /// Pressing a row's rendered Delete button deletes that row's bookmark,
+    /// and the bookmarks after it move up a number.
+    func testPressingARenderedDeleteButtonDeletesThatBookmark() throws {
+        let bookmarks = makeBookmarks(count: 3)
+        let reader = makeReader(bookmarks: bookmarks)
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            let delete = try XCTUnwrap(renderedButton(.delete, row: 1, in: hostingView))
+            delete.performClick(nil)
+
+            // SwiftUI may deliver the button's action on a later turn of the
+            // run loop.
+            XCTAssertTrue(waitUntil { reader.bookmarks.count == 2 })
+            XCTAssertEqual(reader.bookmarks.map(\.id), [bookmarks[0].id, bookmarks[2].id])
+            XCTAssertEqual(reader.bookmarks.map(\.number), [1, 2])
+        }
+    }
+
+    /// Pressing a row's rendered Edit Note button opens that bookmark's note
+    /// for editing.
+    func testPressingARenderedEditNoteButtonOpensThatBookmarksNote() throws {
+        let bookmarks = makeBookmarks(count: 3).map { bookmark -> Bookmark in
+            var noted = bookmark
+            noted.label = "Note \(bookmark.number)"
+            return noted
+        }
+        let reader = makeReader(bookmarks: bookmarks)
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            let editNote = try XCTUnwrap(renderedButton(.editNote, row: 1, in: hostingView))
+            editNote.performClick(nil)
+
+            let opened = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return noteFields(in: hostingView).count == 1
+            }
+            XCTAssertTrue(opened, "Edit Note shows a note field")
+            XCTAssertEqual(noteFields(in: hostingView).first?.stringValue, "Note 2")
+        }
+    }
 
     /// Changing one bookmark's note, and any other reader update, redraws
     /// the list without re-creating its rows. A re-created row would ask for
@@ -290,6 +410,52 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     /// `InitialVoiceOverFocusModifier` places behind the control it targets.
     private func focusTriggers(in hostingView: NSView) -> [VoiceOverFocusTriggerView] {
         descendants(of: hostingView, as: VoiceOverFocusTriggerView.self)
+    }
+
+    /// The buttons AppKit drew beside each row of the list, row by row from
+    /// the top and left to right within a row; empty while there is no list.
+    ///
+    /// SwiftUI draws the borderless Edit Note and Delete buttons with AppKit
+    /// buttons and the row's own button itself, so these are the only AppKit
+    /// buttons in the list. A row's buttons share a vertical center.
+    private func renderedRowButtons(in hostingView: NSView) -> [[NSButton]] {
+        guard let list = descendants(of: hostingView, as: NSScrollView.self).first?.documentView else {
+            return []
+        }
+        // Window coordinates, in which y grows upward.
+        func frame(_ button: NSButton) -> NSRect {
+            button.convert(button.bounds, to: nil)
+        }
+        let rows = Dictionary(grouping: descendants(of: list, as: NSButton.self)) { frame($0).midY.rounded() }
+        return rows.keys.sorted(by: >).map { center in
+            (rows[center] ?? []).sorted { frame($0).minX < frame($1).minX }
+        }
+    }
+
+    /// The rendered button for `command` beside row `row` (counted from zero
+    /// at the top), or nil when the list has no such row or button.
+    private func renderedButton(_ command: BookmarkCommand, row: Int, in hostingView: NSView) -> NSButton? {
+        let rows = renderedRowButtons(in: hostingView)
+        guard rows.indices.contains(row),
+              let index = BookmarkCommand.rowButtons.firstIndex(of: command),
+              rows[row].indices.contains(index) else { return nil }
+        return rows[row][index]
+    }
+
+    /// The editable text fields AppKit drew: the note field while adding or
+    /// editing a bookmark.
+    private func noteFields(in hostingView: NSView) -> [NSTextField] {
+        descendants(of: hostingView, as: NSTextField.self).filter(\.isEditable)
+    }
+
+    /// Every accessibility element below `root` whose label is `label`,
+    /// groups included.
+    private func accessibilityElements(labelled label: String, in root: Any) -> [NSAccessibilityProtocol] {
+        guard let node = root as? NSAccessibilityProtocol else { return [] }
+        let match = node.accessibilityLabel() == label ? [node] : []
+        return match + (node.accessibilityChildren() ?? []).flatMap {
+            accessibilityElements(labelled: label, in: $0)
+        }
     }
 
     /// A reader for a book holding `bookmarks`, opened at `position`.
