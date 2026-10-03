@@ -20,6 +20,18 @@ private enum AccessibilityGetter {
     static let children = #selector(NSAccessibilityProtocol.accessibilityChildren)
 }
 
+extension NSWindow {
+    /// Whether this window still shows content a waiting VoiceOver focus
+    /// request can search: a content view with subviews. A focus request
+    /// waits up to 1.2 seconds before it searches, and a window closed or
+    /// emptied meanwhile may have no content view at all, so the request
+    /// asks here instead of unwrapping it (PERF33).
+    var hasContentForVoiceOverFocus: Bool {
+        guard let contentView else { return false }
+        return !contentView.subviews.isEmpty
+    }
+}
+
 struct StandardVoiceOverFocus: NSViewRepresentable {
     var delay: TimeInterval = 0.8
 
@@ -180,10 +192,12 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
         voiceOverFocusLog("scheduled: delay=\(focusDelay)s \(VoiceOverFocusDiagnostics.describe(window: window))")
 
-        let work = DispatchWorkItem { [weak self] in
+        // The window is held weakly: a request waiting for a window that
+        // closes meanwhile neither keeps it alive nor searches it (PERF33).
+        let work = DispatchWorkItem { [weak self, weak window] in
             Self.pendingWork.removeValue(forKey: windowID)
 
-            guard !window.contentView!.subviews.isEmpty else {
+            guard let window, window.hasContentForVoiceOverFocus else {
                 voiceOverFocusLog("ABORTED: window content gone")
                 return
             }
@@ -259,7 +273,10 @@ class StandardVoiceOverFocusTriggerView: NSView {
         let attempts = Self.focusAttemptCount(isSheet: isSheet)
 
         for attempt in 0..<attempts {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(attempt) * 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(attempt) * 0.3) { [weak window] in
+                // A window closed since the attempts began has nothing left
+                // to focus, and is not kept alive for them.
+                guard let window else { return }
                 if let targetView = target as? NSView {
                     window.makeFirstResponder(targetView)
                 }
@@ -443,10 +460,12 @@ final class VoiceOverFocusTriggerView: NSView {
 
         voiceOverFocusLog("scheduled: delay=\(focusDelay)s \(VoiceOverFocusDiagnostics.describe(window: window))")
 
-        let work = DispatchWorkItem { [weak self] in
+        // The window is held weakly: a request waiting for a window that
+        // closes meanwhile neither keeps it alive nor searches it (PERF33).
+        let work = DispatchWorkItem { [weak self, weak window] in
             Self.pendingWork.removeValue(forKey: windowID)
 
-            guard !window.contentView!.subviews.isEmpty else {
+            guard let window, window.hasContentForVoiceOverFocus else {
                 voiceOverFocusLog("ABORTED: window content gone")
                 return
             }
@@ -517,8 +536,10 @@ final class VoiceOverFocusTriggerView: NSView {
 
         for attempt in 0..<4 {
             let delay = Double(attempt) * 0.3
-            let work = DispatchWorkItem { [weak self] in
-                guard let self else { return }
+            let work = DispatchWorkItem { [weak self, weak window] in
+                // A window closed since the attempts began has nothing left
+                // to focus, and is not kept alive for them.
+                guard let self, let window else { return }
                 guard !self.didReachTarget else {
                     voiceOverFocusLog("attempt \(attempt + 1): skipped because target was already reached")
                     return
@@ -548,8 +569,8 @@ final class VoiceOverFocusTriggerView: NSView {
 
     private func scheduleFocusChecks(target: Any, window: NSWindow, attempt: Int, baseDelay: TimeInterval) {
         for checkDelay in Self.focusCheckDelays {
-            let work = DispatchWorkItem { [weak self] in
-                guard let self else { return }
+            let work = DispatchWorkItem { [weak self, weak window] in
+                guard let self, let window else { return }
                 let matched = self.focusedElementMatches(target)
                 voiceOverFocusLog(
                     "attempt \(attempt) check +\(String(format: "%.2f", checkDelay))s: matchedTarget=\(matched); focused=\(self.describeFocusedElement()); firstResponder=\(VoiceOverFocusDiagnostics.describe(responder: window.firstResponder)); keyWindow=\(window.isKeyWindow)"
