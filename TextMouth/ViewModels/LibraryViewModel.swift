@@ -162,18 +162,6 @@ final class LibraryViewModel: ObservableObject {
         LibraryPersistenceService.saveBookInfo(for: library.books[index])
     }
 
-    /// Return books in a folder sorted by manual order then title.
-    /// Centralizes the repeated sort comparator used across manual-order methods.
-    func sortedBooksInFolder(_ folderPath: String) -> [Book] {
-        library.booksInFolder(folderPath)
-            .sorted { a, b in
-                let orderA = a.manualSortOrder ?? Int.max
-                let orderB = b.manualSortOrder ?? Int.max
-                if orderA != orderB { return orderA < orderB }
-                return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
-            }
-    }
-
     // MARK: - Persistence
 
     /// Save the library index, debounced to avoid rapid repeated writes.

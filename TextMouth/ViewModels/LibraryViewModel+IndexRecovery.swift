@@ -33,26 +33,21 @@ enum LibraryIndexRecoveryOutcome: Equatable {
         switch self {
         case .restored(let bookCount):
             return "The library index was read successfully. Your library has "
-                + "\(Self.describe(bookCount)), and changes are being saved again."
+                + "\(CountWording.books(bookCount)), and changes are being saved again."
         case .savedProvisionalLibrary(let bookCount, let preservedCopy):
             return "The unreadable library index is no longer there, so TextMouth saved "
-                + "the library rebuilt from your books as the new index, with \(Self.describe(bookCount))."
+                + "the library rebuilt from your books as the new index, with \(CountWording.books(bookCount))."
                 + Self.keptCopySentence(preservedCopy)
         case .stillUnreadable(let reason):
             return "The library index still could not be read. \(reason)"
         case .rebuilt(let bookCount, let preservedCopy):
-            return "The library index was rebuilt with \(Self.describe(bookCount))."
+            return "The library index was rebuilt with \(CountWording.books(bookCount))."
                 + Self.keptCopySentence(preservedCopy)
         case .rebuildFailed(let reason):
             return "The library index was not rebuilt. \(reason)"
         case .notRecovering:
             return "The library index is already readable."
         }
-    }
-
-    /// "1 book" or "3 books".
-    private static func describe(_ bookCount: Int) -> String {
-        bookCount == 1 ? "1 book" : "\(bookCount) books"
     }
 
     /// Names the preserved copy of the old index, when there is one.

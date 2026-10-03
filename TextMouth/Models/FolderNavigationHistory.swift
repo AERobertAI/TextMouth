@@ -92,6 +92,6 @@ class FolderNavigationHistory: ObservableObject {
         let bookCount = path.isEmpty
             ? library.books.count
             : library.totalBooksInFolderTree(path)
-        return "\(folderName), \(bookCount) \(bookCount == 1 ? "book" : "books")"
+        return "\(folderName), \(CountWording.books(bookCount))"
     }
 }

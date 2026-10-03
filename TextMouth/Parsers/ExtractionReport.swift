@@ -97,8 +97,8 @@ struct ExtractionReport: Equatable, Sendable {
         // A report whose chapter count was never filled in has no total to
         // give, and must not claim an impossible one such as "2 of 0".
         guard chapterCount >= omissions.count else {
-            let count = omissions.count
-            return "\(count) \(count == 1 ? "chapter" : "chapters") could not be read"
+            let count = CountWording.phrase(omissions.count, singular: "chapter", plural: "chapters")
+            return "\(count) could not be read"
         }
         guard omissions.count == chapterCount else {
             return "\(omissions.count) of \(chapterCount) chapters could not be read"

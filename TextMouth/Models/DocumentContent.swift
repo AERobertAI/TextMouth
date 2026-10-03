@@ -301,13 +301,13 @@ enum TimeFormatting {
 
         var parts: [String] = []
         if hours > 0 {
-            parts.append("\(hours) \(hours == 1 ? "hour" : "hours")")
+            parts.append(CountWording.phrase(hours, singular: "hour", plural: "hours"))
         }
         if minutes > 0 {
-            parts.append("\(minutes) \(minutes == 1 ? "minute" : "minutes")")
+            parts.append(CountWording.phrase(minutes, singular: "minute", plural: "minutes"))
         }
         if secs > 0 || parts.isEmpty {
-            parts.append("\(secs) \(secs == 1 ? "second" : "seconds")")
+            parts.append(CountWording.phrase(secs, singular: "second", plural: "seconds"))
         }
         return parts.joined(separator: ", ")
     }

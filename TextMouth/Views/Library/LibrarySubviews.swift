@@ -41,7 +41,7 @@ struct EditModeBar: View {
 
             Button("Move") { onMove() }
                 .disabled(selectedCount == 0)
-                .accessibilityLabel("Move \(selectedCount) \(selectedCount == 1 ? "book" : "books") to folder")
+                .accessibilityLabel("Move \(CountWording.books(selectedCount)) to folder")
 
             Button(removal.shortTitle, role: .destructive) { onRemove() }
                 .disabled(selectedCount == 0)
@@ -86,14 +86,14 @@ struct TimeRemainingBar: View {
                 .font(.caption)
 
                 if unknown > 0 {
-                    Text("(\(unknown) \(unknown == 1 ? "book" : "books") not yet opened)")
+                    Text("(\(CountWording.books(unknown)) not yet opened)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                Text("\(books.count) \(books.count == 1 ? "book" : "books")")
+                Text(CountWording.books(books.count))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -130,12 +130,12 @@ struct TimeRemainingBar: View {
 
     private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {
         var parts: [String] = []
-        parts.append("\(books.count) \(books.count == 1 ? "book" : "books")")
+        parts.append(CountWording.books(books.count))
         if known > 0 {
             parts.append("\(TimeFormatting.spoken(time)) total remaining at current speed")
         }
         if unknown > 0 {
-            parts.append("\(unknown) \(unknown == 1 ? "book has" : "books have") not been opened yet")
+            parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
         }
         return parts.joined(separator: ". ")
     }
@@ -191,12 +191,12 @@ struct FolderRow: View {
             Text(folder.name)
                 .font(.headline)
             Spacer()
-            Text("\(bookCount) \(bookCount == 1 ? "book" : "books")")
+            Text(CountWording.books(bookCount))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(folder.name), \(bookCount) \(bookCount == 1 ? "book" : "books")")
+        .accessibilityLabel("\(folder.name), \(CountWording.books(bookCount))")
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Double-tap to open folder")
     }

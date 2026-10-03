@@ -326,7 +326,7 @@ struct FolderRemovalWording: Equatable {
     /// and everything in it leave the library, and their files go to the
     /// Trash, where you can recover them until the Trash is emptied."
     var choiceMessage: String {
-        let books = bookCount == 1 ? "1 book" : "\(bookCount) books"
+        let books = CountWording.books(bookCount)
         return "\(quotedName) contains \(books) and may have subfolders. "
             + "With Move Contents Out, they stay in the library and only the folder is deleted. "
             + "With \(buttonTitle), the folder and everything in it leave the library, "
