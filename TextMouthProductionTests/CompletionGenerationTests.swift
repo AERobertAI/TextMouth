@@ -96,6 +96,280 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertFalse(playback.isPlaying)
     }
 
+    // MARK: - End-of-File Notices
+
+    /// A file played to its end finishes once, ended by AVFoundation's
+    /// notice.
+    func testNaturalEndFinishesOnce() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+
+        XCTAssertEqual(reports.endOfFileOutcomes, [.endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+        XCTAssertEqual(events.failures, [])
+        XCTAssertFalse(playback.isPlaying)
+    }
+
+    /// A clip that ends where its file does is reported ended twice: first
+    /// by the position observer, at the clip's end, then about 35
+    /// milliseconds later by AVFoundation's notice of the file's end. The
+    /// first finishes playback; the second, posted after it, ends nothing.
+    func testClipEndingWhereItsFileEndsFinishesOnceThoughReportedTwice() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        playback.setClipEndTime(0.4)
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+
+        XCTAssertTrue(reports.finishedAClipOnATick, "The position observer never reached the clip's end: \(reports.reports)")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.nothingPlaying])
+        XCTAssertEqual(events.finishedCount, 1)
+    }
+
+    /// A seek past the end of the file, while playing, finishes once.
+    func testSeekPastTheEndFinishesOnce() throws {
+        let file = try writeSilentFile(duration: 2)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        let item = try XCTUnwrap(playback._playerItemForTesting)
+        XCTAssertTrue(eventually { item.status == .readyToPlay }, "The file never became ready")
+
+        playback.seek(to: 10)
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+    }
+
+    /// Stop between AVFoundation posting the file's end and the service
+    /// acting on it leaves the notice nothing to end: it was posted during
+    /// the play that Stop ended.
+    func testEndOvertakenByStopEndsNothing() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        playback._endNoticeArrivedForTesting = { [unowned playback] in playback.stop() }
+
+        XCTAssertTrue(eventually { !reports.endOfFileOutcomes.isEmpty }, "The file's end was never reported")
+
+        XCTAssertEqual(reports.endOfFileOutcomes, [.postedDuringEarlierPlay])
+        XCTAssertEqual(events.finishedCount, 0)
+        XCTAssertFalse(playback.isPlaying)
+    }
+
+    /// A seek back between AVFoundation posting the file's end and the
+    /// service acting on it wins: the notice ends nothing, playback plays on
+    /// from the new place, which AVFoundation had stopped at the end, and
+    /// finishes once when it reaches the end again.
+    func testEndOvertakenBySeekEndsNothingAndPlaybackPlaysOn() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        var hasSought = false
+        playback._endNoticeArrivedForTesting = { [unowned playback] in
+            guard !hasSought else { return }
+            hasSought = true
+            playback.seek(to: 0.1)
+        }
+
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes.count == 2 }, "Playback never reached the end again")
+
+        XCTAssertEqual(reports.endOfFileOutcomes, [.postedDuringEarlierPlay, .endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+        XCTAssertEqual(events.failures, [])
+    }
+
+    /// The same file loaded and played again between AVFoundation posting
+    /// its end and the service acting on it, as a chapter reload does,
+    /// begins a play that notice cannot end; the new play finishes once.
+    func testEndOvertakenByAReloadOfTheSameFileEndsNothing() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        XCTAssertTrue(playback.play())
+        var hasReloaded = false
+        playback._endNoticeArrivedForTesting = { [unowned playback] in
+            guard !hasReloaded else { return }
+            hasReloaded = true
+            XCTAssertTrue(playback.load(url: file))
+            XCTAssertTrue(playback.play(fromTime: 0))
+        }
+
+        XCTAssertTrue(eventually { reports.endOfFileOutcomes.count == 2 }, "The reloaded file never reached its end")
+
+        XCTAssertEqual(reports.endOfFileOutcomes, [.postedDuringEarlierPlay, .endedPlay])
+        XCTAssertEqual(events.finishedCount, 1)
+    }
+
+    /// A seek back in the moment between the playhead reaching the file's
+    /// end and AVFoundation posting that end: the late notice arrives as the
+    /// seek lands, with the playhead where the seek put it, and ends
+    /// nothing. AVFoundation leaves that player stopped, so the play goes on
+    /// from there on a new player, and finishes once at the end.
+    func testSeekBackJustAfterTheEndIsReachedPlaysOnAndFinishesOnce() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let events = PlaybackEvents(observing: playback)
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        let firstPlayer = try XCTUnwrap(playback._playerForTesting)
+        var positionsAfterSeeking: [TimeInterval] = []
+        var hasSought = false
+        playback.onPositionUpdate = { [unowned playback] time in
+            if hasSought {
+                positionsAfterSeeking.append(time)
+            } else if time >= 0.4 - 0.001 {
+                // The tick that finds the playhead at the end comes before
+                // AVFoundation posts the end.
+                hasSought = true
+                playback.seek(to: 0.1)
+            }
+        }
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { events.finishedCount == 1 }, "Playback never finished after the seek")
+
+        XCTAssertTrue(hasSought, "The playhead was never reported at the end")
+        XCTAssertEqual(reports.endOfFileOutcomes, [.lateForEarlierPlaythrough, .endedPlay])
+        XCTAssertFalse(playback._playerForTesting === firstPlayer, "The stopped player was kept")
+        XCTAssertTrue(
+            positionsAfterSeeking.contains { $0 > 0.1 && $0 < 0.4 },
+            "Playback did not play on from where it was sought: \(positionsAfterSeeking)"
+        )
+        XCTAssertEqual(events.failures, [])
+    }
+
+    /// A play that finishes at its clip's end, at the file's end, and is at
+    /// once played again on the same player, as a loop does, receives the
+    /// late end of the earlier playthrough as it begins. That end is ignored,
+    /// the play starts again on a new player, and plays through to finish
+    /// once more.
+    func testReplayingAFileJustAfterItsClipEndsPlaysItThroughAgain() throws {
+        let file = try writeSilentFile(duration: 0.4)
+        let playback = AudioPlaybackService()
+        defer { playback.stop() }
+        let reports = PlayerReportLog(observing: playback)
+        XCTAssertTrue(playback.load(url: file))
+        playback.setClipEndTime(0.4)
+        let firstPlayer = try XCTUnwrap(playback._playerForTesting)
+        var finishedCount = 0
+        playback.onPlaybackFinished = { [unowned playback] in
+            finishedCount += 1
+            if finishedCount == 1 {
+                XCTAssertTrue(playback.play(fromTime: 0))
+            }
+        }
+        XCTAssertTrue(playback.play())
+
+        XCTAssertTrue(eventually { finishedCount == 2 }, "The replay never played through")
+
+        XCTAssertEqual(reports.endOfFileOutcomes.first, .lateForEarlierPlaythrough)
+        XCTAssertFalse(reports.endOfFileOutcomes.contains(.endedPlay), "An end of file ended a play: \(reports.endOfFileOutcomes)")
+        XCTAssertFalse(playback._playerForTesting === firstPlayer, "The stopped player was kept")
+        XCTAssertEqual(finishedCount, 2)
+    }
+
+    // MARK: - End Notice Policy
+
+    /// A notice posted during an earlier play ends nothing, wherever the
+    /// playhead stood.
+    func testPolicyIgnoresANoticePostedDuringAnEarlierPlay() {
+        XCTAssertEqual(
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 3, currentGeneration: 4, isPlaying: true,
+                playhead: 10, playStart: 0, fileDuration: 10, restartedFrom: nil
+            ),
+            .postedDuringEarlierPlay
+        )
+    }
+
+    /// With nothing playing, a notice ends nothing.
+    func testPolicyIgnoresANoticeWhenNothingPlays() {
+        XCTAssertEqual(
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 4, currentGeneration: 4, isPlaying: false,
+                playhead: 10, playStart: 0, fileDuration: 10, restartedFrom: nil
+            ),
+            .nothingPlaying
+        )
+    }
+
+    /// A playhead at the file's end, or past where its play began, has
+    /// played to the end; so has one whose position is unknown.
+    func testPolicyEndsThePlayThatReachedTheEnd() {
+        func outcome(playhead: TimeInterval?, playStart: TimeInterval, fileDuration: TimeInterval?) -> AudioEndNoticeOutcome {
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 1, currentGeneration: 1, isPlaying: true,
+                playhead: playhead, playStart: playStart, fileDuration: fileDuration, restartedFrom: nil
+            )
+        }
+        XCTAssertEqual(outcome(playhead: 10, playStart: 2, fileDuration: 10), .endedPlay)
+        // A file whose length was overestimated ends short of it.
+        XCTAssertEqual(outcome(playhead: 9.4, playStart: 2, fileDuration: 10), .endedPlay)
+        // A play that began at the end ends there.
+        XCTAssertEqual(outcome(playhead: 10, playStart: 10, fileDuration: 10), .endedPlay)
+        XCTAssertEqual(outcome(playhead: nil, playStart: 2, fileDuration: 10), .endedPlay)
+    }
+
+    /// A playhead still where the play began, short of the file's end, is
+    /// the late end of an earlier playthrough, within the tolerance of a
+    /// seek's landing, and also while the file's length is unknown.
+    func testPolicyRecognizesTheLateEndOfAnEarlierPlaythrough() {
+        func outcome(playhead: TimeInterval, fileDuration: TimeInterval?) -> AudioEndNoticeOutcome {
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 1, currentGeneration: 1, isPlaying: true,
+                playhead: playhead, playStart: 3, fileDuration: fileDuration, restartedFrom: nil
+            )
+        }
+        let tolerance = AudioEndNoticePolicy.playStartTolerance
+        XCTAssertEqual(outcome(playhead: 3, fileDuration: 10), .lateForEarlierPlaythrough)
+        XCTAssertEqual(outcome(playhead: 3 + tolerance, fileDuration: 10), .lateForEarlierPlaythrough)
+        XCTAssertEqual(outcome(playhead: 3, fileDuration: nil), .lateForEarlierPlaythrough)
+        XCTAssertEqual(outcome(playhead: 3 + 2 * tolerance, fileDuration: 10), .endedPlay)
+    }
+
+    /// A play already started again on a new player after a late notice is
+    /// not started again: another notice with the playhead at its start is
+    /// a real end, as at the true end of a file whose length was
+    /// overestimated, and never starts a loop of restarts.
+    func testPolicyNeverRestartsAPlayTwice() {
+        XCTAssertEqual(
+            AudioEndNoticePolicy.outcome(
+                postedGeneration: 2, currentGeneration: 2, isPlaying: true,
+                playhead: 3, playStart: 3, fileDuration: 10, restartedFrom: 3
+            ),
+            .endedPlay
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A silent WAV file lasting `duration` seconds, in a folder of its own
@@ -136,6 +410,23 @@ final class PlayerReportLog {
     /// How many ticks came from the position observer of a released player.
     var ticksFromReleasedPlayers: Int {
         reports.filter { $0 == .tickFromReleasedPlayer }.count
+    }
+
+    /// What the service made of each end-of-file notice, in order.
+    var endOfFileOutcomes: [AudioEndNoticeOutcome] {
+        reports.compactMap { report in
+            guard case .endOfFile(let outcome) = report else { return nil }
+            return outcome
+        }
+    }
+
+    /// Whether a tick of the position observer found the clip at its end
+    /// and finished it.
+    var finishedAClipOnATick: Bool {
+        reports.contains { report in
+            guard case .tick(_, .finishClip) = report else { return false }
+            return true
+        }
     }
 
     /// Whether a tick of the current player found it at least `seconds`
