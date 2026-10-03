@@ -297,6 +297,54 @@ final class ArchiveEntryReaderTests: XCTestCase {
         return try makeBookFile(named: "Binding Notes.docx", entries: [DOCXParser.Part.document: Data(document.utf8)])
     }
 
+    // MARK: - DAISY
+
+    /// A DAISY book whose navigation file holds more than the text limit
+    /// fails, naming the file and the limit in the DAISY damage sentence.
+    func testDAISYFilePastTheTextLimitIsNamedAsDamaged() throws {
+        let book = try requireFile("daisy202_test.zip")
+        let archive = try Archive(url: book, accessMode: .read)
+        let ncc = try XCTUnwrap(archive["ncc.html"])
+        // Every other file in the book is smaller than its navigation file.
+        let limit = Int64(ncc.uncompressedSize) - 1
+
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: limit, text: limit)) {
+            XCTAssertThrowsError(try DAISYParser.extractMarkdown(from: book)) { error in
+                XCTAssertEqual(
+                    error.localizedDescription,
+                    "The file “ncc.html” in this DAISY book is damaged or incomplete: it holds more than "
+                        + "\(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
+                        + "Get a fresh copy of the book, then import it again."
+                )
+            }
+        }
+    }
+
+    /// An audio file holding more than the audio limit is refused by name,
+    /// while the book's text still reads, a file is still found without
+    /// regard to case, and a missing one is still reported as missing.
+    func testDAISYAudioPastTheAudioLimitIsNamedAsDamaged() throws {
+        let navigation = Data("<html xmlns=\"http://www.w3.org/1999/xhtml\"/>".utf8)
+        let archive = try openArchive(["Harbor/ncc.html": navigation, "Harbor/part1.mp3": Data(count: 5_000)])
+        let provider = ArchiveFileProvider(archive: archive)
+
+        try ArchiveEntryLimits.$current.withValue(ArchiveEntryLimits(audio: 4_000, text: 4_000)) {
+            XCTAssertThrowsError(try provider.readFile(at: "Harbor/part1.mp3")) { error in
+                guard case let .malformedXML(file, reason)? = error as? DAISYParserError else {
+                    return XCTFail("Expected a damaged file, got \(error)")
+                }
+                XCTAssertEqual(file, "Harbor/part1.mp3")
+                XCTAssertEqual(reason, ArchiveEntryOverflow.pastLimit(path: file, limit: 4_000).reason)
+            }
+            XCTAssertEqual(try provider.readFile(at: "harbor/NCC.HTML"), navigation)
+            XCTAssertThrowsError(try provider.readFile(at: "Harbor/part2.mp3")) { error in
+                guard case .missingContent? = error as? DAISYParserError else {
+                    return XCTFail("Expected a missing file, got \(error)")
+                }
+            }
+        }
+    }
+
     // MARK: - Fixtures
 
     /// An archive holding `entries`, opened for reading. Its file is removed

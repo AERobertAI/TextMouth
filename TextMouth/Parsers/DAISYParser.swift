@@ -12,9 +12,10 @@ enum DAISYParserError: LocalizedError {
     case missingContent(String)
     case parseError(String)
     /// A file in the package is damaged: its markup breaks off or is not
-    /// well-formed, so reading on would silently yield a partial book.
-    /// `file` is the file's path inside the package; `reason` completes the
-    /// sentence "The file is damaged or incomplete: …".
+    /// well-formed, so reading on would silently yield a partial book, or
+    /// it holds more than TextMouth reads from one file. `file` is the
+    /// file's path inside the package; `reason` completes the sentence "The
+    /// file is damaged or incomplete: …".
     case malformedXML(file: String, reason: String)
 
     var errorDescription: String? {
@@ -80,7 +81,10 @@ class CachingFileProvider: DAISYFileProvider {
     }
 }
 
-/// Reads files from a ZIPFoundation Archive
+/// Reads files from a ZIPFoundation Archive, each through the shared
+/// `ArchiveEntryReader`, so no file larger than the most TextMouth reads
+/// from one file (audio or text, by its extension) is read into memory
+/// (TODO I05).
 class ArchiveFileProvider: DAISYFileProvider {
     let archive: Archive
 
@@ -96,23 +100,26 @@ class ArchiveFileProvider: DAISYFileProvider {
         }
     }
 
+    /// The bytes of the file at `path`: the entry of exactly that path, or
+    /// else the first file whose path matches it without regard to case.
+    /// - Throws: `DAISYParserError.missingContent` when no entry matches,
+    ///   and `DAISYParserError.malformedXML` naming the file when it holds
+    ///   more than `ArchiveEntryLimits.current` allows.
     func readFile(at path: String) throws -> Data {
-        // Try exact match first
-        if let entry = archive[path] {
-            var data = Data()
-            _ = try archive.extract(entry) { chunk in data.append(chunk) }
-            return data
+        guard let entry = archive[path] ?? caseInsensitiveFile(at: path) else {
+            throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
-        // Try case-insensitive match
+        do {
+            return try ArchiveEntryReader.read(entry, in: archive).data
+        } catch let overflow as ArchiveEntryOverflow {
+            throw DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
+        }
+    }
+
+    /// The first file entry whose path matches `path` without regard to case.
+    private func caseInsensitiveFile(at path: String) -> Entry? {
         let lowerPath = path.lowercased()
-        for entry in archive where entry.type == .file {
-            if entry.path.lowercased() == lowerPath {
-                var data = Data()
-                _ = try archive.extract(entry) { chunk in data.append(chunk) }
-                return data
-            }
-        }
-        throw DAISYParserError.missingContent("File not found in archive: \(path)")
+        return archive.first { $0.type == .file && $0.path.lowercased() == lowerPath }
     }
 }
 
