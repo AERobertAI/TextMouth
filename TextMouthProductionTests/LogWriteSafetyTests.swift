@@ -138,11 +138,117 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: first.path), "a line made the old folder again")
     }
 
+    // MARK: - Rotation in a Synced Folder
+
+    /// A rename refused once, as a File Provider folder can refuse one
+    /// while the provider holds the file, is tried once more, and the full
+    /// log is kept as the older generation as usual.
+    func testARefusedRenameIsTriedOnceMore() throws {
+        let attempts = LockedValue(0)
+        let writer = makeWriter(writingInto: directory, rename: { from, to in
+            attempts.value += 1
+            if attempts.value == 1 {
+                throw POSIXError(.EBUSY)
+            }
+            try LogWriter.renameReplacing(from, to)
+        })
+        let (log, previous, filler) = try makeFullLog()
+
+        writer.append("after a refused rename", to: .debug)
+        writer.flush()
+
+        XCTAssertEqual(attempts.value, 2)
+        XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), filler)
+        let fresh = try String(contentsOf: log, encoding: .utf8)
+        XCTAssertTrue(fresh.hasSuffix(": after a refused rename\n"), fresh)
+        XCTAssertFalse(fresh.contains("LOG_ROTATION"), fresh)
+    }
+
+    /// A rename refused twice starts the log over in place, so it never
+    /// grows past the cap: the older generation stays as it was, and the
+    /// log begins with one line saying why its earlier lines are gone.
+    func testARenameRefusedTwiceStartsTheLogOverInPlace() throws {
+        let attempts = LockedValue(0)
+        let writer = makeWriter(writingInto: directory, rename: { _, _ in
+            attempts.value += 1
+            throw POSIXError(.EPERM)
+        })
+        let (log, previous, _) = try makeFullLog()
+        try "older generation\n".write(to: previous, atomically: true, encoding: .utf8)
+
+        writer.append("after two refusals", to: .debug)
+        writer.flush()
+
+        XCTAssertEqual(attempts.value, 2, "a refused rename is tried exactly once more")
+        XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), "older generation\n")
+        let lines = try String(contentsOf: log, encoding: .utf8).components(separatedBy: "\n")
+        XCTAssertEqual(lines.count, 3, "the note, the line, and the end of the last line: \(lines)")
+        XCTAssertTrue(lines[0].hasSuffix(
+            ": LOG_ROTATION: textmouth_debug.log reached 2 MB but couldn't be renamed to textmouth_debug.log.previous "
+                + "(Operation not permitted), so it was started over without its earlier lines"
+        ), lines[0])
+        XCTAssertTrue(lines[1].hasSuffix(": after two refusals"), lines[1])
+    }
+
+    /// The real rename, refused because a folder holds the older
+    /// generation's name, ends the same way: the log is started over, and
+    /// the folder is left alone.
+    func testALogThatCannotBeRenamedNeverGrowsPastTheCap() throws {
+        let writer = makeWriter(writingInto: directory)
+        let (log, previous, _) = try makeFullLog()
+        try FileManager.default.createDirectory(at: previous, withIntermediateDirectories: false)
+        try Data("kept".utf8).write(to: previous.appendingPathComponent("inside.txt"))
+
+        writer.append("after the real refusals", to: .debug)
+        writer.flush()
+
+        let text = try String(contentsOf: log, encoding: .utf8)
+        XCTAssertLessThan(text.utf8.count, 1_000)
+        XCTAssertTrue(text.contains(": LOG_ROTATION: textmouth_debug.log reached 2 MB but couldn't be renamed"), text)
+        XCTAssertTrue(text.hasSuffix(": after the real refusals\n"), text)
+        XCTAssertEqual(try String(contentsOf: previous.appendingPathComponent("inside.txt"), encoding: .utf8), "kept")
+    }
+
+    /// A log whose content is only in the cloud is never opened to take a
+    /// line, which would download it: however small, it is kept as the
+    /// older generation, by a rename that needs no content, and a fresh file
+    /// takes the line.
+    func testALogOnlyInTheCloudIsKeptAsTheOlderGenerationWithoutDownloading() throws {
+        let debugLog = DiagnosticLog.File.debug.rawValue
+        let writer = makeWriter(writingInto: directory, isOnlyInCloud: { $0.lastPathComponent == debugLog })
+        let log = directory.appendingPathComponent(debugLog)
+        let previous = log.appendingPathExtension(TextMouthPaths.rotatedLogExtension)
+        try "lines in the cloud\n".write(to: log, atomically: true, encoding: .utf8)
+
+        writer.append("after the cloud", to: .debug)
+        writer.flush()
+
+        XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), "lines in the cloud\n")
+        let fresh = try String(contentsOf: log, encoding: .utf8)
+        XCTAssertTrue(fresh.hasSuffix(": after the cloud\n"), fresh)
+        XCTAssertFalse(fresh.contains("lines in the cloud"), fresh)
+    }
+
     // MARK: - Fixtures
 
-    /// A log writer of the test's own that writes into `folder`.
-    private func makeWriter(writingInto folder: URL) -> LogWriter {
-        LogWriter(environment: LogWriter.Environment(folder: { folder }))
+    /// A log writer of the test's own that writes into `folder`, renaming
+    /// with `rename` and taking the files `isOnlyInCloud` names as only in
+    /// the cloud: by default the real rename(2), and no file.
+    private func makeWriter(
+        writingInto folder: URL,
+        rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
+        isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { _ in false }
+    ) -> LogWriter {
+        LogWriter(environment: LogWriter.Environment(folder: { folder }, rename: rename, isOnlyInCloud: isOnlyInCloud))
+    }
+
+    /// The debug log in the test's directory, filled to the cap, the path of
+    /// its older generation, and what fills it.
+    private func makeFullLog() throws -> (log: URL, previous: URL, filler: String) {
+        let log = directory.appendingPathComponent(DiagnosticLog.File.debug.rawValue)
+        let filler = String(repeating: "x", count: Int(TextMouthPaths.maxLogFileSize))
+        try filler.write(to: log, atomically: true, encoding: .utf8)
+        return (log, log.appendingPathExtension(TextMouthPaths.rotatedLogExtension), filler)
     }
 
     /// The sleep timer's and speech's own logs keep their names and are

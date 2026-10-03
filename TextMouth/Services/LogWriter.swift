@@ -15,7 +15,9 @@ import Foundation
 /// Logging is diagnostic only, so every failure is swallowed: a full disk,
 /// an unwritable file, or a folder that cannot be made must never crash or
 /// stall the app. Each log keeps at most two generations: itself, up to
-/// `TextMouthPaths.maxLogFileSize`, and one older `.previous`.
+/// `TextMouthPaths.maxLogFileSize`, and one older `.previous`. That keeps
+/// the churn small when the logs are in a folder a sync service uploads,
+/// and the writer never downloads a log to add a line to it.
 ///
 /// The app writes through `shared`; tests make writers of their own over
 /// folders of their own, each with its own queue.
@@ -24,6 +26,25 @@ final class LogWriter: Sendable {
     struct Environment: Sendable {
         /// The folder lines are written into now.
         var folder: @Sendable () -> URL
+        /// Renames a file, replacing whatever is at the new name in the same
+        /// step; tests make it fail.
+        var rename: @Sendable (_ from: URL, _ to: URL) throws -> Void
+        /// Whether a file's content is only in the cloud, so writing to it
+        /// would download it first; tests say so of files that aren't.
+        var isOnlyInCloud: @Sendable (_ file: URL) -> Bool
+
+        /// An environment writing into `folder`, renaming with rename(2)
+        /// and asking the file system which files are only in the cloud,
+        /// unless a test passes its own.
+        init(
+            folder: @escaping @Sendable () -> URL,
+            rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
+            isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { DatalessFiles.isDataless($0) }
+        ) {
+            self.folder = folder
+            self.rename = rename
+            self.isOnlyInCloud = isOnlyInCloud
+        }
     }
 
     /// The writer every log line of the app goes through.
@@ -50,10 +71,16 @@ final class LogWriter: Sendable {
     /// Appends `message` to the log `file`, timestamped now, on the writer's
     /// queue. Safe to call from any thread: it never waits for the write.
     func append(_ message: String, to file: DiagnosticLog.File) {
-        guard let data = "\(Date()): \(message)\n".data(using: .utf8) else { return }
+        let data = Self.line(message)
         queue.async { [self] in
             write(data, to: file)
         }
+    }
+
+    /// `message` as one line of a log: after the time now, and ending its
+    /// line, as every line of every log is.
+    static func line(_ message: String) -> Data {
+        Data("\(Date()): \(message)\n".utf8)
     }
 
     /// Blocks until every line queued so far has been written, or dropped.
@@ -69,7 +96,7 @@ final class LogWriter: Sendable {
         let folder = environment.folder()
         do {
             try Self.makeFolder(folder)
-            try Self.append(data, to: folder.appendingPathComponent(file.rawValue, isDirectory: false))
+            try append(data, to: folder.appendingPathComponent(file.rawValue, isDirectory: false))
         } catch {
             // Intentionally dropped: see the type's description.
         }
@@ -85,36 +112,147 @@ final class LogWriter: Sendable {
     }
 
     /// Appends `data` to the log at `logFile`, starting the file when it is
-    /// missing and rotating it first once it has reached the cap.
+    /// missing, and starting a fresh one, the full log kept as the older
+    /// generation, once the log has reached the cap.
+    ///
+    /// Nothing is downloaded on the way (`DatalessFiles.withoutDownloading`):
+    /// a log whose content a sync service left only in the cloud would have
+    /// to download before it could take a line, holding up the queue, and
+    /// whoever waits for it, on the network. Such a log is kept as the older
+    /// generation, as a full one is, and a fresh file takes the line.
     ///
     /// The legacy `seekToEndOfFile`/`write(_:)` calls raised Objective-C
     /// exceptions on a failed write and took the whole app down (observed
     /// with ENOSPC); the throwing FileHandle calls report failures as errors
     /// instead. The end offset `seekToEnd()` returns doubles as the size
     /// check that decides whether to rotate before writing.
-    private static func append(_ data: Data, to logFile: URL) throws {
-        guard FileManager.default.fileExists(atPath: logFile.path) else {
-            try data.write(to: logFile)
-            return
-        }
-        let handle = try FileHandle(forWritingTo: logFile)
-        let currentSize = try handle.seekToEnd()
-        if currentSize >= TextMouthPaths.maxLogFileSize {
-            try handle.close()
-            rotate(logFile)
-            try data.write(to: logFile)
-        } else {
-            defer { try? handle.close() }
-            try handle.write(contentsOf: data)
+    private func append(_ data: Data, to logFile: URL) throws {
+        try DatalessFiles.withoutDownloading {
+            guard FileManager.default.fileExists(atPath: logFile.path) else {
+                try data.write(to: logFile)
+                return
+            }
+            guard !environment.isOnlyInCloud(logFile) else {
+                try startAfresh(logFile, with: data)
+                return
+            }
+            let handle: FileHandle
+            do {
+                handle = try FileHandle(forWritingTo: logFile)
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                // The sync service took the content away since the check.
+                try startAfresh(logFile, with: data)
+                return
+            }
+            let currentSize = try handle.seekToEnd()
+            if currentSize >= TextMouthPaths.maxLogFileSize {
+                try handle.close()
+                try startAfresh(logFile, with: data)
+            } else {
+                defer { try? handle.close() }
+                try handle.write(contentsOf: data)
+            }
         }
     }
 
-    /// Keeps the full log as its one `.previous` generation and lets the
-    /// caller start a fresh file, so a log never takes more than two
-    /// generations. Failures leave the current file in place.
-    private static func rotate(_ logFile: URL) {
-        let rotated = logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension)
-        try? FileManager.default.removeItem(at: rotated)
-        try? FileManager.default.moveItem(at: logFile, to: rotated)
+    /// Rotates the log at `logFile` and starts a fresh one holding `data`.
+    /// A log that had to be started over in place begins with a line saying
+    /// why its earlier lines are gone.
+    private func startAfresh(_ logFile: URL, with data: Data) throws {
+        switch rotate(logFile) {
+        case .kept:
+            try data.write(to: logFile)
+        case .startedOver(let reason):
+            let note = Self.rotationNote(for: logFile.lastPathComponent, reason: reason)
+            try Self.replaceContents(of: logFile, with: Self.line(note) + data)
+        }
+    }
+
+    // MARK: - Rotation
+
+    /// What became of a full log when it was rotated.
+    private enum Rotation {
+        /// It was kept as the one older generation, `.previous`.
+        case kept
+        /// It could not be renamed, for `reason`, so it is to be started
+        /// over in place, its lines lost.
+        case startedOver(reason: String)
+    }
+
+    /// Keeps the full log at `logFile` as its one older generation,
+    /// `.previous`, so a log never takes more than two generations.
+    ///
+    /// One rename does it, replacing the generation before in the same step
+    /// (rename(2)), so the older generation is never missing, not even for a
+    /// moment a sync service could upload. The rename needs no content, so a
+    /// log only in the cloud is never downloaded for it. A rename refused,
+    /// as one in a File Provider folder can be while the provider holds the
+    /// file, is tried once more; when that is refused too, the caller starts
+    /// the log over in place, so it still never grows past the cap.
+    private func rotate(_ logFile: URL) -> Rotation {
+        let previous = logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension)
+        var refusal: Error?
+        for _ in 1...2 {
+            do {
+                try environment.rename(logFile, previous)
+                return .kept
+            } catch {
+                refusal = error
+            }
+        }
+        return .startedOver(reason: refusal.map(Self.describe) ?? "no reason given")
+    }
+
+    /// Makes the log at `logFile` hold only `data`, its earlier lines gone:
+    /// truncated in place, or, when it is only in the cloud and cannot be
+    /// opened without downloading it, removed and written afresh.
+    private static func replaceContents(of logFile: URL, with data: Data) throws {
+        do {
+            // Writing without the atomic option truncates the file first.
+            try data.write(to: logFile)
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            try FileManager.default.removeItem(at: logFile)
+            try data.write(to: logFile)
+        }
+    }
+
+    /// What begins a log started over in place, the one named `name`,
+    /// because the rename that keeps a full log was refused, for `reason`.
+    static func rotationNote(for name: String, reason: String) -> String {
+        let limit = TextMouthPaths.maxLogFileSize / (1024 * 1024)
+        return "LOG_ROTATION: \(name) reached \(limit) MB but couldn't be renamed to "
+            + "\(name).\(TextMouthPaths.rotatedLogExtension) (\(reason)), so it was started over without its earlier lines"
+    }
+
+    /// Renames `from` to `to` with rename(2), which replaces whatever is at
+    /// `to` in the same step, as `FileManager.moveItem` never does.
+    /// - Throws: The POSIX error the rename failed with.
+    static func renameReplacing(_ from: URL, _ to: URL) throws {
+        let failure = from.withUnsafeFileSystemRepresentation { fromPath in
+            to.withUnsafeFileSystemRepresentation { toPath -> Int32 in
+                guard let fromPath, let toPath else { return EINVAL }
+                return Darwin.rename(fromPath, toPath) == 0 ? 0 : errno
+            }
+        }
+        guard failure == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
+        }
+    }
+
+    /// Why a file operation failed, as a log line may say it: the system's
+    /// short description, such as "Operation not permitted", or that the
+    /// file is only in the cloud; never a path.
+    static func describe(_ error: Error) -> String {
+        if DatalessFiles.isDownloadRefusal(error) {
+            return "it is only in the cloud"
+        }
+        let nsError = error as NSError
+        if nsError.domain == NSPOSIXErrorDomain {
+            return String(cString: strerror(Int32(nsError.code)))
+        }
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? Error {
+            return describe(underlying)
+        }
+        return "error \(nsError.code) in \(nsError.domain)"
     }
 }

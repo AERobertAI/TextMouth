@@ -285,6 +285,9 @@ final class LogContentPolicyTests: XCTestCase {
         "READER_DOWNLOAD_STARTED", "READER_READ_REFUSED",
         "WORKING_COPIES_SWEPT", "WORKING_COPY_LEFT", "WORKING_COPY_MADE", "WORKING_COPY_REMOVED",
         "WORKING_COPY_SKIPPED", "MAINTENANCE_SKIPPED_IN_CLOUD",
+        // The logs themselves (the user's decision of October 3): a log started over because it
+        // could not be renamed to its older generation.
+        "LOG_ROTATION",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
