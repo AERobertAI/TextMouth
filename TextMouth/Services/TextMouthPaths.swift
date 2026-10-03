@@ -297,7 +297,11 @@ enum TextMouthPaths {
             setCustomRoot(newRoot)
             publishedRoot = URL(fileURLWithPath: newRoot.path)
         }
-        StorageBoundary.shared.publish(root: publishedRoot)
+        // Between the persistence queues' writes, so none of them resolves
+        // its file under the old root and writes it after this.
+        LibraryPersistenceService.betweenWrites {
+            StorageBoundary.shared.publish(root: publishedRoot)
+        }
 
         library = migratedLibrary
     }
