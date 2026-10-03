@@ -660,6 +660,108 @@ final class ContentIndexValidationTests: XCTestCase {
         )
     }
 
+    /// Text of the same length with a heading more or fewer lists headings
+    /// the index does not.
+    func testIndexIsMisalignedWithAnotherHeadingCount() {
+        var chapters = textChapters()
+        chapters[1].headings.removeLast()
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            "chapters[1].headings has 2 entries, but the reading text has 1"
+        )
+    }
+
+    /// A heading that moved within same-length text would send heading
+    /// navigation to the wrong words.
+    func testIndexIsMisalignedWithAMovedHeading() {
+        var chapters = textChapters()
+        chapters[1].headings[1].characterOffset = 6
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            "chapters[1].headings[1].characterOffset is 11, but the reading text has it at 6"
+        )
+    }
+
+    /// A heading renamed in place would be announced by its old label.
+    func testIndexIsMisalignedWithARelabeledHeading() {
+        var chapters = textChapters()
+        chapters[1].headings[1].text = "Fifth"
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            #"chapters[1].headings[1].text is "Five", but the reading text has "Fifth""#
+        )
+    }
+
+    /// A heading at another level would sit at the wrong depth of the outline.
+    func testIndexIsMisalignedWithAnotherHeadingLevel() {
+        var chapters = textChapters()
+        chapters[1].headings[1].level = 2
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            "chapters[1].headings[1].level is 3, but the reading text has 2"
+        )
+    }
+
+    /// Words joined or split in same-length text change the counts that
+    /// reading-time estimates use.
+    func testIndexIsMisalignedWithAnotherWordCount() {
+        var chapters = textChapters()
+        chapters[1].text = "three-four five"
+
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters),
+            "chapters[1].wordCount is 3, but the reading text holds 2"
+        )
+    }
+
+    /// Totals that disagree with the text are named, even when every
+    /// chapter matches.
+    func testIndexIsMisalignedWithAnotherTotal() {
+        var words = textIndex()
+        words.totalWordCount += 1
+        XCTAssertEqual(
+            words.alignmentFailure(with: textChapters()),
+            "totalWordCount is 7, but the reading text holds 6"
+        )
+
+        var characters = textIndex()
+        characters.totalCharacterCount -= 1
+        XCTAssertEqual(
+            characters.alignmentFailure(with: textChapters()),
+            "totalCharacterCount is 24, but the reading text holds 25"
+        )
+    }
+
+    /// Without counting words, every other comparison still runs, but word
+    /// counts are taken on trust, as a load does for an index whose
+    /// fingerprints prove it was measured from this very text.
+    func testWordCountsAreComparedOnlyWhenCounting() {
+        var chapters = textChapters()
+        chapters[1].text = "three-four five"
+        XCTAssertNil(textIndex().alignmentFailure(with: chapters, countingWords: false))
+
+        chapters[1].headings[1].text = "Fifth"
+        XCTAssertEqual(
+            textIndex().alignmentFailure(with: chapters, countingWords: false),
+            #"chapters[1].headings[1].text is "Five", but the reading text has "Fifth""#
+        )
+    }
+
+    /// A heading the parser placed past its chapter's end is recorded at the
+    /// end, and alignment compares it there, so an index built from text
+    /// stays aligned with that text.
+    func testHeadingPastTheEndIsAlignedWhereTheIndexRecordsIt() {
+        let chapters = [Chapter(title: "One", text: "Words.", headings: [Heading(level: 1, text: "", characterOffset: 40)])]
+        let index = BookContentIndex.build(fromChapters: chapters, format: .epub)
+
+        XCTAssertEqual(index.chapters[0].headings[0].characterOffset, 6)
+        XCTAssertNil(index.alignmentFailure(with: chapters))
+    }
+
     // MARK: - Opening a book
 
     /// A sound saved text index keeps the fast path.
