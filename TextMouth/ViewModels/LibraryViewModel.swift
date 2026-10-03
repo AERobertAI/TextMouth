@@ -125,6 +125,8 @@ final class LibraryViewModel: ObservableObject {
 
         // Ensure directory structure exists on first launch
         try? TextMouthPaths.ensureDirectoryStructure()
+        // Clear what ZIP imports interrupted by a crash left extracted.
+        removeLeftoverArchiveExtractions()
 
         // Load the index and run the startup repair; an unreadable index
         // enters recovery with a provisional library and saves nothing.

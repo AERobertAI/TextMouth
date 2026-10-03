@@ -8,7 +8,29 @@ final class SerialImportQueue: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.textmouth.imports", qos: .userInitiated)
     private let stateLock = NSLock()
     private var activeCount = 0
+    /// The cancellation the imports enqueued since the last
+    /// `cancelEnqueued()` share (TODO I05).
+    private var cancellation = ImportCancellation()
     var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+
+    /// The cancellation an import enqueued now shares with every import
+    /// already waiting or running: `cancelEnqueued()` cancels it.
+    var currentCancellation: ImportCancellation {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return cancellation
+    }
+
+    /// Cancels every import enqueued so far, running or waiting, and gives
+    /// the imports enqueued afterwards a cancellation of their own, which
+    /// this cancel never reaches (TODO I05).
+    func cancelEnqueued() {
+        stateLock.lock()
+        let cancelled = cancellation
+        cancellation = ImportCancellation()
+        stateLock.unlock()
+        cancelled.cancel()
+    }
 
     func enqueue(_ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
@@ -202,10 +224,41 @@ extension LibraryViewModel {
         return hasAudio && !hasNonAudio
     }
 
-    /// Import a zip file asynchronously with progress tracking
+    /// Removes, off the main thread, the extraction directories that ZIP
+    /// imports interrupted by a crash or a forced quit left in the data
+    /// directory (TODO I05), which can hold gigabytes nothing else removes.
+    /// Startup calls it once; a directory an import of this process is
+    /// using, or another running copy of TextMouth's, is never removed
+    /// (`ArchiveExtractionDirectory.removeLeftovers`).
+    func removeLeftoverArchiveExtractions() {
+        DispatchQueue.global(qos: .utility).async {
+            ArchiveExtractionDirectory.removeLeftovers()
+        }
+    }
+
+    /// Stops the ZIP imports under way and those waiting behind them (TODO
+    /// I05): a running batch stops before its next entry or book, keeps the
+    /// books it already imported, and its summary says where it stopped; a
+    /// waiting ZIP import never starts. Imports started afterwards are not
+    /// affected. The import overlay has no Cancel button yet; one would call
+    /// this.
+    func cancelImports() {
+        importOperationQueue.cancelEnqueued()
+    }
+
+    /// Import a zip file asynchronously with progress tracking. The import
+    /// takes the queue's cancellation as it is enqueued, so `cancelImports()`
+    /// stops it while it waits as well as while it runs (TODO I05).
     func importZipAsync(from url: URL, toFolder folderPath: String) {
+        let cancellation = importOperationQueue.currentCancellation
         importOperationQueue.enqueue { [weak self] in
             guard let self = self else { return }
+            // A ZIP import cancelled while it waited never starts, and says
+            // nothing: the batch that was running reports the cancel.
+            guard !cancellation.isCancelled else {
+                ImportCancellation.log(url.lastPathComponent, stopped: "before it started")
+                return
+            }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             DispatchQueue.main.async { self.beginImportProgress("Extracting archive...") }
@@ -235,13 +288,10 @@ extension LibraryViewModel {
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes,
-                    progress: { completed, total in
-                        DispatchQueue.main.async {
-                            self.importProgressCurrent = completed
-                            self.importProgressTotal = total
-                            self.importProgressMessage = "Importing book \(completed) of \(total)..."
-                        }
-                    }
+                    progress: { progress in
+                        DispatchQueue.main.async { self.showZipImportProgress(progress) }
+                    },
+                    isCancelled: cancellation.check
                 )
                 DispatchQueue.main.sync {
                     self.completeZIPImport(result, originalURL: url, folderPath: folderPath)
@@ -249,6 +299,28 @@ extension LibraryViewModel {
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
+        }
+    }
+
+    /// Shows how far a ZIP batch has got in the import overlay (TODO I05).
+    private func showZipImportProgress(_ progress: ZipImportProgress) {
+        let shown = Self.overlayProgress(for: progress)
+        importProgressCurrent = shown.current
+        importProgressTotal = shown.total
+        importProgressMessage = shown.message
+    }
+
+    /// What the import overlay shows for a ZIP batch's progress. Its bar and
+    /// count speak of books, so while the archive is extracted the bar is
+    /// left indeterminate and the message counts the archive's items
+    /// extracted, so the overlay moves before the first book imports; once
+    /// books import, the bar and the message count them, as before.
+    nonisolated static func overlayProgress(for progress: ZipImportProgress) -> (current: Int, total: Int, message: String) {
+        switch progress {
+        case let .extracting(archive, done, total):
+            return (0, 0, "Extracting “\(archive)”: \(done) of \(total) items...")
+        case let .importing(done, total):
+            return (done, total, "Importing book \(done) of \(total)...")
         }
     }
 
@@ -310,8 +382,9 @@ extension LibraryViewModel {
     }
 
     /// Publish a batch result while retaining an archive that still contains
-    /// failed or unimported content, or a book imported without some of its
-    /// chapters. This also covers empty/duplicate-only ZIPs.
+    /// failed or unimported content, a book imported without some of its
+    /// chapters, or books a cancel left unimported (`ZipImportResult
+    /// .keepsOriginal`). This also covers empty/duplicate-only ZIPs.
     func completeZIPImport(_ result: ZipImportResult, originalURL: URL, folderPath: String) {
         let priorIDs = Set(library.books.map(\.id))
         for book in result.books { library.addBook(book) }
@@ -323,8 +396,7 @@ extension LibraryViewModel {
         if let failureSummary = result.failureSummary {
             presentImportMessage(failureSummary)
         }
-        if result.failures.isEmpty, result.incompleteBooks.isEmpty, !acceptedBooks.isEmpty,
-           acceptedBooks.count == result.books.count {
+        if !result.keepsOriginal, !acceptedBooks.isEmpty, acceptedBooks.count == result.books.count {
             handleOriginalFileDeletion(url: originalURL)
         }
         if acceptedBooks.count > 1 {

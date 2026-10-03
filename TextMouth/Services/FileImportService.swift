@@ -37,6 +37,9 @@ enum FileImportError: LocalizedError {
     /// A ZIP archive holds a link to a file outside it, which ZIPFoundation
     /// refuses to extract.
     case archiveLinksOutside
+    /// A ZIP archive holds a file whose path climbs out of the folder it is
+    /// extracted into, which is never extracted (TODO I05).
+    case archivePathOutside
 
     var errorDescription: String? {
         switch self {
@@ -47,6 +50,7 @@ enum FileImportError: LocalizedError {
         case .unplayableAudio(let failure): return failure.message
         case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive."
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
+        case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
         }
     }
 }
@@ -190,10 +194,23 @@ struct ZipImportResult {
     /// Books that were imported without some of their chapters, by file,
     /// each with its extraction report's sentence. They keep the ZIP.
     var incompleteBooks: [ZipImportFailure] = []
+    /// Where the batch stopped when the reader cancelled it (TODO I05); nil
+    /// when it ran to its end. A cancelled batch keeps the ZIP.
+    var cancellation: ZipImportCancellation?
 
-    /// What the library's alert says about the batch: the files that failed,
-    /// then the books missing chapters, which also means the original ZIP
-    /// was kept. Nil when every file imported in full.
+    /// Whether the original ZIP must be kept whatever the "After Importing
+    /// a Book" preference says: a file in it failed, a book from it is
+    /// missing chapters, or the batch was cancelled before every book was
+    /// imported, so the ZIP is still the only complete copy of something.
+    var keepsOriginal: Bool {
+        !failures.isEmpty || !incompleteBooks.isEmpty || cancellation != nil
+    }
+
+    /// What the library's alert says about the batch: where it stopped, when
+    /// it was cancelled; the files that failed; then the books missing
+    /// chapters. A cancelled batch, or one with books missing chapters, also
+    /// says the original ZIP was kept. Nil when every file imported in full
+    /// and the batch ran to its end.
     var failureSummary: String? {
         var sections: [String] = []
         if !failures.isEmpty {
@@ -203,14 +220,164 @@ struct ZipImportResult {
             let count = incompleteBooks.count
             sections.append("\(count) book\(count == 1 ? " is" : "s are") missing chapters:\n\(Self.lines(incompleteBooks))")
         }
-        guard !sections.isEmpty else { return nil }
-        let kept = incompleteBooks.isEmpty ? "" : "\nThe original file was kept."
-        return "Imported \(books.count) book\(books.count == 1 ? "" : "s"), but \(sections.joined(separator: "\n"))\(kept)"
+        guard !sections.isEmpty || cancellation != nil else { return nil }
+
+        let imported = "Imported \(books.count) book\(books.count == 1 ? "" : "s")"
+        var sentences: [String] = []
+        if let cancellation {
+            sentences.append(cancellation.sentence)
+        }
+        if !sections.isEmpty {
+            sentences.append("\(imported), but \(sections.joined(separator: "\n"))")
+        } else if cancellation != .whileExtracting {
+            // A cancellation alone: say what came of the books before it.
+            sentences.append("\(imported).")
+        }
+        let kept = incompleteBooks.isEmpty && cancellation == nil ? "" : "\nThe original file was kept."
+        return sentences.joined(separator: " ") + kept
     }
 
     /// One "file: message" line per entry.
     private static func lines(_ entries: [ZipImportFailure]) -> String {
         entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
+    }
+}
+
+/// How far a ZIP batch has got, told to the library's import overlay
+/// (TODO I05), so it moves before the first book imports.
+enum ZipImportProgress: Equatable, Sendable {
+    /// `done` of the `total` entries of the archive named `archive` (the
+    /// archive imported, or one found inside it) are extracted.
+    case extracting(archive: String, done: Int, total: Int)
+    /// `done` of the `total` books found in the archive are imported,
+    /// failed, or skipped as duplicates.
+    case importing(done: Int, total: Int)
+}
+
+/// Where a ZIP batch the reader cancelled stopped (TODO I05).
+enum ZipImportCancellation: Equatable, Sendable {
+    /// While extracting the archive, or an archive inside it, before any
+    /// book was imported.
+    case whileExtracting
+    /// After `completed` of the `total` books found in the archive were
+    /// imported, failed, or skipped as duplicates.
+    case afterBooks(completed: Int, total: Int)
+
+    /// The sentence the batch's summary starts with.
+    var sentence: String {
+        switch self {
+        case .whileExtracting:
+            return "Import cancelled while extracting the archive, before any book was imported."
+        case let .afterBooks(completed, total):
+            return "Import cancelled after \(completed) of \(total) book\(total == 1 ? "" : "s")."
+        }
+    }
+
+    /// Where the batch stopped, for its `IMPORT_CANCELLED` log line.
+    var logDetail: String {
+        switch self {
+        case .whileExtracting:
+            return "while extracting the archive"
+        case let .afterBooks(completed, total):
+            return "after \(completed) of \(total) books"
+        }
+    }
+}
+
+/// What a ZIP batch found in its archive (TODO I05): the books to import,
+/// each listed once, and the archives inside it that could not be searched,
+/// each with why. The batch lists those among its failures, so the original
+/// archive, the only complete copy of their books, is kept.
+struct ImportCandidates: Equatable {
+    /// The books to import.
+    var books: [URL] = []
+    /// The archives inside that could not be searched.
+    var failures: [ZipImportFailure] = []
+
+    /// Adds `other`'s books and failures to `candidates`'.
+    static func += (candidates: inout ImportCandidates, other: ImportCandidates) {
+        candidates.books += other.books
+        candidates.failures += other.failures
+    }
+}
+
+/// How a ZIP batch unpacks the archives it finds inside its archive (TODO
+/// I05): each into a folder of its own in `directory`, within the batch's
+/// budget, so archives inside count toward the same limits as the archive
+/// itself, and no deeper than `ArchiveLimits.maximumNestingDepth`: one
+/// found deeper is reported, not unpacked, since an archive can hold itself.
+struct NestedArchiveUnpacking {
+    /// Where each archive is unpacked, in a folder of its own.
+    let directory: URL
+    /// The batch's budget, shared by every archive it extracts.
+    let budget: ArchiveBudget
+    /// How deep the archives this unpacking opens lie: 1 for those inside
+    /// the archive being imported.
+    let depth: Int
+    /// The batch's cancellation check, asked between entries and chunks.
+    let isCancelled: ImportCancellationCheck
+    /// Told how far each archive's extraction has got, under its name.
+    let progress: ((ZipImportProgress) -> Void)?
+
+    /// The books in `archive`, unpacked within the budget and searched like
+    /// the archive itself, with whatever inside it could not be searched;
+    /// or a failure naming `archive` when it cannot be searched at all,
+    /// because it lies deeper than the batch unpacks, is damaged, or holds
+    /// paths or sizes that cannot be trusted. Its books are then not
+    /// imported, and the batch's other books still are.
+    /// - Throws: `ArchiveBudgetError` when the budget refuses `archive`,
+    ///   and `ImportCancelled` when the reader cancels while it is unpacked;
+    ///   either stops the whole batch.
+    func candidates(inArchive archive: URL) throws -> ImportCandidates {
+        let name = archive.lastPathComponent
+        let maximumDepth = budget.limits.maximumNestingDepth
+        guard depth <= maximumDepth else {
+            return ImportCandidates(failures: [ZipImportFailure(fileName: name, message: Self.tooDeep(maximumDepth))])
+        }
+        let destination = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        do {
+            try ArchiveExtractor.extract(
+                archiveAt: archive,
+                into: destination,
+                budget: budget,
+                nestedArchive: name,
+                isCancelled: isCancelled,
+                progress: Self.extractionProgress(of: name, to: progress)
+            )
+        } catch let stop where stop is ArchiveBudgetError || stop is ImportCancelled {
+            throw stop
+        } catch {
+            // None of it will be imported, so its space is freed now.
+            try? FileManager.default.removeItem(at: destination)
+            let reason = ImportFailure(fileName: name, step: .extractingArchive, underlying: error).reason
+            return ImportCandidates(failures: [ZipImportFailure(fileName: name, message: reason)])
+        }
+        return try FileImportService.importCandidates(
+            in: destination,
+            unpacking: NestedArchiveUnpacking(
+                directory: directory,
+                budget: budget,
+                depth: depth + 1,
+                isCancelled: isCancelled,
+                progress: progress
+            )
+        )
+    }
+
+    /// `progress`, told how far the extraction of the archive named
+    /// `archive` has got; nil when no one is told.
+    static func extractionProgress(
+        of archive: String,
+        to progress: ((ZipImportProgress) -> Void)?
+    ) -> ((Int, Int) -> Void)? {
+        guard let progress else { return nil }
+        return { done, total in progress(.extracting(archive: archive, done: done, total: total)) }
+    }
+
+    /// Why an archive lying deeper than `maximumDepth` levels is not searched.
+    static func tooDeep(_ maximumDepth: Int) -> String {
+        "Not extracted: TextMouth extracts archives within an archive only "
+            + "\(maximumDepth) level\(maximumDepth == 1 ? "" : "s") deep."
     }
 }
 
@@ -830,51 +997,114 @@ enum FileImportService {
     }
 
     /// Import a ZIP file containing supported book files.
-    /// Calls the progress callback with (completed, total) counts.
     /// Pass existingHashes to skip files whose content already exists in the library,
     /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns imported books together with any per-file failures.
+    ///
+    /// The archive and the archives found inside it are extracted within one
+    /// budget (`ArchiveLimits`, TODO I05): each is refused before anything of
+    /// it is written when its declared size, its entries, or the free space it
+    /// needs pass their limits, and each file is held to its recorded size as
+    /// it is written. Everything goes into one extraction directory in the
+    /// data directory (`ArchiveExtractionDirectory`), removed on every exit.
+    /// - Parameters:
+    ///   - progress: told the entries extracted of each archive's total, then
+    ///     the books imported of the total found, so the overlay moves before
+    ///     the first book imports.
+    ///   - isCancelled: asked between entries (and the chunks of a large
+    ///     one) while extracting and between books while importing. Once it
+    ///     says to stop, the batch stops, keeps the books already imported,
+    ///     and returns a result saying where it stopped.
     /// - Throws: an `ImportFailure` naming the archive when it cannot be
-    ///   extracted at all. A book inside it that fails is listed in the
-    ///   result's failures instead, and the others still import.
+    ///   extracted at all, or the budget refuses it or an archive inside it.
+    ///   A book inside it that fails is listed in the result's failures
+    ///   instead, as is an archive inside it that cannot be searched, and the
+    ///   others still import.
     static func importZip(
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
-        progress: ((Int, Int) -> Void)? = nil
+        progress: ((ZipImportProgress) -> Void)? = nil,
+        isCancelled: @escaping ImportCancellationCheck = { false }
     ) throws -> ZipImportResult {
-        // The archive is extracted into one folder, and any archive inside
-        // it into another, so the search of the first never meets the second.
-        let workDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let extracted = workDirectory.appendingPathComponent("archive", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: workDirectory) }
+        // Every exit, returned or thrown, removes what was extracted; the
+        // books are copied out of it as they import.
+        var extraction: ArchiveExtractionDirectory?
+        defer { extraction?.remove() }
 
-        // Extraction is the one archive-wide step that can fail; each book
-        // in the archive then imports, or fails, on its own.
-        try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
+        // Extraction, of the archive and of the archives inside it, is the
+        // one archive-wide step that can fail; each book in the archive then
+        // imports, or fails, on its own.
+        let search: ArchiveSearch = try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
             try run.begin(.extractingArchive)
             try TextMouthPaths.ensureDirectoryStructure()
-            try FileManager.default.createDirectory(at: extracted, withIntermediateDirectories: true)
-            try extractArchive(zipURL, into: extracted)
+            let directory = try ArchiveExtractionDirectory.make()
+            extraction = directory
+            let budget = ArchiveBudget()
+            do {
+                try ArchiveExtractor.extract(
+                    archiveAt: zipURL,
+                    into: directory.archiveDirectory,
+                    budget: budget,
+                    isCancelled: isCancelled,
+                    progress: NestedArchiveUnpacking.extractionProgress(of: zipURL.lastPathComponent, to: progress)
+                )
+                // Every book in the archive, each once, those in the archives
+                // it holds included. They are extracted into another folder,
+                // so the search of the archive never meets them.
+                return .found(try importCandidates(
+                    in: directory.archiveDirectory,
+                    unpacking: NestedArchiveUnpacking(
+                        directory: directory.nestedDirectory,
+                        budget: budget,
+                        depth: 1,
+                        isCancelled: isCancelled,
+                        progress: progress
+                    )
+                ))
+            } catch is ImportCancelled {
+                // The reader's choice, not a failure: nothing is logged as one.
+                return .cancelled
+            }
         }
 
-        // First pass: every book in the archive, each once, those in the
-        // archives it holds included.
-        let books = importCandidates(
-            in: extracted,
-            unpackingNestedArchivesInto: workDirectory.appendingPathComponent("nested", isDirectory: true)
-        )
+        let result: ZipImportResult
+        switch search {
+        case .cancelled:
+            result = ZipImportResult(books: [], failures: [], cancellation: .whileExtracting)
+        case .found(let candidates):
+            let imported = importSupportedFiles(
+                candidates.books,
+                toFolder: folderPath,
+                existingHashes: existingHashes,
+                progress: { done, total in progress?(.importing(done: done, total: total)) },
+                isCancelled: isCancelled
+            )
+            // An archive inside that could not be searched is a failure too,
+            // so the original, the only complete copy of its books, is kept.
+            result = ZipImportResult(
+                books: imported.books,
+                failures: candidates.failures + imported.failures,
+                incompleteBooks: imported.incompleteBooks,
+                cancellation: imported.cancellation
+            )
+        }
+        if let cancellation = result.cancellation {
+            ImportCancellation.log(zipURL.lastPathComponent, stopped: cancellation.logDetail)
+        }
+        return result
+    }
 
-        return importSupportedFiles(
-            books,
-            toFolder: folderPath,
-            existingHashes: existingHashes,
-            progress: progress
-        )
+    /// What extracting a ZIP batch's archives came to: the books found, or a
+    /// stop because the reader cancelled.
+    private enum ArchiveSearch {
+        case found(ImportCandidates)
+        case cancelled
     }
 
     /// The books in `directory`, an extracted archive, each listed once and
-    /// in path order, for a batch import to import one by one (TODO I02):
+    /// in path order, for a batch import to import one by one (TODO I02),
+    /// with the archives inside it that could not be searched (TODO I05):
     ///
     /// - A DAISY book kept as loose files in a folder of its own is one
     ///   book, listed as that folder, and none of the files inside counts
@@ -883,22 +1113,26 @@ enum FileImportService {
     ///   book, since neither folder names one book.
     /// - An archive whose own top level holds a DAISY book is that book.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
-    ///   unpacked into `nestedDirectory` and searched the same way, one
-    ///   level deep only, since an archive can hold itself; with
-    ///   `nestedDirectory` nil, other archives are passed over.
+    ///   unpacked through `nested`, within the batch's budget, and searched
+    ///   the same way; one that cannot be unpacked, or lies deeper than the
+    ///   batch unpacks (an archive can hold itself), is listed among the
+    ///   failures instead of being passed over in silence.
     /// - Any other file in a format TextMouth reads is a book. Hidden files
     ///   and the `__MACOSX` folder macOS adds to archives are passed over:
     ///   they hold copies of the archive's files that are not books.
-    static func importCandidates(in directory: URL, unpackingNestedArchivesInto nestedDirectory: URL?) -> [URL] {
+    /// - Throws: `ArchiveBudgetError` when the batch's budget refuses an
+    ///   archive inside, and `ImportCancelled` when the reader cancels while
+    ///   one is unpacked.
+    static func importCandidates(in directory: URL, unpacking nested: NestedArchiveUnpacking) throws -> ImportCandidates {
         let topLevelBooks = DAISYParser.packageEntryPoints(in: directory)
-        guard topLevelBooks.isEmpty else { return topLevelBooks }
+        guard topLevelBooks.isEmpty else { return ImportCandidates(books: topLevelBooks) }
         guard let entries = FileManager.default.enumerator(
             at: directory,
             includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles]
-        ) else { return [] }
+        ) else { return ImportCandidates() }
 
-        var candidates: [URL] = []
+        var found = ImportCandidates()
         for case let url as URL in entries {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
                 guard url.lastPathComponent != "__MACOSX" else {
@@ -909,44 +1143,36 @@ enum FileImportService {
                 guard !packageFiles.isEmpty else { continue }
                 entries.skipDescendants()
                 let isOneBooksFolder = packageFiles.count == 1 && url.pathExtension.lowercased() != "tmb"
-                candidates += isOneBooksFolder ? [url] : packageFiles
+                found.books += isOneBooksFolder ? [url] : packageFiles
             } else if url.pathExtension.lowercased() == "zip" {
                 if DAISYParser.isDAISYZip(url: url) {
-                    candidates.append(url)
-                } else if let nestedDirectory, let unpacked = unpackNestedArchive(url, into: nestedDirectory) {
-                    candidates += importCandidates(in: unpacked, unpackingNestedArchivesInto: nil)
+                    found.books.append(url)
+                } else {
+                    found += try nested.candidates(inArchive: url)
                 }
             } else if BookFormat.detect(from: url) != nil {
-                candidates.append(url)
+                found.books.append(url)
             }
         }
-        return candidates.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
-    }
-
-    /// Unpacks `archive`, an archive found inside the one being imported,
-    /// into a new folder inside `parent`, and returns that folder; nil when
-    /// it cannot be unpacked, as it then holds no book the import can find,
-    /// and the archive's other books still import.
-    private static func unpackNestedArchive(_ archive: URL, into parent: URL) -> URL? {
-        let destination = parent.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        do {
-            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
-            try FileManager.default.unzipItem(at: archive, to: destination)
-            return destination
-        } catch {
-            return nil
-        }
+        found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        return found
     }
 
     /// Import files discovered inside a ZIP while retaining individual errors
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
+    /// - Parameter isCancelled: asked before each file. Once it says to stop,
+    ///   the files not yet imported are left alone, the books already
+    ///   imported are kept, and the result says after how many of how many
+    ///   files the batch stopped (TODO I05).
     static func importSupportedFiles(
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil,
+        isCancelled: ImportCancellationCheck = { false },
         importer: (URL, String) throws -> ImportedBook = { url, folder in
             try importFileWithReport(from: url, toFolder: folder)
         }
@@ -961,6 +1187,17 @@ enum FileImportService {
 
         // Second pass: import each file, skipping duplicates
         for (index, fileURL) in supportedFiles.enumerated() {
+            // A cancelled batch stops before its next book. Each book is
+            // published or discarded by its own import, so nothing is staged.
+            if isCancelled() {
+                return ZipImportResult(
+                    books: books,
+                    failures: failures,
+                    incompleteBooks: incompleteBooks,
+                    cancellation: .afterBooks(completed: index, total: total)
+                )
+            }
+
             // Compute hash before creating .tmb to avoid orphaning on
             // duplicate; a DAISY book in a folder has its package's.
             if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
@@ -1110,6 +1347,12 @@ enum FileImportService {
     /// every import: the audio is converted into a hidden package and read
     /// as the reader will, and the package is published only once its
     /// bookInfo.json is on disk.
+    ///
+    /// The archive is admitted to a budget (`ArchiveLimits`, TODO I05) before
+    /// any audio is converted, and every file the converter reads is held to
+    /// the size the archive records for it. The converter carries on past an
+    /// audio file it cannot copy, so a file refused for its size is kept on
+    /// the budget and fails the import once conversion ends.
     /// - Parameter observer: told as each step on the staged package begins.
     /// - Throws: an `ImportFailure` naming the archive and the step that
     ///   failed; whatever was staged is removed first.
@@ -1121,7 +1364,9 @@ enum FileImportService {
         try ImportRun.perform(importing: zipURL.lastPathComponent, observer: observer) { run in
             try run.begin(.readingSource)
             let hash = try md5Hash(of: zipURL)
-            let provider = ArchiveFileProvider(archive: try Archive(url: zipURL, accessMode: .read))
+            let archive = try ArchiveExtractor.open(zipURL)
+            let budget = ArchiveBudget()
+            let provider = ArchiveFileProvider(archive: archive, budget: budget)
             let metadata = ImportedFileMetadata.read(from: zipURL, format: .daisy)
             let bookID = UUID()
             let dateAdded = Date()
@@ -1138,6 +1383,7 @@ enum FileImportService {
 
             try run.begin(.convertingAudio, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
+            try budget.admit(ArchiveInspection(of: archive), extractingInto: audioDirectory)
             // DAISY 2.02 books are navigated by ncc.html, DAISY 3 by an OPF.
             let isDAISY202 = provider.listFiles().contains { path in
                 let lowercased = path.lowercased()
@@ -1148,6 +1394,9 @@ enum FileImportService {
                 version: isDAISY202 ? .daisy202 : .daisy3,
                 toDirectory: audioDirectory
             )
+            if let violation = budget.violation {
+                throw violation
+            }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(manifest).write(to: audioDirectory.appendingPathComponent("manifest.json"))
@@ -1177,7 +1426,10 @@ enum FileImportService {
     /// import: the archive is extracted into a hidden package and its audio
     /// read as the reader will, so an archive without one playable track is
     /// never published, and the package is published only once its
-    /// bookInfo.json is on disk.
+    /// bookInfo.json is on disk. The archive is extracted entry by entry
+    /// within a budget (`ArchiveLimits`, TODO I05): one past the limits is
+    /// refused before anything is written, and one whose sizes lie stops at
+    /// its first excess byte.
     /// - Parameter observer: told as each step on the staged package begins.
     /// - Throws: an `ImportFailure` naming the archive and the step that
     ///   failed; whatever was staged is removed first.
@@ -1205,7 +1457,7 @@ enum FileImportService {
 
             try run.begin(.extractingArchive, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            try extractArchive(zipURL, into: audioDirectory)
+            try ArchiveExtractor.extract(archiveAt: zipURL, into: audioDirectory, budget: ArchiveBudget())
 
             // A manifest beside the audio can name the book and its author.
             var title = zipName
@@ -1232,20 +1484,6 @@ enum FileImportService {
                 source: zipURL
             )
             return try publishReadableBook(staged, from: staging, run: &run)
-        }
-    }
-
-    /// Extracts the ZIP archive at `archive` into `directory`. ZIPFoundation's
-    /// own errors have no description a listener could use, so they are
-    /// told in plain words; other errors, such as a missing archive or a
-    /// full disk, already describe themselves.
-    private static func extractArchive(_ archive: URL, into directory: URL) throws {
-        do {
-            try FileManager.default.unzipItem(at: archive, to: directory)
-        } catch Archive.ArchiveError.uncontainedSymlink {
-            throw FileImportError.archiveLinksOutside
-        } catch is Archive.ArchiveError {
-            throw FileImportError.unreadableArchive
         }
     }
 
