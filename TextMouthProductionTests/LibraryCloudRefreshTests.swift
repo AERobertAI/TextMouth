@@ -5,8 +5,9 @@ import XCTest
 /// How the library list keeps its books' cloud states current (FR02): when
 /// a Library window appears, when the app becomes active, after every change
 /// to where the library's books are, every minute while a Library window is
-/// visible, and every 2 seconds while a book downloads. Each refresh reads
-/// through the storage once, and refreshes never overlap.
+/// visible, and every 2 seconds while a book downloads, reading then only
+/// the downloading books, and every book once a minute (PERF16). Each
+/// refresh reads through the storage once, and refreshes never overlap.
 @MainActor
 final class LibraryCloudRefreshTests: XCTestCase {
     /// A download partway done.
@@ -45,6 +46,28 @@ final class LibraryCloudRefreshTests: XCTestCase {
         XCTAssertNil(
             LibraryCloudRefreshCadence.interval(libraryWindowIsVisible: false, states: [BookCloudState.downloading(partway)])
         )
+    }
+
+    /// While a book downloads, the timed refreshes read only the downloading
+    /// books, except that one in thirty, one a minute, reads every book; at
+    /// the visible cadence every timed refresh reads every book (PERF16).
+    func testTimedRefreshesWhileDownloadingReadOnlyTheDownloadingBooks() {
+        let downloading = LibraryCloudRefreshCadence.whileDownloading
+        let visible = LibraryCloudRefreshCadence.whileVisible
+        XCTAssertEqual(LibraryCloudRefreshCadence.downloadingRefreshesPerFullRefresh, 30)
+        for tick in 1...29 {
+            XCTAssertEqual(
+                LibraryCloudRefreshCadence.scope(ofTick: tick, waiting: downloading),
+                .downloadingBooks,
+                "tick \(tick)"
+            )
+        }
+        XCTAssertEqual(LibraryCloudRefreshCadence.scope(ofTick: 30, waiting: downloading), .everyBook)
+        XCTAssertEqual(LibraryCloudRefreshCadence.scope(ofTick: 31, waiting: downloading), .downloadingBooks)
+        XCTAssertEqual(LibraryCloudRefreshCadence.scope(ofTick: 60, waiting: downloading), .everyBook)
+        for tick in [1, 2, 30] {
+            XCTAssertEqual(LibraryCloudRefreshCadence.scope(ofTick: tick, waiting: visible), .everyBook, "tick \(tick)")
+        }
     }
 
     // MARK: - What a Refresh Reads
@@ -191,6 +214,53 @@ final class LibraryCloudRefreshTests: XCTestCase {
         XCTAssertEqual(fixture.storage.refreshCount, 2)
     }
 
+    /// Requests made while a refresh runs make one more refresh after it,
+    /// which reads every book any of them asked for: only the downloading
+    /// books when that is all they asked for, every book when any did
+    /// (PERF16).
+    func testRequestsDuringARefreshReadTheWidestScopeAfterIt() async {
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch", author: "George Eliot")]
+        let fixture = RefreshFixture(books: books)
+        defer { fixture.closeWindows() }
+        // Finder downloads the first book: only the sync service reports it.
+        fixture.storage.fake.setState(.downloading(partway), of: books[0].id)
+
+        // The first refresh, reading every book, is held while two timed
+        // requests for the downloading books arrive.
+        let firstReading = expectation(description: "the first refresh is reading")
+        fixture.storage.holdReads()
+        fixture.storage.onRead { firstReading.fulfill() }
+        fixture.openWindow()
+        await fulfillment(of: [firstReading], timeout: 5)
+        fixture.storage.onRead(nil)
+        fixture.refresher.requestRefresh(.downloadingBooks)
+        fixture.refresher.requestRefresh(.downloadingBooks)
+        fixture.storage.releaseReads()
+        await fixture.refresher.waitForRefreshes()
+
+        XCTAssertEqual(fixture.storage.refreshCount, 2)
+        XCTAssertEqual(fixture.storage.statesRead, [books[0].id, books[1].id, books[0].id])
+
+        // A refresh of the downloading books is held while a request for
+        // them and one for every book arrive.
+        let secondReading = expectation(description: "the second refresh is reading")
+        fixture.storage.holdReads()
+        fixture.storage.onRead { secondReading.fulfill() }
+        fixture.refresher.requestRefresh(.downloadingBooks)
+        await fulfillment(of: [secondReading], timeout: 5)
+        fixture.storage.onRead(nil)
+        fixture.refresher.requestRefresh(.downloadingBooks)
+        fixture.refresher.requestRefresh()
+        fixture.storage.releaseReads()
+        await fixture.refresher.waitForRefreshes()
+
+        XCTAssertEqual(fixture.storage.refreshCount, 4)
+        XCTAssertEqual(
+            Array(fixture.storage.statesRead.dropFirst(3)),
+            [books[0].id, books[0].id, books[1].id]
+        )
+    }
+
     // MARK: - Timer
 
     /// The timer refreshes after each minute, and switches to 2 seconds as
@@ -225,6 +295,55 @@ final class LibraryCloudRefreshTests: XCTestCase {
         // The download ends: back to a minute.
         fixture.states.record(.downloaded, for: book.id)
         XCTAssertEqual(fixture.refresher.timerInterval, .seconds(60))
+    }
+
+    /// While a book downloads, each timed refresh reads that book alone, and
+    /// the thirtieth, a minute after the fast refreshes began, reads every
+    /// book (PERF16).
+    func testTimerWhileABookDownloadsReadsItAloneAndEveryBookEachMinute() async {
+        let books = [
+            cloudTestBook("Moby-Dick"),
+            cloudTestBook("Middlemarch", author: "George Eliot"),
+            cloudTestBook("Bleak House", author: "Charles Dickens"),
+        ]
+        let fixture = RefreshFixture(books: books)
+        defer { fixture.closeWindows() }
+        // Finder downloads the first book: only the sync service reports it.
+        fixture.storage.fake.setState(.downloading(partway), of: books[0].id)
+        let sleeps = (1...32).map { expectation(description: "sleep \($0) starts") }
+        fixture.sleep.onSleep { count in
+            if count <= sleeps.count { sleeps[count - 1].fulfill() }
+        }
+
+        // The window's refresh reads every book and finds the download, so
+        // the minute's wait gives way to a 2-second one.
+        fixture.openWindow()
+        await fixture.refresher.waitForRefreshes()
+        await fulfillment(of: [sleeps[0], sleeps[1]], timeout: 5)
+        XCTAssertEqual(fixture.refresher.timerInterval, .seconds(2))
+        let firstRefresh = fixture.storage.statesRead
+        XCTAssertEqual(Set(firstRefresh), Set(books.map(\.id)))
+
+        // Each of the next 29 timed refreshes reads the downloading book alone.
+        for tick in 1...29 {
+            fixture.sleep.wakeOldest()
+            await fulfillment(of: [sleeps[tick + 1]], timeout: 5)
+            await fixture.refresher.waitForRefreshes()
+        }
+        XCTAssertEqual(
+            Array(fixture.storage.statesRead.dropFirst(firstRefresh.count)),
+            Array(repeating: books[0].id, count: 29)
+        )
+
+        // The thirtieth reads every book.
+        fixture.sleep.wakeOldest()
+        await fulfillment(of: [sleeps[31]], timeout: 5)
+        await fixture.refresher.waitForRefreshes()
+        XCTAssertEqual(
+            Set(fixture.storage.statesRead.dropFirst(firstRefresh.count + 29)),
+            Set(books.map(\.id))
+        )
+        XCTAssertEqual(fixture.storage.statesRead.count, firstRefresh.count + 29 + books.count)
     }
 
     /// A second Library window refreshes when it appears, and the timer
