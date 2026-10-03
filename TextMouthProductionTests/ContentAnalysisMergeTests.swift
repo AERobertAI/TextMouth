@@ -93,7 +93,11 @@ final class ContentAnalysisMergeTests: XCTestCase {
         let model = makeModel(with: [original])
 
         makeNewerWrites(to: original, through: model)
-        waitPastLibrarySaveDebounce()
+        // Each save is the whole row, so once the last one's snapshot is on
+        // disk the record holds every change and nothing is left waiting.
+        waitForRecord(of: original, "the newer writes never reached the disk") {
+            $0.state.lastPlaybackStopped == Self.playbackStop
+        }
         let flushed = try BookInfo.load(from: original.tmbDirectory)
         XCTAssertEqual(flushed.metadata.title, "Retitled Meanwhile", "the newer writes reached the disk first")
 
@@ -504,12 +508,13 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// Each write through the metadata queue (a debounced save, the quit
     /// flush, and an analysis result) raises the book's revision by one.
+    @MainActor
     func testEveryMetadataQueueWriteRaisesTheRevision() throws {
         let book = try makePackage(title: "Queued Revisions")
         XCTAssertEqual(try revision(of: book), 1, "the import's own write")
 
         LibraryPersistenceService.saveBookInfo(for: book)
-        waitPastLibrarySaveDebounce()
+        waitForRecord(of: book, "the debounced save never reached the disk") { ($0.state.revision ?? 0) >= 2 }
         XCTAssertEqual(try revision(of: book), 2, "the debounced save")
 
         LibraryPersistenceService.saveBookInfo(for: book)
@@ -635,9 +640,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
         model.markBookOpened(book.id)
         model.updateLocalVoiceAndSpeed(bookID: book.id, voiceID: "voice.meanwhile", wpm: 240, pitch: 1.2)
         model.updateSkippedHeadings(bookID: book.id, skippedIDs: ["heading-meanwhile"])
-        model.updatePlaybackTimestamps(
-            bookID: book.id, started: Self.playbackStart, stopped: Self.playbackStart.addingTimeInterval(60)
-        )
+        // Keep this change last: waits for these writes look for its stop time.
+        model.updatePlaybackTimestamps(bookID: book.id, started: Self.playbackStart, stopped: Self.playbackStop)
     }
 
     /// Asserts that `record` holds every change `makeNewerWrites` made.
@@ -656,13 +660,30 @@ final class ContentAnalysisMergeTests: XCTestCase {
         XCTAssertEqual(record.state.localPitch, 1.2, file: file, line: line)
         XCTAssertEqual(record.state.skippedHeadingIDs, ["heading-meanwhile"], file: file, line: line)
         XCTAssertEqual(record.state.lastPlaybackStarted, Self.playbackStart, file: file, line: line)
-        XCTAssertEqual(
-            record.state.lastPlaybackStopped, Self.playbackStart.addingTimeInterval(60), file: file, line: line
-        )
+        XCTAssertEqual(record.state.lastPlaybackStopped, Self.playbackStop, file: file, line: line)
     }
 
-    /// A whole-second time, which bookInfo.json's ISO 8601 dates keep exactly.
+    /// Whole-second times, which bookInfo.json's ISO 8601 dates keep exactly,
+    /// for the playback `makeNewerWrites` records.
     private static let playbackStart = Date(timeIntervalSince1970: 1_790_000_000)
+    private static let playbackStop = playbackStart.addingTimeInterval(60)
+
+    /// Waits, spinning the main run loop, until the bookInfo.json in `book`'s
+    /// package satisfies `condition`, and fails with `message` if it has not
+    /// after ten seconds. A debounced save lands half a second after it is
+    /// made, and later still on a busy machine, so a test that checks one
+    /// waits for it instead of for a fixed time.
+    @MainActor
+    private func waitForRecord(
+        of book: Book,
+        _ message: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        until condition: (BookInfo) -> Bool
+    ) {
+        let landed = waitUntil(timeout: 10) { book.storedBookInfo().map(condition) ?? false }
+        XCTAssertTrue(landed, message, file: file, line: line)
+    }
 
     /// The debug log's CONTENT_ANALYSIS_DROPPED lines about `book`.
     private func droppedLines(for book: Book) -> [String] {
