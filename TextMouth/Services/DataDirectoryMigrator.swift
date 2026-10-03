@@ -164,6 +164,9 @@ enum DataDirectoryMigrator {
     /// beside the destination's real folder, followed by a UUID.
     static let stagingNamePrefix = ".TextMouth-migration-"
 
+    /// Copies the data directory at `oldRoot` to `newRoot`, points the
+    /// library's books at the copy, checks it, and publishes it.
+    /// - Returns: The library the published copy's library.json holds.
     static func prepareMigration(
         from oldRoot: URL,
         to newRoot: URL,
@@ -179,33 +182,12 @@ enum DataDirectoryMigrator {
         }
         let source = DataDirectoryLocation(oldRoot, fileManager: fileManager)
         let destination = DataDirectoryLocation(newRoot, fileManager: fileManager)
-        // Compare real folders before copying: a selected symlink can
-        // otherwise disguise a child directory and stage a copy inside itself.
-        if let overlap = DataDirectoryOverlap(source: source, destination: destination) {
-            throw DataDirectoryMigrationError.invalidRelationship(overlap, source: source, destination: destination)
-        }
-        let destinationPath = destination.named.path
-        guard fileManager.fileExists(atPath: source.real.path) else {
-            throw DataDirectoryMigrationError.missingSource
-        }
-        // A new location that is a link leading nowhere has no folder to
-        // receive the data; publishing at its name would replace the link
-        // with the data instead. `fileExists` follows links, so it is false
-        // for a link whose target is missing or leads back to itself.
-        if let target = try? fileManager.destinationOfSymbolicLink(atPath: destinationPath),
-           !fileManager.fileExists(atPath: destinationPath) {
-            throw DataDirectoryMigrationError.unreachableLink(destination, target: target)
-        }
-        if fileManager.fileExists(atPath: destination.real.path) {
-            let contents = try fileManager.contentsOfDirectory(atPath: destination.real.path)
-            guard contents.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
-        }
+        try refuseUnsafeLocations(source: source, destination: destination, fileManager: fileManager)
 
         // The copy is staged and published in the folder that holds the
         // destination's real folder, so a new location that is a link to an
         // empty folder receives the data in that folder, the link staying
         // as it is, and the final rename never crosses volumes (TODO S10).
-        // Book paths keep the name the preferences will hold.
         let staging = destination.real.deletingLastPathComponent()
             .appendingPathComponent(stagingNamePrefix + UUID().uuidString, isDirectory: true)
         defer { try? fileManager.removeItem(at: staging) }
@@ -215,6 +197,58 @@ enum DataDirectoryMigrator {
         // would leave a second name for it instead of a copy (TODO S10).
         try fileManager.copyItem(at: source.real, to: staging)
 
+        let migratedLibrary = try stage(library, from: source, to: destination, in: staging, fileManager: fileManager)
+        try publish(staging, at: destination, fileManager: fileManager)
+        return migratedLibrary
+    }
+
+    // MARK: Steps
+
+    /// Refuses, before anything is copied, a migration that could not be
+    /// published safely: overlapping real folders (TODO F20), a data
+    /// directory that does not exist, and a new location that is a link
+    /// leading nowhere or that already holds something.
+    private static func refuseUnsafeLocations(
+        source: DataDirectoryLocation,
+        destination: DataDirectoryLocation,
+        fileManager: FileManager
+    ) throws {
+        // Compare real folders before copying: a selected symlink can
+        // otherwise disguise a child directory and stage a copy inside itself.
+        if let overlap = DataDirectoryOverlap(source: source, destination: destination) {
+            throw DataDirectoryMigrationError.invalidRelationship(overlap, source: source, destination: destination)
+        }
+        guard fileManager.fileExists(atPath: source.real.path) else {
+            throw DataDirectoryMigrationError.missingSource
+        }
+        // A new location that is a link leading nowhere has no folder to
+        // receive the data; publishing at its name would replace the link
+        // with the data instead. `fileExists` follows links, so it is false
+        // for a link whose target is missing or leads back to itself.
+        let destinationPath = destination.named.path
+        if let target = try? fileManager.destinationOfSymbolicLink(atPath: destinationPath),
+           !fileManager.fileExists(atPath: destinationPath) {
+            throw DataDirectoryMigrationError.unreachableLink(destination, target: target)
+        }
+        if fileManager.fileExists(atPath: destination.real.path) {
+            let contents = try fileManager.contentsOfDirectory(atPath: destination.real.path)
+            guard contents.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
+        }
+    }
+
+    /// Points every book in the data directory at its place in the new
+    /// location, under the name the preferences will hold, writes the result
+    /// as the staged copy's package records and library.json, and checks it
+    /// against the copy in `staging`.
+    /// - Returns: The library the staged library.json holds.
+    private static func stage(
+        _ library: Library,
+        from source: DataDirectoryLocation,
+        to destination: DataDirectoryLocation,
+        in staging: URL,
+        fileManager: FileManager
+    ) throws -> Library {
+        let destinationPath = destination.named.path
         // A book's path spells the data directory as the preferences name
         // it, or, when that name is a link, perhaps as the folder it leads to.
         let sourcePaths = source.named.path == source.real.path
@@ -256,11 +290,19 @@ enum DataDirectoryMigrator {
               validated.books.count == migratedLibrary.books.count else {
             throw DataDirectoryMigrationError.invalidLibrary
         }
+        return migratedLibrary
+    }
 
+    /// Renames the checked copy in `staging` to the destination's real
+    /// folder, which makes it the new data directory.
+    private static func publish(
+        _ staging: URL,
+        at destination: DataDirectoryLocation,
+        fileManager: FileManager
+    ) throws {
         if fileManager.fileExists(atPath: destination.real.path) {
             try fileManager.removeItem(at: destination.real)
         }
         try fileManager.moveItem(at: staging, to: destination.real)
-        return migratedLibrary
     }
 }
