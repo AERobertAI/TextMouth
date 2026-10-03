@@ -674,17 +674,29 @@ extension LibraryViewModel {
 
     /// Rebuild the .TextMouth directory structure, migrate all books,
     /// adopt orphaned .tmb packages, and extract missing content caches.
-    /// Problems are explained through the library's alerts.
-    func rebuildDirectory() {
-        presentThroughAlerts(runDirectoryRebuild(), failureContext: Self.rebuildFailureContext)
+    /// Problems are explained through the library's alerts. Returns the
+    /// task doing the work, which first waits for the storage work under
+    /// way (TODO S04); callers need not wait for it.
+    @discardableResult
+    func rebuildDirectory() -> Task<Void, Never> {
+        Task {
+            presentThroughAlerts(
+                await runDirectoryRebuild(waiting: { _ in }),
+                failureContext: Self.rebuildFailureContext
+            )
+        }
     }
 
     /// Rebuild Directory, returning its outcome and presenting nothing. It
     /// succeeds with "Done. N books in library.", followed by any legacy
     /// books that could not move into packages, or fails with the reason
     /// nothing was rebuilt, such as an unreadable library index.
-    func rebuildDirectoryReturningOutcome() -> OperationOutcome {
-        let run = runDirectoryRebuild()
+    /// - Parameter waiting: Told what the rebuild waits for before it
+    ///   changes anything (see `withStorageWorkHeld(moving:waiting:_:)`).
+    func rebuildDirectoryReturningOutcome(
+        waiting: (StorageWork?) async -> Void = { _ in }
+    ) async -> OperationOutcome {
+        let run = await runDirectoryRebuild(waiting: waiting)
         let bookCount = library.books.count
         return Self.maintenanceOutcome(
             run,
@@ -695,15 +707,31 @@ extension LibraryViewModel {
 
     /// The work of Rebuild Directory: the legacy migration report, or the
     /// error that stopped the rebuild.
-    private func runDirectoryRebuild() -> Result<LegacyMigrationReport?, Error> {
-        Result {
+    ///
+    /// The relocation of misplaced packages and the adoption of packages
+    /// the library does not list run as one unit of storage work, as a
+    /// move's copy does (`withStorageWorkHeld`, with no move): new imports,
+    /// text extractions, and book analyses are held back, and the rebuild
+    /// first waits for those under way. An import that has published its
+    /// package but not yet added its book to the library therefore adds it
+    /// first, so its package is never adopted as an orphan as well (TODO
+    /// S04). The text caches and statistics of adopted books are brought up
+    /// to date afterwards, once the held work has gone on.
+    private func runDirectoryRebuild(
+        waiting: (StorageWork?) async -> Void
+    ) async -> Result<LegacyMigrationReport?, Error> {
+        do {
             try ensureLibraryIndexIsReadable()
-            let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
-            save()
-            LibraryPersistenceService.saveAllBookInfos(library)
-            // Extract content caches for any newly adopted books, then recalculate stats
+            let migration = try await withStorageWorkHeld(moving: nil, waiting: waiting) { () throws -> LegacyMigrationReport? in
+                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                save()
+                LibraryPersistenceService.saveAllBookInfos(library)
+                return migration
+            }
             updateContentCachesAndStatistics()
-            return migration
+            return .success(migration)
+        } catch {
+            return .failure(error)
         }
     }
 

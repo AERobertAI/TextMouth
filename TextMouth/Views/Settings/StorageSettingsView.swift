@@ -662,7 +662,7 @@ struct StorageSettingsView: View {
     private func perform(_ operation: StorageOperation) async -> OperationOutcome {
         switch operation {
         case .rebuild:
-            return libraryViewModel.rebuildDirectoryReturningOutcome()
+            return await libraryViewModel.rebuildDirectoryReturningOutcome(waiting: showWait(of: operation))
         case .resetToDefault:
             return await libraryViewModel.rebuildToDefaultReturningOutcome()
         case .move(let destination):
@@ -676,5 +676,18 @@ struct StorageSettingsView: View {
     /// buttons' state, before work that holds the interface begins.
     private func letTheStatusBeDrawn() async {
         try? await Task.sleep(for: .milliseconds(50))
+    }
+
+    /// What `operation`, which waits for the storage work under way before
+    /// it changes anything, tells the status line: each kind of work it
+    /// waits for, such as "Waiting for the current import to finish...",
+    /// and its own running status again once it waits for nothing more,
+    /// each announced once, as every status that changes while the user
+    /// waits is. A move shows its waits in its progress instead.
+    private func showWait(of operation: StorageOperation) -> (StorageWork?) async -> Void {
+        { work in
+            let message = work?.waitingMessage ?? operation.runningMessage
+            status = StorageStatus(message: message, isFailure: false).announced()
+        }
     }
 }

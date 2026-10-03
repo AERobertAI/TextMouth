@@ -213,14 +213,14 @@ final class LibraryIndexRecoveryTests: XCTestCase {
     /// Default share the same guard, which is checked directly: driving them
     /// here could write the test host's real preferences if it ever failed.
     @MainActor
-    func testDataDirectoryMaintenanceWaitsForRecoveryToEnd() throws {
+    func testDataDirectoryMaintenanceWaitsForRecoveryToEnd() async throws {
         let damagedBytes = try sandbox.stage(.truncated, at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         XCTAssertNoThrow(try model.ensureLibraryIndexIsReadable())
         model.loadLibraryIndex()
 
         XCTAssertThrowsError(try model.ensureLibraryIndexIsReadable())
-        model.rebuildDirectory()
+        await model.rebuildDirectory().value
 
         XCTAssertTrue(model.showError)
         XCTAssertEqual(

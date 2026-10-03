@@ -11,7 +11,9 @@ import XCTest
 /// Before TODO S04 the move did not wait. An import held this way published
 /// its package in the old data directory after the move, a pending library
 /// save wrote the old rows into the new library.json, and a text cache
-/// rebuild wrote its content.md into the old package.
+/// rebuild wrote its content.md into the old package. Rebuild Directory,
+/// which moves misplaced packages and adopts the ones the library does not
+/// list, waits the same way.
 @MainActor
 final class StorageGenerationMoveTests: XCTestCase {
 
@@ -328,6 +330,61 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertEqual(Self.adoptedPackages(of: model, in: Self.folder(world.folder.path, under: destination)), 0, "The removed book came back")
     }
 
+    // MARK: - Rebuild Directory
+
+    /// Rebuild Directory waits, as a move does, for an import that has
+    /// published its package but not yet added its book to the library,
+    /// before it adopts the packages the library does not list: the import
+    /// adds its book first, so its package is never adopted as an orphan as
+    /// well, and the library lists the book once. (Before, the rebuild ran at
+    /// once on the main actor and adopted the package, and the import then
+    /// found its book already in the library.)
+    func testRebuildWaitsForAnImportThatHasNotAddedItsBook() async throws {
+        let world = try makeIntegrationWorld("Storage Rebuild Import")
+        let model = world.library
+        // The import's package, published in the library folder, whose book
+        // is not in the library yet.
+        let book = try FileImportService.importFileWithReport(
+            from: try makeTextSource(named: "Harbor Pilot Notes.txt"),
+            toFolder: world.folder.path
+        ).book
+        let adding = AddingBook()
+        let gate = DispatchSemaphore(value: 0)
+        addTeardownBlock { gate.signal() }
+        let held = HeldWriter(reached: expectation(description: "the import was under way"), gate: gate)
+        // The rest of the import: storage work on a background thread that
+        // adds its book on the main queue, as the library's imports do.
+        DispatchQueue.global().async {
+            StorageBoundary.shared.perform(.importing) { _ in
+                held.reached.fulfill()
+                held.gate.wait()
+                DispatchQueue.main.sync {
+                    MainActor.assumeIsolated {
+                        adding.foundAlreadyListed = model.library.books.contains { $0.id == book.id }
+                        model.library.addBook(book)
+                    }
+                }
+            }
+        }
+        await fulfillment(of: [held.reached], timeout: 10)
+
+        var waits: [StorageWork?] = []
+        let outcome = await model.rebuildDirectoryReturningOutcome { work in
+            waits.append(work)
+            // The import may go on once the rebuild says it waits for it.
+            if work == .importing { held.gate.signal() }
+        }
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(waits, [.importing, nil])
+        XCTAssertEqual(
+            adding.foundAlreadyListed,
+            false,
+            "the rebuild adopted the import's package before the import added its book"
+        )
+        XCTAssertEqual(model.library.books.filter { $0.id == book.id }.count, 1)
+    }
+
     // MARK: - Fixtures
 
     /// Deletes a book's package as Remove & Delete does, after the same
@@ -435,6 +492,14 @@ final class StorageGenerationMoveTests: XCTestCase {
               let library = try? decoder.decode(Library.self, from: data) else { return [] }
         return library.books.filter { $0.filePath.hasPrefix(root.path + "/") }.map(\.title)
     }
+}
+
+/// What an import a test stands in for found as it added its book to the
+/// library, on the main actor.
+@MainActor
+private final class AddingBook {
+    /// Whether the library already listed the book; nil until it was added.
+    var foundAlreadyListed: Bool?
 }
 
 /// Answers true exactly once, to whichever thread asks first.
