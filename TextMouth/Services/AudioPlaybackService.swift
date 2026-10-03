@@ -75,6 +75,101 @@ enum AudioStallPolicy {
     }
 }
 
+// MARK: - Clip Chains
+
+/// The clips one chapter of a segmented audiobook plays, one after another,
+/// as a single stretch of the chapter's time. The chapter's time is 0 where
+/// its first clip starts and runs on through each clip in turn, whatever
+/// file holds it. `AudioPlaybackService.playClips(_:fromChapterTime:)` plays
+/// a chain; this type converts between a time in the chapter and a clip
+/// with a time in that clip's file.
+struct AudioClipChain: Equatable, Sendable {
+    /// One stretch of one audio file.
+    struct Clip: Equatable, Sendable {
+        /// The file the clip plays from.
+        let url: URL
+        /// Where the clip starts in its file, in seconds.
+        let start: TimeInterval
+        /// Where the clip ends in its file, in seconds, or nil when it plays
+        /// to the end of the file.
+        let end: TimeInterval?
+
+        /// How long the clip plays, in seconds. A clip that plays to the end
+        /// of its file counts as lasting no time, since only its file knows
+        /// how long that is; in a chain of several clips every clip but
+        /// perhaps the last has an end (see `AudioBookParser`).
+        var duration: TimeInterval {
+            guard let end else { return 0 }
+            return max(0, end - start)
+        }
+    }
+
+    /// The clips, in the order they play. Never empty.
+    let clips: [Clip]
+    /// Where each clip starts in the chapter, in seconds: the lengths of
+    /// the clips before it, together.
+    let startTimes: [TimeInterval]
+
+    /// A chain of `clips`, or nil when there are none.
+    init?(clips: [Clip]) {
+        guard !clips.isEmpty else { return nil }
+        self.init(nonEmpty: clips)
+    }
+
+    /// The chain `segment` plays, each clip's file found in `folder`, the
+    /// book's audio folder. A clip whose end is not after its start (an end
+    /// of 0 means just this) plays to the end of its file, as a segment's
+    /// clip always has.
+    init(segment: AudioSegment, folder: URL) {
+        self.init(nonEmpty: segment.clips.map { clip in
+            Clip(
+                url: folder.appendingPathComponent(clip.file),
+                start: clip.startTime,
+                end: clip.endTime > clip.startTime ? clip.endTime : nil
+            )
+        })
+    }
+
+    /// The chain of `clips`, which holds at least one.
+    private init(nonEmpty clips: [Clip]) {
+        self.clips = clips
+        var starts: [TimeInterval] = []
+        var elapsed: TimeInterval = 0
+        for clip in clips {
+            starts.append(elapsed)
+            elapsed += clip.duration
+        }
+        startTimes = starts
+    }
+
+    /// The clip playing `chapterTime` seconds into the chapter, and the time
+    /// in its file to play from. A time before the chapter is its start; a
+    /// time past the last clip's end lies past that end, in the last clip,
+    /// where playback finishes at once, as past a lone clip's end. Where
+    /// one clip ends and the next starts, the next is chosen, so a clip
+    /// that lasts no time is passed over.
+    func location(atChapterTime chapterTime: TimeInterval) -> (clipIndex: Int, fileTime: TimeInterval) {
+        let time = chapterTime.isFinite ? max(0, chapterTime) : 0
+        let index = startTimes.lastIndex { $0 <= time } ?? 0
+        return (index, clips[index].start + (time - startTimes[index]))
+    }
+
+    /// How far into the chapter `fileTime`, a time in the file of clip
+    /// `clipIndex`, lies. A time before the clip's start counts as its
+    /// start, and one past its end as its end: the player runs a moment
+    /// past a clip's end before playback moves on, and the next clip begins
+    /// the chapter's time exactly there, so the chapter's time never runs
+    /// ahead and then back.
+    func chapterTime(clipIndex: Int, fileTime: TimeInterval) -> TimeInterval {
+        let clip = clips[clipIndex]
+        var elapsed = max(0, fileTime - clip.start)
+        if clip.end != nil {
+            elapsed = min(elapsed, clip.duration)
+        }
+        return startTimes[clipIndex] + elapsed
+    }
+}
+
 // MARK: - Audio Speed Rules
 
 /// The single source of truth for audio book playback speed: the supported
@@ -246,6 +341,11 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 /// Plays audio files (mp3, m4a, m4b, wav, etc.) with variable speed and seeking.
 /// Used for audio book playback as an alternative to the TTS SpeechService.
 ///
+/// A chapter of a segmented audiobook can play several clips, stretches of
+/// one or more files: `playClips(_:fromChapterTime:)` plays them one after
+/// another as one chapter, timed by the chapter's clock (see
+/// `AudioClipChain`).
+///
 /// A file that cannot be played is reported through one channel: `failure`
 /// is set and `onPlaybackFailed` is called. Playback halts, the player is
 /// released, and `currentTime` stays where it was, so the same position can
@@ -292,8 +392,25 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Optional clip end time for segmented audio (e.g. DAISY).
     /// When set, playback fires onPlaybackFinished when reaching this time
-    /// instead of waiting for the actual end of the audio file.
+    /// instead of waiting for the actual end of the audio file. While a
+    /// clip chain plays, it is the loaded clip's end, and reaching it moves
+    /// on to the next clip instead, until the last.
     private var clipEndTime: TimeInterval?
+
+    /// The clip chain being played and which of its clips is loaded, or nil
+    /// while the service plays a file on its own (`load(url:)`). While a
+    /// chain plays, every time the service takes or reports, from
+    /// `play(fromTime:)` and `seek(to:)` to `currentTime` and
+    /// `onPositionUpdate`, is the chapter's time (see `AudioClipChain`).
+    private var chained: ChainedPlayback?
+
+    /// A clip chain, and the clip of it now loaded.
+    private struct ChainedPlayback {
+        /// The chapter's clips.
+        let chain: AudioClipChain
+        /// The place in `chain.clips` of the clip now loaded.
+        let clipIndex: Int
+    }
 
     /// Guards against the time observer firing clip-end while a seek is
     /// still in progress. Set true before seek, cleared in the completion
@@ -336,10 +453,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// `onPlaybackFailed` before this returns, and no player is created, so
     /// nothing can claim to play it.
     ///
+    /// The file plays on its own, timed by its own clock: a clip chain that
+    /// was playing ends here.
+    ///
     /// - Returns: True when a player holds the file, ready to be asked to
     ///   play it; false when the file failed its check.
     @discardableResult
     func load(url: URL) -> Bool {
+        chained = nil
         let normalizedURL = url.standardizedFileURL
         // A failure releases its player, so a live player for this URL has
         // not failed and can keep playing the file.
@@ -420,7 +541,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     // MARK: - Playback
 
-    /// Play the loaded file from `fromTime` seconds.
+    /// Play from `fromTime` seconds into the loaded file or, while a clip
+    /// chain plays, into the chapter, from whichever clip holds that time.
     ///
     /// - Returns: True when playback started; false when there was nothing
     ///   to play, such as after a load that failed, or when the loaded item
@@ -428,6 +550,37 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ///   only when playback starts.
     @discardableResult
     func play(fromTime: TimeInterval = 0) -> Bool {
+        if let chained {
+            return playClips(chained.chain, fromChapterTime: fromTime)
+        }
+        return playLoadedFile(from: fromTime)
+    }
+
+    /// Play `chain`'s clips one after another as one chapter, from
+    /// `chapterTime` seconds into it: the clip holding that time is loaded
+    /// and played from the matching time in its file.
+    ///
+    /// Each clip's end loads the next clip's file, or seeks within the file
+    /// when the next clip shares it, and plays on; `onPlaybackFinished` is
+    /// called only once the last clip ends. Until `stop()` or `load(url:)`,
+    /// every time the service takes or reports is the chapter's time, so it
+    /// runs on unbroken across clips. A clip whose file cannot be played is
+    /// reported like any file, naming that clip's file, whenever playback
+    /// reaches it.
+    ///
+    /// - Returns: As `play(fromTime:)` returns.
+    @discardableResult
+    func playClips(_ chain: AudioClipChain, fromChapterTime chapterTime: TimeInterval) -> Bool {
+        let location = chain.location(atChapterTime: chapterTime)
+        guard loadClip(location.clipIndex, of: chain) else { return false }
+        return playLoadedFile(from: location.fileTime)
+    }
+
+    /// Play the loaded file from `fileTime` seconds into it.
+    ///
+    /// - Returns: As `play(fromTime:)` returns.
+    @discardableResult
+    private func playLoadedFile(from fileTime: TimeInterval) -> Bool {
         guard let player = player, let playerItem else { return false }
         // The item can fail before its status observation reaches the main
         // queue. Report it now rather than claim to play it meanwhile.
@@ -435,7 +588,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             reportPlaybackError(playerItem.error)
             return false
         }
-        let clampedTime = max(0, duration > 0 ? min(fromTime, duration) : fromTime)
+        let clampedTime = max(0, duration > 0 ? min(fileTime, duration) : fileTime)
         let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
 
         // Block clip-end checks until the seek lands, preventing the stale-time
@@ -444,7 +597,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             self?.seekGate.complete(seekToken)
         }
-        currentTime = clampedTime
+        recordPosition(atFileTime: clampedTime)
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
@@ -478,6 +631,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     func stop() {
+        // A stopped service plays nothing, a chain included.
+        chained = nil
         releasePlayer()
         isPlaying = false
         isPaused = false
@@ -517,15 +672,28 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         onPlaybackFailed?(failure)
     }
 
+    /// Move playback to `time` seconds into the loaded file or, while a clip
+    /// chain plays, into the chapter, loading the clip that holds that time
+    /// when it is another. Playback stays playing, paused, or stopped, as it
+    /// was. With nothing loaded there is nothing to move.
     func seek(to time: TimeInterval) {
+        if let chained {
+            seek(chained, toChapterTime: time)
+            return
+        }
+        seekLoadedFile(to: time)
+    }
+
+    /// Move the loaded file's playback to `fileTime` seconds into it.
+    private func seekLoadedFile(to fileTime: TimeInterval) {
         guard let player = player else { return }
-        let clampedTime = max(0, duration > 0 ? min(time, duration) : time)
+        let clampedTime = max(0, duration > 0 ? min(fileTime, duration) : fileTime)
         let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
         let seekToken = seekGate.begin()
         player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             self?.seekGate.complete(seekToken)
         }
-        currentTime = clampedTime
+        recordPosition(atFileTime: clampedTime)
         // Playing on from the new position is a fresh start to check.
         if isPlaying && !isPaused {
             scheduleProgressCheck()
@@ -579,6 +747,85 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// stall playback of a local file, which never stalls by itself.
     func _pausePlayerForTesting() {
         player?.pause()
+    }
+
+    // MARK: - Clip Chains
+
+    /// Make clip `index` of `chain` the one playing: load its file, keeping
+    /// the player when that file is loaded already, and end the clip at its
+    /// own end.
+    ///
+    /// - Returns: False when the clip's file failed its check, which
+    ///   `load(url:)` has reported, naming that file, after halting
+    ///   playback.
+    private func loadClip(_ index: Int, of chain: AudioClipChain) -> Bool {
+        let clip = chain.clips[index]
+        guard load(url: clip.url) else { return false }
+        chained = ChainedPlayback(chain: chain, clipIndex: index)
+        clipEndTime = clip.end
+        return true
+    }
+
+    /// Move a chain's playback to `chapterTime` seconds into the chapter.
+    private func seek(_ chained: ChainedPlayback, toChapterTime chapterTime: TimeInterval) {
+        let location = chained.chain.location(atChapterTime: chapterTime)
+        guard location.clipIndex != chained.clipIndex else {
+            seekLoadedFile(to: location.fileTime)
+            return
+        }
+        // After a failure released the player there is nothing to move, as
+        // for a file played on its own; playing again starts afresh.
+        guard player != nil else { return }
+        moveToClip(location.clipIndex, of: chained.chain, atFileTime: location.fileTime)
+    }
+
+    /// Load clip `index` of `chain` and put playback at `fileTime` seconds
+    /// into its file. Playback that was playing plays on from there; paused
+    /// or stopped playback stays paused or stopped.
+    private func moveToClip(_ index: Int, of chain: AudioClipChain, atFileTime fileTime: TimeInterval) {
+        let wasPlaying = isPlaying
+        let wasPaused = isPaused
+        // Loading another file resets the playing state; it is put back
+        // below. A file that fails its check has been reported already.
+        guard loadClip(index, of: chain) else { return }
+        if wasPlaying && !wasPaused {
+            playLoadedFile(from: fileTime)
+        } else {
+            seekLoadedFile(to: fileTime)
+            isPlaying = wasPlaying
+            isPaused = wasPaused
+        }
+    }
+
+    /// Carry a chain on with the clip after the one that has just played
+    /// to its end.
+    ///
+    /// - Returns: True when a next clip took over, playing or, if its file
+    ///   cannot be played, reported as failed; false when nothing chains
+    ///   on, because no chain plays or its last clip ended, which ends the
+    ///   chapter.
+    private func advanceToNextClip() -> Bool {
+        guard let chained, chained.clipIndex + 1 < chained.chain.clips.count else { return false }
+        let next = chained.clipIndex + 1
+        // The chapter's time stands at the next clip's start, however far
+        // the player ran past the ended clip's end. Reporting it before the
+        // clip loads leaves the listener's place exactly where that clip
+        // begins even when its file then fails to load.
+        currentTime = chained.chain.startTimes[next]
+        onPositionUpdate?(currentTime)
+        moveToClip(next, of: chained.chain, atFileTime: chained.chain.clips[next].start)
+        return true
+    }
+
+    /// Record `fileTime`, a time in the loaded file, as `currentTime`,
+    /// measured as the service reports times: within the chapter while a
+    /// clip chain plays, within the file otherwise.
+    private func recordPosition(atFileTime fileTime: TimeInterval) {
+        if let chained {
+            currentTime = chained.chain.chapterTime(clipIndex: chained.clipIndex, fileTime: fileTime)
+        } else {
+            currentTime = fileTime
+        }
     }
 
     // MARK: - Chapter/Marker Extraction
@@ -703,15 +950,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 // including clip completion, until the latest seek lands.
                 return
             case .finishClip:
-                self.player?.pause()
-                self.isPlaying = false
-                self.isPaused = false
-                self.clipEndTime = nil
-                self.onPlaybackFinished?()
+                // A clip chain plays on with its next clip; only the end of
+                // its last clip, or of a lone clip, finishes playback.
+                if self.advanceToNextClip() { return }
+                self.finishPlayback()
                 return
             case .publish(let seconds):
-                self.currentTime = seconds
-                self.onPositionUpdate?(seconds)
+                self.recordPosition(atFileTime: seconds)
+                self.onPositionUpdate?(self.currentTime)
             }
         }
     }
@@ -727,10 +973,34 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             // not finish the new item and advance past it.
             guard let self, let item = self.playerItem,
                   notification.object as AnyObject? === item else { return }
-            self.isPlaying = false
-            self.isPaused = false
-            self.onPlaybackFinished?()
+            if self.chained != nil {
+                // Moving on to a clip later in the same file keeps the item
+                // and seeks it away from its end, so an end that arrives
+                // while that seek is under way is stale. A real end comes
+                // only once playback has run on to it.
+                guard !self.seekGate.isSeeking else { return }
+                // A clip chain plays on with its next clip; only the end of
+                // its last clip finishes playback.
+                if self.advanceToNextClip() { return }
+            }
+            self.finishPlayback()
         }
+    }
+
+    /// End playback because what it was asked to play has played to its
+    /// end: the loaded file, the clip it was to stop at, or a chain's last
+    /// clip. A clip that ends where its file does is reported twice, by the
+    /// clip-end check and by AVFoundation's end-of-file notice, one after
+    /// the other; only the first is acted on, since playback that no longer
+    /// plays has nothing left to finish. `onPlaybackFinished` is therefore
+    /// called once each time playback is started and runs to its end.
+    private func finishPlayback() {
+        guard isPlaying else { return }
+        player?.pause()
+        isPlaying = false
+        isPaused = false
+        clipEndTime = nil
+        onPlaybackFinished?()
     }
 
     /// Observe each way AVFoundation reports that the current file cannot
