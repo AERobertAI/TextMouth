@@ -45,6 +45,50 @@ final class DataDirectoryConfigTests: XCTestCase {
         XCTAssertEqual(try requests(applying: holdsFiles.path), [holdsFiles.path])
     }
 
+    // MARK: - config.json While the Library Is Unavailable
+
+    /// While the data directory is unavailable, the service following it
+    /// reads nothing and writes nothing. When it is back, the file is
+    /// reconciled: a setting changed meanwhile keeps its new value, every
+    /// other one takes the file's, the result is published once and saved.
+    func testConfigWaitsForTheLibraryAndIsReconciledWhenItReturns() throws {
+        let root = try makeDataDirectoryMoveDestination("ConfigAway")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
+        var onDisk = ConfigService.AppConfig()
+        onDisk.selectedVoiceID = "com.example.voice.file"
+        onDisk.wordsPerMinute = 300
+        let fileBytes = try ConfigService.fileData(for: onDisk)
+        let file = root.appendingPathComponent("config.json")
+        try fileBytes.write(to: file)
+        StorageBoundary.shared.publish(root: root)
+        DataDirectoryGate.close(root)
+        addTeardownBlock { DataDirectoryGate.open(root) }
+
+        let service = ConfigService()
+        addTeardownBlock { service.shutdown() }
+        var published: [ConfigService.AppConfig] = []
+        let subscription = service.externalEdits.sink { published.append($0) }
+
+        XCTAssertEqual(service.loadedFile, .missing, "the file was read while the library was unavailable")
+        // The launch's save, then a change made while the library is away.
+        service.saveToDisk()
+        service.config.selectedLanguage = "fr"
+        service.saveToDisk()
+        XCTAssertEqual(try Data(contentsOf: file), fileBytes, "the file was written while the library was unavailable")
+
+        DataDirectoryGate.open(root)
+        NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
+
+        XCTAssertEqual(service.config.selectedLanguage, "fr")
+        XCTAssertEqual(service.config.selectedVoiceID, "com.example.voice.file")
+        XCTAssertEqual(service.config.wordsPerMinute, 300)
+        XCTAssertEqual(published.map(\.selectedLanguage), ["fr"])
+        let saved = try ConfigService.decode(Data(contentsOf: file))
+        XCTAssertEqual(saved.selectedLanguage, "fr")
+        XCTAssertEqual(saved.selectedVoiceID, "com.example.voice.file")
+        withExtendedLifetime(subscription) {}
+    }
+
     // MARK: - Helpers
 
     /// The move requests a settings model, on a preferences store of its
