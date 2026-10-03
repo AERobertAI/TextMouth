@@ -61,6 +61,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var listCounters: [String: [Int: Int]] = [:] // numId -> [level: count]
     private var previousParagraphWasList = false
 
+    /// The list items open in the Markdown list being written, outermost
+    /// first. A heading, paragraph, or table ends the list and empties it.
+    private var openListItems: [OpenListItem] = []
+
     /// Whether any readable text has been read. Damage after this point
     /// leaves text worth keeping; damage before it leaves none.
     private var producedText = false
@@ -305,28 +309,28 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // Check if this paragraph is a heading
         if let headingLevel = styles.headingLevels[currentParagraphStyle] {
             let prefix = String(repeating: "#", count: headingLevel)
+            openListItems.removeAll()
             markdown += "\n\(prefix) \(text)\n\n"
         }
         // Check if this paragraph is a list item (via numPr or list style)
         else if let numId = listNumId {
-            let listType = numbering.listType(numId: numId, level: listLevel)
-            let indent = String(repeating: "    ", count: listLevel)
-
-            switch listType {
+            let marker: DOCXListMarker
+            switch numbering.listType(numId: numId, level: listLevel) {
             case .bullet:
-                markdown += "\(indent)- \(text)\n"
+                marker = .bullet
             case .numbered:
                 // Track counter for this list
                 var counter = listCounters[numId] ?? [:]
                 let current = (counter[listLevel] ?? 0) + 1
                 counter[listLevel] = current
                 listCounters[numId] = counter
-                markdown += "\(indent)\(current). \(text)\n"
+                marker = .number(current)
             }
+            writeListItem(text, level: listLevel, marker: marker)
         }
         // Style-based list detection (e.g. "ListBullet", "ListNumber" styles)
         else if styles.bulletListStyles.contains(currentParagraphStyle) {
-            markdown += "- \(text)\n"
+            writeListItem(text, level: 0, marker: .bullet)
         }
         else if styles.numberedListStyles.contains(currentParagraphStyle) {
             let key = "style-\(currentParagraphStyle)"
@@ -334,14 +338,88 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             let current = (counter[0] ?? 0) + 1
             counter[0] = current
             listCounters[key] = counter
-            markdown += "\(current). \(text)\n"
+            writeListItem(text, level: 0, marker: .number(current))
         }
         // Regular paragraph
         else {
+            openListItems.removeAll()
             markdown += "\n\(text)\n"
         }
 
         isInParagraph = false
+    }
+
+    // MARK: - List Items
+
+    /// A list item open in the Markdown being written: the items after it
+    /// nest inside it or continue its list.
+    private struct OpenListItem {
+        /// The level (`w:ilvl`) of the paragraph it holds.
+        let level: Int
+        /// The spaces before its marker.
+        let indent: Int
+        /// The column where its text begins, which a nested item must reach.
+        let contentColumn: Int
+        /// Whether it is numbered: an item at its depth continues its
+        /// Markdown list only when the two are both numbered or both bulleted.
+        let isNumbered: Bool
+    }
+
+    /// Write a list item reading `text` at list level `level` after `marker`.
+    ///
+    /// The item nests one step inside the nearest open item of a shallower
+    /// level, so a list that skips a level (an item at level 2 straight
+    /// after one at level 0), or begins below level 0, still reads as a list
+    /// rather than drifting far enough right to become a code block or a line
+    /// of the paragraph above, whose words would then include its bullet or
+    /// number. It is indented four spaces past its parent's marker, or to
+    /// the parent's text when that marker is wider, which keeps it inside
+    /// the parent's text (CommonMark §5.2).
+    ///
+    /// A numbered item that begins a new list at a number other than 1 is
+    /// written after a blank line: CommonMark lets only a list starting at 1
+    /// interrupt a paragraph, so otherwise its number would be read aloud as
+    /// words of the paragraph before it.
+    private func writeListItem(_ text: String, level: Int, marker: DOCXListMarker) {
+        // Items at this level or deeper are finished. The last of them to
+        // close stood at this item's depth, in the list this item continues
+        // when both are numbered or both bulleted.
+        var previousAtDepth: OpenListItem?
+        while let innermost = openListItems.last, innermost.level >= level {
+            previousAtDepth = openListItems.removeLast()
+        }
+        let parent = openListItems.last
+        let indent = parent.map { max($0.indent + 4, $0.contentColumn) } ?? 0
+
+        let markerText: String
+        switch marker {
+        case .bullet:
+            markerText = "- "
+        case .number(let number):
+            markerText = "\(number). "
+            if number != 1 && previousAtDepth?.isNumbered != true {
+                ensureBlankLine()
+            }
+        }
+        markdown += String(repeating: " ", count: indent) + markerText + text + "\n"
+        openListItems.append(OpenListItem(
+            level: level,
+            indent: indent,
+            contentColumn: indent + markerText.count,
+            isNumbered: marker != .bullet
+        ))
+    }
+
+    /// End the Markdown with a blank line, so the next block cannot be read
+    /// as part of the block before it. Nothing is written at the start, or
+    /// when the Markdown already ends with a blank line. Unicode scalars
+    /// decide, because a carriage return before a line feed forms a single
+    /// Character that a Character comparison with "\n" would not match.
+    private func ensureBlankLine() {
+        guard !markdown.isEmpty else { return }
+        let ending = markdown.unicodeScalars.suffix(2)
+        guard !ending.elementsEqual(["\n", "\n"]) else { return }
+        markdown += ending.last == "\n" ? "\n" : "\n\n"
     }
 
     // MARK: - Run Processing
@@ -424,6 +502,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         let colCount = tableRows.map { $0.count }.max() ?? 0
         guard colCount > 0 else { return }
 
+        // The table ends any list before it.
+        openListItems.removeAll()
         markdown += "\n"
 
         for (rowIndex, row) in tableRows.enumerated() {

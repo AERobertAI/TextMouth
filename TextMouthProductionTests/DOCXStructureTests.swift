@@ -3,9 +3,11 @@ import XCTest
 
 /// A Word document keeps its structure in the reading TextMouth makes of it
 /// (TODO T05): list levels are matched by their identity, with their start
-/// values, restart rules, and per-instance overrides. Each test builds a
-/// minimal DOCX package in memory and reads it through `DOCXParser`, the
-/// path every import takes, or parses one part with its production parser.
+/// values, restart rules, and per-instance overrides, and list items nest
+/// so that each is heard once, apart from the text around it, with no
+/// bullet or number read as a word. Each test builds a minimal DOCX package
+/// in memory and reads it through `DOCXParser`, the path every import
+/// takes, or parses one part with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -232,6 +234,148 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertTrue(namingItself.restarts(level: 2, afterItemAt: 1))
     }
 
+    // MARK: - List Structure
+
+    /// A list that skips a level nests its deeper items one step inside the
+    /// item above them. Indented by their level instead, they would run on
+    /// as lines of that item's paragraph, their bullets read as words.
+    func testItemsBelowASkippedLevelNestOneStep() throws {
+        let reading = try read(body: [
+            Self.listItem("Measure the board", numId: "1", level: 0),
+            Self.listItem("Mark both edges", numId: "1", level: 2),
+            Self.listItem("Square the ends", numId: "1", level: 2),
+            Self.listItem("Cut along the marks", numId: "1", level: 0)
+        ], numbering: """
+        <w:abstractNum w:abstractNumId="0">
+        <w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl>
+        <w:lvl w:ilvl="2"><w:numFmt w:val="bullet"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        """)
+
+        XCTAssertEqual(reading.markdown, """
+        1. Measure the board
+            - Mark both edges
+            - Square the ends
+        2. Cut along the marks
+        """)
+        XCTAssertEqual(reading.spoken, """
+        Measure the board
+
+        Mark both edges
+
+        Square the ends
+
+        Cut along the marks
+        """)
+    }
+
+    /// A list whose first item is below level 0 starts where the paragraph
+    /// before it ends, rather than indented as though inside an item, which
+    /// would make its items lines of that paragraph.
+    func testListStartingBelowTheFirstLevelIsStillAList() throws {
+        let reading = try read(body: [
+            Self.paragraph("Before planing:"),
+            Self.listItem("Sharpen the iron", numId: "1", level: 1),
+            Self.listItem("Set the depth", numId: "1", level: 1),
+            Self.paragraph("Then plane with the grain.")
+        ], numbering: """
+        <w:abstractNum w:abstractNumId="0">
+        <w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl>
+        <w:lvl w:ilvl="1"><w:numFmt w:val="bullet"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        """)
+
+        XCTAssertEqual(reading.markdown, """
+        Before planing:
+        - Sharpen the iron
+        - Set the depth
+
+        Then plane with the grain.
+        """)
+        XCTAssertEqual(reading.spoken, """
+        Before planing:
+
+        Sharpen the iron
+
+        Set the depth
+
+        Then plane with the grain.
+        """)
+    }
+
+    /// A nested list whose count carries on under a new parent item starts
+    /// its new Markdown list at a number other than 1, which may not
+    /// interrupt the parent's paragraph, so a blank line comes first.
+    /// Without it, "2." and the item's words would be read as part of the
+    /// parent item.
+    func testNestedListContinuingAboveOneIsNotReadIntoItsParent() throws {
+        let reading = try read(body: [
+            Self.listItem("Prime the wall", numId: "1", level: 0),
+            Self.listItem("Fill the cracks", numId: "1", level: 1),
+            Self.listItem("Paint the wall", numId: "1", level: 0),
+            Self.listItem("Cut in the edges", numId: "1", level: 1)
+        ], numbering: """
+        <w:abstractNum w:abstractNumId="0">
+        <w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl>
+        <w:lvl w:ilvl="1"><w:numFmt w:val="decimal"/><w:lvlRestart w:val="0"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        """)
+
+        XCTAssertEqual(reading.markdown, """
+        1. Prime the wall
+            1. Fill the cracks
+        2. Paint the wall
+
+            2. Cut in the edges
+        """)
+        XCTAssertEqual(reading.spoken, """
+        Prime the wall
+
+        Fill the cracks
+
+        Paint the wall
+
+        Cut in the edges
+        """)
+    }
+
+    /// A numbered list taken up again after a bulleted item starts a new
+    /// Markdown list at its next number, after a blank line, so the number
+    /// is not read into the bullet's words.
+    func testNumberedItemAfterABulletIsNotReadIntoTheBullet() throws {
+        let reading = try read(body: [
+            Self.listItem("Wet the stone", numId: "1", level: 0),
+            Self.listItem("Hone the bevel", numId: "1", level: 0),
+            Self.listItem("Keep the stone flat", numId: "2", level: 0),
+            Self.listItem("Strop the edge", numId: "1", level: 0)
+        ], numbering: """
+        <w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl></w:abstractNum>
+        <w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+        <w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num>
+        """)
+
+        XCTAssertEqual(reading.markdown, """
+        1. Wet the stone
+        2. Hone the bevel
+        - Keep the stone flat
+
+        3. Strop the edge
+        """)
+        XCTAssertEqual(reading.spoken, """
+        Wet the stone
+
+        Hone the bevel
+
+        Keep the stone flat
+
+        Strop the edge
+        """)
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.
@@ -241,6 +385,12 @@ final class DOCXStructureTests: XCTestCase {
     private static func listItem(_ text: String, numId: String, level: Int) -> String {
         "<w:p><w:pPr><w:numPr><w:ilvl w:val=\"\(level)\"/><w:numId w:val=\"\(numId)\"/></w:numPr></w:pPr>"
             + "<w:r><w:t>\(text)</w:t></w:r></w:p>"
+    }
+
+    /// A paragraph reading `text`, in the paragraph style `style` when one is given.
+    private static func paragraph(_ text: String, style: String? = nil) -> String {
+        let properties = style.map { "<w:pPr><w:pStyle w:val=\"\($0)\"/></w:pPr>" } ?? ""
+        return "<w:p>\(properties)<w:r><w:t>\(text)</w:t></w:r></w:p>"
     }
 
     /// The text part of a document whose body holds `body`.

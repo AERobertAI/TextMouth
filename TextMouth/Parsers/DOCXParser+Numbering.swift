@@ -119,6 +119,12 @@ enum ListType {
     case numbered
 }
 
+/// What begins one list item in the Markdown: a bullet, or its number.
+enum DOCXListMarker: Equatable {
+    case bullet
+    case number(Int)
+}
+
 /// SAX parser for word/numbering.xml
 class DOCXNumberingParser: DOCXSAXParser {
     private var numbering = DOCXNumbering()
