@@ -10,8 +10,11 @@ import XCTest
 /// On each listed drive, every test works only inside a new run folder of
 /// its own, writes only small test files there (random bytes, or, for the
 /// small library, the repository's TestData books), and deletes the folder
-/// when it ends, even after a failure. Nothing else on the drive is read,
-/// listed, or changed, and the library stays in the hosted tests' sandbox.
+/// when it ends, even after a failure. The one exception is asked for by
+/// name: with `TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY` set to 1, the small
+/// library is built at the top of the test folder and stays. Nothing else
+/// on the drive is read, listed, or changed, and the app's library stays in
+/// the hosted tests' sandbox.
 /// Uploads and downloads are checked once a second, up to a limit
 /// (`CloudDriveWait`).
 ///
