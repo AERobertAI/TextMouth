@@ -307,6 +307,7 @@
 		E12E2A648850563FD5191812 /* UnsavedChangesTermination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77239896AFCD08151F16812E /* UnsavedChangesTermination.swift */; };
 		E29FE4702BCCA8BF09C90A35 /* SharedPackageMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8B2A35F817C3A526671647 /* SharedPackageMigrationTests.swift */; };
 		E2EEB780E111C91561F57ED5 /* UnsavedChangesTerminationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294FE48D6A5767A537A8B23B /* UnsavedChangesTerminationTests.swift */; };
+		E307F44FFB1FF4A800F832B4 /* DataDirectoryMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1D1A564C622337043B1529 /* DataDirectoryMigrator.swift */; };
 		E33B7E2FC452AAB6624CB387 /* LibrarySubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C087D36304FC32BDD10D47A /* LibrarySubviews.swift */; };
 		E340388EC5E1C4E6760BBCAD /* FolderPathEquivalenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EAB008FD69BED739FF65067 /* FolderPathEquivalenceTests.swift */; };
 		E399AA8C271341B11AA040FF /* DAISYParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6F70F94BC31DE799BD148D /* DAISYParser.swift */; };
@@ -654,6 +655,7 @@
 		DD0084F9F2A607D9C8431A4B /* RemoteMediaCommandPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteMediaCommandPolicyTests.swift; sourceTree = "<group>"; };
 		DD447A0AC11EA0281C75E54B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DF0FAA2D62EBEDD1E25F851E /* KeyboardShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcut.swift; sourceTree = "<group>"; };
+		DF1D1A564C622337043B1529 /* DataDirectoryMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryMigrator.swift; sourceTree = "<group>"; };
 		DF9FA767F3F6013D0359B401 /* BuildIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildIdentityTests.swift; sourceTree = "<group>"; };
 		E0E9AC1689CAC30509BDBD9A /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
 		E19A2E798A89C975E7F8D461 /* DAISYParser+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+Audio.swift"; sourceTree = "<group>"; };
@@ -745,6 +747,7 @@
 				B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */,
 				C9A144B5DDF8A52704BAAF3B /* BookContentAnalysisService.swift */,
 				4BDD80EF3BDF71FF9FC117F8 /* ConfigService.swift */,
+				DF1D1A564C622337043B1529 /* DataDirectoryMigrator.swift */,
 				0A6681D3B9E45F03A54B2B7C /* DiagnosticLog.swift */,
 				44477438F518186462243E0D /* FileImportService.swift */,
 				118BEA78B35B7A8F2A0B25EC /* FileImportService+Packages.swift */,
@@ -1489,6 +1492,7 @@
 				704F87EA03C091FCA322C945 /* DOCXParser+SAXParser.swift in Sources */,
 				1EBDD3F5FB61798DB616717E /* DOCXParser+Styles.swift in Sources */,
 				57487EBDCC442847FBE5121D /* DOCXParser.swift in Sources */,
+				E307F44FFB1FF4A800F832B4 /* DataDirectoryMigrator.swift in Sources */,
 				8E9FB70D1AA91CF7091E82DC /* DiagnosticLog.swift in Sources */,
 				27ACC87E64625C7E0C136926 /* DocumentContent.swift in Sources */,
 				89DE6A04AF4BD4AD6A9DEEA2 /* DuplicateFinderView.swift in Sources */,
