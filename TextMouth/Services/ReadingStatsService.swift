@@ -106,7 +106,31 @@ final class ReadingStatsService: ObservableObject {
         self.userCalendar = userCalendar
         // `self.fileURL` is the resolved location, not the optional parameter.
         stats = Self.load(from: self.fileURL)
+        migrateDayKeysIfNeeded(at: Date())
         startCheckpointTimer()
+    }
+
+    /// Rewrites the day keys of statistics saved before TODO C06, which
+    /// followed the system's calendar, as Gregorian keys
+    /// (`ListeningDayKeyMigration`), logs what changed, and saves at once
+    /// with `dayKeyVersion` set, so the migration runs, and logs, once.
+    /// Keys this version writes are never read in another calendar. Does
+    /// nothing for statistics already migrated or new, and waits for a
+    /// later launch while the clock reads a date before TextMouth existed.
+    private func migrateDayKeysIfNeeded(at now: Date) {
+        guard stats.dayKeyVersion == nil,
+              let migration = ListeningDayKeyMigration(userCalendar: userCalendar(), now: now)
+        else { return }
+        let outcome = migration.migrate(stats.dailyListeningSeconds)
+        var migrated = stats
+        migrated.dailyListeningSeconds = outcome.dailyListeningSeconds
+        migrated.dayKeyVersion = ListeningDays.keyVersion
+        stats = migrated
+        if let line = outcome.logLine {
+            print(line)
+            TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: line)
+        }
+        save()
     }
 
     /// Stops the checkpoint timer. At termination this follows
@@ -429,7 +453,11 @@ final class ReadingStatsService: ObservableObject {
 // MARK: - Data Model
 
 struct ReadingStats: Codable {
-    /// Daily listening time in seconds, keyed by "yyyy-MM-dd"
+    /// Daily listening time in seconds, keyed by local day as
+    /// `ListeningDays` writes keys: "yyyy-MM-dd", Gregorian, ASCII digits.
+    /// A key from an earlier version that names no day is kept under
+    /// `ListeningDayKeyMigration.legacyKeyPrefix`; it counts in the total
+    /// but in no day. All entries together add up to the total.
     var dailyListeningSeconds: [String: TimeInterval] = [:]
     /// Total listening time across all time
     var totalListeningSeconds: TimeInterval = 0
@@ -437,6 +465,12 @@ struct ReadingStats: Codable {
     var bookListeningSeconds: [String: TimeInterval] = [:]
     /// Books that have been finished
     var finishedBooks: [FinishedBookEntry] = []
+    /// The version of the rules the keys of `dailyListeningSeconds`
+    /// follow: `ListeningDays.keyVersion` once they are Gregorian keys, as
+    /// new statistics are from the start. A file saved before TODO C06
+    /// decodes with none, since its keys followed the system's calendar;
+    /// the service migrates them once when it loads the file.
+    var dayKeyVersion: Int? = ListeningDays.keyVersion
 
     /// Adds `seconds` of listening to `bookID` on the day `dayKey` names,
     /// keeping the grand, per-book, and daily totals in step.

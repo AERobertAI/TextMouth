@@ -20,6 +20,11 @@ import Foundation
 /// day that is current in the new zone, so the later day's listening is
 /// counted again once that day arrives there.
 struct ListeningDays: Sendable {
+    /// The version of the rules above, saved with the statistics as
+    /// `ReadingStats.dayKeyVersion`. Keys saved without it followed the
+    /// system's calendar and are migrated once (`ListeningDayKeyMigration`).
+    static let keyVersion = 1
+
     /// The calendar every key and every day boundary is computed in:
     /// Gregorian, POSIX, in the time zone these days are local to.
     let calendar: Calendar

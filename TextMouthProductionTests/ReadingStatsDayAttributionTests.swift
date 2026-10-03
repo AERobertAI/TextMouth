@@ -2,12 +2,15 @@ import XCTest
 @testable import TextMouth
 
 /// Listening time is kept by local day under keys that never change with
-/// the user's calendar settings (TODO C06). Each test stands in the user's
-/// calendar (its calendar system, locale, and time zone) and passes explicit
-/// times for the clock, over statistics files of its own under the isolated
-/// test data root, so neither the shared service nor the Mac's own settings
-/// play any part. Set-up and tear-down hold only plain values; each test
-/// makes its services on the main actor.
+/// the user's calendar settings, every second goes to the day it was heard
+/// on across midnight, clock changes, and journeys, and keys saved by
+/// earlier versions are migrated once with every total kept (TODO C06).
+/// Each test stands in the user's calendar (its calendar system, locale,
+/// and time zone) and passes explicit times for the clock, over statistics
+/// files of its own under the isolated test data root, so neither the
+/// shared service nor the Mac's own settings play any part. Set-up and
+/// tear-down hold only plain values; each test makes its services on the
+/// main actor.
 final class ReadingStatsDayAttributionTests: XCTestCase {
     /// Directory holding this test's statistics files, removed afterwards.
     private var directory: URL!
@@ -377,6 +380,130 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
         XCTAssertEqual(service.todayListeningTime(at: tokyoMidnight + 900), 900)
     }
 
+    // MARK: - Keys of earlier versions
+
+    /// Statistics an earlier version saved for a Thai user, with Buddhist
+    /// keys for the last three days and one key naming no day, are
+    /// migrated when loaded. The days get their Gregorian keys, where
+    /// Today, This Week, and the streak find them; the stray key becomes a
+    /// legacy entry, in the all-time total but in no day; no total
+    /// changes; and the file is saved marked at once. The next launch
+    /// leaves the keys alone, even one that looks Buddhist.
+    @MainActor
+    func testBuddhistKeysOfAnEarlierVersionMigrateOnceWithTotalsKept() throws {
+        let berlin = try zone("Europe/Berlin")
+        let userCalendar = try calendar(.buddhist, in: "Europe/Berlin", locale: "th_TH")
+        let now = Date()
+        let lastThreeDays = try noons(ofDays: 3, endingWith: now, in: berlin)
+        let book = UUID().uuidString
+        var oldDaily = Dictionary(uniqueKeysWithValues: lastThreeDays.map { (thaiKey(for: $0, in: berlin), 600.0) })
+        oldDaily["2569-13-45"] = 60
+        try writeStatisticsOfAnEarlierVersion(daily: oldDaily, total: 1_860, books: [book: 1_860])
+
+        let service = makeService(userCalendar: { userCalendar })
+
+        var expected = Dictionary(uniqueKeysWithValues: lastThreeDays.map { (gregorianKey(for: $0, in: berlin), 600.0) })
+        expected["legacy:2569-13-45"] = 60
+        XCTAssertEqual(service.stats.dailyListeningSeconds, expected)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 1_860)
+        XCTAssertEqual(service.stats.bookListeningSeconds, [book: 1_860])
+        assertTotalAccountedFor(service.stats)
+        XCTAssertEqual(service.todayListeningTime(at: now), 600)
+        XCTAssertEqual(service.thisWeekListeningTime(at: now), 1_800)
+        XCTAssertEqual(service.currentStreak(at: now), 3)
+        var saved = try savedStats(of: service)
+        XCTAssertEqual(saved.dayKeyVersion, ListeningDays.keyVersion)
+        XCTAssertEqual(saved.dailyListeningSeconds, expected)
+
+        // A Buddhist-looking key in the marked file is never read again.
+        saved.dailyListeningSeconds["2569-01-01"] = 5
+        saved.totalListeningSeconds += 5
+        try save(saved, named: "reading_stats")
+        let relaunched = makeService(userCalendar: { userCalendar })
+        XCTAssertEqual(relaunched.stats.dailyListeningSeconds, saved.dailyListeningSeconds)
+    }
+
+    /// Statistics an earlier version saved with Gregorian keys, as most
+    /// users' are, keep every key, and are saved marked at once, so the
+    /// migration never runs on them again.
+    @MainActor
+    func testGregorianKeysOfAnEarlierVersionStayAndTheFileIsMarked() throws {
+        let daily = ["2026-03-20": 90.0, "2026-03-21": 30]
+        try writeStatisticsOfAnEarlierVersion(daily: daily, total: 120, books: ["book": 120])
+        let userCalendar = try calendar(.gregorian, in: "America/New_York")
+
+        let service = makeService(userCalendar: { userCalendar })
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, daily)
+        let saved = try savedStats(of: service)
+        XCTAssertEqual(saved.dayKeyVersion, ListeningDays.keyVersion)
+        XCTAssertEqual(saved.dailyListeningSeconds, daily)
+    }
+
+    /// New statistics start marked with the current key version, so there
+    /// is nothing to migrate or save, while a file saved before TODO C06
+    /// decodes unmarked.
+    @MainActor
+    func testNewStatisticsStartMarkedAndOldFilesDecodeUnmarked() throws {
+        let userCalendar = try calendar(.gregorian, in: "Europe/Berlin")
+        let service = makeService(userCalendar: { userCalendar })
+
+        XCTAssertEqual(service.stats.dayKeyVersion, ListeningDays.keyVersion)
+        ReadingStatsService.waitForQueuedSaves()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: service.fileURL.path))
+        let oldFile = #"{"dailyListeningSeconds":{},"totalListeningSeconds":0,"bookListeningSeconds":{},"finishedBooks":[]}"#
+        XCTAssertNil(try JSONDecoder().decode(ReadingStats.self, from: Data(oldFile.utf8)).dayKeyVersion)
+    }
+
+    /// Keys that name no day are logged once, by the launch that migrates
+    /// them, and never again.
+    @MainActor
+    func testKeysNamingNoDayAreLoggedOnce() throws {
+        let stray = "nonsense-\(UUID().uuidString)"
+        try writeStatisticsOfAnEarlierVersion(daily: [stray: 30], total: 30, books: ["book": 30])
+        let userCalendar = try calendar(.gregorian, in: "Europe/Berlin")
+
+        let firstLaunch = debugLogLines { _ = makeService(userCalendar: { userCalendar }) }
+        // The second launch reads what the first saved.
+        ReadingStatsService.waitForQueuedSaves()
+        let secondLaunch = debugLogLines { _ = makeService(userCalendar: { userCalendar }) }
+
+        XCTAssertEqual(firstLaunch.filter { $0.contains(stray) }.count, 1)
+        XCTAssertTrue(firstLaunch.contains { $0.hasSuffix(#"READING_STATS_DAY_KEYS: rewritten 0, kept as legacy 1: "\#(stray)""#) })
+        XCTAssertFalse(secondLaunch.contains { $0.contains(stray) })
+    }
+
+    /// The all-time total always equals the day totals plus the legacy
+    /// entries: after a migration that keeps a legacy entry, and after
+    /// listening across midnight, across a 25-hour day, and on a journey.
+    @MainActor
+    func testAllTimeTotalIsAlwaysTheDaysPlusTheLegacyEntries() throws {
+        try writeStatisticsOfAnEarlierVersion(
+            daily: ["2568-12-31": 600, "2026-13-45": 60.25], total: 660.25, books: ["book": 660.25]
+        )
+        var userCalendar = try calendar(.buddhist, in: "America/New_York", locale: "th_TH")
+        let service = makeService(userCalendar: { userCalendar })
+        XCTAssertEqual(service.stats.dailyListeningSeconds, ["2025-12-31": 600, "legacy:2026-13-45": 60.25])
+        assertTotalAccountedFor(service.stats, "After the migration")
+
+        let midnight = try time("2026-07-16T00:00:00-04:00")
+        listen(with: service, from: midnight - 119.75, to: midnight + 60.5, checkpointingEvery: 60)
+        assertTotalAccountedFor(service.stats, "After midnight")
+
+        let longDay = try XCTUnwrap(Self.clockChangeDays.first { $0.hours == 25 })
+        listen(with: service, from: try time(longDay.start), to: try time(longDay.end), checkpointingEvery: 3_600)
+        assertTotalAccountedFor(service.stats, "After the 25-hour day")
+
+        let departure = try time("2026-11-05T20:00:00-05:00")
+        service.startSession(bookID: UUID(), at: departure)
+        service.checkpointActiveSession(at: departure + 600)
+        userCalendar = try calendar(.buddhist, in: "Asia/Tokyo", locale: "th_TH")
+        service.endSession(at: departure + 1_200)
+        assertTotalAccountedFor(service.stats, "After the journey")
+
+        XCTAssertEqual(service.stats.totalListeningSeconds, 660.25 + 180.25 + 93_600 + 1_200)
+    }
+
     // MARK: - Helpers
 
     /// Listens to `book` from `start` to `end` with `service`, as the
@@ -427,6 +554,91 @@ final class ReadingStatsDayAttributionTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ReadingStats.self, from: Data(contentsOf: service.fileURL))
+    }
+
+    /// Writes `stats` to this test's statistics file named `name`, as the
+    /// service saves them.
+    private func save(_ stats: ReadingStats, named name: String) throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(stats).write(to: directory.appendingPathComponent("\(name).json"))
+    }
+
+    /// Writes this test's statistics file named `name` as a version before
+    /// TODO C06 saved it: without `dayKeyVersion`, holding `daily` and the
+    /// totals.
+    private func writeStatisticsOfAnEarlierVersion(
+        daily: [String: TimeInterval],
+        total: TimeInterval,
+        books: [String: TimeInterval],
+        named name: String = "reading_stats"
+    ) throws {
+        let file: [String: Any] = [
+            "dailyListeningSeconds": daily,
+            "totalListeningSeconds": total,
+            "bookListeningSeconds": books,
+            "finishedBooks": [Any](),
+        ]
+        try JSONSerialization.data(withJSONObject: file).write(to: directory.appendingPathComponent("\(name).json"))
+    }
+
+    /// The debug log lines written while `body` runs. A log rotated
+    /// meanwhile starts a new file holding only the new lines.
+    @MainActor
+    private func debugLogLines(writtenDuring body: () throws -> Void) rethrows -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        try body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
+    }
+
+    /// Checks that the all-time total is exactly the day totals plus the
+    /// legacy entries, so no second is lost or counted twice.
+    private func assertTotalAccountedFor(
+        _ stats: ReadingStats,
+        _ context: String = "",
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let isLegacy = { (key: String) in key.hasPrefix(ListeningDayKeyMigration.legacyKeyPrefix) }
+        let days = stats.dailyListeningSeconds.filter { !isLegacy($0.key) }.values.reduce(0, +)
+        let legacy = stats.dailyListeningSeconds.filter { isLegacy($0.key) }.values.reduce(0, +)
+        XCTAssertEqual(days + legacy, stats.totalListeningSeconds, context, file: file, line: line)
+    }
+
+    /// Noon on each of the `count` days ending with the one containing
+    /// `now` in `zone`, latest first, counted with Foundation's Gregorian
+    /// calendar, where no clock change ever moves noon to another day.
+    private func noons(ofDays count: Int, endingWith now: Date, in zone: TimeZone) throws -> [Date] {
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = zone
+        let todayAtNoon = try XCTUnwrap(gregorian.date(bySettingHour: 12, minute: 0, second: 0, of: now))
+        return try (0..<count).map { try XCTUnwrap(gregorian.date(byAdding: .day, value: -$0, to: todayAtNoon)) }
+    }
+
+    /// The key the old code wrote for `day` on a Mac set to Thai in `zone`:
+    /// a default-configured formatter, which wrote Buddhist years.
+    private func thaiKey(for day: Date, in zone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "th_TH")
+        formatter.timeZone = zone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: day)
+    }
+
+    /// The Gregorian key of the day containing `day` in `zone`, written by a
+    /// POSIX formatter rather than the code under test.
+    private func gregorianKey(for day: Date, in zone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = zone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: day)
     }
 
     /// A user's calendar: the `identifier` calendar system in the time zone
