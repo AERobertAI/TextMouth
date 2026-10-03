@@ -668,15 +668,35 @@ final class SettingsViewModel: ObservableObject {
             adopt(config.showBookmarkInPlaybackControls, into: \.showBookmarkInPlaybackControls)
             adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
             adoptServicePreferences(from: config)
-            // Handle external change to dataDirectoryPath
-            if config.dataDirectoryPath != ConfigService.AppConfig.currentDataDirectoryPath {
-                notificationCenter.post(
-                    name: .dataDirectoryChangeRequested,
-                    object: nil,
-                    userInfo: ["path": config.dataDirectoryPath]
-                )
-            }
+            requestDataDirectoryMove(to: config.dataDirectoryPath)
         }
+    }
+
+    /// Asks the library to move to the data directory config.json names,
+    /// when that differs from the one in use and is a place this Mac can
+    /// move it to (FR02). config.json can come from another Mac, through a
+    /// library in the cloud, naming that Mac's data directory: a location
+    /// missing here, or one that holds a library already, is ignored with
+    /// one debug log line (`DataDirectoryRequest`). Storage settings remain
+    /// the way to move the library on purpose.
+    private func requestDataDirectoryMove(to requestedPath: String) {
+        guard requestedPath != ConfigService.AppConfig.currentDataDirectoryPath else { return }
+        let target = requestedPath.isEmpty
+            ? TextMouthPaths.defaultRoot
+            : URL(fileURLWithPath: requestedPath, isDirectory: true)
+        if let reason = DataDirectoryRequest.reasonToIgnore(target) {
+            DiagnosticLog.event(
+                .storage,
+                "CONFIG_FILE: ignored the dataDirectoryPath \(DataDirectoryPaths.shortName(of: target)), "
+                    + "since \(reason); the data directory stays where it is"
+            )
+            return
+        }
+        notificationCenter.post(
+            name: .dataDirectoryChangeRequested,
+            object: nil,
+            userInfo: ["path": requestedPath]
+        )
     }
 
     /// Assigns a value config.json asks for, when it differs from the current

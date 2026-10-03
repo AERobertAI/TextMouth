@@ -77,6 +77,51 @@ final class DataDirectoryVerificationTests: XCTestCase {
         )
     }
 
+    // MARK: - (c) Another Mac's Location
+
+    /// config.json, synced from another Mac, names that Mac's data directory,
+    /// which doesn't exist on this one. The edit must not ask the library to
+    /// move there.
+    func testAnOutsideEditNamingAMissingLocationRequestsNoMove() throws {
+        let scratch = try makeSandboxDirectory("AnotherMacsPath")
+        let folderName = "TextMouth \(UUID().uuidString)"
+        let otherMacsRoot = scratch.appendingPathComponent(
+            "Users/another/Library/CloudStorage/GoogleDrive-another/\(folderName)",
+            isDirectory: true
+        )
+        let center = NotificationCenter()
+        let requests = CallLog<String>()
+        let observer = center.addObserver(forName: .dataDirectoryChangeRequested, object: nil, queue: nil) { note in
+            // Delivered on the posting thread, the main one, inside the edit.
+            MainActor.assumeIsolated { requests.record(note.userInfo?["path"] as? String ?? "") }
+        }
+        addTeardownBlock { center.removeObserver(observer) }
+        let url = try makeConfigFileURL()
+        let service = ConfigService(fileURL: url)
+        addTeardownBlock { service.shutdown() }
+        let settings = SettingsViewModel(
+            notificationCenter: center,
+            initializeServices: true,
+            userDefaults: try isolatedDefaults(),
+            configService: service
+        )
+
+        // The other Mac's save arrives, and the watcher's settled batch
+        // handles it.
+        var edited = service.config
+        edited.dataDirectoryPath = otherMacsRoot.path
+        try ConfigService.fileData(for: edited).write(to: url, options: .atomic)
+        service.handleFileEvent(.write)
+
+        XCTAssertEqual(service.config.dataDirectoryPath, otherMacsRoot.path, "the edit was not applied")
+        XCTAssertEqual(requests.calls, [], "The edit asked the library to move to another Mac's location")
+        XCTAssertEqual(
+            debugLogLines(containing: "CONFIG_FILE: ignored the dataDirectoryPath GoogleDrive-another/\(folderName)").count,
+            1
+        )
+        withExtendedLifetime(settings) {}
+    }
+
     // MARK: - Fixtures
 
     /// Lays out a library at `root`: a Library folder and a library.json

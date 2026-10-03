@@ -346,6 +346,33 @@ enum DataDirectoryPaths {
     }
 }
 
+// MARK: - A Location Named From Outside
+
+/// Whether a data directory that config.json names, from an edit made
+/// outside TextMouth, may start a move here (FR02). config.json travels
+/// with a library in the cloud, so it can name another Mac's location: a
+/// path missing on this Mac, as another user name makes it, or a folder that
+/// holds a library already, this one or another. Neither starts a move;
+/// Storage settings remain the way to move the library on purpose. Any
+/// other location keeps today's request, which the move itself checks.
+enum DataDirectoryRequest {
+    /// Why the edit naming `target` is ignored, for the debug log, or nil
+    /// when it may ask for a move. Reads metadata only.
+    static func reasonToIgnore(_ target: URL) -> String? {
+        DatalessFiles.withoutDownloading {
+            let fileManager = FileManager.default
+            var isFolder: ObjCBool = false
+            guard fileManager.fileExists(atPath: target.path, isDirectory: &isFolder) else {
+                return "it doesn't exist on this Mac"
+            }
+            let holdsLibrary = isFolder.boolValue
+                && (fileManager.fileExists(atPath: LibraryIdentity.markerURL(in: target).path)
+                    || fileManager.fileExists(atPath: target.appendingPathComponent("library.json").path))
+            return holdsLibrary ? "it holds a TextMouth library already" : nil
+        }
+    }
+}
+
 // MARK: - The Check
 
 /// Whether the data directory can be used, read from file-system metadata
