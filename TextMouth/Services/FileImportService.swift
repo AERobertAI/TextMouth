@@ -819,68 +819,99 @@ enum FileImportService {
         existingHashes: Set<String> = [],
         progress: ((Int, Int) -> Void)? = nil
     ) throws -> ZipImportResult {
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        // The archive is extracted into one folder, and any archive inside
+        // it into another, so the search of the first never meets the second.
+        let workDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let extracted = workDirectory.appendingPathComponent("archive", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: workDirectory) }
 
         // Extraction is the one archive-wide step that can fail; each book
         // in the archive then imports, or fails, on its own.
         try ImportRun.perform(importing: zipURL.lastPathComponent) { run in
             try run.begin(.extractingArchive)
             try TextMouthPaths.ensureDirectoryStructure()
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            try extractArchive(zipURL, into: tempDir)
+            try FileManager.default.createDirectory(at: extracted, withIntermediateDirectories: true)
+            try extractArchive(zipURL, into: extracted)
         }
 
-        // First pass: find all supported files, including nested ZIP files
-        // that contain DAISY packages
-        var supportedFiles: [URL] = []
-        let enumerator = FileManager.default.enumerator(at: tempDir, includingPropertiesForKeys: nil)
-        while let fileURL = enumerator?.nextObject() as? URL {
-            let ext = fileURL.pathExtension.lowercased()
-            // Check nested ZIPs — they may be DAISY or audio packages
-            if ext == "zip" {
-                if DAISYParser.isDAISYZip(url: fileURL) {
-                    supportedFiles.append(fileURL)
-                    continue
-                }
-                // Could also be a nested zip of regular books — extract and scan
-                let nestedTemp = tempDir.appendingPathComponent("nested_\(UUID().uuidString)")
-                if let _ = try? FileManager.default.createDirectory(at: nestedTemp, withIntermediateDirectories: true),
-                   let _ = try? FileManager.default.unzipItem(at: fileURL, to: nestedTemp) {
-                    let nestedEnum = FileManager.default.enumerator(at: nestedTemp, includingPropertiesForKeys: nil)
-                    while let nestedURL = nestedEnum?.nextObject() as? URL {
-                        if BookFormat.detect(from: nestedURL) != nil {
-                            supportedFiles.append(nestedURL)
-                        }
-                    }
-                }
-                continue
-            }
-            // Check directories for DAISY packages (unzipped DAISY in a folder)
-            var isDir: ObjCBool = false
-            if FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDir), isDir.boolValue {
-                if DAISYParser.isDAISYDirectory(url: fileURL) {
-                    // Import the directory as a DAISY book by finding its OPF/ncc.html
-                    let dirFiles = (try? FileManager.default.contentsOfDirectory(atPath: fileURL.path)) ?? []
-                    if let opf = dirFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) {
-                        supportedFiles.append(fileURL.appendingPathComponent(opf))
-                    } else if let ncc = dirFiles.first(where: { $0.lowercased() == "ncc.html" || $0.lowercased() == "ncc.htm" }) {
-                        supportedFiles.append(fileURL.appendingPathComponent(ncc))
-                    }
-                }
-                continue
-            }
-            if BookFormat.detect(from: fileURL) != nil {
-                supportedFiles.append(fileURL)
-            }
-        }
+        // First pass: every book in the archive, each once, those in the
+        // archives it holds included.
+        let books = importCandidates(
+            in: extracted,
+            unpackingNestedArchivesInto: workDirectory.appendingPathComponent("nested", isDirectory: true)
+        )
 
         return importSupportedFiles(
-            supportedFiles,
+            books,
             toFolder: folderPath,
             existingHashes: existingHashes,
             progress: progress
         )
+    }
+
+    /// The books in `directory`, an extracted archive, each listed once and
+    /// in path order, for a batch import to import one by one (TODO I02):
+    ///
+    /// - A DAISY book kept as loose files in a folder of its own is one
+    ///   book, listed as that folder, and none of the files inside counts
+    ///   on its own. A folder with several books' package files lists each
+    ///   package file instead, as does a TextMouth package holding a DAISY
+    ///   book, since neither folder names one book.
+    /// - An archive whose own top level holds a DAISY book is that book.
+    /// - A DAISY ZIP inside is one book. Any other archive inside is
+    ///   unpacked into `nestedDirectory` and searched the same way, one
+    ///   level deep only, since an archive can hold itself; with
+    ///   `nestedDirectory` nil, other archives are passed over.
+    /// - Any other file in a format TextMouth reads is a book. Hidden files
+    ///   and the `__MACOSX` folder macOS adds to archives are passed over:
+    ///   they hold copies of the archive's files that are not books.
+    static func importCandidates(in directory: URL, unpackingNestedArchivesInto nestedDirectory: URL?) -> [URL] {
+        let topLevelBooks = DAISYParser.packageEntryPoints(in: directory)
+        guard topLevelBooks.isEmpty else { return topLevelBooks }
+        guard let entries = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        var candidates: [URL] = []
+        for case let url as URL in entries {
+            if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
+                guard url.lastPathComponent != "__MACOSX" else {
+                    entries.skipDescendants()
+                    continue
+                }
+                let packageFiles = DAISYParser.packageEntryPoints(in: url)
+                guard !packageFiles.isEmpty else { continue }
+                entries.skipDescendants()
+                let isOneBooksFolder = packageFiles.count == 1 && url.pathExtension.lowercased() != "tmb"
+                candidates += isOneBooksFolder ? [url] : packageFiles
+            } else if url.pathExtension.lowercased() == "zip" {
+                if DAISYParser.isDAISYZip(url: url) {
+                    candidates.append(url)
+                } else if let nestedDirectory, let unpacked = unpackNestedArchive(url, into: nestedDirectory) {
+                    candidates += importCandidates(in: unpacked, unpackingNestedArchivesInto: nil)
+                }
+            } else if BookFormat.detect(from: url) != nil {
+                candidates.append(url)
+            }
+        }
+        return candidates.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+    }
+
+    /// Unpacks `archive`, an archive found inside the one being imported,
+    /// into a new folder inside `parent`, and returns that folder; nil when
+    /// it cannot be unpacked, as it then holds no book the import can find,
+    /// and the archive's other books still import.
+    private static func unpackNestedArchive(_ archive: URL, into parent: URL) -> URL? {
+        let destination = parent.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+            try FileManager.default.unzipItem(at: archive, to: destination)
+            return destination
+        } catch {
+            return nil
+        }
     }
 
     /// Import files discovered inside a ZIP while retaining individual errors
@@ -906,8 +937,9 @@ enum FileImportService {
 
         // Second pass: import each file, skipping duplicates
         for (index, fileURL) in supportedFiles.enumerated() {
-            // Compute hash before creating .tmb to avoid orphaning on duplicate
-            if let hash = try? md5Hash(of: fileURL), seenHashes.contains(hash) {
+            // Compute hash before creating .tmb to avoid orphaning on
+            // duplicate; a DAISY book in a folder has its package's.
+            if let hash = try? importHash(of: fileURL), seenHashes.contains(hash) {
                 progress?(index + 1, total)
                 continue
             }

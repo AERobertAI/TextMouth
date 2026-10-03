@@ -276,7 +276,184 @@ final class DAISYPackageImportTests: XCTestCase {
         )
     }
 
+    // MARK: - Archives
+
+    /// An archive holding two DAISY books, each in a folder of its own, and
+    /// an EPUB imports three books, each once: each DAISY book as one
+    /// package holding every file it needs, with none of the files in its
+    /// folder (notes, unused audio) imported as books of their own, and
+    /// macOS's `__MACOSX` copies passed over. Both DAISY books read in full
+    /// once the archive's extraction is gone.
+    func testArchiveOfTwoPackagedBooksAndAnEPUBImportsEachBookOnce() throws {
+        let archive = try makeArchive(Self.twoPackagedBooksAndAnEPUB())
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: archive))
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(result.incompleteBooks, [])
+        XCTAssertNil(result.failureSummary)
+        XCTAssertEqual(result.books.map(\.format.rawValue).sorted(), ["daisy", "daisy", "epub"])
+        XCTAssertEqual(try folderEntries(), Set(result.books.map(\.tmbDirectoryName)))
+        let navigationBook = try XCTUnwrap(result.books.first { $0.title == "Notes on Rope Splicing" })
+        let packageBook = try XCTUnwrap(result.books.first { $0.title == "Ferry Timetables of the Outer Sound" })
+        XCTAssertEqual(try bookFiles(of: navigationBook), Fixtures.navigationBookFiles)
+        XCTAssertEqual(try bookFiles(of: packageBook), Fixtures.packageBookFiles)
+        try assertReadsInFull(
+            navigationBook,
+            sentences: Fixtures.navigationBookSentences,
+            headings: Fixtures.navigationBookHeadings
+        )
+        try assertReadsInFull(packageBook, sentences: Fixtures.packageBookSentences, headings: Fixtures.packageBookHeadings)
+    }
+
+    /// The library's own ZIP import takes such an archive as a batch, not as
+    /// one DAISY book: it adds the three books, reports no failure, and
+    /// offers to put them in a folder of their own.
+    @MainActor
+    func testLibraryImportsAnArchiveOfPackagedBooksAsABatch() throws {
+        let archive = try makeArchive(Self.twoPackagedBooksAndAnEPUB())
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        withImportDeleteBehavior(.keepOriginal) {
+            model.importZipAsync(from: archive, toFolder: folderPath)
+            XCTAssertTrue(eventually(within: 60) { model.showZipFolderDialog || model.showError }, "the batch never finished")
+        }
+
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.library.books.map(\.format.rawValue).sorted(), ["daisy", "daisy", "epub"])
+        XCTAssertEqual(Set(model.pendingZipBooks.map(\.id)), Set(model.library.books.map(\.id)))
+    }
+
+    /// A DAISY book that appears twice in an archive, in two folders, is
+    /// imported once, and a book the library already holds is not imported
+    /// again: both are recognized by the package's checksum before anything
+    /// is copied, so neither leaves a package behind.
+    func testArchiveImportsEachDAISYBookOnceByItsChecksum() throws {
+        var entries: [String: Data] = [:]
+        for folder in ["Rope Splicing", "Rope Splicing Copy"] {
+            entries.merge(Self.archiveEntries(Fixtures.navigationBook, inFolder: folder)) { first, _ in first }
+        }
+        let archive = try makeArchive(entries)
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+        let again = try FileImportService.importZip(
+            from: archive,
+            toFolder: folderPath,
+            existingHashes: Set(result.books.map(\.md5Hash))
+        )
+
+        XCTAssertEqual(result.books.map(\.title), ["Notes on Rope Splicing"])
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(again.books, [])
+        XCTAssertEqual(again.failures, [])
+        XCTAssertEqual(try folderEntries(), Set(result.books.map(\.tmbDirectoryName)))
+    }
+
+    /// A DAISY book in an archive that cannot be imported is named once in
+    /// the batch's summary, by its folder, with the reason; the archive's
+    /// other books still import.
+    func testFailingPackagedBookIsNamedOnceByItsFolder() throws {
+        let opf = Fixtures.packageBook["book.opf", default: ""]
+            .replacingOccurrences(of: "images/harbor%20map.png", with: "../../outside.xml")
+        let archive = try makeArchive(
+            Self.archiveEntries(Fixtures.files(Fixtures.packageBook, changing: ["book.opf": opf]), inFolder: "Ferry Timetables")
+                .merging(Self.archiveEntries(Fixtures.navigationBook, inFolder: "Rope Splicing")) { first, _ in first }
+        )
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+
+        XCTAssertEqual(result.books.map(\.title), ["Notes on Rope Splicing"])
+        XCTAssertEqual(result.failures, [ZipImportFailure(
+            fileName: "Ferry Timetables",
+            message: "Reading the file failed: The file “book.opf” in this DAISY book refers to “../../outside.xml”, "
+                + "which is outside the book's folder. Only files inside the folder can be imported."
+        )])
+        let summary = try XCTUnwrap(result.failureSummary)
+        XCTAssertEqual(summary.components(separatedBy: "Ferry Timetables").count, 2, summary)
+        XCTAssertEqual(try folderEntries(), Set(result.books.map(\.tmbDirectoryName)))
+    }
+
+    /// A folder in an archive holding two books' package files imports each
+    /// book from its own package file.
+    func testArchiveFolderOfTwoPackageFilesImportsEachBook() throws {
+        let almanac: [String: String] = [
+            "almanac.opf": Fixtures.packageBook["book.opf", default: ""]
+                .replacingOccurrences(of: "Ferry Timetables of the Outer Sound", with: "Harbor Almanac")
+                .replacingOccurrences(of: "content/timetables.xml", with: "almanac.xml"),
+            "almanac.xml": Fixtures.packageBook["content/timetables.xml", default: ""]
+                .replacingOccurrences(of: "The first ferry leaves", with: "The almanac says the tide turns")
+        ]
+        let archive = try makeArchive(
+            Self.archiveEntries(Fixtures.files(Fixtures.packageBook, changing: almanac), inFolder: "Two Books")
+        )
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(Set(result.books.map(\.title)), ["Ferry Timetables of the Outer Sound", "Harbor Almanac"])
+        let almanacBook = try XCTUnwrap(result.books.first { $0.title == "Harbor Almanac" })
+        XCTAssertEqual(almanacBook.bookFileURL.lastPathComponent, "almanac.opf")
+        XCTAssertTrue(
+            try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: almanacBook.bookFileURL))
+                .contains("The almanac says the tide turns")
+        )
+    }
+
+    /// An archive inside the archive that holds several DAISY books is
+    /// unpacked and searched like the archive itself, each of its books
+    /// imported once as a package, while one that is a single DAISY book is
+    /// imported as the DAISY ZIP it is, as before.
+    func testNestedArchivesAreSearchedForPackagedBooks() throws {
+        let inner = try makeArchive(Self.twoPackagedBooksAndAnEPUB())
+        let archive = try makeArchive([
+            "Collection.zip": try Data(contentsOf: inner),
+            "Tides.zip": try Data(contentsOf: requireFile("daisy202_test.zip"))
+        ])
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(
+            Set(result.books.map(\.title)),
+            Set(["Notes on Rope Splicing", "Ferry Timetables of the Outer Sound", "The Manual of Tide Prediction"])
+                .union(result.books.filter { $0.format == .epub }.map(\.title))
+        )
+        XCTAssertEqual(result.books.count, 4)
+        let tides = try XCTUnwrap(result.books.first { $0.title == "The Manual of Tide Prediction" })
+        XCTAssertEqual(tides.bookFileURL.lastPathComponent, "Tides.zip")
+        XCTAssertFalse(result.books.contains { $0.bookFileURL.lastPathComponent == "Collection.zip" })
+    }
+
     // MARK: - Helpers
+
+    /// The archive the batch tests import: two DAISY books, each in a folder
+    /// of its own beside files that are not books (notes, unused audio, a
+    /// DTD, a hidden file), an EPUB in another folder, and the copies macOS
+    /// adds under `__MACOSX`, which begin as AppleDouble files do.
+    private static func twoPackagedBooksAndAnEPUB() throws -> [String: Data] {
+        let appleDouble = Data([0x00, 0x05, 0x16, 0x07, 0x00, 0x02, 0x00, 0x00])
+        return archiveEntries(Fixtures.files(Fixtures.navigationBook, changing: Fixtures.unrelatedFiles), inFolder: "Rope Splicing")
+            .merging(archiveEntries(Fixtures.files(Fixtures.packageBook, changing: Fixtures.unrelatedFiles), inFolder: "Ferry Timetables")) { first, _ in first }
+            .merging([
+                "Novels/Alice.epub": try Data(contentsOf: requireFile("alice.epub")),
+                "__MACOSX/Rope Splicing/._ncc.html": appleDouble,
+                "__MACOSX/Novels/._Alice.epub": appleDouble
+            ]) { first, _ in first }
+    }
+
+    /// `files` as an archive's entries, each path moved into `folder`.
+    private static func archiveEntries(_ files: [String: String], inFolder folder: String) -> [String: Data] {
+        Fixtures.entries(files, inFolder: folder).mapValues { Data($0.utf8) }
+    }
+
+    /// A ZIP archive holding `entries`, removed when the test ends.
+    private func makeArchive(_ entries: [String: Data]) throws -> URL {
+        let archive = try makeTemporaryZip(prefix: "DAISYPackageBatch", entries: entries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+        return archive
+    }
 
     /// Asserts that `book` reads each of `sentences` and `headings` from
     /// its own package: as the reader rebuilds its text cache from the
