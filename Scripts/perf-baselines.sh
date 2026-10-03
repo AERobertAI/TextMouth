@@ -74,12 +74,16 @@ setup_error() {
   exit 2
 }
 
-# fail <reason>: puts the baselines file back as it was before the run, so
-# a run that did not succeed as a whole changes nothing, then prints the
-# FAILED verdict as the report's last line and exits with 1.
+# fail <reason>: puts the baselines file back as it was before the run, or
+# removes one the run wrote where there was none, so a run that did not
+# succeed as a whole changes nothing; then prints the FAILED verdict as the
+# report's last line and exits with 1.
 fail() {
   if [[ -f $PREVIOUS ]]; then
     cp "$PREVIOUS" "$BASELINES"
+    rm -f "$PREVIOUS"
+  else
+    rm -f "$BASELINES"
   fi
   say "FAILED: $*"
   exit 1
@@ -117,6 +121,8 @@ main() {
 
   say "measuring $TEST_CLASS; each test waits for a quiet Mac first"
   say "xcodebuild's output: $LOG"
+  # A run stopped part of the way changes nothing either.
+  trap 'fail "the run was interrupted"' INT TERM
   env "$RECORD_VARIABLE=1" xcodebuild test \
     -project TextMouth.xcodeproj \
     -scheme TextMouth \
