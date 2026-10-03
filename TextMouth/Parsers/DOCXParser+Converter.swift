@@ -34,6 +34,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var isInParagraph = false
     private var listNumId: String?
     private var listLevel: Int = 0
+    /// The paragraph's own outline level (`w:outlineLvl` in its
+    /// properties), which wins over its style's heading level.
+    private var paragraphOutlineLevel: DOCXOutlineLevel?
 
     // Run-level state (reset at each <w:r>)
     private var isInRun = false
@@ -136,6 +139,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             let val = attributes["w:val"] ?? "0"
             if val != "0" {
                 listNumId = val
+            }
+        case "outlineLvl":
+            // The paragraph's own outline level: a heading level, or body text
+            if let outline = DOCXOutlineLevel(attributes["w:val"]) {
+                paragraphOutlineLevel = outline
             }
         case "r":
             // Start of a text run -- reset run formatting state
@@ -270,6 +278,18 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraphHasContent = false
         listNumId = nil
         listLevel = 0
+        paragraphOutlineLevel = nil
+    }
+
+    /// The heading level of the paragraph being read: its own outline
+    /// level when it declares one, which wins over its style's as direct
+    /// formatting does in Word, so a paragraph marked as body text is no
+    /// heading whatever its style; otherwise its style's heading level.
+    private var paragraphHeadingLevel: Int? {
+        if let paragraphOutlineLevel {
+            return paragraphOutlineLevel.headingLevel
+        }
+        return styles.headingLevels[currentParagraphStyle]
     }
 
     /// Emit the completed paragraph as Markdown
@@ -307,7 +327,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         previousParagraphWasList = isListParagraph
 
         // Check if this paragraph is a heading
-        if let headingLevel = styles.headingLevels[currentParagraphStyle] {
+        if let headingLevel = paragraphHeadingLevel {
             let prefix = String(repeating: "#", count: headingLevel)
             openListItems.removeAll()
             markdown += "\n\(prefix) \(text)\n\n"

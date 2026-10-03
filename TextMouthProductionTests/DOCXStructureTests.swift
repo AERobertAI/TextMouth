@@ -5,10 +5,11 @@ import XCTest
 /// (TODO T05): list levels are matched by their identity, with their start
 /// values, restart rules, and per-instance overrides; list items nest so
 /// that each is heard once, apart from the text around it, with no bullet
-/// or number read as a word; and styles inherit heading levels through
-/// their `w:basedOn` chains. Each test builds a minimal DOCX package in
-/// memory and reads it through `DOCXParser`, the path every import takes,
-/// or parses one part with its production parser.
+/// or number read as a word; styles inherit heading levels through their
+/// `w:basedOn` chains; and a paragraph's own outline level makes it a
+/// heading or body text. Each test builds a minimal DOCX package in memory
+/// and reads it through `DOCXParser`, the path every import takes, or
+/// parses one part with its production parser.
 final class DOCXStructureTests: XCTestCase {
 
     // MARK: - List Level Identity
@@ -754,6 +755,38 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(reading.headings, [])
     }
 
+    // MARK: - Paragraph Outline Levels
+
+    /// A paragraph's own outline level makes it a heading without a heading
+    /// style: outline level 1 is a level-2 heading, and the deepest outline
+    /// levels share heading level 6. The paragraph after it, with no outline
+    /// level of its own, stays body text.
+    func testParagraphOutlineLevelMakesItAHeading() throws {
+        let reading = try read(body: [
+            Self.outlinedParagraph("Spoke Tension", outline: "1"),
+            Self.paragraph("Pluck each spoke and listen for a dull note."),
+            Self.outlinedParagraph("Truing Notes", outline: "8")
+        ], styles: Self.headingStyles)
+
+        XCTAssertEqual(reading.headings, ["2 Spoke Tension", "6 Truing Notes"])
+        XCTAssertTrue(reading.markdown.hasPrefix("## Spoke Tension\n"), reading.markdown)
+    }
+
+    /// A paragraph's own outline level wins over its style's, as direct
+    /// formatting does: a Heading 1 paragraph marked level 2 is a level-3
+    /// heading, and one marked body text (9) is no heading. A value that is
+    /// not a number declares nothing, so the style's level stands.
+    func testParagraphOutlineLevelWinsOverItsStyle() throws {
+        let reading = try read(body: [
+            Self.outlinedParagraph("Rim Width", style: "Heading1", outline: "2"),
+            Self.outlinedParagraph("Measured inside the hooks.", style: "Heading1", outline: "9"),
+            Self.outlinedParagraph("Valve Types", style: "Heading1", outline: "deep")
+        ], styles: Self.headingStyles)
+
+        XCTAssertEqual(reading.headings, ["3 Rim Width", "1 Valve Types"])
+        XCTAssertTrue(reading.markdown.contains("\nMeasured inside the hooks.\n"), reading.markdown)
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.
@@ -769,6 +802,14 @@ final class DOCXStructureTests: XCTestCase {
     private static func paragraph(_ text: String, style: String? = nil) -> String {
         let properties = style.map { "<w:pPr><w:pStyle w:val=\"\($0)\"/></w:pPr>" } ?? ""
         return "<w:p>\(properties)<w:r><w:t>\(text)</w:t></w:r></w:p>"
+    }
+
+    /// A paragraph reading `text` whose own properties give it the outline
+    /// level `outline`, in the paragraph style `style` when one is given.
+    private static func outlinedParagraph(_ text: String, style: String? = nil, outline: String) -> String {
+        let styleProperty = style.map { "<w:pStyle w:val=\"\($0)\"/>" } ?? ""
+        return "<w:p><w:pPr>\(styleProperty)<w:outlineLvl w:val=\"\(outline)\"/></w:pPr>"
+            + "<w:r><w:t>\(text)</w:t></w:r></w:p>"
     }
 
     /// The text part of a document whose body holds `body`.
