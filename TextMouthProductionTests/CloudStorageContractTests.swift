@@ -634,6 +634,67 @@ final class CloudStorageContractTests: XCTestCase {
         XCTAssertEqual(MachineLocalPaths.importStaging, root.appendingPathComponent("Import Staging", isDirectory: true))
     }
 
+    // MARK: - The Test Doubles
+
+    /// A scripted download reports its steps, then succeeds and makes the
+    /// book downloaded.
+    func testAScriptedDownloadPlaysItsStepsAndSucceeds() async throws {
+        let storage = FakeBookCloudStorage()
+        let book = Self.package()
+        let half = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0)
+        storage.setState(.inCloud, of: book.bookID)
+        storage.scriptDownload(of: book.bookID, steps: [half])
+
+        var steps: [BookDownloadProgress] = []
+        for try await step in storage.download(book) {
+            steps.append(step)
+        }
+
+        XCTAssertEqual(steps, [half])
+        XCTAssertEqual(storage.state(of: book), .downloaded)
+        XCTAssertEqual(storage.downloadsStarted, [book.bookID])
+    }
+
+    /// A held download can be finished as soon as it is seen started, with
+    /// every step already delivered, and ends as the test says.
+    func testAHeldDownloadCanBeFinishedAsSoonAsItIsSeenStarted() async {
+        let storage = FakeBookCloudStorage()
+        let book = Self.package()
+        let half = BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 0, totalBytes: 0)
+        storage.scriptDownload(of: book.bookID, steps: [half], holdsOpen: true)
+
+        let download = storage.download(book)
+        XCTAssertEqual(storage.downloadsStarted, [book.bookID])
+        storage.finishHeldDownload(of: book.bookID, failingWith: .offline)
+
+        var steps: [BookDownloadProgress] = []
+        do {
+            for try await step in download {
+                steps.append(step)
+            }
+            XCTFail("the held download ends with the failure the test gave")
+        } catch {
+            XCTAssertEqual(error as? BookCloudError, .offline)
+        }
+        XCTAssertEqual(steps, [half])
+    }
+
+    /// Cancelling the task that iterates a held download is recorded.
+    func testCancellingAHeldDownloadIsRecorded() async {
+        let storage = FakeBookCloudStorage()
+        let book = Self.package()
+        storage.scriptDownload(of: book.bookID, steps: [], holdsOpen: true)
+        let download = storage.download(book)
+
+        let iterating = Task {
+            for try await _ in download {}
+        }
+        iterating.cancel()
+        _ = try? await iterating.value
+
+        XCTAssertEqual(storage.downloadsCancelled, [book.bookID])
+    }
+
     // MARK: - Helpers
 
     /// A package for a book that is never read: the fakes and placeholders
