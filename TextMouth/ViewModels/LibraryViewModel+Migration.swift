@@ -310,15 +310,36 @@ extension LibraryViewModel {
     /// waits for the one under way and holds the rest until it has published,
     /// and a book listed before the move is then analyzed in the new data
     /// directory.
-    /// - Parameter access: How the pass reaches the books' files (FR02):
-    ///   `live` in the app; tests pass one that pretends files are in the
-    ///   cloud.
-    func calculateMissingBookStats(access: MaintenanceFileAccess = .live) {
+    ///
+    /// A book whose files are in the cloud is left as it is (FR02), and the
+    /// pass's one `MAINTENANCE_SKIPPED_IN_CLOUD` line counts such books (see
+    /// `commitStatistics(of:access:skips:)`).
+    /// - Parameters:
+    ///   - access: How the pass reaches the books' files: `live` in the app;
+    ///     tests pass one that pretends files are in the cloud.
+    ///   - completion: Called on the main actor once the pass has ended,
+    ///     after the updates of every book it analyzed.
+    func calculateMissingBookStats(
+        access: MaintenanceFileAccess = .live,
+        then completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
         let booksNeedingStats = library.books.filter(Self.needsContentAnalysis)
-        guard !booksNeedingStats.isEmpty else { return }
+        guard !booksNeedingStats.isEmpty else {
+            completion?()
+            return
+        }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
+            let skips = CloudSkips(.statistics)
+            defer {
+                // Once the pass ends, however it ends. The completion is
+                // queued behind every update the pass sent the main queue.
+                skips.log()
+                if let completion {
+                    DispatchQueue.main.async { completion() }
+                }
+            }
             for listedBook in booksNeedingStats {
                 let shouldContinue = autoreleasepool {
                     boundary.perform(.contentAnalysis) { _ -> Bool in
@@ -326,35 +347,15 @@ extension LibraryViewModel {
                         // paths in the data directory in use now.
                         let book = boundary.rebasedToCurrent(listedBook)
                         guard let self = self else { return false }
-                        guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
-
-                        do {
-                            let analysis = try access.read(book.bookFileURL) {
-                                try BookContentAnalysisService.load(
-                                    book: book,
-                                    hasher: access.hasher,
-                                    isDataless: access.isDataless
-                                )
+                        guard let summary = Self.commitStatistics(of: book, access: access, skips: skips) else {
+                            return true
+                        }
+                        DispatchQueue.main.async {
+                            guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
+                                return
                             }
-                            // `book` is the row as it was when this pass began. The
-                            // result lands on the book's latest state; a dropped one
-                            // leaves the row alone, so a later pass tries again.
-                            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                                for: book,
-                                index: analysis.index,
-                                cacheFormatVersion: analysis.cacheFormatVersion
-                            ) else { return true }
-                            let summary = ContentAnalysisSummary(committed: committed)
-
-                            DispatchQueue.main.async {
-                                guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
-                                    return
-                                }
-                                summary.apply(to: &self.library.books[index])
-                                self.save()
-                            }
-                        } catch {
-                            // Silently skip books that fail to parse — they'll be parsed when opened
+                            summary.apply(to: &self.library.books[index])
+                            self.save()
                         }
                         return true
                     }
@@ -362,6 +363,52 @@ extension LibraryViewModel {
                 releaseBatchParserMemory()
                 guard shouldContinue else { return }
             }
+        }
+    }
+
+    /// Analyzes `book` for the statistics pass, on the pass's thread, and
+    /// commits the analysis to the book's record; returns the analysis
+    /// fields its package now records, or nil when nothing was committed.
+    ///
+    /// A book is left as it is, and counted in `skips`, when any of its
+    /// files is in the cloud (FR02): the pass can read its record, its text
+    /// cache, and its content, which for an audiobook is every track. Every
+    /// read runs with dataless files left in the cloud, and a read refused
+    /// because it met a dataless file leaves the book the same way, as does
+    /// a file that went to the cloud while the book was read: nothing read in
+    /// part is committed. A book whose file is missing, or that fails to
+    /// parse, is skipped quietly too, and is parsed when it is opened.
+    nonisolated private static func commitStatistics(
+        of book: Book,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips
+    ) -> ContentAnalysisSummary? {
+        do {
+            try access.requireOnThisMac(book, reading: .all)
+            guard access.presence(of: book.bookFileURL) == .present else { return nil }
+            return try access.read(book.bookFileURL) {
+                let analysis = try BookContentAnalysisService.load(
+                    book: book,
+                    hasher: access.hasher,
+                    isDataless: access.isDataless
+                )
+                try access.requireOnThisMac(book, reading: .all)
+                // `book` is the row as it was when this pass began. The
+                // result lands on the book's latest state; a dropped one
+                // leaves the row alone, so a later pass tries again.
+                guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                    for: book,
+                    index: analysis.index,
+                    cacheFormatVersion: analysis.cacheFormatVersion
+                ) else { return nil }
+                return ContentAnalysisSummary(committed: committed)
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            skips.record(book)
+            return nil
+        } catch {
+            // Silently skip books that fail to parse — they'll be parsed when opened
+            return nil
         }
     }
 
