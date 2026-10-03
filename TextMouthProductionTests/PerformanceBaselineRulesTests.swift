@@ -6,7 +6,8 @@ import XCTest
 /// medians, the verdicts at twice and 1.5 times a baseline, when the Mac
 /// counts as busy or the baselines as another Mac's, the settings the
 /// environment gives, comparing and confirming a regression, recording new
-/// baselines, the list of measurements, and the committed rules fixture.
+/// baselines, the list of measurements, and the committed rules and
+/// baselines files.
 @MainActor
 final class PerformanceBaselineRulesTests: XCTestCase {
 
@@ -378,6 +379,21 @@ final class PerformanceBaselineRulesTests: XCTestCase {
 
         let transformed = TextSubstitutionService(rules: rules).transform("Mr. Varga met Dr. Okafor — see [12] | then left.")
         XCTAssertEqual(transformed.modifiedText, "Mister Varga met Doctor Okafor  —  see  I then left.")
+    }
+
+    /// performance-baselines.json holds a baseline above zero, in the right
+    /// unit, for exactly the measurements the tests make, so a measurement
+    /// added without recording its baseline is noticed on every Mac.
+    func testTheCommittedBaselinesCoverEveryMeasurement() throws {
+        let file = try PerformanceBaselineFile.read()
+        XCTAssertEqual(Set(file.baselines.keys), Set(PerformanceMeasure.all.map(\.name)))
+        for measure in PerformanceMeasure.all {
+            let baseline = try XCTUnwrap(file.baselines[measure.name], measure.name)
+            XCTAssertEqual(baseline.unit, measure.unit, measure.name)
+            XCTAssertGreaterThan(baseline.value, 0, measure.name)
+        }
+        XCTAssertEqual(file.runsPerMeasurement, PerformanceRules.runs)
+        XCTAssertFalse(file.machine.model.isEmpty)
     }
 
     // MARK: - Support

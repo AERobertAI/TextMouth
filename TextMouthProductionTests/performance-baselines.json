@@ -1,0 +1,104 @@
+{
+  "about" : "Baselines for PerformanceBaselineTests, each the median of five runs on the Mac named below, in the build configuration named below. A test fails when its number is more than twice its baseline (measured twice before it fails) and prints a warning at 1.5 times. Rewrite this file with make perf-baselines after a deliberate change, on a quiet Mac.",
+  "baselines" : {
+    "checkpoint.bytes" : {
+      "summary" : "Bytes one 30-second reading checkpoint writes for a book with a 690 KB content index in a 643-book library.",
+      "unit" : "bytes",
+      "value" : 851
+    },
+    "cloud.refreshLocalLibrary" : {
+      "summary" : "One cloud refresh of a 643-book library that is not in a cloud location.",
+      "unit" : "milliseconds",
+      "value" : 0.161
+    },
+    "epub.extraction" : {
+      "summary" : "Extracting the 1 MB EPUB's text into content.md, with its index and fingerprints.",
+      "unit" : "milliseconds",
+      "value" : 1187.925
+    },
+    "headingSheet.publish" : {
+      "summary" : "Main-thread time one reader publish costs the open Headings sheet of a 180-heading book.",
+      "unit" : "milliseconds",
+      "value" : 1.753
+    },
+    "launch" : {
+      "summary" : "Launch with a 643-book library: reading library.json, the startup repair, and the text cache check.",
+      "unit" : "milliseconds",
+      "value" : 130.793
+    },
+    "list.derivation.author" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by Author.",
+      "unit" : "milliseconds",
+      "value" : 4.52
+    },
+    "list.derivation.dateAdded" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by Date Added.",
+      "unit" : "milliseconds",
+      "value" : 1.075
+    },
+    "list.derivation.fileSize" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by File Size.",
+      "unit" : "milliseconds",
+      "value" : 2.774
+    },
+    "list.derivation.lastOpened" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by Last Opened.",
+      "unit" : "milliseconds",
+      "value" : 2.85
+    },
+    "list.derivation.manualOrder" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by Manual Order.",
+      "unit" : "milliseconds",
+      "value" : 4.268
+    },
+    "list.derivation.title" : {
+      "summary" : "One derivation of the 643-book All Items list sorted by Title.",
+      "unit" : "milliseconds",
+      "value" : 4.278
+    },
+    "list.firstSortByFileSize" : {
+      "summary" : "The first sort of the 643 books by File Size, which measures every book's package.",
+      "unit" : "milliseconds",
+      "value" : 25.124
+    },
+    "livePosition.update" : {
+      "summary" : "One live reading position update in a 643-book library, as a playing reader makes each second.",
+      "unit" : "microseconds",
+      "value" : 129.372
+    },
+    "open.audiobook" : {
+      "summary" : "Opening a 3-file audiobook in a reader until it has loaded.",
+      "unit" : "milliseconds",
+      "value" : 4.89
+    },
+    "open.textBook" : {
+      "summary" : "Opening the 1 MB EPUB in a reader until the speech of its first chapter is prepared.",
+      "unit" : "milliseconds",
+      "value" : 210.3
+    },
+    "render.keptMemory" : {
+      "summary" : "The memory a 40,000-character chapter's rendered speech keeps once built.",
+      "unit" : "megabytes",
+      "value" : 43.354
+    },
+    "render.peakMemory" : {
+      "summary" : "The most memory taken while a 40,000-character chapter's rendered speech is built.",
+      "unit" : "megabytes",
+      "value" : 43.358
+    },
+    "speech.millionCharacterChapter" : {
+      "summary" : "Preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules.",
+      "unit" : "milliseconds",
+      "value" : 237.276
+    }
+  },
+  "configuration" : "Debug",
+  "machine" : {
+    "chip" : "Apple M3",
+    "cores" : 8,
+    "memoryGigabytes" : 8,
+    "model" : "Mac15,12"
+  },
+  "recorded" : "2026-10-03",
+  "runsPerMeasurement" : 5
+}
