@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 import XCTest
 import ZIPFoundation
@@ -685,5 +686,54 @@ enum TextPipelineFixtures {
         let book = try FileImportService.importFile(from: source)
         testCase.addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
         return book
+    }
+}
+
+/// Samples the bytes malloc holds live every half millisecond, on a thread
+/// of its own, while a measured run goes on, keeping the highest.
+///
+/// `@unchecked Sendable`: `running` and `peak` are read and changed only
+/// under `lock`; everything else is a constant.
+final class HeapSampler: @unchecked Sendable {
+    private let lock = NSLock()
+    private var running = true
+    private var peak: Int
+    private let finished = DispatchSemaphore(value: 0)
+
+    /// The bytes every malloc zone holds live now.
+    static func heapInUse() -> Int {
+        var statistics = malloc_statistics_t()
+        malloc_zone_statistics(nil, &statistics)
+        return Int(statistics.size_in_use)
+    }
+
+    /// Start sampling at once.
+    init() {
+        peak = Self.heapInUse()
+        let thread = Thread { [self] in
+            while true {
+                let sample = Self.heapInUse()
+                lock.lock()
+                peak = max(peak, sample)
+                let keepGoing = running
+                lock.unlock()
+                if !keepGoing { break }
+                usleep(500)
+            }
+            finished.signal()
+        }
+        thread.qualityOfService = .userInteractive
+        thread.start()
+    }
+
+    /// Stop sampling and return the highest sample.
+    func stop() -> Int {
+        lock.lock()
+        running = false
+        lock.unlock()
+        finished.wait()
+        lock.lock()
+        defer { lock.unlock() }
+        return peak
     }
 }

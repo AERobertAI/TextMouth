@@ -55,6 +55,19 @@ protocol DAISYFileProvider {
     func listFiles() -> [String]
     /// Read the contents of a file at the given relative path
     func readFile(at path: String) throws -> Data
+    /// Copy the file at the given relative path to `destination`, where
+    /// nothing is yet, holding it to the bounds `readFile(at:)` holds it to.
+    /// DAISY audio conversion copies each audio file with it.
+    func copyFile(at path: String, to destination: URL) throws
+}
+
+extension DAISYFileProvider {
+    /// Copy the file by reading it whole and writing it out: for a provider
+    /// whose files are small or already in memory. The archive and folder
+    /// providers copy without holding a file whole (PERF24).
+    func copyFile(at path: String, to destination: URL) throws {
+        try readFile(at: path).write(to: destination)
+    }
 }
 
 /// Wraps a DAISYFileProvider to cache the listFiles() result. DAISY parsing
@@ -78,6 +91,10 @@ class CachingFileProvider: DAISYFileProvider {
 
     func readFile(at path: String) throws -> Data {
         try inner.readFile(at: path)
+    }
+
+    func copyFile(at path: String, to destination: URL) throws {
+        try inner.copyFile(at: path, to: destination)
     }
 }
 
@@ -119,11 +136,51 @@ class ArchiveFileProvider: DAISYFileProvider {
     ///   more than `ArchiveEntryLimits.current` allows or, within a budget,
     ///   more than the archive records for it.
     func readFile(at path: String) throws -> Data {
+        let entry = try entry(at: path)
+        return try withinBounds(of: entry) {
+            try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: budget != nil).data
+        }
+    }
+
+    /// Copy the file at `path` to `destination` a chunk at a time, held to
+    /// the bounds `readFile(at:)` holds it to, so an audio file of up to
+    /// 256 MB never sits whole in memory (PERF24). A copy that fails, the
+    /// entry found too large partway included, leaves nothing behind.
+    /// - Throws: as `readFile(at:)` throws, or the error writing threw.
+    func copyFile(at path: String, to destination: URL) throws {
+        let entry = try entry(at: path)
+        guard FileManager.default.createFile(atPath: destination.path, contents: nil) else {
+            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: destination.path])
+        }
+        do {
+            let handle = try FileHandle(forWritingTo: destination)
+            defer { try? handle.close() }
+            _ = try withinBounds(of: entry) {
+                try ArchiveEntryReader.stream(entry, in: archive, limit: nil, holdingToDeclaredSize: budget != nil) { chunk in
+                    try handle.write(contentsOf: chunk)
+                }
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            throw error
+        }
+    }
+
+    /// The entry of the file at `path`: the entry of exactly that path, or
+    /// else the first file whose path matches it without regard to case.
+    /// - Throws: `DAISYParserError.missingContent` when no entry matches.
+    private func entry(at path: String) throws -> Entry {
         guard let entry = index[path] ?? index.file(matchingCaseInsensitively: path) else {
             throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
+        return entry
+    }
+
+    /// Run `body`, which reads `entry`, naming an entry it finds too large
+    /// in the DAISY damage sentence and keeping that on the budget.
+    private func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
         do {
-            return try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: budget != nil).data
+            return try body()
         } catch let overflow as ArchiveEntryOverflow {
             let damage = DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
             budget?.record(damage)
@@ -171,6 +228,25 @@ class DirectoryFileProvider: DAISYFileProvider {
             throw DAISYParserError.missingContent("File not found: \(path)")
         }
         return try Data(contentsOf: fullURL)
+    }
+
+    /// Copy the file at `path` to `destination` as the file system copies a
+    /// file: on APFS a clone, which shares the file's blocks rather than
+    /// reading them, so an audio file costs neither time nor memory to copy
+    /// (PERF24). A symbolic link is followed, as reading the file follows it.
+    /// - Throws: as `readFile(at:)` throws, or the error copying threw.
+    func copyFile(at path: String, to destination: URL) throws {
+        let fullURL = baseURL.appendingPathComponent(path)
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: fullURL.path, isDirectory: &isFolder) else {
+            throw DAISYParserError.missingContent("File not found: \(path)")
+        }
+        guard !isFolder.boolValue else {
+            // A folder is not a file: reading it fails, as it always has.
+            try readFile(at: path).write(to: destination)
+            return
+        }
+        try FileManager.default.copyItem(at: fullURL.resolvingSymlinksInPath(), to: destination)
     }
 }
 

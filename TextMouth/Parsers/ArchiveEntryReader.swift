@@ -217,6 +217,31 @@ enum ArchiveEntryReader {
         limit: Int64? = nil,
         holdingToDeclaredSize: Bool = false
     ) throws -> (data: Data, checksum: CRC32) {
+        var data = Data()
+        let checksum = try stream(entry, in: archive, limit: limit, holdingToDeclaredSize: holdingToDeclaredSize) { chunk in
+            // ZIPFoundation reuses each chunk's buffer, so its bytes are
+            // copied here rather than the chunk kept.
+            data.append(chunk)
+        }
+        return (data, checksum)
+    }
+
+    /// Streams `entry`'s bytes to `consume` as they come out of `archive`,
+    /// held to exactly the bounds `read(_:in:limit:holdingToDeclaredSize:)`
+    /// holds a read to, and returns the checksum of the bytes read: for a
+    /// reader that writes an entry out rather than holding it whole, as
+    /// DAISY audio conversion does (PERF24). `consume` must copy or write
+    /// each chunk before it returns: ZIPFoundation reuses its buffer.
+    /// - Throws: `ArchiveEntryOverflow` when the entry holds too much, any
+    ///   error `consume` throws, or ZIPFoundation's own error when the
+    ///   entry's data cannot be read.
+    static func stream(
+        _ entry: Entry,
+        in archive: Archive,
+        limit: Int64?,
+        holdingToDeclaredSize: Bool,
+        consume: (Data) throws -> Void
+    ) throws -> CRC32 {
         let limit = limit ?? ArchiveEntryLimits.current.limit(forEntryAt: entry.path)
         let declared = Int64(clamping: entry.uncompressedSize)
         guard declared <= limit else {
@@ -228,13 +253,7 @@ enum ArchiveEntryReader {
         let overflow: ArchiveEntryOverflow = holdingToDeclaredSize
             ? .pastDeclaredSize(path: entry.path, declared: declared)
             : .pastLimit(path: entry.path, limit: limit)
-        var data = Data()
-        let checksum = try stream(entry, in: archive, maximumBytes: maximumBytes, overflow: overflow) { chunk in
-            // ZIPFoundation reuses each chunk's buffer, so its bytes are
-            // copied here rather than the chunk kept.
-            data.append(chunk)
-        }
-        return (data, checksum)
+        return try stream(entry, in: archive, maximumBytes: maximumBytes, overflow: overflow, consume: consume)
     }
 
     /// Streams `entry`'s bytes to `consume` as they come out of `archive`,

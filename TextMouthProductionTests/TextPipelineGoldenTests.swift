@@ -692,6 +692,22 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertEqual(Set(manifests).count, 1)
     }
 
+    /// Converting a DAISY audio book from a ZIP archive holds no audio file
+    /// whole in memory: the heap grows by far less than the 32 MB audio file
+    /// while it is copied, as it grew by more than the whole file when each
+    /// file was read into memory before being written out.
+    func testDAISYAudioIsCopiedWithoutBeingHeldInMemory() throws {
+        let book = try daisyAudioBookCopies(audioBytes: 32 * 1_048_576)
+        let provider = ArchiveFileProvider(archive: try Archive(url: book.zip, accessMode: .read))
+        let audio = try TextPipelineFixtures.temporaryFolder(for: self)
+        let baseline = HeapSampler.heapInUse()
+        let sampler = HeapSampler()
+        _ = try DAISYAudioConverter.convertToAudioBook(from: provider, version: .daisy202, toDirectory: audio)
+        let growth = sampler.stop() - baseline
+        XCTAssertLessThan(growth, 8 * 1_048_576, "the heap grew by \(growth / 1_048_576) MB")
+        XCTAssertEqual(try Data(contentsOf: audio.appendingPathComponent("track.mp3")), book.files["track.mp3"])
+    }
+
     /// An audio file an import's budget refuses, because it holds more
     /// than the archive records for it, or more than the most TextMouth
     /// reads from one file, is not copied, and nothing of it is left behind;
