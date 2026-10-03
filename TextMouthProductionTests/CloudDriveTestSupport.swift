@@ -225,6 +225,49 @@ enum CloudDriveWait {
     }
 }
 
+// MARK: - What a Drive Reports Uploaded
+
+/// Whether a drive reports files uploaded, read from the flags as the
+/// system gives them, where a flag left out never counts as uploaded (FR02).
+///
+/// Google Drive and Dropbox report each file's own flags. iCloud Drive
+/// syncs a book's .tmb package as one item: the package carries the flags
+/// and the files inside carry none (measured on the real drive, October 3),
+/// so such a file counts as uploaded once its package reports so.
+enum CloudDriveUploads {
+    /// The extension of a TextMouth book package, which iCloud Drive syncs
+    /// as one item.
+    static let packageExtension = "tmb"
+
+    /// The book package holding `file`: the nearest folder above it, inside
+    /// `root`, with the package extension; nil when there is none. Nothing
+    /// above `root` is looked at, so a test never reads outside its folder.
+    static func package(holding file: URL, inside root: URL) -> URL? {
+        let rootPath = root.standardizedFileURL.path
+        var folder = file.standardizedFileURL.deletingLastPathComponent()
+        while folder.path.hasPrefix(rootPath + "/") {
+            if folder.pathExtension.caseInsensitiveCompare(packageExtension) == .orderedSame {
+                return folder
+            }
+            folder = folder.deletingLastPathComponent()
+        }
+        return nil
+    }
+
+    /// Whether a managed file whose flags read `file` is reported uploaded:
+    /// by its own upload flag when it carries any sync flag, as on Google
+    /// Drive and Dropbox, and otherwise, as on iCloud Drive, by the upload
+    /// flag of `package`, the flags of the package holding it (nil when it
+    /// is in none, or they could not be read).
+    static func isUploaded(file: UbiquitousItemStatusProvider.Metadata?, package: UbiquitousItemStatusProvider.Metadata?) -> Bool {
+        guard let file, file.isUbiquitousItem == true else { return false }
+        if UbiquitousItemStatusProvider.carriesSyncFlags(file) {
+            return file.isUploaded == true
+        }
+        return package?.isUbiquitousItem == true && package?.isUploaded == true
+    }
+}
+
 // MARK: - Synthetic Books
 
 /// A synthetic book package the tests write: files of random bytes, so no
@@ -370,13 +413,22 @@ struct CloudDriveDownloadRecord: Sendable {
     }
 
     /// Whether the progress only ever moved forward: files done and percent
-    /// never fell, and the count of files never changed.
+    /// never fell, and the count of files never changed, but where a package
+    /// arrived whole (`isWholeArrival(from:to:)`).
     var isInOrder: Bool {
         zip(updates, updates.dropFirst()).allSatisfy { earlier, later in
             later.completedFiles >= earlier.completedFiles
                 && later.percent >= earlier.percent
-                && later.totalFiles == earlier.totalFiles
+                && (later.totalFiles == earlier.totalFiles || Self.isWholeArrival(from: earlier, to: later))
         }
+    }
+
+    /// Whether `later` follows `earlier` as a package the sync service
+    /// syncs as one item arrives whole: `earlier` counts the package, only
+    /// in the cloud and unlisted, as one item still to come, and `later`
+    /// has every file of it here, as on iCloud Drive.
+    static func isWholeArrival(from earlier: BookDownloadProgress, to later: BookDownloadProgress) -> Bool {
+        earlier.totalFiles == 1 && earlier.completedFiles == 0 && later.completedFiles == later.totalFiles
     }
 
     /// Follows `stream` until it ends or `limit` passes. At the limit the
@@ -424,27 +476,29 @@ struct CloudDriveDownloadRecord: Sendable {
 
 // MARK: - Progress Other Processes Publish
 
-/// Listens for the progress the system publishes for files, through the
-/// app's own listener (`PublishedFileProgress`), for question 2: does an
-/// app without an iCloud entitlement hear of a sync service's downloads?
-/// What it hears is what a book's download folds into its progress.
+/// Listens for the progress the system publishes for files, or for a
+/// package as a whole, through the app's own listener
+/// (`PublishedFileProgress`), for question 2: does an app without an iCloud
+/// entitlement hear of a sync service's downloads? What it hears is what a
+/// book's download folds into its progress.
 ///
 /// `@unchecked Sendable`: the system reports on threads of its own, so
 /// every stored property is read and written only under `lock`.
 final class PublishedProgressRecorder: @unchecked Sendable {
     /// Guards every property below.
     private let lock = NSLock()
-    /// The listening, one for each file, stopped by `stop()`.
+    /// The listening, one for each item, stopped by `stop()`.
     private var listeners: [PublishedFileProgress] = []
-    /// Every fraction published for each file, by file name, in the order
+    /// Every fraction published for each item, by its name, in the order
     /// heard.
     private var fractions: [String: [Double]] = [:]
 
-    /// Starts listening for progress published for each of `files`.
-    func subscribe(to files: [URL]) {
-        for file in files {
-            let name = file.lastPathComponent
-            let listening = PublishedFileProgress.listen(to: file) { [self] fraction in
+    /// Starts listening for progress published for each of `items`, files
+    /// or packages.
+    func subscribe(to items: [URL]) {
+        for item in items {
+            let name = item.lastPathComponent
+            let listening = PublishedFileProgress.listen(to: item) { [self] fraction in
                 note(fraction, for: name)
             }
             lock.withLock { listeners.append(listening) }
@@ -460,23 +514,24 @@ final class PublishedProgressRecorder: @unchecked Sendable {
         listeners.forEach { $0.stop() }
     }
 
-    /// What was heard for `files`, in words: for each file that heard
+    /// What was heard for `items`, in words: for each item that heard
     /// anything, how many reports came and the first and last fraction.
-    func summary(of files: [URL]) -> String {
+    func summary(of items: [URL]) -> String {
         let heard = lock.withLock { fractions }
-        let lines = files.compactMap { file -> String? in
-            guard let seen = heard[file.lastPathComponent], let first = seen.first, let last = seen.last else {
+        let lines = items.compactMap { item -> String? in
+            guard let seen = heard[item.lastPathComponent], let first = seen.first, let last = seen.last else {
                 return nil
             }
-            return "\(file.lastPathComponent) had \(seen.count) reports, from \(Self.percent(first)) to \(Self.percent(last))"
+            return "\(item.lastPathComponent) had \(seen.count) reports, from \(Self.percent(first)) to \(Self.percent(last))"
         }
+        let listened = CountWording.phrase(items.count, singular: "item", plural: "items")
         guard !lines.isEmpty else {
-            return "No: the publishing handler never fired for any of the \(files.count) files."
+            return "No: no download progress was heard for any of \(listened)."
         }
-        return "Yes, for \(lines.count) of \(files.count) files: " + lines.joined(separator: "; ") + "."
+        return "Yes, for \(lines.count) of \(listened): " + lines.joined(separator: "; ") + "."
     }
 
-    /// Notes that `fraction` was published for the file called `name`.
+    /// Notes that `fraction` was published for the item called `name`.
     private func note(_ fraction: Double, for name: String) {
         lock.withLock { fractions[name, default: []].append(fraction) }
     }
