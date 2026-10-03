@@ -223,16 +223,24 @@ enum DAISYParser {
 
     /// Detect whether a ZIP file contains a DAISY book.
     /// Used by the import system to identify DAISY packages in zip imports.
+    /// An archive holding several DAISY books, each in a folder of its own,
+    /// is not one book but a batch, whose books import one by one; an
+    /// archive with a book at its top level is that book (TODO I02).
     static func isDAISYZip(url: URL) -> Bool {
         guard let archive = try? Archive(url: url, accessMode: .read) else { return false }
-        let provider = ArchiveFileProvider(archive: archive)
-        return detectVersion(in: provider) != nil
+        // Cached, since detection and the count of books both list the archive.
+        let provider = CachingFileProvider(wrapping: ArchiveFileProvider(archive: archive))
+        guard detectVersion(in: provider) != nil else { return false }
+        let folders = packageFolders(inArchivePaths: provider.listFiles())
+        return folders.count <= 1 || folders.contains("")
     }
 
-    /// Detect whether a directory contains a DAISY book
+    /// Detect whether a directory holds a DAISY book: a package file or a
+    /// navigation file at its top level (`packageEntryPoints(in:)`). A
+    /// folder of books, each in a folder of its own, is not itself a book,
+    /// and neither is a folder whose files merely include one (TODO I02).
     static func isDAISYDirectory(url: URL) -> Bool {
-        let provider = DirectoryFileProvider(baseURL: url)
-        return detectVersion(in: provider) != nil
+        !packageEntryPoints(in: url).isEmpty
     }
 
     // MARK: - File Access Abstraction
