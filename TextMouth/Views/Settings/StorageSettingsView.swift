@@ -150,6 +150,33 @@ struct StorageSettingsView: View {
     /// Failed writes, so the status never says all is well while changes
     /// are unsaved (TODO S09).
     @ObservedObject private var failureCenter = PersistenceFailureCenter.shared
+    /// Whether the data directory exists, as last checked (PERF32). The
+    /// Status line used to ask the disk twice on every draw, on the main
+    /// thread, once a second while a book played, and a network or
+    /// unplugged volume can block there. It is checked off the main thread
+    /// when the pane appears, after each data-directory operation, and when
+    /// the library's folder or its availability changes. Until the first
+    /// answer the directory counts as there, as it nearly always is.
+    @State private var directoryExists = true
+    /// Bumped as each data-directory operation ends, to check again.
+    @State private var directoryCheckRequest = 0
+
+    /// Whether a folder exists at a path: how the pane checks the data
+    /// directory, off the main thread. A test puts in its own to count the
+    /// checks and see where they run, and puts this one back, as tests do
+    /// with `CloudServices`.
+    static var directoryCheck: @Sendable (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
+
+    /// What the data directory check depends on: when any of it changes,
+    /// the directory is checked again.
+    private struct DirectoryCheckKey: Equatable {
+        /// The data directory's path.
+        let root: String
+        /// Whether the library could be used there, at the last look.
+        let isAvailable: Bool
+        /// How many data-directory operations have ended.
+        let request: Int
+    }
 
     /// A choice offered for a chosen folder: an alert titled `title`,
     /// explaining `message`, whose confirming `button` does `action`.
@@ -161,6 +188,12 @@ struct StorageSettingsView: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("StorageSettingsView")
+        let directoryCheckKey = DirectoryCheckKey(
+            root: TextMouthPaths.rootPath,
+            isAvailable: unavailability == nil,
+            request: directoryCheckRequest
+        )
         Form {
             Section {
                 LabeledContent("Location") {
@@ -187,13 +220,13 @@ struct StorageSettingsView: View {
                 LabeledContent("Status") {
                     Text(Self.statusText(
                         isRecoveringIndex: isRecoveringIndex,
-                        directoryExists: TextMouthPaths.directoryExists,
+                        directoryExists: directoryExists,
                         hasUnsavedChanges: hasUnsavedChanges,
                         isLibraryUnavailable: unavailability != nil
                     ))
                     .foregroundColor(
                         unavailability != nil || isRecoveringIndex || hasUnsavedChanges
-                            || !TextMouthPaths.directoryExists ? .red : .green
+                            || !directoryExists ? .red : .green
                     )
                 }
 
@@ -304,7 +337,7 @@ struct StorageSettingsView: View {
                 LabeledContent("Folders") {
                     Text("\(libraryViewModel.library.folders.count)")
                 }
-                let tmbCount = libraryViewModel.library.books.filter { !$0.tmbDirectoryName.isEmpty }.count
+                let tmbCount = libraryViewModel.library.books.count { !$0.tmbDirectoryName.isEmpty }
                 LabeledContent("TMB Packages") {
                     Text("\(tmbCount) of \(libraryViewModel.library.books.count)")
                 }
@@ -370,6 +403,11 @@ struct StorageSettingsView: View {
             LogsSettingsSection()
         }
         .padding()
+        // Checked off the main thread on appearing, and again whenever what
+        // the check depends on changes (PERF32).
+        .task(id: directoryCheckKey) {
+            directoryExists = await Self.directoryExists(at: directoryCheckKey.root)
+        }
         .alert("Rebuild Directory", isPresented: $showRebuildConfirmation) {
             Button("Rebuild") {
                 start(.rebuild)
@@ -672,6 +710,8 @@ struct StorageSettingsView: View {
             let outcome = libraryViewModel.outcomeConfirmingSaves(await perform(operation))
             status = .announced(after: outcome)
             runningOperation = nil
+            // The operation may have made, moved, or replaced the directory.
+            directoryCheckRequest += 1
         }
     }
 
@@ -701,6 +741,14 @@ struct StorageSettingsView: View {
             guard let outcome = await libraryViewModel.redoAllTextExtractionReturningOutcome() else { return }
             extractionStatus = .announced(after: libraryViewModel.outcomeConfirmingSaves(outcome))
         }
+    }
+
+    /// Whether a folder exists at `path`, asked through `directoryCheck` off
+    /// the main thread, so a slow or missing volume never holds the
+    /// interface.
+    static func directoryExists(at path: String) async -> Bool {
+        let check = directoryCheck
+        return await Task.detached(priority: .userInitiated) { check(path) }.value
     }
 
     /// Pauses briefly, so the run loop draws the status line, and the
