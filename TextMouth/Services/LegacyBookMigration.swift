@@ -289,9 +289,12 @@ extension FileImportService {
             let original = FileIdentity(of: book.bookFileURL)
             let otherReaders = original.map { (readers[$0] ?? 1) - 1 } ?? 0
             do {
+                // A closure, not the bare method reference: the Swift 6 mode
+                // infers that reference as @Sendable (SE-0418), and the
+                // compiler then cannot infer this conditional's type.
                 let migration = try migrateBookToTMB(
                     book,
-                    removingOriginalWith: otherReaders > 0 ? nil : removeMigratedOriginal(at:)
+                    removingOriginalWith: otherReaders > 0 ? nil : { try removeMigratedOriginal(at: $0) }
                 )
                 library.books[index] = migration.book
                 // A moved record reads its package copy from now on.
