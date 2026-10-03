@@ -181,7 +181,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(
             error?.localizedDescription,
             "The file “Disc 2/02.mp3” in this audiobook is damaged or incomplete: it cannot be opened as audio. "
-                + "Get a fresh copy of the book, then import it again."
+                + AudioMediaAdvice.damage
         )
     }
 
@@ -219,7 +219,7 @@ final class AudioMediaValidationTests: XCTestCase {
             error?.localizedDescription,
             "The file “02.m4a” in this audiobook is damaged or incomplete: "
                 + "its audio breaks off before the length the file declares. "
-                + "Get a fresh copy of the book, then import it again."
+                + AudioMediaAdvice.damage
         )
     }
 
@@ -275,7 +275,7 @@ final class AudioMediaValidationTests: XCTestCase {
             XCTAssertEqual(
                 AudioParseError.unplayableFile(file: "Disc 2/03.mp3", problem: problem).errorDescription,
                 "The file “Disc 2/03.mp3” in this audiobook is damaged or incomplete: \(reason). "
-                    + "Get a fresh copy of the book, then import it again."
+                    + AudioMediaAdvice.damage
             )
         }
     }
@@ -299,7 +299,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(
             error?.localizedDescription,
             "The heading “Chapter 12” starts 5 seconds into its file “a.wav”, which is only 2 seconds long. "
-                + "The book's navigation does not match its audio; get a fresh copy and import it again."
+                + AudioMediaAdvice.mismatch
         )
     }
 
@@ -345,7 +345,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(
             error?.localizedDescription,
             "The heading “Survey” ends 3 seconds into its file “a.wav”, which is only 2 seconds long. "
-                + "The book's navigation does not match its audio; get a fresh copy and import it again."
+                + AudioMediaAdvice.mismatch
         )
     }
 
@@ -463,7 +463,7 @@ final class AudioMediaValidationTests: XCTestCase {
             error?.localizedDescription,
             "The heading “Chapter 2” starts 0 seconds into its file “a.wav”, before the heading “Chapter 1”, "
                 + "which comes earlier in the book and starts 1 second in. "
-                + "The book's navigation does not match its audio; get a fresh copy and import it again."
+                + AudioMediaAdvice.mismatch
         )
     }
 
@@ -514,7 +514,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(
             error?.localizedDescription,
             "The heading “Chapter 12” starts 1 hour into its file “03.wav”, which is only 10 minutes long. "
-                + "The book's navigation does not match its audio; get a fresh copy and import it again."
+                + AudioMediaAdvice.mismatch
         )
     }
 
@@ -528,7 +528,7 @@ final class AudioMediaValidationTests: XCTestCase {
             error.errorDescription,
             "The untitled heading 3 ends 1 hour, 2 minutes, 5 seconds into its file “Disc 1/03.mp3”, "
                 + "which is only 1 hour long. "
-                + "The book's navigation does not match its audio; get a fresh copy and import it again."
+                + AudioMediaAdvice.mismatch
         )
     }
 
@@ -686,6 +686,16 @@ final class AudioMediaValidationTests: XCTestCase {
     private func describe(_ sections: [AudioSegment]?) -> [String] {
         (sections ?? []).map { "\($0.title) | \($0.file) | \($0.startTime)–\($0.endTime)" }
     }
+}
+
+/// The sentences that end the media checks' messages, exactly as a listener
+/// hears them. They are written out here, not taken from the app, so that
+/// changing what the app says means changing these tests too.
+enum AudioMediaAdvice {
+    /// Ends the message about a damaged file (see `PackageDamage`).
+    static let damage = "Get a fresh copy of the book, then import it again."
+    /// Ends every message about a section that does not fit its file.
+    static let mismatch = "The book's navigation does not match its audio; get a fresh copy and import it again."
 }
 
 /// Stands in for the app's prober: records each file it is asked to probe
