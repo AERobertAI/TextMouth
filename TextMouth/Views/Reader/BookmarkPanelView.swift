@@ -42,7 +42,8 @@ enum BookmarkPanelOperation: Equatable {
 ///
 /// Everything works from the keyboard, with VoiceOver, and from a braille
 /// display: every row is a button with its own Edit Note and Delete buttons,
-/// and offers all three commands as VoiceOver actions.
+/// offers all three commands as VoiceOver actions, and can be reached with
+/// Tab or the Up and Down Arrow keys.
 ///
 /// Focus follows the work. On opening, it goes to the bookmark nearest the
 /// reading position; after an Add, to the new bookmark; after an edit, back
@@ -199,12 +200,13 @@ struct BookmarkPanelView: View {
     /// and Delete buttons beside it.
     ///
     /// Every row's button can take keyboard focus (with keyboard navigation
-    /// on, as for any button), and Space or Return on it goes to the
-    /// bookmark. For VoiceOver the row is a container named after its
-    /// bookmark, holding the three buttons as separate controls. The row and
-    /// its main button both offer all three commands as VoiceOver actions,
-    /// so they are at hand wherever the VoiceOver cursor is in the row.
-    /// Pointer users find them in the row's context menu as well.
+    /// on, as for any button). Space or Return on it goes to the bookmark,
+    /// Up and Down Arrow move to the rows above and below it, and Tab visits
+    /// every control in turn. For VoiceOver the row is a container named
+    /// after its bookmark, holding the three buttons as separate controls.
+    /// The row and its main button both offer all three commands as
+    /// VoiceOver actions, so they are at hand wherever the VoiceOver cursor
+    /// is in the row. Pointer users find them in the row's context menu too.
     private func bookmarkRowView(_ row: BookmarkRow) -> some View {
         let bookmark = row.bookmark
         return HStack(spacing: 8) {
@@ -223,6 +225,12 @@ struct BookmarkPanelView: View {
             // bookmark too; a held key does not repeat the navigation.
             .onKeyPress(keys: [.return], phases: .down) { _ in
                 perform(.goTo, on: bookmark)
+                return .handled
+            }
+            // Up and Down Arrow move between rows, as in a list; holding one
+            // keeps moving.
+            .onKeyPress(keys: [.upArrow, .downArrow]) { press in
+                moveFocus(from: bookmark, by: press.key == .upArrow ? -1 : 1)
                 return .handled
             }
             .accessibilityLabel(row.bookmarkAccessibilityLabel)
@@ -284,6 +292,17 @@ struct BookmarkPanelView: View {
         case .delete:
             requestFocus(Self.delete(bookmark, from: viewModel))
         }
+    }
+
+    /// Move keyboard focus `offset` rows from `bookmark`'s row: -1 to the row
+    /// above, 1 to the row below. At either end of the list focus stays put,
+    /// as in any list. VoiceOver, whose cursor follows keyboard focus unless
+    /// the user turns that off, is not asked to move separately.
+    private func moveFocus(from bookmark: Bookmark, by offset: Int) {
+        guard let neighbor = Self.neighbor(of: bookmark.id, offset: offset, in: rows.map(\.bookmark)) else {
+            return
+        }
+        focusedControl = .bookmark(neighbor.id)
     }
 
     /// Ask for keyboard focus and the VoiceOver cursor to move to `target`.

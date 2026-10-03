@@ -426,6 +426,47 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
     }
 
+    /// Up and Down Arrow move keyboard focus to the rows above and below,
+    /// and at either end of the list focus stays put.
+    func testArrowKeysMoveKeyboardFocusBetweenRows() throws {
+        try XCTSkipUnless(NSApp.isFullKeyboardAccessEnabled, Self.keyboardNavigationOff)
+        // The content unit the panel opens in (and so the row it opens on),
+        // the arrows pressed, and the unit whose bookmark Return then goes to.
+        let cases: [(opensIn: Int, arrows: [KeyEquivalent], arrivesIn: Int)] = [
+            (opensIn: 0, arrows: [.downArrow, .downArrow], arrivesIn: 2),
+            (opensIn: 2, arrows: [.upArrow], arrivesIn: 1),
+            (opensIn: 0, arrows: [.upArrow], arrivesIn: 0),
+            (opensIn: 2, arrows: [.downArrow], arrivesIn: 2),
+        ]
+
+        for step in cases {
+            let reader = try makeNavigableReader(
+                position: ReadingPosition(chapterIndex: step.opensIn, characterOffset: 12)
+            )
+            defer { reader.close() }
+
+            try withRenderedPanel(for: reader) { hostingView in
+                letKeyboardFocusSettle(in: hostingView)
+                for arrow in step.arrows {
+                    press(arrow, in: hostingView)
+                    // SwiftUI moves focus on a later turn of the run loop,
+                    // as it would between two real key presses.
+                    letKeyboardFocusSettle(in: hostingView, seconds: 0.2)
+                }
+                press(.return, in: hostingView)
+
+                let arrived = waitUntil {
+                    reader.currentChapterIndex == step.arrivesIn && reader.currentCharacterOffset == 10
+                }
+                XCTAssertTrue(
+                    arrived,
+                    "Opening in unit \(step.opensIn + 1) and pressing \(step.arrows.count) arrows "
+                        + "reached unit \(reader.currentChapterIndex + 1), offset \(reader.currentCharacterOffset)"
+                )
+            }
+        }
+    }
+
     /// After the middle of three bookmarks is deleted, keyboard focus is on
     /// the next one: Return goes to it.
     func testAfterDeletingTheMiddleBookmarkReturnGoesToTheNextOne() throws {
@@ -754,13 +795,17 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
             KeyEquivalent.return.character: 36,
             KeyEquivalent.escape.character: 53,
             KeyEquivalent.space.character: 49,
+            KeyEquivalent.upArrow.character: 126,
+            KeyEquivalent.downArrow.character: 125,
         ]
         guard let keyCode = keyCodes[key.character] else { return nil }
         let characters = String(key.character)
+        // The keyboard flags arrow keys as function keys on the numeric pad.
+        let isArrow = key == .upArrow || key == .downArrow
         return NSEvent.keyEvent(
             with: .keyDown,
             location: .zero,
-            modifierFlags: [],
+            modifierFlags: isArrow ? [.function, .numericPad] : [],
             timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber,
             context: nil,
@@ -771,11 +816,12 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         )
     }
 
-    /// Wait for the panel to move keyboard focus to its latest request. It
-    /// waits `BookmarkPanelView.keyboardFocusDelay` for SwiftUI to draw the
-    /// target, so this waits comfortably longer.
-    private func letKeyboardFocusSettle(in hostingView: NSView) {
-        _ = waitUntil(timeout: 0.6) {
+    /// Wait `seconds` for the panel to move keyboard focus. After a focus
+    /// request it waits `BookmarkPanelView.keyboardFocusDelay` for SwiftUI to
+    /// draw the target, so the default waits comfortably longer; after a key
+    /// press, focus moves on SwiftUI's next update, so far less will do.
+    private func letKeyboardFocusSettle(in hostingView: NSView, seconds: TimeInterval = 0.6) {
+        _ = waitUntil(timeout: seconds) {
             hostingView.layoutSubtreeIfNeeded()
             return false
         }
