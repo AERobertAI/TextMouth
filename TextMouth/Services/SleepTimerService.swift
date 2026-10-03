@@ -632,6 +632,23 @@ final class SleepTimerService: ObservableObject {
         return String(format: "%d:%02d", minutes, seconds)
     }
 
+    /// The timer's state as VoiceOver reads it after "Sleep timer:": the
+    /// time left ("4:59 remaining"), where a timer set for a place in the
+    /// book stops playback ("stops at the end of this chapter"), or "fading
+    /// out"; empty with no timer.
+    var spokenStatus: String {
+        guard isActive, let duration else { return "" }
+        if isFadingOut { return "fading out" }
+        return duration.spokenStop ?? "\(formattedRemaining) remaining"
+    }
+
+    /// The label VoiceOver reads for the timer's status, wherever it is
+    /// shown: "Sleep timer: 4:59 remaining", or "Sleep timer: stops at the
+    /// end of the book"; empty with no timer.
+    var spokenLabel: String {
+        isActive ? "Sleep timer: \(spokenStatus)" : ""
+    }
+
     // MARK: - Test Support
 
     /// Advances the real countdown transition without waiting for wall-clock

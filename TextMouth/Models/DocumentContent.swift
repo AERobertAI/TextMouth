@@ -324,6 +324,18 @@ enum SleepTimerDuration: Hashable {
         }
     }
 
+    /// What a timer set for a place in the book does, as VoiceOver reads it
+    /// after "Sleep timer:" ("stops at the end of this chapter"); nil for a
+    /// timer counting minutes, which is read as the time it has left.
+    var spokenStop: String? {
+        switch self {
+        case .minutes: return nil
+        case .endOfHeading: return "set for the end of the heading"
+        case .endOfChapter: return "stops at the end of this chapter"
+        case .endOfBook: return "stops at the end of the book"
+        }
+    }
+
     /// Whether a timer set for this stops playback where a chapter ends,
     /// before anything after that chapter plays (TODO P01). End of chapter
     /// stops at the end of whichever chapter is playing, the book's last

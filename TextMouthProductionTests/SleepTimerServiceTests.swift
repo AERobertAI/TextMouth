@@ -178,6 +178,35 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(service.formattedRemaining, "")
     }
 
+    /// VoiceOver reads the timer's status as the time left, or as where a
+    /// timer set for a place in the book stops playback, never as "End of
+    /// chapter remaining"; and as fading out while a fade runs. The sheet
+    /// and the reader's indicators read it named as the sleep timer's.
+    func testSpokenStatusSaysWhereTheTimerStopsPlayback() {
+        XCTAssertEqual(service.spokenStatus, "")
+        XCTAssertEqual(service.spokenLabel, "")
+
+        start(.minutes(5))
+        service._advanceCountdownForTesting()
+        XCTAssertEqual(service.spokenStatus, "4:59 remaining")
+        XCTAssertEqual(service.spokenLabel, "Sleep timer: 4:59 remaining")
+
+        let places: [(duration: SleepTimerDuration, status: String)] = [
+            (.endOfHeading, "set for the end of the heading"),
+            (.endOfChapter, "stops at the end of this chapter"),
+            (.endOfBook, "stops at the end of the book"),
+        ]
+        for place in places {
+            start(place.duration)
+            XCTAssertEqual(service.spokenStatus, place.status, place.duration.displayName)
+            XCTAssertEqual(service.spokenLabel, "Sleep timer: \(place.status)", place.duration.displayName)
+        }
+
+        start(.minutes(1), fade: 30)
+        service._expireForTesting()
+        XCTAssertEqual(service.spokenLabel, "Sleep timer: fading out")
+    }
+
     func testAutoCloseDefaultsTrue() {
         XCTAssertTrue(ConfigService.AppConfig().sleepTimerAutoClose)
     }
