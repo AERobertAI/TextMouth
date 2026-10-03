@@ -67,8 +67,18 @@ write_stubs() {
 #   STUB_FAIL_TARGET=<target>   that target prints a compiler-style error and fails
 #   STUB_RESOLVE_WRITES=<file>  resolve-packages copies <file> over Package.resolved
 #   STUB_BUILD_WRITES=<file>    build copies <file> over Package.resolved
+#   STUB_BUILD_LOG=<file>       build writes <file> as xcodebuild's Release log,
+#                               build/xcodebuild-Release.log; empty writes none
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
+# In the log and output files, @ROOT@ stands for the repository root, since
+# xcodebuild names every source file by its full path.
+
+# with_root <file>: prints <file> with the repository root in place of @ROOT@.
+with_root() {
+  sed "s#@ROOT@#$(pwd -P)#g" "$1"
+}
+
 echo "make $*" >> "$STUB_LOG"
 target=${1:-}
 # The gate removes earlier builds' compiled code before it builds.
@@ -84,9 +94,13 @@ case $target in
   resolve-packages)
     if [ -n "${STUB_RESOLVE_WRITES:-}" ]; then cp "$STUB_RESOLVE_WRITES" "$STUB_RESOLVED"; fi ;;
   build)
+    if [ -n "${STUB_BUILD_LOG:-}" ]; then
+      mkdir -p build
+      with_root "$STUB_BUILD_LOG" > build/xcodebuild-Release.log
+    fi
     if [ -n "${STUB_BUILD_WRITES:-}" ]; then cp "$STUB_BUILD_WRITES" "$STUB_RESOLVED"; fi ;;
   test)
-    cat "$STUB_TEST_OUTPUT"
+    with_root "$STUB_TEST_OUTPUT"
     exit "${STUB_TEST_STATUS:-0}" ;;
 esac
 exit 0
@@ -161,6 +175,49 @@ write_fixtures() {
     printf '** TEST FAILED **\n'
   } > "$FIXTURES/tests-fail.log"
 
+  # A Release build log with no Swift warning, only other tools' warnings,
+  # which the gate must not count.
+  {
+    printf "SwiftCompile normal arm64 @ROOT@/TextMouth/Services/Ledger.swift (in target 'TextMouth' from project 'TextMouth')\n"
+    printf "ld: warning: ignoring duplicate libraries: '-lc++'\n"
+    printf '2026-01-01 00:00:00.000 appintentsmetadataprocessor[100:200] warning: Metadata extraction skipped. No AppIntents.framework dependency found.\n'
+    printf '** BUILD SUCCEEDED **\n'
+  } > "$FIXTURES/build-clean.log"
+
+  # A Release build log with six different Swift warnings, the compiler's
+  # own warning about its settings among them, and the first reported again
+  # when the second architecture compiles, among other tools' warnings.
+  {
+    printf "SwiftCompile normal arm64 @ROOT@/TextMouth/Services/Ledger.swift (in target 'TextMouth' from project 'TextMouth')\n"
+    printf "@ROOT@/TextMouth/Services/Ledger.swift:12:9: warning: capture of 'entry' with non-Sendable type 'Entry' in a '@Sendable' closure [#SendableClosureCaptures]\n"
+    printf '        entry.total += 1\n'
+    printf '        ^\n'
+    printf "@ROOT@/TextMouth/Services/Ledger.swift:20:13: warning: initialization of immutable value 'unused' was never used\n"
+    printf "@ROOT@/TextMouth/Models/Tally.swift:7:5: warning: var 'sharedTally' is not concurrency-safe because it is nonisolated global shared mutable state [#MutableGlobalVariable]\n"
+    printf "@ROOT@/TextMouth/Views/Shelf.swift:44:17: warning: 'reload()' is deprecated: use refresh() [#DeprecatedDeclaration]\n"
+    printf '@ROOT@/TextMouth/Views/Shelf.swift:51:9: warning: will never be executed\n'
+    printf '<unknown>:0: warning: the compiler ignored an option\n'
+    printf "SwiftCompile normal x86_64 @ROOT@/TextMouth/Services/Ledger.swift (in target 'TextMouth' from project 'TextMouth')\n"
+    printf "@ROOT@/TextMouth/Services/Ledger.swift:12:9: warning: capture of 'entry' with non-Sendable type 'Entry' in a '@Sendable' closure [#SendableClosureCaptures]\n"
+    printf "ld: warning: ignoring duplicate libraries: '-lc++'\n"
+    printf '2026-01-01 00:00:00.000 appintentsmetadataprocessor[100:200] warning: Metadata extraction skipped. No AppIntents.framework dependency found.\n'
+    printf '** BUILD SUCCEEDED **\n'
+  } > "$FIXTURES/build-warnings.log"
+
+  # A passing hosted test run whose build reported a Swift warning in a test
+  # file, and whose tests printed lines that only look like warnings: with
+  # no column, or with no file.
+  {
+    printf "@ROOT@/TextMouthProductionTests/LedgerTests.swift:30:13: warning: variable 'total' was never mutated; consider changing to 'let' constant\n"
+    printf "Test Case '-[StubTests testPrints]' started.\n"
+    printf '@ROOT@/TextMouthProductionTests/LedgerTests.swift:41: warning: printed by a test, with no column\n'
+    printf 'warning: printed by a test, with no file\n'
+    printf "Test Case '-[StubTests testPrints]' passed (0.001 seconds).\n"
+    printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
+    printf '\t Executed 3 tests, with 0 failures (0 unexpected) in 0.020 (0.021) seconds\n'
+    printf '** TEST SUCCEEDED **\n'
+  } > "$FIXTURES/tests-warning.log"
+
   printf '** TEST SUCCEEDED **\n' > "$FIXTURES/tests-without-totals.log"
   {
     printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
@@ -204,7 +261,7 @@ run_gate() {
       -u TEXTMOUTH_BUILD_SLOT -u CLAUDE_CODE_SESSION_ID -u TEXTMOUTH_CLAUDE_TMP_ROOT \
       -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED \
       PATH="$STUBS:$PATH" STUB_LOG="$stub_log" STUB_RESOLVED="$RESOLVED" \
-      STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
+      STUB_BUILD_LOG="$FIXTURES/build-clean.log" STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
       ${settings[@]+"${settings[@]}"} "${command[@]}" "$@" 2>&1)
   status=$?
 }
@@ -298,7 +355,9 @@ dry_run_cases() {
   expect_report "would run: make resolve-packages"
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
+  expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
   expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData"
+  expect_report "would require no Swift warnings in build/check/test.log"
   expect_report "pins match Package.resolved: "
   expect_report "$first_identity $first_version"
   expect_verdict "check: PASSED (dry run)"
@@ -492,8 +551,49 @@ real_run_cases() {
     "slot make test TEST_DERIVED_DATA=build/DerivedData" "make test TEST_DERIVED_DATA=build/DerivedData"
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
+  expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "no Swift warnings in build/check/test.log"
   expect_report "Package.resolved still holds the committed pins"
   expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Swift warning in the Release build fails the gate before the tests, naming the first five"
+  run_gate STUB_BUILD_LOG="$FIXTURES/build-warnings.log"
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  # Six, not seven: the warning reported again for x86_64 counts once.
+  expect_report "6 Swift warnings in build/xcodebuild-Release.log; the first 5:"
+  expect_report "| TextMouth/Services/Ledger.swift:12:9: warning: capture of 'entry' with non-Sendable type"
+  expect_report "| TextMouth/Services/Ledger.swift:20:13: warning: initialization of immutable value 'unused'"
+  expect_report "| TextMouth/Models/Tally.swift:7:5: warning: var 'sharedTally' is not concurrency-safe"
+  expect_report "| TextMouth/Views/Shelf.swift:44:17: warning: 'reload()' is deprecated"
+  expect_report "| TextMouth/Views/Shelf.swift:51:9: warning: will never be executed"
+  refute_report "<unknown>:0: warning"
+  refute_report "ld: warning"
+  refute_report "appintentsmetadataprocessor"
+  expect_report "the gate allows no Swift warning, about concurrency or anything else"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): 6 Swift warnings"
+  end_case
+
+  begin_case "a Swift warning in the hosted test build fails the gate; lines a test prints do not"
+  run_gate STUB_TEST_OUTPUT="$FIXTURES/tests-warning.log"
+  expect_status 1
+  expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "Executed 3 tests, with 0 failures"
+  expect_report "1 Swift warning in build/check/test.log:"
+  expect_report "| TextMouthProductionTests/LedgerTests.swift:30:13: warning: variable 'total' was never mutated"
+  refute_report "printed by a test"
+  expect_verdict "check: FAILED: step 4 of 4 (run the hosted XCTest suite): 1 Swift warning"
+  end_case
+
+  begin_case "a Release build that leaves no log fails the gate, never reading an earlier build's"
+  mkdir -p "$sandbox/build"
+  printf '%s/TextMouth/Old.swift:1:1: warning: left by an earlier build\n' "$sandbox" > "$sandbox/build/xcodebuild-Release.log"
+  run_gate STUB_BUILD_LOG=
+  expect_status 1
+  expect_commands "make generate" "make resolve-packages" "make build"
+  refute_report "left by an earlier build"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/xcodebuild-Release.log is missing, so the build's Swift warnings are unknown"
   end_case
 
   begin_case "a run removes earlier builds' compiled code before building and keeps the package checkouts"

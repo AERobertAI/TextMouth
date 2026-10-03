@@ -22,7 +22,9 @@ BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Where `make test` builds the app and its tests, relative to the repository
-# root; empty means Xcode's default DerivedData folder.
+# root; empty means Xcode's default DerivedData folder. `make check` passes
+# $(DERIVED_BUILD_DIR), the folder `make build` uses, once it has removed the
+# compiled code earlier builds left there.
 TEST_DERIVED_DATA =
 
 # Package resolution uses the same derived data folder as `make build`, so the
@@ -49,7 +51,7 @@ help:
 	@echo "  make install    - Copy the app to /Applications"
 	@echo "  make uninstall  - Remove from /Applications"
 	@echo "  make test       - Run the hosted production test suite"
-	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests"
+	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
 	@echo "  make check-selftest - Test the gate script in seconds, without building"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
@@ -140,8 +142,9 @@ test:
 	@echo ""
 
 ## Run the reproducibility gate: regenerate the project, verify the package
-## pins, build Release, and run the hosted tests. Pass options through
-## CHECK_ARGS, for example: make check CHECK_ARGS=--dry-run
+## pins, build Release and run the hosted tests from scratch, and fail on any
+## Swift warning. Pass options through CHECK_ARGS, for example:
+## make check CHECK_ARGS=--dry-run
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
 

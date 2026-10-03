@@ -3,8 +3,9 @@
 # Runs `make check` for every push to main and every pull request: regenerate
 # the Xcode project, resolve Swift packages exactly as the committed
 # Package.resolved pins them, build Release, and run the hosted XCTest suite.
-# The job fails on any generation, resolution, compile, or test error, and
-# uploads the gate's logs when it fails or times out.
+# The job fails on any generation, resolution, compile, or test error, and on
+# any Swift warning in either build, and uploads the gate's logs when it fails
+# or times out.
 #
 # The toolchain matches the development Mac, and changes only deliberately:
 # - XCODE_VERSION is what `xcodebuild -version` reports there (26.0.1, build
