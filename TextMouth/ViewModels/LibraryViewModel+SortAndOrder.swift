@@ -8,6 +8,10 @@ enum ManualBookOrder {
         let newIndex: Int
     }
 
+    /// The books in `folderPath`, in the folder's manual order exactly as
+    /// the list shows it: by manual position, then title, then book ID
+    /// (`LibraryBookSorter`). Moving a book up or down, dragging, and
+    /// Continue to Next Book all follow this one order.
     static func orderedBooks(in library: Library, folderPath: String) -> [Book] {
         LibraryBookSorter.sorted(
             library.booksInFolder(folderPath),
@@ -90,9 +94,11 @@ enum ManualBookOrder {
 /// manual sort order, folder sort settings, and next-book navigation.
 extension LibraryViewModel {
 
-    /// Get the next book in the same folder, sorted by manual order then title.
+    /// The book after `book` in its folder's manual order, as the list
+    /// shows that order (`ManualBookOrder.orderedBooks`), or nil for the
+    /// last. Continue to Next Book plays it.
     func nextBookInFolder(after book: Book) -> Book? {
-        let folderBooks = sortedBooksInFolder(book.folderPath)
+        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath)
         guard let currentIndex = folderBooks.firstIndex(where: { $0.id == book.id }) else { return nil }
         let nextIndex = currentIndex + 1
         guard nextIndex < folderBooks.count else { return nil }

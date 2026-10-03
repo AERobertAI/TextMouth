@@ -73,10 +73,89 @@ final class ManualOrderRearrangingTests: XCTestCase {
         XCTAssertEqual(library.books.map(\.manualSortOrder), before.map(\.manualSortOrder))
     }
 
+    // MARK: - The Next Book
+
+    /// Continue to Next Book follows the folder's manual order: books with a
+    /// manual position first, in that order, then the rest by title. Books
+    /// in other folders never come next.
+    @MainActor
+    func testNextBookFollowsTheFoldersManualOrder() {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [
+            LibrarySortStateTests.shelvedBook("Chronicle", in: "Shelf", manualOrder: 1),
+            Self.unplacedBook("Bestiary", in: "Shelf"),
+            LibrarySortStateTests.shelvedBook("Ledger", in: "Shelf", manualOrder: 0),
+            Self.unplacedBook("Almanac", in: "Shelf"),
+            LibrarySortStateTests.shelvedBook("Elsewhere", in: "Other Shelf", manualOrder: 2)
+        ])
+
+        XCTAssertEqual(
+            Self.titlesInContinuingOrder(from: "Ledger", in: model),
+            ["Ledger", "Chronicle", "Almanac", "Bestiary"]
+        )
+    }
+
+    /// Books the manual order cannot tell apart, such as two same-titled
+    /// copies kept with Keep Both, follow one another in the order the list
+    /// shows them, so continuing never skips or repeats one. The next book
+    /// used to break such ties by the library's own order, while the list,
+    /// Move Book Up and Down, and dragging break them by book ID.
+    @MainActor
+    func testNextBookBreaksTiesAsTheListDoes() throws {
+        // Added in the reverse of the order their IDs give them.
+        let laterID = try XCTUnwrap(UUID(uuidString: "00000000-0000-0000-0000-00000000000B"))
+        let earlierID = try XCTUnwrap(UUID(uuidString: "00000000-0000-0000-0000-00000000000A"))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [
+            Self.unplacedBook("Atlas", in: "Shelf", id: laterID),
+            Self.unplacedBook("Atlas", in: "Shelf", id: earlierID),
+            Self.unplacedBook("Bestiary", in: "Shelf")
+        ])
+        let shown = ManualBookOrder.orderedBooks(in: model.library, folderPath: "Shelf")
+        XCTAssertEqual(Array(shown.map(\.id).prefix(2)), [earlierID, laterID], "The list shows the copies by ID")
+
+        for (position, book) in shown.enumerated() {
+            let following = shown.indices.contains(position + 1) ? shown[position + 1].id : nil
+            XCTAssertEqual(
+                model.nextBookInFolder(after: book)?.id,
+                following,
+                "The book after \(book.title) (\(book.id)) should be the next one the list shows"
+            )
+        }
+    }
+
     // MARK: - Fixtures
 
     /// The setting of a folder in manual order.
     private static let manual = FolderSortSetting(sortField: .manual, sortAscending: true)
+
+    /// A book in `folder` with no manual position, as every book has until
+    /// its folder is first rearranged. Nothing is written for it.
+    private static func unplacedBook(_ title: String, in folder: String, id: UUID = UUID()) -> Book {
+        Book(
+            id: id,
+            title: title,
+            format: .txt,
+            filePath: "/nonexistent/next-book/\(id.uuidString).txt",
+            md5Hash: "next-book-\(id.uuidString)",
+            folderPath: folder
+        )
+    }
+
+    /// The titles Continue to Next Book plays in `model`'s library, starting
+    /// with the book titled `first` and following `nextBookInFolder(after:)`
+    /// until it finds no next book (or, should it ever loop, once every
+    /// book has had a turn).
+    @MainActor
+    private static func titlesInContinuingOrder(from first: String, in model: LibraryViewModel) -> [String] {
+        var book = model.library.books.first { $0.title == first }
+        var titles: [String] = []
+        while let current = book, titles.count <= model.library.books.count {
+            titles.append(current.title)
+            book = model.nextBookInFolder(after: current)
+        }
+        return titles
+    }
 
     /// A folder of real packages in manual order, in an inert library model.
     private struct Shelf {
