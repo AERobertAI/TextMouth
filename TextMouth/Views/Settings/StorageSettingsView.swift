@@ -326,35 +326,39 @@ struct StorageSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                Button("Redo Text Extraction...") {
-                    showRedoExtractionConfirmation = true
-                }
-                .disabled(libraryViewModel.isExtracting || isMovingLibrary)
-                .accessibilityLabel("Redo text extraction")
-                .accessibilityHint("Re-extracts cached text from all books. Useful after parser fixes or format improvements.")
+                // The batch's own progress object: only this part redraws as
+                // each book finishes (TODO PERF12).
+                TextExtractionObserver(progress: libraryViewModel.textExtraction) { extraction in
+                    Button("Redo Text Extraction...") {
+                        showRedoExtractionConfirmation = true
+                    }
+                    .disabled(extraction.isExtracting || isMovingLibrary)
+                    .accessibilityLabel("Redo text extraction")
+                    .accessibilityHint("Re-extracts cached text from all books. Useful after parser fixes or format improvements.")
 
-                if libraryViewModel.isExtracting {
-                    HStack(spacing: 8) {
-                        ProgressView(value: Double(libraryViewModel.extractionProgressCurrent),
-                                     total: Double(max(libraryViewModel.extractionProgressTotal, 1)))
-                            .progressViewStyle(.linear)
-                        Text("\(libraryViewModel.extractionProgressCurrent)/\(libraryViewModel.extractionProgressTotal)")
+                    if extraction.isExtracting {
+                        HStack(spacing: 8) {
+                            ProgressView(value: Double(extraction.current),
+                                         total: Double(max(extraction.total, 1)))
+                                .progressViewStyle(.linear)
+                            Text("\(extraction.current)/\(extraction.total)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Text extraction progress: \(extraction.current) of \(extraction.total)")
+                    } else {
+                        Text("Re-extract the cached text for all books. Use this after parser updates to refresh the cached content.")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Text extraction progress: \(libraryViewModel.extractionProgressCurrent) of \(libraryViewModel.extractionProgressTotal)")
-                } else {
-                    Text("Re-extract the cached text for all books. Use this after parser updates to refresh the cached content.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    // What the last run did, such as how many books in the
-                    // cloud it skipped (FR02).
-                    if let extractionStatus {
-                        Text(extractionStatus.message)
-                            .font(.caption)
-                            .foregroundColor(extractionStatus.isFailure ? .red : .secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        // What the last run did, such as how many books in the
+                        // cloud it skipped (FR02).
+                        if let extractionStatus {
+                            Text(extractionStatus.message)
+                                .font(.caption)
+                                .foregroundColor(extractionStatus.isFailure ? .red : .secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             } header: {

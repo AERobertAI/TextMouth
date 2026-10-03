@@ -324,7 +324,7 @@ final class TextCacheVerificationTests: XCTestCase {
 
         await runStartupBatch(of: model)
 
-        XCTAssertEqual(model.extractionProgressTotal, 1)
+        XCTAssertEqual(model.textExtraction.total, 1)
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): source changed"])
         XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: book).allHeadings.map(\.text), ["Replacement"])
         let row = try XCTUnwrap(model.bookByID(book.id))
@@ -373,7 +373,7 @@ final class TextCacheVerificationTests: XCTestCase {
 
         await runStartupBatch(of: model)
 
-        XCTAssertEqual(model.extractionProgressTotal, 1)
+        XCTAssertEqual(model.textExtraction.total, 1)
         XCTAssertEqual(staleReports(for: row), [])
         XCTAssertEqual(FileStamp(of: MarkdownCacheService.cacheURL(for: row)), cacheStamp, "content.md was not rewritten")
         XCTAssertEqual(model.bookByID(row.id)?.textCacheFingerprint, packageFingerprint)

@@ -5,24 +5,24 @@ import XCTest
 /// Exercise real cache writes, package checkpoints, and library progress in the
 /// hosted test sandbox. No timing threshold or production library is required.
 final class CacheUpdateTests: XCTestCase {
-    /// A completed book must be published before the next progress notification,
-    /// so quitting during a long batch can flush useful library progress.
+    /// A book counted as done is durable: its package record holds the
+    /// analysis before progress counts it, so quitting or crashing during a
+    /// long batch loses no work. Its row waits to change with others' (TODO
+    /// PERF12), and every row has changed, and the index has been saved,
+    /// once the batch ends.
     @MainActor
-    func testAutomaticUpdatePublishesEachDurableBookBeforeProgress() async throws {
+    func testAutomaticUpdateCommitsEachBookBeforeProgressAndEveryRowByTheEnd() async throws {
         preserveLibraryIndex()
         let books = try [makeBook(), makeBook()]
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: books)
-        let firstCheckpoint = expectation(description: "First book checkpoint published")
+        let firstCheckpoint = expectation(description: "First book counted")
         let finished = expectation(description: "Batch finished")
-        let subscription = model.$extractionProgressCurrent.filter { $0 == 1 }.prefix(1).sink { _ in
-            XCTAssertEqual(model.library.books[0].cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
-            XCTAssertEqual(model.library.books[1].cacheFormatVersion, "3.0.3")
-            LibraryPersistenceService.flushPendingSave()
-            XCTAssertEqual(
-                LibraryPersistenceService.load().library?.books.first?.cacheFormatVersion,
-                MarkdownCacheService.currentCacheVersion
-            )
+        let subscription = model.textExtraction.$current.filter { $0 == 1 }.prefix(1).sink { _ in
+            let counted = books.first {
+                (try? BookInfo.load(from: $0.tmbDirectory).state.cacheFormatVersion) == MarkdownCacheService.currentCacheVersion
+            }
+            XCTAssertNotNil(counted, "the counted book's record does not hold its analysis")
             firstCheckpoint.fulfill()
         }
         defer { subscription.cancel() }
@@ -31,8 +31,14 @@ final class CacheUpdateTests: XCTestCase {
         await fulfillment(of: [firstCheckpoint, finished], timeout: 10)
 
         XCTAssertFalse(model.isExtracting)
-        XCTAssertEqual(model.extractionProgressCurrent, 2)
+        XCTAssertEqual(model.textExtraction.current, 2)
+        XCTAssertEqual(model.analysisSummaries.pendingCount, 0)
         XCTAssertTrue(model.library.books.allSatisfy { $0.contentIndexVersion == BookContentIndex.currentVersion })
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(
+            LibraryPersistenceService.load().library?.books.map(\.cacheFormatVersion),
+            books.map { _ in MarkdownCacheService.currentCacheVersion }
+        )
     }
 
     /// A crash after bookInfo.json commits but before library.json saves must
@@ -70,7 +76,8 @@ final class CacheUpdateTests: XCTestCase {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
         let finished = expectation(description: "Manual extraction finished")
-        let subscription = model.$isExtracting.dropFirst().filter { !$0 }.prefix(1).sink { _ in finished.fulfill() }
+        let subscription = model.textExtraction.$isExtracting.dropFirst().filter { !$0 }.prefix(1)
+            .sink { _ in finished.fulfill() }
         defer { subscription.cancel() }
 
         model.redoAllTextExtraction()
@@ -108,15 +115,16 @@ final class CacheUpdateTests: XCTestCase {
         let book = try makeBook()
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
-        model.isExtracting = true
-        model.extractionProgressCurrent = 3
-        model.extractionProgressTotal = 9
+        model.textExtraction.begin("Updating text cache", total: 9)
+        for _ in 0..<3 {
+            model.textExtraction.advance()
+        }
 
         model.extractMissingContentCaches()
         model.redoAllTextExtraction()
 
-        XCTAssertEqual(model.extractionProgressCurrent, 3)
-        XCTAssertEqual(model.extractionProgressTotal, 9)
+        XCTAssertEqual(model.textExtraction.current, 3)
+        XCTAssertEqual(model.textExtraction.total, 9)
         XCTAssertFalse(MarkdownCacheService.cacheExists(for: book))
     }
 

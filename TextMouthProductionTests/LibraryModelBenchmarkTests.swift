@@ -171,9 +171,14 @@ final class LibraryModelBenchmarkTests: XCTestCase {
     /// How many times the extraction batch publishes the library model, and
     /// changes the library, while it brings `batchBookCount` books' text
     /// caches up to date, as the next install's first launch does for
-    /// about 632 books. Each book's summary changed its row (a library
-    /// update, which re-renders every Library window's list) and saved the
-    /// index, and its progress changed two more published properties.
+    /// about 632 books.
+    ///
+    /// Before PERF12 each book's summary changed its row (a library update,
+    /// which re-renders every Library window's list) and saved the index,
+    /// and its progress changed two more published properties of the model:
+    /// 60 library updates and 186 model publishes for 60 books. Now the
+    /// summaries reach the library together at most every half second and
+    /// at the batch's end, and the progress publishes only its own object.
     func testLibraryUpdatesPerExtractionBatch() async throws {
         let sandbox = try LibraryIndexSandbox.capture()
         addTeardownBlock { sandbox.restore() }
@@ -182,9 +187,11 @@ final class LibraryModelBenchmarkTests: XCTestCase {
         model.library = Library(books: books)
         var libraryUpdates = 0
         var modelPublishes = 0
+        var progressPublishes = 0
         let watchers = [
             model.$library.dropFirst().sink { _ in libraryUpdates += 1 },
-            model.objectWillChange.sink { modelPublishes += 1 }
+            model.objectWillChange.sink { modelPublishes += 1 },
+            model.textExtraction.objectWillChange.sink { progressPublishes += 1 }
         ]
         defer { watchers.forEach { $0.cancel() } }
         let finished = expectation(description: "The batch finished")
@@ -201,7 +208,12 @@ final class LibraryModelBenchmarkTests: XCTestCase {
             note: "over \(elapsed.formatted(.units(allowed: [.milliseconds])))"
         )
         LibraryBenchmarkClock.report("PERF12 model publishes for the batch", count: modelPublishes)
-        XCTAssertEqual(libraryUpdates, books.count, "one library update per book")
+        LibraryBenchmarkClock.report("PERF12 progress publishes for the batch", count: progressPublishes)
+        let seconds = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+        let allowed = Int((seconds / ContentAnalysisSummaryBuffer.flushInterval).rounded(.up)) + 1
+        XCTAssertGreaterThanOrEqual(libraryUpdates, 1)
+        XCTAssertLessThanOrEqual(libraryUpdates, allowed, "more than one library update per flush interval")
+        XCTAssertEqual(modelPublishes, libraryUpdates, "progress published the library model")
         XCTAssertTrue(model.library.books.allSatisfy {
             $0.cacheFormatVersion == MarkdownCacheService.currentCacheVersion
         })

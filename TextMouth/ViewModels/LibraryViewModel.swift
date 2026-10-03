@@ -111,11 +111,21 @@ final class LibraryViewModel: ObservableObject {
         NotificationCenter.default.post(name: .openBookWindow, object: bookID)
     }
 
-    /// Text extraction progress tracking (for startup cache generation and re-extraction)
-    @Published var isExtracting = false
-    @Published var extractionProgressCurrent = 0
-    @Published var extractionProgressTotal = 0
-    @Published var extractionProgressMessage = ""
+    /// The text extraction batch's progress (startup cache generation and
+    /// re-extraction), an object of its own so that each finished book
+    /// redraws only the views showing it, never this model's observers
+    /// (TODO PERF12).
+    let textExtraction = TextExtractionProgress()
+    /// Whether a text extraction batch runs; a second is refused meanwhile.
+    var isExtracting: Bool {
+        textExtraction.isExtracting
+    }
+    /// Finished books' analysis summaries, on their way to `library`
+    /// together: in one change and one save at most every half second, at
+    /// the end of each pass, and at quit (TODO PERF12).
+    private(set) lazy var analysisSummaries = ContentAnalysisSummaryBuffer { [weak self] summaries in
+        self?.applyAnalysisSummaries(summaries)
+    }
 
     /// Set while library.json exists but cannot be read. The library shown is
     /// then provisional and index writes are suspended. Only the recovery

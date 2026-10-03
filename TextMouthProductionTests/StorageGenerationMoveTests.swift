@@ -123,7 +123,7 @@ final class StorageGenerationMoveTests: XCTestCase {
         }
         let oldPackageAfterMove = Self.entries(of: oldPackage)
 
-        await waitFor(model.$isExtracting, "the rebuild finished") { !$0 }
+        await waitFor(model.textExtraction.$isExtracting, "the rebuild finished") { !$0 }
         XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
         XCTAssertEqual(waits, [.textExtraction, nil])
         let moved = try XCTUnwrap(model.library.books.first { $0.id == book.id })
@@ -211,7 +211,7 @@ final class StorageGenerationMoveTests: XCTestCase {
             if work == .textExtraction { held.gate.signal() }
         }
 
-        await waitFor(model.$isExtracting, "the batch finished") { !$0 }
+        await waitFor(model.textExtraction.$isExtracting, "the batch finished") { !$0 }
         XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
         for book in [first, second] {
             let moved = try XCTUnwrap(model.library.books.first { $0.id == book.id })

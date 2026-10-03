@@ -56,15 +56,18 @@ struct LibraryWindowView: View {
                     Self.importProgressOverlay(for: libraryViewModel)
                 }
 
-                // Text extraction progress overlay (shown on startup or re-extraction)
-                if libraryViewModel.isExtracting {
-                    ProgressOverlay(
-                        title: "Extracting Text",
-                        current: libraryViewModel.extractionProgressCurrent,
-                        total: libraryViewModel.extractionProgressTotal,
-                        message: libraryViewModel.extractionProgressMessage,
-                        itemNoun: "books extracted"
-                    )
+                // Text extraction progress overlay (shown on startup or
+                // re-extraction), redrawn alone as each book finishes (TODO PERF12)
+                TextExtractionObserver(progress: libraryViewModel.textExtraction) { extraction in
+                    if extraction.isExtracting {
+                        ProgressOverlay(
+                            title: "Extracting Text",
+                            current: extraction.current,
+                            total: extraction.total,
+                            message: extraction.message,
+                            itemNoun: "books extracted"
+                        )
+                    }
                 }
             }
         }
