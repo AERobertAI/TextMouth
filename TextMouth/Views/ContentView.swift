@@ -115,7 +115,7 @@ struct LibraryWindowView: View {
         .alert("Delete Original File?", isPresented: $libraryViewModel.showDeleteOriginalDialog) {
             Button("Delete", role: .destructive) {
                 if let url = libraryViewModel.pendingOriginalURL {
-                    FileImportService.deleteOriginalFile(at: url)
+                    libraryViewModel.deleteOriginalFile(at: url)
                 }
                 libraryViewModel.pendingOriginalURL = nil
             }

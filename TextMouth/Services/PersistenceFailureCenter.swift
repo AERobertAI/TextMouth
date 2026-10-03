@@ -44,6 +44,12 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         }
     }
 
+    /// What a successful operation here does to its files: "saved", or
+    /// "removed" for original-file cleanup.
+    var outcomeWord: String {
+        self == .originalFileCleanup ? "removed" : "saved"
+    }
+
     /// What VoiceOver says for the banner's Retry button, which a sighted
     /// user sees beside the sentence it retries: "Retry saving settings".
     var retryLabel: String {
@@ -59,8 +65,7 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
     /// What VoiceOver says once a retry has settled every failure here:
     /// "Settings saved.", "Original files removed."
     var retriedAnnouncement: String {
-        let outcome = self == .originalFileCleanup ? "removed" : "saved"
-        return topic.prefix(1).uppercased() + topic.dropFirst() + " \(outcome)."
+        topic.prefix(1).uppercased() + topic.dropFirst() + " \(outcomeWord)."
     }
 
     /// The sentence that follows a banner row's failure when `count` more
@@ -117,6 +122,9 @@ struct PersistenceFailure: Identifiable, Sendable {
         case configuration
         /// Writing the substitution rules.
         case substitutions
+        /// Deleting the original file at `path` after its book was imported:
+        /// to the Trash when `movesToTrash`, otherwise permanently.
+        case originalFile(path: String, movesToTrash: Bool)
     }
 
     /// What a later outcome must concern to settle a failure: the file, or
@@ -128,6 +136,8 @@ struct PersistenceFailure: Identifiable, Sendable {
         case statistics
         case configuration
         case substitutions
+        /// An original file, by its path.
+        case originalFile(String)
     }
 
     /// This report's place in the order of reports.
@@ -176,6 +186,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return .statistics
         case .configuration: return .configuration
         case .substitutions: return .substitutions
+        case .originalFile: return .originalFileCleanup
         }
     }
 
@@ -189,6 +200,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return .statistics
         case .configuration: return .configuration
         case .substitutions: return .substitutions
+        case .originalFile(let path, _): return .originalFile(path)
         }
     }
 
@@ -201,6 +213,7 @@ extension PersistenceFailure.Subject {
         case .statistics: return "the listening statistics"
         case .configuration: return "the settings"
         case .substitutions: return "the text substitution rules"
+        case .originalFile(let path, _): return "the original file at \(path)"
         }
     }
 
@@ -221,6 +234,11 @@ extension PersistenceFailure.Subject {
             return "Settings could not be saved: \(reason)"
         case .substitutions:
             return "Text substitution rules could not be saved: \(reason)"
+        case .originalFile(let path, let movesToTrash):
+            return OriginalFileDeletionWording(
+                movesToTrash: movesToTrash,
+                fileName: URL(fileURLWithPath: path).lastPathComponent
+            ).failureSentence(reason: reason)
         }
     }
 }
@@ -428,7 +446,7 @@ final class PersistenceFailureCenter: ObservableObject {
     /// outstanding for it, if any.
     nonisolated func recordSuccess(_ key: PersistenceFailure.Key) {
         guard let settled = ledger.remove(key) else { return }
-        Self.log("PERSISTENCE_RECOVERED: \(settled.subject.logName) is saved")
+        Self.log("PERSISTENCE_RECOVERED: \(settled.subject.logName) is \(settled.subsystem.outcomeWord)")
         schedulePublish()
     }
 
@@ -436,7 +454,10 @@ final class PersistenceFailureCenter: ObservableObject {
     /// is left to save for it: the book left the library, for example.
     nonisolated func withdraw(_ key: PersistenceFailure.Key) {
         guard let withdrawn = ledger.remove(key) else { return }
-        Self.log("PERSISTENCE_WITHDRAWN: \(withdrawn.subject.logName) no longer needs saving")
+        Self.log(
+            "PERSISTENCE_WITHDRAWN: \(withdrawn.subject.logName) no longer needs to be "
+                + withdrawn.subsystem.outcomeWord
+        )
         schedulePublish()
     }
 

@@ -912,9 +912,14 @@ enum FileImportService {
         }
     }
 
-    /// Delete the original source file after import (if the user chose that option)
-    static func deleteOriginalFile(at url: URL) {
-        try? FileManager.default.removeItem(at: url)
+    /// Delete the original source file after import (if the user chose that
+    /// option), to the Trash or permanently as "Move to Trash instead of
+    /// deleting" chooses, like every other deletion. Throws when the file
+    /// could not be removed, so the caller can say so (TODO S09); a file
+    /// that is already gone counts as removed.
+    @MainActor
+    static func deleteOriginalFile(at url: URL) throws {
+        try removeItemRespectingTrashSetting(at: url)
     }
 
     /// Compute MD5 hash of a file (streaming for large files)

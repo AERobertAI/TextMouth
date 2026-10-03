@@ -98,7 +98,11 @@ final class BookFormatTests: XCTestCase {
                 originalURL: source
             )
         )
-        viewModel.keepDuplicate()
+        // Deleting goes to the Trash when that preference is on: keep this
+        // test's file out of the real Trash.
+        withTrashPreference(movesToTrash: false) {
+            viewModel.keepDuplicate()
+        }
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
         XCTAssertNil(viewModel.pendingDuplicateOriginalURL)

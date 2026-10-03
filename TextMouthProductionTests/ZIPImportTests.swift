@@ -74,7 +74,11 @@ final class ZIPImportTests: XCTestCase {
             incompleteBooks: hasIncompleteBook ? [ZipImportFailure(fileName: "accepted.epub", message: "missing")] : []
         )
 
-        viewModel.completeZIPImport(result, originalURL: original, folderPath: "")
+        // Deleting goes to the Trash when that preference is on: keep this
+        // test's archive out of the real Trash.
+        withTrashPreference(movesToTrash: false) {
+            viewModel.completeZIPImport(result, originalURL: original, folderPath: "")
+        }
 
         XCTAssertEqual(FileManager.default.fileExists(atPath: original.path), !shouldDelete)
         XCTAssertEqual(viewModel.library.books.count, hasBook ? 1 : 0)

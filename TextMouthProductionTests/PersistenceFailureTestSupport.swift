@@ -136,6 +136,19 @@ extension XCTestCase {
         return book
     }
 
+    /// Runs `body` with "Move to Trash instead of deleting" set as given,
+    /// then puts back the value it found. A test that lets TextMouth delete
+    /// a file of its own turns the Trash off, so it never sends anything to
+    /// the user's real Trash.
+    @MainActor
+    func withTrashPreference(movesToTrash: Bool, _ body: () throws -> Void) rethrows {
+        let service = ConfigService.shared
+        let previous = service.config.moveToTrashInsteadOfDeleting
+        service.config.moveToTrashInsteadOfDeleting = movesToTrash
+        defer { service.config.moveToTrashInsteadOfDeleting = previous }
+        try body()
+    }
+
     /// The shared failure center that the app's services report to, cleared
     /// now and again when the test ends, so no test sees another's failures.
     @MainActor

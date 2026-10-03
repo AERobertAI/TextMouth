@@ -532,7 +532,11 @@ final class EPUBPartialExtractionTests: XCTestCase {
         let deleted = try makeEPUB(chapters: Self.threeChapters)
         try withImportDeleteBehavior(.deleteAfterImport) {
             let library = Self.emptyLibrary()
-            library.completeSingleImportedBook(try importWithReport(deleted), originalURL: deleted)
+            // Deleting goes to the Trash when that preference is on: keep
+            // this test's book out of the real Trash.
+            try withTrashPreference(movesToTrash: false) {
+                library.completeSingleImportedBook(try importWithReport(deleted), originalURL: deleted)
+            }
 
             XCTAssertFalse(library.showError)
             XCTAssertFalse(FileManager.default.fileExists(atPath: deleted.path))
