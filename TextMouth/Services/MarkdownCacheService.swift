@@ -110,6 +110,7 @@ enum MarkdownCacheService {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
 
         let cachePath = cacheURL(for: book)
+        extractionObserver?(book)
         let fileURL = URL(fileURLWithPath: book.filePath)
         let sourceFingerprint = FileFingerprint(of: fileURL, hasher: .md5)
 
@@ -199,6 +200,30 @@ enum MarkdownCacheService {
         book.applyContentIndexSummary(generated.content.contentIndex)
         return generated
     }
+
+    // MARK: - Test Seam
+
+    /// Told, with the book, once a cache generation has chosen where its
+    /// content.md goes and before it reads the source, on the thread doing
+    /// the work; nil in the app. Tests set it to hold a rebuild there.
+    static var extractionObserver: (@Sendable (Book) -> Void)? {
+        get {
+            extractionObserverLock.lock()
+            defer { extractionObserverLock.unlock() }
+            return storedExtractionObserver
+        }
+        set {
+            extractionObserverLock.lock()
+            storedExtractionObserver = newValue
+            extractionObserverLock.unlock()
+        }
+    }
+
+    /// Guards `storedExtractionObserver`, which any cache generation reads.
+    private static let extractionObserverLock = NSLock()
+    // Access is confined by extractionObserverLock. `nonisolated(unsafe)`
+    // documents that contract to Swift's global-state checker.
+    nonisolated(unsafe) private static var storedExtractionObserver: (@Sendable (Book) -> Void)?
 
     // MARK: - Generation Diagnostics
 

@@ -11,7 +11,27 @@ final class SerialImportQueue: @unchecked Sendable {
     /// The cancellation the imports enqueued since the last
     /// `cancelEnqueued()` share (TODO I05).
     private var cancellation = ImportCancellation()
+    /// Backs `stepObserver`; guarded by `stateLock`.
+    private var storedStepObserver: (@Sendable (ImportStep, URL) throws -> Void)?
     var onActivityChanged: (@MainActor @Sendable (Int) -> Void)?
+
+    /// Told as each step of a queued single-file or text import begins on
+    /// its staged package (see `ImportStepObserver`), on the import queue;
+    /// nil in the app. Tests set it before enqueueing to hold an import at
+    /// a step of their choosing. ZIP, audio ZIP, DAISY ZIP, and package
+    /// imports do not report their steps.
+    var stepObserver: (@Sendable (ImportStep, URL) throws -> Void)? {
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return storedStepObserver
+        }
+        set {
+            stateLock.lock()
+            storedStepObserver = newValue
+            stateLock.unlock()
+        }
+    }
 
     /// The cancellation an import enqueued now shares with every import
     /// already waiting or running: `cancelEnqueued()` cancels it.
@@ -374,13 +394,18 @@ extension LibraryViewModel {
         origin: ImportOrigin? = nil
     ) {
         let request = importRequest(from: origin, opensAfterImport: openAfterImport)
-        importOperationQueue.enqueue { [weak self] in
+        let queue = importOperationQueue
+        queue.enqueue { [weak self] in
             guard let self else { return }
             let didAccess = url.startAccessingSecurityScopedResource()
             defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
             DispatchQueue.main.async { self.beginImportProgress("Importing \(url.lastPathComponent)...") }
             do {
-                let imported = try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                let imported = try FileImportService.importFileWithReport(
+                    from: url,
+                    toFolder: folderPath,
+                    observer: queue.stepObserver
+                )
                 DispatchQueue.main.sync {
                     self.completeSingleImportedBook(imported, originalURL: url, request: request)
                 }
@@ -501,7 +526,8 @@ extension LibraryViewModel {
         let bookTitle = TextImportPolicy.resolvedTitle(title)
         let fileName = TextImportPolicy.textFilename(for: bookTitle)
         let request = importRequest(from: origin)
-        importOperationQueue.enqueue { [weak self] in
+        let queue = importOperationQueue
+        queue.enqueue { [weak self] in
             guard let self else { return }
             do {
                 let imported = try FileImportService.importText(
@@ -509,7 +535,8 @@ extension LibraryViewModel {
                     title: bookTitle,
                     author: author,
                     fileName: fileName,
-                    toFolder: folderPath
+                    toFolder: folderPath,
+                    observer: queue.stepObserver
                 )
                 DispatchQueue.main.async {
                     if self.addBookCheckingDuplicate(imported.book, request: request) {
