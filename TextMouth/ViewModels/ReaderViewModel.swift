@@ -174,7 +174,9 @@ final class ReaderViewModel: ObservableObject {
     /// (for example AirPods disconnecting). The next resume must recreate
     /// the active playback backend so audio binds to the newly-current
     /// output device instead of continuing a graph/synth paused on the old
-    /// route.
+    /// route. Also set when the library moves a paused audiobook's files, so
+    /// resuming plays them from where they are then instead of from a player
+    /// still holding the old place (TODO P10).
     var restartPlaybackBackendOnNextResume = false
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
@@ -876,7 +878,11 @@ final class ReaderViewModel: ObservableObject {
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, !self.hasClosed else { return }
                     if let audioFiles = loadedAudioFiles {
-                        self.audioChapterFiles = audioFiles
+                        // A move the library made while the book loaded left
+                        // the files it loaded from behind (TODO P10).
+                        self.audioChapterFiles = self.book.filePath == filePath
+                            ? audioFiles
+                            : self.audioChapterFilesAtCurrentLocation(audioFiles, index: parsed.contentIndex)
                     }
                     if let segs = loadedAudioSegments {
                         self.audioSegments = segs

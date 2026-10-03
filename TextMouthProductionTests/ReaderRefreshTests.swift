@@ -94,6 +94,35 @@ final class ReaderRefreshTests: XCTestCase {
         XCTAssertEqual(reopened.bookmarks.map(\.label), ["Neap tide, second reading"])
     }
 
+    /// An audiobook of two tracks plays when the library moves it to
+    /// another folder. The reader must name the book's new files, its
+    /// player must not hold a file that no longer exists, and moving on to
+    /// the second track must play it from where the book is now.
+    func testPlayingAudioReaderFollowsAMoveOfItsBook() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Audio Move")
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+
+        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        var stale = staleFields(of: reader, in: world.library, after: "the move while playing")
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        if let message = reader.errorMessage {
+            stale.append("after the move, the second track could not play: \(message)")
+        }
+        XCTAssertTrue(stale.isEmpty, Self.report(stale))
+        reader.stop()
+    }
+
     /// While an audiobook is open, the Library window's editor renames it.
     /// The reader must show the new title and offer it in its own metadata
     /// editor, so that editor, opened afterwards to change only the genre,
@@ -120,6 +149,133 @@ final class ReaderRefreshTests: XCTestCase {
         }
         XCTAssertEqual(saved.audioGenre, "Field Recording")
         XCTAssertTrue(stale.isEmpty, Self.report(stale))
+    }
+
+    /// An audiobook plays while the data directory moves, as Change
+    /// Location… moves it. The library's half of that move is driven here,
+    /// `TextMouthPaths.moveDataDirectory(to:library:)`: it copies the data
+    /// directory and gives the library's books paths in the copy. (Change
+    /// Location… also records the new location in the shared config.json,
+    /// which the hosted app watches, so the whole command is not run.) The
+    /// copy keeps the original, so nothing is missing; the reader must
+    /// still play the book's files from where the library now has them.
+    func testPlayingAudioReaderFollowsADataDirectoryMove() throws {
+        // The move records the new location in this process's preferences
+        // (the sandbox's, never the user's; see TextMouthRuntime). Under
+        // hosted tests the data directory itself never leaves the sandbox.
+        preservePreferences(["textMouthDataDirectory"])
+        let world = try makeIntegrationWorld("Reader Refresh Data Directory")
+        let book = try world.makeSilentAudioBook(
+            title: "Estuary Survey",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        // Every queued write is made first, so the copy is made of settled files.
+        LibraryPersistenceService.flushPendingSave()
+        let destination = try makeSandboxDirectory("ReaderRefreshMovedData")
+            .appendingPathComponent("Moved Data", isDirectory: true)
+
+        try TextMouthPaths.moveDataDirectory(to: destination, library: &world.library.library)
+
+        let moved = try row(of: book, in: world.library)
+        XCTAssertTrue(
+            moved.filePath.hasPrefix(destination.standardizedFileURL.path + "/"),
+            "The library does not name the copy: \(Self.displayPath(moved.filePath))"
+        )
+        let stale = staleFields(of: reader, in: world.library, after: "the data directory move")
+        XCTAssertTrue(stale.isEmpty, Self.report(stale))
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on")
+        reader.stop()
+    }
+
+    // MARK: - Audio from Moved Files
+
+    /// Paused audio stays paused when the library moves its book, and
+    /// resuming plays from where the book's files are now, at the place it
+    /// was paused.
+    func testPausedAudioResumesFromTheMovedFiles() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Paused Audio")
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        reader.pause()
+        XCTAssertTrue(reader.isCurrentlyPaused)
+
+        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        XCTAssertTrue(reader.isCurrentlyPaused, "The move ended the pause")
+        XCTAssertTrue(reader.audioPlaybackService.isPaused, "The move started or stopped the player")
+
+        reader.togglePlayPause()
+
+        XCTAssertNil(reader.errorMessage)
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Resuming did not play")
+        XCTAssertFalse(reader.audioPlaybackService.isPaused, "Resuming did not play")
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: book, in: world.library).filePath),
+            "Resuming played from somewhere other than the moved files"
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 5)
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
+        reader.stop()
+    }
+
+    /// A segmented book, as a DAISY book plays, is in a heading whose clips
+    /// run across three files when the library moves it. Playback goes on
+    /// from the same place in the moved package, and seeking to a clip in
+    /// another file loads that file from the moved package too.
+    func testSegmentedAudioPlaysItsClipsFromTheMovedPackage() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Segmented Audio")
+        let book = try world.makeSegmentedAudioBook(
+            title: "Harbour Soundings",
+            files: ["intro.wav": 1, "a.wav": 1, "b.wav": 0.75, "c.wav": 1, "d.wav": 1],
+            sections: [
+                AudioSegment(title: "Opening", file: "intro.wav", startTime: 0, endTime: 1),
+                try XCTUnwrap(AudioSegment(title: "Harbour Survey", clips: [
+                    AudioClip(file: "a.wav", startTime: 0.5, endTime: 1),
+                    AudioClip(file: "b.wav", startTime: 0, endTime: 0.75),
+                    AudioClip(file: "c.wav", startTime: 0.25, endTime: 1)
+                ])),
+                AudioSegment(title: "Closing", file: "d.wav", startTime: 0, endTime: 1)
+            ],
+            savedPosition: ReadingPosition(chapterIndex: 1, characterOffset: 2)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        XCTAssertEqual(reader.audioSegments.count, 3, "The book did not open as a segmented book")
+        reader.play()
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "a.wav")
+
+        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+
+        let movedFolder = Self.standardizedPath(try row(of: book, in: world.library).filePath)
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "a.wav")
+        XCTAssertEqual(Self.folderPath(of: reader.audioPlaybackService.loadedURL), movedFolder)
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.2, accuracy: 0.001)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+
+        // 0.8 seconds into the heading lies in its second clip, in b.wav.
+        reader.navigateTo(chapterIndex: 1, characterOffset: 8)
+
+        XCTAssertNil(reader.errorMessage)
+        XCTAssertEqual(reader.audioPlaybackService.loadedURL?.lastPathComponent, "b.wav")
+        XCTAssertEqual(Self.folderPath(of: reader.audioPlaybackService.loadedURL), movedFolder)
+        reader.stop()
     }
 
     // MARK: - Applying Updates
@@ -292,9 +448,19 @@ final class ReaderRefreshTests: XCTestCase {
 
     /// Whether `path` is the book's own path or inside it.
     private static func isWithin(_ path: String, bookPath: String) -> Bool {
-        let file = URL(fileURLWithPath: path).standardizedFileURL.path
-        let home = URL(fileURLWithPath: bookPath).standardizedFileURL.path
+        let file = standardizedPath(path)
+        let home = standardizedPath(bookPath)
         return file == home || file.hasPrefix(home + "/")
+    }
+
+    /// `path` standardized, so two spellings of one location compare equal.
+    private static func standardizedPath(_ path: String) -> String {
+        URL(fileURLWithPath: path).standardizedFileURL.path
+    }
+
+    /// The folder holding the file at `url`, standardized, or nil for none.
+    private static func folderPath(of url: URL?) -> String? {
+        url.map { standardizedPath($0.deletingLastPathComponent().path) }
     }
 
     /// `path` with the hosted tests' sandbox home shortened to "~", so

@@ -36,9 +36,60 @@ extension ReaderViewModel {
         appliedLibraryRevision = update.revision
         let previous = book
         book.libraryFields = update.book.libraryFields
+        if book.filePath != previous.filePath {
+            followMovedFiles()
+        }
         if book.editableMetadata != previous.editableMetadata {
             showEditedMetadata()
         }
+    }
+
+    // MARK: - Moved Files
+
+    /// Points everything the reader plays from at the book's files where
+    /// they are now, after the library moved them: a move to another
+    /// folder, a rename or move of a folder above the book, a data
+    /// directory move, or a repair. A single-file book and a segmented
+    /// book's clips are found from the book's own path when they play; a
+    /// multi-file book's chapter files are found again here.
+    private func followMovedFiles() {
+        if !audioChapterFiles.isEmpty, let index = content?.contentIndex {
+            audioChapterFiles = audioChapterFilesAtCurrentLocation(audioChapterFiles, index: index)
+        }
+        retargetAudioPlayback()
+    }
+
+    /// `files`, a multi-file audiobook's chapter files, found under the
+    /// book's path as it is now: each chapter's file as `index` records it,
+    /// relative to that path, just as opening the book finds them. `files`
+    /// is kept when the index does not name a file for every chapter, which
+    /// the index of a book with chapter files always does.
+    func audioChapterFilesAtCurrentLocation(_ files: [String], index: BookContentIndex) -> [String] {
+        index.resolvedAudioFilePaths(relativeTo: URL(fileURLWithPath: book.filePath)) ?? files
+    }
+
+    /// Moves the audio player off a file the library has moved. Playing
+    /// audio plays on at once from the same place in the book's files where
+    /// they are now. Paused audio stays paused, and resuming plays from the
+    /// files where they are then. With no file loaded, the next play finds
+    /// the files where they are anyway.
+    private func retargetAudioPlayback() {
+        guard isAudioBook, audioPlaybackService.loadedURL != nil else { return }
+        if audioPlaybackService.isPlaying && !audioPlaybackService.isPaused {
+            restartAudioAtCursor(volume: audioPlaybackService.intendedVolume)
+        } else {
+            restartPlaybackBackendOnNextResume = true
+        }
+    }
+
+    /// Plays the cursor's chapter again from the cursor, loading its audio
+    /// from wherever the book's files are now, at `volume`, the volume it
+    /// played at, which a sleep timer may be fading. The listening session,
+    /// the sleep timer, and the media controls carry on as they were.
+    private func restartAudioAtCursor(volume: Float) {
+        audioPlaybackService.stop()
+        audioPlaybackService.setVolume(volume)
+        playAudioChapter()
     }
 
     /// Shows the book's metadata as the library now has it wherever the
