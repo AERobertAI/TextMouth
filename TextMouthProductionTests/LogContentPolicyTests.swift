@@ -280,7 +280,7 @@ final class LogContentPolicyTests: XCTestCase {
     /// The files that still hand lines straight to the writer: code outside
     /// this policy's change, to be moved onto `DiagnosticLog`.
     private static let filesStillWritingDirectly: Set<String> = [
-        "AppDelegate.swift", "BookContentAnalysisService.swift", "ConfigService.swift",
+        "BookContentAnalysisService.swift", "ConfigService.swift",
     ]
 
     /// Every other line goes through `DiagnosticLog`, the one place that
