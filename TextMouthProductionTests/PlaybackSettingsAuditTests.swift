@@ -362,17 +362,17 @@ final class PlaybackSettingsAuditTests: XCTestCase {
 
     /// Only text books offer speech controls. The text sheet is checked too,
     /// proving the harness can see voice and WPM controls when they exist.
-    func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() {
+    func testRenderedSheetOffersSpeechControlsOnlyForTextBooks() throws {
         let text = makeReader(format: .txt)
         defer { text.close() }
-        withHostedControls(BookVoicePickerView(viewModel: text)) { controls in
+        try withHostedControls(BookVoicePickerView(viewModel: text)) { controls in
             XCTAssertTrue(controls.contains { $0.label == "Select voice for this book" })
             XCTAssertTrue(controls.contains { $0.valueDescription.hasSuffix("words per minute") })
         }
 
         let audio = makeReader(format: .audio)
         defer { audio.close() }
-        withHostedControls(BookVoicePickerView(viewModel: audio)) { controls in
+        try withHostedControls(BookVoicePickerView(viewModel: audio)) { controls in
             let spoken = controls.map { "\($0.label) \($0.valueDescription)".lowercased() }
             for speechTerm in ["words per minute", "voice", "pitch"] {
                 XCTAssertFalse(spoken.contains { $0.contains(speechTerm) }, speechTerm)
@@ -389,6 +389,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// its accessibility label even when hidden, so a hidden "Seconds" would
     /// be heard as "Seconds, Minimum pause threshold".
     func testPlaybackSettingsSteppersSpeakTheirLabelsOnce() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let settings = try makeIsolatedSettings()
         // The pause threshold's stepper shows only for a smart rewind.
         settings.rewindOnResumeUnit = .sentence
@@ -422,6 +423,7 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     /// "Event for step 1, Step 1". A pop-up button's value is the title of
     /// the item it has chosen.
     func testGestureStepPickersSpeakTheirLabelsOnce() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let settings = try makeIsolatedSettings()
         // The pattern editor shows only while the gesture is on.
         settings.restartTimerGestureEnabled = true

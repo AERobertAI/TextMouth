@@ -5,7 +5,9 @@ import XCTest
 /// Storage settings' Logs group (the user's decision of October 3), as
 /// VoiceOver and a braille display meet it, and its Show Logs in Finder.
 /// The group is hosted with a settings model on a store of the test's own,
-/// so choosing in it never changes where the app's logs go.
+/// so choosing in it never changes where the app's logs go. The hosted
+/// tests read the group's AppKit controls as VoiceOver does, so they are
+/// skipped where a session exposes none to accessibility, as on a CI runner.
 @MainActor
 final class LogsSettingsSectionTests: XCTestCase {
 
@@ -80,6 +82,7 @@ final class LogsSettingsSectionTests: XCTestCase {
     /// as its value and both choices in its hint, and hears a choice made
     /// elsewhere, as an edit of config.json makes one, as the new value.
     func testThePickerSpeaksItsLabelValueAndHint() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let settings = makeSettings()
 
         try withHostedView(makeGroup(settings), size: NSSize(width: 600, height: 400), until: { !self.logPickers(in: $0).isEmpty }) { hosting in
@@ -104,6 +107,7 @@ final class LogsSettingsSectionTests: XCTestCase {
     /// Storage settings show the Logs group: VoiceOver finds its picker by
     /// its label among the pane's controls, with its hint.
     func testStorageSettingsShowTheLogsGroup() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         let view = StorageSettingsView()
             .environmentObject(LibraryViewModel(initializeServices: false))
             .environmentObject(makeSettings())

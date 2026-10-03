@@ -65,11 +65,16 @@ extension XCTestCase {
     /// elements for its own text, toggles, and buttons lazily, only for a
     /// connected assistive app, so those are verified through the functions
     /// that produce their labels.
+    ///
+    /// Where this session exposes no accessibility elements for a hosted
+    /// window's AppKit controls at all, as on a CI runner, the test is
+    /// skipped before `view` is hosted (see `HostedWindowAccessibility`).
     @MainActor
     func withHostedControls<Content: View>(
         _ view: Content,
         _ body: ([AccessibleControl]) throws -> Void
-    ) rethrows {
+    ) throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
         try withHostedView(view, until: { !accessibleControls(in: $0).isEmpty }) { hostingView in
             try body(accessibleControls(in: hostingView))
         }
@@ -171,6 +176,117 @@ extension XCTestCase {
             controls += accessibleControls(in: child)
         }
         return controls
+    }
+}
+
+// MARK: - Hosted-window accessibility
+
+/// Whether this session exposes the AppKit controls SwiftUI draws in a
+/// hosted window to accessibility, as every check that reads those controls
+/// the way VoiceOver does needs it to.
+///
+/// The development Mac does: a hosting view's accessibility children hold
+/// its sliders, steppers, pop-up buttons, and text fields. A GitHub Actions
+/// macOS runner draws the same AppKit controls, and the checks that find
+/// them as views pass there, but exposes none of them to accessibility, so
+/// the checks that read them would fail for want of the capability rather
+/// than for a missing control; there they are skipped instead, all with one
+/// message. The answer is measured once per run on a probe of its own, never
+/// on the view under test, so wherever the capability exists a control
+/// missing from the view under test, or left without its label, still fails
+/// its test.
+@MainActor
+enum HostedWindowAccessibility {
+    /// The one message every test skipped for want of the capability gives.
+    nonisolated static let unavailableMessage =
+        "This session exposes no accessibility elements for the AppKit controls in a hosted window"
+
+    /// This run's answer: nil until first asked, then the measured one,
+    /// unless `assuming(_:_:)` has put another in its place for a while.
+    fileprivate static var verdict: Bool?
+
+    /// Run `body` as though this session's answer were `exposed`, then put
+    /// back the answer it had, measured or not yet, even when `body` throws:
+    /// for the tests of the skip itself, which must see both answers on
+    /// every Mac.
+    static func assuming(_ exposed: Bool, _ body: () throws -> Void) rethrows {
+        let saved = verdict
+        verdict = exposed
+        defer { verdict = saved }
+        try body()
+    }
+}
+
+/// One stepper in a form, drawn as the settings panes draw theirs, which
+/// AppKit draws as an `NSStepper`: labelled `label`, or, given nil,
+/// deliberately left without a label.
+struct LoneStepper: View {
+    /// The stepper's accessibility label; nil leaves it without one.
+    let label: String?
+
+    var body: some View {
+        Form {
+            // A stepper's title does not become the AppKit stepper's
+            // accessibility label, which stays empty, so the settings panes
+            // give each stepper an accessibility label of its own; forgetting
+            // that label is how a stepper comes to have none.
+            let stepper = Stepper(value: .constant(1), in: 0...2) { EmptyView() }
+            if let label {
+                stepper.accessibilityLabel(label)
+            } else {
+                stepper
+            }
+        }
+    }
+}
+
+extension XCTestCase {
+    /// Whether this session exposes the AppKit controls in a hosted window
+    /// to accessibility (see `HostedWindowAccessibility`). The first call
+    /// measures it: it hosts a labelled `LoneStepper` and waits, as
+    /// `withHostedView` waits out a slow first render, for the stepper to
+    /// appear among the window's accessibility elements. Later calls return
+    /// that answer.
+    @MainActor
+    func hostedWindowsExposeAccessibility() -> Bool {
+        if let verdict = HostedWindowAccessibility.verdict {
+            return verdict
+        }
+        var exposed = false
+        withHostedView(LoneStepper(label: "Accessibility probe"), until: { exposesAStepper($0) }) { hostingView in
+            exposed = exposesAStepper(hostingView)
+            if !exposed {
+                // Say once, in the run's log, what the probe found: a stepper
+                // drawn but not exposed is the missing capability, while no
+                // stepper drawn at all would point at the probe instead.
+                let drawn = descendants(of: hostingView, as: NSStepper.self).count
+                print(
+                    "HOSTED_ACCESSIBILITY_UNAVAILABLE: a hosted window drew \(drawn) AppKit stepper(s) "
+                        + "and exposed none to accessibility; tests that read hosted controls are skipped"
+                )
+            }
+        }
+        HostedWindowAccessibility.verdict = exposed
+        return exposed
+    }
+
+    /// Skip the running test, with the one message naming the capability,
+    /// unless this session exposes the AppKit controls in a hosted window to
+    /// accessibility. Every test that reads hosted controls through
+    /// `accessibleControls(in:)` calls this first, through
+    /// `withHostedControls` or on its own.
+    @MainActor
+    func skipUnlessHostedWindowsExposeAccessibility() throws {
+        guard hostedWindowsExposeAccessibility() else {
+            throw XCTSkip(HostedWindowAccessibility.unavailableMessage)
+        }
+    }
+
+    /// Whether the accessibility elements below `hostingView` include a
+    /// stepper, as they include the probe's wherever the capability exists.
+    @MainActor
+    private func exposesAStepper(_ hostingView: NSView) -> Bool {
+        accessibleControls(in: hostingView).contains { $0.role == .incrementor }
     }
 }
 
