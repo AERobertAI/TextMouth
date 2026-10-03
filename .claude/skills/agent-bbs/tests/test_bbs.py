@@ -592,6 +592,87 @@ class ThreadTests(BoardTestCase):
         self.assertIn("no message #9", self.fails("thread", "9"))
 
 
+class InboxTests(BoardTestCase):
+    """inbox: the messages that concern one agent, and read marks."""
+
+    def setUp(self) -> None:
+        """Register alpha (claiming a directory and a glob), beta, and gamma."""
+        super().setUp()
+        self.register("alpha", "TextMouth/Views/", "TextMouth/**/Library*.swift")
+        self.register("beta")
+        self.register("gamma")
+
+    def post(self, sender: str, *args: str) -> int:
+        """Post a message with a stock topic and return its id."""
+        return self.ok_json("post", sender, "--topic", "news", *args)["id"]
+
+    def inbox_ids(self, *args: str) -> List[int]:
+        """Ids of the messages alpha's inbox shows with these options."""
+        return [message["id"] for message in self.ok_json("inbox", "alpha", *args)]
+
+    def test_the_inbox_holds_messages_to_the_agent_to_all_and_about_its_files(self) -> None:
+        to_alpha = self.post("beta", "--to", "alpha")
+        to_all = self.post("beta")
+        self.post("beta", "--to", "gamma")
+        under_directory = self.post("beta", "--to", "gamma", "--file", "TextMouth/Views/LibraryView.swift")
+        under_glob = self.post("gamma", "--to", "beta", "--file", "TextMouth/Models/LibraryItem.swift")
+        elsewhere = self.post("gamma", "--to", "beta", "--file", "Docs/README.md")
+        self.post("alpha", "--to", "all")  # an agent's own posts never reach its inbox
+        self.assertEqual(self.inbox_ids("--peek"), [to_alpha, to_all, under_directory, under_glob])
+        # Claims count as they are when the inbox is read, not when the post was made.
+        self.ok("claim", "alpha", "Docs/")
+        self.assertIn(elsewhere, self.inbox_ids("--peek"))
+
+    def test_the_inbox_marks_what_it_shows_as_read(self) -> None:
+        first = self.post("beta", "--to", "alpha")
+        self.assertEqual([(m["id"], m["unread"]) for m in self.ok_json("inbox", "alpha")], [(first, True)])
+        self.assertEqual(self.inbox_ids("--unread"), [])
+        self.assertEqual([(m["id"], m["unread"]) for m in self.ok_json("inbox", "alpha")], [(first, False)])
+        second = self.post("beta")
+        self.assertEqual(self.inbox_ids("--unread"), [second])
+
+    def test_peek_leaves_messages_unread(self) -> None:
+        message = self.post("beta", "--to", "alpha")
+        self.assertEqual(self.inbox_ids("--unread", "--peek"), [message])
+        self.assertEqual(self.inbox_ids("--unread", "--peek"), [message])
+        self.assertEqual(self.inbox_ids("--unread"), [message])
+        self.assertEqual(self.inbox_ids("--unread"), [])
+
+    def test_read_marks_are_kept_for_each_agent(self) -> None:
+        message = self.post("gamma")
+        self.ok("inbox", "alpha")
+        self.assertEqual([m["id"] for m in self.ok_json("inbox", "beta", "--unread")], [message])
+
+    def test_filters_choose_which_messages_are_shown_and_marked(self) -> None:
+        build = self.post("beta", "--tag", "build")
+        commit = self.post("beta", "--tag", "commit")
+        later = self.post("beta", "--tag", "commit")
+        self.assertEqual(self.inbox_ids("--unread", "--tag", "commit", "--last", "1"), [later])
+        self.assertEqual(self.inbox_ids("--unread", "--since", str(build)), [commit])
+        self.assertEqual(self.inbox_ids("--unread"), [build])
+
+    def test_the_text_flags_unread_messages(self) -> None:
+        self.post("beta", "--to", "alpha")
+        self.ok("inbox", "alpha")
+        self.post("beta")
+        text = self.ok("inbox", "alpha")
+        self.assertIn("2 messages for alpha, 1 unread:", text)
+        self.assertIn("#2 (unread) notice from beta to all", text)
+        self.assertNotIn("#1 (unread)", text)
+        self.assertIn("No unread messages for alpha.", self.ok("inbox", "alpha", "--unread"))
+
+    def test_register_and_heartbeat_mention_unread_messages(self) -> None:
+        self.post("beta", "--to", "alpha")
+        self.assertIn("Unread messages for alpha: 1. Run: bbs.py inbox alpha --unread", self.ok("heartbeat", "alpha"))
+        self.assertEqual(self.ok_json("register", "alpha")["unread"], 1)
+        self.ok("inbox", "alpha")
+        self.assertEqual(self.ok_json("heartbeat", "alpha")["unread"], 0)
+        self.assertNotIn("Unread", self.ok("heartbeat", "alpha"))
+
+    def test_an_unknown_agent_has_no_inbox(self) -> None:
+        self.assertIn("unknown agent 'delta'", self.fails("inbox", "delta"))
+
+
 class ConcurrencyTests(BoardTestCase):
     """Several processes using the board at the same moment."""
 

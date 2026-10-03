@@ -672,6 +672,14 @@ SCHEMA = (
         PRIMARY KEY (message_id, path)
     )
     """,
+    # Which agent has been shown which message by inbox or watch.
+    """
+    CREATE TABLE IF NOT EXISTS reads (
+        agent      TEXT NOT NULL REFERENCES agents(name) ON DELETE CASCADE,
+        message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+        PRIMARY KEY (agent, message_id)
+    )
+    """,
 )
 
 
@@ -875,19 +883,25 @@ def cmd_register(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
         add_claims(conn, name, patterns)
         agent = load_agents(conn, name=name)[0]
         overlaps = overlaps_involving(conn, name)
+        unread, reminder = unread_reminder(conn, name)
     verb = "Registered" if created else "Updated"
     lines = [f"{verb} {name}.", describe_agent(agent)]
     if agent["claims"]:
         lines.append(describe_overlaps(overlaps, none="No overlaps with other agents' claims."))
-    return Outcome({"created": created, "agent": agent, "overlaps": overlaps}, "\n".join(lines))
+    if reminder:
+        lines.append(reminder)
+    data = {"created": created, "agent": agent, "overlaps": overlaps, "unread": unread}
+    return Outcome(data, "\n".join(lines))
 
 
 def cmd_heartbeat(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
-    """Refresh an agent's last-seen time."""
+    """Refresh an agent's last-seen time and mention any unread messages."""
     with write_transaction(conn):
         name = require_agent(conn, args.name)
         agent = load_agents(conn, name=name)[0]
-    return Outcome(agent, f"{name} last seen {local_label(agent['last_seen'])}.")
+        unread, reminder = unread_reminder(conn, name)
+    lines = [f"{name} last seen {local_label(agent['last_seen'])}."] + ([reminder] if reminder else [])
+    return Outcome({**agent, "unread": unread}, "\n".join(lines))
 
 
 def cmd_agents(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
@@ -1053,19 +1067,30 @@ def cmd_claims(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 def query_messages(
-    conn: sqlite3.Connection, *, where: Iterable[str] = (), params: Iterable[Any] = ()
+    conn: sqlite3.Connection,
+    *,
+    where: Iterable[str] = (),
+    params: Iterable[Any] = (),
+    reader: Optional[str] = None,
 ) -> List[dict]:
     """Return the messages meeting every condition, oldest first, with files.
 
-    Conditions refer to the messages table as ``m``.
+    Conditions refer to the messages table as ``m``. With ``reader`` each
+    message also says whether that agent has been shown it (``unread``),
+    and conditions may test ``r.message_id IS NULL`` for unread messages.
     """
+    columns, joins, values = "m.*, f.path AS file", "", []
+    if reader is not None:
+        columns += ", r.message_id IS NULL AS unread"
+        joins = " LEFT JOIN reads r ON r.message_id = m.id AND r.agent = ?"
+        values.append(reader)
     clause = " AND ".join(where)
     rows = conn.execute(
-        "SELECT m.*, f.path AS file FROM messages m"
+        f"SELECT {columns} FROM messages m"
         " LEFT JOIN message_files f ON f.message_id = m.id"
-        f"{' WHERE ' + clause if clause else ''}"
+        f"{joins}{' WHERE ' + clause if clause else ''}"
         " ORDER BY m.id, f.rowid",
-        list(params),
+        values + list(params),
     )
     # The join yields one row per file, so gather each message's files.
     messages: Dict[int, dict] = {}
@@ -1083,6 +1108,8 @@ def query_messages(
                 "files": [],
                 "reply_to": row["reply_to"],
             }
+            if reader is not None:
+                message["unread"] = bool(row["unread"])
         if row["file"] is not None:
             message["files"].append(row["file"])
     return list(messages.values())
@@ -1110,10 +1137,14 @@ def message_filters(args: argparse.Namespace) -> Tuple[List[str], List[Any]]:
     return where, params
 
 
-def describe_message(message: dict) -> str:
-    """Describe one message: a header line, then reply, files, and body."""
+def describe_message(message: dict, *, mark_unread: bool = False) -> str:
+    """Describe one message: a header line, then reply, files, and body.
+
+    With ``mark_unread`` the header of an unread message says so.
+    """
+    unread = " (unread)" if mark_unread and message.get("unread") else ""
     lines = [
-        f"#{message['id']} {message['tag']} from {message['from']} to {message['to']}, "
+        f"#{message['id']}{unread} {message['tag']} from {message['from']} to {message['to']}, "
         f"{local_label(message['posted'])}: {message['topic']}"
     ]
     if message["reply_to"] is not None:
@@ -1124,9 +1155,10 @@ def describe_message(message: dict) -> str:
     return "\n".join(lines)
 
 
-def describe_messages(heading: str, messages: List[dict]) -> str:
+def describe_messages(heading: str, messages: List[dict], *, mark_unread: bool = False) -> str:
     """Return a heading and then the messages, separated by blank lines."""
-    return "\n\n".join([heading] + [describe_message(message) for message in messages])
+    described = [describe_message(message, mark_unread=mark_unread) for message in messages]
+    return "\n\n".join([heading] + described)
 
 
 def read_body(args: argparse.Namespace) -> str:
@@ -1275,6 +1307,77 @@ def cmd_thread(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Inbox
+# ---------------------------------------------------------------------------
+
+
+def collect_inbox(
+    conn: sqlite3.Connection,
+    name: str,
+    *,
+    where: Iterable[str] = (),
+    params: Iterable[Any] = (),
+    unread_only: bool = False,
+) -> List[dict]:
+    """Return the messages that concern an agent, oldest first.
+
+    A message concerns the agent when it is addressed to the agent or to
+    all, or when one of its files falls under one of the agent's current
+    claims. The agent's own posts never do.
+    """
+    claims = [claim["pattern"] for claim in load_claims(conn, name=name)]
+    conditions, values = ["m.sender != ?", *where], [name, *params]
+    if unread_only:
+        conditions.append("r.message_id IS NULL")
+    return [
+        message
+        for message in query_messages(conn, where=conditions, params=values, reader=name)
+        if message["to"] in (name, EVERYONE)
+        or any(patterns_overlap(path, claim) for path in message["files"] for claim in claims)
+    ]
+
+
+def mark_read(conn: sqlite3.Connection, name: str, messages: Iterable[dict]) -> None:
+    """Record that an agent has been shown these messages."""
+    conn.executemany(
+        "INSERT OR IGNORE INTO reads (agent, message_id) VALUES (?, ?)",
+        [(name, message["id"]) for message in messages],
+    )
+
+
+def unread_reminder(conn: sqlite3.Connection, name: str) -> Tuple[int, str]:
+    """Count an agent's unread messages and phrase a reminder (empty if none)."""
+    count = len(collect_inbox(conn, name, unread_only=True))
+    if not count:
+        return 0, ""
+    return count, f"Unread messages for {name}: {count}. Run: {PROG} inbox {name} --unread"
+
+
+def cmd_inbox(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
+    """Show the messages that concern an agent, newest last, and mark them read.
+
+    Only the messages shown are marked; --peek marks none.
+    """
+    where, params = message_filters(args)
+    with write_transaction(conn):
+        name = require_agent(conn, args.name)
+        messages = collect_inbox(conn, name, where=where, params=params, unread_only=args.unread)
+        if args.last is not None:
+            messages = messages[-args.last :]
+        if not args.peek:
+            mark_read(conn, name, messages)
+    unread = sum(message["unread"] for message in messages)
+    if not messages:
+        text = f"No {'unread ' if args.unread else ''}messages for {name}."
+    elif args.unread:
+        text = describe_messages(f"{plural(len(messages), 'unread message')} for {name}:", messages)
+    else:
+        heading = f"{plural(len(messages), 'message')} for {name}, {unread} unread:"
+        text = describe_messages(heading, messages, mark_unread=True)
+    return Outcome(messages, text)
+
+
+# ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
 
@@ -1406,6 +1509,14 @@ def build_parser() -> BoardArgumentParser:
 
     thread = command("thread", cmd_thread, "show a message with its replies")
     thread.add_argument("id", type=positive_int, metavar="ID", help="any message in the conversation")
+
+    inbox = command("inbox", cmd_inbox, "show messages to you, to all, or about files you claim")
+    inbox.add_argument("name", help="your agent name")
+    inbox.add_argument("--unread", action="store_true", help="only messages you have not been shown yet")
+    inbox.add_argument("--since", type=parse_since, metavar="ID_OR_TIME", help=since_help)
+    inbox.add_argument("--tag", choices=TAGS, help="only messages of this kind")
+    inbox.add_argument("--last", type=positive_int, metavar="N", help="only the last N messages")
+    inbox.add_argument("--peek", action="store_true", help="leave the messages shown unread")
     return parser
 
 
