@@ -395,8 +395,8 @@ final class AudioMediaValidationTests: XCTestCase {
             line.range(of: tag).map { String(line[$0.lowerBound...]) }
         }
         XCTAssertEqual(logged, [
-            tag + "a.wav: 2 sections ended up to 0.400 s past the file's measured end (2.000 s) and now end with it",
-            tag + "b.wav: 1 section ended up to 0.200 s past the file's measured end (1.000 s) and now end with it"
+            tag + "a.wav: moved 2 sections' ends back to the file's measured end of 2.000 s, from up to 0.400 s past it",
+            tag + "b.wav: moved 1 section's end back to the file's measured end of 1.000 s, from 0.200 s past it"
         ])
     }
 

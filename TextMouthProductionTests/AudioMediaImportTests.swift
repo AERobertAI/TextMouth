@@ -142,8 +142,8 @@ final class AudioMediaImportTests: XCTestCase {
             line.range(of: tag).map { String(line[$0.lowerBound...]) }
         }
         XCTAssertEqual(logged, [
-            tag + "part1.wav: 1 section ended up to 0.300 s past the file's measured end (2.000 s) and now end with it",
-            tag + "part2.wav: 1 section ended up to 0.050 s past the file's measured end (1.000 s) and now end with it"
+            tag + "part1.wav: moved 1 section's end back to the file's measured end of 2.000 s, from 0.300 s past it",
+            tag + "part2.wav: moved 1 section's end back to the file's measured end of 1.000 s, from 0.050 s past it"
         ])
     }
 
