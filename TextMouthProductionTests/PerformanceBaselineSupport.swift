@@ -618,12 +618,13 @@ final class PerformanceBaselineRun {
     /// Measures `measure` with `sample`, which runs the measured work once,
     /// awaiting it, and returns its number, as `check(_:sample:)` does. Named
     /// apart from `check`, so an asynchronous test calling the synchronous
-    /// one never has an overload chosen for it.
+    /// one never has an overload chosen for it. `sample` runs on the main
+    /// actor, as the tests do, so awaiting it crosses no isolation.
     func checkAwaiting(
         _ measure: PerformanceMeasure,
         file: StaticString = #filePath,
         line: UInt = #line,
-        sample: () async throws -> Double
+        sample: @MainActor () async throws -> Double
     ) async throws {
         try requireCatalogued([measure])
         for _ in 0..<PerformanceRules.warmUpRuns {
@@ -639,7 +640,7 @@ final class PerformanceBaselineRun {
 
     /// `PerformanceRules.runs` runs of `sample`, each awaited before the
     /// next begins, as `check` takes its runs.
-    private static func runs(of sample: () async throws -> Double) async rethrows -> [[Double]] {
+    private static func runs(of sample: @MainActor () async throws -> Double) async rethrows -> [[Double]] {
         var runs: [[Double]] = []
         for _ in 0..<PerformanceRules.runs {
             runs.append([try await sample()])
