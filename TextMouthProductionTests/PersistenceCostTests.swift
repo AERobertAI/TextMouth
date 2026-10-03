@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// Measures what the library's persistence costs at the moments the
@@ -133,7 +134,87 @@ final class PersistenceCostTests: XCTestCase {
         )
     }
 
+    // MARK: - PERF13: Launch
+
+    /// What the startup repair and the text cache filter cost at launch, on
+    /// the main thread, for 200 books spread over folders about as the
+    /// user's 643 are (averaging 1.9 folders deep), each with a current,
+    /// fingerprinted text cache. The repair's file checks go through an
+    /// access that counts its lstat calls.
+    @MainActor
+    func testLaunchCost() async throws {
+        let top = "Launch Cost \(UUID().uuidString.prefix(8))"
+        createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(top, isDirectory: true))
+        // The test's books live in a folder of its own, so the user's 12
+        // books at the top of the library count as one folder deep.
+        let depths = Array(repeating: 1, count: 63) + Array(repeating: 2, count: 91) + Array(repeating: 3, count: 46)
+        let books = try depths.enumerated().map { number, depth -> Book in
+            let folder = ([top] + ["Shelf \(number % 4)", "Series \(number % 3)"].prefix(depth - 1))
+                .joined(separator: "/")
+            return try makeCachedBook(number: number, in: folder)
+        }
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: books)
+        let lstats = CallCounter()
+        let access = MaintenanceFileAccess(isDataless: { url in
+            lstats.increment()
+            return DatalessFiles.isDataless(url)
+        })
+        let clock = ContinuousClock()
+
+        let repairStarted = clock.now
+        model.migrateOldBooksIfNeeded(access: access)
+        let repair = clock.now - repairStarted
+        Self.report(
+            "PERF13 the startup repair of \(books.count) books made \(lstats.count) lstat calls "
+                + "(\(String(format: "%.1f", Double(lstats.count) / Double(books.count))) a book) "
+                + "in \(Self.milliseconds(repair)) ms on the main thread"
+        )
+
+        let finished = expectation(description: "The text cache batch finished")
+        let filterStarted = clock.now
+        model.extractMissingContentCaches(access: access) { finished.fulfill() }
+        let filterOnMain = clock.now - filterStarted
+        await fulfillment(of: [finished], timeout: 30)
+        Self.report(
+            "PERF13 the text cache filter of \(books.count) books held the main thread "
+                + "\(Self.milliseconds(filterOnMain)) ms"
+        )
+        XCTAssertFalse(model.isExtracting, "a current cache was queued again")
+    }
+
     // MARK: - Fixtures
+
+    /// A small Markdown book numbered `number`, in a package of its own in
+    /// the library folder `folder`, whose text cache is current and
+    /// fingerprinted, as every book's is once the startup batch has run.
+    private func makeCachedBook(number: Int, in folder: String) throws -> Book {
+        let packageName = "Launch_Book_\(number)-Cost_Fixture-1774073441.tmb"
+        let package = TextMouthPaths.tmbPath(folderPath: folder, tmbName: packageName)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let source = package.appendingPathComponent("book.md")
+        try "# Launch Book \(number)\n\nA few words.".write(to: source, atomically: true, encoding: .utf8)
+        let cache = TextMouthPaths.contentMarkdownPath(in: package)
+        try "# Launch Book \(number)\n\nA few words.".write(to: cache, atomically: true, encoding: .utf8)
+        let fingerprint = TextCacheFingerprint(
+            source: try XCTUnwrap(FileFingerprint(of: source, hasher: .md5)),
+            cache: try XCTUnwrap(FileFingerprint(of: cache, hasher: .md5))
+        )
+        let book = Book(
+            title: "Launch Book \(number)",
+            author: "Cost Fixture",
+            format: .markdown,
+            filePath: source.path,
+            md5Hash: "launch-\(number)",
+            folderPath: folder,
+            tmbDirectoryName: packageName,
+            cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+            contentIndexVersion: BookContentIndex.currentVersion,
+            textCacheFingerprint: fingerprint
+        )
+        try book.saveBookInfoThrowing()
+        return book
+    }
 
     /// A small Markdown book numbered `number`, in a package of its own in
     /// the library folder `folder`, with a record and a content index, as an
@@ -311,6 +392,25 @@ final class PersistenceCostTests: XCTestCase {
     /// Prints one measurement on a line of its own.
     private static func report(_ line: String) {
         print("PERSISTENCE_COST: \(line)")
+    }
+}
+
+// MARK: - Counting Calls
+
+/// Counts calls made from any thread, as a maintenance pass's file checks
+/// are. Its count lives in an OSAllocatedUnfairLock.
+private final class CallCounter: Sendable {
+    /// How many calls were counted.
+    private let calls = OSAllocatedUnfairLock(initialState: 0)
+
+    /// Counts one call.
+    func increment() {
+        calls.withLock { $0 += 1 }
+    }
+
+    /// How many calls were counted.
+    var count: Int {
+        calls.withLock { $0 }
     }
 }
 
