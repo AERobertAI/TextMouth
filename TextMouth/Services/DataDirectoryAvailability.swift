@@ -92,7 +92,8 @@ enum DataDirectoryPreferences {
 enum DataDirectoryGate {
     /// Guards `closedRoots`: writers ask from their own queues.
     private static let lock = NSLock()
-    /// The standardized paths of the closed data directories.
+    /// The standardized paths of the closed data directories, read and
+    /// changed only under `lock`.
     nonisolated(unsafe) private static var closedRoots: Set<String> = []
 
     /// Closes the gate of the data directory at `root`.
