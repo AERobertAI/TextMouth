@@ -267,8 +267,8 @@ final class ConfigService: ObservableObject {
         /// out, from 2 to 99, or -1 to read every symbol.
         var repeatedSymbolThreshold: Int?
         /// The symbols that can form runs, written together, such as
-        /// "*-=_~#"; spaces, letters, and digits are ignored. An empty set
-        /// collapses nothing.
+        /// "*-=_~#"; spaces, letters, and digits are ignored. Empty, like
+        /// any empty text here, keeps the current symbols.
         var repeatedSymbolSet: String?
         /// The keyboard shortcuts of each action, keyed by the action's name
         /// as Settings shows it, each a list of shortcuts such as

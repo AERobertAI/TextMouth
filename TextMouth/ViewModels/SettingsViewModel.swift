@@ -771,8 +771,10 @@ final class SettingsViewModel: ObservableObject {
             config.repeatedSymbolThreshold.map { SettingsPolicy.repeatedSymbolThreshold.validated($0) },
             into: TextSubstitutionService.repeatedSymbolThresholdPreference
         )
+        // Empty symbols, like any empty text in the file, leave the current
+        // ones alone.
         adopt(
-            config.repeatedSymbolSet.map { SettingsPolicy.repeatedSymbolSet.validated($0) },
+            config.repeatedSymbolSet.map { SettingsPolicy.repeatedSymbolSet.validated($0) }.flatMap(\.nonEmpty),
             into: TextSubstitutionService.repeatedSymbolSetPreference
         )
         adopt(

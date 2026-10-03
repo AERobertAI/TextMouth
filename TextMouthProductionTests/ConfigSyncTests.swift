@@ -631,8 +631,9 @@ final class ConfigSyncTests: XCTestCase {
 
     /// Values the Settings controls could not produce are repaired as the
     /// file is read: a negative threshold means -1, one past 99 is 99, and
-    /// the symbols keep only their punctuation and symbols, each once. Empty
-    /// symbols are a choice, collapsing nothing.
+    /// the symbols keep only their punctuation and symbols, each once.
+    /// Symbols left empty, as written or once repaired, keep the current
+    /// ones, as any empty text in the file does.
     func testRepeatedSymbolValuesAreRepairedAsTheFileIsRead() throws {
         let store = try isolatedDefaults()
         let substitutions = TextSubstitutionService(rules: [], preferences: store)
@@ -648,9 +649,13 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertEqual(try decodeConfig(#"{"repeatedSymbolThreshold": -5}"#).repeatedSymbolThreshold, -1)
         XCTAssertEqual(try decodeConfig(#"{"repeatedSymbolThreshold": 0}"#).repeatedSymbolThreshold, 2)
 
-        viewModel.applyConfigChanges(try decodeConfig(#"{"repeatedSymbolSet": ""}"#))
-        XCTAssertEqual(substitutions.repeatedSymbolSet, "")
-        XCTAssertFalse(substitutions.repeatedSymbolRule.collapsesRuns)
+        let empty = try decodeConfig(#"{"repeatedSymbolSet": ""}"#)
+        let lettersOnly = try decodeConfig(#"{"repeatedSymbolSet": "abc 123"}"#)
+        XCTAssertEqual(empty.repeatedSymbolSet, "")
+        XCTAssertEqual(lettersOnly.repeatedSymbolSet, "")
+        viewModel.applyConfigChanges(empty)
+        viewModel.applyConfigChanges(lettersOnly)
+        XCTAssertEqual(substitutions.repeatedSymbolSet, "*=")
     }
 
     /// Missing, null, or unusable repeated-symbol values leave the settings

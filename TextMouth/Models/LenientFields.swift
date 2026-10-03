@@ -168,7 +168,8 @@ extension LenientFields {
     /// A `config.json` set of characters validated by `rule` that may be
     /// absent: nil when the field is missing, null, or not text, which
     /// leaves the preference as it is; text keeps only the characters the
-    /// rule admits, each once. Empty text is an empty set.
+    /// rule admits, each once. Text left empty is kept as it is, and, like
+    /// any empty text in the file, applying it keeps the current set.
     func optionalCharacterSet(_ key: Key, rule: CharacterSetSettingRule) -> String? {
         optionalValue(key) { (text: String) in rule.validated(text) }
     }
