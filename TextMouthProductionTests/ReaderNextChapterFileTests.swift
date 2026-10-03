@@ -118,32 +118,6 @@ final class ReaderNextChapterFileTests: XCTestCase {
         reader.startSleepTimer(duration: .minutes(30))
         XCTAssertEqual(service.queuedFilePaths, files, "A timer counting minutes kept the next chapter's file from following")
     }
-
-    /// Only this book's own sleep timer, set for the end of the chapter and
-    /// still in effect, keeps the next chapter's file from following: a timer
-    /// of another book's, one that has expired, and one set for the end of a
-    /// heading or for some minutes never stop playback at a chapter's end.
-    func testOnlyThisBooksEndOfChapterTimerStopsAtTheChaptersEnd() {
-        let cases: [(name: String, ownTimer: Bool, active: Bool, duration: SleepTimerDuration?, stops: Bool)] = [
-            ("this book's, at the end of the chapter", true, true, .endOfChapter, true),
-            ("another book's, at the end of the chapter", false, true, .endOfChapter, false),
-            ("this book's, expired at the end of the chapter", true, false, .endOfChapter, false),
-            ("this book's, at the end of a heading", true, true, .endOfHeading, false),
-            ("this book's, counting minutes", true, true, .minutes(30), false),
-            ("none", false, false, nil, false),
-        ]
-        for timer in cases {
-            XCTAssertEqual(
-                ReaderViewModel.sleepTimerStopsAtChapterEnd(
-                    timerBelongsToThisBook: timer.ownTimer,
-                    timerIsActive: timer.active,
-                    timerDuration: timer.duration
-                ),
-                timer.stops,
-                timer.name
-            )
-        }
-    }
 }
 
 // MARK: - Watching the Cursor

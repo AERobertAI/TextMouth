@@ -475,9 +475,10 @@ extension ReaderViewModel {
         }
     }
 
-    /// The speech of `play` finished. Save the position, tell the sleep
-    /// timer this book's document ended, and move on to the next chapter
-    /// with anything to say, or end the book when none remains.
+    /// The speech of `play` finished. Save the position, and move on to the
+    /// next chapter with anything to say, or end the book when none
+    /// remains; this book's sleep timer set for the end of the chapter stops
+    /// playback here instead (`stopForSleepTimerAtChapterEnd`).
     ///
     /// Chapters that are empty, entirely inside skipped sections, or deleted
     /// by substitutions are passed over, exactly as starting playback passes
@@ -492,11 +493,14 @@ extension ReaderViewModel {
         DiagnosticLog.trace(.playback, "speech finished: chapter=\(play.chapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
         guard endsPlayUnderWay(play, reportedBy: "speech") else { return }
         savePosition()
-        sleepTimerService.notifyDocumentEnd(by: book.id)
         guard content != nil else { return }
         guard let speech = nextSpeakableChapterSpeech(from: play.chapterIndex + 1) else {
             DiagnosticLog.trace(.playback, "no more speakable chapters, book ended")
             handleEndOfBook()
+            return
+        }
+        if sleepTimerService.expireAtChapterEnd(endingTheBook: false, by: book.id) {
+            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: speech.chapterIndex)
             return
         }
         DiagnosticLog.trace(.playback, "advancing to chapter \(speech.chapterIndex) (from \(play.chapterIndex))")
@@ -505,22 +509,81 @@ extension ReaderViewModel {
         startSpeaking(SpeechStart(speech: speech, offset: 0), playing: takeLookAheadEngine(for: speech))
     }
 
-    /// The audio of `play` played to its end. Save the position, tell the
-    /// sleep timer this book's document ended, and play the next chapter,
-    /// or end the book after the last.
+    /// The audio of `play` played to its end. Save the position, and play
+    /// the next chapter, or end the book after the last; this book's sleep
+    /// timer set for the end of the chapter stops playback here instead
+    /// (`stopForSleepTimerAtChapterEnd`).
     private func audioDidFinish(_ play: ChapterPlay) {
         guard endsPlayUnderWay(play, reportedBy: "audio") else { return }
         savePosition()
-        sleepTimerService.notifyDocumentEnd(by: book.id)
         guard let content else { return }
         let nextIndex = play.chapterIndex + 1
-        if nextIndex < content.chapters.count {
-            currentChapterIndex = nextIndex
-            currentCharacterOffset = 0
-            playAudioChapter()
-        } else {
+        guard nextIndex < content.chapters.count else {
             handleEndOfBook()
+            return
         }
+        if sleepTimerService.expireAtChapterEnd(endingTheBook: false, by: book.id) {
+            stopForSleepTimerAtChapterEnd(of: play, nextChapterIndex: nextIndex)
+            return
+        }
+        currentChapterIndex = nextIndex
+        currentCharacterOffset = 0
+        playAudioChapter()
+    }
+
+    /// What the listener hears when this book's sleep timer runs out and
+    /// pauses playback: one counting minutes, or one set for a heading's end.
+    nonisolated static let sleepTimerExpiredAnnouncement = "Sleep timer expired. Playback paused."
+
+    /// What the listener hears when this book's sleep timer stops playback
+    /// where a chapter ends, before the next chapter starts (TODO P01).
+    nonisolated static let sleepTimerStoppedAtChapterEndAnnouncement =
+        "Sleep timer expired at the end of the chapter. Playback paused."
+
+    /// Stop where the chapter just played ended, because this book's sleep
+    /// timer, which has just ended, was set to stop playback there (TODO
+    /// P01). Nothing more plays: the cursor waits at the beginning of the
+    /// next chapter, saved, so that Play starts that chapter, and the
+    /// listener hears once that the timer stopped playback.
+    ///
+    /// The chapter has already played to its end, so there is nothing left
+    /// to pause or fade. A text book stops its finished speech and lets go
+    /// of the next chapter rendered ahead, unplayed. An audiobook lets go of
+    /// its player, together with any next chapter's file it may already
+    /// have rolled on into, one named to follow before the timer was set.
+    /// Either way the reader shows playback stopped, ends its listening
+    /// session, and tells Now Playing, as a pause does.
+    ///
+    /// - Parameters:
+    ///   - play: The chapter play that ended.
+    ///   - nextChapterIndex: The chapter Play will start: the next one with
+    ///     anything to play.
+    private func stopForSleepTimerAtChapterEnd(of play: ChapterPlay, nextChapterIndex: Int) {
+        DiagnosticLog.trace(
+            .playback,
+            "sleep timer: stopped at the end of chapter \(play.chapterIndex); chapter \(nextChapterIndex) waits"
+        )
+        if isAudioBook {
+            audioPlaybackService.stop()
+            isCurrentlyPlaying = false
+            isCurrentlyPaused = false
+        } else {
+            speechService.stop()
+            discardLookAhead()
+        }
+        // Moving to the next chapter begins a new playback generation, as any
+        // move to another chapter does, so the end of the chapter just played,
+        // were it reported again, could not move on from it.
+        chapterPlaybackGeneration += 1
+        currentChapterIndex = nextChapterIndex
+        currentCharacterOffset = 0
+        readingStatsService.endSession(bookID: book.id)
+        nowPlayingService.updateNowPlayingInfo(
+            title: book.title, author: book.author, isPlaying: false
+        )
+        recordPlaybackStopped()
+        savePosition()
+        announceToVoiceOver(Self.sleepTimerStoppedAtChapterEndAnnouncement)
     }
 
     // MARK: - Look-ahead
@@ -1326,9 +1389,9 @@ extension ReaderViewModel {
     /// end:
     /// - at the last chapter, where the book's end-of-book behavior decides
     ///   what comes next;
-    /// - while this book's sleep timer is set for the end of the chapter,
-    ///   which expires as every audiobook chapter ends
-    ///   (`sleepTimerStopsAtChapterEnd`);
+    /// - while this book's sleep timer stops playback at the end of the
+    ///   chapter playing, as one set for the end of the chapter does
+    ///   (`SleepTimerService.stopsPlaybackAtChapterEnd(endingTheBook:ownedBy:)`);
     /// - when the next chapter's file is only in the cloud, where the player
     ///   would wait on the network, so the chapter downloads first instead
     ///   (`chapterHasFileOnlyInCloud(_:)`).
@@ -1338,39 +1401,10 @@ extension ReaderViewModel {
         guard audioLayout == .multiFile, let content else { return nil }
         let nextIndex = currentChapterIndex + 1
         guard nextIndex < content.chapters.count, nextIndex < audioChapterFiles.count,
-              !sleepTimerStopsAtChapterEnd,
+              !sleepTimerService.stopsPlaybackAtChapterEnd(endingTheBook: false, ownedBy: book.id),
               case .file(let nextFile) = chapterAudioSource(forChapterAt: nextIndex),
               !chapterHasFileOnlyInCloud(nextIndex) else { return nil }
         return nextFile
-    }
-
-    /// Whether this book's sleep timer is set for the end of the chapter,
-    /// which expires as every chapter of an audiobook ends: playback must
-    /// stop there rather than roll on into the next chapter.
-    private var sleepTimerStopsAtChapterEnd: Bool {
-        Self.sleepTimerStopsAtChapterEnd(
-            timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
-            timerIsActive: sleepTimerService.isActive,
-            timerDuration: sleepTimerService.duration
-        )
-    }
-
-    /// The decision behind `sleepTimerStopsAtChapterEnd`, from the sleep
-    /// timer's state: only this book's own timer counts, and only while it
-    /// is in effect, waiting for the end of the chapter or fading out
-    /// there. A timer that has expired stops nothing more.
-    ///
-    /// - Parameters:
-    ///   - timerBelongsToThisBook: Whether this book set the timer.
-    ///   - timerIsActive: Whether the timer is in effect.
-    ///   - timerDuration: What the timer was set for, which it keeps after
-    ///     expiring until it is stopped or replaced.
-    nonisolated static func sleepTimerStopsAtChapterEnd(
-        timerBelongsToThisBook: Bool,
-        timerIsActive: Bool,
-        timerDuration: SleepTimerDuration?
-    ) -> Bool {
-        timerBelongsToThisBook && timerIsActive && timerDuration == .endOfChapter
     }
 
     // MARK: - Audio Playback Failures
@@ -1484,8 +1518,15 @@ extension ReaderViewModel {
 
     // MARK: - End of Book Behavior
 
-    /// Called when the last chapter finishes playing.
-    /// Behavior depends on per-book override or global setting: stop, loop, or continue to next book.
+    /// Called when the last chapter finishes playing, and when Play finds
+    /// nothing left to say. Behavior depends on per-book override or global
+    /// setting: stop, loop, or continue to next book.
+    ///
+    /// This book's sleep timer set to stop playback where a chapter ends
+    /// stops it here, where the book's last chapter ends (TODO P01): the
+    /// timer ends, and the book neither starts again nor continues to the
+    /// next book, whatever its end-of-book behavior. The listener hears once
+    /// that the book finished and why nothing follows.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another
@@ -1495,6 +1536,10 @@ extension ReaderViewModel {
         // Clear its mirrored UI state before applying stop/loop/continue.
         isCurrentlyPlaying = false
         isCurrentlyPaused = false
+        // Whether this book's sleep timer keeps the next book from starting,
+        // decided before a timer that stops playback here ends just below.
+        let sleepTimerEndsListening = sleepTimerEndsListeningHere
+        let sleepTimerStoppedHere = sleepTimerService.expireAtChapterEnd(endingTheBook: true, by: book.id)
         // Determine behavior: per-book override or global setting
         var behavior = effectiveEndOfBookBehavior
         // Looping restarts speech at the first chapter with anything to say.
@@ -1509,24 +1554,35 @@ extension ReaderViewModel {
         switch behavior {
         case .stop:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
-            finishListening(announcing: "Finished: \(book.title)")
+            finishListening(
+                announcing: sleepTimerStoppedHere
+                    ? "Finished: \(book.title). Sleep timer expired."
+                    : "Finished: \(book.title)"
+            )
 
         case .loop:
             currentChapterIndex = 0
             currentCharacterOffset = 0
             chapterPlaybackGeneration += 1
             savePosition()
-            announceToVoiceOver("Restarting: \(book.title)")
-            // Route through the correct backend and start the next listening
-            // session. Audiobook placeholder text cannot be looped via TTS.
-            play()
+            if sleepTimerStoppedHere {
+                // The book waits at its beginning, where Play starts it again.
+                DiagnosticLog.trace(.playback, "end of book: this book's sleep timer stopped playback here; not starting it again")
+                finishListening(announcing: "Finished: \(book.title). Not restarted because of the sleep timer.")
+            } else {
+                announceToVoiceOver("Restarting: \(book.title)")
+                // Route through the correct backend and start the next
+                // listening session. Audiobook placeholder text cannot be
+                // looped via TTS.
+                play()
+            }
 
         case .continueNext:
             readingStatsService.markBookFinished(bookID: book.id, title: book.title)
             savePosition()
             // Find the next book in the same folder by manual sort order
             if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
-                if sleepTimerEndsListeningHere {
+                if sleepTimerEndsListening {
                     // The next book would play on past this book's sleep
                     // timer, which can pause only the book that set it.
                     DiagnosticLog.trace(.playback, "end of book: this book's sleep timer is in effect; not starting the next book")
@@ -1544,7 +1600,11 @@ extension ReaderViewModel {
                     }
                 }
             } else {
-                finishListening(announcing: "Finished: \(book.title). No more books in folder.")
+                finishListening(
+                    announcing: sleepTimerStoppedHere
+                        ? "Finished: \(book.title). No more books in folder. Sleep timer expired."
+                        : "Finished: \(book.title). No more books in folder."
+                )
             }
         }
     }
@@ -1636,14 +1696,15 @@ extension ReaderViewModel {
     /// The timer pauses only the book that set it, so it could never pause
     /// the next book, which would play on past it. Continuing is therefore
     /// ruled out while the timer is in effect: counting down, fading out,
-    /// or waiting for the end of a heading. It is also ruled out once a
-    /// timer set for the end of the chapter has expired, since that timer
-    /// fires as the book's last chapter ends, just before the book does.
+    /// or waiting for the end of a heading or of a chapter. A timer set for
+    /// the end of the chapter is still in effect as the book's last chapter
+    /// ends, since it ends there itself (`handleEndOfBook()` asks first). A
+    /// timer that has ended, at an earlier chapter's end or by running out,
+    /// rules nothing out.
     var sleepTimerEndsListeningHere: Bool {
         Self.sleepTimerEndsListening(
             timerBelongsToThisBook: sleepTimerService.ownerID == book.id,
-            timerIsActive: sleepTimerService.isActive,
-            timerDuration: sleepTimerService.duration
+            timerIsActive: sleepTimerService.isActive
         )
     }
 
@@ -1654,15 +1715,11 @@ extension ReaderViewModel {
     ///   - timerBelongsToThisBook: Whether the finished book set the timer.
     ///   - timerIsActive: Whether the timer is counting down, waiting for
     ///     its moment, or fading out.
-    ///   - timerDuration: What the timer was set for, which it keeps after
-    ///     expiring until it is stopped or replaced.
     nonisolated static func sleepTimerEndsListening(
         timerBelongsToThisBook: Bool,
-        timerIsActive: Bool,
-        timerDuration: SleepTimerDuration?
+        timerIsActive: Bool
     ) -> Bool {
-        guard timerBelongsToThisBook else { return false }
-        return timerIsActive || timerDuration == .endOfChapter
+        timerBelongsToThisBook && timerIsActive
     }
 
     // MARK: - Sleep Timer
@@ -1717,7 +1774,7 @@ extension ReaderViewModel {
                     "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
                         + "paused=\(isPausedAfterPause)"
                 )
-                self.announceToVoiceOver("Sleep timer expired. Playback paused.")
+                self.announceToVoiceOver(Self.sleepTimerExpiredAnnouncement)
             },
             onFadeStep: { [weak self] volume in
                 guard let self = self else { return }

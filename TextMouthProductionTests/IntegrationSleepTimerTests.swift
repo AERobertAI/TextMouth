@@ -6,6 +6,12 @@ import XCTest
 /// shared timer counts down on its own clock, fades the owning reader's
 /// real audio out, and pauses it, while another book's reader window
 /// closes, as windows do when a listener settles down for the night.
+///
+/// A timer set for a place in the book stops playback where the book gets
+/// there, for text and audio alike (TODO P01, finding #676): at the end of
+/// the chapter playing, before the next one starts. Audiobooks play real,
+/// silent tracks; a text book's speech is stopped before the main run loop
+/// turns, and its look-ahead renders are held; so nothing is ever heard.
 @MainActor
 final class IntegrationSleepTimerTests: XCTestCase {
     /// Subscriptions the test keeps until it ends.
@@ -71,6 +77,142 @@ final class IntegrationSleepTimerTests: XCTestCase {
         XCTAssertFalse(timer.isFadingOut)
     }
 
+    // MARK: - Stopping Where a Chapter Ends (TODO P01, finding #676)
+
+    /// Finding #676: a timer set for the end of the chapter, with the
+    /// default fade of no seconds, stops an audiobook where the chapter
+    /// playing ends, before the next one starts. The listener hears once
+    /// that the timer stopped playback, the timer has ended, the next
+    /// chapter's file is never played, and the cursor waits, saved, at the
+    /// beginning of the next chapter, where Play then starts it.
+    ///
+    /// Before the repair the timer announced a pause that paused nothing,
+    /// since the chapter's audio had already finished, and the next chapter
+    /// played on.
+    func testEndOfChapterTimerStopsAnAudiobookBeforeTheNextChapter() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Chapter End")
+        world.settings.sleepFadeOutDuration = 0
+        let book = try world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [0.6, 5])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let service = reader.audioPlaybackService
+        let secondChapterFile = try XCTUnwrap(reader.audioChapterFiles.last.map(resolvedPath))
+        defer { reader.stop() }
+
+        let recorder = recordingAnnouncements {
+            reader.startSleepTimer(duration: .endOfChapter)
+            reader.play()
+            XCTAssertTrue(service.isPlaying, "The first chapter did not play")
+            XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "The first chapter never ended")
+            XCTAssertFalse(service.isPlaying, "The next chapter played")
+            XCTAssertFalse(reader.isCurrentlyPlaying, "The reader shows the next chapter playing")
+            // Nothing may start a moment later either.
+            XCTAssertFalse(
+                eventually(within: 1) { service.isPlaying || reader.isCurrentlyPlaying },
+                "Playback started again after the chapter's end"
+            )
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Sleep timer expired at the end of the chapter. Playback paused."]
+        )
+        XCTAssertFalse(timer.isActive, "The timer is still in effect")
+        XCTAssertEqual(reader.currentCharacterOffset, 0)
+        XCTAssertNotEqual(
+            service.loadedURL.map { resolvedPath($0.path) },
+            secondChapterFile,
+            "The next chapter's file was loaded"
+        )
+        try assertSavedPlace(of: book, in: world, chapter: 1, offset: 0)
+
+        reader.togglePlayPause()
+        XCTAssertTrue(service.isPlaying, "Play did not start the next chapter")
+        XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, secondChapterFile)
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+    }
+
+    /// The same for a text book: a timer set for the end of the chapter
+    /// stops speech where the chapter ends, with no fade even when one is
+    /// set, since speech is not faded there. The next chapter is not
+    /// spoken, the chapter rendered ahead is let go without playing, the
+    /// timer has ended, and the cursor waits, saved, at the beginning of
+    /// the next chapter. Before the repair the next chapter was spoken at
+    /// once.
+    func testEndOfChapterTimerStopsSpeechBeforeTheNextChapter() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        for fadeSeconds: TimeInterval in [0, 5] {
+            try withSpeechReader("Sleep Timer Speech Fade \(Int(fadeSeconds))", fadeSeconds: fadeSeconds) { speech in
+                let reader = speech.reader
+                reader.startSleepTimer(duration: .endOfChapter)
+                let endOfFirstChapter = try startSpeakingSilently(reader)
+                XCTAssertNotNil(reader.lookAhead, "The next chapter was not looked ahead to")
+
+                var spokeOn = false
+                let recorder = recordingAnnouncements {
+                    spokeOn = endSpeechSilently(endOfFirstChapter, of: reader)
+                }
+
+                let fade = "with a fade of \(fadeSeconds) seconds"
+                XCTAssertFalse(spokeOn, "The next chapter was spoken \(fade)")
+                XCTAssertEqual(
+                    recorder.announcements.map(\.message),
+                    ["Sleep timer expired at the end of the chapter. Playback paused."],
+                    fade
+                )
+                XCTAssertFalse(timer.isActive, "The timer is still in effect \(fade)")
+                XCTAssertFalse(timer.isFadingOut, "Speech faded out \(fade)")
+                XCTAssertNil(reader.lookAhead, "The chapter rendered ahead was kept \(fade)")
+                XCTAssertEqual(reader.currentChapterIndex, 1, fade)
+                XCTAssertEqual(reader.currentCharacterOffset, 0, fade)
+                try assertSavedPlace(of: speech.book, in: speech.world, chapter: 1, offset: 0)
+            }
+        }
+    }
+
+    /// A timer set for the end of the chapter that is the book's last
+    /// stops playback where the book ends, whatever the book does at its
+    /// end: it neither starts again nor continues to the next book. The
+    /// listener hears once that the book finished and why nothing follows,
+    /// and the timer has ended.
+    func testEndOfChapterTimerAtTheLastChapterEndsListeningWithTheBook() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let outcomes: [(behavior: EndOfBookBehavior, announcement: String, chapterAfter: Int)] = [
+            (.stop, "Finished: Quay Notes. Sleep timer expired.", 2),
+            (.loop, "Finished: Quay Notes. Not restarted because of the sleep timer.", 0),
+            (.continueNext, "Finished: Quay Notes. Next book not started because of the sleep timer.", 2),
+        ]
+        for outcome in outcomes {
+            let label = "Sleep Timer Book End \(outcome.behavior.rawValue)"
+            try withSpeechReader(label, endOfBook: outcome.behavior) { speech in
+                let reader = speech.reader
+                let continued = recordContinueRequests(in: speech.world)
+                reader.navigateTo(chapterIndex: 2, characterOffset: 0)
+                reader.startSleepTimer(duration: .endOfChapter)
+                let endOfLastChapter = try startSpeakingSilently(reader)
+
+                var spokeOn = false
+                let recorder = recordingAnnouncements {
+                    spokeOn = endSpeechSilently(endOfLastChapter, of: reader)
+                    // Long enough for the next book to have been asked for.
+                    spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+                }
+
+                let behavior = outcome.behavior.rawValue
+                XCTAssertFalse(spokeOn, "\(behavior): the book was spoken again")
+                XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
+                XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
+                XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+                XCTAssertFalse(speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id), behavior)
+                XCTAssertEqual(reader.currentChapterIndex, outcome.chapterAfter, behavior)
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     /// Counts each time `reader` goes from not paused to paused from now on.
@@ -84,5 +226,127 @@ final class IntegrationSleepTimerTests: XCTestCase {
             .sink { _ in count += 1 }
             .store(in: &subscriptions)
         return { count }
+    }
+
+    /// Check that the library holds `book`'s position as `chapter` and
+    /// `offset`, as the reader last saved it.
+    private func assertSavedPlace(
+        of book: Book,
+        in world: IntegrationWorld,
+        chapter: Int,
+        offset: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let saved = try XCTUnwrap(
+            world.library.bookByID(book.id)?.readingPosition,
+            "No position was saved",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(saved.chapterIndex, chapter, "The saved chapter", file: file, line: line)
+        XCTAssertEqual(saved.characterOffset, offset, "The saved offset", file: file, line: line)
+    }
+
+    /// Record every `.continueToNextBook` posted in `world` from now on.
+    ///
+    /// - Returns: A function reading the notifications posted so far.
+    private func recordContinueRequests(in world: IntegrationWorld) -> () -> [Notification] {
+        var posted: [Notification] = []
+        world.notifications.publisher(for: .continueToNextBook)
+            .sink { posted.append($0) }
+            .store(in: &subscriptions)
+        return { posted }
+    }
+
+    // MARK: - A Text Book's Reader
+
+    /// The surroundings of a test of a text book's reader.
+    private struct SpeechWorld {
+        /// The world the reader belongs to.
+        let world: IntegrationWorld
+        /// The reader, loaded with three short chapters.
+        let reader: ReaderViewModel
+        /// The book the reader reads.
+        let book: Book
+        /// The book after it in its folder, where Continue to Next Book goes.
+        let nextBook: Book
+    }
+
+    /// Run `body` with a reader of a text book of three short chapters, in a
+    /// world of its own whose folder holds another book after it.
+    ///
+    /// The reader's content is given to it directly: the book names a file
+    /// that is not there, so the reader's own load fails before the content
+    /// is given, and nothing is read from disk. Its look-ahead renders are
+    /// held, never rendered, and a test silences its speech before the main
+    /// run loop turns (`startSpeakingSilently`, `endSpeechSilently`), so
+    /// nothing is ever heard.
+    ///
+    /// - Parameters:
+    ///   - label: Names the world's folder, config, and preferences.
+    ///   - endOfBook: What the book does when its last chapter ends.
+    ///   - fadeSeconds: The sleep timer's fade-out setting.
+    private func withSpeechReader(
+        _ label: String,
+        endOfBook: EndOfBookBehavior = .stop,
+        fadeSeconds: TimeInterval = 0,
+        _ body: (SpeechWorld) throws -> Void
+    ) throws {
+        let world = try makeIntegrationWorld(label)
+        world.settings.sleepFadeOutDuration = fadeSeconds
+        let book = listTextBook(titled: "Quay Notes", in: world, endOfBook: endOfBook)
+        let nextBook = listTextBook(titled: "Slipway Notes", in: world, endOfBook: .stop)
+        let reader = world.openReader(for: book, renderScheduler: HeldRenderQueue())
+        waitForReaderToLoad(reader)
+        reader.errorMessage = nil
+        reader.content = DocumentContent(
+            title: book.title,
+            author: "Test Author",
+            chapters: ["Bollard", "Capstan", "Davit"].map {
+                Chapter(title: $0, text: "The \($0.lowercased()) is noted here.")
+            }
+        )
+        try body(SpeechWorld(world: world, reader: reader, book: book, nextBook: nextBook))
+    }
+
+    /// A text book titled `title`, listed in `world`'s folder, whose file is
+    /// not there.
+    private func listTextBook(titled title: String, in world: IntegrationWorld, endOfBook: EndOfBookBehavior) -> Book {
+        let book = Book(
+            title: title,
+            format: .txt,
+            filePath: world.folder.path + "/\(UUID().uuidString) missing.txt",
+            md5Hash: UUID().uuidString,
+            folderPath: world.folder.path,
+            localEndOfBookBehavior: endOfBook.rawValue
+        )
+        world.library.library.addBook(book)
+        return book
+    }
+
+    /// Start `reader` speaking from its cursor, then stop its speech before
+    /// the main run loop turns, so nothing is heard. The chapter play stays
+    /// under way, with its look-ahead.
+    ///
+    /// - Returns: The end of that chapter's speech, to report as the speech
+    ///   service reports it once the chapter has been spoken.
+    private func startSpeakingSilently(_ reader: ReaderViewModel) throws -> () -> Void {
+        reader.play()
+        let endOfChapter = try XCTUnwrap(reader.speechService.onUtteranceFinished, "Speech did not start")
+        reader.speechService.stop()
+        return endOfChapter
+    }
+
+    /// Report the end of a chapter's speech through `endOfChapter`, then stop
+    /// anything `reader` began speaking in reply before the main run loop
+    /// turns, so nothing is heard.
+    ///
+    /// - Returns: Whether the reader went on speaking.
+    private func endSpeechSilently(_ endOfChapter: () -> Void, of reader: ReaderViewModel) -> Bool {
+        endOfChapter()
+        let spokeOn = reader.speechService.isSpeaking
+        reader.speechService.stop()
+        return spokeOn
     }
 }

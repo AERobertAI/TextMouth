@@ -319,6 +319,23 @@ enum SleepTimerDuration: Hashable {
         }
     }
 
+    /// Whether a timer set for this stops playback where a chapter ends,
+    /// before anything after that chapter plays (TODO P01). End of chapter
+    /// stops at the end of whichever chapter is playing, the book's last
+    /// included; a timer counting minutes, or waiting for a heading's end,
+    /// stops at no chapter's end.
+    ///
+    /// - Parameter endingTheBook: Whether the chapter ending is the book's
+    ///   last, with nothing after it to play, so that its end is the book's.
+    func stopsPlaybackAtChapterEnd(endingTheBook: Bool) -> Bool {
+        switch self {
+        case .endOfChapter:
+            return true
+        case .minutes, .endOfHeading:
+            return false
+        }
+    }
+
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),

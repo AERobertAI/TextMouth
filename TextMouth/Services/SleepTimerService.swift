@@ -430,16 +430,43 @@ final class SleepTimerService: ObservableObject {
         }
     }
 
-    /// Notify the timer that a chapter ended in the owner book.
-    /// Only the owner can trigger an `endOfChapter` timer.
-    func notifyDocumentEnd(by callerID: UUID) {
-        guard isActive, case .endOfChapter = duration else { return }
-        guard self.ownerID == callerID else {
-            timerLog(.event, "DOCUMENT_END_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
-            return
-        }
-        timerLog(.event, "DOCUMENT_END_EXPIRING caller=\(Self.ownerToken(callerID))")
-        expire()
+    // MARK: - Stopping Where a Chapter Ends
+
+    /// Whether the timer `callerID` owns is in effect and stops playback
+    /// where the chapter playing now ends (TODO P01): a timer set for the end
+    /// of the chapter. Another owner's timer, one that has ended, and one
+    /// counting minutes or waiting for a heading's end stop nothing there.
+    ///
+    /// - Parameters:
+    ///   - endingTheBook: Whether that chapter is the book's last, with
+    ///     nothing after it to play.
+    ///   - callerID: The owner asking, as it passed to `start(...)`.
+    func stopsPlaybackAtChapterEnd(endingTheBook: Bool, ownedBy callerID: UUID) -> Bool {
+        guard isActive, ownerID == callerID, let duration else { return false }
+        return duration.stopsPlaybackAtChapterEnd(endingTheBook: endingTheBook)
+    }
+
+    /// End the timer because its owner's playback has reached the end of a
+    /// chapter where the timer stops it, and the owner has stopped there
+    /// (TODO P01). The chapter has already played to its end, so no fade is
+    /// left to run and nothing is left to pause: the timer ends as `stop()`
+    /// ends it, without calling `onTimerExpired`, and the owner tells the
+    /// listener itself, once, in words that say where playback stopped.
+    ///
+    /// Only the owner ends its timer this way, and only one that stops
+    /// playback there (`stopsPlaybackAtChapterEnd(endingTheBook:ownedBy:)`).
+    ///
+    /// - Returns: Whether the timer ended, so the owner must stop rather
+    ///   than play on.
+    @discardableResult
+    func expireAtChapterEnd(endingTheBook: Bool, by callerID: UUID) -> Bool {
+        guard stopsPlaybackAtChapterEnd(endingTheBook: endingTheBook, ownedBy: callerID) else { return false }
+        timerLog(
+            .event,
+            "CHAPTER_END_REACHED caller=\(Self.ownerToken(callerID)) endingTheBook=\(endingTheBook)"
+        )
+        stop(reason: "chapter-end-reached")
+        return true
     }
 
     // MARK: - Internal Countdown / Fade
