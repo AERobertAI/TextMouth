@@ -831,22 +831,29 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     // MARK: - Chapter/Marker Extraction
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).
-    /// Returns array of (title, startTime, duration).
+    /// Returns array of (title, startTime, duration), in the file's order.
+    /// Everything is read through AVFoundation's asynchronous loading API
+    /// (TODO Q06): a marker whose title cannot be read is named "Chapter",
+    /// and a file whose markers cannot be loaded has none.
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         let asset = AVURLAsset(url: url)
         do {
             let locales = try await asset.load(.availableChapterLocales)
             let preferredLanguages = locales.isEmpty ? ["en"] : locales.map { $0.identifier }
-            let groups = asset.chapterMetadataGroups(bestMatchingPreferredLanguages: preferredLanguages)
+            let groups = try await asset.loadChapterMetadataGroups(bestMatchingPreferredLanguages: preferredLanguages)
 
-            return groups.map { group in
+            var chapters: [(title: String, startTime: TimeInterval, duration: TimeInterval)] = []
+            for group in groups {
                 let titleItems = AVMetadataItem.metadataItems(from: group.items,
                                                               filteredByIdentifier: .commonIdentifierTitle)
-                let title = titleItems.first?.stringValue ?? "Chapter"
+                // A title that fails to load counts as missing, as the
+                // synchronous stringValue this replaces returned nil.
+                let title = (try? await titleItems.first?.load(.stringValue)) ?? "Chapter"
                 let start = CMTimeGetSeconds(group.timeRange.start)
                 let dur = CMTimeGetSeconds(group.timeRange.duration)
-                return (title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0)
+                chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))
             }
+            return chapters
         } catch {
             return []
         }
