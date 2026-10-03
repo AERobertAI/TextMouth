@@ -961,6 +961,41 @@ extension ReaderViewModel {
         )
     }
 
+    /// Where a chapter's audio plays from.
+    enum ChapterAudioSource: Equatable {
+        /// A segmented chapter's clips, played one after another.
+        case clips(AudioClipChain)
+        /// One file: a multi-file book's chapter file, or the book's file.
+        case file(URL)
+
+        /// Every file the chapter plays from, each once, in playing order.
+        var files: [URL] {
+            switch self {
+            case .clips(let chain):
+                var seen = Set<URL>()
+                return chain.clips.map(\.url).filter { seen.insert($0).inserted }
+            case .file(let url):
+                return [url]
+            }
+        }
+    }
+
+    /// Where chapter `chapterIndex`'s audio plays from: a segmented
+    /// chapter's clips, a multi-file book's chapter file, or the book's one
+    /// file. A segmented book's chapter without a segment plays its file
+    /// whole.
+    func chapterAudioSource(forChapterAt chapterIndex: Int) -> ChapterAudioSource {
+        if audioLayout == .segmented, let chain = audioClipChain(forChapterAt: chapterIndex) {
+            return .clips(chain)
+        }
+        if !audioChapterFiles.isEmpty && chapterIndex < audioChapterFiles.count {
+            // Multi-file audio book: each chapter is its own file.
+            return .file(URL(fileURLWithPath: audioChapterFiles[chapterIndex]))
+        }
+        // Single audio file — use book file path
+        return .file(URL(fileURLWithPath: book.filePath))
+    }
+
     /// Wire up audio playback service callbacks for position tracking and chapter advancement.
     func setupAudioCallbacks() {
         audioPlaybackService.onPositionUpdate = { [weak self] time in
@@ -1032,6 +1067,10 @@ extension ReaderViewModel {
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         listenForAudioEnd(of: beginChapterPlay())
+        // A chapter whose file is only in the cloud is downloaded first,
+        // and plays once it is here: the player is never handed a file it
+        // would wait on the network for (FR02).
+        guard chapterFilesReadyToPlay() else { return }
         // Audio that cannot be played claims no Playing state.
         guard startCurrentChapterAudio(in: content) else { return }
 
@@ -1039,7 +1078,7 @@ extension ReaderViewModel {
         isCurrentlyPaused = false
         // Audio that plays again resolves a failure its alert still shows,
         // however playback was started.
-        if audioPlaybackFailure != nil {
+        if audioPlaybackFailure != nil || cloudSession.chapterFailure != nil {
             dismissErrorAlert()
         }
 
@@ -1055,24 +1094,19 @@ extension ReaderViewModel {
     ///   stopped the reader and told the listener, and an item that has
     ///   already failed is reported through the same handler.
     private func startCurrentChapterAudio(in content: DocumentContent) -> Bool {
-        // A segmented chapter plays its clips, in one file or several, as
-        // one chain timed from the chapter's start, so the cursor's offset
-        // is the time to play from, whichever clip holds it.
-        if audioLayout == .segmented, let chain = audioClipChain(forChapterAt: currentChapterIndex) {
+        let audioURL: URL
+        switch chapterAudioSource(forChapterAt: currentChapterIndex) {
+        case .clips(let chain):
+            // A segmented chapter plays its clips, in one file or several,
+            // as one chain timed from the chapter's start, so the cursor's
+            // offset is the time to play from, whichever clip holds it.
             audioPlaybackService.setSpeed(audioSpeed)
             return audioPlaybackService.playClips(
                 chain,
                 fromChapterTime: AudioBookParser.time(forCharacterOffset: currentCharacterOffset)
             )
-        }
-
-        let audioURL: URL
-        if !audioChapterFiles.isEmpty && currentChapterIndex < audioChapterFiles.count {
-            // Multi-file audio book: each chapter is its own file.
-            audioURL = URL(fileURLWithPath: audioChapterFiles[currentChapterIndex])
-        } else {
-            // Single audio file — use book file path
-            audioURL = URL(fileURLWithPath: book.filePath)
+        case .file(let url):
+            audioURL = url
         }
 
         guard audioPlaybackService.load(url: audioURL) else { return false }

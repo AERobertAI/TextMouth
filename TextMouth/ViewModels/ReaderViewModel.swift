@@ -1178,6 +1178,10 @@ final class ReaderViewModel: ObservableObject {
         /// Whether the alert offers Retry, as it does for audio that could
         /// not be played, which may play once its file is back.
         let offersRetry: Bool
+        /// The retry button's title: "Retry" for audio that could not be
+        /// played, and "Try Again" for a chapter that could not be got from
+        /// the cloud (FR02), as the download view words it.
+        var retryTitle = "Retry"
     }
 
     /// `errorMessage` while no content has loaded: the book itself could
@@ -1190,6 +1194,16 @@ final class ReaderViewModel: ObservableObject {
     /// which stays usable behind it. Nil when there is no such error.
     var errorAlert: ErrorAlert? {
         guard content != nil, let errorMessage else { return nil }
+        // A chapter whose files could not be got from the cloud stopped the
+        // reader at that chapter, which may play once they are here (FR02).
+        if cloudSession.chapterFailure != nil {
+            return ErrorAlert(
+                title: "Chapter Not Downloaded",
+                message: errorMessage,
+                offersRetry: true,
+                retryTitle: "Try Again"
+            )
+        }
         return ErrorAlert(
             title: audioPlaybackFailure == nil ? "Error" : "Playback Problem",
             message: errorMessage,
@@ -1198,10 +1212,12 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Close the error alert, forgetting the error it showed and, for an
-    /// audio failure, the failure behind it.
+    /// audio failure or a chapter not got from the cloud, the failure behind
+    /// it.
     func dismissErrorAlert() {
         errorMessage = nil
         audioPlaybackFailure = nil
+        cloudSession.chapterFailure = nil
     }
 
     var canReleaseMediaControls: Bool {

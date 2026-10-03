@@ -15,8 +15,8 @@ struct ReaderView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let phase = viewModel.cloudPhase {
-                // The book is being got from the cloud, or could not be
-                // (FR02).
+                // The book, or the chapter about to play, is being got from
+                // the cloud, or could not be (FR02).
                 ReaderCloudPhaseView(
                     phase: phase,
                     title: viewModel.book.title,
@@ -207,16 +207,17 @@ struct ReaderView: View {
             viewModel.soundEffectService = soundEffectService
         }
         // A problem met after the book has loaded, such as a chapter whose
-        // audio cannot be played, is shown over the reader, which stays
-        // usable behind it. Return chooses the default button, Retry for
-        // audio and OK otherwise, and Escape cancels.
+        // audio cannot be played or could not be got from the cloud, is
+        // shown over the reader, which stays usable behind it. Return
+        // chooses the default button, Retry (Try Again for the cloud) or
+        // OK, and Escape cancels.
         .alert(
             viewModel.errorAlert?.title ?? "",
             isPresented: errorAlertIsPresented,
             presenting: viewModel.errorAlert
         ) { alert in
             if alert.offersRetry {
-                Button("Retry") {
+                Button(alert.retryTitle) {
                     // SwiftUI closes the alert around this action. Retrying
                     // on the next turn of the main queue lets a retry that
                     // fails again present a fresh alert, rather than having
@@ -442,7 +443,7 @@ struct ReaderDownloadProgressView: View {
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            Text(ReaderCloudWording.source(provider: download.provider))
+            Text(ReaderCloudWording.source(provider: download.provider, chapterNumber: download.chapterNumber))
                 .foregroundColor(.secondary)
 
             // The time waited steps every few seconds, so a value read by

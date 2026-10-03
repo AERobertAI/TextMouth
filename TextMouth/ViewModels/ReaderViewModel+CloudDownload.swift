@@ -41,7 +41,7 @@ struct ReaderCloudServices {
 /// What a reader window shows in place of its book while it gets the book
 /// from the cloud (FR02).
 enum ReaderCloudPhase: Equatable {
-    /// The book is downloading.
+    /// The book, or the files of the chapter about to play, are downloading.
     case downloading(ReaderDownload)
     /// The opening download was cancelled: the book isn't ready, and can be
     /// downloaded again.
@@ -56,13 +56,31 @@ enum ReaderCloudPhase: Equatable {
 struct ReaderDownload: Equatable {
     /// The sync service downloading it, when known.
     let provider: CloudProvider?
+    /// The number, from one, of the chapter about to play whose file is only
+    /// in the cloud; nil for the download that opens the book.
+    let chapterNumber: Int?
     /// When the reader started waiting.
     let startedAt: Date
     /// The latest progress reported, or nil before the first report.
     var progress: BookDownloadProgress?
 }
 
-/// Why a reader could not get its book from the cloud.
+/// What a reader's download is for.
+enum ReaderDownloadPurpose: Equatable, Sendable {
+    /// Opening the book: loading follows.
+    case opening
+    /// Playing the chapter with this number, from one, whose file is only in
+    /// the cloud: playback goes on once it is here.
+    case chapter(Int)
+
+    /// The chapter's number, for a chapter's download.
+    var chapterNumber: Int? {
+        if case .chapter(let number) = self { return number }
+        return nil
+    }
+}
+
+/// Why a reader could not get its book, or a chapter of it, from the cloud.
 enum ReaderCloudFailure: Equatable {
     /// The download failed.
     case download(BookCloudError)
@@ -79,6 +97,8 @@ struct ReaderCloudSession {
     var location: StorageLocation?
     /// The download being waited for, if any.
     var downloadTask: Task<Void, Never>?
+    /// What that download is for.
+    var downloadPurpose: ReaderDownloadPurpose?
     /// Counts the downloads started, so a state found after one ended is not
     /// recorded over a later one's progress.
     var downloadGeneration = 0
@@ -89,6 +109,12 @@ struct ReaderCloudSession {
     /// How many reads after a download were refused because a file was only
     /// in the cloud again; the second ends the opening.
     var refusedReads = 0
+    /// Whether the chapter about to play has just been downloaded, so a file
+    /// still only in the cloud fails instead of downloading again.
+    var chapterJustDownloaded = false
+    /// Why the chapter about to play could not be got from the cloud, while
+    /// the error alert says so.
+    var chapterFailure: ReaderCloudFailure?
 }
 
 // MARK: - Announcements
@@ -133,9 +159,12 @@ enum ReaderCloudWording {
     /// What VoiceOver calls the download view's progress bar.
     static let progressLabel = "Download progress"
 
-    /// The line below the heading: where the book comes from.
-    static func source(provider: CloudProvider?) -> String {
-        "From \(provider?.displayName ?? "the cloud service")"
+    /// The line below the heading: where the book comes from and, for a
+    /// chapter, which one is waited for.
+    static func source(provider: CloudProvider?, chapterNumber: Int?) -> String {
+        let service = provider?.displayName ?? "the cloud service"
+        guard let chapterNumber else { return "From \(service)" }
+        return "Chapter \(chapterNumber), from \(service)"
     }
 
     /// The download's progress, from 0 to 1, or nil when it shows no
@@ -185,8 +214,11 @@ enum ReaderCloudWording {
     }
 
     /// Spoken as a download starts.
-    static func downloadStarted(title: String, provider: CloudProvider?) -> String {
-        "Downloading \(title) from \(provider?.displayName ?? "the cloud service")."
+    static func downloadStarted(title: String, provider: CloudProvider?, chapterNumber: Int?) -> String {
+        let service = provider?.displayName ?? "the cloud service"
+        let downloading = "Downloading \(title) from \(service)."
+        guard let chapterNumber else { return downloading }
+        return "Chapter \(chapterNumber) isn't on this Mac. \(downloading)"
     }
 
     /// Spoken as a download reaches `percent`, one of the milestones.
@@ -202,9 +234,17 @@ enum ReaderCloudWording {
     /// Spoken when the opening download is done and the book loads.
     static let downloadedLoading = "Downloaded. Loading."
 
+    /// Spoken when a chapter's download is done and playback goes on.
+    static let downloaded = "Downloaded."
+
     /// Shown and spoken when the opening download is cancelled.
     static func notDownloaded(title: String) -> String {
         "\(title) isn't downloaded."
+    }
+
+    /// Spoken when a chapter's download is cancelled.
+    static func chapterNotDownloaded(number: Int, title: String) -> String {
+        "Chapter \(number) of \(title) isn't downloaded."
     }
 
     /// Shown and spoken when the book's package has not arrived yet.
@@ -262,7 +302,7 @@ extension ReaderViewModel {
         case .local, .downloaded:
             loadDownloadedBook()
         case .inCloud, .downloadFailed, .downloading:
-            startDownload()
+            startDownload(.opening)
         case .waitingForSync:
             stopOpening(
                 at: .waitingForSync,
@@ -324,7 +364,7 @@ extension ReaderViewModel {
                 "READER_READ_REFUSED: \(book.title): a file was only in the cloud (refusal \(cloudSession.refusedReads))"
             )
             if cloudSession.refusedReads == 1 {
-                startDownload()
+                startDownload(.opening)
             } else {
                 recordStateFoundAfterDownload()
                 stopOpening(
@@ -348,18 +388,29 @@ extension ReaderViewModel {
 
     // MARK: Downloading
 
-    /// Starts downloading the book, showing the download view in place of
-    /// the book, and waits for it: its progress shows in the view and in the
-    /// library list, VoiceOver hears its start, its milestones, and its end,
-    /// and a download without a percentage is announced every so often.
-    func startDownload() {
+    /// Starts downloading the book for `purpose`, showing the download view
+    /// in place of the book, and waits for it: its progress shows in the
+    /// view and in the library list, VoiceOver hears its start, its
+    /// milestones, and its end, and a download without a percentage is
+    /// announced every so often.
+    func startDownload(_ purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: true)
         cloudSession.downloadGeneration += 1
+        cloudSession.downloadPurpose = purpose
         cloudSession.announcements = ReaderDownloadAnnouncements()
         let provider = cloudProvider
-        cloudPhase = .downloading(ReaderDownload(provider: provider, startedAt: Date(), progress: nil))
-        announceCloud(ReaderCloudWording.downloadStarted(title: book.title, provider: provider))
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_STARTED: \(book.title)")
+        cloudPhase = .downloading(ReaderDownload(
+            provider: provider,
+            chapterNumber: purpose.chapterNumber,
+            startedAt: Date(),
+            progress: nil
+        ))
+        announceCloud(ReaderCloudWording.downloadStarted(
+            title: book.title,
+            provider: provider,
+            chapterNumber: purpose.chapterNumber
+        ))
+        DiagnosticLog.event(.storage, "READER_DOWNLOAD_STARTED: \(book.title)\(Self.logSuffix(for: purpose))")
 
         let storage = cloudServices.storage
         let package = BookPackage(book)
@@ -379,10 +430,10 @@ extension ReaderViewModel {
                     self.downloadDidProgress(progress)
                 }
                 guard !Task.isCancelled else { return }
-                self?.downloadDidFinish()
+                self?.downloadDidFinish(purpose)
             } catch {
                 guard !Task.isCancelled else { return }
-                self?.downloadDidFail(error)
+                self?.downloadDidFail(error, purpose: purpose)
             }
         }
         startQuietAnnouncements()
@@ -392,18 +443,26 @@ extension ReaderViewModel {
     /// cancelled.
     func downloadAgain() {
         guard cloudPhase == .notDownloaded else { return }
-        startDownload()
+        startDownload(.opening)
     }
 
     /// Cancel: stops waiting for the download under way (the sync service may
-    /// finish it anyway), records the book's state as found afterwards, and
-    /// leaves "<title> isn't downloaded." with Download and Close.
+    /// finish it anyway) and records the book's state as found afterwards.
+    /// An opening download leaves "<title> isn't downloaded." with Download
+    /// and Close; a chapter's leaves the reader stopped at that chapter.
     func cancelDownload() {
-        guard case .downloading = cloudPhase, cloudSession.downloadTask != nil else { return }
+        guard case .downloading = cloudPhase, let purpose = cloudSession.downloadPurpose else { return }
         endDownloadWork(cancelling: true)
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)")
+        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose))")
         recordStateFoundAfterDownload()
-        stopOpening(at: .notDownloaded, announcing: ReaderCloudWording.notDownloaded(title: book.title))
+        switch purpose {
+        case .opening:
+            stopOpening(at: .notDownloaded, announcing: ReaderCloudWording.notDownloaded(title: book.title))
+        case .chapter(let number):
+            cloudPhase = nil
+            stop()
+            announceCloud(ReaderCloudWording.chapterNotDownloaded(number: number, title: book.title))
+        }
     }
 
     /// Try Again: opens the book afresh, from the check of its state.
@@ -431,25 +490,46 @@ extension ReaderViewModel {
         }
     }
 
-    /// The download finished: every file of the book is on this Mac, and
-    /// the book loads.
-    private func downloadDidFinish() {
+    /// The download finished: every file of the book is on this Mac. The
+    /// book loads, or the chapter waiting for it plays unless the reader was
+    /// stopped meanwhile.
+    private func downloadDidFinish(_ purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: false)
         cloudServices.states.record(.downloaded, for: book.id)
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_FINISHED: \(book.title)")
-        announceCloud(ReaderCloudWording.downloadedLoading)
-        loadDownloadedBook()
+        DiagnosticLog.event(.storage, "READER_DOWNLOAD_FINISHED: \(book.title)\(Self.logSuffix(for: purpose))")
+        switch purpose {
+        case .opening:
+            announceCloud(ReaderCloudWording.downloadedLoading)
+            loadDownloadedBook()
+        case .chapter:
+            announceCloud(ReaderCloudWording.downloaded)
+            cloudPhase = nil
+            // A reader stopped while it waited stays stopped.
+            guard isCurrentlyPlaying && !isCurrentlyPaused else { return }
+            cloudSession.chapterJustDownloaded = true
+            playAudioChapter()
+        }
     }
 
-    /// The download failed with `error`, recorded for the library list and
-    /// shown, with Try Again and Close.
-    private func downloadDidFail(_ error: Error) {
+    /// The download failed with `error`, recorded for the library list. The
+    /// opening shows why, with Try Again and Close; a chapter's download
+    /// stops the reader at that chapter, with an alert offering Try Again.
+    private func downloadDidFail(_ error: Error, purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: false)
         let cloudError = (error as? BookCloudError) ?? .provider(error.localizedDescription)
         let explanation = cloudError.explanation(in: cloudProvider)
         cloudServices.states.record(.downloadFailed(explanation), for: book.id)
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_FAILED: \(book.title): \(Self.logReason(cloudError))")
-        stopOpening(at: .failed(.download(cloudError)), announcing: explanation)
+        DiagnosticLog.event(
+            .storage,
+            "READER_DOWNLOAD_FAILED: \(book.title)\(Self.logSuffix(for: purpose)): \(Self.logReason(cloudError))"
+        )
+        switch purpose {
+        case .opening:
+            stopOpening(at: .failed(.download(cloudError)), announcing: explanation)
+        case .chapter:
+            cloudPhase = nil
+            stopAtChapter(because: .download(cloudError), message: explanation)
+        }
     }
 
     /// Ends the waiting for the download under way and its announcements,
@@ -464,6 +544,7 @@ extension ReaderViewModel {
             cloudServices.states.endDownload(of: book.id)
         }
         cloudSession.downloadTask = nil
+        cloudSession.downloadPurpose = nil
         cloudSession.quietAnnouncementTask?.cancel()
         cloudSession.quietAnnouncementTask = nil
     }
@@ -524,15 +605,69 @@ extension ReaderViewModel {
         announceCloud(ReaderCloudWording.stillDownloading(elapsed: elapsed), priority: .medium)
     }
 
+    // MARK: Chapters Only in the Cloud
+
+    /// Whether the current chapter's files can be handed to the player: true
+    /// unless one is only in the cloud (FR02). AVPlayer would wait on the
+    /// network for such a file, so instead the book downloads, with the same
+    /// view, as a short pause, and the chapter plays once it is here; the
+    /// reader shows Playing meanwhile. Offline, the download fails at once
+    /// and the reader stops at the chapter with the reason and Try Again.
+    ///
+    /// Only a book in a cloud library is checked. Each file is looked at with
+    /// one lstat(2) made with downloading switched off, so the check never
+    /// waits on the network either.
+    func chapterFilesReadyToPlay() -> Bool {
+        guard cloudSession.location?.isCloud == true else { return true }
+        // A chapter download under way plays the cursor's chapter when it
+        // is done.
+        guard cloudSession.downloadTask == nil else { return false }
+
+        let isDataless = cloudServices.isDataless
+        let inCloud = chapterAudioSource(forChapterAt: currentChapterIndex).files.contains {
+            LocalBookFiles.availability(of: $0, isDataless: isDataless) == .inCloud
+        }
+        let justDownloaded = cloudSession.chapterJustDownloaded
+        cloudSession.chapterJustDownloaded = false
+        guard inCloud else { return true }
+
+        let chapterNumber = currentChapterIndex + 1
+        if justDownloaded {
+            // Still only in the cloud right after its download: stop here
+            // rather than download over and over.
+            DiagnosticLog.event(
+                .storage,
+                "READER_READ_REFUSED: \(book.title): chapter \(chapterNumber) was only in the cloud after its download"
+            )
+            stopAtChapter(because: .partNotOnThisMac, message: ReaderCloudWording.partNotOnThisMac(title: book.title))
+            return false
+        }
+        DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) has a file only in the cloud; downloading first")
+        isCurrentlyPlaying = true
+        isCurrentlyPaused = false
+        startDownload(.chapter(chapterNumber))
+        return false
+    }
+
+    /// Stops the reader at the current chapter, whose files could not be got
+    /// from the cloud, and shows why in the error alert, which offers Try
+    /// Again (`retryAudioPlayback()`, which plays the chapter afresh).
+    private func stopAtChapter(because failure: ReaderCloudFailure, message: String) {
+        stop()
+        cloudSession.chapterFailure = failure
+        errorMessage = message
+        announceCloud(message)
+    }
+
     // MARK: Closing
 
     /// Stops waiting for a download as the reader closes, recording the
     /// book's state as found afterwards.
     func endCloudWorkForClose() {
-        let wasDownloading = cloudSession.downloadTask != nil
+        let purpose = cloudSession.downloadPurpose
         endDownloadWork(cancelling: true)
-        guard wasDownloading else { return }
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title): the reader closed")
+        guard let purpose else { return }
+        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose)): the reader closed")
         recordStateFoundAfterDownload()
     }
 
@@ -548,6 +683,12 @@ extension ReaderViewModel {
                 continuation.resume(returning: work())
             }
         }
+    }
+
+    /// How a log line names a download's purpose: nothing for the opening,
+    /// the chapter for a chapter's.
+    private static func logSuffix(for purpose: ReaderDownloadPurpose) -> String {
+        purpose.chapterNumber.map { " (chapter \($0))" } ?? ""
     }
 
     /// How a log line names why a download failed.

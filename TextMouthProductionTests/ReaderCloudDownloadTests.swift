@@ -6,7 +6,8 @@ import XCTest
 /// Opening a book that is in a cloud library (FR02): the reader checks the
 /// book's state before reading it, downloads it first when any of its files
 /// is only in the cloud, shows and speaks the download, and can cancel it or
-/// try again; it never lets a read wait on the network.
+/// try again; it never lets a read wait on the network, and checks each
+/// chapter's file before it plays.
 ///
 /// Every reader here is real, on real packages in a library folder of the
 /// test's own; only the cloud is a fake (`FakeBookCloudStorage`), so each
@@ -139,6 +140,7 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(shown, expectedShown)
         XCTAssertEqual(recorded, expectedRecorded)
         XCTAssertEqual(reader.shownDownload?.provider, .iCloudDrive)
+        XCTAssertNil(reader.shownDownload?.chapterNumber)
 
         cloud.storage.finishHeldDownload(of: book.id)
         waitForReaderToLoad(reader)
@@ -367,6 +369,144 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertNotNil(reader.content, "Try Again did not open the book")
     }
 
+    // MARK: - Chapters Only in the Cloud
+
+    /// A chapter whose file is only in the cloud is downloaded before it
+    /// plays, in the same view, as a short pause: the player is never
+    /// handed the file meanwhile, and the chapter plays once it is here.
+    func testChapterOnlyInTheCloudDownloadsBeforeItPlays() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Download")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let second = reader.audioChapterFiles[1]
+        let step = Self.progress(1, of: 2, bytes: 100, of: 200)
+        cloud.cloudOnly.mark(second)
+        cloud.storage.scriptDownload(of: book.id, steps: [step], holdsOpen: true)
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "The first chapter did not play")
+        let mark = announcementMark()
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+
+        waitFor("the chapter's download") { reader.shownDownload?.progress == step }
+        XCTAssertEqual(reader.shownDownload?.chapterNumber, 2)
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The player was handed a file only in the cloud")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing while it waited")
+        XCTAssertEqual(cloud.storage.downloadsStarted, [book.id])
+
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertEqual(announcements(since: mark), [
+            "Chapter 2 isn't on this Mac. Downloading Ferry Timetable from iCloud Drive.",
+            "50 percent downloaded.",
+            "Downloaded.",
+        ])
+        reader.stop()
+    }
+
+    /// Offline, a chapter only in the cloud stops the reader at the chapter
+    /// with the offline explanation and Try Again, which plays it once it
+    /// is here.
+    func testChapterOnlyInTheCloudStopsAtTheChapterOffline() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Offline")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.storage.scriptDownload(of: book.id, steps: [], failingWith: .offline)
+        reader.play()
+        let mark = announcementMark()
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        waitFor("the offline alert") { reader.errorAlert != nil }
+
+        let explanation = BookCloudError.offline.explanation(in: .iCloudDrive)
+        XCTAssertEqual(reader.errorAlert, ReaderViewModel.ErrorAlert(
+            title: "Chapter Not Downloaded",
+            message: explanation,
+            offersRetry: true,
+            retryTitle: "Try Again"
+        ))
+        XCTAssertFalse(reader.isCurrentlyPlaying)
+        XCTAssertNil(reader.audioPlaybackService.loadedURL)
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertEqual(announcements(since: mark).last, explanation)
+
+        cloud.cloudOnly.clear()
+        reader.retryAudioPlayback()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Try Again did not play the chapter")
+        XCTAssertNil(reader.errorAlert)
+        reader.stop()
+    }
+
+    /// A chapter still only in the cloud right after its download stops the
+    /// reader there rather than download again and again.
+    func testChapterStillInTheCloudAfterItsDownloadStopsThere() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Still Missing")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        reader.play()
+
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        waitFor("the alert") { reader.errorAlert != nil }
+
+        XCTAssertEqual(reader.errorAlert?.message, "Part of Ferry Timetable isn't on this Mac.")
+        XCTAssertEqual(reader.errorAlert?.retryTitle, "Try Again")
+        XCTAssertEqual(cloud.storage.downloadsStarted, [book.id])
+        XCTAssertFalse(reader.isCurrentlyPlaying)
+    }
+
+    /// Cancel during a chapter's download stops the reader at that chapter.
+    func testCancellingAChaptersDownloadStopsAtTheChapter() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Cancel")
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        let step = Self.progress(1, of: 2, bytes: 100, of: 200)
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.storage.scriptDownload(of: book.id, steps: [step], holdsOpen: true)
+        reader.play()
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        waitFor("the chapter's download") { reader.shownDownload?.progress == step }
+        let mark = announcementMark()
+
+        reader.cancelDownload()
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertFalse(reader.isCurrentlyPlaying)
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(announcements(since: mark), ["Chapter 2 of Ferry Timetable isn't downloaded."])
+    }
+
+    /// In a library that is not in a cloud location, chapters play without
+    /// any check, exactly as before.
+    func testLocalLibraryPlaysChaptersWithoutCheckingThem() throws {
+        let cloud = try makeCloudReaders("Cloud Local Chapters", location: .local)
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        cloud.cloudOnly.markEverything()
+
+        reader.play()
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying)
+        XCTAssertEqual(cloud.storage.downloadsStarted, [])
+        XCTAssertNil(reader.cloudPhase)
+        reader.stop()
+    }
+
     // MARK: - Fixtures
 
     /// Progress of `files` of `totalFiles` files, `bytes` of `totalBytes`.
@@ -409,6 +549,16 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: timeout, condition), "Timed out waiting for \(what)", file: file, line: line)
     }
 
+    /// `path` with symbolic links resolved and standardized, so spellings of
+    /// one place compare equal.
+    private static func path(_ path: String) -> String {
+        URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+    }
+
+    /// The path of `url`, as `path(_:)` spells it.
+    private static func path(_ url: URL) -> String {
+        path(url.path)
+    }
 }
 
 // MARK: - A Cloud Library of the Test's Own
@@ -495,6 +645,8 @@ private final class CloudOnlyFiles: @unchecked Sendable {
     private var always: Set<String> = []
     /// Paths only in the cloud for this many more checks.
     private var forChecks: [String: Int] = [:]
+    /// Whether every file is only in the cloud.
+    private var everything = false
 
     /// Says the file at `path` is only in the cloud: for its next `times`
     /// checks, or for every check when `times` is nil.
@@ -509,11 +661,17 @@ private final class CloudOnlyFiles: @unchecked Sendable {
         }
     }
 
+    /// Says every file is only in the cloud.
+    func markEverything() {
+        lock.withLock { everything = true }
+    }
+
     /// Says every file is on this Mac.
     func clear() {
         lock.withLock {
             always = []
             forChecks = [:]
+            everything = false
         }
     }
 
@@ -526,7 +684,7 @@ private final class CloudOnlyFiles: @unchecked Sendable {
     private func isDataless(_ url: URL) -> Bool {
         let key = Self.key(url)
         return lock.withLock {
-            if always.contains(key) {
+            if everything || always.contains(key) {
                 return true
             }
             guard let remaining = forChecks[key], remaining > 0 else { return false }
@@ -627,19 +785,20 @@ final class ReaderCloudWordingTests: XCTestCase {
     }
 
     /// The heading, the line below it, and what is said as a download
-    /// starts, naming the sync service, or "the cloud service" when it is
-    /// unknown.
+    /// starts, for the book and for a chapter, naming the sync service, or
+    /// "the cloud service" when it is unknown.
     func testHeadingSourceAndStartWording() {
         XCTAssertEqual(ReaderCloudWording.heading(title: "Tide Tables"), "Downloading Tide Tables")
-        XCTAssertEqual(ReaderCloudWording.source(provider: .iCloudDrive), "From iCloud Drive")
-        XCTAssertEqual(ReaderCloudWording.source(provider: nil), "From the cloud service")
+        XCTAssertEqual(ReaderCloudWording.source(provider: .iCloudDrive, chapterNumber: nil), "From iCloud Drive")
+        XCTAssertEqual(ReaderCloudWording.source(provider: .googleDrive, chapterNumber: 6), "Chapter 6, from Google Drive")
+        XCTAssertEqual(ReaderCloudWording.source(provider: nil, chapterNumber: nil), "From the cloud service")
         XCTAssertEqual(
-            ReaderCloudWording.downloadStarted(title: "Tide Tables", provider: .dropbox),
+            ReaderCloudWording.downloadStarted(title: "Tide Tables", provider: .dropbox, chapterNumber: nil),
             "Downloading Tide Tables from Dropbox."
         )
         XCTAssertEqual(
-            ReaderCloudWording.downloadStarted(title: "Tide Tables", provider: .other("Box")),
-            "Downloading Tide Tables from Box."
+            ReaderCloudWording.downloadStarted(title: "Tide Tables", provider: .other("Box"), chapterNumber: 6),
+            "Chapter 6 isn't on this Mac. Downloading Tide Tables from Box."
         )
         XCTAssertEqual(ReaderCloudWording.milestone(50), "50 percent downloaded.")
         XCTAssertEqual(ReaderCloudWording.stillDownloading(elapsed: 90), "Still downloading, 1 minute, 30 seconds elapsed.")
@@ -655,6 +814,7 @@ final class ReaderCloudWordingTests: XCTestCase {
             ReaderCloudWording.waitingForSync(title: "Tide Tables", provider: nil),
             "Tide Tables hasn't arrived on this Mac yet. The cloud service may still be syncing it."
         )
+        XCTAssertEqual(ReaderCloudWording.chapterNotDownloaded(number: 3, title: "Tide Tables"), "Chapter 3 of Tide Tables isn't downloaded.")
         XCTAssertEqual(
             ReaderCloudWording.message(for: .download(.stalled(seconds: 60)), title: "Tide Tables", provider: .googleDrive),
             BookCloudError.stalled(seconds: 60).explanation(in: .googleDrive)
@@ -693,7 +853,7 @@ final class ReaderCloudWordingTests: XCTestCase {
 
     /// A download from iCloud Drive, opening the book, at `progress`.
     private static func download(progress: BookDownloadProgress?) -> ReaderDownload {
-        ReaderDownload(provider: .iCloudDrive, startedAt: Date(), progress: progress)
+        ReaderDownload(provider: .iCloudDrive, chapterNumber: nil, startedAt: Date(), progress: progress)
     }
 
     /// Hosts the download view of a download at `progress` offscreen and
