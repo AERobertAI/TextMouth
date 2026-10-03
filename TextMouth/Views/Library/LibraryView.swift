@@ -175,6 +175,10 @@ struct LibraryView: View {
                 }
             }
 
+            // Writes and cleanups that failed stay in view, with Retry, until
+            // they succeed or are dismissed (TODO S09).
+            PersistenceFailureBanner(center: libraryViewModel.failureCenter)
+
             // Category picker
             Picker("View", selection: $category) {
                 ForEach(LibraryCategory.allCases, id: \.self) { cat in

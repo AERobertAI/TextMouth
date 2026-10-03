@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -296,6 +297,48 @@ final class PersistenceFailureCenterTests: XCTestCase {
         XCTAssertEqual(PersistenceFailure.sentence("  The disk is full.\n"), "The disk is full.")
         XCTAssertEqual(PersistenceFailure.sentence("Is the disk full?"), "Is the disk full?")
         XCTAssertEqual(PersistenceFailure.sentence(""), "No reason was given.")
+    }
+
+    /// VoiceOver hears each banner button by the subsystem it acts on, and a
+    /// row without a retry has no Retry button. SwiftUI may build the
+    /// accessibility elements of its buttons only for a connected assistive
+    /// app; when it exposes none here, the test is skipped, and the labels
+    /// are still covered by the wording tests.
+    func testTheBannersButtonsNameTheirSubsystem() throws {
+        center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused()) { _ in }
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        recordingAnnouncements { center.publish() }
+
+        try withHostedControls(PersistenceFailureBanner(center: center)) { controls in
+            let labels = controls.filter { $0.role == .button }.map(\.label)
+            guard !labels.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertTrue(labels.contains("Retry saving settings"), "\(labels)")
+            XCTAssertTrue(labels.contains("Dismiss the notice about library changes"), "\(labels)")
+            XCTAssertFalse(labels.contains("Retry saving library changes"), "that failure has no retry: \(labels)")
+        }
+    }
+
+    /// The banner takes room in the Library window only while it has a row:
+    /// it appears with a failure and goes when the row is dismissed.
+    func testTheBannerTakesRoomOnlyWhileItHasARow() {
+        let hosting = NSHostingView(rootView: PersistenceFailureBanner(center: center))
+        hosting.layoutSubtreeIfNeeded()
+        XCTAssertEqual(hosting.fittingSize.height, 0)
+
+        center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused())
+        recordingAnnouncements { center.publish() }
+        XCTAssertTrue(waitUntil(timeout: 5) {
+            hosting.layoutSubtreeIfNeeded()
+            return hosting.fittingSize.height > 0
+        }, "the banner did not appear")
+
+        center.dismiss(.configuration)
+        XCTAssertTrue(waitUntil(timeout: 5) {
+            hosting.layoutSubtreeIfNeeded()
+            return hosting.fittingSize.height == 0
+        }, "the dismissed banner did not go")
     }
 
     /// The banner's buttons and announcements name their subsystem, so
