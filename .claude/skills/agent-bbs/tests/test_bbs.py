@@ -694,6 +694,19 @@ class InboxTests(BoardTestCase):
     def test_an_unknown_agent_has_no_inbox(self) -> None:
         self.assertIn("unknown agent 'delta'", self.fails("inbox", "delta"))
 
+    def test_a_newcomer_gets_findings_about_its_files_but_not_old_traffic(self) -> None:
+        with self.clock(NOON):
+            self.post("beta", "--tag", "build", "--topic", "old notice for everyone")
+            finding = self.post("beta", "--tag", "finding", "--file", "TextMouth/Audio/Player.swift")
+        with self.clock(NOON + dt.timedelta(minutes=5)):
+            self.register("delta", "TextMouth/Audio/")
+            self.assertEqual([m["id"] for m in self.ok_json("inbox", "delta", "--peek")], [finding])
+            fresh = self.post("beta", "--topic", "new notice for everyone")
+        with self.clock(NOON + dt.timedelta(minutes=9)):
+            self.ok("register", "delta", "--role", "a new role")  # re-registering keeps the start
+            self.assertEqual([m["id"] for m in self.ok_json("inbox", "delta")], [finding, fresh])
+        self.assertEqual(len(self.ok_json("read")), 3, "the public log still holds everything")
+
 
 class WatchTests(BoardTestCase):
     """watch: waiting for messages, and its exit statuses."""

@@ -46,7 +46,7 @@ How paths are read:
       bbs post archivebounds --tag finding --file TextMouth/Services/DOCXParser.swift --topic "DOCXParser leaves the archive open on a missing entry" --body "extract(_:) returns at the guard without closing it. Not fixing it on this branch."
       bbs post livestats --reply-to 12 --body "Seen; fixing it in my next commit."
 
-- `bbs inbox NAME [--unread] [--since ID|TIME] [--tag TAG] [--last N] [--peek]` shows the messages that concern you, newest last. Those are messages to you, to `all`, or tied to files under your current claims, but never your own posts. It marks the messages it shows as read, unless you add `--peek`.
+- `bbs inbox NAME [--unread] [--since ID|TIME] [--tag TAG] [--last N] [--peek]` shows the messages that concern you, newest last. Those are messages to you or to `all` posted since you first registered, plus messages tied to files under your current claims whenever they were posted, but never your own posts. It marks the messages it shows as read, unless you add `--peek`. Earlier traffic stays in the public log (`bbs read`). To reach an agent that has not registered yet, tie the message to the files it will claim.
 
       bbs inbox archivebounds --unread
 
@@ -79,7 +79,7 @@ The board is `$TEXTMOUTH_BBS_DIR/board.sqlite` when that variable is set. Otherw
 <!-- protocol:begin -->
 **Message board protocol.** Other agents work in this repository at the same time, each in its own worktree, and you coordinate with them on a shared message board. Below, `bbs` means `python3 .claude/skills/agent-bbs/scripts/bbs.py` run from your worktree root, and NAME is your agent name, which is your task slug.
 
-1. **On start**, register with your role, your branch, and the files you expect to edit, then look for overlaps: `bbs register NAME --role "ONE LINE" --branch BRANCH --files PATH ...`, then `bbs claims`. Claim files you take on later with `bbs claim NAME PATH ...`, and quote globs.
+1. **On start**, register with your role, your branch, and the files you expect to edit, then look for overlaps and catch up on recent traffic: `bbs register NAME --role "ONE LINE" --branch BRANCH --files PATH ...`, then `bbs claims` and `bbs read --last 10`. Claim files you take on later with `bbs claim NAME PATH ...`, and quote globs.
 2. **Read your inbox** with `bbs inbox NAME --unread` before every build, before every commit, and before your final report, and act on what concerns you.
 3. **Before a full-suite run**, post a build notice: `bbs post NAME --tag build --topic "full suite"`. Run every build as `BBS_AGENT=NAME .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild ...`, so the board shows you as building while you hold a slot.
 4. **After each commit**, post its hash and subject, which `git log -1 --format='%h %s'` prints: `bbs post NAME --tag commit --topic "HASH SUBJECT"`.

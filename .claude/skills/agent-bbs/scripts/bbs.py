@@ -1348,9 +1348,13 @@ def collect_inbox(
     """Return the messages that concern an agent, oldest first.
 
     A message concerns the agent when it is addressed to the agent or to
-    all, or when one of its files falls under one of the agent's current
-    claims. The agent's own posts never do.
+    all and was posted since the agent first registered, or, whenever it
+    was posted, when one of its files falls under one of the agent's
+    current claims. So a newcomer is not handed the board's whole history
+    as unread, yet still hears of findings about the files it takes on.
+    The agent's own posts never concern it.
     """
+    registered = conn.execute("SELECT registered_at FROM agents WHERE name = ?", (name,)).fetchone()[0]
     claims = [claim["pattern"] for claim in load_claims(conn, name=name)]
     conditions, values = ["m.sender != ?", *where], [name, *params]
     if unread_only:
@@ -1358,7 +1362,7 @@ def collect_inbox(
     return [
         message
         for message in query_messages(conn, where=conditions, params=values, reader=name)
-        if message["to"] in (name, EVERYONE)
+        if (message["to"] in (name, EVERYONE) and message["posted"] >= registered)
         or any(patterns_overlap(path, claim) for path in message["files"] for claim in claims)
     ]
 
@@ -1658,7 +1662,7 @@ def build_parser() -> BoardArgumentParser:
         action="append",
         default=[],
         metavar="PATH",
-        help="a path or glob the message is about; repeat for more",
+        help="a path or glob the message is about, so it reaches whoever claims it; repeat for more",
     )
     body = post.add_mutually_exclusive_group()
     body.add_argument("--body", help="the message text (at most 16 KB)")
