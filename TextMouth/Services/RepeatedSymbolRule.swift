@@ -173,9 +173,9 @@ struct RepeatedSymbolRule: Equatable, Sendable {
 
     /// `words` with a space in front when the speech so far ends in a
     /// character that is not white space, and a space after when the text
-    /// after the run begins with one, so the words never run into their
-    /// neighbours: "Name:________" becomes "Name: 8 underscores". Nothing is
-    /// added to an empty replacement.
+    /// after the run begins with such a character, so the words never run
+    /// into their neighbours: "Name:________" becomes "Name: 8 underscores".
+    /// Nothing is added to an empty replacement.
     static func padded(_ words: String, after previous: Character?, before next: Character?) -> String {
         guard !words.isEmpty else { return words }
         let leading = previous.map { !$0.isWhitespace } ?? false ? " " : ""
@@ -278,11 +278,12 @@ struct RepeatedSymbolRule: Equatable, Sendable {
 /// use, maps the inside of a span linearly: the middle of an 80-symbol run
 /// would land 50 characters past its 15-character replacement, inside the
 /// next sentence. Here the inside of the longer span is folded onto the
-/// shorter one in pieces no longer than the shorter span, each restarting at
-/// its beginning, so every offset stays within the replacement or its run.
+/// shorter one in pieces, each starting again just after the shorter span's
+/// first character, so every offset stays within the replacement or its run.
 ///
 /// Each span keeps its start and end exactly: the start of a run maps to the
-/// start of its replacement and back, and so does the end.
+/// start of its replacement and back, and so does the end. An empty
+/// replacement's start is its end, so it maps back to the run's end.
 struct SpanReplacementMap {
     /// The breakpoints so far, in target order, as `OffsetMap` takes them.
     private(set) var points: [(targetPos: Int, cumulativeDelta: Int)] = []
