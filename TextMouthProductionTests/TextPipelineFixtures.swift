@@ -581,6 +581,20 @@ enum TextPipelineFixtures {
         return folder
     }
 
+    // MARK: - Timing
+
+    /// The fastest of `runs` runs of `body`, in seconds: the run least
+    /// disturbed by whatever else the machine was doing.
+    static func fastestTime(of runs: Int, _ body: () throws -> Void) rethrows -> Double {
+        var fastest = Double.infinity
+        for _ in 0..<max(1, runs) {
+            let start = DispatchTime.now().uptimeNanoseconds
+            try body()
+            fastest = min(fastest, Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000_000)
+        }
+        return fastest
+    }
+
     // MARK: - Importing
 
     /// Import `source` as a reader imports it, into the hosted tests'

@@ -522,15 +522,33 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Inline Wrappers
 
+    /// Where an inline wrapper goes in the Markdown being built: the stretch
+    /// from `contentStart` to the end of the Markdown is the element's own
+    /// content, and the opener goes before `lower` and the closer before
+    /// `upper`, both within that stretch.
+    private struct InlineSpan {
+        var contentStart: String.Index
+        var lower: String.Index
+        var upper: String.Index
+    }
+
     /// Wrap the Markdown written since `start` (a UTF-8 offset into `result`)
     /// in `opener` and `closer`, leaving whitespace at either end outside.
     /// Words spanning lines (a block or line break inside the element) cannot
     /// form one inline span, and empty content needs no wrapper: both are
     /// left unwrapped, so only the words remain.
     private static func wrap(from start: Int, in result: inout String, opener: String, closer: String) {
+        guard let span = wrapSpan(from: start, in: result) else { return }
+        insert(opener, closer, around: span, in: &result)
+    }
+
+    /// Where `wrap` puts its opener and closer around the Markdown written
+    /// since `start`, or nil when it leaves the words unwrapped. Found here,
+    /// apart from the insertion, for the reason `insert` gives.
+    private static func wrapSpan(from start: Int, in result: String) -> InlineSpan? {
         let scalars = result.unicodeScalars
         let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
-        guard !scalars[contentStart...].contains("\n") else { return }
+        guard !scalars[contentStart...].contains("\n") else { return nil }
         var lower = contentStart
         var upper = scalars.endIndex
         while lower < upper, scalars[lower] == " " {
@@ -539,8 +557,8 @@ enum HTMLToMarkdownConverter {
         while upper > lower, scalars[scalars.index(before: upper)] == " " {
             upper = scalars.index(before: upper)
         }
-        guard lower < upper else { return }
-        insert(opener, at: lower, closer, at: upper, afterContentStart: contentStart, in: &result)
+        guard lower < upper else { return nil }
+        return InlineSpan(contentStart: contentStart, lower: lower, upper: upper)
     }
 
     /// Mark the Markdown written since `start` as emphasis with `delimiter`,
@@ -559,9 +577,17 @@ enum HTMLToMarkdownConverter {
     /// written right after a delimiter, with which it would merge into one
     /// run: this is what keeps emphasis beside emphasis apart.
     private static func emphasize(from start: Int, in result: inout String, delimiter: String) {
+        guard let span = emphasisSpan(from: start, in: result) else { return }
+        insert(delimiter, delimiter, around: span, in: &result)
+    }
+
+    /// Where `emphasize` puts its delimiters around the Markdown written
+    /// since `start`, or nil where CommonMark would not read them as a pair.
+    /// Found here, apart from the insertion, for the reason `insert` gives.
+    private static func emphasisSpan(from start: Int, in result: String) -> InlineSpan? {
         let scalars = result.unicodeScalars
         let contentStart = result.utf8.index(result.utf8.startIndex, offsetBy: start)
-        guard !scalars[contentStart...].contains("\n") else { return }
+        guard !scalars[contentStart...].contains("\n") else { return nil }
         var lower = contentStart
         var upper = scalars.endIndex
         // Leave whitespace, escapes (a backslash and the ASCII punctuation it
@@ -588,13 +614,13 @@ enum HTMLToMarkdownConverter {
                 break
             }
         }
-        guard lower < upper else { return }
+        guard lower < upper else { return nil }
         let previous = lower > scalars.startIndex ? scalars[scalars.index(before: lower)] : nil
         let followsBoundary = previous.map { $0 == " " || $0 == "\n" || MarkdownLiteral.isASCIIPunctuation($0) } ?? true
         guard previous != "*",
               isFlankingSafe(scalars[lower]) || followsBoundary,
-              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return }
-        insert(delimiter, at: lower, delimiter, at: upper, afterContentStart: contentStart, in: &result)
+              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return nil }
+        return InlineSpan(contentStart: contentStart, lower: lower, upper: upper)
     }
 
     /// Letters, digits, and marks. CommonMark counts none of them as
@@ -631,24 +657,39 @@ enum HTMLToMarkdownConverter {
         return backslashes % 2 == 1
     }
 
-    /// Rewrite the Markdown from `contentStart` to the end of `result` with
-    /// `opener` inserted at `lower` and `closer` at `upper`. All three
-    /// indexes lie in that final stretch, so the work is proportional to the
-    /// wrapped content rather than to the chapter.
-    private static func insert(
-        _ opener: String, at lower: String.Index,
-        _ closer: String, at upper: String.Index,
-        afterContentStart contentStart: String.Index,
-        in result: inout String
-    ) {
-        let scalars = result.unicodeScalars
-        var wrapped = String.UnicodeScalarView()
-        wrapped.append(contentsOf: scalars[contentStart..<lower])
-        wrapped.append(contentsOf: opener.unicodeScalars)
-        wrapped.append(contentsOf: scalars[lower..<upper])
-        wrapped.append(contentsOf: closer.unicodeScalars)
-        wrapped.append(contentsOf: scalars[upper...])
-        result.unicodeScalars.replaceSubrange(contentStart..., with: wrapped)
+    /// Rewrite the Markdown from `span.contentStart` to the end of `result`
+    /// with `opener` inserted before `span.lower` and `closer` before
+    /// `span.upper`. All three indexes lie in that final stretch, so the
+    /// work is proportional to the wrapped content rather than to the
+    /// chapter, but only while `result` is the one reference to its storage
+    /// when the stretch is replaced. A view of `result` alive at that moment
+    /// (a `unicodeScalars` constant in this function or in its caller, as
+    /// there once were) shares the storage, so the standard library cannot
+    /// replace the stretch in place: it copies the whole Markdown converted
+    /// so far, scalar by scalar, and every emphasis and link then cost as
+    /// much as everything before it (PERF18). So the span is found by a
+    /// function that has returned, and the new stretch is built by another.
+    private static func insert(_ opener: String, _ closer: String, around span: InlineSpan, in result: inout String) {
+        let stretch = rewrapped(result, around: span, opener: opener, closer: closer)
+        result.unicodeScalars.replaceSubrange(span.contentStart..., with: stretch)
+    }
+
+    /// The stretch of `markdown` from `span.contentStart` to its end, with
+    /// `opener` before `span.lower` and `closer` before `span.upper`.
+    private static func rewrapped(
+        _ markdown: String,
+        around span: InlineSpan,
+        opener: String,
+        closer: String
+    ) -> String.UnicodeScalarView {
+        let scalars = markdown.unicodeScalars
+        var stretch = String.UnicodeScalarView()
+        stretch.append(contentsOf: scalars[span.contentStart..<span.lower])
+        stretch.append(contentsOf: opener.unicodeScalars)
+        stretch.append(contentsOf: scalars[span.lower..<span.upper])
+        stretch.append(contentsOf: closer.unicodeScalars)
+        stretch.append(contentsOf: scalars[span.upper...])
+        return stretch
     }
 
     /// The length of the longest run of `scalar` in `text`.

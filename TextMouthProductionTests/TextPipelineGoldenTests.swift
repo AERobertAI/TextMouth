@@ -196,6 +196,24 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
     }
 
+    /// Converting HTML takes time in proportion to its length, however many
+    /// emphases and links it holds. Each one once copied all the Markdown
+    /// converted before it (PERF18), so eight times the document took about
+    /// forty times as long in a Debug build (and sixty in Release); now it
+    /// takes about eight times as long. The bound between the two leaves
+    /// room for a busy machine, and each time is the fastest of three runs.
+    func testInlineMarkupConversionTimeGrowsInProportionToTheDocument() throws {
+        let short = TextPipelineFixtures.html(bytes: 32_768)
+        let long = TextPipelineFixtures.html(bytes: 262_144)
+        let shortTime = try TextPipelineFixtures.fastestTime(of: 3) { _ = try HTMLToMarkdownConverter.convert(short) }
+        let longTime = try TextPipelineFixtures.fastestTime(of: 3) { _ = try HTMLToMarkdownConverter.convert(long) }
+        print(String(format: "PERF18 scaling: %.1f ms for 32 KB, %.1f ms for 256 KB", shortTime * 1_000, longTime * 1_000))
+        XCTAssertLessThan(
+            longTime, shortTime * 20,
+            String(format: "%.0f ms for 256 KB against %.0f ms for 32 KB", longTime * 1_000, shortTime * 1_000)
+        )
+    }
+
     /// The review's synthetic HTML, with and without inline markup, converts
     /// to the recorded Markdown, by digest.
     private static let recordedSyntheticConversions: [String: String] = [
