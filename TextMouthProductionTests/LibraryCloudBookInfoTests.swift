@@ -16,7 +16,7 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         let calls = ReadLog()
         let reader = LibraryBookInfoReader(
             isDataless: { _ in calls.note("isDataless"); return false },
-            readEPUBMetadata: { _ in calls.note("readEPUB"); return Self.fileMetadata },
+            readEPUBMetadata: { _ in calls.note("readEPUB"); return epubFileMetadata },
             readAudioMetadata: { _ in calls.note("readAudio"); return AudioMetadata() }
         )
 
@@ -39,7 +39,7 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         let calls = ReadLog()
         let reader = LibraryBookInfoReader(
             isDataless: { _ in calls.note("isDataless"); return true },
-            readEPUBMetadata: { _ in calls.note("readEPUB"); return Self.fileMetadata },
+            readEPUBMetadata: { _ in calls.note("readEPUB"); return epubFileMetadata },
             readAudioMetadata: { _ in calls.note("readAudio"); return AudioMetadata() }
         )
 
@@ -114,7 +114,7 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         let calls = ReadLog()
         let reader = LibraryBookInfoReader(
             isDataless: { _ in calls.note("isDataless"); return false },
-            readEPUBMetadata: { _ in calls.note("readEPUB"); return Self.fileMetadata },
+            readEPUBMetadata: { _ in calls.note("readEPUB"); return epubFileMetadata },
             readAudioMetadata: { _ in
                 calls.note("readAudio")
                 return AudioMetadata(title: "Tag Title", artist: "Tag Artist", album: "Tag Album", duration: "9:41", fileFormat: "M4B")
@@ -141,7 +141,7 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         let calls = ReadLog()
         let reader = LibraryBookInfoReader(
             isDataless: { _ in calls.note("isDataless"); return true },
-            readEPUBMetadata: { _ in calls.note("readEPUB"); return Self.fileMetadata },
+            readEPUBMetadata: { _ in calls.note("readEPUB"); return epubFileMetadata },
             readAudioMetadata: { _ in calls.note("readAudio"); return AudioMetadata() }
         )
 
@@ -166,7 +166,7 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         let calls = ReadLog()
         let reader = LibraryBookInfoReader(
             isDataless: { _ in calls.note("isDataless"); return false },
-            readEPUBMetadata: { _ in calls.note("readEPUB"); return Self.fileMetadata },
+            readEPUBMetadata: { _ in calls.note("readEPUB"); return epubFileMetadata },
             readAudioMetadata: { _ in calls.note("readAudio"); return AudioMetadata() }
         )
 
@@ -194,18 +194,6 @@ final class LibraryCloudBookInfoTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// What the EPUB's file says.
-    private static let fileMetadata = EPUBMetadata(
-        title: "Middlemarch: A Study of Provincial Life",
-        author: "Eliot, George",
-        publisher: "Penguin Classics",
-        publicationDate: "1871",
-        isbn: "9780141439549",
-        language: "en",
-        identifier: "urn:isbn:9780141439549",
-        epubVersion: "3.0"
-    )
-
     /// An EPUB whose publisher was edited in the library.
     private func epubBook() -> Book {
         var book = cloudTestBook("Middlemarch", author: "George Eliot")
@@ -223,6 +211,20 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         return book
     }
 }
+
+/// What the tests' EPUB file says. It lives outside the main-actor test
+/// class, so the readers' `@Sendable` closures can return it from any
+/// thread.
+private let epubFileMetadata = EPUBMetadata(
+    title: "Middlemarch: A Study of Provincial Life",
+    author: "Eliot, George",
+    publisher: "Penguin Classics",
+    publicationDate: "1871",
+    isbn: "9780141439549",
+    language: "en",
+    identifier: "urn:isbn:9780141439549",
+    epubVersion: "3.0"
+)
 
 /// The reads a test's `LibraryBookInfoReader` was asked for, in order, and
 /// whether each ran on the main thread.
