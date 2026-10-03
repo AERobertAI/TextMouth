@@ -10,9 +10,25 @@ struct ReaderView: View {
     @State private var showMetadataEditor = false
     @State private var showVoicePicker = false
     @State private var showSearch = false
+    /// Closes this reader's window, for Close in the cloud download view.
+    @Environment(\.dismissWindow) private var dismissWindow
     var body: some View {
         VStack(spacing: 0) {
-            if viewModel.isLoading {
+            if let phase = viewModel.cloudPhase {
+                // The book, or the chapter about to play, is being got from
+                // the cloud, or could not be (FR02).
+                ReaderCloudPhaseView(
+                    phase: phase,
+                    title: viewModel.book.title,
+                    provider: viewModel.cloudProvider,
+                    actions: ReaderCloudPhaseView.Actions(
+                        cancel: { viewModel.cancelDownload() },
+                        download: { viewModel.downloadAgain() },
+                        tryAgain: { viewModel.retryOpening() },
+                        close: { dismissWindow() }
+                    )
+                )
+            } else if viewModel.isLoading {
                 ProgressView("Loading book...")
                     .accessibilityLabel("Loading \(viewModel.book.title)")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -191,16 +207,17 @@ struct ReaderView: View {
             viewModel.soundEffectService = soundEffectService
         }
         // A problem met after the book has loaded, such as a chapter whose
-        // audio cannot be played, is shown over the reader, which stays
-        // usable behind it. Return chooses the default button, Retry for
-        // audio and OK otherwise, and Escape cancels.
+        // audio cannot be played or could not be got from the cloud, is
+        // shown over the reader, which stays usable behind it. Return
+        // chooses the default button, Retry (Try Again for the cloud) or
+        // OK, and Escape cancels.
         .alert(
             viewModel.errorAlert?.title ?? "",
             isPresented: errorAlertIsPresented,
             presenting: viewModel.errorAlert
         ) { alert in
             if alert.offersRetry {
-                Button("Retry") {
+                Button(alert.retryTitle) {
                     // SwiftUI closes the alert around this action. Retrying
                     // on the next turn of the main queue lets a retry that
                     // fails again present a fresh alert, rather than having
@@ -340,6 +357,160 @@ struct ReaderView: View {
     /// than the voice icon a sighted user would read as "voice settings".
     static func bookSettingsSymbol(isAudioBook: Bool) -> String {
         isAudioBook ? "gauge.with.needle" : "person.wave.2"
+    }
+}
+
+// MARK: - Cloud Download (FR02)
+
+/// What a reader window shows in place of its book while it gets the book
+/// from the cloud (FR02): the download under way, whose progress bar
+/// VoiceOver lands on, or why the book isn't ready and what can be done.
+/// Every value is spoken as well as shown, and every button is labelled and
+/// reachable from the keyboard.
+struct ReaderCloudPhaseView: View {
+    /// What the view's buttons do.
+    struct Actions {
+        /// Cancel: stops waiting for the download.
+        let cancel: () -> Void
+        /// Download: downloads the book again after a cancel.
+        let download: () -> Void
+        /// Try Again: opens the book afresh.
+        let tryAgain: () -> Void
+        /// Close: closes the reader's window.
+        let close: () -> Void
+    }
+
+    let phase: ReaderCloudPhase
+    /// The book's title.
+    let title: String
+    /// The sync service holding the library, when known.
+    let provider: CloudProvider?
+    let actions: Actions
+
+    var body: some View {
+        Group {
+            switch phase {
+            case .downloading(let download):
+                ReaderDownloadProgressView(download: download, title: title, onCancel: actions.cancel)
+            case .notDownloaded:
+                ReaderCloudMessageView(
+                    symbol: "icloud.and.arrow.down",
+                    message: ReaderCloudWording.notDownloaded(title: title),
+                    primaryTitle: "Download",
+                    primaryHint: "Downloads the book again",
+                    onPrimary: actions.download,
+                    onClose: actions.close
+                )
+            case .failed(let failure):
+                ReaderCloudMessageView(
+                    symbol: "exclamationmark.icloud",
+                    message: ReaderCloudWording.message(for: failure, title: title, provider: provider),
+                    primaryTitle: "Try Again",
+                    primaryHint: "Tries to get the book again",
+                    onPrimary: actions.tryAgain,
+                    onClose: actions.close
+                )
+            case .waitingForSync:
+                ReaderCloudMessageView(
+                    symbol: "arrow.clockwise.icloud",
+                    message: ReaderCloudWording.waitingForSync(title: title, provider: provider),
+                    primaryTitle: "Try Again",
+                    primaryHint: "Looks for the book again",
+                    onPrimary: actions.tryAgain,
+                    onClose: actions.close
+                )
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// A download under way: the heading "Downloading <title>", where it comes
+/// from, a progress bar labelled "Download progress" whose value says how
+/// far it has got, and Cancel (Escape). VoiceOver moves to the progress bar
+/// when the view appears.
+struct ReaderDownloadProgressView: View {
+    let download: ReaderDownload
+    /// The book's title.
+    let title: String
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text(ReaderCloudWording.heading(title: title))
+                .font(.title2)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
+            Text(ReaderCloudWording.source(provider: download.provider, chapterNumber: download.chapterNumber))
+                .foregroundColor(.secondary)
+
+            // The time waited steps every few seconds, so a value read by
+            // VoiceOver or shown on a braille display does not churn.
+            TimelineView(.periodic(from: download.startedAt, by: ReaderCloudWording.elapsedStep)) { context in
+                let elapsed = ReaderCloudWording.elapsed(since: download.startedAt, at: context.date)
+                VStack(spacing: 6) {
+                    // One progress view, with no value while there is no
+                    // percentage, so it stays the same element for
+                    // VoiceOver whether or not it shows one.
+                    ProgressView(value: ReaderCloudWording.fraction(of: download))
+                        .progressViewStyle(.linear)
+                        .accessibilityLabel(ReaderCloudWording.progressLabel)
+                        .accessibilityValue(ReaderCloudWording.progressValue(of: download, elapsed: elapsed, spoken: true))
+                        .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+                    // The bar's value, shown; VoiceOver hears it on the bar.
+                    Text(ReaderCloudWording.progressValue(of: download, elapsed: elapsed, spoken: false))
+                        .font(.callout)
+                        .monospacedDigit()
+                        .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
+                }
+            }
+
+            Button("Cancel", action: onCancel)
+                .keyboardShortcut(.cancelAction)
+                .accessibilityHint("Stops waiting for the download")
+        }
+        .frame(maxWidth: 420)
+    }
+}
+
+/// Why a book isn't ready to read: the reason, which VoiceOver moves to,
+/// and a button to try once more (Return) beside Close.
+struct ReaderCloudMessageView: View {
+    /// The SF Symbol above the message; hidden from VoiceOver.
+    let symbol: String
+    /// What happened, shown and spoken.
+    let message: String
+    /// The title of the button that tries again.
+    let primaryTitle: String
+    /// What that button does, as VoiceOver hints it.
+    let primaryHint: String
+    let onPrimary: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: symbol)
+                .font(.largeTitle)
+                .foregroundColor(.secondary)
+                .accessibilityHidden(true)
+            Text(message)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+                .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+            HStack(spacing: 12) {
+                Button("Close", action: onClose)
+                    .accessibilityHint("Closes this book's window")
+                Button(primaryTitle, action: onPrimary)
+                    .keyboardShortcut(.defaultAction)
+                    .accessibilityHint(primaryHint)
+            }
+        }
+        .frame(maxWidth: 420)
     }
 }
 

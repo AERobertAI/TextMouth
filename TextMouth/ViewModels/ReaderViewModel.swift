@@ -79,6 +79,10 @@ final class ReaderViewModel: ObservableObject {
     /// Cached visible text window for the reader surface.
     @Published private(set) var displayVisibleTextWindow = ""
     @Published var isLoading = true
+    /// What the reader shows in place of its book while it gets the book
+    /// from the cloud (FR02): a download, or why the book isn't ready. Nil
+    /// while it shows the book, or Loading.
+    @Published var cloudPhase: ReaderCloudPhase?
     @Published var errorMessage: String?
     /// The audio failure `errorMessage` reports, kept while the message is
     /// shown so its alert can offer Retry. Nil for every other error.
@@ -126,6 +130,13 @@ final class ReaderViewModel: ObservableObject {
     /// Renders the look-ahead's audio: the shared render queue, unless the
     /// reader was created with its own, as tests do to hold renders.
     let renderScheduler: any SpeechRenderScheduling
+    /// The cloud services the reader gets its book ready with when the
+    /// library is in a cloud location (FR02): the app's, unless the reader
+    /// was created with its own, as tests do.
+    let cloudServices: ReaderCloudServices
+    /// The reader's cloud work: its download, its working copy, and where
+    /// the library was found to be (FR02).
+    var cloudSession = ReaderCloudSession()
     let readingStatsService = ReadingStatsService.shared
     let audioPlaybackService = AudioPlaybackService()
 
@@ -279,6 +290,8 @@ final class ReaderViewModel: ObservableObject {
     ///   - renderScheduler: Renders the next chapter ahead of time. Nil uses
     ///     the shared render queue; tests pass one that holds each render
     ///     until they let it start and finish.
+    ///   - cloud: The cloud services that get a book in a cloud library ready
+    ///     to read (FR02). Nil uses the app's; tests pass fakes.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -286,7 +299,8 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         notificationCenter: NotificationCenter = .default,
-        renderScheduler: (any SpeechRenderScheduling)? = nil
+        renderScheduler: (any SpeechRenderScheduling)? = nil,
+        cloud: ReaderCloudServices? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -297,6 +311,7 @@ final class ReaderViewModel: ObservableObject {
         self.autoplayRequests = autoplayRequests ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
+        self.cloudServices = cloud ?? .app
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -797,116 +812,184 @@ final class ReaderViewModel: ObservableObject {
 
     // MARK: - Content Loading
 
-    private func loadContent() {
+    /// What reading a book's files produced, handed from the background read
+    /// to the reader on the main actor.
+    struct LoadedContent {
+        /// The book's chapters, with their index.
+        let content: DocumentContent
+        /// The index to save with the book when `shouldPersistContentIndex`.
+        let index: BookContentIndex
+        /// A multi-file audiobook's chapter files, where the book was read.
+        let audioFiles: [String]?
+        /// A segmented audiobook's clips, chapter by chapter.
+        let audioSegments: [AudioSegment]?
+        /// An EPUB's own package metadata.
+        let fileMetadata: EPUBMetadata?
+        /// An audiobook's tags.
+        let audioTags: AudioMetadata?
+        /// Whether the index, or the version of the cache it was measured
+        /// from, is new and must be saved with the book.
+        let shouldPersistContentIndex: Bool
+        /// The text cache format version the analysis vouches for.
+        let cacheFormatVersion: String?
+    }
+
+    /// Start getting the book ready to read, showing Loading meanwhile.
+    ///
+    /// The book's library is checked first, off the main thread, since that
+    /// reads file-system metadata (FR02). A book in a library that is not in
+    /// a cloud location is read right away, in the same background step, as
+    /// it always was. A book in a cloud location goes on through its cloud
+    /// state (`continueOpening(in:found:)`): downloaded first when any of its
+    /// files is only in the cloud, and then read without ever waiting on the
+    /// network.
+    func loadContent() {
         isLoading = true
-        let filePath = book.filePath
-        let format = book.format
         let bookCopy = book
+        let storage = cloudServices.storage
+        let package = BookPackage(bookCopy)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            do {
-                let url = URL(fileURLWithPath: filePath)
-                let cacheOutdated = !format.isAudio
-                    && MarkdownCacheService.isCacheOutdated(stored: bookCopy.cacheFormatVersion)
-                let analysis = try BookContentAnalysisService.load(
-                    book: bookCopy,
-                    regenerateTextCache: cacheOutdated
-                )
-                let parsed = analysis.content
-                let audioFiles = analysis.audioFilePaths
-                let audioSegments = analysis.audioSegments
-
-                // Read the metadata the book's files hold: an EPUB's package
-                // metadata, or an audiobook's tags. The book's own edits are
-                // laid over it back on the main actor, from the reader's copy
-                // of the book as it is by then, so an edit the library makes
-                // while the book loads is shown too (TODO P10).
-                var fileMetadata: EPUBMetadata?
-                if format == .epub {
-                    fileMetadata = try? EPUBParser.readMetadata(url: url)
-                }
-                var audioTags: AudioMetadata?
-                if format.isAudio {
-                    audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
-                }
-
-                let loadedAudioFiles = audioFiles
-                let loadedAudioSegments = audioSegments
-                let loadedFileMetadata = fileMetadata
-                let loadedAudioTags = audioTags
-                let loadedContentIndex = analysis.index
-                let shouldPersistContentIndex = !analysis.usedPersistedIndex
-                    || bookCopy.contentIndexVersion != BookContentIndex.currentVersion
-                    || (!format.isAudio
-                        && bookCopy.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)
+            let location = storage.libraryLocation()
+            if location.isCloud {
+                let state = storage.state(of: package)
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, !self.hasClosed else { return }
-                    if let audioFiles = loadedAudioFiles {
-                        // A move the library made while the book loaded left
-                        // the files it loaded from behind (TODO P10).
-                        self.audioChapterFiles = self.book.filePath == filePath
-                            ? audioFiles
-                            : self.audioChapterFilesAtCurrentLocation(audioFiles, index: parsed.contentIndex)
-                    }
-                    if let segs = loadedAudioSegments {
-                        self.audioSegments = segs
-                    }
-                    // Assigning content also publishes its headings.
-                    self.content = parsed
-                    self.epubMetadata = loadedFileMetadata.map { self.book.mergingEditableEPUBMetadata($0) }
-                    self.audioMetadata = loadedAudioTags.map { self.book.mergingEditableAudioMetadata($0) }
-
-                    // Clamp saved reading position to valid range. The chapter
-                    // count can change if the book was re-imported or the cache
-                    // was regenerated with different parsing.
-                    if self.currentChapterIndex < 0 {
-                        self.currentChapterIndex = 0
-                        self.currentCharacterOffset = 0
-                    } else if self.currentChapterIndex >= parsed.chapters.count {
-                        self.currentChapterIndex = max(0, parsed.chapters.count - 1)
-                        self.currentCharacterOffset = 0
-                    }
-                    if self.currentChapterIndex < parsed.chapters.count {
-                        let chapterLen = parsed.chapters[self.currentChapterIndex].text.utf16Length
-                        if self.currentCharacterOffset < 0 || self.currentCharacterOffset > chapterLen {
-                            self.currentCharacterOffset = 0
-                        }
-                    }
-
-                    self.isLoading = false
-
-                    if shouldPersistContentIndex {
-                        self.libraryViewModel.updateContentIndex(
-                            bookID: self.book.id,
-                            index: loadedContentIndex,
-                            cacheFormatVersion: analysis.cacheFormatVersion
-                        )
-                    }
-
-                    // Save position with global offset now that we have chapter data
-                    self.savePosition()
-                    self.refreshPlaybackUI()
-                    // A finished book may have continued to this one while
-                    // it loaded: start playing for it now.
-                    self.claimAutoplayRequest()
+                    self?.continueOpening(in: location, found: state)
                 }
-            } catch {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self, !self.hasClosed else { return }
-                    // The library moved the book while it loaded, so the
-                    // files the load read may have gone from under it: load
-                    // it again from where the book is now (TODO P10).
-                    if self.book.filePath != filePath {
-                        self.loadContent()
-                        return
-                    }
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                    // A book that cannot load cannot play for a finished
-                    // book that continued to it; its error shows instead.
-                    self.discardAutoplayRequest()
-                }
+                return
+            }
+            let result = Result { try ReaderViewModel.readContent(of: bookCopy) }
+            DispatchQueue.main.async { [weak self] in
+                self?.finishLoading(result, readFrom: bookCopy.filePath)
             }
         }
+    }
+
+    /// Reads `book`'s content, with the metadata its files hold: an EPUB's
+    /// package metadata, or an audiobook's tags, from `tagsURL` when given
+    /// (the same file in the book's working copy) and otherwise from the
+    /// book's own file. Runs on a background queue.
+    ///
+    /// The book's own edits are laid over the metadata back on the main
+    /// actor, from the reader's copy of the book as it is by then, so an
+    /// edit the library makes while the book loads is shown too (TODO P10).
+    nonisolated static func readContent(of book: Book, audioTagsFrom tagsURL: URL? = nil) throws -> LoadedContent {
+        let url = book.bookFileURL
+        let format = book.format
+        let cacheOutdated = !format.isAudio
+            && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+        let analysis = try BookContentAnalysisService.load(
+            book: book,
+            regenerateTextCache: cacheOutdated
+        )
+
+        var fileMetadata: EPUBMetadata?
+        if format == .epub {
+            fileMetadata = try? EPUBParser.readMetadata(url: url)
+        }
+        var audioTags: AudioMetadata?
+        if format.isAudio {
+            let tagged = tagsURL ?? url
+            audioTags = (try? waitForAsync { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
+        }
+
+        return LoadedContent(
+            content: analysis.content,
+            index: analysis.index,
+            audioFiles: analysis.audioFilePaths,
+            audioSegments: analysis.audioSegments,
+            fileMetadata: fileMetadata,
+            audioTags: audioTags,
+            shouldPersistContentIndex: !analysis.usedPersistedIndex
+                || book.contentIndexVersion != BookContentIndex.currentVersion
+                || (!format.isAudio
+                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
+            cacheFormatVersion: analysis.cacheFormatVersion
+        )
+    }
+
+    /// Shows what a read of the book at `filePath` produced, or why it
+    /// failed. A closed reader has nothing left to show.
+    private func finishLoading(_ result: Result<LoadedContent, Error>, readFrom filePath: String) {
+        guard !hasClosed else { return }
+        switch result {
+        case .success(let loaded):
+            showLoadedContent(loaded, readFrom: filePath)
+        case .failure(let error):
+            showLoadFailure(error, readFrom: filePath)
+        }
+    }
+
+    /// Shows `loaded`, read from the book at `filePath`: its chapters, its
+    /// headings, its metadata, and its audio files, with the saved position
+    /// kept within the book. Saves a new index, and starts playing for a
+    /// finished book that continued to this one while it loaded.
+    func showLoadedContent(_ loaded: LoadedContent, readFrom filePath: String) {
+        let parsed = loaded.content
+        if let audioFiles = loaded.audioFiles {
+            // A move the library made while the book loaded left
+            // the files it loaded from behind (TODO P10).
+            audioChapterFiles = book.filePath == filePath
+                ? audioFiles
+                : audioChapterFilesAtCurrentLocation(audioFiles, index: parsed.contentIndex)
+        }
+        if let segs = loaded.audioSegments {
+            audioSegments = segs
+        }
+        // Assigning content also publishes its headings.
+        content = parsed
+        epubMetadata = loaded.fileMetadata.map { book.mergingEditableEPUBMetadata($0) }
+        audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
+
+        // Clamp saved reading position to valid range. The chapter
+        // count can change if the book was re-imported or the cache
+        // was regenerated with different parsing.
+        if currentChapterIndex < 0 {
+            currentChapterIndex = 0
+            currentCharacterOffset = 0
+        } else if currentChapterIndex >= parsed.chapters.count {
+            currentChapterIndex = max(0, parsed.chapters.count - 1)
+            currentCharacterOffset = 0
+        }
+        if currentChapterIndex < parsed.chapters.count {
+            let chapterLen = parsed.chapters[currentChapterIndex].text.utf16Length
+            if currentCharacterOffset < 0 || currentCharacterOffset > chapterLen {
+                currentCharacterOffset = 0
+            }
+        }
+
+        isLoading = false
+
+        if loaded.shouldPersistContentIndex {
+            libraryViewModel.updateContentIndex(
+                bookID: book.id,
+                index: loaded.index,
+                cacheFormatVersion: loaded.cacheFormatVersion
+            )
+        }
+
+        // Save position with global offset now that we have chapter data
+        savePosition()
+        refreshPlaybackUI()
+        // A finished book may have continued to this one while
+        // it loaded: start playing for it now.
+        claimAutoplayRequest()
+    }
+
+    /// Shows why the book at `filePath` could not be read, in place of the
+    /// reader.
+    func showLoadFailure(_ error: Error, readFrom filePath: String) {
+        // The library moved the book while it loaded, so the
+        // files the load read may have gone from under it: load
+        // it again from where the book is now (TODO P10).
+        if book.filePath != filePath {
+            loadContent()
+            return
+        }
+        errorMessage = error.localizedDescription
+        isLoading = false
+        // A book that cannot load cannot play for a finished
+        // book that continued to it; its error shows instead.
+        discardAutoplayRequest()
     }
 
     // MARK: - Text Display Window
@@ -1098,6 +1181,10 @@ final class ReaderViewModel: ObservableObject {
         /// Whether the alert offers Retry, as it does for audio that could
         /// not be played, which may play once its file is back.
         let offersRetry: Bool
+        /// The retry button's title: "Retry" for audio that could not be
+        /// played, and "Try Again" for a chapter that could not be got from
+        /// the cloud (FR02), as the download view words it.
+        var retryTitle = "Retry"
     }
 
     /// `errorMessage` while no content has loaded: the book itself could
@@ -1110,6 +1197,16 @@ final class ReaderViewModel: ObservableObject {
     /// which stays usable behind it. Nil when there is no such error.
     var errorAlert: ErrorAlert? {
         guard content != nil, let errorMessage else { return nil }
+        // A chapter whose files could not be got from the cloud stopped the
+        // reader at that chapter, which may play once they are here (FR02).
+        if cloudSession.chapterFailure != nil {
+            return ErrorAlert(
+                title: "Chapter Not Downloaded",
+                message: errorMessage,
+                offersRetry: true,
+                retryTitle: "Try Again"
+            )
+        }
         return ErrorAlert(
             title: audioPlaybackFailure == nil ? "Error" : "Playback Problem",
             message: errorMessage,
@@ -1118,10 +1215,12 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Close the error alert, forgetting the error it showed and, for an
-    /// audio failure, the failure behind it.
+    /// audio failure or a chapter not got from the cloud, the failure behind
+    /// it.
     func dismissErrorAlert() {
         errorMessage = nil
         audioPlaybackFailure = nil
+        cloudSession.chapterFailure = nil
     }
 
     var canReleaseMediaControls: Bool {
@@ -1229,6 +1328,9 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
+        // A download the reader waits for is stopped, and the book's state
+        // found afterwards recorded for the library list (FR02).
+        endCloudWorkForClose()
         playbackUIRefreshWorkItem?.cancel()
         livePositionWorkItem?.cancel()
         livePositionWorkItem = nil
@@ -1249,6 +1351,9 @@ final class ReaderViewModel: ObservableObject {
         if sleepTimerService.ownerID == book.id {
             sleepTimerService.stop()
         }
+        // Playback has stopped, so nothing reads the working copy any more
+        // (FR02).
+        removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
     }
