@@ -14,7 +14,6 @@ struct LibraryWindowView: View {
     /// Presents the New from Text sheet, from the toolbar or through the
     /// router for File > New from Text....
     @State private var showTextInput = false
-    @State private var zipFolderName = ""
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: NSWindow?
 
@@ -92,7 +91,11 @@ struct LibraryWindowView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                libraryViewModel.importFiles(urls: urls, toFolder: currentFolderPath)
+                libraryViewModel.importFiles(
+                    urls: urls,
+                    toFolder: currentFolderPath,
+                    from: ImportOrigin(window: hostWindow)
+                )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
                 libraryViewModel.showError = true
@@ -102,37 +105,6 @@ struct LibraryWindowView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
-        }
-        // Zip folder creation dialog
-        .alert("Create Folder for Imported Books?", isPresented: $libraryViewModel.showZipFolderDialog) {
-            TextField("Folder name", text: $zipFolderName)
-            Button("Create Folder") {
-                libraryViewModel.moveZipBooksToFolder(folderName: zipFolderName)
-                zipFolderName = ""
-            }
-            Button("No Thanks", role: .cancel) {
-                libraryViewModel.pendingZipBooks = []
-            }
-        } message: {
-            Text("\(libraryViewModel.pendingZipBooks.count) books were imported from the ZIP. Would you like to create a new folder to hold them?")
-        }
-        // Delete original file confirmation dialog, in the words of the Trash
-        // preference, which decides where the file goes
-        .alert(
-            libraryViewModel.pendingOriginalFileWording.confirmationTitle,
-            isPresented: $libraryViewModel.showDeleteOriginalDialog
-        ) {
-            Button(libraryViewModel.pendingOriginalFileWording.buttonTitle, role: .destructive) {
-                if let url = libraryViewModel.pendingOriginalURL {
-                    libraryViewModel.deleteOriginalFile(at: url)
-                }
-                libraryViewModel.pendingOriginalURL = nil
-            }
-            Button("Keep", role: .cancel) {
-                libraryViewModel.pendingOriginalURL = nil
-            }
-        } message: {
-            Text(libraryViewModel.pendingOriginalFileWording.confirmationMessage)
         }
         // Remove book confirmation dialog (supports single or multiple books).
         // Its words say whether the files go to the Trash, are deleted
@@ -159,27 +131,11 @@ struct LibraryWindowView: View {
                 Text(removalChoice.message)
             }
         }
-        // Duplicate import dialog
-        .alert("Duplicate Book Found", isPresented: $libraryViewModel.showDuplicateDialog) {
-            Button("Replace Existing") {
-                libraryViewModel.replaceDuplicate()
-            }
-            Button("Keep Both") {
-                libraryViewModel.keepDuplicate()
-            }
-            Button("Cancel", role: .cancel) {
-                libraryViewModel.cancelDuplicate()
-            }
-        } message: {
-            if let existing = libraryViewModel.pendingDuplicateExisting {
-                let choice = "A book matching \"\(existing.title)\" is already in your library. Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?"
-                // A new copy missing chapters says so with the choice, so it
-                // never replaces a complete copy unannounced.
-                let incomplete = libraryViewModel.pendingDuplicateWarning
-                    .map { "\n\nThe copy just imported is incomplete. \($0)" } ?? ""
-                Text(verbatim: choice + incomplete)
-            }
-        }
+        // Import questions: replace or keep a duplicate, delete an original
+        // file, put a ZIP archive's books in a folder. They wait in one queue
+        // and are asked one at a time, each in the window its import started
+        // in (TODO I01).
+        .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
         // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
         // items opened from Finder, opening a book's reader, and Continue to
         // Next Book are app-wide actions: the router hands each to exactly
@@ -293,7 +249,7 @@ struct LibraryWindowView: View {
             // shows one for them, or the router opened one. The import's
             // progress and questions appear there, and each book imported
             // opens afterwards.
-            libraryViewModel.importAndOpenFiles(urls: items)
+            libraryViewModel.importAndOpenFiles(urls: items, from: ImportOrigin(window: hostWindow))
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             // Opens the book's reader window, or brings it forward when it
             // is already open.
@@ -318,10 +274,11 @@ struct LibraryWindowView: View {
     private func presentDAISYFolderPanel() {
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
+        let origin = ImportOrigin(window: hostWindow)
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }
-            viewModel.importDAISYFolders(panel.urls, toFolder: destination)
+            viewModel.importDAISYFolders(panel.urls, toFolder: destination, from: origin)
         }
         if let hostWindow {
             panel.beginSheetModal(for: hostWindow, completionHandler: importChosenFolders)

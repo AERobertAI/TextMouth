@@ -71,7 +71,10 @@ final class OriginalFileDeletionTests: XCTestCase {
         defer { config.config.importDeleteBehavior = previous }
 
         withTrashPreference(movesToTrash: false) {
-            model.handleOriginalFileDeletion(url: original)
+            XCTAssertNil(
+                model.originalFileQuestion(for: original, of: nil, request: ImportRequest()),
+                "Delete After Import asks nothing"
+            )
         }
 
         XCTAssertEqual(center.outstandingFailures().map(\.key), [.originalFile(original.path)])
@@ -190,16 +193,17 @@ final class OriginalFileDeletionTests: XCTestCase {
     /// which the deletion reads too, and names the file it asks about.
     func testTheLibrarysConfirmationFollowsThePreferenceAndNamesTheFile() {
         let model = LibraryViewModel(initializeServices: false)
-        model.pendingOriginalURL = URL(fileURLWithPath: "/Downloads/Atlas.epub")
+        let original = ImportDecision.OriginalFile(url: URL(fileURLWithPath: "/Downloads/Atlas.epub"), bookID: nil)
+        model.ask(ImportDecision(kind: .originalFile(original), request: ImportRequest()))
 
         withTrashPreference(movesToTrash: true) {
             XCTAssertEqual(
-                model.pendingOriginalFileWording,
+                model.currentImportDecisionWording?.originalFile,
                 OriginalFileDeletionWording(movesToTrash: true, fileName: "Atlas.epub")
             )
         }
         withTrashPreference(movesToTrash: false) {
-            XCTAssertEqual(model.pendingOriginalFileWording.buttonTitle, "Delete Permanently")
+            XCTAssertEqual(model.currentImportDecisionWording?.originalFile?.buttonTitle, "Delete Permanently")
         }
     }
 

@@ -446,7 +446,7 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         try FileManager.default.copyItem(at: URL(fileURLWithPath: book.filePath), to: source)
 
         let reimported = try FileImportService.importFile(from: source, toFolder: book.folderPath)
-        XCTAssertTrue(model.addBookCheckingDuplicate(reimported, toFolder: book.folderPath))
+        XCTAssertTrue(model.addBookCheckingDuplicate(reimported))
         model.save()
         LibraryPersistenceService.flushPendingSave()
         let restarted = LibraryViewModel(initializeServices: false)

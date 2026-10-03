@@ -474,8 +474,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
                 "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book. "
                     + "The original file was kept."
             )
-            XCTAssertFalse(library.showDeleteOriginalDialog)
-            XCTAssertNil(library.pendingOriginalURL)
+            XCTAssertTrue(library.importDecisions.isEmpty)
             XCTAssertEqual(debugLogLines(containing: "EPUB_INCOMPLETE_CONTENT: \(title): ").count, 1)
         }
     }
@@ -500,7 +499,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
                 XCTAssertEqual(library.library.books.map(\.id), [imported.book.id], "\(behavior)")
                 XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 2)
                 XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path), "\(behavior)")
-                XCTAssertFalse(library.showDeleteOriginalDialog, "\(behavior)")
+                XCTAssertTrue(library.importDecisions.isEmpty, "\(behavior)")
                 XCTAssertTrue(library.showError, "\(behavior)")
                 XCTAssertEqual(
                     library.errorMessage,
@@ -525,8 +524,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
             library.completeSingleImportedBook(try importWithReport(asked), originalURL: asked)
 
             XCTAssertFalse(library.showError)
-            XCTAssertTrue(library.showDeleteOriginalDialog)
-            XCTAssertEqual(library.pendingOriginalURL, asked)
+            XCTAssertEqual(library.importDecisions.current?.originalFile?.url, asked)
         }
 
         let deleted = try makeEPUB(chapters: Self.threeChapters)
@@ -558,7 +556,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
             XCTAssertNil(imported.warning)
             XCTAssertEqual(imported.report.blankChapterCount, 1)
             XCTAssertFalse(library.showError)
-            XCTAssertTrue(library.showDeleteOriginalDialog)
+            XCTAssertEqual(library.importDecisions.current?.originalFile?.url, epub)
         }
     }
 
@@ -580,16 +578,15 @@ final class EPUBPartialExtractionTests: XCTestCase {
 
             library.completeSingleImportedBook(imported, originalURL: epub)
 
-            XCTAssertTrue(library.showDuplicateDialog)
+            let duplicate = try XCTUnwrap(library.importDecisions.current?.duplicate)
             XCTAssertFalse(library.showError)
-            XCTAssertEqual(library.pendingDuplicateWarning, imported.warning)
-            XCTAssertNil(library.pendingDuplicateOriginalURL)
+            XCTAssertEqual(duplicate.warning, imported.warning)
+            XCTAssertNil(duplicate.originalURL)
 
-            library.keepDuplicate()
+            library.answerCurrentImportDecision(.keepBoth)
 
             XCTAssertEqual(library.library.books.map(\.id), [existing.id, imported.book.id])
-            XCTAssertNil(library.pendingDuplicateWarning)
-            XCTAssertFalse(library.showDeleteOriginalDialog)
+            XCTAssertTrue(library.importDecisions.isEmpty, "keeping an incomplete copy asks nothing more")
             XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path))
         }
     }
@@ -637,12 +634,11 @@ final class EPUBPartialExtractionTests: XCTestCase {
         try removeMember("OEBPS/ch02.xhtml", from: epub)
         let imported = try importWithReport(epub)
         let library = Self.emptyLibrary()
-        let opened = XCTNSNotificationExpectation(name: .openBookWindow)
-        opened.isInverted = true
+        let opened = OpenedBooks(recordingFor: library)
 
-        library.completeSingleImportedBook(imported, originalURL: epub, openAfterImport: true)
+        library.completeSingleImportedBook(imported, originalURL: epub, request: ImportRequest(opensAfterImport: true))
 
-        wait(for: [opened], timeout: 0.2)
+        XCTAssertEqual(opened.ids, [])
         XCTAssertTrue(library.showError)
         XCTAssertEqual(library.library.books.map(\.id), [imported.book.id])
     }

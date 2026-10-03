@@ -55,8 +55,7 @@ final class IntegrationImportTests: XCTestCase {
         )
         XCTAssertEqual(model.importProgressMessage, "", "The import progress is still shown")
         XCTAssertEqual(try Data(contentsOf: epub), originalBytes, "The original file changed")
-        XCTAssertFalse(model.showDeleteOriginalDialog, "Deleting the original was offered")
-        XCTAssertNil(model.pendingOriginalURL)
+        XCTAssertTrue(model.importDecisions.isEmpty, "Deleting the original was offered")
     }
 
     // MARK: - Fixture

@@ -235,10 +235,10 @@ final class DAISYPackageImportTests: XCTestCase {
         model.library = Library(books: [first.book])
         model.completeSingleImportedBook(second, originalURL: copy.appendingPathComponent("ncc.html"))
 
-        XCTAssertTrue(model.showDuplicateDialog)
-        XCTAssertEqual(model.pendingDuplicateExisting?.id, first.book.id)
-        XCTAssertEqual(model.pendingDuplicateBook?.id, second.book.id)
-        XCTAssertNil(model.pendingDuplicateOriginalURL)
+        let duplicate = try XCTUnwrap(model.importDecisions.current?.duplicate)
+        XCTAssertEqual(duplicate.existing.id, first.book.id)
+        XCTAssertEqual(duplicate.book.id, second.book.id)
+        XCTAssertNil(duplicate.originalURL)
     }
 
     /// Any other source's import checksum is the MD5 of its file, as before.
@@ -274,8 +274,7 @@ final class DAISYPackageImportTests: XCTestCase {
             }
 
             XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id }, folder.lastPathComponent)
-            XCTAssertFalse(model.showDeleteOriginalDialog, folder.lastPathComponent)
-            XCTAssertNil(model.pendingOriginalURL, folder.lastPathComponent)
+            XCTAssertTrue(model.importDecisions.isEmpty, folder.lastPathComponent)
             XCTAssertTrue(FileManager.default.fileExists(atPath: original.path), folder.lastPathComponent)
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: packageFolder.appendingPathComponent("notes.txt").path))
@@ -362,12 +361,18 @@ final class DAISYPackageImportTests: XCTestCase {
 
         withImportDeleteBehavior(.keepOriginal) {
             model.importZipAsync(from: archive, toFolder: folderPath)
-            XCTAssertTrue(eventually(within: 60) { model.showZipFolderDialog || model.showError }, "the batch never finished")
+            XCTAssertTrue(
+                eventually(within: 60) { model.importDecisions.current?.zipBatch != nil || model.showError },
+                "the batch never finished"
+            )
         }
 
         XCTAssertFalse(model.showError, model.errorMessage ?? "")
         XCTAssertEqual(model.library.books.map(\.format.rawValue).sorted(), ["daisy", "daisy", "epub"])
-        XCTAssertEqual(Set(model.pendingZipBooks.map(\.id)), Set(model.library.books.map(\.id)))
+        XCTAssertEqual(
+            Set(model.importDecisions.current?.zipBatch?.books.map(\.id) ?? []),
+            Set(model.library.books.map(\.id))
+        )
     }
 
     /// A DAISY book that appears twice in an archive, in two folders, is
