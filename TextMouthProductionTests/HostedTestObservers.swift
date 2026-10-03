@@ -11,6 +11,50 @@ final class TextMouthTestBundle: NSObject {
         XCTestObservationCenter.shared.addTestObserver(ConfigSaveFlush.shared)
         XCTestObservationCenter.shared.addTestObserver(ReaderWindowLeakCheck.shared)
         XCTestObservationCenter.shared.addTestObserver(DataDirectoryLeakCheck.shared)
+        XCTestObservationCenter.shared.addTestObserver(HostedSandboxCleanup.shared)
+    }
+}
+
+/// Keeps the temporary folder from filling with hosted-test sandboxes
+/// (PERF26).
+///
+/// Each process hosting the tests works in a sandbox of its own,
+/// `TextMouthTests-<process identifier>` in the temporary folder (see
+/// `TextMouthRuntime`), which used to stay behind after every run: a
+/// thousand of them once filled the disk. As the bundle starts, this
+/// deletes the sandboxes of processes that have ended, off the main thread,
+/// so a first sweep of many never delays the tests; as it finishes, it waits
+/// for that sweep, since a short run can end before it, and then deletes
+/// this process's own sandbox, unless TEXTMOUTH_KEEP_SANDBOX=1 keeps it. A
+/// run that crashes leaves its sandbox to the next run's sweep.
+///
+/// `@unchecked Sendable`: XCTest reports to observers on the main thread,
+/// where `sawBundleStart` alone is set; the dispatch group is thread-safe.
+final class HostedSandboxCleanup: NSObject, XCTestObservation, @unchecked Sendable {
+    /// The cleanup the principal class registers.
+    static let shared = HostedSandboxCleanup()
+
+    /// The longest the end of a run waits for its sweep: far longer than a
+    /// sweep takes, and short enough that a stuck one never hangs the run.
+    static let sweepWaitLimit: DispatchTimeInterval = .seconds(60)
+
+    /// Whether XCTest reported the start of the bundle to this cleanup,
+    /// which proves the principal class registered it.
+    private(set) var sawBundleStart = false
+
+    /// The sweep started with the bundle, until it finishes.
+    private let sweep = DispatchGroup()
+
+    func testBundleWillStart(_ testBundle: Bundle) {
+        sawBundleStart = true
+        DispatchQueue.global(qos: .userInitiated).async(group: sweep) {
+            TextMouthRuntime.removeAbandonedSandboxes()
+        }
+    }
+
+    func testBundleDidFinish(_ testBundle: Bundle) {
+        _ = sweep.wait(timeout: .now() + Self.sweepWaitLimit)
+        TextMouthRuntime.current.finishWithSandbox()
     }
 }
 

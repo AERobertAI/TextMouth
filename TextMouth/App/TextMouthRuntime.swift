@@ -24,7 +24,9 @@ import Foundation
 /// In a process hosting tests they are a sandbox folder in the temporary
 /// directory, named after the process, and a preferences store kept inside
 /// that folder, so nothing a test does reaches the real library, legacy
-/// data, or preferences.
+/// data, or preferences. The sandbox lasts as long as its process: the
+/// hosted tests delete it as they finish, and sweep away the sandboxes of
+/// processes that ended without deleting theirs (see Sandbox Lifetime).
 ///
 /// A runtime is an immutable value, and `current` never changes. A test that
 /// checks how a decision goes in the app builds its own runtime with
@@ -51,14 +53,26 @@ struct TextMouthRuntime: @unchecked Sendable {
     /// app, whose preferences the system keeps.
     let preferencesFile: URL?
 
+    /// Whether `homeDirectory`, the sandbox of a process hosting tests, stays
+    /// after the process finishes with it: only when `keepSandboxVariable`
+    /// asks. Always false in the app, whose home is the user's.
+    let keepsSandbox: Bool
+
     /// A runtime made of exactly these parts. Tests build one to ask how a
     /// decision goes in the app, or under hosted tests, without touching
     /// `current`.
-    init(isHostedTest: Bool, homeDirectory: URL, preferences: UserDefaults, preferencesFile: URL? = nil) {
+    init(
+        isHostedTest: Bool,
+        homeDirectory: URL,
+        preferences: UserDefaults,
+        preferencesFile: URL? = nil,
+        keepsSandbox: Bool = false
+    ) {
         self.isHostedTest = isHostedTest
         self.homeDirectory = homeDirectory
         self.preferences = preferences
         self.preferencesFile = preferencesFile
+        self.keepsSandbox = isHostedTest && keepsSandbox
     }
 
     // MARK: - This Process
@@ -68,10 +82,12 @@ struct TextMouthRuntime: @unchecked Sendable {
 
     /// This process's runtime, decided at first use from its environment.
     ///
-    /// A process hosting tests starts with an empty preferences store: the
-    /// sandbox is named after the process identifier, which the system
-    /// reuses, so an earlier run's store could otherwise carry its values
-    /// into this one.
+    /// A process hosting tests starts with an empty sandbox and an empty
+    /// preferences store: the sandbox is named after the process identifier,
+    /// which the system reuses, so an earlier run that crashed, or kept its
+    /// sandbox, could otherwise carry its library and its values into this
+    /// one. Everything this process writes derives its place from `current`,
+    /// so nothing has used the sandbox yet when it is cleared here.
     static let current: TextMouthRuntime = {
         let process = ProcessInfo.processInfo
         let runtime = detect(
@@ -79,6 +95,9 @@ struct TextMouthRuntime: @unchecked Sendable {
             processIdentifier: process.processIdentifier,
             temporaryDirectory: FileManager.default.temporaryDirectory
         )
+        if runtime.isHostedTest {
+            clearEarlierSandbox(at: runtime.homeDirectory)
+        }
         runtime.emptySandboxedPreferences()
         return runtime
     }()
@@ -93,7 +112,8 @@ struct TextMouthRuntime: @unchecked Sendable {
     ///   - temporaryDirectory: Where a process hosting tests keeps its sandbox.
     /// - Returns: The user's real home and the standard preferences for the
     ///   app; for a process hosting tests, a sandbox folder in
-    ///   `temporaryDirectory` and a preferences store inside it.
+    ///   `temporaryDirectory` and a preferences store inside it, kept after
+    ///   the process when `keepSandboxVariable` is 1.
     static func detect(
         environment: [String: String],
         processIdentifier: Int32,
@@ -103,7 +123,7 @@ struct TextMouthRuntime: @unchecked Sendable {
             return TextMouthRuntime(isHostedTest: false, homeDirectory: realHomeDirectory, preferences: .standard)
         }
         let sandbox = temporaryDirectory.appendingPathComponent(
-            "TextMouthTests-\(processIdentifier)",
+            "\(sandboxNamePrefix)\(processIdentifier)",
             isDirectory: true
         )
         let store = sandboxedPreferences(
@@ -114,7 +134,8 @@ struct TextMouthRuntime: @unchecked Sendable {
             isHostedTest: true,
             homeDirectory: sandbox,
             preferences: store.defaults,
-            preferencesFile: store.file
+            preferencesFile: store.file,
+            keepsSandbox: environment[keepSandboxVariable] == "1"
         )
     }
 
@@ -164,5 +185,122 @@ struct TextMouthRuntime: @unchecked Sendable {
     private func emptySandboxedPreferences() {
         guard let preferencesFile else { return }
         preferences.removePersistentDomain(forName: preferencesFile.deletingPathExtension().path)
+    }
+
+    // MARK: - Sandbox Lifetime
+
+    /// Every hosted-test sandbox is a folder in the temporary directory named
+    /// this prefix followed by the identifier of the process it belongs to.
+    static let sandboxNamePrefix = "TextMouthTests-"
+
+    /// The environment variable that keeps a process's sandbox after the
+    /// hosted tests finish, for a developer to look inside, when it is 1:
+    /// TEXTMOUTH_KEEP_SANDBOX=1, or TEST_RUNNER_TEXTMOUTH_KEEP_SANDBOX=1 for
+    /// xcodebuild, which passes it on to the process hosting the tests.
+    static let keepSandboxVariable = "TEXTMOUTH_KEEP_SANDBOX"
+
+    /// The file in a kept sandbox that keeps later sweeps away from it. A
+    /// kept sandbox stays until a developer deletes it.
+    static let keptSandboxMarker = "KEPT-SANDBOX.txt"
+
+    /// The identifier of the process the sandbox folder named `name` belongs
+    /// to, or nil when the name is not a sandbox's: exactly
+    /// `sandboxNamePrefix` followed by a positive decimal number.
+    static func sandboxProcess(named name: String) -> Int32? {
+        guard name.hasPrefix(sandboxNamePrefix) else { return nil }
+        let digits = name.dropFirst(sandboxNamePrefix.count)
+        guard !digits.isEmpty,
+              digits.allSatisfy({ ("0"..."9").contains($0) }),
+              let process = Int32(digits),
+              process > 0 else { return nil }
+        return process
+    }
+
+    /// Whether the process `process` is running: it exists, though it may
+    /// belong to another user, who alone may signal it.
+    static func isProcessRunning(_ process: Int32) -> Bool {
+        kill(process, 0) == 0 || errno == EPERM
+    }
+
+    /// Whether `sandbox` was kept by its process (see `keepsSandbox`).
+    static func isKept(_ sandbox: URL) -> Bool {
+        FileManager.default.fileExists(atPath: sandbox.appendingPathComponent(keptSandboxMarker).path)
+    }
+
+    /// The sandboxes in `temporaryDirectory` that hosted-test processes left
+    /// behind and nothing uses any more: folders named for a process other
+    /// than `currentProcess` that `isRunning` says has ended. Kept sandboxes
+    /// stay, and so does anything that is not a plain folder, such as a
+    /// symbolic link, which could lead anywhere. In name order.
+    static func abandonedSandboxes(
+        in temporaryDirectory: URL,
+        currentProcess: Int32,
+        isRunning: (Int32) -> Bool
+    ) -> [URL] {
+        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
+        let entries = (try? FileManager.default.contentsOfDirectory(
+            at: temporaryDirectory,
+            includingPropertiesForKeys: keys
+        )) ?? []
+        return entries.filter { entry in
+            guard let process = sandboxProcess(named: entry.lastPathComponent),
+                  process != currentProcess,
+                  let values = try? entry.resourceValues(forKeys: Set(keys)),
+                  values.isDirectory == true,
+                  values.isSymbolicLink != true,
+                  !isKept(entry) else { return false }
+            return !isRunning(process)
+        }
+        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    /// Deletes the sandboxes earlier hosted-test processes left behind in
+    /// `temporaryDirectory`, as `abandonedSandboxes` finds them: those of
+    /// processes that crashed or were stopped before they could delete their
+    /// own, and the few files a finished process's late background work
+    /// wrote again. One that cannot be deleted now, such as one another
+    /// run's sweep is deleting at the same moment, waits for the next sweep.
+    /// - Returns: The sandboxes deleted.
+    @discardableResult
+    static func removeAbandonedSandboxes(
+        in temporaryDirectory: URL = FileManager.default.temporaryDirectory,
+        currentProcess: Int32 = ProcessInfo.processInfo.processIdentifier,
+        isRunning: (Int32) -> Bool = isProcessRunning
+    ) -> [URL] {
+        abandonedSandboxes(in: temporaryDirectory, currentProcess: currentProcess, isRunning: isRunning)
+            .filter { (try? FileManager.default.removeItem(at: $0)) != nil }
+    }
+
+    /// Ends this process's use of its sandbox as the hosted tests finish:
+    /// deletes it, or, when `keepsSandbox`, marks it kept so that later
+    /// sweeps leave it alone. Does nothing in the app, whose home is the
+    /// user's own, nor to a home that is not named as a sandbox is.
+    func finishWithSandbox() {
+        guard isHostedTest, Self.sandboxProcess(named: homeDirectory.lastPathComponent) != nil else { return }
+        if keepsSandbox {
+            let note = "This test sandbox was kept because \(Self.keepSandboxVariable) was 1. "
+                + "Later test runs leave it alone; delete this folder when you are done with it.\n"
+            try? note.write(to: homeDirectory.appendingPathComponent(Self.keptSandboxMarker), atomically: true, encoding: .utf8)
+        } else {
+            try? FileManager.default.removeItem(at: homeDirectory)
+        }
+    }
+
+    /// Clears `sandbox`, a hosted-test process's sandbox, of what an earlier
+    /// process with the same identifier left there, before the new process
+    /// uses it. A kept one is moved aside, beside it under its name followed
+    /// by "-kept-" and a unique suffix, which no sweep takes for a sandbox;
+    /// any other is deleted, as is a kept one that could not be moved.
+    static func clearEarlierSandbox(at sandbox: URL) {
+        let manager = FileManager.default
+        guard manager.fileExists(atPath: sandbox.path) else { return }
+        if isKept(sandbox) {
+            let aside = sandbox.deletingLastPathComponent().appendingPathComponent(
+                "\(sandbox.lastPathComponent)-kept-\(UUID().uuidString.prefix(8))",
+                isDirectory: true
+            )
+            if (try? manager.moveItem(at: sandbox, to: aside)) != nil { return }
+        }
+        try? manager.removeItem(at: sandbox)
     }
 }
