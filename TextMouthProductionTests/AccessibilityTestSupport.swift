@@ -75,6 +75,20 @@ extension XCTestCase {
         }
     }
 
+    /// Every view of type `T` inside `view`, depth first in subview order:
+    /// the AppKit controls, and other platform views, SwiftUI drew.
+    @MainActor
+    func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
+        var found: [T] = []
+        for subview in view.subviews {
+            if let match = subview as? T {
+                found.append(match)
+            }
+            found += descendants(of: subview, as: type)
+        }
+        return found
+    }
+
     /// Spin the main run loop until `condition` holds or `timeout` passes,
     /// letting SwiftUI apply asynchronous view updates. Returns the outcome.
     @MainActor
