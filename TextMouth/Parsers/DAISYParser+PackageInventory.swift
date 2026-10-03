@@ -72,3 +72,36 @@ extension DAISYParser {
         return folders
     }
 }
+
+// MARK: - Reading a Book From Its Entry File
+
+/// Lists one file of a package before all the others, and reads every file
+/// as the provider it wraps does. Opened from a package or navigation file,
+/// a book is read from that file's whole folder, and the parser takes the
+/// first package or navigation file it lists; listing the chosen one first
+/// makes that the book the reader chose, even in a folder holding another
+/// book's package file beside it (TODO I02).
+final class EntryFirstFileProvider: DAISYFileProvider {
+    /// The chosen file's path inside the package.
+    private let entry: String
+    /// The provider that lists and reads the package's files.
+    private let inner: DAISYFileProvider
+
+    /// Lists `entry` first among the files `inner` provides.
+    init(entry: String, wrapping inner: DAISYFileProvider) {
+        self.entry = entry
+        self.inner = inner
+    }
+
+    /// Every file `inner` lists, `entry` first when it is among them.
+    func listFiles() -> [String] {
+        let files = inner.listFiles()
+        guard files.contains(entry) else { return files }
+        return [entry] + files.filter { $0 != entry }
+    }
+
+    /// The file at `path`, as `inner` reads it.
+    func readFile(at path: String) throws -> Data {
+        try inner.readFile(at: path)
+    }
+}

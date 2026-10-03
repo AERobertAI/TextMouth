@@ -163,6 +163,7 @@
 		9367CBE3D10E4BBDF0DEB4C0 /* RemovedFromLibraryMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09029F21B8236C81E8327DB1 /* RemovedFromLibraryMarker.swift */; };
 		93D4E20E195A1FC6AD4A80A8 /* SubstitutionCompositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE8C85E2E883DE314829286 /* SubstitutionCompositionTests.swift */; };
 		9486CF24F11C99DC7ADA358C /* RemovalWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725183EF3DA7A14663C47417 /* RemovalWording.swift */; };
+		95183905CFC4BEF44D745375 /* DAISYPackageFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C3383998011C5B6FB97B86 /* DAISYPackageFixtures.swift */; };
 		955E23F0BE911219325BE922 /* LibraryIndexTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA77815981A0330771BCAACD /* LibraryIndexTestSupport.swift */; };
 		95E69744D442BD8D6C122E5E /* TMBNameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2C598C575141839E3C3C2A /* TMBNameTests.swift */; };
 		9687D888D1F0163145E01009 /* PlaybackLifecyclePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD19246C1262E82F31145B81 /* PlaybackLifecyclePolicyTests.swift */; };
@@ -338,6 +339,7 @@
 		36A34A32605717C5AED65E8E /* ImportAndShortcutPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportAndShortcutPolicyTests.swift; sourceTree = "<group>"; };
 		36D2210724B40BF276058B99 /* ImportConcurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportConcurrencyTests.swift; sourceTree = "<group>"; };
 		378C7D551953D9BD9E963E9E /* LibraryWindowRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryWindowRouterTests.swift; sourceTree = "<group>"; };
+		38C3383998011C5B6FB97B86 /* DAISYPackageFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYPackageFixtures.swift; sourceTree = "<group>"; };
 		3A06EF6FE24227C31FB77CBE /* PlaybackControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackControlsView.swift; sourceTree = "<group>"; };
 		3A6A28200CBB6E2418B150E3 /* ContentIndexValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentIndexValidationTests.swift; sourceTree = "<group>"; };
 		3A6F70F94BC31DE799BD148D /* DAISYParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYParser.swift; sourceTree = "<group>"; };
@@ -789,6 +791,7 @@
 				7AB1BEF55AF43238FE6171E2 /* ContinueToNextBookTests.swift */,
 				0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */,
 				7C5C1211EE29A6C08B383087 /* DAISYMalformedXMLTests.swift */,
+				38C3383998011C5B6FB97B86 /* DAISYPackageFixtures.swift */,
 				A43CF2482B3D82FF0A911711 /* DAISYPackageInventoryTests.swift */,
 				24206A06E41796B40E1FE5E0 /* DamagedFileTestSupport.swift */,
 				11D5E6350A32BCADEB8B77FD /* DataDirectoryMigrationTests.swift */,
@@ -1048,6 +1051,7 @@
 				1644CDE2503476D1D825AC97 /* DAISYEdgeCaseTests.swift in Sources */,
 				50ADE0C8695EFFAC74E8F14C /* DAISYInlineFragmentTests.swift in Sources */,
 				A573A0CD337BD9B32E904EB9 /* DAISYMalformedXMLTests.swift in Sources */,
+				95183905CFC4BEF44D745375 /* DAISYPackageFixtures.swift in Sources */,
 				5AC6F317AC990577E3BD45B9 /* DAISYPackageInventoryTests.swift in Sources */,
 				6D86FFF46267459C8A6B08F1 /* DAISYParserTests.swift in Sources */,
 				F7ED9C47B4579FE533C4D55F /* DOCXEdgeCaseTests.swift in Sources */,

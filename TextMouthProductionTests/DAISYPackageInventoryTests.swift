@@ -5,8 +5,10 @@ import XCTest
 /// for it at the top of its folder: its package file (`.opf`) or its
 /// navigation file (`ncc.html`) (TODO I02). A folder whose book lies in a
 /// folder inside it is not itself a book, and an archive of several
-/// packaged books is a batch of books rather than one.
+/// packaged books is a batch of books rather than one. A book opens from
+/// the file that stands for it.
 final class DAISYPackageInventoryTests: XCTestCase {
+    private typealias Fixtures = DAISYPackageFixtures
 
     // MARK: - Entry Files
 
@@ -16,10 +18,10 @@ final class DAISYPackageInventoryTests: XCTestCase {
     func testEntryPointsAreTheFilesThatStandForBooksAtTheFolderTop() throws {
         let folder = try makeSandboxDirectory("daisy-entries")
 
-        let navigationBook = try write(["ncc.html": "", "part1.smil": ""], in: folder, "Navigation")
-        let packageBook = try write(["book.opf": "", "book.xml": ""], in: folder, "Package")
-        let hybridBook = try write(["NCC.HTM": "", "book.opf": ""], in: folder, "Hybrid")
-        let twoBooks = try write(["Volume 10.opf": "", "Volume 2.opf": ""], in: folder, "Volumes")
+        let navigationBook = try Fixtures.writeFolder(["ncc.html": "", "part1.smil": ""], named: "Navigation", in: folder)
+        let packageBook = try Fixtures.writeFolder(["book.opf": "", "book.xml": ""], named: "Package", in: folder)
+        let hybridBook = try Fixtures.writeFolder(["NCC.HTM": "", "book.opf": ""], named: "Hybrid", in: folder)
+        let twoBooks = try Fixtures.writeFolder(["Volume 10.opf": "", "Volume 2.opf": ""], named: "Volumes", in: folder)
 
         XCTAssertEqual(entryNames(in: navigationBook), ["ncc.html"])
         XCTAssertEqual(entryNames(in: packageBook), ["book.opf"])
@@ -32,7 +34,7 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// nor a folder holding only other files.
     func testHiddenFilesAndFoldersNamedLikePackagesAreNotBooks() throws {
         let folder = try makeSandboxDirectory("daisy-not-entries")
-        let decoys = try write(["._book.opf": "", ".ncc.html": "", "notes.txt": ""], in: folder, "Decoys")
+        let decoys = try Fixtures.writeFolder(["._book.opf": "", ".ncc.html": "", "notes.txt": ""], named: "Decoys", in: folder)
         try FileManager.default.createDirectory(
             at: decoys.appendingPathComponent("folder.opf", isDirectory: true),
             withIntermediateDirectories: true
@@ -48,7 +50,7 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// is never taken for one of them.
     func testOnlyTheFolderWithTheBookAtItsTopIsADAISYDirectory() throws {
         let shelf = try makeSandboxDirectory("daisy-shelf")
-        let book = try write(["ncc.html": "", "part1.smil": ""], in: shelf, "Rope Splicing")
+        let book = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: shelf)
 
         XCTAssertTrue(DAISYParser.isDAISYDirectory(url: book))
         XCTAssertFalse(DAISYParser.isDAISYDirectory(url: shelf))
@@ -67,10 +69,8 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// An archive holding two packaged books, each in a folder of its own,
     /// is a batch of books, not one DAISY book.
     func testArchiveOfTwoPackagedBooksIsNotOneDAISYBook() throws {
-        let zip = try makeTemporaryDAISYZip(entries: [
-            "Rope Splicing/ncc.html": Self.minimalNCC,
-            "Ferry Timetables/book.opf": Self.minimalOPF
-        ])
+        let zip = try makeTemporaryDAISYZip(entries: Fixtures.entries(Fixtures.navigationBook, inFolder: "Rope Splicing")
+            .merging(Fixtures.entries(Fixtures.packageBook, inFolder: "Ferry Timetables")) { first, _ in first })
         addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
 
         XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
@@ -79,15 +79,10 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// An archive whose top level holds a book is that book, whatever its
     /// folders hold; macOS's `__MACOSX` copies never count as a second book.
     func testArchiveWithABookAtItsTopOrMacOSCopiesIsOneDAISYBook() throws {
-        let topLevelBook = try makeTemporaryDAISYZip(entries: [
-            "ncc.html": Self.minimalNCC,
-            "Extras/book.opf": Self.minimalOPF
-        ])
-        let withMacCopies = try makeTemporaryDAISYZip(entries: [
-            "Rope Splicing/ncc.html": Self.minimalNCC,
-            "__MACOSX/Rope Splicing/._ncc.html": "",
-            "__MACOSX/Other/._book.opf": ""
-        ])
+        let topLevelBook = try makeTemporaryDAISYZip(entries: Fixtures.navigationBook
+            .merging(Fixtures.entries(Fixtures.packageBook, inFolder: "Extras")) { first, _ in first })
+        let withMacCopies = try makeTemporaryDAISYZip(entries: Fixtures.entries(Fixtures.navigationBook, inFolder: "Rope Splicing")
+            .merging(["__MACOSX/Rope Splicing/._ncc.html": "", "__MACOSX/Other/._book.opf": ""]) { first, _ in first })
         addTeardownBlock {
             try? FileManager.default.removeItem(at: topLevelBook)
             try? FileManager.default.removeItem(at: withMacCopies)
@@ -104,71 +99,67 @@ final class DAISYPackageInventoryTests: XCTestCase {
     /// sandbox's own path does, through /var), and a book there reads.
     func testFolderListsItsFilesRelativeToItselfThroughSymbolicLinks() throws {
         let sandbox = try makeSandboxDirectory("daisy-listing")
-        let book = try write([
-            "ncc.html": Self.minimalNCC,
-            "part1.smil": Self.minimalSMIL,
-            "text/part1.html": Self.minimalText
-        ], in: sandbox, "Rope Splicing")
+        let book = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sandbox)
         let link = sandbox.appendingPathComponent("Link to Rope Splicing", isDirectory: true)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: book)
 
         for folder in [book, link] {
-            XCTAssertEqual(
-                DirectoryFileProvider(baseURL: folder).listFiles().sorted(),
-                ["ncc.html", "part1.smil", "text/part1.html"],
+            XCTAssertEqual(DirectoryFileProvider(baseURL: folder).listFiles().sorted(), Fixtures.navigationBookFiles, folder.path)
+            XCTAssertTrue(
+                try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: folder))
+                    .contains(Fixtures.navigationBookSentences[0]),
                 folder.path
             )
-            XCTAssertTrue(try DAISYParser.extractMarkdown(from: folder).contains("Unlay the strands"), folder.path)
         }
     }
 
-    // MARK: - Fixtures
+    // MARK: - Opening a Book From Its Entry File
 
-    /// The smallest DAISY 2.02 navigation file: a title and one heading.
-    static let minimalNCC = """
-    <html><head><meta name="dc:title" content="Notes on Rope Splicing"/></head>
-    <body><h1><a href="part1.smil#p1">Short Splice</a></h1></body></html>
-    """
+    /// A DAISY 2.02 book opens from its navigation file, which used to be
+    /// refused as "not a DAISY book": its text, from every section, and its
+    /// title and author are read from the files around it.
+    func testBookOpensFromItsNavigationFile() throws {
+        let book = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: makeSandboxDirectory("daisy-ncc"))
+        let navigation = book.appendingPathComponent("ncc.html")
 
-    /// The smallest SMIL file: the heading's one text fragment.
-    static let minimalSMIL = """
-    <?xml version="1.0" encoding="utf-8"?>
-    <smil><body><seq><par id="p1"><text src="text/part1.html#t1"/></par></seq></body></smil>
-    """
+        let spoken = try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: navigation))
+        let metadata = try XCTUnwrap(DAISYParser.readMetadata(from: navigation))
 
-    /// The smallest DAISY 2.02 text file: the fragment the SMIL file names.
-    static let minimalText = """
-    <html><body><p id="t1">Unlay the strands for twelve turns before tucking them against the lay.</p></body></html>
-    """
-
-    /// The smallest DAISY 3 package file: a title and one DTBook.
-    static let minimalOPF = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <package xmlns="http://openebook.org/namespaces/oeb-package/1.0/">
-    <metadata><dc-metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:Title>Ferry Timetables of the Outer Sound</dc:Title>
-    </dc-metadata></metadata>
-    <manifest><item id="text" href="book.xml" media-type="application/x-dtbook+xml"/></manifest>
-    <spine><itemref idref="text"/></spine>
-    </package>
-    """
-
-    /// Writes `files` (path inside the folder → text) into a new folder
-    /// named `name` inside `parent`, and returns the folder.
-    @discardableResult
-    func write(_ files: [String: String], in parent: URL, _ name: String) throws -> URL {
-        let folder = parent.appendingPathComponent(name, isDirectory: true)
-        for (path, text) in files {
-            let file = folder.appendingPathComponent(path)
-            try FileManager.default.createDirectory(
-                at: file.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try Data(text.utf8).write(to: file)
+        for sentence in Fixtures.navigationBookSentences + Fixtures.navigationBookHeadings {
+            XCTAssertTrue(spoken.contains(sentence), "missing “\(sentence)” in:\n\(spoken)")
         }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder
+        XCTAssertEqual(metadata.title, "Notes on Rope Splicing")
+        XCTAssertEqual(metadata.author, "Casimir Oyelaran")
+        XCTAssertEqual(try BookParser.parse(url: navigation, format: .daisy).title, "Notes on Rope Splicing")
     }
+
+    /// In a folder holding two books' package files, each book opens from
+    /// its own package file, never from the other one beside it.
+    func testBookOpensFromTheChosenPackageFile() throws {
+        let almanac: [String: String] = [
+            "almanac.opf": Fixtures.packageBook["book.opf", default: ""]
+                .replacingOccurrences(of: "Ferry Timetables of the Outer Sound", with: "Harbor Almanac")
+                .replacingOccurrences(of: "content/timetables.xml", with: "almanac.xml"),
+            "almanac.xml": Fixtures.packageBook["content/timetables.xml", default: ""]
+                .replacingOccurrences(of: "The first ferry leaves", with: "The almanac says the tide turns")
+        ]
+        let folder = try Fixtures.writeFolder(
+            Fixtures.packageBook.merging(almanac) { first, _ in first },
+            named: "Two Books",
+            in: makeSandboxDirectory("daisy-two-opf")
+        )
+
+        for (package, title, sentence) in [
+            ("book.opf", "Ferry Timetables of the Outer Sound", "The first ferry leaves"),
+            ("almanac.opf", "Harbor Almanac", "The almanac says the tide turns")
+        ] {
+            let url = folder.appendingPathComponent(package)
+            XCTAssertEqual(try DAISYParser.readMetadata(from: url)?.title, title, package)
+            XCTAssertTrue(try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: url)).contains(sentence), package)
+        }
+    }
+
+    // MARK: - Helpers
 
     /// The names of the files `DAISYParser.packageEntryPoints(in:)` finds in
     /// `folder`, in its order.

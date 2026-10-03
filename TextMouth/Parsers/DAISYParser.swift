@@ -278,10 +278,16 @@ enum DAISYParser {
                 } catch {
                     throw DAISYParserError.invalidArchive
                 }
-            } else if ext == "opf" {
-                // .opf file — treat the containing directory as the DAISY book
+            } else if isPackageEntryFile(url) {
+                // A package file (.opf) or a DAISY 2.02 navigation file
+                // (ncc.html): its folder holds the book. The chosen file is
+                // listed first, so the reader takes it over any other
+                // package file in the folder (TODO I02).
                 let parentDir = url.deletingLastPathComponent()
-                base = DirectoryFileProvider(baseURL: parentDir)
+                base = EntryFirstFileProvider(
+                    entry: url.lastPathComponent,
+                    wrapping: DirectoryFileProvider(baseURL: parentDir)
+                )
             } else if let archive = try? Archive(url: url, accessMode: .read) {
                 // Try opening as ZIP anyway (some DAISY files don't have .zip extension)
                 base = ArchiveFileProvider(archive: archive)
