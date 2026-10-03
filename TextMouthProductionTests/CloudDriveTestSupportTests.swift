@@ -223,6 +223,61 @@ final class CloudDriveTestSupportTests: XCTestCase {
         XCTAssertEqual(checks, 1)
     }
 
+    // MARK: - What a Drive Reports Uploaded
+
+    /// A file counts as uploaded by its own upload flag when it carries sync
+    /// flags, as on Google Drive and Dropbox, whatever its package says; one
+    /// that carries none, as inside an iCloud Drive package, counts by its
+    /// package's upload flag. A flag left out never counts as uploaded, nor
+    /// does a file no sync service manages.
+    func testAFileCountsAsUploadedByItsOwnFlagsOrElseByItsPackages() {
+        typealias Metadata = UbiquitousItemStatusProvider.Metadata
+        let packageUp = Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true)
+        let packageUploading = Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: false)
+        let packageSaysNothing = Metadata(isUbiquitousItem: true)
+        let googleFileUp = Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true)
+        let googleFileUploading = Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: false)
+        let iCloudFile = Metadata(isUbiquitousItem: true, byteCount: 1_024)
+        let localFile = Metadata(byteCount: 1_024)
+
+        XCTAssertTrue(CloudDriveUploads.isUploaded(file: googleFileUp, package: nil))
+        XCTAssertTrue(CloudDriveUploads.isUploaded(file: googleFileUp, package: packageUploading))
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: googleFileUploading, package: packageUp), "the file's own flag")
+        XCTAssertTrue(CloudDriveUploads.isUploaded(file: iCloudFile, package: packageUp))
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: iCloudFile, package: packageUploading))
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: iCloudFile, package: packageSaysNothing), "no flag anywhere")
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: iCloudFile, package: nil), "in no package")
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: localFile, package: packageUp), "managed by no sync service")
+        XCTAssertFalse(CloudDriveUploads.isUploaded(file: nil, package: packageUp), "unreadable")
+    }
+
+    /// A file's package is the nearest folder above it, inside the test
+    /// folder, with the package extension, in any letter case; a file in no
+    /// package has none, and nothing above the test folder is a candidate.
+    func testAFilesPackageIsTheNearestPackageFolderInsideTheRoot() {
+        let root = URL(fileURLWithPath: "/Users/reader/Drive/Outer.tmb/TextMouth Cloud Tests", isDirectory: true)
+        /// The URL of `path` inside the root.
+        func inRoot(_ path: String) -> URL {
+            root.appendingPathComponent(path)
+        }
+
+        XCTAssertEqual(
+            CloudDriveUploads.package(holding: inRoot("run/Book.tmb/content.md"), inside: root)?.path,
+            inRoot("run/Book.tmb").path
+        )
+        XCTAssertEqual(
+            CloudDriveUploads.package(holding: inRoot("run/Book.tmb/audio/0001.mp3"), inside: root)?.path,
+            inRoot("run/Book.tmb").path
+        )
+        XCTAssertEqual(
+            CloudDriveUploads.package(holding: inRoot("Library/Alice.TMB/bookInfo.json"), inside: root)?.path,
+            inRoot("Library/Alice.TMB").path
+        )
+        XCTAssertNil(CloudDriveUploads.package(holding: inRoot("Small Library/library.json"), inside: root))
+        XCTAssertNil(CloudDriveUploads.package(holding: inRoot("loose.txt"), inside: root), "Outer.tmb is above the root")
+        XCTAssertNil(CloudDriveUploads.package(holding: URL(fileURLWithPath: "/elsewhere/Book.tmb/a.txt"), inside: root))
+    }
+
     // MARK: - Synthetic Books
 
     /// A synthetic package holds files of the sizes asked for, of random
@@ -339,17 +394,24 @@ final class CloudDriveTestSupportTests: XCTestCase {
     }
 
     /// Progress that falls back, or whose count of files changes, is out of
-    /// order; progress that stays or moves forward is in order.
+    /// order; progress that stays or moves forward is in order, and so is a
+    /// package counted as one item to come that then arrives whole with
+    /// every file, as on iCloud Drive, but no other change of the count.
     func testProgressThatGoesBackIsOutOfOrder() {
         /// A finished download that reported `updates`.
         func record(_ updates: [BookDownloadProgress]) -> CloudDriveDownloadRecord {
             CloudDriveDownloadRecord(updates: updates, outcome: .finished, elapsed: .zero)
         }
+        var partOfThePackage = Self.progress(0, of: 1)
+        partOfThePackage.partialFiles = 0.4
 
         XCTAssertTrue(record([]).isInOrder)
         XCTAssertTrue(record([Self.progress(1, of: 3), Self.progress(1, of: 3), Self.progress(3, of: 3)]).isInOrder)
         XCTAssertFalse(record([Self.progress(2, of: 3), Self.progress(1, of: 3)]).isInOrder)
         XCTAssertFalse(record([Self.progress(1, of: 4), Self.progress(1, of: 3)]).isInOrder)
+        XCTAssertTrue(record([Self.progress(0, of: 1), partOfThePackage, Self.progress(3, of: 3)]).isInOrder)
+        XCTAssertFalse(record([Self.progress(0, of: 1), Self.progress(1, of: 3)]).isInOrder, "arrived only in part")
+        XCTAssertFalse(record([Self.progress(1, of: 2), Self.progress(3, of: 3)]).isInOrder, "no package counted as one")
     }
 
     // MARK: - Published Progress
@@ -368,7 +430,7 @@ final class CloudDriveTestSupportTests: XCTestCase {
         let recorder = PublishedProgressRecorder()
         recorder.subscribe(to: [heard, quiet])
         defer { recorder.stop() }
-        XCTAssertEqual(recorder.summary(of: [heard]), "No: the publishing handler never fired for any of the 1 files.")
+        XCTAssertEqual(recorder.summary(of: [heard]), "No: no download progress was heard for any of 1 item.")
 
         let progress = Progress(totalUnitCount: 4)
         progress.kind = .file
@@ -388,7 +450,7 @@ final class CloudDriveTestSupportTests: XCTestCase {
 
         XCTAssertNotNil(completed, recorder.summary(of: [heard, quiet]))
         let summary = recorder.summary(of: [heard, quiet])
-        XCTAssertTrue(summary.hasPrefix("Yes, for 1 of 2 files: heard.bin had "), summary)
+        XCTAssertTrue(summary.hasPrefix("Yes, for 1 of 2 items: heard.bin had "), summary)
         XCTAssertTrue(summary.contains("from 0 percent"), summary)
     }
 

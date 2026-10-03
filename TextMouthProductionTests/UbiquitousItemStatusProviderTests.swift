@@ -290,6 +290,95 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         )
     }
 
+    // MARK: - Sync Flags of an Item's Own
+
+    /// An item carries sync flags of its own when it reports any one of the
+    /// upload flag, the downloading status, or whether it is downloading, as
+    /// every item a sync service syncs does: an iCloud Drive package, and a
+    /// Google Drive file and the folder holding it. A file inside an iCloud
+    /// Drive package reports only that it is managed, and an ordinary local
+    /// item reports nothing, so neither carries any (flags as measured on
+    /// the real drives, October 3).
+    func testAnItemCarriesSyncFlagsWhenItReportsAnyOfThem() {
+        let carrying: [(String, Metadata)] = [
+            ("an iCloud Drive package", Self.iCloudPackage(uploaded: false)),
+            ("a Google Drive file", Metadata(isUbiquitousItem: true, downloadingStatus: .current, isDownloading: false, isUploaded: true)),
+            ("a Google Drive package folder", Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true)),
+            ("only the upload flag", Metadata(isUbiquitousItem: true, isUploaded: false)),
+            ("only the downloading status", Metadata(isUbiquitousItem: true, downloadingStatus: .notDownloaded, isDataless: true)),
+            ("only whether it downloads", Metadata(isUbiquitousItem: true, isDownloading: true, isDataless: true)),
+        ]
+        let carryingNone: [(String, Metadata)] = [
+            ("a file inside an iCloud Drive package", Self.fileInICloudPackage),
+            ("an ordinary local file", Metadata(byteCount: 42)),
+        ]
+
+        for (name, metadata) in carrying {
+            XCTAssertTrue(UbiquitousItemStatusProvider.carriesSyncFlags(metadata), name)
+        }
+        for (name, metadata) in carryingNone {
+            XCTAssertFalse(UbiquitousItemStatusProvider.carriesSyncFlags(metadata), name)
+        }
+    }
+
+    /// One read gives an item's status and whether it carries sync flags of
+    /// its own, and the status is the one `status(of:)` gives: an iCloud
+    /// Drive package carries its flags, and a file inside it, downloaded
+    /// and counted as uploaded since it reports no flag, carries none.
+    func testOneReadGivesTheStatusAndWhetherTheItemCarriesSyncFlags() {
+        let package = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/Book.tmb", isDirectory: true)
+        let file = package.appendingPathComponent("content.md", isDirectory: false)
+        let reads = URLRecorder()
+        let items = [package.path: Self.iCloudPackage(uploaded: false), file.path: Self.fileInICloudPackage]
+        let provider = UbiquitousItemStatusProvider(
+            readMetadata: { url, _ in
+                reads.record(url)
+                guard let metadata = items[url.standardizedFileURL.path] else { throw CocoaError(.fileReadNoSuchFile) }
+                return metadata
+            },
+            startDownload: { _ in XCTFail("nothing is downloaded") },
+            evict: { _ in XCTFail("nothing is removed") }
+        )
+
+        let packageStatus = provider.flaggedStatus(of: package)
+        let fileStatus = provider.flaggedStatus(of: file)
+
+        XCTAssertEqual(reads.recorded, [package, file], "one read each")
+        XCTAssertEqual(
+            packageStatus,
+            FlaggedItemStatus(
+                status: CloudItemStatus(state: .downloaded, isUploaded: false, byteCount: nil, hasUnresolvedConflicts: false, downloadError: nil),
+                carriesSyncFlags: true
+            )
+        )
+        XCTAssertEqual(
+            fileStatus,
+            FlaggedItemStatus(
+                status: CloudItemStatus(state: .downloaded, isUploaded: true, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil),
+                carriesSyncFlags: false
+            )
+        )
+        XCTAssertEqual(provider.status(of: package), packageStatus.status)
+        XCTAssertEqual(provider.status(of: file), fileStatus.status)
+    }
+
+    /// An item the system will not look up without downloading, as every
+    /// file inside an iCloud Drive package only in the cloud is, and a path
+    /// with nothing at it, carry no flags that anyone can read.
+    func testAnItemThatCannotBeReadCarriesNoSyncFlags() {
+        let refusal = CocoaError(.fileReadUnknown, userInfo: [NSUnderlyingErrorKey: POSIXError(.EDEADLK)])
+        let refusing = UbiquitousItemStatusProvider(readMetadata: { _, _ in throw refusal })
+        let missing = UbiquitousItemStatusProvider(readMetadata: { _, _ in throw CocoaError(.fileReadNoSuchFile) })
+        let file = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/Book.tmb/content.md")
+
+        let refused = refusing.flaggedStatus(of: file)
+        let absent = missing.flaggedStatus(of: file)
+
+        XCTAssertEqual(refused.status.state, .notDownloaded)
+        XCTAssertFalse(refused.carriesSyncFlags)
+        XCTAssertEqual(absent, FlaggedItemStatus(status: .missing, carriesSyncFlags: false))
+    }
+
     // MARK: - Reading One File
 
     /// A file the system will not look up without downloading, because a
@@ -446,6 +535,23 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
             evict: { _ in XCTFail("nothing is removed") }
         )
     }
+
+    /// An iCloud Drive book package as the real drive reported it: managed,
+    /// on this Mac, not downloading, with the upload flag given, and no
+    /// conflict. A folder reports no size.
+    private static func iCloudPackage(uploaded: Bool) -> Metadata {
+        Metadata(
+            isUbiquitousItem: true,
+            downloadingStatus: .current,
+            isDownloading: false,
+            isUploaded: uploaded,
+            hasUnresolvedConflicts: false
+        )
+    }
+
+    /// A 1 KB file inside an iCloud Drive book package as the real drive
+    /// reported it: managed, and no sync flag at all.
+    private static let fileInICloudPackage = Metadata(isUbiquitousItem: true, byteCount: 1_024)
 
     /// Metadata for every combination of the status keys, with the given
     /// management key and dataless flag, a size of 42 bytes, and the upload

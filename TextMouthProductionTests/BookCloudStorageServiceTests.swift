@@ -607,7 +607,8 @@ final class BookCloudStorageServiceTests: XCTestCase {
     /// The part of a file still to come that the sync service publishes
     /// counts toward the progress, by size: a book whose 900-byte file is
     /// still to come, beside a 100-byte record already here, moves as that
-    /// file does, and the download stops listening once it ends.
+    /// file does. The download listens to the package as a whole and to
+    /// that file, never to the record, and stops listening once it ends.
     func testAPublishedPartOfAFileCountsBySize() async throws {
         let book = try makePackage(["audio.m4b", "bookInfo.json"])
         let items = self.items!
@@ -632,7 +633,11 @@ final class BookCloudStorageServiceTests: XCTestCase {
             BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 1_000, totalBytes: 1_000),
         ])
         XCTAssertEqual(steps.map(\.percent), [10, 46, 64, 100])
-        XCTAssertEqual(publisher.filesListenedTo, paths([book["audio.m4b"]]), "listened to a file already here")
+        XCTAssertEqual(
+            publisher.filesListenedTo,
+            paths([book.package.url, book["audio.m4b"]]),
+            "listened to a file already here, or not to the package"
+        )
         XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
     }
 
@@ -659,8 +664,9 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(steps.map(\.percent), [50, 75, 100])
     }
 
-    /// A download listens to each file still to come, those found later in
-    /// a folder that arrives included, and to no file already here.
+    /// A download listens to the package as a whole and to each file still
+    /// to come, those found later in a folder that arrives included, and to
+    /// no file already here.
     func testADownloadListensToEachFileStillToCome() async throws {
         let book = try makePackage(["bookInfo.json", "content.md", "parts/0001.mp3"])
         let items = self.items!
@@ -683,7 +689,10 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
         _ = try await collect(storage.download(book.package))
 
-        XCTAssertEqual(publisher.filesListenedTo, paths([book["content.md"], book["parts/0001.mp3"]]))
+        XCTAssertEqual(
+            publisher.filesListenedTo,
+            paths([book.package.url, book["content.md"], book["parts/0001.mp3"]])
+        )
         XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
     }
 
@@ -698,7 +707,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
             makeStorage(sleep: { try await polls.sleep($0) }, stallLimit: .seconds(1)).download(book.package),
             failsWith: .stalled(seconds: 1)
         )
-        XCTAssertEqual(publisher.filesListenedTo.count, 1)
+        XCTAssertEqual(publisher.filesListenedTo.count, 2, "the package and its file")
         XCTAssertEqual(publisher.listeningCount, 0, "a failed download kept listening")
 
         let held = HeldPolls()
@@ -706,7 +715,7 @@ final class BookCloudStorageServiceTests: XCTestCase {
             break
         }
         await fulfillment(of: [publisher.expectationThatListeningEnds()], timeout: 10)
-        XCTAssertEqual(publisher.filesListenedTo.count, 2)
+        XCTAssertEqual(publisher.filesListenedTo.count, 4, "the package and its file again")
     }
 
     /// A part published lower than one heard before, as when the sync
@@ -861,6 +870,353 @@ final class BookCloudStorageServiceTests: XCTestCase {
         }
     }
 
+    // MARK: - A Package Synced as One Item, or File by File
+    //
+    // iCloud Drive syncs a book's .tmb package as one item: the package
+    // carries the sync flags, its files carry none, and a request for one of
+    // them is refused as for an item that doesn't exist. Google Drive and
+    // Dropbox sync each file, and their package folders carry flags too
+    // (`syncAsOneItem` and `syncFileByFile` script both, as measured on the
+    // real drives on October 3). Each operation is checked both ways.
+
+    /// The package is the item the sync service syncs only when it carries
+    /// sync flags of its own and none of its listed files does, which holds
+    /// too when no file is listed because the whole package is only in the
+    /// cloud. Then it alone is what is synced; otherwise each file is. An
+    /// old book without a package has no such item.
+    func testThePackageIsTheSyncedItemOnlyWhenItAloneCarriesFlags() {
+        typealias FileStatus = BookCloudStorageService.FileStatus
+        let folder = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/Book.tmb", isDirectory: true)
+        /// The book's file called `name`, or its folder when `name` is nil,
+        /// on this Mac and carrying flags of its own or not.
+        func item(_ name: String?, flags: Bool) -> FileStatus {
+            let url = name.map { folder.appendingPathComponent($0) } ?? folder
+            return FileStatus(url: url, status: managed(.downloaded), carriesSyncFlags: flags)
+        }
+        /// The survey of the book holding `files`, whose folder carries flags
+        /// as `packageFlags` says, or that has no package when it is nil.
+        func survey(packageFlags: Bool?, files: [FileStatus]) -> BookCloudStorageService.Survey {
+            BookCloudStorageService.Survey(
+                listing: BookCloudStorageService.PackageListing(files: files.map(\.url)),
+                files: files,
+                package: packageFlags.map { item(nil, flags: $0) }
+            )
+        }
+        let flagless = [item("bookInfo.json", flags: false), item("content.md", flags: false)]
+        let flagged = [item("bookInfo.json", flags: true), item("content.md", flags: true)]
+        let mixed = [item("bookInfo.json", flags: true), item("content.md", flags: false)]
+
+        XCTAssertEqual(survey(packageFlags: true, files: flagless).packageItem, item(nil, flags: true), "as on iCloud Drive")
+        XCTAssertEqual(survey(packageFlags: true, files: []).packageItem, item(nil, flags: true), "only in the cloud")
+        XCTAssertNil(survey(packageFlags: true, files: flagged).packageItem, "as on Google Drive")
+        XCTAssertNil(survey(packageFlags: true, files: mixed).packageItem, "one file carries flags")
+        XCTAssertNil(survey(packageFlags: false, files: flagless).packageItem, "nothing carries flags")
+        XCTAssertNil(survey(packageFlags: nil, files: flagless).packageItem, "no package")
+        XCTAssertEqual(survey(packageFlags: true, files: flagless).syncedItems.map(\.url), [folder])
+        XCTAssertEqual(survey(packageFlags: true, files: flagged).syncedItems.map(\.url), flagged.map(\.url))
+    }
+
+    /// A package synced as one item and on this Mac is downloaded.
+    func testAPackageSyncedAsOneItemAndHereIsDownloaded() throws {
+        putLibraryInTheCloud()
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil))
+
+        XCTAssertEqual(makeStorage().state(of: book.package), .downloaded)
+    }
+
+    /// A package synced as one item that is only in the cloud is in the
+    /// cloud, then downloading while the sync service brings it whole,
+    /// counted as one item still to come: its folder stays only in the
+    /// cloud until the whole package arrives.
+    func testAPackageSyncedAsOneItemIsInTheCloudThenDownloadingWhole() throws {
+        putLibraryInTheCloud()
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let storage = makeStorage(readFolder: listing(refusing: book.package.url, while: SharedFlag(true)))
+
+        XCTAssertEqual(storage.state(of: book.package), .inCloud)
+        items.setStatus(managed(.downloading, bytes: nil), of: book.package.url)
+        XCTAssertEqual(
+            storage.state(of: book.package),
+            .downloading(BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0))
+        )
+    }
+
+    /// A package whose files carry flags of their own is surveyed file by
+    /// file, though its folder carries flags as well, as on Google Drive: a
+    /// file only in the cloud puts the book in the cloud, and a file being
+    /// downloaded makes it downloading.
+    func testAPackageWhoseFilesCarryFlagsIsSurveyedFileByFile() throws {
+        putLibraryInTheCloud()
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded, bytes: 10))
+        let storage = makeStorage()
+
+        items.setStatus(managed(.notDownloaded, bytes: 10), of: book["content.md"])
+        XCTAssertEqual(storage.state(of: book.package), .inCloud)
+        items.setStatus(managed(.downloading, bytes: 10), of: book["content.md"])
+        XCTAssertEqual(
+            storage.state(of: book.package),
+            .downloading(BookDownloadProgress(completedFiles: 1, totalFiles: 2, completedBytes: 10, totalBytes: 20))
+        )
+    }
+
+    /// While a package synced as one item has changes waiting to upload,
+    /// removing its download is refused before anything is removed, though
+    /// its files report no upload flag: a flag they leave out never counts
+    /// as uploaded when the package's own says otherwise.
+    func testRemovingAPackageSyncedAsOneItemIsRefusedWhileItUploads() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil, uploaded: false))
+
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .notUploaded)
+        }
+        XCTAssertEqual(items.removalRequests, [])
+        XCTAssertEqual(events.tags, ["CLOUD_DOWNLOAD_REMOVAL_FAILED"])
+    }
+
+    /// Removing the download of a package synced as one item removes the
+    /// package's local copy, as one item, and asks nothing for a file,
+    /// which the sync service would refuse as an item that doesn't exist.
+    func testRemovingAPackageSyncedAsOneItemRemovesThePackageWhole() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil))
+
+        try makeStorage().removeDownload(of: book.package)
+
+        XCTAssertEqual(paths(items.removalRequests), paths([book.package.url]))
+        XCTAssertEqual(events.recorded, ["CLOUD_DOWNLOAD_REMOVED: \(book.package.url.lastPathComponent): 2 of 2 files, as one package"])
+    }
+
+    /// A package synced as one item that is only in the cloud has no local
+    /// copy to remove.
+    func testAPackageSyncedAsOneItemOnlyInTheCloudHasNothingToRemove() throws {
+        let book = try makePackage(["content.md"])
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let storage = makeStorage(readFolder: listing(refusing: book.package.url, while: SharedFlag(true)))
+
+        try storage.removeDownload(of: book.package)
+
+        XCTAssertEqual(items.removalRequests, [])
+        XCTAssertEqual(events.recorded, ["CLOUD_DOWNLOAD_REMOVED: \(book.package.url.lastPathComponent): 0 of 0 files, as one package"])
+    }
+
+    /// A package whose files carry flags of their own is removed file by
+    /// file, and refused while any file waits to upload, as on Google Drive;
+    /// what its folder's own upload flag says does not count, since only
+    /// the files' local copies are removed.
+    func testAPackageWhoseFilesCarryFlagsIsRemovedFileByFile() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded))
+        items.setStatus(managed(.downloaded, bytes: nil, uploaded: false), of: book.package.url)
+
+        try makeStorage().removeDownload(of: book.package)
+        XCTAssertEqual(paths(items.removalRequests), paths([book["bookInfo.json"], book["content.md"]]))
+
+        items.setStatus(managed(.downloaded, uploaded: false), of: book["content.md"])
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .notUploaded)
+        }
+        XCTAssertEqual(items.removalRequests.count, 2, "nothing more was removed")
+    }
+
+    /// A package synced as one item is asked for whole, never file by file,
+    /// which the sync service would refuse: here its folder is on this Mac
+    /// while its files are only in the cloud.
+    func testAPackageSyncedAsOneItemIsAskedForWholeNeverFileByFile() async throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let items = try XCTUnwrap(self.items)
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil))
+        for name in ["bookInfo.json", "content.md"] {
+            items.setStatus(managed(.notDownloaded, bytes: 10), of: book[name], carriesSyncFlags: false)
+        }
+        let polls = ScriptedPolls([
+            {
+                for name in ["bookInfo.json", "content.md"] {
+                    items.setStatus(managed(.downloaded, bytes: 10), of: book[name], carriesSyncFlags: false)
+                }
+            },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.percent), [0, 100])
+        XCTAssertEqual(paths(items.downloadRequests), paths([book.package.url]))
+    }
+
+    /// A package synced as one item and only in the cloud is asked for
+    /// whole, once, and counts as one item still to come until it arrives
+    /// with every file; the start's event line says the service syncs the
+    /// package as one item.
+    func testAPackageSyncedAsOneItemOnlyInTheCloudIsAskedForWhole() async throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let items = try XCTUnwrap(self.items)
+        let package = book.package.url
+        items.setLocation(.cloud(.iCloudDrive), of: package)
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let inCloud = SharedFlag(true)
+        let polls = ScriptedPolls([
+            { items.setStatus(managed(.downloading, bytes: nil), of: package) },
+            {},
+            {
+                inCloud.set(false)
+                items.setStatus(managed(.downloaded, bytes: nil), of: package)
+            },
+        ])
+        let storage = makeStorage(sleep: { try await polls.sleep($0) }, readFolder: listing(refusing: package, while: inCloud))
+
+        let steps = try await collect(storage.download(book.package))
+
+        XCTAssertEqual(steps, [
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0),
+            BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 0, totalBytes: 0),
+        ])
+        XCTAssertEqual(paths(items.downloadRequests), paths([package]))
+        XCTAssertEqual(
+            events.recorded.first,
+            "CLOUD_DOWNLOAD_STARTED: \(package.lastPathComponent): 1 of 1 files to come from iCloud Drive, "
+                + "which syncs the package as one item"
+        )
+    }
+
+    /// What the sync service publishes for a package as a whole moves the
+    /// progress of a package only in the cloud, counted as one item still to
+    /// come, as iCloud Drive's package-level fractions reach the reader's
+    /// bar; the download listens to the package alone, since it lists no
+    /// file, and stops listening once the package is here.
+    func testWhatIsPublishedForAPackageMovesItsProgress() async throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let items = try XCTUnwrap(self.items)
+        let publisher = try XCTUnwrap(self.publisher)
+        let package = book.package.url
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let inCloud = SharedFlag(true)
+        let polls = ScriptedPolls([
+            {
+                items.setStatus(managed(.downloading, bytes: nil), of: package)
+                publisher.publish(0.4, of: package)
+            },
+            { publisher.publish(0.8, of: package) },
+            {
+                inCloud.set(false)
+                items.setStatus(managed(.downloaded, bytes: nil), of: package)
+            },
+        ])
+        let storage = makeStorage(sleep: { try await polls.sleep($0) }, readFolder: listing(refusing: package, while: inCloud))
+
+        let steps = try await collect(storage.download(book.package))
+
+        XCTAssertEqual(steps, [
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0),
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.4),
+            BookDownloadProgress(completedFiles: 0, totalFiles: 1, completedBytes: 0, totalBytes: 0, partialFiles: 0.8),
+            BookDownloadProgress(completedFiles: 2, totalFiles: 2, completedBytes: 0, totalBytes: 0),
+        ])
+        XCTAssertEqual(steps.map(\.percent), [0, 40, 80, 100])
+        XCTAssertEqual(publisher.filesListenedTo, paths([package]))
+        XCTAssertEqual(publisher.listeningCount, 0, "a listening outlived the download")
+    }
+
+    /// What the sync service publishes for a package as a whole counts for
+    /// each of its files still to come, here by size: half the package is
+    /// half of each such file, unless a file's own published part is further
+    /// along.
+    func testAPartPublishedForThePackageCountsForEachFileStillToCome() async throws {
+        let book = try makePackage(["audio.m4b", "cover.jpg"])
+        let items = try XCTUnwrap(self.items)
+        let publisher = try XCTUnwrap(self.publisher)
+        syncAsOneItem(book, package: managed(.downloaded, bytes: nil))
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"], carriesSyncFlags: false)
+        items.setStatus(managed(.notDownloaded, bytes: 100), of: book["cover.jpg"], carriesSyncFlags: false)
+        let polls = ScriptedPolls([
+            { publisher.publish(0.5, of: book.package.url) },
+            { publisher.publish(0.8, of: book["audio.m4b"]) },
+            {
+                items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"], carriesSyncFlags: false)
+                items.setStatus(managed(.downloaded, bytes: 100), of: book["cover.jpg"], carriesSyncFlags: false)
+            },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.completedBytes), [0, 500, 770, 1_000])
+        XCTAssertEqual(steps.map(\.percent), [0, 50, 77, 100])
+    }
+
+    /// A package synced as one item that the sync service is downloading
+    /// keeps a stall away, however long it takes: the four quiet checks that
+    /// make a two-second stall never come.
+    func testAPackageSyncedAsOneItemBeingDownloadedKeepsAStallAway() async throws {
+        let book = try makePackage(["content.md"])
+        let items = try XCTUnwrap(self.items)
+        let package = book.package.url
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let inCloud = SharedFlag(true)
+        // Downloading from the first check, for ten checks, then here whole.
+        let quiet: @Sendable () -> Void = {}
+        var script: [@Sendable () -> Void] = [{ items.setStatus(managed(.downloading, bytes: nil), of: package) }]
+        script += Array(repeating: quiet, count: 9)
+        script.append {
+            inCloud.set(false)
+            items.setStatus(managed(.downloaded, bytes: nil), of: package)
+        }
+        let polls = ScriptedPolls(script)
+        let storage = makeStorage(
+            sleep: { try await polls.sleep($0) },
+            stallLimit: .seconds(2),
+            readFolder: listing(refusing: package, while: inCloud)
+        )
+
+        let steps = try await collect(storage.download(book.package))
+
+        XCTAssertEqual(polls.sleeps, 11)
+        XCTAssertEqual(steps.last?.percent, 100)
+    }
+
+    /// A download error the package synced as one item still reports at the
+    /// next check ends its download with the service's words.
+    func testADownloadErrorThePackageKeepsReportingEndsItsDownload() async throws {
+        let book = try makePackage(["content.md"])
+        let items = try XCTUnwrap(self.items)
+        let package = book.package.url
+        syncAsOneItem(book, package: managed(.notDownloaded, bytes: nil))
+        let polls = ScriptedPolls([
+            { items.setStatus(managed(.notDownloaded, bytes: nil, error: "The disk is full."), of: package) },
+        ])
+        let storage = makeStorage(
+            sleep: { try await polls.sleep($0) },
+            readFolder: listing(refusing: package, while: SharedFlag(true))
+        )
+
+        _ = await download(storage.download(book.package), failsWith: .provider("The disk is full."))
+
+        XCTAssertEqual(polls.sleeps, 2)
+    }
+
+    /// A package whose files carry flags of their own downloads file by
+    /// file, its folder's flags notwithstanding, as on Google Drive: the
+    /// missing file is asked for, the download listens to the package and to
+    /// that file, and the part published for the file counts.
+    func testAPackageWhoseFilesCarryFlagsDownloadsFileByFile() async throws {
+        let book = try makePackage(["audio.m4b", "bookInfo.json"])
+        let items = try XCTUnwrap(self.items)
+        let publisher = try XCTUnwrap(self.publisher)
+        syncFileByFile(book, files: managed(.downloaded, bytes: 100))
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"])
+        let polls = ScriptedPolls([
+            { publisher.publish(0.5, of: book["audio.m4b"]) },
+            { items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"]) },
+        ])
+
+        let steps = try await collect(makeStorage(sleep: { try await polls.sleep($0) }).download(book.package))
+
+        XCTAssertEqual(steps.map(\.percent), [10, 55, 100])
+        XCTAssertEqual(paths(items.downloadRequests), paths([book["audio.m4b"]]))
+        XCTAssertEqual(publisher.filesListenedTo, paths([book.package.url, book["audio.m4b"]]))
+    }
+
     // MARK: - Installation
 
     /// The app installs the real services at launch, and the hosted tests'
@@ -941,6 +1297,39 @@ final class BookCloudStorageServiceTests: XCTestCase {
     /// reports it.
     private func putLibraryInTheCloud() {
         items.setLocation(.cloud(.iCloudDrive), of: TextMouthPaths.root)
+    }
+
+    /// Scripts `book` as iCloud Drive syncs a package, as one item: the
+    /// package has `status` and carries the sync flags, and each file, on
+    /// this Mac and `fileBytes` long, carries none, so the scripted service
+    /// refuses a request for one as for an item that doesn't exist.
+    private func syncAsOneItem(_ book: TestPackage, package status: CloudItemStatus, fileBytes: Int64 = 10) {
+        guard let items = self.items else { return XCTFail("setUp made no scripted sync service") }
+        items.setStatus(status, of: book.package.url)
+        for file in book.files.values {
+            items.setStatus(managed(.downloaded, bytes: fileBytes), of: file, carriesSyncFlags: false)
+        }
+    }
+
+    /// Scripts `book` as Google Drive syncs a package, file by file: each
+    /// file has `status` and carries its own sync flags, and so does the
+    /// package's folder, which is on this Mac and reports no size.
+    private func syncFileByFile(_ book: TestPackage, files status: CloudItemStatus) {
+        guard let items = self.items else { return XCTFail("setUp made no scripted sync service") }
+        items.setStatus(managed(.downloaded, bytes: nil), of: book.package.url)
+        for file in book.files.values {
+            items.setStatus(status, of: file)
+        }
+    }
+
+    /// A folder listing that refuses to list `folder` while `inCloud` is
+    /// on, as the system refuses a folder only in the cloud, and lists every
+    /// other folder from the sandbox.
+    private func listing(refusing folder: URL, while inCloud: SharedFlag) -> BookCloudStorageService.FolderReader {
+        { candidate in
+            if inCloud.isOn && samePath(candidate, folder) { throw downloadRefusal }
+            return try BookCloudStorageService.readFolder(candidate)
+        }
     }
 
     /// A package folder in the sandbox holding a small file for each name
@@ -1263,7 +1652,7 @@ private final class EventRecorder: @unchecked Sendable {
 
 /// A sync service that refuses every removal and otherwise answers as
 /// `base` does.
-private struct RefusingRemovals: CloudItemStatusProviding {
+private struct RefusingRemovals: SyncFlagReporting {
     /// The service that answers everything else.
     let base: FakeCloudItemStatusProvider
     /// What every removal throws.
@@ -1271,18 +1660,21 @@ private struct RefusingRemovals: CloudItemStatusProviding {
 
     func location(of folder: URL) -> StorageLocation { base.location(of: folder) }
     func status(of file: URL) -> CloudItemStatus { base.status(of: file) }
+    func flaggedStatus(of item: URL) -> FlaggedItemStatus { base.flaggedStatus(of: item) }
     func requestDownload(of file: URL) throws { try base.requestDownload(of: file) }
     func removeLocalCopy(of file: URL) throws { throw refusal }
 }
 
 /// A cloud library whose files are ordinary files on this Mac: every
-/// folder is in iCloud Drive, and each file's state is read for real.
-private struct CloudLibraryOnThisMac: CloudItemStatusProviding {
+/// folder is in iCloud Drive, and each file's state, and its flags, are
+/// read for real, so no item carries sync flags of its own.
+private struct CloudLibraryOnThisMac: SyncFlagReporting {
     /// Reads each file's state from the file system.
     private let files = UbiquitousItemStatusProvider()
 
     func location(of folder: URL) -> StorageLocation { .cloud(.iCloudDrive) }
     func status(of file: URL) -> CloudItemStatus { files.status(of: file) }
+    func flaggedStatus(of item: URL) -> FlaggedItemStatus { files.flaggedStatus(of: item) }
     func requestDownload(of file: URL) throws { XCTFail("nothing is downloaded") }
     func removeLocalCopy(of file: URL) throws { XCTFail("nothing is removed") }
 }

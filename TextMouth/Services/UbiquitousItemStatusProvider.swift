@@ -1,5 +1,38 @@
 import Foundation
 
+// MARK: - Items That Carry Sync Flags (FR02)
+
+/// One item's cloud state, and whether the sync service reports sync flags
+/// for the item itself.
+struct FlaggedItemStatus: Equatable, Sendable {
+    /// The item's cloud state, as `CloudItemStatusProviding.status(of:)`
+    /// gives it.
+    var status: CloudItemStatus
+    /// Whether the sync service reports the item's own sync flags: whether
+    /// its changes have uploaded, where its content is, or whether it is
+    /// downloading. False for an item it does not sync on its own, for an
+    /// ordinary local item, and where nothing is.
+    var carriesSyncFlags: Bool
+}
+
+/// A file-level provider that also says which items carry sync flags of
+/// their own (FR02).
+///
+/// A sync service reports sync flags for each item it syncs. iCloud Drive
+/// syncs a package, such as a book's .tmb folder, as one item: the package
+/// carries the flags, while the files inside it carry none and are refused,
+/// as items that don't exist, when a download or a removal is asked for one
+/// of them. Google Drive and Dropbox sync each file, and every file carries
+/// its own flags, as do the folders holding them, a package's folder
+/// included (measured on the real drives, October 3).
+/// `BookCloudStorageService` reads both, the package and its files, to
+/// decide which items of a book to ask about, download, and remove.
+protocol SyncFlagReporting: CloudItemStatusProviding {
+    /// The cloud state of the item at `item`, as `status(of:)` reads it,
+    /// and whether it carries sync flags of its own, both from one read.
+    func flaggedStatus(of item: URL) -> FlaggedItemStatus
+}
+
 // MARK: - Ubiquitous Item Status (FR02)
 
 /// The cloud state of files and folders, read from Foundation's
@@ -14,7 +47,7 @@ import Foundation
 ///
 /// The reads go through one function (`readMetadata`), and the two requests
 /// through two more, so tests supply their own and need no real cloud drive.
-struct UbiquitousItemStatusProvider: CloudItemStatusProviding {
+struct UbiquitousItemStatusProvider: SyncFlagReporting {
 
     // MARK: Metadata
 
@@ -227,29 +260,51 @@ struct UbiquitousItemStatusProvider: CloudItemStatusProviding {
     // MARK: One File
 
     /// The cloud state of the file at `file`, read without downloading
-    /// anything. A file the system refuses to look up without downloading,
-    /// because a folder above it is only in the cloud, is not downloaded.
+    /// anything (`flaggedStatus(of:)`).
     func status(of file: URL) -> CloudItemStatus {
+        flaggedStatus(of: file).status
+    }
+
+    /// The cloud state of the item at `item`, and whether it carries sync
+    /// flags of its own, from one read without downloading anything. An
+    /// item the system refuses to look up without downloading, because a
+    /// folder above it is only in the cloud, is not downloaded, and nothing
+    /// is known of its flags.
+    func flaggedStatus(of item: URL) -> FlaggedItemStatus {
         DatalessFiles.withoutDownloading {
             do {
-                return Self.status(from: try readMetadata(file, Self.statusKeys))
+                let metadata = try readMetadata(item, Self.statusKeys)
+                return FlaggedItemStatus(status: Self.status(from: metadata), carriesSyncFlags: Self.carriesSyncFlags(metadata))
             } catch let error where DatalessFiles.isDownloadRefusal(error) {
-                return CloudItemStatus(
+                let inFolderOnlyInCloud = CloudItemStatus(
                     state: .notDownloaded,
                     isUploaded: true,
                     byteCount: nil,
                     hasUnresolvedConflicts: false,
                     downloadError: nil
                 )
+                return FlaggedItemStatus(status: inFolderOnlyInCloud, carriesSyncFlags: false)
             } catch {
-                return .missing
+                return FlaggedItemStatus(status: .missing, carriesSyncFlags: false)
             }
         }
+    }
+
+    /// Whether `metadata` holds sync flags of the item's own: the upload
+    /// flag, the downloading status, or whether it is downloading. A sync
+    /// service reports them for each item it syncs, and none for a file
+    /// inside a package it syncs as one item (iCloud Drive's files report
+    /// only that they are managed), nor for an ordinary local item.
+    static func carriesSyncFlags(_ metadata: Metadata) -> Bool {
+        metadata.isUploaded != nil || metadata.downloadingStatus != nil || metadata.isDownloading != nil
     }
 
     /// The status `metadata` describes. An item no sync service manages is
     /// local; a managed one is described by `state(from:)`. A missing upload
     /// flag counts as uploaded and a missing conflict flag as no conflict.
+    /// A file inside a package iCloud Drive syncs as one item carries no
+    /// flags at all, so the package's own flags speak for it: the book
+    /// storage reads them (`carriesSyncFlags(_:)`, `flaggedStatus(of:)`).
     static func status(from metadata: Metadata) -> CloudItemStatus {
         // Only a sync service makes dataless items, so a dataless item is
         // managed even when the keys say otherwise.
