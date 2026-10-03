@@ -154,8 +154,13 @@ extension LibraryViewModel {
                 library.books[existingIndex] = repaired
                 if repaired != existing {
                     save()
-                    let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
-                    DiagnosticLog.event(.import, message)
+                    // The line says whether the book's file exists, never where it is.
+                    let pathExists = FileManager.default.fileExists(atPath: repaired.filePath)
+                    DiagnosticLog.event(
+                        .import,
+                        "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) "
+                            + "folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(pathExists)"
+                    )
                 }
             }
             return existing.id
