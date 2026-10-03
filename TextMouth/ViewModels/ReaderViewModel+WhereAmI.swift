@@ -6,7 +6,10 @@ import AVFoundation
 
 extension ReaderViewModel {
 
-    static let whereAmIEscalationInterval: TimeInterval = 3
+    /// How soon a second Where Am I must follow the first to ask for the
+    /// expanded announcement. A constant, so it is nonisolated like
+    /// `shouldUseFullWhereAmI(last:now:)`, which reads it.
+    nonisolated static let whereAmIEscalationInterval: TimeInterval = 3
 
     /// A rapid repeat asks for the expanded announcement; the exact boundary
     /// remains brief so a press at three seconds is deterministic.
