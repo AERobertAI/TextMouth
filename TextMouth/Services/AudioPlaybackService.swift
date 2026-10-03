@@ -1,4 +1,4 @@
-@preconcurrency import AVFoundation
+import AVFoundation
 import Combine
 
 /// Latest-wins gate for asynchronous AVPlayer seeks. AVPlayer may complete
