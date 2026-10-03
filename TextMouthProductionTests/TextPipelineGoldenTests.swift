@@ -350,6 +350,108 @@ final class TextPipelineGoldenTests: XCTestCase {
         XCTAssertEqual(provider.listFiles(), Self.lookupEntries.filter { $0.type == .file }.map(\.path))
     }
 
+    // MARK: - Opening content.md (PERF22)
+
+    /// The chapter split as it was before PERF22: every line copied into an
+    /// array, and each chapter's lines joined again and trimmed.
+    private static func splitChaptersBefore(_ markdown: String) -> [(title: String, content: String)] {
+        let prefix = "<!-- chapter: "
+        let suffix = " -->"
+        let lines = markdown.components(separatedBy: "\n")
+        var sections: [(title: String, content: String)] = []
+        var currentTitle = ""
+        var currentLines: [String] = []
+        var foundMarker = false
+        for line in lines {
+            if line.hasPrefix(prefix) && line.hasSuffix(suffix) {
+                if foundMarker {
+                    let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !content.isEmpty {
+                        sections.append((title: currentTitle, content: content))
+                    }
+                }
+                let titleStart = line.index(line.startIndex, offsetBy: prefix.count)
+                let titleEnd = line.index(line.endIndex, offsetBy: -suffix.count)
+                var title = String(line[titleStart..<titleEnd])
+                if title.contains("<!--") {
+                    title = title.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: "", options: .regularExpression)
+                        .trimmingCharacters(in: .whitespaces)
+                }
+                currentTitle = title
+                currentLines = []
+                foundMarker = true
+            } else {
+                currentLines.append(line)
+            }
+        }
+        if foundMarker {
+            let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !content.isEmpty {
+                sections.append((title: currentTitle, content: content))
+            }
+        }
+        return sections
+    }
+
+    /// Cached Markdown that puts the chapter split's every rule to the
+    /// test: markers first, last, alone, and in a row; marker lookalikes
+    /// that are not whole marker lines (a leading space, words after, a CR
+    /// LF line ending, a combining mark after the prefix or the suffix);
+    /// titles empty, accented, and holding a comment; sections empty or only
+    /// whitespace; and line breaks other than a line feed.
+    private static let splitEdgeCases: [String] = [
+        "", "\n", "\n\n", "No markers at all.\nSecond line.",
+        "<!-- chapter: One -->\nText one.\n<!-- chapter: Two -->\nText two.",
+        "Before any marker.\n<!-- chapter: One -->\nText.\n",
+        "<!-- chapter: One -->\n<!-- chapter: Two -->\n\n  \t\n<!-- chapter: Three -->\nThree.",
+        "<!-- chapter: One -->", "<!-- chapter: One -->\n", "<!-- chapter: Last -->\nEnd without a line feed",
+        "<!-- chapter: One -->\r\nCR LF text.\r\n<!-- chapter: Two -->\r\nMore.\r\n",
+        "<!-- chapter: One -->\nText.\r\n<!-- chapter: Two -->\nMore.",
+        " <!-- chapter: Indented -->\nText.", "<!-- chapter: Words --> after\nText.",
+        "<!-- chapter: \u{301}Mark after the prefix -->\nText.", "<!-- chapter: Mark after the suffix -->\u{301}\nText.",
+        "<!-- chapter:  -->\nUntitled.", "<!-- chapter: Caf\u{E9} \u{2014} \u{65E5}\u{672C} -->\nAccented title.",
+        "<!-- chapter: Title <!-- old annotation --> kept -->\nText.",
+        "<!-- chapter: One -->\n\u{2028}Line separator\u{2028}\n\u{85}\n<!-- chapter: Two -->\n\u{A0}",
+        "<!-- chapter: One -->\nA\rB\rC old Mac line ends\n<!-- chapter: Two -->\n\r",
+        "<!-- chapter: One -->\n\u{FEFF}\n<!-- chapter: Two -->\n\u{200B}",
+    ]
+
+    /// The split finds the chapters the line-array split found, with the
+    /// same titles and the same trimmed text, for every golden book's
+    /// content.md, the edge cases above, and two thousand random documents
+    /// of marker lines and tricky text.
+    func testChapterSplitMatchesTheSplitItReplaces() throws {
+        typealias Fixtures = TextPipelineFixtures
+        var documents = Self.splitEdgeCases
+        for (_, url) in try goldenBooks() {
+            let book = try Fixtures.imported(url, for: self)
+            documents.append(try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8))
+        }
+        var random = SeededGenerator(state: 22)
+        let markers = ["<!-- chapter: A -->", "<!-- chapter: B c -->", "<!-- chapter:  -->", "<!-- chapter: \u{E9} -->"]
+        let lines = markers + Fixtures.randomTrickyTexts(count: 60, maximumPieces: 8, seed: 2_222)
+        for _ in 0..<2_000 {
+            let count = Int(random.next() % 12)
+            documents.append((0..<count).map { _ in lines[Int(random.next() % UInt64(lines.count))] }.joined(separator: "\n"))
+        }
+        for markdown in documents {
+            let split = MarkdownCacheService.splitChapters(markdown)
+            let before = Self.splitChaptersBefore(markdown)
+            XCTAssertEqual(split.map(\.title), before.map(\.title), markdown.debugDescription)
+            XCTAssertEqual(split.map(\.content), before.map(\.content), markdown.debugDescription)
+        }
+    }
+
+    /// A marker line too short to hold the marker's prefix and suffix apart
+    /// (`<!-- chapter: -->`, whose one space both share) names a chapter
+    /// with no title. Reading a title there once stopped the app, so a
+    /// Markdown book holding that line could not be opened.
+    func testAMarkerTooShortForATitleNamesAnUntitledChapter() {
+        let sections = MarkdownCacheService.splitChapters("<!-- chapter: -->\nWords.\n<!-- chapter: Two -->\nMore.")
+        XCTAssertEqual(sections.map(\.title), ["", "Two"])
+        XCTAssertEqual(sections.map(\.content), ["Words.", "More."])
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the

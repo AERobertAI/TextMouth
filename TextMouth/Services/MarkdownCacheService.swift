@@ -438,44 +438,62 @@ enum MarkdownCacheService {
 
     /// Split cached Markdown into chapter sections based on chapter markers.
     /// Returns empty array if no chapter markers are found.
-    private static func splitChapters(_ markdown: String) -> [(title: String, content: String)] {
-        let lines = markdown.components(separatedBy: "\n")
+    ///
+    /// A line ends at each line feed alone, as `components(separatedBy: "\n")`
+    /// ends it, and a marker is a whole line that begins with the marker's
+    /// prefix and ends with its suffix, compared Character by Character. A
+    /// section's content is everything between its marker line and the next
+    /// one (or the end), trimmed of whitespace and newlines; one with nothing
+    /// left is dropped.
+    ///
+    /// The lines and sections are Substrings of `markdown`, found by looking
+    /// for line feeds among its UTF-8 bytes, so each section is copied once,
+    /// when it is trimmed, rather than every line being copied into an array
+    /// and every section joined again (PERF22). Those copies once took a
+    /// quarter of the time a book took to open, and much of the memory a
+    /// book in one long chapter needed to open.
+    static func splitChapters(_ markdown: String) -> [(title: String, content: String)] {
         var sections: [(title: String, content: String)] = []
-        var currentTitle = ""
-        var currentLines: [String] = []
-        var foundMarker = false
+        // The title of the section being read, and where its content starts:
+        // nil until the first marker.
+        var current: (title: String, contentStart: String.Index)?
 
-        for line in lines {
-            if line.hasPrefix(chapterMarkerPrefix) && line.hasSuffix(chapterMarkerSuffix) {
-                // Save previous section if it has content
-                if foundMarker {
-                    let content = currentLines.joined(separator: "\n")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !content.isEmpty {
-                        sections.append((title: currentTitle, content: content))
-                    }
-                }
-                // Extract title from marker
-                let titleStart = line.index(line.startIndex, offsetBy: chapterMarkerPrefix.count)
-                let titleEnd = line.index(line.endIndex, offsetBy: -chapterMarkerSuffix.count)
-                currentTitle = visibleChapterTitle(String(line[titleStart..<titleEnd]))
-                currentLines = []
-                foundMarker = true
-            } else {
-                currentLines.append(line)
-            }
-        }
-
-        // Save final section
-        if foundMarker {
-            let content = currentLines.joined(separator: "\n")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+        /// Close the section being read at `end`, keeping it if it holds anything.
+        func closeSection(at end: String.Index) {
+            guard let current else { return }
+            let content = markdown[current.contentStart..<end].trimmingCharacters(in: .whitespacesAndNewlines)
             if !content.isEmpty {
-                sections.append((title: currentTitle, content: content))
+                sections.append((title: current.title, content: content))
             }
         }
 
+        let bytes = markdown.utf8
+        var lineStart = markdown.startIndex
+        while true {
+            let lineEnd = bytes[lineStart...].firstIndex(of: UInt8(ascii: "\n")) ?? markdown.endIndex
+            // Sliced as scalars, so a line ending in the CR of a CR LF keeps
+            // it, as the lines `components(separatedBy: "\n")` made kept it.
+            let line = Substring(markdown.unicodeScalars[lineStart..<lineEnd])
+            let nextLineStart = lineEnd < markdown.endIndex ? bytes.index(after: lineEnd) : lineEnd
+            if line.hasPrefix(chapterMarkerPrefix) && line.hasSuffix(chapterMarkerSuffix) {
+                closeSection(at: lineStart)
+                current = (title: visibleChapterTitle(markerTitle(of: line)), contentStart: nextLineStart)
+            }
+            guard lineEnd < markdown.endIndex else { break }
+            lineStart = nextLineStart
+        }
+        closeSection(at: markdown.endIndex)
         return sections
+    }
+
+    /// The title a chapter marker line names: what stands between the
+    /// marker's prefix and suffix, counted in Characters. A line too short
+    /// to hold both apart (`<!-- chapter: -->`, whose single space both
+    /// share) names no title; reading one there once stopped the app.
+    private static func markerTitle(of line: Substring) -> String {
+        let titleLength = line.count - chapterMarkerPrefix.count - chapterMarkerSuffix.count
+        guard titleLength > 0 else { return "" }
+        return String(line.dropFirst(chapterMarkerPrefix.count).prefix(titleLength))
     }
 
     /// A chapter marker title is the chapter's first heading label. Caches
