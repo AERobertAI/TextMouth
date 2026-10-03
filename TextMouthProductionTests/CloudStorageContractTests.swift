@@ -662,6 +662,9 @@ final class CloudStorageContractTests: XCTestCase {
             root.appendingPathComponent("Archive Extraction", isDirectory: true)
         )
         XCTAssertEqual(MachineLocalPaths.importStaging, root.appendingPathComponent("Import Staging", isDirectory: true))
+        let caches = library.appendingPathComponent("Caches/com.textmouth.TextMouth", isDirectory: true)
+        XCTAssertEqual(MachineLocalPaths.caches, caches)
+        XCTAssertEqual(MachineLocalPaths.readingTextCache, caches.appendingPathComponent("Reading Text", isDirectory: true))
     }
 
     // MARK: - The Test Doubles

@@ -890,14 +890,24 @@ final class ReaderViewModel: ObservableObject {
     /// The book's own edits are laid over the metadata back on the main
     /// actor, from the reader's copy of the book as it is by then, so an
     /// edit the library makes while the book loads is shown too (TODO P10).
-    nonisolated static func readContent(of book: Book, audioTagsFrom tagsURL: URL? = nil) throws -> LoadedContent {
+    ///
+    /// A text book's reading text goes through `readingTexts`, this Mac's
+    /// cache of the reading text of the large books opened lately (PERF22,
+    /// `ReadingTextCache`): it is read from there when kept for the book's
+    /// content.md as it is, and kept there after a parse otherwise.
+    nonisolated static func readContent(
+        of book: Book,
+        audioTagsFrom tagsURL: URL? = nil,
+        readingTexts: ReadingTextCache? = .shared
+    ) throws -> LoadedContent {
         let url = book.bookFileURL
         let format = book.format
         let cacheOutdated = !format.isAudio
             && MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
         let analysis = try BookContentAnalysisService.load(
             book: book,
-            regenerateTextCache: cacheOutdated
+            regenerateTextCache: cacheOutdated,
+            readingTexts: readingTexts
         )
 
         var fileMetadata: EPUBMetadata?
@@ -940,7 +950,9 @@ final class ReaderViewModel: ObservableObject {
     /// Shows `loaded`, read from the book at `filePath`: its chapters, its
     /// headings, its metadata, and its audio files, with the saved position
     /// kept within the book. Saves a new index, and starts playing for a
-    /// finished book that continued to this one while it loaded.
+    /// finished book that continued to this one while it loaded; a text
+    /// book that does not start playing has the speech of the chapter it
+    /// opened at prepared in the background (`prepareOpenedChapterSpeech()`).
     func showLoadedContent(_ loaded: LoadedContent, readFrom filePath: String) {
         let parsed = loaded.content
         if let audioFiles = loaded.audioFiles {
@@ -997,6 +1009,9 @@ final class ReaderViewModel: ObservableObject {
         // A finished book may have continued to this one while
         // it loaded: start playing for it now.
         claimAutoplayRequest()
+        // Otherwise get the speech of the chapter the cursor is in ready
+        // off the main thread, so Play finds it prepared.
+        prepareOpenedChapterSpeech()
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the

@@ -151,6 +151,61 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF22: The Kept Reading Text
+
+    /// Opening a book by parsing its content.md, as every open did before
+    /// the reading text cache and as a first open still does, and from the
+    /// reading text the cache kept, as each later open of a large book
+    /// does; and the store that keeps it, which runs in the background after
+    /// the first open. The books are the generated EPUBs of the developer's
+    /// median size (30 documents), of a large book (106), and of the largest
+    /// anthology (1,447), and a 20 MB plain-text book in one chapter. The
+    /// cache keeps every size here, so the median book's figures show what
+    /// the app's one-megabyte minimum leaves out.
+    func testPERF22KeptReadingText() throws {
+        var books: [(name: String, book: Book)] = []
+        for (documents, paragraphs) in [(30, 38), (106, 113), (1_447, 32)] {
+            let entries = TextPipelineFixtures.convertedBookEPUB(documents: documents, paragraphs: paragraphs)
+            let epub = try TextPipelineFixtures.writeEPUB(entries, named: "kept-\(documents).epub", for: self)
+            books.append(("EPUB of \(documents) documents", try TextPipelineFixtures.imported(epub, for: self)))
+        }
+        let text = TextPipelineFixtures.plainText(bytes: 20 * 1_048_576)
+        let file = try TextPipelineFixtures.writeText(text, named: "kept-one-chapter.txt", for: self)
+        books.append(("20 MB plain text in one chapter", try TextPipelineFixtures.imported(file, for: self)))
+        let cache = ReadingTextCache(
+            folder: try TextPipelineFixtures.temporaryFolder(for: self),
+            producer: "PERF22 benchmark",
+            minimumContentByteCount: 0
+        )
+
+        for (name, book) in books {
+            let contentMarkdown = MarkdownCacheService.cacheURL(for: book)
+            let megabytes = Double(FileStamp(of: contentMarkdown)?.byteCount ?? 0) / 1_048_576
+            let label = String(format: "%@ (%.1f MB content.md)", name, megabytes)
+            try benchmark("PERF22", "load parsing content.md, \(label)") {
+                try BookContentAnalysisService.load(book: book)
+            }
+            let parsed = try BookContentAnalysisService.load(book: book, readingTexts: cache)
+            ReadingTextCache.waitForBackgroundWork()
+            try benchmark("PERF22", "load from the kept reading text, \(label)") {
+                let kept = try BookContentAnalysisService.load(book: book, readingTexts: cache)
+                guard kept.readFromReadingTextCache else {
+                    throw TestError.assertionFailed("\(name) was not read from the kept reading text")
+                }
+                return kept
+            }
+            let recorded = try XCTUnwrap(try BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint)
+            let key = ReadingTextKey(
+                contentDigest: recorded.cache.digest,
+                content: try XCTUnwrap(ContentFileIdentity(of: contentMarkdown)),
+                bookTitle: book.title
+            )
+            try benchmark("PERF22", "keeping the reading text, \(label)", repetitions: 3) {
+                try cache.store(parsed.content.chapters, for: book.id, key: key)
+            }
+        }
+    }
+
     // MARK: - PERF23: Escaping and Plain-Text Headings
 
     /// Escaping 20 MB of prose as Markdown literals, and dividing it, and

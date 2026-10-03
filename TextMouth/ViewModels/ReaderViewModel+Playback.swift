@@ -1124,16 +1124,47 @@ extension ReaderViewModel {
         return speech
     }
 
-    /// Prepare a long chapter's speech off the main actor for the look-ahead,
-    /// which waits for it, and choose the chapter to render ahead again once
-    /// the speech is ready. A preparation of the same inputs already under
-    /// way is not started again.
-    private func prepareInBackground(_ inputs: ChapterSpeechInputs) {
-        chapterSpeechCache.awaitedByLookAhead = inputs
+    /// Prepare the speech of the chapter Play will start in off the main
+    /// actor once a text book has loaded, so that Play finds it kept instead
+    /// of preparing it on the main thread, where the developer's rules take
+    /// 155 ms for a chapter of 744,000 UTF-16 units and 4 s for a book of
+    /// one 20 MB chapter in the Release app. That chapter is the cursor's,
+    /// or, when the cursor's chapter holds no words at all, as a cover page
+    /// does, the next chapter that does, which Play passes on to. Nothing is
+    /// prepared for an audiobook, by a closed reader, or when the speech is
+    /// already kept or being prepared.
+    ///
+    /// The speech is kept only while the chapter is still prepared from the
+    /// same inputs when it is ready (`finishPreparingInBackground(_:)`): a
+    /// change to the substitution rules, the repeated-symbol setting, the
+    /// pauses, or the skipped sections meanwhile leaves Play to prepare the
+    /// chapter from the settings in force, as it always did. So does Play
+    /// pressed before the preparation ends.
+    func prepareOpenedChapterSpeech() {
+        guard !hasClosed, !isAudioBook, let content else { return }
+        let chapters = content.chapters
+        let chapterIndex = Self.nextSpeakableChapterIndex(from: currentChapterIndex, chapterCount: chapters.count) {
+            Self.hasSpeakableText(chapters[$0].text)
+        } ?? currentChapterIndex
+        guard let inputs = speechInputs(forChapterAt: chapterIndex),
+              !chapterSpeechCache.isKeptOrPreparing(inputs) else { return }
+        prepareInBackground(inputs, forLookAhead: false)
+    }
+
+    /// Prepare a chapter's speech off the main actor and keep it when it is
+    /// ready. For the look-ahead (`forLookAhead`), which waits for a long
+    /// chapter's speech this way, choose the chapter to render ahead again
+    /// once the speech is ready. A preparation of the same inputs already
+    /// under way is not started again.
+    private func prepareInBackground(_ inputs: ChapterSpeechInputs, forLookAhead: Bool = true) {
+        if forLookAhead {
+            chapterSpeechCache.awaitedByLookAhead = inputs
+        }
         guard chapterSpeechCache.beginPreparingInBackground(inputs) else { return }
         DiagnosticLog.trace(
             .playback,
-            "preRender: preparing chapter \(inputs.chapterIndex) (\(inputs.text.utf16Length) UTF-16 units) off the main thread"
+            "\(forLookAhead ? "preRender" : "open"): preparing chapter \(inputs.chapterIndex) "
+                + "(\(inputs.text.utf16Length) UTF-16 units) off the main thread"
         )
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let speech = inputs.prepare()

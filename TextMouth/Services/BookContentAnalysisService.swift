@@ -13,6 +13,9 @@ enum BookContentAnalysisService {
         /// one that now carries new fingerprints of its text cache.
         var usedPersistedIndex: Bool
         var cacheFormatVersion: String?
+        /// Whether the reading text came from the book's cached reading text
+        /// (`ReadingTextCache`) rather than from parsing content.md.
+        var readFromReadingTextCache = false
     }
 
     /// Load `book`'s content with its index. The index saved in the book's
@@ -28,11 +31,19 @@ enum BookContentAnalysisService {
     /// `hasher` computes the digests that check needs; tests pass one that
     /// counts them. `isDataless` says whether a file is dataless (FR02):
     /// the maintenance access's check, or `DatalessFiles.isDataless`.
+    ///
+    /// `readingTexts`, which only the reader passes, keeps the reading text
+    /// of the large books opened lately (PERF22, `ReadingTextCache`): an
+    /// unchanged book whose reading text it keeps is read from it instead
+    /// of parsing content.md, and a large book whose content.md was parsed
+    /// is kept in it for the next open. Imports and maintenance passes read
+    /// content.md, and keep nothing.
     static func load(
         book: Book,
         regenerateTextCache: Bool = false,
         hasher: FingerprintHasher = .md5,
-        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless,
+        readingTexts: ReadingTextCache? = nil
     ) throws -> Result {
         let url = URL(fileURLWithPath: book.filePath)
 
@@ -88,7 +99,8 @@ enum BookContentAnalysisService {
                 && book.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
             verifying: !regenerateTextCache,
             hasher: hasher,
-            isDataless: isDataless
+            isDataless: isDataless,
+            readingTexts: readingTexts
         )
     }
 
@@ -124,6 +136,8 @@ enum BookContentAnalysisService {
     ///     `isDataless` calls dataless when it is stamped (FR02) is never
     ///     judged by the size and date it reports, and a dataless source is
     ///     never read for its digest (`TextCacheFingerprint.verify`).
+    ///   - readingTexts: The reader's cache of reading texts, or nil to
+    ///     parse content.md and keep nothing (see `cachedContent`).
     ///
     /// A saved index that fails validation or alignment is reported and
     /// replaced by a fresh index of the text, as before fingerprints. Since
@@ -145,12 +159,17 @@ enum BookContentAnalysisService {
     /// When the source cannot be read again, a stale cache is read as it is,
     /// with the fingerprints it was written with, so the next load tries
     /// again instead of trusting it.
+    ///
+    /// content.md itself is read only when it is needed, for its digest or
+    /// to be parsed: a book whose reading text is kept for this very file
+    /// opens without reading it at all.
     private static func loadExistingCache(
         of book: Book,
         cacheIsCurrent: Bool,
         verifying: Bool,
         hasher: FingerprintHasher,
-        isDataless: (URL) -> Bool
+        isDataless: (URL) -> Bool,
+        readingTexts: ReadingTextCache?
     ) throws -> Result {
         let sourceURL = book.bookFileURL
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
@@ -159,19 +178,30 @@ enum BookContentAnalysisService {
         // Stamp both files before reading either, so a file that changes
         // while it is read differs from its stamp next time. Whether each is
         // dataless is asked with its stamp, since reading content.md for the
-        // reader downloads it.
+        // reader downloads it. content.md's identity, which a kept reading
+        // text must have been read from, is taken with its stamp too.
         let sourceStamp = FileStamp(of: sourceURL)
         let cacheStamp = FileStamp(of: cacheURL)
+        let cacheIdentity = readingTexts == nil ? nil : ContentFileIdentity(of: cacheURL)
         let sourceIsDataless = isDataless(sourceURL)
         let cacheIsDataless = isDataless(cacheURL)
-        let bytes = try Data(contentsOf: cacheURL)
+
+        // content.md's bytes, read when first needed, for its digest or to
+        // parse it, and at most once.
+        var knownBytes: Data?
+        func cacheBytes() throws -> Data {
+            if let knownBytes { return knownBytes }
+            let bytes = try Data(contentsOf: cacheURL)
+            knownBytes = bytes
+            return bytes
+        }
 
         // content.md's digest, computed only when a check needs it, and at
         // most once.
         var knownCacheDigest: String?
-        func cacheDigest() -> String {
+        func cacheDigest() throws -> String {
             if let knownCacheDigest { return knownCacheDigest }
-            let digest = hasher.digestOfData(bytes)
+            let digest = hasher.digestOfData(try cacheBytes())
             knownCacheDigest = digest
             return digest
         }
@@ -182,7 +212,7 @@ enum BookContentAnalysisService {
         // Whether the files were found to hold what `recorded` describes.
         var verified = false
         if verifying, let recorded {
-            switch recorded.verify(
+            switch try recorded.verify(
                 sourceURL: sourceURL,
                 sourceStamp: sourceStamp,
                 cacheStamp: cacheStamp,
@@ -205,8 +235,50 @@ enum BookContentAnalysisService {
         // Whether a saved index that may be used was set aside, by validation
         // here (which reported why) or by alignment below.
         var savedIndexFailed = cacheIsCurrent && record?.contentIndex != nil && saved == nil
+
+        /// The result for `content`, paired with the index chosen by now:
+        /// the saved one, or one measured from `content` itself.
+        func result(_ content: DocumentContent, readFromReadingTextCache: Bool) -> Result {
+            var index = saved ?? content.contentIndex.replacingFormat(book.format)
+            index.textCacheFingerprint = fingerprint
+            // The saved index counts as used only when the package already
+            // records these fingerprints, in its state and in that index;
+            // otherwise the caller's save must record them.
+            let unchangedRecord = saved != nil && saved?.textCacheFingerprint == fingerprint && recorded == fingerprint
+            return Result(
+                content: DocumentContent(
+                    title: content.title,
+                    author: content.author,
+                    chapters: content.chapters,
+                    contentIndex: index
+                ),
+                index: index,
+                audioFilePaths: nil,
+                audioSegments: nil,
+                usedPersistedIndex: unchangedRecord,
+                cacheFormatVersion: cacheIsCurrent ? MarkdownCacheService.currentCacheVersion : nil,
+                readFromReadingTextCache: readFromReadingTextCache
+            )
+        }
+
+        // What a reading text kept for this content.md must have been read
+        // from: given only while the files hold what their record describes,
+        // by that record's digest of content.md and by its identity now.
+        let readingTextKey: ReadingTextKey? = {
+            guard verified, let fingerprint, let cacheIdentity else { return nil }
+            return ReadingTextKey(contentDigest: fingerprint.cache.digest, content: cacheIdentity, bookTitle: book.title)
+        }()
+        // The reading text kept for exactly that, when the book is large
+        // enough to be kept and the saved index was measured from the same
+        // content.md.
+        if let readingTexts, let readingTextKey, readingTexts.keeps(readingTextKey), let index = saved,
+           index.textCacheFingerprint?.cache.digest == readingTextKey.contentDigest,
+           let content = cachedContent(of: book, in: readingTexts, key: readingTextKey, index: index) {
+            return result(content, readFromReadingTextCache: true)
+        }
+
         var content = MarkdownCacheService.parseMultiChapterMarkdown(
-            try MarkdownCacheService.cacheText(from: bytes, at: cacheURL),
+            try MarkdownCacheService.cacheText(from: try cacheBytes(), at: cacheURL),
             bookTitle: book.title,
             bookAuthor: book.author,
             contentIndex: saved
@@ -228,10 +300,12 @@ enum BookContentAnalysisService {
         // that kept content.md's size and date, so confirm content.md by its
         // digest before indexing it again. One that changed is rebuilt; when
         // that fails, the recorded fingerprints stay, as for any stale cache.
-        if savedIndexFailed, verified, let recorded, cacheDigest() != recorded.cache.digest {
+        if savedIndexFailed, verified, let recorded, try cacheDigest() != recorded.cache.digest {
             if let rebuilt = rebuildStaleCache(of: book, because: .cacheChanged) {
                 return rebuilt
             }
+            // content.md does not hold what its record describes after all.
+            verified = false
             fingerprint = recorded
         }
 
@@ -243,28 +317,54 @@ enum BookContentAnalysisService {
            let source = FileFingerprint(of: sourceURL, hasher: hasher) {
             fingerprint = TextCacheFingerprint(
                 source: source,
-                cache: FileFingerprint(stamp: cacheStamp, digest: cacheDigest())
+                cache: FileFingerprint(stamp: cacheStamp, digest: try cacheDigest())
             )
         }
 
-        var index = saved ?? content.contentIndex.replacingFormat(book.format)
-        index.textCacheFingerprint = fingerprint
-        // The saved index counts as used only when the package already
-        // records these fingerprints, in its state and in that index;
-        // otherwise the caller's save must record them.
-        let unchangedRecord = saved != nil && saved?.textCacheFingerprint == fingerprint && recorded == fingerprint
-        return Result(
-            content: DocumentContent(
-                title: content.title,
-                author: content.author,
-                chapters: content.chapters,
-                contentIndex: index
-            ),
-            index: index,
-            audioFilePaths: nil,
-            audioSegments: nil,
-            usedPersistedIndex: unchangedRecord,
-            cacheFormatVersion: cacheIsCurrent ? MarkdownCacheService.currentCacheVersion : nil
+        // A large book parsed from a content.md that holds what its record
+        // describes is kept for its next open, which then reads no
+        // content.md. It is kept in the background: this open never waits
+        // for the write.
+        if verified, let readingTexts, let readingTextKey {
+            readingTexts.storeInBackground(content.chapters, for: book.id, key: readingTextKey)
+        }
+        return result(content, readFromReadingTextCache: false)
+    }
+
+    /// `book`'s reading text as `readingTexts` keeps it for the content.md
+    /// `key` describes, paired with `index`, the saved index measured from
+    /// that content.md; nil when none is kept for `key`. A kept reading text
+    /// is checked against the index as a parsed one is, apart from counting
+    /// words: each chapter's length, and its headings' places, labels, and
+    /// levels. One that does not match, or a file that cannot be read, is
+    /// reported as `READING_TEXT_CACHE_REJECTED: <title>: <reason>` and
+    /// removed, so the caller parses content.md and keeps that instead.
+    private static func cachedContent(
+        of book: Book,
+        in readingTexts: ReadingTextCache,
+        key: ReadingTextKey,
+        index: BookContentIndex
+    ) -> DocumentContent? {
+        let chapters: [Chapter]
+        switch readingTexts.chapters(for: book.id, key: key) {
+        case .found(let found):
+            chapters = found
+        case .none:
+            return nil
+        case .damaged(let reason):
+            reportRejectedReadingText(of: book, reason: reason)
+            return nil
+        }
+        if let reason = index.alignmentFailure(with: chapters, countingWords: false) {
+            reportRejectedReadingText(of: book, reason: reason)
+            readingTexts.remove(bookID: book.id)
+            return nil
+        }
+        return DocumentContent(
+            title: MarkdownCacheService.documentTitle(of: chapters, bookTitle: book.title),
+            author: book.author,
+            chapters: chapters,
+            contentIndex: index
         )
     }
 
@@ -372,6 +472,13 @@ enum BookContentAnalysisService {
     /// `CONTENT_INDEX_REJECTED: <title>: <reason>`.
     private static func reportRejectedIndex(of book: Book, reason: String) {
         logLine("CONTENT_INDEX_REJECTED", about: book, reason)
+    }
+
+    /// Record in the console and the debug log that the reading text kept
+    /// for `book` (`ReadingTextCache`) could not be used, and why, as the
+    /// single line `READING_TEXT_CACHE_REJECTED: <title>: <reason>`.
+    private static func reportRejectedReadingText(of book: Book, reason: String) {
+        logLine("READING_TEXT_CACHE_REJECTED", about: book, reason)
     }
 
     /// Record in the console and the debug log that `book`'s text cache no

@@ -196,7 +196,8 @@ final class LibraryViewModel: ObservableObject {
 
     /// The startup the launch check defers until the library is there (FR02):
     /// the directory structure, the library's identity, the sweep of what
-    /// interrupted imports left, the index with its repair, the observers,
+    /// interrupted imports left and of the reading texts this Mac kept that
+    /// went unused for a day, the index with its repair, the observers,
     /// and the background maintenance. It runs once: at launch, or on the
     /// Try Again that first finds the library.
     func startLibrary() {
@@ -208,6 +209,9 @@ final class LibraryViewModel: ObservableObject {
         recordLibraryIdentity()
         // Clear what ZIP imports interrupted by a crash left extracted.
         removeLeftoverArchiveExtractions()
+        // Clear the reading texts this Mac kept that went unused for a day,
+        // off the main thread; they are this Mac's own, never in the cloud.
+        ReadingTextCache.shared.removeExpiredInBackground()
 
         // Load the index and run the startup repair; an unreadable index
         // enters recovery with a provisional library and saves nothing.

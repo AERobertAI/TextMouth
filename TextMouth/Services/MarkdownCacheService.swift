@@ -102,6 +102,8 @@ enum MarkdownCacheService {
     /// the cache against. The source is fingerprinted before extraction
     /// reads it: one replaced meanwhile then differs from its fingerprint
     /// next time, instead of being recorded as the one this cache came from.
+    /// Each one also removes the reading text this Mac kept for the book
+    /// (`ReadingTextCache`), which the old content.md gave.
     /// Every generation is storage work (TODO S04): a data-directory move
     /// waits for it, so its cache lands where it chose to write it, and one
     /// started during a move waits until the move has published. A book
@@ -140,7 +142,7 @@ enum MarkdownCacheService {
         let parsed: DocumentContent
         if let chapters = extracted.chapters, !chapters.isEmpty {
             parsed = DocumentContent(
-                title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
+                title: documentTitle(of: chapters, bookTitle: book.title),
                 author: book.author,
                 chapters: chapters,
                 contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
@@ -160,6 +162,10 @@ enum MarkdownCacheService {
         // byte-order mark, which is how a String's UTF-8 write stores them.
         let bytes = Data(extracted.markdown.utf8)
         try bytes.write(to: cachePath, options: .atomic)
+        // The reading text this Mac kept for the book was read from the
+        // content.md just replaced, so it goes now rather than at the next
+        // open, which would find it no longer matches (PERF22).
+        ReadingTextCache.shared.remove(bookID: book.id)
         var index = parsed.contentIndex
         index.textCacheFingerprint = fingerprint(source: sourceFingerprint, written: bytes, to: cachePath)
         let content = DocumentContent(
@@ -394,7 +400,7 @@ enum MarkdownCacheService {
             let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle, includeNavigationHeadings: true))
                 ?? Chapter(title: bookTitle, text: markdown, headings: [])
             return DocumentContent(
-                title: chapter.title.isEmpty ? bookTitle : chapter.title,
+                title: documentTitle(of: [chapter], bookTitle: bookTitle),
                 author: bookAuthor,
                 chapters: [chapter],
                 contentIndex: contentIndex
@@ -425,15 +431,21 @@ enum MarkdownCacheService {
             }
         }
 
-        // Use the first chapter's title as the document title, or fall back to book title
-        let docTitle = chapters.first?.title.isEmpty == false ? chapters.first!.title : bookTitle
-
         return DocumentContent(
-            title: docTitle,
+            title: documentTitle(of: chapters, bookTitle: bookTitle),
             author: bookAuthor,
             chapters: chapters,
             contentIndex: contentIndex
         )
+    }
+
+    /// The title of a book whose reading text is `chapters`: its first
+    /// chapter's title, or `bookTitle` when that is empty or there is no
+    /// chapter. Extraction, parsing content.md, and reading a book's cached
+    /// reading text (`ReadingTextCache`) all name a book's content this way.
+    static func documentTitle(of chapters: [Chapter], bookTitle: String) -> String {
+        guard let first = chapters.first, !first.title.isEmpty else { return bookTitle }
+        return first.title
     }
 
     /// Split cached Markdown into chapter sections based on chapter markers.

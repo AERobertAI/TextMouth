@@ -617,4 +617,18 @@ enum MachineLocalPaths {
     static var keptBooks: URL {
         root.appendingPathComponent("Kept Books.json", isDirectory: false)
     }
+
+    /// ~/Library/Caches/com.textmouth.TextMouth: what TextMouth can always
+    /// make again from the data directory. Time Machine leaves the Caches
+    /// folder out of backups, and macOS may empty it when the disk runs low.
+    static var caches: URL {
+        TextMouthRuntime.current.homeDirectory
+            .appendingPathComponent("Library/Caches/com.textmouth.TextMouth", isDirectory: true)
+    }
+
+    /// The reading text of the large books this Mac opened lately
+    /// (`ReadingTextCache`), each kept for a day after it was last used.
+    static var readingTextCache: URL {
+        caches.appendingPathComponent("Reading Text", isDirectory: true)
+    }
 }

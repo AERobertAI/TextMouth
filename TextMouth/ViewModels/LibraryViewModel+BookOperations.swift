@@ -172,11 +172,13 @@ extension LibraryViewModel {
     /// Takes `book`, whose package was just deleted, out of the library
     /// model and out of the persistence queue: no write queued for it may
     /// chase the deleted package, and a failed write of its record no
-    /// longer counts as unsaved (TODO S09). Every removal that deletes a
+    /// longer counts as unsaved (TODO S09). The reading text this Mac kept
+    /// for it goes too (`ReadingTextCache`). Every removal that deletes a
     /// package ends here.
     func removeDeletedBook(_ book: Book) {
         library.removeBook(id: book.id)
         LibraryPersistenceService.forgetDeletedBook(book)
+        ReadingTextCache.shared.remove(bookID: book.id)
     }
 
     // MARK: - Moving Books

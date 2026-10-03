@@ -67,8 +67,9 @@ struct FileStamp: Hashable, Sendable {
 
     /// `time` in nanoseconds since 1970. A time outside what `Int64` can
     /// count (before 1678 or after 2262), which no real file has, is held at
-    /// the nearest limit instead of trapping on overflow.
-    private static func nanoseconds(since1970 time: timespec) -> Int64 {
+    /// the nearest limit instead of trapping on overflow. Every file time a
+    /// stamp or an identity keeps (`ContentFileIdentity`) is converted here.
+    static func nanoseconds(since1970 time: timespec) -> Int64 {
         let seconds = Int64(time.tv_sec)
         let (scaled, overflowed) = seconds.multipliedReportingOverflow(by: 1_000_000_000)
         guard !overflowed else { return seconds < 0 ? .min : .max }
