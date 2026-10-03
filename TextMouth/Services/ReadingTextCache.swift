@@ -287,7 +287,9 @@ struct ReadingTextCache: Sendable {
         guard byteCount > 0 else { return byteCount == 0 ? "" : nil }
         guard let bytes = try handle.read(upToCount: byteCount), bytes.count == byteCount else { return nil }
         let text = String(decoding: bytes, as: UTF8.self)
-        // Decoding replaces what is not UTF-8, which changes the length.
+        // Decoding puts U+FFFD in place of what is not UTF-8, which nearly
+        // always changes the byte count; the caller's check against the
+        // index (each chapter's UTF-16 length and headings) comes after.
         return text.utf8.count == byteCount ? text : nil
     }
 
