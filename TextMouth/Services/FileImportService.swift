@@ -287,7 +287,7 @@ enum FileImportService {
                 throw TMBPackageImportError.invalidPackage("the content format does not match bookInfo.json")
             }
             guard !info.metadata.md5Hash.isEmpty,
-                  try content(at: contentURL, hasChecksum: info.metadata.md5Hash) else {
+                  try content(at: contentURL, of: info.metadata.format, hasChecksum: info.metadata.md5Hash) else {
                 throw TMBPackageImportError.invalidPackage("the content hash does not match bookInfo.json")
             }
         }
@@ -295,16 +295,16 @@ enum FileImportService {
         return TMBPackageInspection(info: info, contentURL: contentURL)
     }
 
-    /// Whether the book whose file in its package is `contentURL` still has
-    /// the checksum `recorded`: the MD5 of that file, or, for a DAISY book
-    /// kept as its package's files, those files' checksum
-    /// (`DAISYPackageInventory.contentHash()`), which the record of a loose
-    /// DAISY book's import holds (TODO I02).
-    private static func content(at contentURL: URL, hasChecksum recorded: String) throws -> Bool {
+    /// Whether the book of `format` whose file in its package is
+    /// `contentURL` still has the checksum `recorded`: the MD5 of that file,
+    /// or, for a DAISY book kept as its package's files, those files'
+    /// checksum (`DAISYPackageInventory.contentHash()`), which the record of
+    /// a loose DAISY book's import holds (TODO I02).
+    private static func content(at contentURL: URL, of format: BookFormat, hasChecksum recorded: String) throws -> Bool {
         if try md5Hash(of: contentURL) == recorded {
             return true
         }
-        guard let package = try? DAISYPackageInventory.ofSource(contentURL) else { return false }
+        guard let package = try? daisyPackage(of: contentURL, format: format) else { return false }
         return (try? package.contentHash()) == recorded
     }
 
@@ -523,7 +523,7 @@ enum FileImportService {
             }
 
             try run.begin(.readingSource)
-            let package = try DAISYPackageInventory.ofSource(sourceURL)
+            let package = try daisyPackage(of: sourceURL, format: format)
             let hash = try importHash(of: sourceURL, package: package)
             let metadata = ImportedFileMetadata.read(
                 from: package?.entryURL ?? sourceURL,
@@ -583,13 +583,23 @@ enum FileImportService {
     /// - Throws: when the source cannot be read, or is a folder that is not
     ///   one DAISY book.
     static func importHash(of source: URL) throws -> String {
-        try importHash(of: source, package: DAISYPackageInventory.ofSource(source))
+        try importHash(of: source, package: daisyPackage(of: source, format: BookFormat.detect(from: source)))
     }
 
     /// The checksum a book imported from `source` is known by, when
     /// `package` is the DAISY package `source` is, or nil when it is none.
     private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
         try package?.contentHash() ?? md5Hash(of: source)
+    }
+
+    /// The DAISY package `source`, a book of `format`, is: for a DAISY book
+    /// kept as loose files (its folder, or its OPF or ncc.html), the files
+    /// it needs (`DAISYPackageInventory.ofSource(_:)`). Nil for any other
+    /// source, a DAISY ZIP included, and for any source in another format,
+    /// such as an unpacked EPUB that also has a package file.
+    private static func daisyPackage(of source: URL, format: BookFormat?) throws -> DAISYPackageInventory? {
+        guard format == .daisy else { return nil }
+        return try DAISYPackageInventory.ofSource(source)
     }
 
     /// Copies what an import of `source` reads into the staged package

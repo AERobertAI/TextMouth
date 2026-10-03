@@ -161,6 +161,25 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(try folderEntries(), [])
     }
 
+    /// A folder in another book format is never taken for a DAISY package,
+    /// even with a package file at its top: an unpacked EPUB named like one
+    /// fails as before, and nothing of it is copied.
+    func testFolderInAnotherFormatIsNeverTakenForADAISYPackage() throws {
+        let folder = try Fixtures.writeFolder(
+            ["content.opf": Fixtures.packageBook["book.opf", default: ""], "mimetype": "application/epub+zip"],
+            named: "Harbor Guide.epub",
+            in: sources
+        )
+
+        XCTAssertEqual(BookFormat.detect(from: folder), .epub)
+        XCTAssertThrowsError(try FileImportService.importHash(of: folder))
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)) { error in
+            XCTAssertEqual((error as? ImportFailure)?.step, .readingSource)
+            XCTAssertNil((error as? ImportFailure)?.underlying as? DAISYPackageError)
+        }
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
     // MARK: - Duplicates
 
     /// The same book imported again, here from a copy of its folder
