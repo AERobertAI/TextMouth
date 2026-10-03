@@ -1230,6 +1230,13 @@ extension LibraryViewModel {
     /// startup runs on that library. Returns the outcome, presenting
     /// nothing; on success TextMouth is quitting.
     ///
+    /// The switch holds the storage work, as a move does
+    /// (`StorageBoundary.holdWork(for:)`), until TextMouth has asked to quit.
+    /// While another operation holds it (a data-directory move, Rebuild
+    /// Directory, or a folder edit moving books between folders) the switch
+    /// is refused, saying which, since quitting would stop that operation
+    /// part way; and none of them can begin while TextMouth opens again.
+    ///
     /// Unsaved changes are written first
     /// (`LibraryPersistenceService.flushPendingSave`). While the library is
     /// available, a change that still can't be saved, as the failure center
@@ -1248,9 +1255,13 @@ extension LibraryViewModel {
         at folder: URL,
         relaunching relauncher: TextMouthRelauncher = .live
     ) async -> OperationOutcome {
-        guard dataDirectoryMove == nil else {
-            return .failure(Self.switchFailureContext, StorageBusyError(reason: .movingDataDirectory))
+        let hold: StorageWorkHold
+        do {
+            hold = try StorageBoundary.shared.holdWork(for: .switchingLibraries)
+        } catch {
+            return .failure(Self.switchFailureContext, error)
         }
+        defer { hold.release() }
         LibraryPersistenceService.flushPendingSave()
         configService.flushScheduledSave()
         let unsaved = failureCenter.unsavedFailures()

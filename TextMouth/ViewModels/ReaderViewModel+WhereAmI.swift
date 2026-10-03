@@ -342,8 +342,21 @@ extension ReaderViewModel {
     /// Post a VoiceOver announcement from the key (or main) window with high
     /// priority, and remember it in `lastAnnouncement` for tests.
     func announceToVoiceOver(_ message: String) {
+        postAnnouncement(message, priority: .high)
+    }
+
+    /// Post a VoiceOver announcement with medium priority, which VoiceOver
+    /// speaks after what it is saying rather than over it, and remember it
+    /// in `lastAnnouncement` for tests.
+    func announceToVoiceOverAfterCurrentSpeech(_ message: String) {
+        postAnnouncement(message, priority: .medium)
+    }
+
+    /// Post `message` from the key (or main) window at `priority`, and
+    /// remember it in `lastAnnouncement`.
+    private func postAnnouncement(_ message: String, priority: NSAccessibilityPriorityLevel) {
         lastAnnouncement = message
-        VoiceOverAnnouncer.announce(message)
+        VoiceOverAnnouncer.announce(message, priority: priority)
     }
 }
 

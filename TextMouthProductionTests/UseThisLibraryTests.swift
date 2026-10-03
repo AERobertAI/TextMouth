@@ -83,21 +83,69 @@ final class UseThisLibraryTests: XCTestCase {
         XCTAssertTrue(center.hasUnsavedChanges, "the unsaved change was given up")
     }
 
-    /// While the library moves, switching is refused.
-    func testUseThisLibraryIsRefusedWhileTheLibraryMoves() async throws {
-        let preferences = makeSandboxedPreferences("UseWhileMoving")
+    /// While another operation holds the storage work, switching is refused,
+    /// saying what that operation is doing, since quitting would stop it part
+    /// way: a data-directory move, Rebuild Directory, a folder edit moving
+    /// books between folders, or another switch opening TextMouth again.
+    /// Nothing is recorded, TextMouth stays open, and once the hold ends the
+    /// switch goes ahead.
+    func testUseThisLibraryIsRefusedWhileStorageWorkIsHeld() async throws {
+        let refusals: [(reason: StorageHoldReason, refusal: String)] = [
+            (.movingDataDirectory, "TextMouth is already moving its data directory. Try again once that move is done."),
+            (.rebuildingDirectory, "TextMouth is rebuilding its data directory. Try again when that finishes."),
+            (.movingBooksBetweenFolders, "TextMouth is moving books between folders. Try again when that finishes."),
+            (.switchingLibraries, "TextMouth is switching to another library and opening again on it."),
+        ]
+        XCTAssertEqual(
+            Set(refusals.map(\.reason)),
+            Set(StorageHoldReason.allCases),
+            "a kind of hold has no refusal here"
+        )
+        let preferences = makeSandboxedPreferences("UseWhileHeld")
         let model = makeModel(preferences: preferences)
-        model.dataDirectoryMove = DataDirectoryMoveProgress(destination: URL(fileURLWithPath: "/Volumes/Backup/Library"))
-        let chosen = try makeLibraryFolder("WhileMoving")
+        let chosen = try makeLibraryFolder("WhileHeld")
+
+        for held in refusals {
+            let hold = try StorageBoundary.shared.holdWork(for: held.reason)
+            let relaunch = RelaunchRecord()
+            let outcome = await model.useLibraryReturningOutcome(at: chosen, relaunching: relaunch.relauncher)
+            hold.release()
+
+            XCTAssertEqual(outcome, .failure("Failed to switch libraries: \(held.refusal)"), "held for \(held.reason)")
+            XCTAssertEqual(relaunch.steps, [], "held for \(held.reason)")
+            XCTAssertNil(DataDirectoryPreferences.customPath.read(from: preferences), "held for \(held.reason)")
+        }
+
         let relaunch = RelaunchRecord()
-
         let outcome = await model.useLibraryReturningOutcome(at: chosen, relaunching: relaunch.relauncher)
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(relaunch.steps, ["open", "quit"])
+    }
 
-        XCTAssertEqual(outcome, .failure(
-            "Failed to switch libraries: TextMouth is already moving its data directory. Try again once that move is done."
-        ))
-        XCTAssertEqual(relaunch.steps, [])
-        XCTAssertNil(DataDirectoryPreferences.customPath.read(from: preferences))
+    /// While a switch opens TextMouth again, it holds the storage work, so
+    /// that no move, rebuild, or folder edit can begin and be stopped part
+    /// way by the quit; the hold ends with the switch, however it ends.
+    func testASwitchHoldsTheStorageWorkWhileTextMouthOpensAgain() async throws {
+        let preferences = makeSandboxedPreferences("UseHolds")
+        let model = makeModel(preferences: preferences)
+        let chosen = try makeLibraryFolder("Holds")
+        var refusalWhileOpening: Error?
+        let relauncher = TextMouthRelauncher(
+            openNewInstance: {
+                do {
+                    try StorageBoundary.shared.holdWork(for: .rebuildingDirectory).release()
+                } catch {
+                    refusalWhileOpening = error
+                }
+            },
+            quit: {}
+        )
+
+        let outcome = await model.useLibraryReturningOutcome(at: chosen, relaunching: relauncher)
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(refusalWhileOpening as? StorageBusyError, StorageBusyError(reason: .switchingLibraries))
+        XCTAssertNoThrow(try StorageBoundary.shared.holdWork(for: .rebuildingDirectory).release(), "the switch kept its hold")
     }
 
     /// When TextMouth can't open again by itself, the choice stands for the

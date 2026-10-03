@@ -173,18 +173,6 @@ final class StorageGenerationStaleWriterTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// A new data directory of the test's own, with its folders, made the
-    /// current one until the test ends.
-    private func makeCurrentDataDirectory(_ label: String) throws -> URL {
-        let root = try makeDataDirectoryMoveDestination(label)
-        try FileManager.default.createDirectory(
-            at: root.appendingPathComponent("Library", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        StorageBoundary.shared.publish(root: root)
-        return root
-    }
-
     /// Moves the data directory at `old`, the current one, as a move does:
     /// copies it to a new folder, then publishes the copy. Returns the copy.
     private func moveDataDirectory(from old: URL, label: String) throws -> URL {

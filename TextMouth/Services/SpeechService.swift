@@ -422,16 +422,35 @@ enum VoiceWarmUp {
         let utterance = AVSpeechUtterance(string: word)
         utterance.voice = voice
         utterance.prefersAssistiveTechnologySettings = false
-        synthesizer.write(utterance) { buffer in
-            // The synthesizer ends its output with an empty buffer. Holding
-            // the synthesizer here keeps it alive until then.
+        synthesizer.write(utterance, toBufferCallback: lastBufferReporter(keepingAlive: synthesizer, report: report))
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+            report(false)
+        }
+    }
+
+    /// The buffer callback of a warm-up's write: once the synthesizer
+    /// delivers its last buffer, the empty one that ends its output, it
+    /// reports the warm-up finished through `report`, and it holds
+    /// `synthesizer` until then, so the synthesizer lives to deliver it.
+    ///
+    /// The callback is made here, outside the main actor, so that it is not
+    /// isolated to it (board #732). The synthesizer calls it on a thread of
+    /// its own choosing: the main thread so far, when `write` is called
+    /// there (38 calls of 38), but nothing promises that. A callback made in
+    /// main-actor code would be isolated to the main actor, which the Swift 6
+    /// language mode checks as the callback begins, stopping the app on any
+    /// other thread. This one touches nothing but `report`, which a lock
+    /// makes safe on any thread (`reportingOnce`), and the synthesizer it
+    /// keeps alive, so it may run on any thread.
+    nonisolated static func lastBufferReporter(
+        keepingAlive synthesizer: AVSpeechSynthesizer,
+        report: @escaping @Sendable (Bool) -> Void
+    ) -> AVSpeechSynthesizer.BufferCallback {
+        { buffer in
             guard let pcm = buffer as? AVAudioPCMBuffer, pcm.frameLength == 0 else { return }
             withExtendedLifetime(synthesizer) {
                 report(true)
             }
-        }
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
-            report(false)
         }
     }
 

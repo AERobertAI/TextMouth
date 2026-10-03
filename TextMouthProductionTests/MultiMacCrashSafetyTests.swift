@@ -26,7 +26,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies beside library.json are never read or touched: the
     /// index itself loads, and writes go on.
     func testConflictCopiesBesideTheLibraryIndexAreLeftAlone() throws {
-        _ = try makeOwnDataDirectory("IndexConflicts")
+        _ = try makeCurrentDataDirectory("IndexConflicts")
         let book = try makePackagedBook("Moby-Dick")
         let index = TextMouthPaths.libraryIndexFile
         try LibraryPersistenceService.encodedIndex(Library(books: [book])).write(to: index)
@@ -46,7 +46,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// leave it, enters index recovery: its bytes are preserved beside it,
     /// and no save is written over it until the user chooses.
     func testAHalfWrittenLibraryIndexIsPreservedAndNotWrittenOver() throws {
-        _ = try makeOwnDataDirectory("IndexHalf")
+        _ = try makeCurrentDataDirectory("IndexHalf")
         let index = TextMouthPaths.libraryIndexFile
         let half = halfOf(try LibraryPersistenceService.encodedIndex(Library(books: [try makePackagedBook("Moby-Dick")])))
         try half.write(to: index)
@@ -89,7 +89,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// another Mac and not synced here, keeps every row through the startup
     /// repair, and nothing is made where the packages will arrive.
     func testALibraryIndexListingPackagesNotHereYetKeepsEveryRow() throws {
-        _ = try makeOwnDataDirectory("IndexAhead")
+        _ = try makeCurrentDataDirectory("IndexAhead")
         let here = try makePackagedBook("Moby-Dick")
         let notHere = [bookNotHereYet("Emma"), bookNotHereYet("Dracula")]
         let library = Library(books: [here] + notHere)
@@ -120,7 +120,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// package can leave ("Book 2.tmb"), is not adopted as a second book,
     /// and stays where it is.
     func testAConflictCopyOfAPackageIsNotAdoptedAsASecondBook() throws {
-        _ = try makeOwnDataDirectory("PackageConflict")
+        _ = try makeCurrentDataDirectory("PackageConflict")
         let book = try makePackagedBook("Moby-Dick")
         let copyName = book.tmbDirectoryName.replacingOccurrences(of: ".tmb", with: " 2.tmb")
         let copy = book.tmbDirectory.deletingLastPathComponent().appendingPathComponent(copyName, isDirectory: true)
@@ -137,7 +137,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies of a book's record inside its package are never
     /// read: the record loads as it is, and a save writes the record alone.
     func testConflictCopiesOfARecordAreLeftAlone() throws {
-        _ = try makeOwnDataDirectory("RecordConflicts")
+        _ = try makeCurrentDataDirectory("RecordConflicts")
         let book = try makePackagedBook("Moby-Dick")
         let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
         let theirs = halfOf(try Data(contentsOf: record))
@@ -158,7 +158,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A package another Mac left with its record cut short is not adopted,
     /// and is left as it is for that Mac to finish.
     func testAPackageWithAHalfWrittenRecordIsSkippedAndKept() throws {
-        _ = try makeOwnDataDirectory("RecordHalf")
+        _ = try makeCurrentDataDirectory("RecordHalf")
         let orphan = try makePackagedBook("Moby-Dick")
         let record = TextMouthPaths.bookInfoPath(in: orphan.tmbDirectory)
         let half = halfOf(try Data(contentsOf: record))
@@ -174,7 +174,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A save for a book whose package another Mac removed makes no package
     /// again: the write is dropped, with one log line.
     func testASaveForAPackageThatDisappearedMakesNothing() throws {
-        _ = try makeOwnDataDirectory("PackageRemoved")
+        _ = try makeCurrentDataDirectory("PackageRemoved")
         let book = try makePackagedBook("Moby-Dick")
         try FileManager.default.removeItem(at: book.tmbDirectory)
 
@@ -188,7 +188,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// library; nothing is asked of the sync service for it, and a kept
     /// book waiting so is not downloaded.
     func testAPackageThatDisappearedWaitsForSync() async throws {
-        _ = try makeOwnDataDirectory("PackageGone")
+        _ = try makeCurrentDataDirectory("PackageGone")
         let gone = try makePackagedBook("Moby-Dick")
         try FileManager.default.removeItem(at: gone.tmbDirectory)
         let provider = FakeCloudItemStatusProvider()
@@ -269,12 +269,12 @@ final class MultiMacCrashSafetyTests: XCTestCase {
 
     /// Another Mac's lease, refreshed a moment ago, brings the warning, and
     /// stays as that Mac wrote it.
-    func testAnotherMacsLeaseIsWarnedAboutAndKept() throws {
+    func testAnotherMacsLeaseIsWarnedAboutAndKept() async throws {
         let harness = try LeaseHarness(test: self)
         let theirs = try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
         let bytes = try Data(contentsOf: theirs)
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(harness.warnings.map(\.computerName), ["Galley"])
         XCTAssertEqual(try Data(contentsOf: theirs), bytes, "another Mac's lease was changed")
@@ -282,7 +282,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
 
     /// Another Mac's lease cut short is judged by its modification date,
     /// naming no computer, and stays as it is.
-    func testAHalfWrittenLeaseFromAnotherMacIsJudgedByItsDateAndKept() throws {
+    func testAHalfWrittenLeaseFromAnotherMacIsJudgedByItsDateAndKept() async throws {
         let harness = try LeaseHarness(test: self)
         let theirs = try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
         let half = halfOf(try Data(contentsOf: theirs))
@@ -292,7 +292,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
             ofItemAtPath: theirs.path
         )
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(
             harness.warnings,
@@ -305,13 +305,13 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// when this Mac's newer lease meets an older one on its way back
     /// ("<ID> 2.json", "<ID> (1).json"), is not another Mac: TextMouth never
     /// warns that it is open on this very Mac, and the copies stay.
-    func testAConflictCopyOfThisMacsOwnLeaseIsNotAnotherMac() throws {
+    func testAConflictCopyOfThisMacsOwnLeaseIsNotAnotherMac() async throws {
         let harness = try LeaseHarness(test: self)
-        harness.lease.refresh()
+        await harness.lease.refresh()
         let own = harness.sessions.appendingPathComponent("\(harness.lease.macID).json")
         let copies = try writeConflictCopies(of: own, holding: Data(contentsOf: own))
 
-        harness.lease.refresh()
+        await harness.lease.refresh()
 
         XCTAssertEqual(harness.warnings, [], "this Mac was warned about itself")
         for copy in copies {
@@ -500,7 +500,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// Conflict copies beside the substitution rules are never read.
     func testConflictCopiesBesideTheSubstitutionsAreLeftAlone() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesConflicts")
+        let root = try makeCurrentDataDirectory("RulesConflicts")
         let file = root.appendingPathComponent("substitutions.json")
         try rulesData(named: ["Harbor"]).write(to: file)
         let theirs = try rulesData(named: ["Galley", "Chart Room"])
@@ -521,7 +521,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// rules stand in meanwhile.
     func testHalfWrittenSubstitutionsArePreservedBeforeTheyAreReplaced() throws {
         reloadTheAppsRulesWhenTheTestEnds()
-        let root = try makeOwnDataDirectory("RulesHalf")
+        let root = try makeCurrentDataDirectory("RulesHalf")
         let file = root.appendingPathComponent("substitutions.json")
         let half = halfOf(try rulesData(named: ["Harbor", "Galley"]))
         try half.write(to: file)
@@ -551,7 +551,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     func testSubstitutionsOnlyInTheCloudAreNeverSavedOver() throws {
         reloadTheAppsRulesWhenTheTestEnds()
         let center = cleanSharedFailureCenter()
-        let root = try makeOwnDataDirectory("RulesInCloud")
+        let root = try makeCurrentDataDirectory("RulesInCloud")
         let file = root.appendingPathComponent("substitutions.json")
         let theirs = try rulesData(named: ["Harbor"])
         try theirs.write(to: file)
@@ -583,12 +583,85 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertTrue(center.outstandingFailures().isEmpty, "the stand-ins' change is still reported")
     }
 
+    /// On a new Mac whose library is in the cloud, a first launch that finds
+    /// no substitutions.json, which the sync service hasn't brought down
+    /// yet, has the standard rules stand in and writes nothing, so it makes
+    /// no file of its own for the sync service to set against another
+    /// Mac's. A rule changed then writes the rules, the change with them.
+    func testTheStandardRulesAreWrittenOnlyOnceARuleChanges() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeCurrentDataDirectory("RulesFirstLaunch")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+
+        service.loadRules()
+
+        XCTAssertTrue(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), TextSubstitutionService.defaultRules.map(\.name))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: file.path),
+            "the standard rules were written before any rule changed"
+        )
+
+        service.addRule(SubstitutionRule(name: "Galley", pattern: "galley", replacement: "galley", isRegex: false))
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(
+            try JSONDecoder().decode([SubstitutionRule].self, from: Data(contentsOf: file)).map(\.name),
+            TextSubstitutionService.defaultRules.map(\.name) + ["Galley"]
+        )
+    }
+
+    /// The rules the sync service brings down after that first launch, from
+    /// another Mac, are taken up as the app becomes active, in place of the
+    /// standard rules, and the file stays exactly as it came, with no copy
+    /// of this Mac's beside it.
+    func testSubstitutionsThatArriveLaterAreTakenUpAsTheyCame() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeCurrentDataDirectory("RulesArriveLater")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+        service.loadRules()
+        let theirs = try rulesData(named: ["Harbor", "Chart Room"])
+        try theirs.write(to: file)
+
+        // As the app becomes active.
+        service.readFileThatArrived()
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), ["Harbor", "Chart Room"])
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the rules that arrived were written over")
+        XCTAssertEqual(try rulesFiles(in: root), ["substitutions.json"], "another copy of the rules was made")
+    }
+
+    /// A rule changed before the app has taken up rules that arrived
+    /// meanwhile takes them up instead of writing the standard rules over
+    /// them: the file holds the user's own rules, from another Mac, and stays
+    /// exactly as it came, while the change made to the stand-ins is dropped,
+    /// as one made while the library was unavailable is.
+    func testARuleChangedAfterTheRulesArriveWritesNothingOverThem() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeCurrentDataDirectory("RulesArriveBeforeAChange")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+        service.loadRules()
+        let theirs = try rulesData(named: ["Harbor"])
+        try theirs.write(to: file)
+
+        service.addRule(SubstitutionRule(name: "Galley", pattern: "galley", replacement: "galley", isRegex: false))
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), ["Harbor"])
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the standard rules were written over the rules that arrived")
+        XCTAssertEqual(try rulesFiles(in: root), ["substitutions.json"], "another copy of the rules was made")
+    }
+
     // MARK: - reading-checkpoints.json
 
     /// A checkpoint journal cut short names no book, and the startup repair
     /// changes no row because of it.
     func testAHalfWrittenCheckpointJournalChangesNothing() throws {
-        _ = try makeOwnDataDirectory("JournalHalf")
+        _ = try makeCurrentDataDirectory("JournalHalf")
         let book = try makePackagedBook("Moby-Dick")
         let whole = try JSONSerialization.data(withJSONObject: ["books": [book.id.uuidString]])
         try halfOf(whole).write(to: TextMouthPaths.readingCheckpointsFile)
@@ -604,7 +677,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
     /// A checkpoint journal naming books whose packages aren't on this Mac,
     /// or that this library doesn't hold, changes no row.
     func testACheckpointJournalNamingBooksNotHereChangesNothing() throws {
-        _ = try makeOwnDataDirectory("JournalAhead")
+        _ = try makeCurrentDataDirectory("JournalAhead")
         let here = try makePackagedBook("Moby-Dick")
         let notHere = bookNotHereYet("Emma")
         let journal = ["books": [notHere.id.uuidString, here.id.uuidString, UUID().uuidString]]
@@ -627,19 +700,6 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         hasUnresolvedConflicts: false,
         downloadError: nil
     )
-
-    /// A data directory of the test's own, with its Library folder, made the
-    /// current one until the test ends, and its gate opened then.
-    private func makeOwnDataDirectory(_ label: String) throws -> URL {
-        let root = try makeDataDirectoryMoveDestination(label)
-        try FileManager.default.createDirectory(
-            at: root.appendingPathComponent("Library", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        StorageBoundary.shared.publish(root: root)
-        addTeardownBlock { DataDirectoryGate.open(root) }
-        return root
-    }
 
     /// A book in a package of its own at the top of the current data
     /// directory's Library folder, its file and its record written, as
@@ -732,6 +792,14 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let previous = CloudServices.itemStatus
         CloudServices.itemStatus = provider
         addTeardownBlock { @MainActor in CloudServices.itemStatus = previous }
+    }
+
+    /// The names of the files in the data directory at `root` that hold
+    /// substitution rules: substitutions.json, and any copy beside it.
+    private func rulesFiles(in root: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: root.path)
+            .filter { $0.hasPrefix("substitutions") }
+            .sorted()
     }
 
     /// substitutions.json's bytes for plain rules with the names given.

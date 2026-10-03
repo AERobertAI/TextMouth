@@ -217,7 +217,6 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[nextIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -234,7 +233,6 @@ extension ReaderViewModel {
         }) {
             let heading = allHeadings[prevIndex]
             navigateTo(chapterIndex: heading.chapterIndex, characterOffset: heading.characterOffset)
-            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -477,6 +475,9 @@ extension ReaderViewModel {
     func skipWords(count: Int) {
         guard let content = content,
               currentChapterIndex < content.chapters.count else { return }
+        // A skip to or past where the heading this reader's End of heading
+        // sleep timer waits for ends, ends the timer (finding #787).
+        defer { endSleepTimerIfMoveReachedHeadingEnd() }
 
         let wasPlaying = speechService.isSpeaking && !speechService.isPaused
 
@@ -588,6 +589,9 @@ extension ReaderViewModel {
             totalCharacterCount: content.totalCharacterCount,
             totalTime: totalTime
         ) else { return }
+        // A skip to or past where the heading this reader's End of heading
+        // sleep timer waits for ends, ends the timer (finding #787).
+        defer { endSleepTimerIfMoveReachedHeadingEnd() }
 
         DiagnosticLog.trace(.playback, "skipByTime seconds=\(seconds) totalTime=\(totalTime) totalChars=\(content.totalCharacterCount) charDelta=\(charDelta)")
 
@@ -653,6 +657,9 @@ extension ReaderViewModel {
     func skipCharacters(count: Int) {
         guard let content = content,
               currentChapterIndex < content.chapters.count else { return }
+        // A skip to or past where the heading this reader's End of heading
+        // sleep timer waits for ends, ends the timer (finding #787).
+        defer { endSleepTimerIfMoveReachedHeadingEnd() }
 
         let wasPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
 
@@ -720,7 +727,6 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -737,7 +743,6 @@ extension ReaderViewModel {
                 chapterIndex: heading.chapterIndex,
                 characterOffset: heading.characterOffset
             )
-            sleepTimerService.notifyHeadingBoundary(by: readerID)
             announceToVoiceOver("Heading: \(heading.text)")
         }
     }
@@ -753,8 +758,14 @@ extension ReaderViewModel {
 
     /// Navigate to a specific chapter and character offset.
     /// Handles both TTS and audio book playback, with same-chapter seek optimization.
+    /// Every jump goes through here: to a heading, a bookmark, a search
+    /// result, a place in the book, or the next sentence or paragraph. A
+    /// jump to or past where the heading this reader's End of heading sleep
+    /// timer waits for ends, ends the timer there once the jump is made
+    /// (`endSleepTimerIfMoveReachedHeadingEnd()`, finding #787).
     func navigateTo(chapterIndex: Int, characterOffset: Int) {
         guard let content = content, !content.chapters.isEmpty else { return }
+        defer { endSleepTimerIfMoveReachedHeadingEnd() }
 
         let clampedPosition = Self.clampedNavigationPosition(
             in: content,
@@ -948,6 +959,12 @@ extension ReaderViewModel {
         characterOffset: Int
     ) -> Heading? {
         HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).heading
+    }
+
+    /// The first heading after the cursor, where the heading the cursor is
+    /// in ends; nil after the last heading.
+    var headingAfterCursor: Heading? {
+        Self.nextHeading(in: headings, chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset)
     }
 
     /// Return the first heading strictly after the current reading position.

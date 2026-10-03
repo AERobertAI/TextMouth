@@ -77,6 +77,37 @@ final class SpeechVoiceWarmUpTests: XCTestCase {
         XCTAssertEqual(reports.withLock { $0 }, [true])
     }
 
+    /// The warm-up's buffer callback runs safely on any thread (board #732):
+    /// made outside the main actor, it carries no main-actor check, so the
+    /// synthesizer may call it from a thread of its own. Made and called
+    /// here on a detached task's thread, as the synthesizer would call it: a
+    /// buffer holding audio reports nothing, the last, empty buffer reports
+    /// the warm-up finished, and a second last buffer counts for nothing.
+    /// The synthesizer it keeps alive is never asked to write anything.
+    func testTheWarmUpsBufferCallbackRunsOnAnyThread() async throws {
+        let reports = OSAllocatedUnfairLock<[Bool]>(initialState: [])
+        let report = VoiceWarmUp.reportingOnce { finished in
+            reports.withLock { $0.append(finished) }
+        }
+
+        let calledOnTheMainThread = try await Task.detached { () throws -> Bool in
+            let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1))
+            let audio = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 16))
+            audio.frameLength = 16
+            let last = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 16))
+            let callback = VoiceWarmUp.lastBufferReporter(keepingAlive: AVSpeechSynthesizer(), report: report)
+
+            callback(audio)
+            XCTAssertTrue(reports.withLock { $0.isEmpty }, "A buffer holding audio reported the warm-up finished")
+            callback(last)
+            callback(last)
+            return pthread_main_np() != 0
+        }.value
+
+        XCTAssertFalse(calledOnTheMainThread, "The callback was not called from another thread")
+        XCTAssertEqual(reports.withLock { $0 }, [true])
+    }
+
     // MARK: - Readers
 
     /// A text book's reader asks for its voice to be warmed when it opens.

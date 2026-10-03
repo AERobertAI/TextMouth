@@ -87,7 +87,6 @@ final class SleepTimerService: ObservableObject {
 
     private var timer: Timer?
     private var fadeTimer: Timer?
-    private var endOfHeadingTriggered = false
     /// Generation counter to prevent stale fade/expire callbacks from firing after stop()
     private var generation: Int = 0
     /// One-shot latch set after the final fade step lands at volume 0
@@ -271,7 +270,6 @@ final class SleepTimerService: ObservableObject {
         self.lastUsedDuration = duration
         persistLastUsedDuration(duration)
         self.isActive = true
-        self.endOfHeadingTriggered = false
         self.pendingFadeCompletion = false
 
         switch duration {
@@ -281,7 +279,6 @@ final class SleepTimerService: ObservableObject {
             startCountdown()
         case .endOfHeading:
             remainingSeconds = 0
-            endOfHeadingTriggered = false
             timerLog(.event, "START kind=end-of-heading fadeSeconds=\(fadeOutDuration)")
         case .endOfChapter:
             remainingSeconds = 0
@@ -340,7 +337,6 @@ final class SleepTimerService: ObservableObject {
         isFadingOut = false
         remainingSeconds = 0
         duration = nil
-        endOfHeadingTriggered = false
         isCountdownPausedByPlayback = false
         pendingFadeCompletion = false
         ownerID = nil
@@ -436,39 +432,60 @@ final class SleepTimerService: ObservableObject {
         startCountdown()
     }
 
-    /// Notify the timer that a heading boundary was crossed in the
-    /// owner reader. Only the owner can advance an `endOfHeading` timer.
-    func notifyHeadingBoundary(by callerID: UUID) {
-        guard isActive, case .endOfHeading = duration else { return }
-        guard self.ownerID == callerID else {
-            timerLog(.event, "HEADING_BOUNDARY_IGNORED reason=owner-mismatch caller=\(Self.ownerToken(callerID))")
-            return
-        }
-        if endOfHeadingTriggered {
-            timerLog(.event, "HEADING_BOUNDARY_EXPIRING caller=\(Self.ownerToken(callerID))")
-            expire()
-        } else {
-            endOfHeadingTriggered = true
-            timerLog(.event, "HEADING_BOUNDARY_ARMED caller=\(Self.ownerToken(callerID))")
-        }
+    // MARK: - Stopping Where a Heading Ends
+
+    /// Whether the timer `callerID` owns is in effect and waits for the end
+    /// of a heading (TODO P01, finding #787). The owner, which alone knows
+    /// its book's headings, asks before it looks for that end, so a reader
+    /// that set no such timer does nothing more as its cursor moves.
+    func waitsForHeadingEnd(ownedBy callerID: UUID) -> Bool {
+        isActive && ownerID == callerID && duration == .endOfHeading
+    }
+
+    /// End the timer because its owner's reading position has reached the
+    /// end of the heading the timer waits for, where the next heading
+    /// begins: playback carried it there, or the listener moved it there
+    /// (TODO P01, finding #787). The first such end ends the timer. As at a
+    /// chapter's end (`expireAtChapterEnd`), the owner stops playback there
+    /// itself and tells the listener, once: the timer ends as `stop()` ends
+    /// it, without calling `onTimerExpired`, and without a fade of its own,
+    /// since speech is not faded where a heading or a chapter ends. An
+    /// audiobook's headings begin its chapters, so it fades toward a
+    /// heading's end as toward that chapter's end.
+    ///
+    /// Only the owner's timer for the end of a heading ends this way; any
+    /// other call changes nothing and writes nothing to the log, since the
+    /// owner asks as its cursor moves.
+    ///
+    /// - Returns: Whether the timer ended, so the owner must stop playback.
+    @discardableResult
+    func expireAtHeadingEnd(by callerID: UUID) -> Bool {
+        guard waitsForHeadingEnd(ownedBy: callerID) else { return false }
+        timerLog(.event, "HEADING_END_REACHED caller=\(Self.ownerToken(callerID))")
+        stop(reason: "heading-end-reached")
+        return true
     }
 
     // MARK: - Stopping Where a Chapter Ends
 
     /// Whether the timer `callerID` owns is in effect and stops playback
     /// where the chapter playing now ends (TODO P01): a timer set for the end
-    /// of the chapter, at any chapter's end, or for the end of the book, at
-    /// the end of its last chapter. Another owner's timer, one that has
-    /// ended, and one counting minutes or waiting for a heading's end stop
-    /// nothing there.
+    /// of the chapter, at any chapter's end; for the end of a heading, where
+    /// that heading ends too, or the book does (finding #787); or for the end
+    /// of the book, at the end of its last chapter. Another owner's timer,
+    /// one that has ended, and one counting minutes stop nothing there.
     ///
     /// - Parameters:
+    ///   - endingTheHeading: Whether the heading the timer waits for, if it
+    ///     waits for one, ends where that chapter does: the owner, which
+    ///     alone knows its book's headings, finds the next heading beginning
+    ///     where the next chapter does.
     ///   - endingTheBook: Whether that chapter is the book's last, with
     ///     nothing after it to play.
     ///   - callerID: The owner asking, as it passed to `start(...)`.
-    func stopsPlaybackAtChapterEnd(endingTheBook: Bool, ownedBy callerID: UUID) -> Bool {
+    func stopsPlaybackAtChapterEnd(endingTheHeading: Bool, endingTheBook: Bool, ownedBy callerID: UUID) -> Bool {
         guard isActive, ownerID == callerID, let duration else { return false }
-        return duration.stopsPlaybackAtChapterEnd(endingTheBook: endingTheBook)
+        return duration.stopsPlaybackAtChapterEnd(endingTheHeading: endingTheHeading, endingTheBook: endingTheBook)
     }
 
     /// End the timer because its owner's playback has reached the end of a
@@ -479,16 +496,22 @@ final class SleepTimerService: ObservableObject {
     /// listener itself, once, in words that say where playback stopped.
     ///
     /// Only the owner ends its timer this way, and only one that stops
-    /// playback there (`stopsPlaybackAtChapterEnd(endingTheBook:ownedBy:)`).
+    /// playback there
+    /// (`stopsPlaybackAtChapterEnd(endingTheHeading:endingTheBook:ownedBy:)`).
     ///
     /// - Returns: Whether the timer ended, so the owner must stop rather
     ///   than play on.
     @discardableResult
-    func expireAtChapterEnd(endingTheBook: Bool, by callerID: UUID) -> Bool {
-        guard stopsPlaybackAtChapterEnd(endingTheBook: endingTheBook, ownedBy: callerID) else { return false }
+    func expireAtChapterEnd(endingTheHeading: Bool, endingTheBook: Bool, by callerID: UUID) -> Bool {
+        guard stopsPlaybackAtChapterEnd(
+            endingTheHeading: endingTheHeading,
+            endingTheBook: endingTheBook,
+            ownedBy: callerID
+        ) else { return false }
         timerLog(
             .event,
-            "CHAPTER_END_REACHED caller=\(Self.ownerToken(callerID)) endingTheBook=\(endingTheBook)"
+            "CHAPTER_END_REACHED caller=\(Self.ownerToken(callerID)) "
+                + "endingTheHeading=\(endingTheHeading) endingTheBook=\(endingTheBook)"
         )
         stop(reason: "chapter-end-reached")
         return true

@@ -260,7 +260,8 @@ final class StorageOperationOutcomeTests: XCTestCase {
 
     /// An operation refused while another holds the storage work is told
     /// what that operation is doing (#673): a data-directory move, a
-    /// rebuild, or books moving between folders.
+    /// rebuild, books moving between folders, or a switch to another library
+    /// opening TextMouth again.
     func testABusyRefusalSaysWhatHoldsTheStorageWork() {
         XCTAssertEqual(
             StorageBusyError(reason: .movingDataDirectory).localizedDescription,
@@ -273,6 +274,10 @@ final class StorageOperationOutcomeTests: XCTestCase {
         XCTAssertEqual(
             StorageBusyError(reason: .movingBooksBetweenFolders).localizedDescription,
             "TextMouth is moving books between folders. Try again when that finishes."
+        )
+        XCTAssertEqual(
+            StorageBusyError(reason: .switchingLibraries).localizedDescription,
+            "TextMouth is switching to another library and opening again on it."
         )
     }
 

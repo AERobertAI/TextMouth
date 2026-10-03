@@ -73,6 +73,11 @@ enum StorageHoldReason: Sendable, CaseIterable {
     /// A folder edit from the library's sheets moving its books' packages
     /// between folders (PERF14).
     case movingBooksBetweenFolders
+    /// Use This Library, or Start New Library while the library isn't
+    /// available: switching to the library in another folder, from the
+    /// moment the switch begins until TextMouth has asked to open again on
+    /// that library and quit (FR02).
+    case switchingLibraries
 }
 
 /// The refusal of an operation that needs the storage work held while
@@ -92,6 +97,8 @@ struct StorageBusyError: LocalizedError, Equatable {
             return "TextMouth is rebuilding its data directory. Try again when that finishes."
         case .movingBooksBetweenFolders:
             return "TextMouth is moving books between folders. Try again when that finishes."
+        case .switchingLibraries:
+            return "TextMouth is switching to another library and opening again on it."
         }
     }
 }
@@ -112,9 +119,9 @@ struct StorageBusyError: LocalizedError, Equatable {
 /// which keeps it from running across a publication: a move holds new work
 /// back (`holdWork(for:)`), waits for the work already under way, copies and
 /// publishes, and then lets the held work go on under the new generation.
-/// Rebuild Directory and a folder edit moving books between folders hold
-/// new work back the same way, each saying why (`StorageHoldReason`), and
-/// only one operation holds it at a time.
+/// Rebuild Directory, a folder edit moving books between folders, and Use
+/// This Library hold new work back the same way, each saying why
+/// (`StorageHoldReason`), and only one operation holds it at a time.
 ///
 /// `@unchecked Sendable`: every stored property is guarded by `condition`,
 /// a lock never held while calling out, so nothing reached from here, such
