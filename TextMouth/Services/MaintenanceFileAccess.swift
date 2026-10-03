@@ -43,15 +43,19 @@ struct MaintenanceFileAccess: Sendable {
 
     // MARK: Reading
 
-    /// Runs `body`, which reads the item at `url` or what is inside it, and
-    /// returns what it returns. A read this access refuses throws first,
-    /// with the error the system gives a refused read of a dataless file
-    /// (`DatalessFiles.isDownloadRefusal` recognizes it).
+    /// Runs `body`, which reads the item at `url` or what is inside it, on
+    /// this thread with dataless files left in the cloud
+    /// (`DatalessFiles.withoutDownloading`), and returns what it returns: a
+    /// read of a dataless file fails at once with `EDEADLK` instead of
+    /// downloading it. A read this access refuses throws that error before
+    /// it starts. `DatalessFiles.isDownloadRefusal` recognizes both.
     func read<Value>(_ url: URL, _ body: () throws -> Value) throws -> Value {
-        if refusesRead(url) {
-            throw Self.refusal(of: url)
+        try DatalessFiles.withoutDownloading {
+            if refusesRead(url) {
+                throw Self.refusal(of: url)
+            }
+            return try body()
         }
-        return try body()
     }
 
     /// The error a read of the dataless file at `url` meets when dataless

@@ -412,12 +412,18 @@ extension LibraryViewModel {
     ) {
         // A second scene/action must not launch the same library migration again.
         guard !isExtracting else { return }
-        let booksNeedingCache = library.books.filter { book in
-            guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
-            // Needs cache if missing or if the stored version is outdated
-            if !MarkdownCacheService.cacheExists(for: book) { return true }
-            if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-            return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
+        // These checks stat every book's files with dataless files left in
+        // the cloud (FR02): one that would download a folder's listing fails
+        // at once instead of waiting on the network, and the book it could
+        // not check is listed, for the batch to find its files in the cloud.
+        let booksNeedingCache = DatalessFiles.withoutDownloading {
+            library.books.filter { book in
+                guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
+                // Needs cache if missing or if the stored version is outdated
+                if !MarkdownCacheService.cacheExists(for: book) { return true }
+                if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+                return Self.hasResizedTextCacheFile(book, isDataless: access.isDataless)
+            }
         }
         rebuildTextCaches(books: booksNeedingCache, force: false, access: access, completion: completion)
     }
@@ -467,7 +473,9 @@ extension LibraryViewModel {
     /// Share automatic and manual extraction, releasing large parser results per
     /// book and publishing each durable checkpoint before advancing progress.
     /// Bounded utility workers keep memory and CPU available for reading.
-    /// `access` is how each book's files are reached (FR02).
+    /// `access` is how each book's files are reached (FR02): a book whose
+    /// files are in the cloud counts toward the progress, is left as it is,
+    /// and is counted in the batch's one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
     private func rebuildTextCaches(
         books: [Book],
         force: Bool,
@@ -497,48 +505,20 @@ extension LibraryViewModel {
             self.extractionProgressMessage = "\(activity): \(self.extractionProgressCurrent) of \(books.count)..."
         }
 
+        let skips = CloudSkips(force ? .textReextraction : .textCacheUpdate)
+        // What the pass reads of each book. Redo Text Extraction writes a new
+        // text cache without reading the one it replaces.
+        let files: MaintainedFiles = force ? [.content, .record] : .all
+
         TextCacheUpdateQueue.run(books: books, update: { book in
-            let currentVersion = MarkdownCacheService.currentCacheVersion
-            let summary: ContentAnalysisSummary? = autoreleasepool {
-                // A read that is refused leaves the book without a result,
-                // like any other failure.
-                let updated = try? access.read(book.bookFileURL) { () -> ContentAnalysisSummary? in
-                    if !force, let savedIndex = BookContentAnalysisService.completedTextCacheIndex(
-                        for: book,
-                        hasher: access.hasher,
-                        isDataless: access.isDataless
-                    ) {
-                        // An earlier run already committed this book; repairing
-                        // the library summary requires no source parsing or writes.
-                        // The package records this index with the current version.
-                        var recovered = book
-                        recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
-                        return ContentAnalysisSummary(committed: recovered)
-                    }
-                    var updatedBook = book
-                    guard let contentIndex = MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &updatedBook) else {
-                        return nil
-                    }
-                    do {
-                        // `book` is the row as it was when the batch was queued. The
-                        // result lands on the book's latest state; a dropped one
-                        // leaves the library version unchanged, so a later pass
-                        // tries again.
-                        guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                            for: updatedBook, index: contentIndex, cacheFormatVersion: currentVersion
-                        ) else { return nil }
-                        return ContentAnalysisSummary(committed: committed)
-                    } catch {
-                        // Leave the library version unchanged so startup retries
-                        // a book whose new index could not be committed.
-                        return nil
-                    }
-                }
-                return updated ?? nil
+            let summary = autoreleasepool {
+                Self.updateTextCache(of: book, force: force, reading: files, access: access, skips: skips)
             }
             releaseBatchParserMemory()
             DispatchQueue.main.async { updateProgress(summary) }
         }, completion: { [weak self] in
+            // Every worker has returned, so the tally is complete.
+            skips.log()
             // Each worker enqueues its progress before returning, so this final
             // main-queue block follows all completed-book notifications.
             DispatchQueue.main.async { [weak self] in
@@ -547,6 +527,88 @@ extension LibraryViewModel {
                 completion?()
             }
         })
+    }
+
+    /// Brings `book`'s text cache up to date on a batch's worker thread, and
+    /// returns what its package now records, or nil when nothing new was
+    /// committed. `force` rebuilds the cache from the source even when an
+    /// earlier run committed it, as Redo Text Extraction does.
+    ///
+    /// A book is left as it is, and counted in `skips`, when any of the
+    /// `files` the batch reads is in the cloud (FR02). Its cache is caught up
+    /// the next time its files are on this Mac, and the reader, which
+    /// downloads a book before it loads it, rebuilds an outdated cache as it
+    /// loads. Every read runs with dataless files left in the cloud, and a
+    /// read refused because it met a dataless file leaves the book the same
+    /// way: it is never logged as a failure, never rebuilds a cache, and
+    /// never reaches the book's record.
+    nonisolated private static func updateTextCache(
+        of book: Book,
+        force: Bool,
+        reading files: MaintainedFiles,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips
+    ) -> ContentAnalysisSummary? {
+        do {
+            try access.requireOnThisMac(book, reading: files)
+            return try access.read(book.bookFileURL) {
+                try committedTextCache(of: book, force: force, reading: files, access: access)
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            skips.record(book)
+            return nil
+        } catch {
+            MarkdownCacheService.logGenerationFailure(error, for: book)
+            return nil
+        }
+    }
+
+    /// The work of `updateTextCache(of:force:reading:access:skips:)` for a
+    /// book whose `files` were on this Mac when it began: recovers the cache
+    /// an earlier run committed, or writes the cache from the source and
+    /// commits its analysis to the book's record.
+    /// - Throws: why no cache could be written, including the refusal of a
+    ///   read that met a file which went to the cloud meanwhile.
+    nonisolated private static func committedTextCache(
+        of book: Book,
+        force: Bool,
+        reading files: MaintainedFiles,
+        access: MaintenanceFileAccess
+    ) throws -> ContentAnalysisSummary? {
+        let currentVersion = MarkdownCacheService.currentCacheVersion
+        if !force, let savedIndex = try BookContentAnalysisService.recoveredTextCacheIndex(
+            for: book,
+            hasher: access.hasher,
+            isDataless: access.isDataless
+        ) {
+            // An earlier run already committed this book; repairing
+            // the library summary requires no source parsing or writes.
+            // The package records this index with the current version.
+            var recovered = book
+            recovered.applyContentAnalysis(savedIndex, cacheFormatVersion: currentVersion)
+            return ContentAnalysisSummary(committed: recovered)
+        }
+        var updatedBook = book
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updatedBook) else {
+            return nil
+        }
+        // A file that went to the cloud while the cache was written may have
+        // been read only in part, so nothing is committed from it.
+        try access.requireOnThisMac(book, reading: files)
+        do {
+            // `book` is the row as it was when the batch was queued. The
+            // result lands on the book's latest state; a dropped one
+            // leaves the library version unchanged, so a later pass
+            // tries again.
+            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                for: updatedBook, index: generated.content.contentIndex, cacheFormatVersion: currentVersion
+            ) else { return nil }
+            return ContentAnalysisSummary(committed: committed)
+        } catch {
+            // Leave the library version unchanged so startup retries
+            // a book whose new index could not be committed.
+            return nil
+        }
     }
 
     // MARK: - Directory Management

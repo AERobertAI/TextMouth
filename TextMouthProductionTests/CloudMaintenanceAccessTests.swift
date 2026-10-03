@@ -10,6 +10,18 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
 
     // MARK: - Reading
 
+    /// A read through the access runs with dataless files left in the
+    /// cloud, and the thread's policy is back as it was afterwards.
+    func testReadRunsWithDownloadsOff() throws {
+        let book = try makePackagedBook()
+        let policyBefore = currentPolicy()
+
+        let policyDuringRead = try MaintenanceFileAccess.live.read(book.bookFileURL) { currentPolicy() }
+
+        XCTAssertEqual(policyDuringRead, IOPOL_MATERIALIZE_DATALESS_FILES_OFF)
+        XCTAssertEqual(currentPolicy(), policyBefore)
+    }
+
     /// The live access reads a file on this Mac and calls it no dataless
     /// file; its hasher gives the digest `FingerprintHasher.md5` gives.
     func testLiveAccessReadsFilesOnThisMac() throws {
@@ -177,6 +189,11 @@ final class CloudMaintenanceAccessTests: CloudMaintenanceTestCase {
     }
 
     // MARK: - Fixtures
+
+    /// This thread's policy for dataless files.
+    private func currentPolicy() -> Int32 {
+        getiopolicy_np(IOPOL_TYPE_VFS_MATERIALIZE_DATALESS_FILES, IOPOL_SCOPE_THREAD)
+    }
 
     /// Asserts that `found` names the item at `expected`, however either
     /// path is spelled.
