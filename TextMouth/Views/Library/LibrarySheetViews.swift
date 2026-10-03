@@ -119,6 +119,47 @@ struct OperationFailureNotice: View {
         VoiceOverAnnouncer.announce(failure)
         return failure
     }
+
+    /// Starts `operation`, a sheet's edit that moves books and can take a
+    /// while (PERF14), and keeps the sheet's state while it runs:
+    /// `isWorking` is true until it is done, which shows
+    /// `SheetWorkIndicator` and keeps the sheet's buttons disabled, so the
+    /// edit cannot start twice nor the sheet close halfway; then
+    /// `failureMessage` holds what `message(after:)` gives. The owner closes
+    /// the sheet after a success, as it does for an edit that finishes at
+    /// once.
+    static func run(
+        _ operation: @escaping @MainActor () async -> OperationOutcome,
+        isWorking: Binding<Bool>,
+        failureMessage: Binding<String?>
+    ) {
+        isWorking.wrappedValue = true
+        Task { @MainActor in
+            let outcome = await operation()
+            failureMessage.wrappedValue = message(after: outcome)
+            isWorking.wrappedValue = false
+        }
+    }
+}
+
+/// What a sheet shows while its edit runs (PERF14): a small spinner beside
+/// `label`, such as "Moving books...", read by VoiceOver as one element, so
+/// whoever looks or listens finds the sheet working rather than stuck.
+struct SheetWorkIndicator: View {
+    /// What the sheet is doing.
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+            Text(label)
+                .font(.callout)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
 }
 
 extension View {
@@ -198,9 +239,10 @@ struct MoveFolderSheet: View {
     let library: Library
     let lastMovedFolderPath: String
     /// Moves the books into the folder at the given path and returns what
-    /// happened. The owner closes the sheet after a success; after a failure
-    /// the sheet stays open with the chosen destination and shows why.
-    let onMove: (String) -> OperationOutcome
+    /// happened, once their packages have moved (PERF14). The owner closes
+    /// the sheet after a success; after a failure the sheet stays open with
+    /// the chosen destination and shows why.
+    let onMove: @MainActor (String) async -> OperationOutcome
     /// Creates a folder from a name and a parent path and returns what
     /// happened. After a success the new folder becomes the destination;
     /// after a failure the new-folder fields keep their input and the sheet
@@ -218,6 +260,8 @@ struct MoveFolderSheet: View {
     @State private var newFolderParent = ""
     /// Why the last Move or Create failed, until the user changes an input.
     @State private var failureMessage: String?
+    /// Whether the books are moving now.
+    @State private var isWorking = false
 
     /// Title shown in the sheet header
     private var headerTitle: String {
@@ -249,6 +293,7 @@ struct MoveFolderSheet: View {
                 }
             }
             .accessibilityLabel("Destination folder")
+            .disabled(isWorking)
 
             // Inline new folder creation
             if showNewFolder {
@@ -293,9 +338,14 @@ struct MoveFolderSheet: View {
                     }
                     .padding(.vertical, 4)
                 }
+                .disabled(isWorking)
             }
 
             OperationFailureNotice(message: failureMessage)
+
+            if isWorking {
+                SheetWorkIndicator(label: "Moving \(CountWording.books(books.count))...")
+            }
 
             HStack {
                 Button("Cancel", action: onCancel)
@@ -310,14 +360,20 @@ struct MoveFolderSheet: View {
                 }
 
                 Button("Move") {
-                    failureMessage = OperationFailureNotice.message(after: onMove(selectedPath))
+                    OperationFailureNotice.run(
+                        { await onMove(selectedPath) },
+                        isWorking: $isWorking,
+                        failureMessage: $failureMessage
+                    )
                 }
                 .keyboardShortcut(.return, modifiers: [])
             }
+            .disabled(isWorking)
         }
         .padding()
         .frame(width: 400)
         .navigationTitle(headerTitle)
+        .interactiveDismissDisabled(isWorking)
         .clearingFailure($failureMessage, whenChanged: selectedPath)
         .clearingFailure($failureMessage, whenChanged: newFolderName)
         .clearingFailure($failureMessage, whenChanged: newFolderParent)
@@ -337,14 +393,17 @@ struct MoveFolderSheet: View {
 struct RenameFolderSheet: View {
     let currentName: String
     @Binding var newName: String
-    /// Renames the folder and returns what happened. The owner closes the
-    /// sheet after a success; after a failure the sheet stays open with the
-    /// typed name and shows why.
-    let onRename: () -> OperationOutcome
+    /// Renames the folder and returns what happened, once the packages of
+    /// its books have moved (PERF14). The owner closes the sheet after a
+    /// success; after a failure the sheet stays open with the typed name and
+    /// shows why.
+    let onRename: @MainActor () async -> OperationOutcome
     let onCancel: () -> Void
 
     /// Why the last Rename failed, until the user changes the name.
     @State private var failureMessage: String?
+    /// Whether the folder is being renamed now.
+    @State private var isWorking = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -355,25 +414,32 @@ struct RenameFolderSheet: View {
             TextField("Folder name", text: $newName)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("New folder name")
+                .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
+
+            if isWorking {
+                SheetWorkIndicator(label: "Renaming the folder...")
+            }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button("Rename") {
-                    failureMessage = OperationFailureNotice.message(after: onRename())
+                    OperationFailureNotice.run(onRename, isWorking: $isWorking, failureMessage: $failureMessage)
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .disabled(BookFolder.normalizedName(newName) == nil
                           || BookFolder.normalizedName(newName) == currentName)
             }
+            .disabled(isWorking)
         }
         .padding()
         .frame(width: 300)
         .navigationTitle("Rename Folder")
         .clearingFailure($failureMessage, whenChanged: newName)
+        .interactiveDismissDisabled(isWorking)
     }
 }
 
@@ -384,14 +450,17 @@ struct MoveFolderToParentSheet: View {
     let folder: BookFolder
     let library: Library
     /// Moves the folder under the given parent path and returns what
-    /// happened. The owner closes the sheet after a success; after a failure
-    /// the sheet stays open with the chosen parent and shows why.
-    let onMove: (String) -> OperationOutcome
+    /// happened, once the packages of its books have moved (PERF14). The
+    /// owner closes the sheet after a success; after a failure the sheet
+    /// stays open with the chosen parent and shows why.
+    let onMove: @MainActor (String) async -> OperationOutcome
     let onCancel: () -> Void
 
     @State private var selectedParent = ""
     /// Why the last Move failed, until the user picks another parent.
     @State private var failureMessage: String?
+    /// Whether the folder is moving now.
+    @State private var isWorking = false
 
     /// Valid destinations: all folders except the folder itself, its descendants, and its current parent
     private var validDestinations: [(label: String, path: String)] {
@@ -421,24 +490,35 @@ struct MoveFolderToParentSheet: View {
                 }
             }
             .accessibilityLabel("Destination parent folder")
+            .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
+
+            if isWorking {
+                SheetWorkIndicator(label: "Moving the folder...")
+            }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button("Move") {
-                    failureMessage = OperationFailureNotice.message(after: onMove(selectedParent))
+                    OperationFailureNotice.run(
+                        { await onMove(selectedParent) },
+                        isWorking: $isWorking,
+                        failureMessage: $failureMessage
+                    )
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .disabled(selectedParent == folder.parentPath)
             }
+            .disabled(isWorking)
         }
         .padding()
         .frame(width: 400)
         .navigationTitle("Move Folder: \(folder.name)")
         .clearingFailure($failureMessage, whenChanged: selectedParent)
+        .interactiveDismissDisabled(isWorking)
         .onAppear {
             selectedParent = folder.parentPath
         }
@@ -452,15 +532,17 @@ struct DeleteFolderMoveContentsSheet: View {
     let folder: BookFolder
     let library: Library
     /// Moves the folder's contents to the given path, deletes the folder,
-    /// and returns what happened. The owner closes the sheet after a
-    /// success; after a failure the sheet stays open with the chosen
-    /// destination and shows why.
-    let onConfirm: (String) -> OperationOutcome
+    /// and returns what happened, once the packages of its books have moved
+    /// (PERF14). The owner closes the sheet after a success; after a failure
+    /// the sheet stays open with the chosen destination and shows why.
+    let onConfirm: @MainActor (String) async -> OperationOutcome
     let onCancel: () -> Void
 
     @State private var selectedDestination = ""
     /// Why the last attempt failed, until the user picks another destination.
     @State private var failureMessage: String?
+    /// Whether the contents are moving now.
+    @State private var isWorking = false
 
     /// Valid destinations: all folders except the folder being deleted and its descendants
     private var validDestinations: [(label: String, path: String)] {
@@ -490,23 +572,34 @@ struct DeleteFolderMoveContentsSheet: View {
                 }
             }
             .accessibilityLabel("Destination for folder contents")
+            .disabled(isWorking)
 
             OperationFailureNotice(message: failureMessage)
+
+            if isWorking {
+                SheetWorkIndicator(label: "Moving the folder's contents...")
+            }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.escape, modifiers: [])
                 Spacer()
                 Button("Move Contents & Delete Folder") {
-                    failureMessage = OperationFailureNotice.message(after: onConfirm(selectedDestination))
+                    OperationFailureNotice.run(
+                        { await onConfirm(selectedDestination) },
+                        isWorking: $isWorking,
+                        failureMessage: $failureMessage
+                    )
                 }
                 .keyboardShortcut(.return, modifiers: [])
             }
+            .disabled(isWorking)
         }
         .padding()
         .frame(width: 450)
         .navigationTitle("Move Contents: \(folder.name)")
         .clearingFailure($failureMessage, whenChanged: selectedDestination)
+        .interactiveDismissDisabled(isWorking)
         .onAppear {
             // Default to the parent of the folder being deleted
             selectedDestination = folder.parentPath

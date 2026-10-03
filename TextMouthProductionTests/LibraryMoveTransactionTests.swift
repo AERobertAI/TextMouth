@@ -4,7 +4,7 @@ import XCTest
 /// Regression coverage for filesystem-first library move transactions.
 @MainActor
 final class LibraryMoveTransactionTests: XCTestCase {
-    func testBookMoveCommitsModelPathAndBookInfoAfterDiskMove() throws {
+    func testBookMoveCommitsModelPathAndBookInfoAfterDiskMove() async throws {
         let sourceFolder = uniqueFolder("Source")
         let destinationFolder = uniqueFolder("Destination")
         var book = try makeManagedBook(folderPath: sourceFolder)
@@ -13,7 +13,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel()
         viewModel.library = Library(books: [book])
 
-        viewModel.moveBooks([book], toFolder: destinationFolder)
+        await viewModel.moveBooks([book], toFolder: destinationFolder).value
 
         book = try XCTUnwrap(viewModel.library.books.first)
         XCTAssertEqual(book.folderPath, destinationFolder)
@@ -24,7 +24,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertEqual(info.metadata.folderPath, destinationFolder)
     }
 
-    func testBookMoveFailureLeavesModelAndSourcePackageUntouched() throws {
+    func testBookMoveFailureLeavesModelAndSourcePackageUntouched() async throws {
         let sourceFolder = uniqueFolder("Source")
         let destinationFolder = uniqueFolder("Destination")
         let book = try makeManagedBook(folderPath: sourceFolder)
@@ -37,7 +37,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel()
         viewModel.library = Library(books: [book])
 
-        viewModel.moveBooks([book], toFolder: destinationFolder)
+        await viewModel.moveBooks([book], toFolder: destinationFolder).value
 
         let stored = try XCTUnwrap(viewModel.library.books.first)
         XCTAssertEqual(stored.folderPath, sourceFolder)
@@ -46,7 +46,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertTrue(viewModel.showError)
     }
 
-    func testFolderRenamePersistsNewBookInfoLocation() throws {
+    func testFolderRenamePersistsNewBookInfoLocation() async throws {
         let oldName = uniqueFolder("Old")
         let newName = uniqueFolder("New")
         let folder = BookFolder(name: oldName)
@@ -55,7 +55,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel()
         viewModel.library = Library(books: [book], folders: [folder])
 
-        viewModel.renameFolder(folder, to: newName)
+        await viewModel.renameFolder(folder, to: newName).value
 
         let moved = try XCTUnwrap(viewModel.library.books.first)
         XCTAssertEqual(moved.folderPath, newName)
@@ -63,7 +63,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: moved.tmbDirectory).metadata.folderPath, newName)
     }
 
-    func testFolderRemovalFailureDoesNotDeleteOrReassignBooks() throws {
+    func testFolderRemovalFailureDoesNotDeleteOrReassignBooks() async throws {
         let folderPath = uniqueFolder("FolderToKeep")
         let folder = BookFolder(name: folderPath)
         let book = try makeManagedBook(folderPath: folderPath)
@@ -77,7 +77,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel()
         viewModel.library = Library(books: [book], folders: [folder])
 
-        viewModel.removeFolderMovingContents(folder, toPath: "")
+        await viewModel.removeFolderMovingContents(folder, toPath: "").value
 
         XCTAssertEqual(viewModel.library.folders.map(\.id), [folder.id])
         XCTAssertEqual(viewModel.library.books.first?.folderPath, folderPath)
@@ -91,7 +91,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
     /// the listing shows the new spelling, the package and subfolder stay
     /// inside it, and the book's path and package record follow. The case-
     /// insensitive rule is forced so the in-place path runs on any volume.
-    func testCaseOnlyFolderRenameRespellsTheDirectoryOnDisk() throws {
+    func testCaseOnlyFolderRenameRespellsTheDirectoryOnDisk() async throws {
         let token = UUID().uuidString
         let oldName = "archive-\(token)"
         let newName = "Archive-\(token)"
@@ -105,8 +105,8 @@ final class LibraryMoveTransactionTests: XCTestCase {
             folders: [folder, BookFolder(name: "Sub", parentPath: oldName)]
         )
 
-        FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
-            viewModel.renameFolder(folder, to: newName)
+        await FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            await viewModel.renameFolder(folder, to: newName).value
         }
 
         XCTAssertFalse(viewModel.showError, viewModel.errorMessage ?? "")
@@ -129,7 +129,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
     /// Renaming a folder saved with a decomposed name to its composed
     /// spelling keeps one directory and leaves the package where it is.
-    func testNormalizationOnlyFolderRenameKeepsThePackageInPlace() throws {
+    func testNormalizationOnlyFolderRenameKeepsThePackageInPlace() async throws {
         let token = UUID().uuidString
         let decomposed = "Cafe\u{301}-\(token)"
         let composed = "Caf\u{E9}-\(token)"
@@ -139,7 +139,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library(books: [book], folders: [folder])
 
-        viewModel.renameFolder(folder, to: composed)
+        await viewModel.renameFolder(folder, to: composed).value
 
         XCTAssertFalse(viewModel.showError, viewModel.errorMessage ?? "")
         XCTAssertTrue(BookFolder.spellingsMatch(try XCTUnwrap(viewModel.library.folders.first).name, composed))
@@ -157,7 +157,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
     /// When a package record cannot be rewritten, a capitalization-only
     /// rename is rolled back: the directory gets its old spelling again and
     /// the library keeps the old name.
-    func testFailedCaseOnlyRenameRestoresTheDirectorySpelling() throws {
+    func testFailedCaseOnlyRenameRestoresTheDirectorySpelling() async throws {
         let token = UUID().uuidString
         let oldName = "ledger-\(token)"
         let newName = "Ledger-\(token)"
@@ -171,8 +171,8 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library(books: [book], folders: [folder])
 
-        FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
-            viewModel.renameFolder(folder, to: newName)
+        await FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            await viewModel.renameFolder(folder, to: newName).value
         }
 
         XCTAssertTrue(viewModel.showError)
@@ -225,12 +225,12 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
     /// A subfolder name already used at the destination refuses the whole
     /// removal before anything moves, and the message names the clash.
-    func testRefusedRemovalForDuplicateSubfolderNameLeavesModelAndDiskUntouched() throws {
+    func testRefusedRemovalForDuplicateSubfolderNameLeavesModelAndDiskUntouched() async throws {
         let old = uniqueFolder("Old")
         let target = uniqueFolder("Target")
         defer { cleanup([old, target]) }
 
-        let message = try refusedRemovalMessage(
+        let message = try await refusedRemovalMessage(
             folders: [old, "\(old)/Sub", target, "\(target)/Sub"],
             bookIn: "\(old)/Sub",
             removing: old,
@@ -246,11 +246,11 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
     /// Choosing the removed folder's own subfolder as the destination is
     /// refused without touching the model or the disk.
-    func testRefusedRemovalIntoItsOwnSubfolderLeavesModelAndDiskUntouched() throws {
+    func testRefusedRemovalIntoItsOwnSubfolderLeavesModelAndDiskUntouched() async throws {
         let old = uniqueFolder("Old")
         defer { cleanup([old]) }
 
-        let message = try refusedRemovalMessage(
+        let message = try await refusedRemovalMessage(
             folders: [old, "\(old)/Sub"],
             bookIn: "\(old)/Sub",
             removing: old,
@@ -266,12 +266,12 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
     /// Contents that would end up deeper than the folder limit are refused
     /// without touching the model or the disk.
-    func testRefusedRemovalBeyondTheDepthLimitLeavesModelAndDiskUntouched() throws {
+    func testRefusedRemovalBeyondTheDepthLimitLeavesModelAndDiskUntouched() async throws {
         let old = uniqueFolder("Old")
         let deep = uniqueFolder("Deep")
         defer { cleanup([old, deep]) }
 
-        let message = try refusedRemovalMessage(
+        let message = try await refusedRemovalMessage(
             folders: [old, "\(old)/B", "\(old)/B/C", deep, "\(deep)/Y", "\(deep)/Y/Z"],
             bookIn: "\(old)/B/C",
             removing: old,
@@ -297,7 +297,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         into destination: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws -> String? {
+    ) async throws -> String? {
         let viewModel = LibraryViewModel(initializeServices: false)
         viewModel.library = Library()
         for path in folderPaths {
@@ -317,7 +317,7 @@ final class LibraryMoveTransactionTests: XCTestCase {
         let modelBefore = viewModel.library
         let diskBefore = diskSnapshot(of: topLevelFolders)
 
-        viewModel.removeFolderMovingContents(folder, toPath: destination)
+        await viewModel.removeFolderMovingContents(folder, toPath: destination).value
 
         XCTAssertTrue(viewModel.showError, file: file, line: line)
         XCTAssertEqual(viewModel.library.folders, modelBefore.folders, file: file, line: line)

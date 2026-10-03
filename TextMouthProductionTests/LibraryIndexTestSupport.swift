@@ -230,4 +230,31 @@ extension XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { elapsed.fulfill() }
         wait(for: [elapsed], timeout: 5)
     }
+
+    /// Runs `edit`, a library edit that awaits its packages' moves off the
+    /// main actor (PERF14), and returns its outcome once it is done, the
+    /// main run loop turning meanwhile, so a synchronous test, such as one
+    /// that waits for a reader the same way, can make the edit in one step.
+    @MainActor
+    func outcome(
+        of edit: @escaping @MainActor () async -> OperationOutcome,
+        timeout: TimeInterval = 30
+    ) -> OperationOutcome {
+        let box = OutcomeBox()
+        let finished = expectation(description: "The library edit finished")
+        Task { @MainActor in
+            box.outcome = await edit()
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: timeout)
+        return box.outcome ?? .failure("The library edit did not finish within \(Int(timeout)) seconds.")
+    }
+}
+
+/// Where `outcome(of:timeout:)` keeps an edit's outcome until the test reads
+/// it. Main-actor isolated: the edit and the test both run there.
+@MainActor
+private final class OutcomeBox {
+    /// The edit's outcome, once it is done.
+    var outcome: OperationOutcome?
 }

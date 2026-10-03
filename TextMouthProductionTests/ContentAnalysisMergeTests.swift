@@ -261,7 +261,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
         let model = makeModel(with: [original])
         let destination = "Analysis Merge Destination \(UUID().uuidString.prefix(8))"
         createdDirectories.append(TextMouthPaths.libraryDir.appendingPathComponent(destination, isDirectory: true))
-        model.moveBooks([original], toFolder: destination)
+        let move = outcome { await model.moveBooksReturningOutcome([original], toFolder: destination) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         let moved = try XCTUnwrap(model.bookByID(original.id))
         XCTAssertEqual(moved.folderPath, destination)
         model.persistReadingPosition(bookID: original.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 5))

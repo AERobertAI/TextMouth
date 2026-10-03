@@ -181,34 +181,44 @@ extension LibraryViewModel {
 
     // MARK: - Moving Books
 
-    func moveBook(_ book: Book, toFolder path: String) {
+    /// Moves `book` to the folder at `path`, as `moveBooks(_:toFolder:)` does.
+    @discardableResult
+    func moveBook(_ book: Book, toFolder path: String) -> Task<Void, Never> {
         moveBooks([book], toFolder: path)
     }
 
     /// Move one or more books to the specified folder path. A failure is
-    /// explained through the library's error alert.
-    func moveBooks(_ books: [Book], toFolder path: String) {
-        presentFailure(of: moveBooksReturningOutcome(books, toFolder: path))
+    /// explained through the library's error alert. Returns the task doing
+    /// the work, whose packages move off the main actor (PERF14); callers
+    /// need not wait for it.
+    @discardableResult
+    func moveBooks(_ books: [Book], toFolder path: String) -> Task<Void, Never> {
+        Task {
+            presentFailure(of: await moveBooksReturningOutcome(books, toFolder: path))
+        }
     }
 
     /// Moves books to the folder at `path` and returns what happened,
     /// presenting nothing, so the move sheet can stay open with the reason
     /// after a failure (TODO A07). A failed move puts back any package that
-    /// already moved and leaves the library as it was.
-    func moveBooksReturningOutcome(_ books: [Book], toFolder path: String) -> OperationOutcome {
+    /// already moved and leaves the library as it was. The packages move off
+    /// the main actor (`performLibraryTransition`, PERF14).
+    func moveBooksReturningOutcome(_ books: [Book], toFolder path: String) async -> OperationOutcome {
         var proposed = library
         let ids = Set(books.map(\.id))
         for index in proposed.books.indices where ids.contains(proposed.books[index].id) {
             proposed.books[index].folderPath = path
         }
         do {
-            try commitLibraryTransition(proposed, affectedBookIDs: ids)
+            try await performLibraryTransition(proposed, affectedBookIDs: ids)
             lastMovedFolderPath = path
             return .success(nil)
         } catch {
             return .failure("Could not move books", error)
         }
     }
+
+    // MARK: - Library Transitions
 
     /// Move every changed package, persist its new metadata, and then commit the
     /// proposed library model. Completed disk moves are reversed on any failure.
@@ -219,20 +229,102 @@ extension LibraryViewModel {
     /// A move that writes a book's record has saved the book's current state,
     /// so it settles any earlier failed write of the book. Undoing a failed
     /// transition is never silent: what cannot be put back is reported to the
-    /// failure center (`rollBack`). `disk` makes the moves and writes; tests
-    /// replace it to make one of them fail.
+    /// failure center (`LibraryTransitionDiskWork`). `disk` makes the moves
+    /// and writes; tests replace it to make one of them fail.
     ///
     /// Readers with a moving book open hear of the move before any package
     /// moves, and that it ended once the library holds the books' new rows,
     /// or once a failed transition has been put back (TODO P10).
+    ///
+    /// Everything here runs on the main actor, so it suits a transition
+    /// small enough to finish at once, such as putting a ZIP archive's books
+    /// into a folder of their own. The folder edits started from the
+    /// library's sheets, which can move hundreds of packages, use
+    /// `performLibraryTransition`, which moves them off the main actor.
     func commitLibraryTransition(
         _ proposedLibrary: Library,
         affectedBookIDs: Set<UUID>,
         equivalence: FolderPathEquivalence = .library,
         disk: LibraryTransitionDisk = .system
     ) throws {
-        typealias Move = LibraryTransitionMove
+        let plan = try planLibraryTransition(proposedLibrary, affectedBookIDs: affectedBookIDs, equivalence: equivalence)
+        bookUpdates.packagesWillMove(plan.movingBookIDs)
+        defer { bookUpdates.packagesDidMove(plan.movingBookIDs) }
+        try LibraryTransitionDiskWork.perform(plan, disk: disk, restoringThrough: self)
+        publish(plan)
+    }
 
+    /// The transition `commitLibraryTransition` makes, with its disk work off
+    /// the main actor (PERF14): moving each package and rewriting its record,
+    /// which for a folder of hundreds of books takes the better part of a
+    /// second that VoiceOver would otherwise spend waiting for the app. The
+    /// library publishes the new rows once that work is done, with a
+    /// VoiceOver announcement of how many books moved.
+    ///
+    /// It runs as held storage work, as Rebuild Directory does: imports,
+    /// text extractions, and analyses started meanwhile wait until it is
+    /// done, so none writes into a package as it moves; those already under
+    /// way finish first, VoiceOver hearing what it waits for; and the saves
+    /// already queued are written before anything moves. Throws
+    /// `LibraryTransitionError.storageBusy` while another hold is in place:
+    /// a data-directory move, Rebuild Directory, or another transition. A
+    /// transition that moves no package and rewrites no record, as for an
+    /// empty folder, only makes folders, at once, and holds nothing.
+    ///
+    /// The library can change while the packages move, as when a reader saves
+    /// its position or another window edits a book. Such changes are kept
+    /// (`library(after:current:)`), and a moved book whose row changed has its
+    /// record saved again at its new place, as one whose row changed while a
+    /// failed transition was put back has at its old one.
+    func performLibraryTransition(
+        _ proposedLibrary: Library,
+        affectedBookIDs: Set<UUID>,
+        equivalence: FolderPathEquivalence = .library,
+        disk: LibraryTransitionDisk = .system
+    ) async throws {
+        let plan = try planLibraryTransition(proposedLibrary, affectedBookIDs: affectedBookIDs, equivalence: equivalence)
+        guard !plan.moves.isEmpty else {
+            // No package moves and no record is rewritten, as for an empty
+            // folder: only folders are made, at once, which no storage work
+            // can be in the way of.
+            try LibraryTransitionDiskWork.perform(plan, disk: disk, restoringThrough: self)
+            publish(plan)
+            return
+        }
+        guard let hold = StorageBoundary.shared.holdWork() else {
+            throw LibraryTransitionError.storageBusy
+        }
+        defer { hold.release() }
+        await hold.waitForWorkUnderWay { work in
+            VoiceOverAnnouncer.announce(work.waitingMessage)
+        }
+        LibraryPersistenceService.flushPendingSave()
+
+        bookUpdates.packagesWillMove(plan.movingBookIDs)
+        defer { bookUpdates.packagesDidMove(plan.movingBookIDs) }
+        do {
+            try await OffMainWork.runThrowing { [weak self] in
+                try LibraryTransitionDiskWork.perform(plan, disk: disk, restoringThrough: self)
+            }
+        } catch {
+            saveRowsChanged(during: plan)
+            throw error
+        }
+        if let announcement = LibraryTransitionWording.completion(movingPackagesOf: plan.movingBookIDs.count) {
+            VoiceOverAnnouncer.announce(announcement)
+        }
+        publish(plan)
+    }
+
+    /// Plans the transition to `proposedLibrary`: checks the paths it
+    /// introduces, and works out where each affected book's package goes and
+    /// whether it moves on disk, without changing anything. Throws for a
+    /// destination folder path the library refuses.
+    private func planLibraryTransition(
+        _ proposedLibrary: Library,
+        affectedBookIDs: Set<UUID>,
+        equivalence: FolderPathEquivalence
+    ) throws -> LibraryTransitionPlan {
         var proposed = proposedLibrary
         let existingPaths = Set(library.folders.map(\.fullPath))
         let changedFolders = proposed.folders.filter { !existingPaths.contains($0.fullPath) }
@@ -241,10 +333,15 @@ extension LibraryViewModel {
                 .allSatisfy({ BookFolder.isValidLibraryPath($0.folderPath) }) else {
             throw FileImportError.importFailed("A destination folder path is invalid.")
         }
-        var moves: [Move] = []
+        // Each book is found by ID once, not by a search per affected book,
+        // which for a folder of hundreds of books took a tenth of a second.
+        let originals = Self.firstIndexByID(of: library.books)
+        let proposedIndexes = Self.firstIndexByID(of: proposed.books)
+        var moves: [LibraryTransitionMove] = []
         for bookID in affectedBookIDs {
-            guard let original = library.books.first(where: { $0.id == bookID }),
-                  let proposedIndex = proposed.books.firstIndex(where: { $0.id == bookID }) else { continue }
+            guard let originalIndex = originals[bookID],
+                  let proposedIndex = proposedIndexes[bookID] else { continue }
+            let original = library.books[originalIndex]
             var updated = proposed.books[proposedIndex]
             guard !original.tmbDirectoryName.isEmpty else { continue }
 
@@ -256,19 +353,10 @@ extension LibraryViewModel {
             // Equivalent folder paths name one directory on this volume, so a
             // "move" there would find its own source occupying the destination.
             let needsDiskMove = !equivalence.areEquivalent(original.folderPath, updated.folderPath)
-            if needsDiskMove {
-                guard FileManager.default.fileExists(atPath: source.path) else {
-                    throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: source.path])
-                }
-                guard !FileManager.default.fileExists(atPath: destination.path) else {
-                    throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: destination.path])
-                }
-                try TextMouthPaths.ensureLibrarySubfolder(updated.folderPath)
-            }
             let fileName = URL(fileURLWithPath: original.filePath).lastPathComponent
             updated.filePath = destination.appendingPathComponent(fileName).path
             proposed.books[proposedIndex] = updated
-            moves.append(Move(
+            moves.append(LibraryTransitionMove(
                 original: original,
                 updated: updated,
                 source: source,
@@ -276,122 +364,157 @@ extension LibraryViewModel {
                 needsDiskMove: needsDiskMove
             ))
         }
+        return LibraryTransitionPlan(
+            original: library,
+            proposed: proposed,
+            moves: moves,
+            changedFolders: changedFolders
+        )
+    }
 
-        // A reader playing a moving book's audio stops reading its files
-        // before they move, and plays on from the same place once the move
-        // is over: from the new place, or from the old one when the move is
-        // put back.
-        let movingBookIDs = moves.filter(\.needsDiskMove).map(\.original.id)
-        bookUpdates.packagesWillMove(movingBookIDs)
-        defer { bookUpdates.packagesDidMove(movingBookIDs) }
-
-        var completedMoves: [Move] = []
-        var rewrittenRecordIDs: Set<UUID> = []
-        do {
-            for move in moves where move.needsDiskMove {
-                try disk.moveItem(move.source, move.destination)
-                completedMoves.append(move)
-            }
-            for move in moves {
-                try disk.writeRecord(move.updated)
-                rewrittenRecordIDs.insert(move.original.id)
-            }
-            // Empty folders have no book move to create their destinations.
-            // Materialize changed folder paths before publishing the model.
-            for folder in changedFolders {
-                try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
-            }
-        } catch {
-            rollBack(moves, completed: completedMoves, rewrittenRecordIDs: rewrittenRecordIDs, disk: disk)
-            throw error
-        }
-
-        library = proposed
+    /// Makes the library hold `plan`'s rows, once its packages have moved and
+    /// their records are rewritten, keeping any change made meanwhile
+    /// (`library(after:current:)`), and saves it. Each moved book's record
+    /// now holds its state where its package is, which settles an earlier
+    /// failed write of the book.
+    private func publish(_ plan: LibraryTransitionPlan) {
+        let changedRows = rowsChanged(during: plan)
+        library = Self.library(after: plan, current: library)
         save()
-        // Each moved book's record now holds its current state, where its
-        // package is: an earlier failed write of the book is settled.
-        for move in moves {
+        for move in plan.moves {
             failureCenter.recordSuccess(.book(move.original.id))
+        }
+        for id in changedRows {
+            if let book = bookByID(id) {
+                LibraryPersistenceService.saveBookInfo(for: book)
+            }
         }
         FileImportService.removeEmptyLibrarySubdirectories(library: library)
     }
 
-    /// Undoes the disk side of a library transition that failed, while the
-    /// library still holds every book where it was (TODO S09). Each package
-    /// that moved goes back, the last one moved first; then each book whose
-    /// record was rewritten gets the record of its current state back, where
-    /// its package now is. A package that moved but whose record was not
-    /// rewritten carried its record with it, unchanged, so it needs none.
-    ///
-    /// Nothing here is silent. A package that cannot be moved back is
-    /// reported with both paths, so the user knows where its files are, and
-    /// keeps its rewritten record, which describes where it is; a record
-    /// that cannot be restored is reported as the book's unsaved record.
-    /// Each report carries a retry.
-    private func rollBack(
-        _ moves: [LibraryTransitionMove],
-        completed: [LibraryTransitionMove],
-        rewrittenRecordIDs: Set<UUID>,
-        disk: LibraryTransitionDisk
-    ) {
-        var stranded: Set<UUID> = []
-        for move in completed.reversed() where !moveBack(move, disk: disk) {
-            stranded.insert(move.original.id)
-        }
-        for move in moves
-        where rewrittenRecordIDs.contains(move.original.id) && !stranded.contains(move.original.id) {
-            restoreRecord(ofBookID: move.original.id, disk: disk)
+    /// Saves again, where their packages are, the records of `plan`'s books
+    /// whose rows changed while a transition that failed was put back: the
+    /// rollback restored each record as the transition found it.
+    private func saveRowsChanged(during plan: LibraryTransitionPlan) {
+        for id in rowsChanged(during: plan) {
+            if let book = bookByID(id) {
+                LibraryPersistenceService.saveBookInfo(for: book)
+            }
         }
     }
 
-    /// Moves `move`'s package back to where the library expects it, and
-    /// returns whether it is back. One that cannot be moved back is reported
-    /// to the failure center with where it is and where it belongs; its
-    /// retry moves it back and then restores its record.
-    private func moveBack(_ move: LibraryTransitionMove, disk: LibraryTransitionDisk) -> Bool {
-        do {
-            try disk.moveItem(move.destination, move.source)
-            return true
-        } catch {
-            failureCenter.recordFailure(
-                .strandedPackage(
-                    bookID: move.original.id,
-                    title: move.original.title,
-                    location: move.destination.path,
-                    home: move.source.path
-                ),
-                path: move.destination.path,
-                error: error
-            ) { [weak self] _ in
-                guard let self, self.moveBack(move, disk: disk) else { return }
-                self.restoreRecord(ofBookID: move.original.id, disk: disk)
-            }
-            return false
+    /// The IDs of `plan`'s books whose rows in the library differ from the
+    /// rows the plan was made from, as a reader's checkpoint or another
+    /// window's edit makes them differ while the packages move.
+    private func rowsChanged(during plan: LibraryTransitionPlan) -> [UUID] {
+        let rows = Self.firstIndexByID(of: library.books)
+        return plan.moves.compactMap { move in
+            guard let index = rows[move.original.id], library.books[index] != move.original else { return nil }
+            return move.original.id
         }
+    }
+
+    /// The index of each book in `books` by its ID: the first, should an
+    /// ID appear twice, as a search from the start would find it.
+    private nonisolated static func firstIndexByID(of books: [Book]) -> [UUID: Int] {
+        Dictionary(books.indices.map { (books[$0].id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// The library to hold once `plan`'s packages have moved: `plan.proposed`,
+    /// unless the library changed meanwhile, which a transition run off the
+    /// main actor allows. Then it is the library as it is now, with the
+    /// transition's own changes made to it: each moved book's place (its
+    /// folder, package, and file paths), and the folders and folder sort
+    /// settings the transition added, changed, or removed. A book removed
+    /// meanwhile stays removed, and one added meanwhile stays.
+    nonisolated static func library(after plan: LibraryTransitionPlan, current: Library) -> Library {
+        let original = plan.original
+        let unchanged = current.books == original.books
+            && current.folders == original.folders
+            && current.folderSortSettings == original.folderSortSettings
+        guard !unchanged else { return plan.proposed }
+
+        var merged = current
+        let places = Dictionary(
+            plan.moves.map { ($0.original.id, $0.updated.fileLocation) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for index in merged.books.indices {
+            if let place = places[merged.books[index].id] {
+                merged.books[index].fileLocation = place
+            }
+        }
+        merged.folders = mergedChanges(
+            from: original.folders,
+            to: plan.proposed.folders,
+            into: current.folders,
+            key: \.id
+        )
+        merged.folderSortSettings = mergedChanges(
+            from: original.folderSortSettings,
+            to: plan.proposed.folderSortSettings,
+            into: current.folderSortSettings
+        )
+        return merged
+    }
+
+    /// `current` with the changes that turned `before` into `after`: items
+    /// removed, changed, and added, matched by `key`; items no change touched
+    /// stay as `current` has them.
+    private nonisolated static func mergedChanges<Item: Equatable, Key: Hashable>(
+        from before: [Item],
+        to after: [Item],
+        into current: [Item],
+        key: (Item) -> Key
+    ) -> [Item] {
+        let beforeByKey = Dictionary(before.map { (key($0), $0) }, uniquingKeysWith: { first, _ in first })
+        let afterByKey = Dictionary(after.map { (key($0), $0) }, uniquingKeysWith: { first, _ in first })
+        var merged = current.filter { item in
+            beforeByKey[key(item)] == nil || afterByKey[key(item)] != nil
+        }
+        for index in merged.indices {
+            let itemKey = key(merged[index])
+            if let changed = afterByKey[itemKey], let was = beforeByKey[itemKey], changed != was {
+                merged[index] = changed
+            }
+        }
+        let present = Set(merged.map(key))
+        merged += after.filter { beforeByKey[key($0)] == nil && !present.contains(key($0)) }
+        return merged
+    }
+
+    /// `current` with the changes that turned `before` into `after`: entries
+    /// removed, changed, and added; entries no change touched stay as
+    /// `current` has them.
+    private nonisolated static func mergedChanges<Value: Equatable>(
+        from before: [String: Value],
+        to after: [String: Value],
+        into current: [String: Value]
+    ) -> [String: Value] {
+        var merged = current
+        for (key, value) in before where after[key] == nil {
+            if merged[key] == value {
+                merged[key] = nil
+            }
+        }
+        for (key, value) in after where before[key] != value {
+            merged[key] = value
+        }
+        return merged
     }
 
     /// Writes the record of the book `id` as the library now holds it, into
-    /// the package where the library expects it. Success settles the book's
-    /// failure; a failure is reported as the book's unsaved record, with a
-    /// retry of this restore. A book no longer in the library has no record
-    /// left to restore, so its failure is withdrawn.
-    private func restoreRecord(ofBookID id: UUID, disk: LibraryTransitionDisk) {
+    /// the package where the library expects it: the retry of a record that
+    /// a failed transition could not restore. Success settles the book's
+    /// failure; a failure is reported again, with this retry. A book no
+    /// longer in the library has no record left to restore, so its failure
+    /// is withdrawn.
+    func retryRecordRestore(ofBookID id: UUID, disk: LibraryTransitionDisk) {
         guard let book = bookByID(id) else {
             failureCenter.withdraw(.book(id))
             return
         }
-        do {
-            try disk.writeRecord(book)
-            failureCenter.recordSuccess(.book(id))
-        } catch {
-            failureCenter.recordFailure(
-                .bookRecord(bookID: id, title: book.title),
-                path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
-                error: error
-            ) { [weak self] _ in
-                self?.restoreRecord(ofBookID: id, disk: disk)
-            }
-        }
+        LibraryTransitionDiskWork.restoreRecord(of: book, disk: disk, restoringThrough: self)
     }
 
     /// Where the library's failed writes and cleanups are reported and shown.
@@ -638,7 +761,7 @@ extension LibraryViewModel {
 
 /// One book's part in a library transition: the book before and after, and
 /// the package directory it moves between.
-struct LibraryTransitionMove {
+struct LibraryTransitionMove: Sendable {
     /// The book as the library holds it before the transition.
     let original: Book
     /// The book as the transition leaves it.
@@ -651,13 +774,37 @@ struct LibraryTransitionMove {
     let needsDiskMove: Bool
 }
 
+/// A library transition worked out on the main actor before anything on
+/// disk changes: the library it starts from and the one it makes, each
+/// affected book's move, and the folders it introduces, which need
+/// directories of their own.
+struct LibraryTransitionPlan: Sendable {
+    /// The library the transition was planned from.
+    let original: Library
+    /// The library the transition makes.
+    let proposed: Library
+    /// Each affected book's part, for the books that have packages.
+    let moves: [LibraryTransitionMove]
+    /// The folders the proposed library holds that the original did not.
+    let changedFolders: [BookFolder]
+
+    /// The books whose packages move on disk, which open readers are told
+    /// about before and after.
+    var movingBookIDs: [UUID] {
+        moves.filter(\.needsDiskMove).map(\.original.id)
+    }
+}
+
 /// The disk operations a library transition makes, and its rollback undoes.
-/// Tests replace them to make one fail at a chosen moment (TODO S09).
+/// Tests replace them to make one fail at a chosen moment (TODO S09). They
+/// run on whatever thread runs the transition's disk work: the main thread
+/// for `commitLibraryTransition`, a background queue for
+/// `performLibraryTransition` (PERF14).
 struct LibraryTransitionDisk: Sendable {
     /// Moves a package directory from the first URL to the second.
-    var moveItem: @MainActor @Sendable (_ source: URL, _ destination: URL) throws -> Void
+    var moveItem: @Sendable (_ source: URL, _ destination: URL) throws -> Void
     /// Writes a book's record into its package.
-    var writeRecord: @MainActor @Sendable (_ book: Book) throws -> Void
+    var writeRecord: @Sendable (_ book: Book) throws -> Void
 
     /// The operations the app makes.
     static let system = LibraryTransitionDisk(
@@ -668,4 +815,161 @@ struct LibraryTransitionDisk: Sendable {
             try book.saveBookInfoThrowing()
         }
     )
+}
+
+/// The disk side of a library transition: checking that each package can
+/// move, moving it, rewriting its record, making the new folders, and, when
+/// any step fails, putting back what was done. It touches nothing but the
+/// disk and the failure center, so it runs on any thread (PERF14).
+enum LibraryTransitionDiskWork {
+    /// Makes `plan`'s changes on disk through `disk`, or throws the first
+    /// failure once it has put back what it did (`rollBack`). Every package
+    /// is checked before any moves: its source must be there and its
+    /// destination free, and the destination's folder is made. `model` is
+    /// the library model the failures' retries look the books up in.
+    static func perform(
+        _ plan: LibraryTransitionPlan,
+        disk: LibraryTransitionDisk,
+        restoringThrough model: LibraryViewModel?
+    ) throws {
+        let fileManager = FileManager.default
+        for move in plan.moves where move.needsDiskMove {
+            guard fileManager.fileExists(atPath: move.source.path) else {
+                throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: move.source.path])
+            }
+            guard !fileManager.fileExists(atPath: move.destination.path) else {
+                throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: move.destination.path])
+            }
+            try TextMouthPaths.ensureLibrarySubfolder(move.updated.folderPath)
+        }
+
+        var completedMoves: [LibraryTransitionMove] = []
+        var rewrittenRecordIDs: Set<UUID> = []
+        do {
+            for move in plan.moves where move.needsDiskMove {
+                try disk.moveItem(move.source, move.destination)
+                completedMoves.append(move)
+            }
+            for move in plan.moves {
+                try disk.writeRecord(move.updated)
+                rewrittenRecordIDs.insert(move.original.id)
+            }
+            // Empty folders have no book move to create their destinations.
+            // Materialize changed folder paths before publishing the model.
+            for folder in plan.changedFolders {
+                try TextMouthPaths.ensureLibrarySubfolder(folder.fullPath)
+            }
+        } catch {
+            rollBack(plan.moves, completed: completedMoves, rewrittenRecordIDs: rewrittenRecordIDs, disk: disk, model: model)
+            throw error
+        }
+    }
+
+    /// Undoes the disk side of a library transition that failed, while the
+    /// library still holds every book where it was (TODO S09). Each package
+    /// that moved goes back, the last one moved first; then each book whose
+    /// record was rewritten gets back the record of its state as the
+    /// transition found it, where its package now is. A package that moved
+    /// but whose record was not rewritten carried its record with it,
+    /// unchanged, so it needs none.
+    ///
+    /// Nothing here is silent. A package that cannot be moved back is
+    /// reported with both paths, so the user knows where its files are, and
+    /// keeps its rewritten record, which describes where it is; a record
+    /// that cannot be restored is reported as the book's unsaved record.
+    /// Each report carries a retry.
+    private static func rollBack(
+        _ moves: [LibraryTransitionMove],
+        completed: [LibraryTransitionMove],
+        rewrittenRecordIDs: Set<UUID>,
+        disk: LibraryTransitionDisk,
+        model: LibraryViewModel?
+    ) {
+        var stranded: Set<UUID> = []
+        for move in completed.reversed() where !moveBack(move, disk: disk, model: model) {
+            stranded.insert(move.original.id)
+        }
+        for move in moves
+        where rewrittenRecordIDs.contains(move.original.id) && !stranded.contains(move.original.id) {
+            restoreRecord(of: move.original, disk: disk, restoringThrough: model)
+        }
+    }
+
+    /// Moves `move`'s package back to where the library expects it, and
+    /// returns whether it is back. One that cannot be moved back is reported
+    /// to the failure center with where it is and where it belongs; its
+    /// retry, on the main actor, moves it back and then restores its record
+    /// as the library holds the book then.
+    @discardableResult
+    static func moveBack(_ move: LibraryTransitionMove, disk: LibraryTransitionDisk, model: LibraryViewModel?) -> Bool {
+        do {
+            try disk.moveItem(move.destination, move.source)
+            return true
+        } catch {
+            PersistenceFailureCenter.shared.recordFailure(
+                .strandedPackage(
+                    bookID: move.original.id,
+                    title: move.original.title,
+                    location: move.destination.path,
+                    home: move.source.path
+                ),
+                path: move.destination.path,
+                error: error
+            ) { [weak model] _ in
+                guard moveBack(move, disk: disk, model: model) else { return }
+                model?.retryRecordRestore(ofBookID: move.original.id, disk: disk)
+            }
+            return false
+        }
+    }
+
+    /// Writes `book`'s record into its package. Success settles the book's
+    /// failure; a failure is reported as the book's unsaved record, whose
+    /// retry, on the main actor, writes the record of the book as the
+    /// library holds it then (`LibraryViewModel.retryRecordRestore`).
+    static func restoreRecord(of book: Book, disk: LibraryTransitionDisk, restoringThrough model: LibraryViewModel?) {
+        do {
+            try disk.writeRecord(book)
+            PersistenceFailureCenter.shared.recordSuccess(.book(book.id))
+        } catch {
+            PersistenceFailureCenter.shared.recordFailure(
+                .bookRecord(bookID: book.id, title: book.title),
+                path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
+                error: error
+            ) { [weak model] _ in
+                model?.retryRecordRestore(ofBookID: book.id, disk: disk)
+            }
+        }
+    }
+}
+
+/// Why a library transition could not start.
+enum LibraryTransitionError: LocalizedError, Equatable {
+    /// Another operation holds the library's storage work: a data-directory
+    /// move, Rebuild Directory, or another move of books between folders.
+    case storageBusy
+
+    var errorDescription: String? {
+        switch self {
+        case .storageBusy:
+            return "TextMouth is still moving books or its data directory. Try again once that is done."
+        }
+    }
+}
+
+/// What VoiceOver hears when a library transition run off the main actor
+/// finishes (PERF14).
+enum LibraryTransitionWording {
+    /// How many packages a transition must move before its end is
+    /// announced: a smaller one finishes before the user could wonder, and
+    /// the sheet that started it closing says enough.
+    static let announcedPackageCount = 25
+
+    /// The announcement of a finished transition that moved `count`
+    /// packages, such as "Done. Moved 527 books."; nil below
+    /// `announcedPackageCount`.
+    static func completion(movingPackagesOf count: Int) -> String? {
+        guard count >= announcedPackageCount else { return nil }
+        return "Done. Moved \(CountWording.books(count))."
+    }
 }

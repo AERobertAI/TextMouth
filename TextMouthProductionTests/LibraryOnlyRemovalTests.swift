@@ -419,7 +419,8 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         try makeFolder(destination)
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
-        model.moveBooks([book], toFolder: destination)
+        let move = outcome { await model.moveBooksReturningOutcome([book], toFolder: destination) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
         let moved = try XCTUnwrap(model.bookByID(book.id))
         XCTAssertEqual(moved.folderPath, destination)
 

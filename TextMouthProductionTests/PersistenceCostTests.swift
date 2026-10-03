@@ -97,6 +97,10 @@ final class PersistenceCostTests: XCTestCase {
     /// waits for the app's answers: every package moves and its record is
     /// rewritten. A heartbeat on the main thread measures the longest time
     /// it went without running.
+    ///
+    /// Before PERF14 the whole rename ran there: 611 ms, a 633 ms stall
+    /// (Debug). Now the packages move off the main actor, and VoiceOver
+    /// hears when they are done.
     @MainActor
     func testFolderRenameCost() async throws {
         let folder = "Rename Cost \(UUID().uuidString.prefix(8))"
@@ -109,15 +113,20 @@ final class PersistenceCostTests: XCTestCase {
         model.library = Library(books: books, folders: [BookFolder(name: folder)])
         let shelf = try XCTUnwrap(model.library.folders.first)
 
+        let announcementsBefore = VoiceOverAnnouncer.recordedAnnouncements.count
         let heartbeat = MainThreadHeartbeat()
         let clock = ContinuousClock()
         let started = clock.now
-        let outcome = model.renameFolderReturningOutcome(shelf, to: renamed)
+        let outcome = await model.renameFolderReturningOutcome(shelf, to: renamed)
         let elapsed = clock.now - started
         let longestStall = await heartbeat.stop()
 
         XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
         XCTAssertEqual(model.library.books.filter { $0.folderPath == renamed }.count, books.count)
+        XCTAssertEqual(
+            VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message),
+            ["Done. Moved 527 books."]
+        )
         Self.report(
             "PERF14 renaming a folder of \(books.count) books took \(Self.milliseconds(elapsed)) ms; "
                 + "the main thread went \(Self.milliseconds(longestStall)) ms without running"

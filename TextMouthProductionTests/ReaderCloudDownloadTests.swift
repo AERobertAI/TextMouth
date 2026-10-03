@@ -747,13 +747,17 @@ final class ReaderCloudDownloadTests: XCTestCase {
         let cloudOnly = cloud.cloudOnly
         let disk = LibraryTransitionDisk(
             moveItem: { source, destination in
-                duringMove.moves += 1
-                duringMove.loadedURL = reader.audioPlaybackService.loadedURL
-                duringMove.wasShowingDownload = reader.shownDownload != nil
-                duringMove.downloadsCancelled = storage.downloadsCancelled
-                try FileManager.default.moveItem(at: source, to: destination)
-                // A move within a cloud drive leaves the files in the cloud.
-                cloudOnly.markEverything()
+                // `commitLibraryTransition` runs its disk work on the main
+                // actor, where the reader lives.
+                try MainActor.assumeIsolated {
+                    duringMove.moves += 1
+                    duringMove.loadedURL = reader.audioPlaybackService.loadedURL
+                    duringMove.wasShowingDownload = reader.shownDownload != nil
+                    duringMove.downloadsCancelled = storage.downloadsCancelled
+                    try FileManager.default.moveItem(at: source, to: destination)
+                    // A move within a cloud drive leaves the files in the cloud.
+                    cloudOnly.markEverything()
+                }
             },
             writeRecord: { book in
                 try book.saveBookInfoThrowing()
@@ -898,7 +902,8 @@ final class ReaderCloudDownloadTests: XCTestCase {
     }
 
     /// What a reader's player was doing as a package moved. Main-actor
-    /// isolated, as the transition's disk operations are.
+    /// isolated, as the disk operations of `commitLibraryTransition` run
+    /// there.
     @MainActor
     private final class PlayerDuringMove {
         /// How many packages moved.
@@ -919,10 +924,14 @@ final class ReaderCloudDownloadTests: XCTestCase {
     private func observingDisk(_ reader: ReaderViewModel, into observation: PlayerDuringMove) -> LibraryTransitionDisk {
         LibraryTransitionDisk(
             moveItem: { source, destination in
-                observation.moves += 1
-                observation.wasPlaying = reader.audioPlaybackService.isPlaying
-                observation.loadedURL = reader.audioPlaybackService.loadedURL
-                try FileManager.default.moveItem(at: source, to: destination)
+                // `commitLibraryTransition` runs its disk work on the main
+                // actor, where the reader lives.
+                try MainActor.assumeIsolated {
+                    observation.moves += 1
+                    observation.wasPlaying = reader.audioPlaybackService.isPlaying
+                    observation.loadedURL = reader.audioPlaybackService.loadedURL
+                    try FileManager.default.moveItem(at: source, to: destination)
+                }
             },
             writeRecord: { book in
                 try book.saveBookInfoThrowing()

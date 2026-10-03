@@ -40,14 +40,14 @@ final class FolderOperationOutcomeTests: XCTestCase {
     /// A rename refused by a folder conflict returns the conflict, leaves the
     /// folders and their directories exactly as they were, and raises no
     /// library alert, which would otherwise appear behind the open sheet.
-    func testRefusedRenameReturnsTheConflictAndChangesNothing() throws {
+    func testRefusedRenameReturnsTheConflictAndChangesNothing() async throws {
         let reports = uniqueFolder("Reports")
         let archive = uniqueFolder("Archive")
         let viewModel = try modelWithFolders([reports, archive])
         let before = viewModel.library.folders
         let folder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
 
-        let outcome = viewModel.renameFolderReturningOutcome(folder, to: reports)
+        let outcome = await viewModel.renameFolderReturningOutcome(folder, to: reports)
 
         XCTAssertEqual(
             outcome,
@@ -61,13 +61,13 @@ final class FolderOperationOutcomeTests: XCTestCase {
 
     /// A rename that works returns a success with nothing to say and renames
     /// the folder and its directory.
-    func testRenameThatWorksReturnsSuccess() throws {
+    func testRenameThatWorksReturnsSuccess() async throws {
         let original = uniqueFolder("Original")
         let renamed = uniqueFolder("Renamed")
         let viewModel = try modelWithFolders([original])
         let folder = try XCTUnwrap(viewModel.library.folders.first)
 
-        let outcome = viewModel.renameFolderReturningOutcome(folder, to: renamed)
+        let outcome = await viewModel.renameFolderReturningOutcome(folder, to: renamed)
 
         XCTAssertEqual(outcome, .success(nil))
         XCTAssertEqual(viewModel.library.folders.map(\.fullPath), [renamed])
@@ -78,26 +78,27 @@ final class FolderOperationOutcomeTests: XCTestCase {
 
     /// Renaming a folder to the name it already has changes nothing and is
     /// a silent success, as the plain form's silent no-op always was.
-    func testRenamingToTheCurrentNameIsASilentSuccess() throws {
+    func testRenamingToTheCurrentNameIsASilentSuccess() async throws {
         let name = uniqueFolder("Same")
         let viewModel = try modelWithFolders([name])
         let folder = try XCTUnwrap(viewModel.library.folders.first)
 
-        XCTAssertEqual(viewModel.renameFolderReturningOutcome(folder, to: "  \(name)  "), .success(nil))
+        let outcome = await viewModel.renameFolderReturningOutcome(folder, to: "  \(name)  ")
+        XCTAssertEqual(outcome, .success(nil))
         XCTAssertEqual(viewModel.library.folders, [folder])
         XCTAssertFalse(viewModel.showError)
     }
 
     /// The plain form still explains a refusal through the library's alert,
     /// in exactly the words the outcome carries.
-    func testPlainRenameStillExplainsTheRefusalThroughTheAlert() throws {
+    func testPlainRenameStillExplainsTheRefusalThroughTheAlert() async throws {
         let reports = uniqueFolder("Reports")
         let archive = uniqueFolder("Archive")
         let viewModel = try modelWithFolders([reports, archive])
         let folder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
-        let expected = viewModel.renameFolderReturningOutcome(folder, to: reports).failureMessage
+        let expected = await viewModel.renameFolderReturningOutcome(folder, to: reports).failureMessage
 
-        viewModel.renameFolder(folder, to: reports)
+        await viewModel.renameFolder(folder, to: reports).value
 
         XCTAssertTrue(viewModel.showError)
         XCTAssertNotNil(expected)
@@ -157,14 +158,14 @@ final class FolderOperationOutcomeTests: XCTestCase {
 
     /// Moving a folder next to a sibling of the same name is refused with the
     /// conflict, and nothing moves.
-    func testRefusedFolderMoveReturnsTheConflict() throws {
+    func testRefusedFolderMoveReturnsTheConflict() async throws {
         let first = uniqueFolder("First")
         let second = uniqueFolder("Second")
         let viewModel = try modelWithFolders([first, second, "\(first)/Shared", "\(second)/Shared"])
         let before = viewModel.library.folders
         let moving = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == "\(first)/Shared" })
 
-        let outcome = viewModel.moveFolderReturningOutcome(moving, toParent: second)
+        let outcome = await viewModel.moveFolderReturningOutcome(moving, toParent: second)
 
         XCTAssertEqual(
             outcome,
@@ -176,13 +177,13 @@ final class FolderOperationOutcomeTests: XCTestCase {
 
     /// Removing a folder into one of its own subfolders is refused with the
     /// conflict, and the folder stays.
-    func testRefusedRemovalMovingContentsReturnsTheConflict() throws {
+    func testRefusedRemovalMovingContentsReturnsTheConflict() async throws {
         let parent = uniqueFolder("Parent")
         let viewModel = try modelWithFolders([parent, "\(parent)/Child"])
         let before = viewModel.library.folders
         let folder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == parent })
 
-        let outcome = viewModel.removeFolderMovingContentsReturningOutcome(folder, toPath: "\(parent)/Child")
+        let outcome = await viewModel.removeFolderMovingContentsReturningOutcome(folder, toPath: "\(parent)/Child")
 
         XCTAssertEqual(
             outcome,
@@ -201,7 +202,7 @@ final class FolderOperationOutcomeTests: XCTestCase {
     /// A book move blocked by a package already at the destination returns
     /// the file system's reason, leaves the book and its package where they
     /// were, and does not remember the destination for the next move.
-    func testFailedBookMoveReturnsTheReasonAndLeavesTheBook() throws {
+    func testFailedBookMoveReturnsTheReasonAndLeavesTheBook() async throws {
         let source = uniqueFolder("Source")
         let destination = uniqueFolder("Destination")
         let viewModel = try modelWithFolders([source, destination])
@@ -212,7 +213,7 @@ final class FolderOperationOutcomeTests: XCTestCase {
             withIntermediateDirectories: true
         )
 
-        let outcome = viewModel.moveBooksReturningOutcome([book], toFolder: destination)
+        let outcome = await viewModel.moveBooksReturningOutcome([book], toFolder: destination)
 
         XCTAssertTrue(outcome.failureMessage?.hasPrefix("Could not move books: ") == true, "\(outcome)")
         XCTAssertEqual(viewModel.library.books.first?.folderPath, source)
@@ -223,14 +224,15 @@ final class FolderOperationOutcomeTests: XCTestCase {
 
     /// A book move that works returns success and remembers the destination
     /// as the next move's default, as before.
-    func testBookMoveThatWorksReturnsSuccess() throws {
+    func testBookMoveThatWorksReturnsSuccess() async throws {
         let source = uniqueFolder("Source")
         let destination = uniqueFolder("Destination")
         let viewModel = try modelWithFolders([source, destination])
         let book = try makeManagedBook(in: source)
         viewModel.library.books = [book]
 
-        XCTAssertEqual(viewModel.moveBooksReturningOutcome([book], toFolder: destination), .success(nil))
+        let outcome = await viewModel.moveBooksReturningOutcome([book], toFolder: destination)
+        XCTAssertEqual(outcome, .success(nil))
         XCTAssertEqual(viewModel.library.books.first?.folderPath, destination)
         XCTAssertEqual(viewModel.lastMovedFolderPath, destination)
     }
@@ -241,15 +243,17 @@ final class FolderOperationOutcomeTests: XCTestCase {
     /// was, even one showing the folder or a folder inside it, and keeps the
     /// sheet open: the outcome is a failure, which the sheet shows labelled
     /// as an error and announces exactly once.
-    func testRefusedRenameLeavesTheWindowAndKeepsTheSheetOpen() throws {
+    func testRefusedRenameLeavesTheWindowAndKeepsTheSheetOpen() async throws {
         let reports = uniqueFolder("Reports")
         let archive = uniqueFolder("Archive")
         let viewModel = try modelWithFolders([reports, archive, "\(archive)/Inner"])
         let folder = try XCTUnwrap(viewModel.library.folders.first { $0.fullPath == archive })
         var shown: String?
+        // A refused rename is refused before anything is moved, and says
+        // nothing itself: what VoiceOver hears comes from the sheet below.
+        let outcome = await viewModel.renameFolderReturningOutcome(folder, to: reports)
 
         let recorder = recordingAnnouncements {
-            let outcome = viewModel.renameFolderReturningOutcome(folder, to: reports)
             XCTAssertFalse(outcome.succeeded, "a sheet closes only after a success")
             let pathAfter = viewModel.library.folders.first { $0.id == folder.id }?.fullPath
             for windowPath in [archive, "\(archive)/Inner", reports, ""] {
