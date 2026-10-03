@@ -482,9 +482,18 @@ final class BookCloudStates: ObservableObject {
         }.value
         setLibraryLocation(location)
         guard location.isCloud else { return }
+        // Recorded in one assignment (PERF31): the states are one published
+        // dictionary, which each assignment copies whole and announces, so
+        // recording book by book published once per book, 644 times for a
+        // 643-book library, and copied the dictionary each time. Nothing is
+        // published when nothing changed.
+        var refreshed = states
         for (bookID, state) in results
         where runningDownloads[bookID] == nil && downloadEvents[bookID] == eventsBeforeReading[bookID] {
-            record(state, for: bookID)
+            refreshed[bookID] = state
+        }
+        if refreshed != states {
+            states = refreshed
         }
     }
 

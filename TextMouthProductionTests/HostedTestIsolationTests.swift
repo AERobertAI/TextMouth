@@ -530,6 +530,254 @@ final class HostedTestIsolationTests: XCTestCase {
         return window
     }
 
+    // MARK: - Sandbox Lifetime (PERF26)
+
+    /// The bundle's principal class registered the sandbox cleanup, and
+    /// XCTest is reporting this run to it.
+    func testSandboxCleanupIsRegistered() {
+        XCTAssertTrue(HostedSandboxCleanup.shared.sawBundleStart)
+    }
+
+    /// A sandbox's folder name says which process it belongs to; no other
+    /// name, however close, is taken for a sandbox's.
+    func testOnlyASandboxNameNamesAProcess() {
+        XCTAssertEqual(TextMouthRuntime.sandboxProcess(named: "TextMouthTests-4242"), 4242)
+        let others = [
+            "TextMouthTests-", "TextMouthTests-0", "TextMouthTests-12x", "TextMouthTests-+12",
+            "TextMouthTests--12", "TextMouthTests- 12", "TextMouthTests-99999999999",
+            "TextMouthTests-4242-kept-1A2B3C4D", "textmouthtests-4242", "Other-4242", "4242",
+        ]
+        for name in others {
+            XCTAssertNil(TextMouthRuntime.sandboxProcess(named: name), name)
+        }
+    }
+
+    /// The sweep deletes exactly the sandboxes of processes that have ended.
+    /// It leaves this process's, a running process's, a kept one, a file
+    /// with a sandbox's name, a symbolic link to a folder (and the folder it
+    /// leads to), and every other name.
+    func testSweepDeletesOnlySandboxesOfEndedProcesses() throws {
+        let temporary = try makeSandboxDirectory("sandbox-sweep")
+        let manager = FileManager.default
+        func folder(_ name: String, holding file: String? = nil) throws -> URL {
+            let url = temporary.appendingPathComponent(name, isDirectory: true)
+            try manager.createDirectory(at: url, withIntermediateDirectories: true)
+            if let file {
+                try Data("x".utf8).write(to: url.appendingPathComponent(file))
+            }
+            return url
+        }
+        let ended = try folder("TextMouthTests-111")
+        let endedWithLibrary = try folder("TextMouthTests-112", holding: "library.json")
+        let leftAlone = [
+            try folder("TextMouthTests-222"),
+            try folder("TextMouthTests-1000"),
+            try folder("TextMouthTests-333", holding: TextMouthRuntime.keptSandboxMarker),
+            try folder("TextMouthTests-12x"),
+            try folder("Other-666"),
+        ]
+        let fileNamedLikeASandbox = temporary.appendingPathComponent("TextMouthTests-444")
+        try Data("x".utf8).write(to: fileNamedLikeASandbox)
+        let linkTarget = try folder("Elsewhere", holding: "precious.txt")
+        let link = temporary.appendingPathComponent("TextMouthTests-555")
+        try manager.createSymbolicLink(at: link, withDestinationURL: linkTarget)
+        // Process 1000 is "this" process; 222 is running; every other has
+        // ended. Each process asked about is told when its folder was made.
+        var madeDates: [Int32: Date] = [:]
+        let isMakerRunning: (Int32, Date?) -> Bool = { process, made in
+            madeDates[process] = made ?? .distantPast
+            return process == 222
+        }
+
+        let found = TextMouthRuntime.abandonedSandboxes(in: temporary, currentProcess: 1000, isMakerRunning: isMakerRunning)
+        XCTAssertEqual(found.map(\.lastPathComponent), ["TextMouthTests-111", "TextMouthTests-112"])
+        XCTAssertEqual(Set(madeDates.keys), [111, 112, 222], "Only plain, unkept folders of other processes are asked about")
+        for (process, made) in madeDates {
+            XCTAssertLessThan(abs(made.timeIntervalSinceNow), 600, "process \(process) was not told when its folder was made")
+        }
+
+        let removed = TextMouthRuntime.removeAbandonedSandboxes(
+            in: temporary,
+            currentProcess: 1000,
+            isMakerRunning: isMakerRunning
+        )
+        XCTAssertEqual(removed.map(\.lastPathComponent), ["TextMouthTests-111", "TextMouthTests-112"])
+        XCTAssertFalse(manager.fileExists(atPath: ended.path))
+        XCTAssertFalse(manager.fileExists(atPath: endedWithLibrary.path))
+        for url in leftAlone {
+            XCTAssertTrue(manager.fileExists(atPath: url.path), url.lastPathComponent)
+        }
+        XCTAssertTrue(manager.fileExists(atPath: fileNamedLikeASandbox.path))
+        XCTAssertNotNil(try? manager.destinationOfSymbolicLink(atPath: link.path))
+        XCTAssertTrue(manager.fileExists(atPath: linkTarget.appendingPathComponent("precious.txt").path))
+    }
+
+    /// This process and any process that exists count as running; one
+    /// that does not exist has ended.
+    func testRunningProcessesAreRecognized() {
+        XCTAssertTrue(TextMouthRuntime.isProcessRunning(ProcessInfo.processInfo.processIdentifier))
+        // launchd, which belongs to root: signalling it is refused, yet it runs.
+        XCTAssertTrue(TextMouthRuntime.isProcessRunning(1))
+        XCTAssertFalse(TextMouthRuntime.isProcessRunning(Int32.max))
+    }
+
+    /// A running process's start is known, and comes after the Mac's own
+    /// start, launchd's; a process that does not exist has none.
+    func testProcessStartDates() throws {
+        let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
+        let ownStart = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: ProcessInfo.processInfo.processIdentifier))
+        XCTAssertLessThanOrEqual(launchdStarted, ownStart)
+        XCTAssertLessThanOrEqual(ownStart, Date())
+        XCTAssertNil(TextMouthRuntime.startDate(ofProcess: Int32.max))
+    }
+
+    /// Process identifiers are reused. A sandbox named for a running process
+    /// that started well after the sandbox was made belongs to an earlier
+    /// process with that identifier, which has ended: the sweep deletes it.
+    /// One made after its process started stays, and so does one made up to
+    /// an hour before, which only a change of the clock explains.
+    func testSandboxOfAnIdentifierALaterProcessTookIsSwept() throws {
+        // launchd, process 1, has been running since the Mac started up.
+        let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
+        let hour: TimeInterval = 60 * 60
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: Date()))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-0.5 * hour)))
+        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-2 * hour)))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: nil), "An unknown date keeps a running process's")
+        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(Int32.max, sandboxMade: Date()))
+
+        // The sweep, as runs make it, judging by when each folder was made.
+        let manager = FileManager.default
+        let currentProcess = ProcessInfo.processInfo.processIdentifier
+        let earlier = try makeSandboxDirectory("sandbox-identifier-taken")
+        let taken = earlier.appendingPathComponent("TextMouthTests-1", isDirectory: true)
+        try manager.createDirectory(at: taken, withIntermediateDirectories: true)
+        try manager.setAttributes([.creationDate: launchdStarted.addingTimeInterval(-2 * hour)], ofItemAtPath: taken.path)
+        let later = try makeSandboxDirectory("sandbox-identifier-kept")
+        let current = later.appendingPathComponent("TextMouthTests-1", isDirectory: true)
+        try manager.createDirectory(at: current, withIntermediateDirectories: true)
+
+        XCTAssertEqual(
+            TextMouthRuntime.removeAbandonedSandboxes(in: earlier, currentProcess: currentProcess).map(\.lastPathComponent),
+            ["TextMouthTests-1"]
+        )
+        XCTAssertFalse(manager.fileExists(atPath: taken.path))
+        XCTAssertEqual(TextMouthRuntime.removeAbandonedSandboxes(in: later, currentProcess: currentProcess), [])
+        XCTAssertTrue(manager.fileExists(atPath: current.path))
+    }
+
+    /// As its tests finish, a hosted process deletes its sandbox, with
+    /// everything the tests wrote there.
+    func testFinishedSandboxIsDeleted() throws {
+        let temporary = try makeSandboxDirectory("sandbox-finish")
+        let runtime = hostedRuntime(processIdentifier: 4242, in: temporary)
+        XCTAssertFalse(runtime.keepsSandbox)
+        let library = runtime.homeDirectory.appendingPathComponent("Library/Application Support", isDirectory: true)
+        try FileManager.default.createDirectory(at: library, withIntermediateDirectories: true)
+
+        runtime.finishWithSandbox()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: runtime.homeDirectory.path))
+    }
+
+    /// TEXTMOUTH_KEEP_SANDBOX=1 keeps the sandbox, marked so that no later
+    /// run's sweep deletes it once the process has ended.
+    func testKeptSandboxOutlivesItsProcessAndLaterSweeps() throws {
+        let temporary = try makeSandboxDirectory("sandbox-keep")
+        let runtime = hostedRuntime(processIdentifier: 4243, in: temporary, keep: "1")
+        XCTAssertTrue(runtime.keepsSandbox)
+        try FileManager.default.createDirectory(at: runtime.homeDirectory, withIntermediateDirectories: true)
+
+        runtime.finishWithSandbox()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: runtime.homeDirectory.path))
+        XCTAssertTrue(TextMouthRuntime.isKept(runtime.homeDirectory))
+        XCTAssertEqual(
+            TextMouthRuntime.removeAbandonedSandboxes(in: temporary, currentProcess: 1, isMakerRunning: { _, _ in false }),
+            []
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: runtime.homeDirectory.path))
+    }
+
+    /// Only the value 1 keeps a sandbox, and only a hosted process has one:
+    /// the app, even with the variable set, keeps and deletes nothing.
+    func testOnlyAHostedProcessAskedWithOneKeepsItsSandbox() throws {
+        let temporary = try makeSandboxDirectory("sandbox-keep-values")
+        for (value, keeps) in [("1", true), ("0", false), ("", false), ("yes", false)] {
+            XCTAssertEqual(hostedRuntime(processIdentifier: 4244, in: temporary, keep: value).keepsSandbox, keeps, value)
+        }
+        XCTAssertFalse(hostedRuntime(processIdentifier: 4244, in: temporary).keepsSandbox, "unset")
+
+        let appRuntime = TextMouthRuntime.detect(
+            environment: [TextMouthRuntime.keepSandboxVariable: "1"],
+            processIdentifier: 4245,
+            temporaryDirectory: temporary
+        )
+        XCTAssertFalse(appRuntime.isHostedTest)
+        XCTAssertFalse(appRuntime.keepsSandbox)
+
+        // An app runtime is given a home of the test's own: finishing must
+        // leave it, as it leaves the user's real home.
+        let home = temporary.appendingPathComponent("TextMouthTests-4246", isDirectory: true)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        TextMouthRuntime(isHostedTest: false, homeDirectory: home, preferences: makeSandboxedPreferences("app-home"))
+            .finishWithSandbox()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: home.path))
+    }
+
+    /// A hosted runtime never deletes a home that is not named as a sandbox
+    /// is, whoever built it.
+    func testFinishingLeavesAHomeNotNamedAsASandbox() throws {
+        let home = try makeSandboxDirectory("not-a-sandbox-name")
+        TextMouthRuntime(isHostedTest: true, homeDirectory: home, preferences: makeSandboxedPreferences("odd-home"))
+            .finishWithSandbox()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: home.path))
+    }
+
+    /// A sandbox an earlier process with this process's identifier left
+    /// behind is cleared before this process uses it. A kept one is moved
+    /// aside, whole, under a name no sweep takes for a sandbox's.
+    func testEarlierSandboxUnderTheSameIdentifierIsCleared() throws {
+        let temporary = try makeSandboxDirectory("sandbox-earlier")
+        let manager = FileManager.default
+
+        let stale = temporary.appendingPathComponent("TextMouthTests-777", isDirectory: true)
+        try manager.createDirectory(at: stale, withIntermediateDirectories: true)
+        try Data("stale".utf8).write(to: stale.appendingPathComponent("library.json"))
+        TextMouthRuntime.clearEarlierSandbox(at: stale)
+        XCTAssertFalse(manager.fileExists(atPath: stale.path))
+
+        let kept = temporary.appendingPathComponent("TextMouthTests-778", isDirectory: true)
+        try manager.createDirectory(at: kept, withIntermediateDirectories: true)
+        try Data("kept".utf8).write(to: kept.appendingPathComponent("library.json"))
+        try Data("note".utf8).write(to: kept.appendingPathComponent(TextMouthRuntime.keptSandboxMarker))
+        TextMouthRuntime.clearEarlierSandbox(at: kept)
+        XCTAssertFalse(manager.fileExists(atPath: kept.path))
+        let aside = try manager.contentsOfDirectory(atPath: temporary.path).filter { $0.hasPrefix("TextMouthTests-778-kept-") }
+        XCTAssertEqual(aside.count, 1)
+        let movedLibrary = temporary.appendingPathComponent(aside.first ?? "").appendingPathComponent("library.json")
+        XCTAssertEqual(try? String(contentsOf: movedLibrary, encoding: .utf8), "kept")
+        XCTAssertNil(TextMouthRuntime.sandboxProcess(named: aside.first ?? ""))
+
+        // Nothing there: nothing to do.
+        TextMouthRuntime.clearEarlierSandbox(at: stale)
+        XCTAssertFalse(manager.fileExists(atPath: stale.path))
+    }
+
+    /// A hosted-test runtime for the process `processIdentifier`, with its
+    /// sandbox in `temporary`, and TEXTMOUTH_KEEP_SANDBOX set to `keep`
+    /// when it is given.
+    private func hostedRuntime(processIdentifier: Int32, in temporary: URL, keep: String? = nil) -> TextMouthRuntime {
+        var environment = [TextMouthRuntime.testConfigurationVariable: "/tmp/Run.xctestconfiguration"]
+        environment[TextMouthRuntime.keepSandboxVariable] = keep
+        return TextMouthRuntime.detect(
+            environment: environment,
+            processIdentifier: processIdentifier,
+            temporaryDirectory: temporary
+        )
+    }
+
     // MARK: - Sentinel Proof
 
     /// The startup repair, the sandbox-container and legacy migrations, sound

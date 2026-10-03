@@ -6,7 +6,7 @@ struct HeadingNavigatorView: View {
     /// `currentHeadingID` so a moving playback cursor doesn't force the
     /// whole list and accessibility hierarchy to be rebuilt (and VoiceOver
     /// focus to be lost) on every word spoken.
-    struct HeadingListItem: Identifiable {
+    struct HeadingListItem: Identifiable, Equatable {
         let heading: Heading
         let isSkipped: Bool
         let infoText: String
@@ -28,6 +28,68 @@ struct HeadingNavigatorView: View {
                 suffix: accessibilitySuffix
             )
         }
+    }
+
+    /// What the sheet shows of its reader, which it follows instead of the
+    /// whole reader (PERF30): the book's title, its headings, the sections
+    /// skipped, and the heading the reading position is in under each level
+    /// filter. While a book plays its position moves eight times a second,
+    /// but this changes only when the position crosses into another heading.
+    struct ReaderState: Equatable {
+        /// The book's title, for the sheet's title.
+        let title: String
+        /// Every heading, in reading order.
+        let headings: [Heading]
+        /// The IDs of the headings whose sections are skipped.
+        let skippedHeadingIDs: Set<String>
+        /// The heading the reading position is in, by level filter, as
+        /// `HeadingNavigatorView.currentHeadingIDs` lists them.
+        let currentHeadingIDs: [String?]
+
+        /// What `reader` shows the sheet now, at the position it displays.
+        @MainActor
+        init(of reader: ReaderViewModel) {
+            title = reader.book.title
+            headings = reader.headings
+            skippedHeadingIDs = reader.skippedHeadingIDs
+            currentHeadingIDs = HeadingNavigatorView.currentHeadingIDs(
+                in: reader.headings,
+                chapterIndex: reader.displayChapterIndex,
+                characterOffset: reader.displayCharacterOffset
+            )
+        }
+    }
+
+    /// The deepest heading level the level filter offers; its "All" choice
+    /// shows every heading up to this level.
+    nonisolated static let deepestFilterLevel = 6
+
+    /// The heading the reading position at `chapterIndex` and
+    /// `characterOffset` is in, under each level filter the sheet offers:
+    /// entry `level - 1` is the last heading in `headings` (in reading order)
+    /// at `level` or above that starts at or before the position, or nil
+    /// before the first. The same rule picks the current heading for one
+    /// filter; one pass answers it for every filter, so the sheet's snapshot
+    /// can follow the position without knowing the filter shown.
+    nonisolated static func currentHeadingIDs(
+        in headings: [Heading],
+        chapterIndex: Int,
+        characterOffset: Int
+    ) -> [String?] {
+        var current = [String?](repeating: nil, count: deepestFilterLevel)
+        for heading in headings where heading.startsAtOrBefore(chapterIndex: chapterIndex, characterOffset: characterOffset) {
+            for maximumLevel in 1...deepestFilterLevel where heading.level <= maximumLevel {
+                current[maximumLevel - 1] = heading.id
+            }
+        }
+        return current
+    }
+
+    /// The heading the reading position is in under the filter that shows
+    /// levels up to `maximumLevel`, from `currentHeadingIDs`.
+    nonisolated static func currentHeadingID(forMaximumLevel maximumLevel: Int, in currentHeadingIDs: [String?]) -> String? {
+        let index = min(max(maximumLevel, 1), deepestFilterLevel) - 1
+        return currentHeadingIDs.indices.contains(index) ? currentHeadingIDs[index] : nil
     }
 
     /// Shared row/rotor label format so VoiceOver speaks heading names before
@@ -78,18 +140,17 @@ struct HeadingNavigatorView: View {
         return nextOffsetsByID
     }
 
-    @ObservedObject var viewModel: ReaderViewModel
+    /// The reader whose headings the sheet lists, goes to, and skips. Not
+    /// observed: the sheet follows `shown` instead (PERF30).
+    let viewModel: ReaderViewModel
+    /// What the sheet shows of the reader, republished only when it changes.
+    @StateObject private var shown: ReaderSnapshot<ReaderState>
     @Environment(\.dismiss) private var dismiss
     @State private var displayMode: HeadingDisplayMode = .timeEstimate
-    @State private var maxHeadingLevel: Int = 6
+    @State private var maxHeadingLevel: Int = HeadingNavigatorView.deepestFilterLevel
     // Cache the rendered heading metadata in state so sheet presentation does
     // not repeatedly recompute timing/accessibility strings on the main thread.
     @State private var headingItems: [HeadingListItem] = []
-    /// The id of the heading the playback cursor is currently inside. Updated
-    /// independently of `headingItems` so the only thing that re-renders when
-    /// the cursor advances within a heading is the speaker-icon badge — the
-    /// full list (and its VoiceOver focus state) stays put.
-    @State private var currentHeadingID: String?
     /// The row that receives the sheet's one-time accessibility focus request.
     /// Keep this separate from `currentHeadingID`: playback may cross into a
     /// new section while the sheet is open, but it must not steal VoiceOver
@@ -109,7 +170,23 @@ struct HeadingNavigatorView: View {
         }
     }
 
+    /// A sheet listing `viewModel`'s headings.
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        _shown = StateObject(wrappedValue: ReaderSnapshot(of: viewModel, ReaderState.init(of:)))
+    }
+
+    /// The heading the playback cursor is in, under the level filter shown:
+    /// the row with the speaker badge. It changes only when the cursor
+    /// crosses into another heading, which redraws the sheet and, of its
+    /// rows, only the two whose badge moves; the list's identity, scroll
+    /// position, and VoiceOver focus stay put.
+    private var currentHeadingID: String? {
+        Self.currentHeadingID(forMaximumLevel: maxHeadingLevel, in: shown.value.currentHeadingIDs)
+    }
+
     var body: some View {
+        let _ = ViewBodyCounter.record("HeadingNavigatorView")
         VStack(spacing: 0) {
             HStack {
                 Text("Headings")
@@ -143,7 +220,7 @@ struct HeadingNavigatorView: View {
                         ForEach(headingLevelsPresent, id: \.self) { level in
                             Text("H1–H\(level)").tag(level)
                         }
-                        Text("All").tag(6)
+                        Text("All").tag(Self.deepestFilterLevel)
                     }
                     .pickerStyle(.segmented)
                     .accessibilityLabel("Heading level filter")
@@ -155,7 +232,7 @@ struct HeadingNavigatorView: View {
 
             Divider()
 
-            if viewModel.headings.isEmpty {
+            if shown.value.headings.isEmpty {
                 Text("No headings found in this document.")
                     .foregroundColor(.secondary)
                     .padding()
@@ -168,51 +245,23 @@ struct HeadingNavigatorView: View {
                     // element and send focus back toward the beginning.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(headingItems) { item in
-                            // `isCurrent` is derived inline so updates to the
-                            // playback cursor only redraw the speaker badge,
-                            // not the whole list.
-                            let isCurrent = item.heading.id == currentHeadingID
-                            let row = HeadingRow(
-                                heading: item.heading,
-                                isCurrent: isCurrent,
-                                isSkipped: item.isSkipped,
-                                infoText: item.infoText
-                            )
-
-                            Button {
-                                viewModel.navigateToHeading(item.heading)
-                                dismiss()
-                            } label: {
-                                row
-                                    .padding(.horizontal)
-                                    .padding(.vertical, 6)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(item.accessibilityDescription(isCurrent: isCurrent))
-                            .accessibilityHint(row.accessibilityHintText)
-                            // Preserve the semantic selected state while the
-                            // label controls exactly where VoiceOver speaks
-                            // the human-readable "current heading" status.
-                            .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
-                            // This is the sole initial VoiceOver focus
-                            // mechanism. It targets the current heading when
-                            // possible, while remaining fixed if playback
-                            // later advances into another heading.
-                            .modifier(InitialVoiceOverFocusModifier(
-                                isTarget: item.id == initialFocusHeadingID,
-                                delay: 0.2
-                            ))
-                            .contextMenu {
-                                Button("Go To") {
+                            // `isCurrent` is derived inline, and rows are
+                            // equatable, so a move of the playback cursor into
+                            // another heading redraws only the two rows whose
+                            // speaker badge moves, not the whole list.
+                            HeadingNavigatorRow(
+                                item: item,
+                                isCurrent: item.heading.id == currentHeadingID,
+                                isInitialFocusTarget: item.id == initialFocusHeadingID,
+                                goTo: {
                                     viewModel.navigateToHeading(item.heading)
                                     dismiss()
-                                }
-                                Button(item.isSkipped ? "Include Section" : "Skip Section") {
+                                },
+                                toggleSkip: {
                                     viewModel.toggleHeadingSkip(item.heading)
                                 }
-                            }
+                            )
+                            .equatable()
                             Divider()
                         }
                     }
@@ -228,11 +277,10 @@ struct HeadingNavigatorView: View {
             }
         }
         .frame(width: 550, height: 500)
-        .navigationTitle("Headings: \(viewModel.book.title)")
+        .navigationTitle("Headings: \(shown.value.title)")
         .accessibilityLabel("Headings, \(CountWording.phrase(headingItems.count, singular: "heading", plural: "headings"))")
         .onAppear {
             rebuildHeadingItems()
-            currentHeadingID = computedCurrentHeadingID()
             initialFocusHeadingID = Self.initialFocusHeadingID(
                 currentHeadingID: currentHeadingID,
                 headingItems: headingItems
@@ -242,39 +290,21 @@ struct HeadingNavigatorView: View {
         .onChange(of: displayMode) { _, _ in
             rebuildHeadingItems()
         }
+        // The badge follows the filter by itself: the current heading is
+        // derived for each filter from the snapshot.
         .onChange(of: maxHeadingLevel) { _, _ in
             rebuildHeadingItems()
-            // The filter scope changed — the cursor's heading may have just
-            // been filtered out (or back in). Recompute now so the badge
-            // is correct immediately, instead of waiting for the next
-            // playback tick to repair the state via updateCurrentHeadingIDIfChanged.
-            currentHeadingID = computedCurrentHeadingID()
         }
-        .onChange(of: viewModel.headings) { _, _ in
+        .onChange(of: shown.value.headings) { _, _ in
             rebuildHeadingItems()
-            // Heading list changed entirely — the cached current id may be
-            // stale (e.g. the heading was renamed/removed), recompute.
-            currentHeadingID = computedCurrentHeadingID()
         }
-        // Position-driven changes never rebuild the list. They only update
-        // the lightweight `currentHeadingID` state — which feeds the inline
-        // `isCurrent` check in the ForEach. The list's identity, scroll
-        // position, and VoiceOver focus all stay put. Crossing a heading
-        // boundary updates a single row's speaker badge; cursor movement
-        // within a heading is a no-op.
-        .onChange(of: viewModel.displayChapterIndex) { _, _ in
-            updateCurrentHeadingIDIfChanged()
-        }
-        .onChange(of: viewModel.displayCharacterOffset) { _, _ in
-            updateCurrentHeadingIDIfChanged()
-        }
-        .onChange(of: viewModel.book.skippedHeadingIDs ?? []) { _, _ in
+        .onChange(of: shown.value.skippedHeadingIDs) { _, _ in
             rebuildHeadingItems()
         }
     }
 
     private var filteredHeadings: [Heading] {
-        Self.filteredHeadings(viewModel.headings, maximumLevel: maxHeadingLevel)
+        Self.filteredHeadings(shown.value.headings, maximumLevel: maxHeadingLevel)
     }
 
     /// Prefer the currently read heading for initial accessibility focus.
@@ -290,7 +320,7 @@ struct HeadingNavigatorView: View {
 
     private func makeHeadingItems() -> [HeadingListItem] {
         let filtered = filteredHeadings
-        let skippedIDs = viewModel.skippedHeadingIDs
+        let skippedIDs = shown.value.skippedHeadingIDs
 
         guard let content = viewModel.content else {
             return filtered.map { heading in
@@ -307,7 +337,7 @@ struct HeadingNavigatorView: View {
         // Heading offsets and totalCharacterCount use UTF-16 coordinates;
         // grapheme counts shift every later chapter after emoji/combining text.
         let chapterStartOffsets = cumulativeChapterOffsets(content.chapters.map(\.text.utf16Length))
-        let allHeadings = viewModel.headings
+        let allHeadings = shown.value.headings
         let totalCharacterCount = max(content.totalCharacterCount, 1)
         let totalWordCount = content.totalWordCount
         let totalReadingTime = content.estimatedReadingTime(wpm: viewModel.speechService.wordsPerMinute)
@@ -383,36 +413,9 @@ struct HeadingNavigatorView: View {
         voiceOverFocusLog("rebuilt headings items in \(String(format: "%.3f", elapsed))s")
     }
 
-    /// Compute which heading the playback cursor is currently inside, scoped
-    /// to the visible filter level. Used to drive the inline `isCurrent`
-    /// check on each row without rebuilding the cached `headingItems`.
-    private func computedCurrentHeadingID() -> String? {
-        currentHeadingID(in: filteredHeadings)
-    }
-
-    /// Update `currentHeadingID` only when the cursor has actually crossed a
-    /// heading boundary. The throttled display offset still advances during
-    /// playback, but the vast majority of those updates land inside the same
-    /// heading and produce no change here, so SwiftUI doesn't re-render
-    /// anything. When the cursor does cross into a new heading, exactly
-    /// two rows redraw (the previous and new "currently reading" rows).
-    private func updateCurrentHeadingIDIfChanged() {
-        let newID = computedCurrentHeadingID()
-        if newID != currentHeadingID {
-            currentHeadingID = newID
-        }
-    }
-
     /// Distinct heading levels present in this document (sorted), for building the filter picker
     private var headingLevelsPresent: [Int] {
-        Self.levelsPresent(in: viewModel.headings)
-    }
-
-    private func currentHeadingID(in headings: [Heading]) -> String? {
-        headings.last(where: {
-            $0.chapterIndex < viewModel.displayChapterIndex ||
-            ($0.chapterIndex == viewModel.displayChapterIndex && $0.characterOffset <= viewModel.displayCharacterOffset)
-        })?.id
+        Self.levelsPresent(in: shown.value.headings)
     }
 
     private func cumulativeChapterOffsets(_ counts: [Int]) -> [Int] {
@@ -427,6 +430,72 @@ struct HeadingNavigatorView: View {
     }
 
 }
+
+/// One row of the headings sheet: a button that goes to its heading, whose
+/// VoiceOver label speaks the heading, its level, whether it is skipped or
+/// being read, and its time or percentage; its context menu goes to the
+/// heading or skips its section.
+///
+/// Equatable on what it shows, never on its actions (PERF30): when the
+/// playback cursor crosses into another heading the sheet draws again, and
+/// of its rows only the two whose badge moves draw again with it.
+private struct HeadingNavigatorRow: View, Equatable {
+    /// The heading and what the row says about it.
+    let item: HeadingNavigatorView.HeadingListItem
+    /// Whether the playback cursor is in this heading.
+    let isCurrent: Bool
+    /// Whether this row takes the sheet's one-time VoiceOver focus request.
+    let isInitialFocusTarget: Bool
+    /// Goes to the heading and closes the sheet.
+    let goTo: () -> Void
+    /// Skips the heading's section, or includes it again.
+    let toggleSkip: () -> Void
+
+    /// Whether two rows show the same thing: everything but the actions.
+    nonisolated static func == (lhs: HeadingNavigatorRow, rhs: HeadingNavigatorRow) -> Bool {
+        lhs.item == rhs.item
+            && lhs.isCurrent == rhs.isCurrent
+            && lhs.isInitialFocusTarget == rhs.isInitialFocusTarget
+    }
+
+    var body: some View {
+        let _ = ViewBodyCounter.record("HeadingNavigatorRow")
+        let row = HeadingRow(
+            heading: item.heading,
+            isCurrent: isCurrent,
+            isSkipped: item.isSkipped,
+            infoText: item.infoText
+        )
+        Button(action: goTo) {
+            row
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.accessibilityDescription(isCurrent: isCurrent))
+        .accessibilityHint(row.accessibilityHintText)
+        // Preserve the semantic selected state while the label controls
+        // exactly where VoiceOver speaks the human-readable "current heading"
+        // status.
+        .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
+        // This is the sole initial VoiceOver focus mechanism. It targets the
+        // current heading when possible, while remaining fixed if playback
+        // later advances into another heading.
+        .modifier(InitialVoiceOverFocusModifier(
+            isTarget: isInitialFocusTarget,
+            delay: 0.2
+        ))
+        .contextMenu {
+            Button("Go To", action: goTo)
+            Button(item.isSkipped ? "Include Section" : "Skip Section", action: toggleSkip)
+        }
+    }
+}
+
+/// The headings sheet's only input is its reader (PERF30).
+extension HeadingNavigatorView: SheetOverOneReader {}
 
 struct HeadingRow: View {
     let heading: Heading

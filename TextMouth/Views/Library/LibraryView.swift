@@ -173,9 +173,60 @@ struct LibraryView: View {
     @State private var cloudRefreshToken = UUID()
     /// A Remove Download refusal to show in this window (FR02).
     @State private var cloudRefusal: LibraryCloudRefusal?
+    /// Whether this Library window has closed. SwiftUI keeps a closed window
+    /// and its views for the rest of the session, and every change to the
+    /// library would still rebuild this list nobody can see, so a closed
+    /// window shows a placeholder instead (PERF27). SwiftUI can show a closed
+    /// Library window again, for a book opened from Finder: the list comes
+    /// back as soon as the window is on screen or key.
+    @State private var isWindowClosed = false
 
     var body: some View {
-        let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
+        Group {
+            if isWindowClosed {
+                ClosedLibraryWindowPlaceholder()
+            } else {
+                libraryContent
+            }
+        }
+        // Outside the list, so the window is followed while it is closed too.
+        .background(WindowAccessor(
+            onWindowFound: { window in
+                hostWindow = window
+            },
+            onWindowBecameKey: reopenAfterClosing,
+            onWindowWillClose: {
+                isWindowClosed = true
+            },
+            onWindowBecameVisible: reopenAfterClosing
+        ))
+    }
+
+    /// Shows the list again in a window SwiftUI brought back after it closed.
+    private func reopenAfterClosing() {
+        if isWindowClosed {
+            isWindowClosed = false
+        }
+    }
+
+    /// The window's library while the window is open: the list of the
+    /// location's folders and books, with its bars, toolbar, and sheets.
+    @ViewBuilder
+    private var libraryContent: some View {
+        let _ = ViewBodyCounter.record("LibraryView.list")
+        // What the list shows, read once for the whole body and passed down
+        // (PERF28): the bars, the rows, the header's count, the rotors, the
+        // focus target, and the toolbar all use these rather than asking
+        // the model again.
+        let allBooks = displayedBooks
+        let books = filteredBooks
+        let folders = libraryViewModel.subfoldersOf(currentFolderPath)
+        let subfolders = category == .folders ? folders : []
+        let lastBook = libraryViewModel.lastOpenedBook
+        let focusTarget = Self.preferredFocusTarget(
+            hasContinueListening: lastBook != nil,
+            hasDisplayedBooks: !allBooks.isEmpty
+        )
 
         VStack(spacing: 0) {
             // While the library index cannot be read, keep that visible after
@@ -211,16 +262,16 @@ struct LibraryView: View {
             }
 
             // Quick-resume button
-            continueListeningButton
+            continueListeningButton(for: lastBook)
 
             // Edit mode toolbar: shown when edit mode is active
             if isEditMode {
                 EditModeBar(
                     selectedCount: effectiveSelection.count,
-                    totalCount: filteredBooks.count,
+                    totalCount: books.count,
                     removalPreferences: removalPreferences,
                     onSelectAll: {
-                        editSelection = Set(filteredBooks.map { $0.id })
+                        editSelection = Set(books.map(\.id))
                     },
                     onDeselectAll: {
                         editSelection = []
@@ -248,13 +299,12 @@ struct LibraryView: View {
 
             // Total time remaining bar, with how many of the books shown are
             // in the cloud (FR02)
-            let summarizedBooks = displayedBooks
             TimeRemainingBar(
-                books: summarizedBooks,
+                books: allBooks,
                 wpm: settingsViewModel.wordsPerMinute,
-                booksInCloud: cloudStates.countInTheCloud(summarizedBooks),
-                focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
-                shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary,
+                booksInCloud: cloudStates.countInTheCloud(allBooks),
+                focusIdentifier: focusTarget == .timeSummary ? voiceOverFocusID : nil,
+                shouldTriggerFocus: focusTarget == .timeSummary,
                 livePositions: libraryViewModel.livePositions
             )
 
@@ -308,20 +358,20 @@ struct LibraryView: View {
 
                 // Books section
                 Section {
-                    bookRows
+                    bookRows(books, orderedBy: allBooks)
                 } header: {
-                    Text("Books (\(filteredBooks.count))")
+                    Text("Books (\(books.count))")
                         .accessibilityAddTraits(.isHeader)
                 }
             }
             .searchable(text: $searchText, prompt: "Search books")
             .accessibilityRotor("Books") {
-                ForEach(filteredBooks) { book in
+                ForEach(books) { book in
                     AccessibilityRotorEntry(book.title, id: book.id)
                 }
             }
             .accessibilityRotor("Folders") {
-                ForEach(libraryViewModel.subfoldersOf(currentFolderPath)) { folder in
+                ForEach(folders) { folder in
                     AccessibilityRotorEntry(
                         "\(folder.name), \(libraryViewModel.bookCount(inFolderTree: folder.fullPath)) books",
                         id: folder.id
@@ -358,7 +408,7 @@ struct LibraryView: View {
                     .accessibilityLabel("Go up one folder level")
                 }
 
-                importBookButton
+                importBookButton(focusTarget: focusTarget)
 
                 Button {
                     showTextInput = true
@@ -417,7 +467,7 @@ struct LibraryView: View {
                     .accessibilityHint(sort.directionCommandHint)
                     // Only show "Apply to Subfolders" when in folders mode and subfolders exist
                     if category == .folders {
-                        let hasSubfolders = !libraryViewModel.subfoldersOf(currentFolderPath).isEmpty
+                        let hasSubfolders = !folders.isEmpty
                         if hasSubfolders {
                             Divider()
                             Button {
@@ -478,9 +528,6 @@ struct LibraryView: View {
                 )
             }
         }
-        .background(WindowAccessor(onWindowFound: { window in
-            hostWindow = window
-        }))
         .trackingRemovalPreferences($removalPreferences)
         // Keeps the books' cloud states refreshed while the window is
         // visible, and shows Remove Download's refusals (FR02).
@@ -725,10 +772,11 @@ struct LibraryView: View {
 
     // MARK: - Extracted Subviews
 
-    /// Continue Listening button — extracted to reduce body complexity for the type checker
+    /// Continue Listening button for `lastBook`, the book last opened, when
+    /// there is one — extracted to reduce body complexity for the type checker
     @ViewBuilder
-    private var continueListeningButton: some View {
-        if let lastBook = libraryViewModel.lastOpenedBook {
+    private func continueListeningButton(for lastBook: Book?) -> some View {
+        if let lastBook {
             Button {
                 onOpenBook(lastBook)
             } label: {
@@ -783,24 +831,38 @@ struct LibraryView: View {
 
     // MARK: - Book Rows
 
-    /// The rows of the books shown. Dragging rearranges a folder's manual
+    /// The rows of `books`, the books the list shows. Each is an equatable
+    /// row, which SwiftUI skips when nothing it shows has changed: a change
+    /// to one book redraws one row, and a row's context menu is built only
+    /// when its row draws (PERF28). Dragging rearranges a folder's manual
     /// order only where the rows are that whole order; elsewhere it is off.
-    private var bookRows: some View {
+    /// - Parameters:
+    ///   - books: The books the list shows, as the search narrows them.
+    ///   - allBooks: Every book at the location, in the order shown: while
+    ///     the list shows a folder's manual order, that whole order, which
+    ///     each row's Move Up and Move Down follow.
+    private func bookRows(_ books: [Book], orderedBy allBooks: [Book]) -> some View {
         // The selection in list order, and its cloud commands, made once
         // for all the rows that belong to it.
         let selectedIDs = effectiveSelection
-        let selection = selectedBooks
+        let selection = books.filter { selectedIDs.contains($0.id) }
         let selectionCloudCommands = LibraryCloudCommand.commands(
             for: selection,
             isSelection: selection.count > 1,
             states: cloudStates
         )
-        return ForEach(Array(filteredBooks.enumerated()), id: \.element.id) { _, book in
+        // Every book's moves in the folder's manual order, read from the
+        // order shown rather than by sorting the folder again for each row.
+        let manualMoves = reorderableFolder == nil ? [:] : LibraryManualMoves.moves(in: allBooks)
+        let actions = rowActions
+        return ForEach(books) { book in
             bookRow(
                 book,
                 selectedIDs: selectedIDs,
                 selection: selection,
-                selectionCloudCommands: selectionCloudCommands
+                selectionCloudCommands: selectionCloudCommands,
+                manualMoves: manualMoves,
+                actions: actions
             )
         }
         .onMove(perform: dragReorderAction)
@@ -813,38 +875,38 @@ struct LibraryView: View {
     ///   - selectedIDs: Every selected book, by either selection.
     ///   - selection: The selected books the list shows, in its order.
     ///   - selectionCloudCommands: The cloud commands of `selection`.
+    ///   - manualMoves: Each book's moves in the manual order the list
+    ///     shows, by ID; empty when it shows none.
+    ///   - actions: What the row's commands do.
     private func bookRow(
         _ book: Book,
         selectedIDs: Set<UUID>,
         selection: [Book],
-        selectionCloudCommands: [LibraryCloudCommand]
+        selectionCloudCommands: [LibraryCloudCommand],
+        manualMoves: [UUID: LibraryManualMoves],
+        actions: LibraryBookRowActions
     ) -> some View {
         let targets = commandTargets(for: book, selectedIDs: selectedIDs, selection: selection)
-        let cloudCommands = targets.count > 1
-            ? selectionCloudCommands
-            : LibraryCloudCommand.commands(for: targets, isSelection: false, states: cloudStates)
-        return BookRow(
+        let isSelectionRow = targets.count > 1
+        return LibraryBookListRow(
             book: book,
             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
             wpm: settingsViewModel.wordsPerMinute,
             isEditMode: isEditMode,
             isEditSelected: editSelection.contains(book.id),
             cloudState: cloudStates.listedState(of: book.id),
-            cloudCommands: cloudCommands,
-            performCloudCommand: performCloudCommand,
-            livePosition: libraryViewModel.livePositions.entry(for: book.id)
+            targets: targets,
+            cloudCommands: isSelectionRow
+                ? selectionCloudCommands
+                : LibraryCloudCommand.commands(for: targets, isSelection: false, states: cloudStates),
+            // Move Up and Move Down move the row's own book alone (TODO A06).
+            manualMoves: isSelectionRow ? nil : manualMoves[book.id],
+            removalPreferences: removalPreferences,
+            livePosition: libraryViewModel.livePositions.entry(for: book.id),
+            actions: actions
         )
+        .equatable()
         .tag(book.id)
-        .accessibilityAction(.default) {
-            if isEditMode {
-                toggleEditSelection(book.id)
-            } else {
-                onOpenBook(book)
-            }
-        }
-        .contextMenu {
-            bookContextMenu(for: book, targets: targets, cloudCommands: cloudCommands)
-        }
     }
 
     // MARK: - Row Commands
@@ -861,77 +923,37 @@ struct LibraryView: View {
         return ids.count > 1 ? selection : [book]
     }
 
-    /// A book row's context menu. Its commands act on `targets`: the
-    /// selection when the row belongs to one, otherwise the row's book.
-    /// The cloud commands (FR02) are also the row's VoiceOver actions.
-    @ViewBuilder
-    private func bookContextMenu(for book: Book, targets: [Book], cloudCommands: [LibraryCloudCommand]) -> some View {
-        let isMulti = targets.count > 1
-
-        if !isMulti {
-            Button("Open") {
-                onOpenBook(book)
-            }
-            Button("Book Info") {
+    /// What the rows' commands do, on this list's state as it is when they
+    /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
+    /// the cloud commands, and removal.
+    private var rowActions: LibraryBookRowActions {
+        LibraryBookRowActions(
+            open: onOpenBook,
+            showInfo: { book in
                 showBookInfo(for: book)
-            }
-        }
-        if !isEditMode {
-            Button("Select") {
+            },
+            select: { book in
                 editSelection.insert(book.id)
                 isEditMode = true
-            }
-        }
-        Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
-            booksToMove = targets
-            showMoveSheet = true
-        }
-        // Manual order move commands: single book only, where
-        // the list shows one folder's manual order (TODO A06)
-        if !isMulti, let folder = reorderableFolder {
-            let canUp = libraryViewModel.canMoveBookInManualOrder(
-                bookID: book.id, direction: -1, folderPath: folder
-            )
-            let canDown = libraryViewModel.canMoveBookInManualOrder(
-                bookID: book.id, direction: 1, folderPath: folder
-            )
-            if canUp || canDown {
-                Divider()
-            }
-            if canUp {
-                Button("Move Up") {
-                    moveBook(book.id, direction: -1, inManualOrderOf: folder)
+            },
+            toggleSelection: { book in
+                toggleEditSelection(book.id)
+            },
+            moveToFolder: { books in
+                booksToMove = books
+                showMoveSheet = true
+            },
+            moveInManualOrder: { book, direction in
+                if let folder = reorderableFolder {
+                    moveBook(book.id, direction: direction, inManualOrderOf: folder)
                 }
+            },
+            performCloudCommand: performCloudCommand,
+            remove: { books in
+                libraryViewModel.removeBooks(books)
+                clearAllSelections()
             }
-            if canDown {
-                Button("Move Down") {
-                    moveBook(book.id, direction: 1, inManualOrderOf: folder)
-                }
-            }
-        }
-        // Download Now and Remove Download in a cloud library, and Show in
-        // Finder in every library (FR02).
-        if !cloudCommands.isEmpty {
-            Divider()
-            ForEach(cloudCommands) { command in
-                Button(command.title) {
-                    performCloudCommand(command)
-                }
-            }
-        }
-        Divider()
-        // Says what removal will do: ask first, or
-        // move the files to the Trash, or delete them.
-        Button(
-            LibraryRemoveCommandWording(
-                preferences: removalPreferences,
-                books: targets
-            ).menuTitle,
-            role: .destructive
-        ) {
-            libraryViewModel.removeBooks(targets)
-            clearAllSelections()
-        }
+        )
     }
 
     /// Runs a row's cloud command, from its context menu or its VoiceOver
@@ -1058,16 +1080,23 @@ struct LibraryView: View {
         libraryViewModel.displayedBooks(at: location)
     }
 
-    private var preferredLibraryFocusTarget: LibraryFocusTarget? {
+    /// Which of the views this list owns takes the library's one initial
+    /// VoiceOver focus: nil when Continue Listening, which owns its own
+    /// focus identifier and trigger, takes it.
+    private static func preferredFocusTarget(
+        hasContinueListening: Bool,
+        hasDisplayedBooks: Bool
+    ) -> LibraryFocusTarget? {
         let target = LibraryFocusTarget.preferred(
-            hasContinueListening: libraryViewModel.lastOpenedBook != nil,
-            hasDisplayedBooks: !displayedBooks.isEmpty
+            hasContinueListening: hasContinueListening,
+            hasDisplayedBooks: hasDisplayedBooks
         )
-        // Continue Listening owns its own focus identifier and trigger.
         return target == .continueListening ? nil : target
     }
 
-    private var importBookButton: some View {
+    /// The Import Book button: the initial VoiceOver target when
+    /// `focusTarget` says so.
+    private func importBookButton(focusTarget: LibraryFocusTarget?) -> some View {
         Button {
             showFileImporter = true
         } label: {
@@ -1076,7 +1105,7 @@ struct LibraryView: View {
         .accessibilityLabel("Import a book file")
         .accessibilityHint("Opens a file picker to import EPUB, text, markdown, or HTML files")
         .modifier(LibraryFocusTargetModifier(
-            isEnabled: preferredLibraryFocusTarget == .importButton
+            isEnabled: focusTarget == .importButton
         ))
     }
 
@@ -1235,6 +1264,21 @@ struct LibraryView: View {
             .font(.callout)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding([.horizontal, .top])
+    }
+}
+
+// MARK: - Closed Window (PERF27)
+
+/// What a Library window shows once it has closed, in place of its list
+/// (PERF27). Nobody sees it unless SwiftUI shows the window again, and then
+/// only for the moment until the list returns; VoiceOver reads it as the
+/// window's name.
+private struct ClosedLibraryWindowPlaceholder: View {
+    var body: some View {
+        Text("Library")
+            .font(.title2)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

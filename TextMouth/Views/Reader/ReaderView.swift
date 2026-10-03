@@ -517,15 +517,62 @@ struct ReaderCloudMessageView: View {
 // MARK: - Per-Book Voice Picker
 
 struct BookVoicePickerView: View {
-    @ObservedObject var viewModel: ReaderViewModel
+    /// What the sheet shows of its reader: the voice, speed, pitch, or audio
+    /// speed in force, the end-of-book choice, and whether the book has
+    /// settings of its own (PERF30). The sheet draws again when this
+    /// changes, and only then, rather than with each of the reader's
+    /// publishes, eight a second while it plays. Its body reads the reader
+    /// itself, whose values these are by the time it draws.
+    struct ReaderState: Equatable {
+        let title: String
+        let isAudioBook: Bool
+        let voiceIdentifier: String?
+        let wordsPerMinute: Double
+        let pitchMultiplier: Double
+        let audioSpeed: Double
+        let endOfBookBehavior: EndOfBookBehavior
+        let hasLocalEndOfBookBehavior: Bool
+        let hasLocalSettings: Bool
+
+        /// What `reader` shows the sheet now.
+        @MainActor
+        init(of reader: ReaderViewModel) {
+            title = reader.book.title
+            isAudioBook = reader.isAudioBook
+            voiceIdentifier = reader.speechService.currentVoice?.identifier
+            wordsPerMinute = reader.speechService.wordsPerMinute
+            pitchMultiplier = reader.speechService.pitchMultiplier
+            audioSpeed = reader.audioSpeed
+            endOfBookBehavior = reader.effectiveEndOfBookBehavior
+            hasLocalEndOfBookBehavior = reader.book.localEndOfBookBehavior != nil
+            hasLocalSettings = reader.hasLocalSettings
+        }
+    }
+
+    /// The reader whose voice, speed, and pitch the sheet sets. Not
+    /// observed: the sheet follows `shown` instead (PERF30).
+    let viewModel: ReaderViewModel
+    /// What the sheet shows of the reader, republished only when it changes.
+    @StateObject private var shown: ReaderSnapshot<ReaderState>
     /// The installed voices, listed once and shared (TODO PERF07), observed
     /// so the pickers fill as soon as the list arrives.
     @ObservedObject private var voiceCatalog = VoiceCatalog.shared
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLanguage: String = ""
-    @State private var previewSynthesizer = AVSpeechSynthesizer()
+    /// The synthesizer that previews a voice, made at the first preview: a
+    /// default value would make one each time the sheet is made, that is
+    /// each time the reader view presenting it draws (PERF30).
+    @State private var previewSynthesizer: AVSpeechSynthesizer?
+
+    /// A sheet that sets `viewModel`'s voice, speed, and pitch, or an
+    /// audiobook's speed, and what happens when the book ends.
+    init(viewModel: ReaderViewModel) {
+        self.viewModel = viewModel
+        _shown = StateObject(wrappedValue: ReaderSnapshot(of: viewModel, ReaderState.init(of:)))
+    }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("BookVoicePickerView")
         VStack(spacing: 16) {
             Text(viewModel.isAudioBook ? "Audio Speed for This Book" : "Voice & Speed for This Book")
                 .font(.headline)
@@ -754,15 +801,22 @@ struct BookVoicePickerView: View {
         voice.qualityLabel
     }
 
+    /// Speaks a sample in the voice, speed, and pitch chosen, with the
+    /// sheet's own synthesizer, made the first time.
     private func previewVoice() {
-        previewSynthesizer.stopSpeaking(at: .immediate)
+        let synthesizer = previewSynthesizer ?? AVSpeechSynthesizer()
+        previewSynthesizer = synthesizer
+        synthesizer.stopSpeaking(at: .immediate)
         let utterance = AVSpeechUtterance(string: "Hello! This is how I'll read for you.")
         utterance.voice = viewModel.speechService.currentVoice
         utterance.rate = SpeechService.rateForWPM(viewModel.speechService.wordsPerMinute)
         utterance.pitchMultiplier = Float(SpeechService.clampedPitch(viewModel.speechService.pitchMultiplier))
-        previewSynthesizer.speak(utterance)
+        synthesizer.speak(utterance)
     }
 }
+
+/// The voice sheet's only input is its reader (PERF30).
+extension BookVoicePickerView: SheetOverOneReader {}
 
 // MARK: - Book Info Bar
 
