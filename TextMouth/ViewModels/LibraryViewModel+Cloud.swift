@@ -6,8 +6,9 @@ import Foundation
 //
 // The library list shows each book's cloud state from `BookCloudStates`
 // (see BookCloudNote.swift). `LibraryCloudRefresher` keeps that record
-// current while a Library window is visible. Every read of the file system
-// goes through `BookCloudStorage`, off the main thread.
+// current while a Library window is visible, and `LibraryCloudCommand`
+// decides which cloud commands a book or a selection offers. Every read of
+// the file system goes through `BookCloudStorage`, off the main thread.
 
 extension LibraryViewModel {
     /// The package of every book in the library, as the cloud services see
@@ -260,5 +261,101 @@ private struct BookPackagePlace: Equatable {
         folderPath = book.folderPath
         tmbDirectoryName = book.tmbDirectoryName
         filePath = book.filePath
+    }
+}
+
+// MARK: - Commands Offered
+
+extension BookCloudState {
+    /// Whether Download Now can download the book: some of its files are
+    /// only in the cloud, or its last download failed. A book downloading
+    /// already, or not synced to this Mac yet, has nothing to download now.
+    var canDownload: Bool {
+        switch self {
+        case .inCloud, .downloadFailed:
+            return true
+        case .local, .downloaded, .downloading, .waitingForSync:
+            return false
+        }
+    }
+
+    /// Whether Remove Download can remove the book's download: every file
+    /// of the book is on this Mac.
+    var canRemoveDownload: Bool {
+        self == .downloaded
+    }
+}
+
+/// A cloud command the library offers for a book or a selection (FR02),
+/// in the row's context menu and as one of its VoiceOver actions.
+struct LibraryCloudCommand: Identifiable, Equatable {
+    /// What a command does.
+    enum Kind: Equatable {
+        /// Download Now: downloads books whose files are in the cloud.
+        case download
+        /// Remove Download: removes the local copies of downloaded books,
+        /// which stay in the cloud.
+        case removeDownload
+        /// Show in Finder: selects the books' packages in Finder, where the
+        /// sync service's own commands are, such as Keep Downloaded.
+        case showInFinder
+    }
+
+    /// What the command does.
+    let kind: Kind
+    /// The books it acts on, in list order.
+    let books: [Book]
+    /// Its title in the menu, which is also its VoiceOver action's name.
+    let title: String
+
+    /// A list offers each kind of command at most once, so the kind
+    /// identifies it.
+    var id: Kind { kind }
+
+    /// The cloud commands for `targets`, in menu order:
+    /// - Download Now for the books not downloaded, and Remove Download for
+    ///   the downloaded ones, both only in a cloud library;
+    /// - Show in Finder, in every library, for each book whose package is on
+    ///   this Mac (all but those waiting for sync).
+    ///
+    /// A book not checked yet offers only Show in Finder. A book open in a
+    /// reader offers the same commands as any other; Remove Download then
+    /// explains why it can't remove its download.
+    /// - Parameters:
+    ///   - targets: The clicked book, or the selection it is part of, in
+    ///     list order.
+    ///   - isSelection: Whether `targets` is a selection of several books,
+    ///     so the titles count the books each command acts on.
+    ///   - states: The books' recorded cloud states.
+    @MainActor
+    static func commands(for targets: [Book], isSelection: Bool, states: BookCloudStates) -> [LibraryCloudCommand] {
+        let listed = targets.map { (book: $0, state: states.listedState(of: $0.id)) }
+        let downloadable = listed.filter { $0.state?.canDownload == true }.map(\.book)
+        let removable = listed.filter { $0.state?.canRemoveDownload == true }.map(\.book)
+        let revealable = listed.filter { $0.state != .waitingForSync }.map(\.book)
+
+        var commands: [LibraryCloudCommand] = []
+        if !downloadable.isEmpty {
+            commands.append(LibraryCloudCommand(
+                kind: .download,
+                books: downloadable,
+                title: LibraryCloudWording.downloadTitle(count: downloadable.count, forSelection: isSelection)
+            ))
+        }
+        if !removable.isEmpty {
+            commands.append(LibraryCloudCommand(
+                kind: .removeDownload,
+                books: removable,
+                title: LibraryCloudWording.removeDownloadTitle(count: removable.count, forSelection: isSelection)
+            ))
+        }
+        if !revealable.isEmpty {
+            commands.append(LibraryCloudCommand(
+                kind: .showInFinder,
+                books: revealable,
+                title: LibraryCloudWording.showInFinderTitle(count: revealable.count, forSelection: isSelection)
+            ))
+        }
+        return commands
     }
 }
