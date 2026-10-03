@@ -666,6 +666,60 @@ final class ConfigWatcherTests: XCTestCase {
         withExtendedLifetime(settings) {}
     }
 
+    /// An edit of the shortcuts, noticed through the watcher's handler, is
+    /// applied once and reaches the shortcut manager at once, published
+    /// once; the store keeps them where and as every release saved them,
+    /// and nothing is written back.
+    func testExternalEditOfTheShortcutsReachesTheManagerOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let manager = KeyboardShortcutManager(userDefaults: defaults, installsEventMonitor: false)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+
+        edit.keyboardShortcuts[ShortcutAction.whereAmI.rawValue] = ["control+w"]
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", control: true)])
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(counter.writes, 0)
+        let stored = try XCTUnwrap(defaults.data(forKey: "customKeyboardBindings"))
+        let saved = try JSONDecoder().decode([String: [KeyBinding]].self, from: stored)
+        XCTAssertEqual(saved["Where Am I?"], [KeyBinding(key: "w", control: true)])
+        withExtendedLifetime(settings) {}
+    }
+
+    /// A shortcut recorded in the Shortcuts settings, which changes the
+    /// manager's bindings, is saved to config.json at once, and that save is
+    /// never applied back as an edit.
+    func testShortcutRecordedInSettingsIsSavedToConfig() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let manager = KeyboardShortcutManager(userDefaults: defaults, installsEventMonitor: false)
+        let recorder = EditRecorder(service)
+
+        manager.addBinding(KeyBinding(key: "j", control: true), to: .whereAmI)
+        settle()
+
+        XCTAssertEqual(counter.writes, 1)
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.keyboardShortcuts[ShortcutAction.whereAmI.rawValue], ["option+w", "control+j"])
+        XCTAssertEqual(recorder.edits, [])
+        withExtendedLifetime(settings) {}
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the

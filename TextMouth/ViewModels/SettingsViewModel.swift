@@ -683,16 +683,19 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Preferences other services keep
     //
-    // The sound effects service and the substitution service keep their
-    // preferences in the same store as this model, and follow them there.
-    // The mirror reads and writes them there through each service's own
-    // definitions: a value applied from config.json reaches its service at
-    // once, and a change made through a service's controls is saved to
-    // config.json by the observer below.
+    // The sound effects service, the substitution service, and the shortcut
+    // manager keep their preferences in the same store as this model, and
+    // follow them there. The mirror reads and writes them there through each
+    // service's own definitions: a value applied from config.json reaches its
+    // service at once, and a change made through a service's controls is
+    // saved to config.json by the observer below.
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
-        SoundEffectService.preferenceKeys + [TextSubstitutionService.enabledPreference.key]
+        SoundEffectService.preferenceKeys + [
+            TextSubstitutionService.enabledPreference.key,
+            KeyboardShortcutManager.bindingsPreference.key,
+        ]
     }
 
     /// Saves config.json whenever a preference another service keeps changes
@@ -713,6 +716,9 @@ final class SettingsViewModel: ObservableObject {
             SoundEffectService.assignmentsNamingEveryEvent(SoundEffectService.assignmentsPreference.read(from: preferences))
         )
         config.substitutionsEnabled = TextSubstitutionService.enabledPreference.read(from: preferences)
+        config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(
+            KeyboardShortcutManager.bindingsPreference.read(from: preferences)
+        )
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -726,6 +732,11 @@ final class SettingsViewModel: ObservableObject {
             into: SoundEffectService.assignmentsPreference
         )
         adopt(config.substitutionsEnabled, into: TextSubstitutionService.enabledPreference)
+        adopt(
+            entries: SettingsPolicy.keyboardShortcuts.requestedValues(fromConfig: config.keyboardShortcuts),
+            into: KeyboardShortcutManager.bindingsPreference,
+            combining: KeyboardShortcutManager.bindings(_:adopting:)
+        )
     }
 
     /// Writes a value config.json asks for into the store when it differs

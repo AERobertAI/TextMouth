@@ -83,6 +83,25 @@ final class KeyboardShortcutManager: ObservableObject {
         return loaded
     }
 
+    /// The bindings once `requested`, from config.json, are in place: each
+    /// action it names takes exactly the bindings it lists, and every other
+    /// action keeps its own, except any binding the file gives a named
+    /// action, which moves there as a shortcut recorded in Settings moves
+    /// from the action that had it. A file that changes a few shortcuts thus
+    /// never leaves one key on two actions, which would make the action it
+    /// triggers a matter of chance.
+    nonisolated static func bindings(
+        _ current: [ShortcutAction: [KeyBinding]],
+        adopting requested: [ShortcutAction: [KeyBinding]]
+    ) -> [ShortcutAction: [KeyBinding]] {
+        let claimed = Set(requested.values.joined())
+        var adopted = current.mapValues { bindings in bindings.filter { !claimed.contains($0) } }
+        for (action, bindings) in requested {
+            adopted[action] = bindings
+        }
+        return adopted
+    }
+
     private func saveBindings() {
         Self.bindingsPreference.write(bindings, to: userDefaults)
     }

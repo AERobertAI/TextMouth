@@ -591,6 +591,81 @@ final class ConfigSyncTests: XCTestCase {
         XCTAssertFalse(substitutions.isEnabled)
     }
 
+    // MARK: - Keyboard shortcuts
+
+    /// Shortcuts applied from config.json reach the shortcut manager at
+    /// once, through the store it follows: an action the file names takes
+    /// exactly its shortcuts, and the others keep theirs. They are saved
+    /// back with every action named, in readable text.
+    func testShortcutsReachTheShortcutManagerAndAreSaved() throws {
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = makeIsolatedViewModel(store)
+        var config = ConfigService.AppConfig()
+        config.keyboardShortcuts = ["Where Am I?": ["option+w"], "Release Media Controls": ["control+r"]]
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
+        XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [KeyBinding(key: "r", control: true)])
+        XCTAssertEqual(manager.bindingsFor(.togglePlayback), ShortcutAction.defaultBindings[.togglePlayback])
+
+        var saved = ConfigService.AppConfig()
+        viewModel.writePreferences(into: &saved)
+        XCTAssertEqual(saved.keyboardShortcuts["Where Am I?"], ["option+w"])
+        XCTAssertEqual(saved.keyboardShortcuts["Play / Pause"], ["space", "k"])
+        XCTAssertEqual(Set(saved.keyboardShortcuts.keys), Set(ShortcutAction.allCases.map(\.rawValue)))
+    }
+
+    /// A shortcut config.json gives one action moves there from the action
+    /// that had it, as recording it in Settings would, so no key triggers
+    /// two actions; an empty list leaves an action without a shortcut.
+    func testAShortcutTheFileGivesAnActionMovesThere() throws {
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = makeIsolatedViewModel(store)
+        var config = ConfigService.AppConfig()
+        config.keyboardShortcuts = ["Where Am I?": ["k"], "Go to Library": []]
+
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "k")])
+        XCTAssertEqual(manager.bindingsFor(.togglePlayback), [KeyBinding(key: "space")])
+        XCTAssertTrue(manager.bindingsFor(.goToLibrary).isEmpty)
+    }
+
+    /// Shortcuts config.json holds in a form TextMouth cannot use leave the
+    /// current ones as they are and are logged, a mistyped shortcut leaving
+    /// its whole action alone, while the usable entries beside them apply.
+    func testUnusableShortcutsKeepTheCurrentOnesAndAreLogged() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let store = try isolatedDefaults()
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        let viewModel = makeIsolatedViewModel(store)
+        let mistyped = "hyper\(Int.random(in: 100_000...999_999))+k"
+        let unknownAction = "Teleport \(UUID().uuidString)"
+
+        let config = try decodeConfig("""
+        {
+          "keyboardShortcuts": {
+            "Play / Pause": ["space", "\(mistyped)"],
+            "Where Am I?": ["Option + W"],
+            "\(unknownAction)": ["t"],
+            "Go Back": "command+["
+          }
+        }
+        """)
+        viewModel.applyConfigChanges(config)
+
+        XCTAssertEqual(config.keyboardShortcuts, ["Where Am I?": ["option+w"]])
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", option: true)])
+        XCTAssertEqual(manager.bindingsFor(.togglePlayback), ShortcutAction.defaultBindings[.togglePlayback])
+        XCTAssertEqual(manager.bindingsFor(.goBack), ShortcutAction.defaultBindings[.goBack])
+        XCTAssertEqual(debugLogLines(containing: mistyped).count, 1)
+        XCTAssertEqual(debugLogLines(containing: unknownAction).count, 1)
+        XCTAssertFalse(debugLogLines(containing: "config.json keyboardShortcuts.Go Back: could not be read").isEmpty)
+    }
+
     // MARK: - Decoding config.json
 
     /// Extreme numbers are clamped, and wrongly typed, unrepresentable, or

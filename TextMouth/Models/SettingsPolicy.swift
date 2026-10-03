@@ -264,6 +264,16 @@ enum SettingsPolicy {
         format: { $0 }
     )
 
+    /// The shortcuts of each action (Shortcuts settings): a list of
+    /// shortcuts written as `KeyBinding.configText` writes them, such as
+    /// "option+shift+command+b", read whole or not at all.
+    static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, [String], [KeyBinding]>(
+        key: "keyboardShortcuts",
+        supportedDescription: "actions as Settings names them, each with a list of shortcuts such as \"shift+command+b\"",
+        parse: { KeyBinding.bindings(fromConfigTexts: $0) },
+        format: { $0.map(\.configText) }
+    )
+
     // MARK: Integer
 
     /// Minutes a sleep timer can run: the range of the custom-duration

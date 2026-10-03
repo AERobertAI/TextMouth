@@ -256,6 +256,12 @@ final class ConfigService: ObservableObject {
         /// Whether the text substitution rules apply. The rules themselves
         /// are kept in substitutions.json, beside this file.
         var substitutionsEnabled: Bool?
+        /// The keyboard shortcuts of each action, keyed by the action's name
+        /// as Settings shows it, each a list of shortcuts such as
+        /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
+        /// leaves the action without one. TextMouth writes every action; an
+        /// action the file leaves out keeps its shortcuts.
+        var keyboardShortcuts: [String: [String]] = [:]
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -329,6 +335,7 @@ final class ConfigService: ObservableObject {
                 rule: SettingsPolicy.soundEffectAssignments
             )
             substitutionsEnabled = fields.optionalFlag(.substitutionsEnabled)
+            keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
         }
 
         init() {}

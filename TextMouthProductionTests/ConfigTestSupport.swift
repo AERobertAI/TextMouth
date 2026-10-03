@@ -46,6 +46,12 @@ extension ConfigService.AppConfig {
             .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
         ] as [SoundEvent: String]).keyedByRawValue
         config.substitutionsEnabled = false
+        // Every action, as TextMouth writes them, three of them changed.
+        var shortcuts = ShortcutAction.defaultBindings
+        shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]
+        shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true)]
+        shortcuts[.releaseMediaControls] = [KeyBinding(key: "escape", shift: true)]
+        config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
         return config
     }
 }
