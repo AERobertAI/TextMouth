@@ -1640,12 +1640,21 @@ enum FileImportService {
     /// retained in place. Other records receive a complete recovery copy under
     /// the current UUID-based name, with derived content invalidated so startup
     /// analysis rebuilds it from that record's own source file.
-    /// `access` is how the repair reaches the packages' files (FR02).
+    ///
+    /// A shared package any of whose items is in the cloud is left as it is
+    /// (FR02): the copy would download it, and its record, which decides
+    /// which row keeps the package, may not be read without downloading
+    /// either. A record whose read is refused is the same: guessing its
+    /// owner would separate the wrong row and invalidate the record. Every
+    /// row sharing such a package keeps its row as it is, counted in
+    /// `skips`, until all of the package is on this Mac. `access` is how the
+    /// repair reaches the packages' files.
     @discardableResult
     static func separateSharedTMBPackages(
         library: inout Library,
         libraryDirectory: URL = TextMouthPaths.libraryDir,
-        access: MaintenanceFileAccess = .live
+        access: MaintenanceFileAccess = .live,
+        skips: CloudSkips? = nil
     ) -> Int {
         let fm = FileManager.default
         var packageReferences: [String: [Int]] = [:]
@@ -1662,11 +1671,26 @@ enum FileImportService {
             let sharedPackage = libraryDirectory
                 .appendingPathComponent(firstBook.folderPath, isDirectory: true)
                 .appendingPathComponent(firstBook.tmbDirectoryName, isDirectory: true)
-            guard fm.fileExists(atPath: sharedPackage.path) else { continue }
+            guard access.presence(of: sharedPackage) != .absent else { continue }
 
-            let storedBookID = (try? access.read(TextMouthPaths.bookInfoPath(in: sharedPackage)) {
-                try BookInfo.load(from: sharedPackage)
-            })?.metadata.bookID
+            // The package's owner, as its record names it; nil when the record
+            // cannot be read for a reason other than the cloud.
+            let storedBookID: UUID?
+            do {
+                guard access.itemInCloud(sharedPackage) == nil else {
+                    throw MaintenanceFileAccess.refusal(of: sharedPackage)
+                }
+                storedBookID = try access.read(TextMouthPaths.bookInfoPath(in: sharedPackage)) {
+                    try BookInfo.load(from: sharedPackage)
+                }.metadata.bookID
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                for index in indices {
+                    skips?.record(library.books[index])
+                }
+                continue
+            } catch {
+                storedBookID = nil
+            }
             let keeper = indices.first { library.books[$0].id == storedBookID } ?? indices[0]
 
             for index in indices where index != keeper {
@@ -1682,7 +1706,15 @@ enum FileImportService {
                     isDirectory: true
                 )
                 let destination = parent.appendingPathComponent(packageName, isDirectory: true)
-                guard !fm.fileExists(atPath: destination.path) else { continue }
+                switch access.presence(of: destination) {
+                case .absent:
+                    break
+                case .present:
+                    continue
+                case .inCloud:
+                    skips?.record(book)
+                    continue
+                }
 
                 let staging = parent.appendingPathComponent(
                     ".textmouth-split-\(UUID().uuidString)",
@@ -1731,7 +1763,13 @@ enum FileImportService {
                     separated += 1
                 } catch {
                     try? fm.removeItem(at: staging)
-                    print("Failed to separate shared package for \(book.title): \(error)")
+                    if DatalessFiles.isDownloadRefusal(error) {
+                        // A file went to the cloud while the package was
+                        // copied: the book waits for it, as it is.
+                        skips?.record(book)
+                    } else {
+                        print("Failed to separate shared package for \(book.title): \(error)")
+                    }
                 }
             }
 
@@ -1769,10 +1807,18 @@ enum FileImportService {
     /// book's folderPath says they should be in. Updates filePath to match.
     /// This fixes books whose folder assignment was updated in library.json
     /// without the physical .tmb directory being moved.
+    ///
+    /// Only a package found missing from its folder is moved (FR02): a check
+    /// that met a dataless folder decides nothing, and a package that is
+    /// itself in the cloud stays where it is. Such a book keeps its row as it
+    /// is, counted in `skips`. `access` is how the repair reaches the
+    /// packages.
     @discardableResult
     static func relocateMisplacedTMBPackages(
         library: inout Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        access: MaintenanceFileAccess = .live,
+        skips: CloudSkips? = nil
     ) -> Int {
         let fm = FileManager.default
         var relocated = 0
@@ -1790,11 +1836,32 @@ enum FileImportService {
             let rootDir = libraryDirectory
                 .appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
 
-            // If the .tmb is already in the right place, nothing to do
-            if fm.fileExists(atPath: expectedDir.path) { continue }
+            // If the .tmb is already in the right place, nothing to do; and
+            // nothing is done when only the cloud knows whether it is.
+            switch access.presence(of: expectedDir) {
+            case .absent:
+                break
+            case .present:
+                continue
+            case .inCloud:
+                skips?.record(book)
+                continue
+            }
 
-            // If the .tmb is at root, move it to the correct folder
-            guard fm.fileExists(atPath: rootDir.path) else { continue }
+            // If the .tmb is at root, move it to the correct folder, unless
+            // it is itself in the cloud.
+            switch access.presence(of: rootDir) {
+            case .absent:
+                continue
+            case .inCloud:
+                skips?.record(book)
+                continue
+            case .present:
+                guard !access.isDataless(rootDir) else {
+                    skips?.record(book)
+                    continue
+                }
+            }
 
             do {
                 try fm.createDirectory(
@@ -1918,12 +1985,18 @@ enum FileImportService {
     /// left a readable bookInfo.json in it. Such a package is left untouched
     /// on disk for a deliberate re-import.
     ///
-    /// `access` is how the repair reaches the packages' files (FR02).
+    /// The walk and every check run with dataless files left in the cloud
+    /// (FR02). A folder that cannot be listed without downloading is passed
+    /// over, and a package whose folder, record, removal marker, or book file
+    /// is in the cloud is neither adopted nor rewritten: it is counted in
+    /// `skips`, and adopted at a launch that finds it on this Mac. `access`
+    /// is how the repair reaches the packages' files.
     @discardableResult
     static func adoptOrphanedTMBPackages(
         library: inout Library,
         libraryDirectory: URL = TextMouthPaths.libraryDir,
-        access: MaintenanceFileAccess = .live
+        access: MaintenanceFileAccess = .live,
+        skips: CloudSkips? = nil
     ) -> Int {
         let fm = FileManager.default
         let libraryDir = libraryDirectory
@@ -1931,122 +2004,172 @@ enum FileImportService {
         // Collect all .tmb directory names currently tracked in the library
         let knownTMBNames = Set(library.books.map { $0.tmbDirectoryName })
 
-        // Walk the library directory tree to find all .tmb packages on disk
-        var adopted = 0
-        guard let enumerator = fm.enumerator(
-            at: libraryDir,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else { return 0 }
+        return DatalessFiles.withoutDownloading { () -> Int in
+            // Walk the library directory tree to find all .tmb packages on disk
+            var adopted = 0
+            guard let enumerator = fm.enumerator(
+                at: libraryDir,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            ) else { return 0 }
 
-        while let url = enumerator.nextObject() as? URL {
-            // Only look at .tmb directories
-            guard url.pathExtension == "tmb",
-                  (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
-            else { continue }
+            while let url = enumerator.nextObject() as? URL {
+                // Only look at .tmb directories
+                guard url.pathExtension == "tmb",
+                      (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+                else { continue }
 
-            // Don't recurse into .tmb packages
-            enumerator.skipDescendants()
+                // Don't recurse into .tmb packages
+                enumerator.skipDescendants()
 
-            let tmbName = url.lastPathComponent
-            // Skip if already tracked in the library
-            if knownTMBNames.contains(tmbName) { continue }
+                // Skip if already tracked in the library
+                if knownTMBNames.contains(url.lastPathComponent) { continue }
 
-            // Try to load bookInfo.json from the orphaned .tmb
-            guard let info = try? access.read(TextMouthPaths.bookInfoPath(in: url), {
-                try BookInfo.load(from: url)
-            }) else { continue }
+                let orphan: (book: Book, recordedFolderPath: String)
+                do {
+                    guard let found = try orphanedBook(in: url, libraryDirectory: libraryDir, access: access) else {
+                        continue
+                    }
+                    orphan = found
+                } catch {
+                    // Only a refusal: part of the package is in the cloud.
+                    skips?.record(package: url)
+                    continue
+                }
 
-            // The user removed this book from the library; it stays out.
-            if RemovedFromLibraryMarker.retires(info.metadata.bookID, in: url) { continue }
+                // addBook guards against duplicate hashes — only truly new books get added
+                let countBefore = library.books.count
+                library.addBook(orphan.book)
+                if library.books.count > countBefore {
+                    adopted += 1
 
-            // Find the actual book file inside the .tmb: the one its record
-            // names, since a DAISY book's package holds many files (TODO
-            // I02); for a record naming none there, the first entry that is
-            // not metadata or cache (a removal marker naming some other book
-            // included)
-            let tmbContents = (try? access.read(url) { try fm.contentsOfDirectory(atPath: url.path) }) ?? []
-            let recordedName = info.metadata.originalFileName
-            let bookFileName = tmbContents.contains(recordedName) && isPackageContentName(recordedName)
-                ? recordedName
-                : tmbContents.first(where: isPackageContentName)
-
-            guard let fileName = bookFileName else { continue }
-            let bookFilePath = url.appendingPathComponent(fileName).path
-            guard fm.fileExists(atPath: bookFilePath) else { continue }
-
-            // Determine the folder path relative to the library directory.
-            // e.g. Library/Science Fiction/Author/Book.tmb → "Science Fiction/Author"
-            // Resolve symlinks so /tmp vs /private/tmp paths match consistently.
-            let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
-            let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
-            let relativePath = resolvedParent
-                .replacingOccurrences(of: resolvedLibrary, with: "")
-            let folderPath = relativePath
-                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-
-            // Build the Book from bookInfo.json metadata and state
-            let book = Book(
-                id: info.metadata.bookID,
-                title: info.metadata.title,
-                author: info.metadata.author,
-                format: info.metadata.format,
-                filePath: bookFilePath,
-                md5Hash: info.metadata.md5Hash,
-                folderPath: folderPath,
-                dateAdded: info.metadata.dateAdded,
-                lastOpened: info.metadata.lastOpened,
-                readingPosition: info.state.readingPosition,
-                bookmarks: info.bookmarks,
-                totalWordCount: info.state.totalWordCount,
-                totalCharacterCount: info.state.totalCharacterCount,
-                tmbDirectoryName: tmbName,
-                sourceFilePath: info.metadata.sourceFilePath,
-                lastPlaybackStarted: info.state.lastPlaybackStarted,
-                lastPlaybackStopped: info.state.lastPlaybackStopped,
-                localVoiceID: info.state.localVoiceID,
-                localWPM: info.state.localWPM,
-                localPitch: info.state.localPitch,
-                skippedHeadingIDs: info.state.skippedHeadingIDs,
-                localEndOfBookBehavior: info.state.localEndOfBookBehavior,
-                localSkipForwardUnit: info.state.localSkipForwardUnit,
-                localSkipBackwardUnit: info.state.localSkipBackwardUnit,
-                manualSortOrder: info.state.manualSortOrder,
-                audioDuration: info.state.audioDuration,
-                audioAlbum: info.metadata.audioAlbum,
-                audioGenre: info.metadata.audioGenre,
-                audioYear: info.metadata.audioYear,
-                epubPublisher: info.metadata.publisher,
-                epubPublicationDate: info.metadata.publicationDate,
-                epubISBN: info.metadata.isbn,
-                epubLanguage: info.metadata.language,
-                epubIdentifier: info.metadata.epubIdentifier,
-                epubVersion: info.metadata.epubVersion,
-                cacheFormatVersion: info.state.cacheFormatVersion,
-                contentIndexVersion: info.state.contentIndexVersion
-            )
-
-            // addBook guards against duplicate hashes — only truly new books get added
-            let countBefore = library.books.count
-            library.addBook(book)
-            if library.books.count > countBefore {
-                adopted += 1
-
-                // Update the bookInfo.json folderPath if it was empty but the .tmb
-                // lives inside a subfolder (common with orphans from zip imports)
-                if info.metadata.folderPath != folderPath {
-                    var updatedBook = book
-                    updatedBook.folderPath = folderPath
-                    library.books[library.books.count - 1] = updatedBook
-                    try? updatedBook.saveBookInfoThrowing()
+                    // Update the bookInfo.json folderPath if it was empty but the .tmb
+                    // lives inside a subfolder (common with orphans from zip imports)
+                    if orphan.recordedFolderPath != orphan.book.folderPath {
+                        try? orphan.book.saveBookInfoThrowing()
+                    }
                 }
             }
+
+            if adopted > 0 {
+                print("Adopted \(adopted) orphaned .tmb package(s) into library")
+            }
+            return adopted
+        }
+    }
+
+    /// The book the orphaned package at `url` holds, as its bookInfo.json
+    /// describes it and placed in the library folder the package is in, with
+    /// the folder path the record names; nil when it holds none to adopt: its
+    /// record cannot be read, its book was taken out with Remove from Library
+    /// Only, or it has no book file.
+    /// - Throws: a download refusal (`DatalessFiles.isDownloadRefusal`) when
+    ///   the package, its record, its removal marker, or its book file is in
+    ///   the cloud (FR02), so nothing is decided about the package.
+    private static func orphanedBook(
+        in url: URL,
+        libraryDirectory libraryDir: URL,
+        access: MaintenanceFileAccess
+    ) throws -> (book: Book, recordedFolderPath: String)? {
+        let record = TextMouthPaths.bookInfoPath(in: url)
+        let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: url)
+        if let inCloud = [url, record, marker].first(where: access.isInCloud) {
+            throw MaintenanceFileAccess.refusal(of: inCloud)
         }
 
-        if adopted > 0 {
-            print("Adopted \(adopted) orphaned .tmb package(s) into library")
+        // Try to load bookInfo.json from the orphaned .tmb
+        let info: BookInfo
+        do {
+            info = try access.read(record) { try BookInfo.load(from: url) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            return nil
         }
-        return adopted
+
+        // The user removed this book from the library; it stays out.
+        if RemovedFromLibraryMarker.retires(info.metadata.bookID, in: url) { return nil }
+
+        // Find the actual book file inside the .tmb: the one its record
+        // names, since a DAISY book's package holds many files (TODO
+        // I02); for a record naming none there, the first entry that is
+        // not metadata or cache (a removal marker naming some other book
+        // included)
+        let tmbContents: [String]
+        do {
+            tmbContents = try access.read(url) { try FileManager.default.contentsOfDirectory(atPath: url.path) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            tmbContents = []
+        }
+        let recordedName = info.metadata.originalFileName
+        let bookFileName = tmbContents.contains(recordedName) && isPackageContentName(recordedName)
+            ? recordedName
+            : tmbContents.first(where: isPackageContentName)
+
+        guard let fileName = bookFileName else { return nil }
+        let bookFile = url.appendingPathComponent(fileName)
+        switch access.presence(of: bookFile) {
+        case .absent:
+            return nil
+        case .inCloud:
+            throw MaintenanceFileAccess.refusal(of: bookFile)
+        case .present:
+            break
+        }
+
+        // Determine the folder path relative to the library directory.
+        // e.g. Library/Science Fiction/Author/Book.tmb → "Science Fiction/Author"
+        // Resolve symlinks so /tmp vs /private/tmp paths match consistently.
+        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+        let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
+        let relativePath = resolvedParent
+            .replacingOccurrences(of: resolvedLibrary, with: "")
+        let folderPath = relativePath
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        // Build the Book from bookInfo.json metadata and state
+        let book = Book(
+            id: info.metadata.bookID,
+            title: info.metadata.title,
+            author: info.metadata.author,
+            format: info.metadata.format,
+            filePath: bookFile.path,
+            md5Hash: info.metadata.md5Hash,
+            folderPath: folderPath,
+            dateAdded: info.metadata.dateAdded,
+            lastOpened: info.metadata.lastOpened,
+            readingPosition: info.state.readingPosition,
+            bookmarks: info.bookmarks,
+            totalWordCount: info.state.totalWordCount,
+            totalCharacterCount: info.state.totalCharacterCount,
+            tmbDirectoryName: url.lastPathComponent,
+            sourceFilePath: info.metadata.sourceFilePath,
+            lastPlaybackStarted: info.state.lastPlaybackStarted,
+            lastPlaybackStopped: info.state.lastPlaybackStopped,
+            localVoiceID: info.state.localVoiceID,
+            localWPM: info.state.localWPM,
+            localPitch: info.state.localPitch,
+            skippedHeadingIDs: info.state.skippedHeadingIDs,
+            localEndOfBookBehavior: info.state.localEndOfBookBehavior,
+            localSkipForwardUnit: info.state.localSkipForwardUnit,
+            localSkipBackwardUnit: info.state.localSkipBackwardUnit,
+            manualSortOrder: info.state.manualSortOrder,
+            audioDuration: info.state.audioDuration,
+            audioAlbum: info.metadata.audioAlbum,
+            audioGenre: info.metadata.audioGenre,
+            audioYear: info.metadata.audioYear,
+            epubPublisher: info.metadata.publisher,
+            epubPublicationDate: info.metadata.publicationDate,
+            epubISBN: info.metadata.isbn,
+            epubLanguage: info.metadata.language,
+            epubIdentifier: info.metadata.epubIdentifier,
+            epubVersion: info.metadata.epubVersion,
+            cacheFormatVersion: info.state.cacheFormatVersion,
+            contentIndexVersion: info.state.contentIndexVersion
+        )
+        return (book, info.metadata.folderPath)
     }
 
     /// Recreates folder rows for the folders on disk and for every folder a
@@ -2094,24 +2217,30 @@ enum FileImportService {
     /// Relative paths of the folder directories under `libraryDirectory`:
     /// directories that are not packages, not inside a package, not hidden,
     /// and no deeper than a folder row can be.
+    ///
+    /// The walk leaves dataless folders in the cloud (FR02): a folder that
+    /// cannot be listed without downloading is still found by its parent's
+    /// listing, and only the folders inside it wait until it is on this Mac.
     private static func folderDirectoryPaths(in libraryDirectory: URL) -> Set<String> {
-        guard let enumerator = FileManager.default.enumerator(atPath: libraryDirectory.path) else {
-            return []
-        }
-        var paths = Set<String>()
-        while let relativePath = enumerator.nextObject() as? String {
-            // Attributes come from lstat, so a symbolic link is never followed.
-            guard (enumerator.fileAttributes?[.type] as? FileAttributeType) == .typeDirectory else {
-                continue
+        DatalessFiles.withoutDownloading {
+            guard let enumerator = FileManager.default.enumerator(atPath: libraryDirectory.path) else {
+                return []
             }
-            let name = (relativePath as NSString).lastPathComponent
-            let depth = relativePath.components(separatedBy: "/").count
-            if name.hasPrefix(".") || name.lowercased().hasSuffix(".tmb") || depth > BookFolder.maxDepth {
-                enumerator.skipDescendants()
-                continue
+            var paths = Set<String>()
+            while let relativePath = enumerator.nextObject() as? String {
+                // Attributes come from lstat, so a symbolic link is never followed.
+                guard (enumerator.fileAttributes?[.type] as? FileAttributeType) == .typeDirectory else {
+                    continue
+                }
+                let name = (relativePath as NSString).lastPathComponent
+                let depth = relativePath.components(separatedBy: "/").count
+                if name.hasPrefix(".") || name.lowercased().hasSuffix(".tmb") || depth > BookFolder.maxDepth {
+                    enumerator.skipDescendants()
+                    continue
+                }
+                paths.insert(relativePath)
             }
-            paths.insert(relativePath)
+            return paths
         }
-        return paths
     }
 }

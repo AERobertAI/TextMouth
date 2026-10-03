@@ -38,10 +38,26 @@ extension LibraryViewModel {
 
     /// Migrate any books still using old storage paths to .tmb packages,
     /// and fix any stale file paths pointing to old locations.
-    /// - Parameter access: How the repair reaches the books' files (FR02):
-    ///   `live` in the app; tests pass one that pretends files are in the
-    ///   cloud.
+    ///
+    /// The data directory may be in a cloud folder (FR02), so every check
+    /// and read of the repair runs with dataless files left in the cloud: one
+    /// that would download a file or a folder's listing fails at once instead
+    /// of waiting on the network, here on the main thread. Nothing is moved,
+    /// rewritten, adopted, separated, or relocated on the strength of a check
+    /// that met a dataless folder or a read that was refused: such a book
+    /// keeps its row as it is, and one `MAINTENANCE_SKIPPED_IN_CLOUD` line
+    /// counts such books.
+    /// - Parameter access: How the repair reaches the books' files: `live`
+    ///   in the app; tests pass one that pretends files are in the cloud.
     func migrateOldBooksIfNeeded(access: MaintenanceFileAccess = .live) {
+        DatalessFiles.withoutDownloading {
+            repairLibrary(access: access)
+        }
+    }
+
+    /// The work of `migrateOldBooksIfNeeded(access:)`, run with dataless
+    /// files left in the cloud.
+    private func repairLibrary(access: MaintenanceFileAccess) {
         // Every repair below reconciles the index with the disk and then saves
         // the index. While the index cannot be read there is nothing to
         // reconcile, and saving would replace the evidence the user may still
@@ -51,77 +67,41 @@ extension LibraryViewModel {
             return
         }
 
+        let skips = CloudSkips(.startupRepair)
+        defer { skips.log() }
         var needsSave = false
 
         // A book taken out with Remove from Library Only stays out, even when
         // this index was saved before the removal. It goes first, so no
         // repair below touches its package.
-        if !RemovedFromLibraryMarker.removeRetiredBooks(from: &library).isEmpty { needsSave = true }
+        if !removeRetiredBooks(access: access, skips: skips).isEmpty { needsSave = true }
 
         // Merge folder rows that name one directory on this volume before the
         // repairs below reason about where each book's package lives.
         if repairEquivalentFolderDuplicates() { needsSave = true }
 
-        // Fix stale file paths — if the file doesn't exist at the stored path,
-        // search for the .tmb in the expected folder, then fall back to the root
-        // Library directory (fixes a bug where folder moves updated the path
-        // without physically moving the .tmb directory).
-        for i in library.books.indices {
-            let book = library.books[i]
-            if !book.tmbDirectoryName.isEmpty &&
-               !FileManager.default.fileExists(atPath: book.filePath) {
-                let fileName = URL(fileURLWithPath: book.filePath).lastPathComponent
-
-                // First try the expected folder location
-                let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
-                let correctPath = tmbDir.appendingPathComponent(fileName).path
-                if FileManager.default.fileExists(atPath: correctPath) {
-                    library.books[i].filePath = correctPath
-                    needsSave = true
-                    continue
-                }
-
-                // Fall back: check root Library directory (the .tmb may never
-                // have been physically moved when the book was assigned to a folder)
-                let rootTmbDir = TextMouthPaths.tmbPath(folderPath: "", tmbName: book.tmbDirectoryName)
-                let rootPath = rootTmbDir.appendingPathComponent(fileName).path
-                if FileManager.default.fileExists(atPath: rootPath) {
-                    // Move the .tmb to the correct folder location
-                    do {
-                        if !book.folderPath.isEmpty {
-                            try? TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
-                        }
-                        try FileManager.default.moveItem(at: rootTmbDir, to: tmbDir)
-                        library.books[i].filePath = correctPath
-                    } catch {
-                        // Move failed — just update the path to where the file actually is
-                        library.books[i].filePath = rootPath
-                    }
-                    needsSave = true
-                }
-            }
-        }
+        if repairStaleFilePaths(access: access, skips: skips) { needsSave = true }
 
         // Move books that have no .tmb package yet into packages. Each copy
         // is verified before its original is removed; a book that cannot
         // move keeps its record and original, and the pass logs why.
-        let migration = FileImportService.migrateLegacyBooks(in: &library)
+        let migration = migrateLegacyBooks(access: access, skips: skips)
         if migration.migratedCount > 0 { needsSave = true }
 
         // Repair legacy package-name collisions before background parsing can
         // write two different books' caches and indexes into the same directory.
-        let separated = FileImportService.separateSharedTMBPackages(library: &library, access: access)
+        let separated = FileImportService.separateSharedTMBPackages(library: &library, access: access, skips: skips)
         if separated > 0 { needsSave = true }
 
         // Move .tmb packages that are at the root but should be in a subfolder.
         // This fixes books whose folder was assigned in the UI without physically
         // moving the directory (a bug fixed in d6c6b2c but existing books need repair).
-        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library)
+        let relocated = FileImportService.relocateMisplacedTMBPackages(library: &library, access: access, skips: skips)
         if relocated > 0 { needsSave = true }
 
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
         // This recovers books left behind by interrupted imports or crashes.
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
         if adopted > 0 { needsSave = true }
 
         if needsSave {
@@ -130,6 +110,115 @@ extension LibraryViewModel {
 
         // Once, after the whole repair, so one alert covers every book.
         showLegacyMigrationIssues(migration)
+    }
+
+    /// Takes the books Remove from Library Only retired out of the library,
+    /// as `RemovedFromLibraryMarker.removeRetiredBooks(from:)` does, and
+    /// returns them. A book whose removal marker is in the cloud keeps its
+    /// row (FR02): the marker cannot be read without downloading it, and a
+    /// marker that cannot be read counts as retiring its book. The book is
+    /// counted in `skips`, and taken out once its marker is on this Mac.
+    private func removeRetiredBooks(access: MaintenanceFileAccess, skips: CloudSkips) -> [Book] {
+        let held = library.books.filter { book in
+            !book.tmbDirectoryName.isEmpty
+                && access.isInCloud(TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory))
+        }
+        guard !held.isEmpty else {
+            return RemovedFromLibraryMarker.removeRetiredBooks(from: &library)
+        }
+        held.forEach(skips.record)
+        let heldIDs = Set(held.map(\.id))
+        var checkable = library
+        checkable.books.removeAll { heldIDs.contains($0.id) }
+        let retired = RemovedFromLibraryMarker.removeRetiredBooks(from: &checkable)
+        let retiredIDs = Set(retired.map(\.id))
+        library.books.removeAll { retiredIDs.contains($0.id) }
+        return retired
+    }
+
+    /// Fixes stale file paths: when a book's file is not at its recorded
+    /// path, the package is looked for in the book's folder, then at the top
+    /// of the library, where a folder assignment may have left it without
+    /// moving it (a bug fixed in d6c6b2c), and is moved into its folder.
+    /// Returns whether any row changed.
+    ///
+    /// Only a file found missing counts as missing (FR02). A check that met
+    /// a dataless folder, or a package that is itself in the cloud, decides
+    /// nothing: the book keeps its row as it is, and is counted in `skips`.
+    private func repairStaleFilePaths(access: MaintenanceFileAccess, skips: CloudSkips) -> Bool {
+        var changed = false
+        for i in library.books.indices {
+            let book = library.books[i]
+            guard !book.tmbDirectoryName.isEmpty else { continue }
+            /// What is at `url`, with the book counted in `skips` when the
+            /// answer is in the cloud.
+            func presence(of url: URL) -> ItemPresence {
+                let found = access.presence(of: url)
+                if found == .inCloud {
+                    skips.record(book)
+                }
+                return found
+            }
+            guard presence(of: book.bookFileURL) == .absent else { continue }
+            let fileName = book.bookFileURL.lastPathComponent
+
+            // First try the expected folder location
+            let tmbDir = TextMouthPaths.tmbPath(folderPath: book.folderPath, tmbName: book.tmbDirectoryName)
+            let correctPath = tmbDir.appendingPathComponent(fileName)
+            switch presence(of: correctPath) {
+            case .present:
+                library.books[i].filePath = correctPath.path
+                changed = true
+                continue
+            case .inCloud:
+                continue
+            case .absent:
+                break
+            }
+
+            // Fall back: check root Library directory (the .tmb may never
+            // have been physically moved when the book was assigned to a folder)
+            let rootTmbDir = TextMouthPaths.tmbPath(folderPath: "", tmbName: book.tmbDirectoryName)
+            let rootPath = rootTmbDir.appendingPathComponent(fileName)
+            guard presence(of: rootPath) == .present else { continue }
+            // A package that is itself in the cloud is not moved on the
+            // strength of what this Mac knows of it.
+            guard !access.isDataless(rootTmbDir) else {
+                skips.record(book)
+                continue
+            }
+            // Move the .tmb to the correct folder location
+            do {
+                if !book.folderPath.isEmpty {
+                    try? TextMouthPaths.ensureLibrarySubfolder(book.folderPath)
+                }
+                try FileManager.default.moveItem(at: rootTmbDir, to: tmbDir)
+                library.books[i].filePath = correctPath.path
+            } catch {
+                // Move failed — just update the path to where the file actually is
+                library.books[i].filePath = rootPath.path
+            }
+            changed = true
+        }
+        return changed
+    }
+
+    /// Moves the books recorded without a package into packages
+    /// (`FileImportService.migrateLegacyBooks(in:)`) and returns its report,
+    /// unless an original is in the cloud (FR02): copying it would download
+    /// it. The migration decides whether an original may be removed by every
+    /// record that reads it, so then none of the books moves this time; the
+    /// ones in the cloud are counted in `skips`, and all of them move at a
+    /// launch that finds their originals on this Mac.
+    private func migrateLegacyBooks(access: MaintenanceFileAccess, skips: CloudSkips) -> LegacyMigrationReport {
+        let inCloud = library.books.filter { book in
+            book.tmbDirectoryName.isEmpty && access.fileInCloud(of: book, reading: .content) != nil
+        }
+        guard inCloud.isEmpty else {
+            inCloud.forEach(skips.record)
+            return LegacyMigrationReport()
+        }
+        return FileImportService.migrateLegacyBooks(in: &library)
     }
 
     /// Tells the user, through the library's error alert, which legacy books
