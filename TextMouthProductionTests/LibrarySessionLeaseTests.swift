@@ -179,9 +179,10 @@ final class LibrarySessionLeaseTests: XCTestCase {
 
 /// A lease over a data directory of the test's own: a clock the test sets,
 /// its own preferences, a computer named "Chart Room" running version 9.9,
-/// and a warning that records what it was shown and answers as told.
+/// and a warning that records what it was shown and answers as told. The
+/// multi-Mac tests (MultiMacCrashSafetyTests) use it too.
 @MainActor
-private final class LeaseHarness {
+final class LeaseHarness {
     /// The data directory.
     let root: URL
     /// The time the lease reads.
