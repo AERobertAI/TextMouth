@@ -378,4 +378,13 @@ enum DataDirectoryMoveWording {
             return nil
         }
     }
+
+    /// What an import question's sheet says, and VoiceOver speaks, when it
+    /// is answered while the library moves. An answer can add, replace, or
+    /// discard a book, move books into a new folder, or open a book, and the
+    /// library and its files must not change while they are copied, so no
+    /// answer is taken until the move ends, however it ends. The question
+    /// stays, to be answered then.
+    static let importAnswerRefusal =
+        "Import questions can't be answered while the library is moving. Answer this one when the move ends."
 }
