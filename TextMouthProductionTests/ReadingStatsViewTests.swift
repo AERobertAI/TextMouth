@@ -1,10 +1,22 @@
+import Combine
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
 /// The Stats settings pane (TODO C07) words each figure once, for the
 /// screen and for VoiceOver alike, plural included, and reads every figure
 /// at one instant, with the open session's uncredited time in each
-/// listening time.
+/// listening time. While a book plays it stays live without disturbing
+/// VoiceOver: each refresh tick reads the figures again and changes only
+/// the tiles' words, never which views show them, and announces nothing.
+///
+/// The hosted tests render the pane offscreen in a window that is never
+/// shown, with a clock the test sets by hand and ticks the test sends.
+/// SwiftUI builds the accessibility elements of the pane's text only for
+/// a connected assistive app, which these runs never have, so the tests
+/// watch the pane through its clock instead: the pane reads the clock
+/// once each time it reads its figures, so the clock's readings show when
+/// the pane refreshed and for which instant.
 ///
 /// Each test that needs statistics drives its own service over a disposable
 /// statistics file under the isolated test data root, and explicit times
@@ -167,7 +179,175 @@ final class ReadingStatsViewTests: XCTestCase {
         XCTAssertEqual(service.stats.totalListeningSeconds, saved, "Nothing was credited between the readings")
     }
 
+    // MARK: - Refreshing the rendered pane
+
+    /// While a book plays, a refresh tick makes the pane read every figure
+    /// again at the new time, though the saved statistics have not
+    /// changed: Today, This Week, and All Time each advance by the half
+    /// minute since the last reading, so their words change, and nothing
+    /// else does. The tick announces nothing. Until C07 a tick refreshed
+    /// nothing.
+    @MainActor
+    func testRefreshTickRereadsTheFiguresWhileABookPlays() throws {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+        service.checkpointActiveSession(at: noon + interval)
+        let saved = service.stats.totalListeningSeconds
+        let clock = ManualClock(now: noon + interval + 10)
+        let ticks = PassthroughSubject<Void, Never>()
+
+        try withHostedPane(service: service, clock: clock, ticks: ticks) { hostingView in
+            XCTAssertEqual(Set(clock.readings), [noon + interval + 10], "Every reading so far is at the first time")
+            let shown = ReadingStatsFigures(service: service, at: noon + interval + 10)
+            let readingsBeforeTick = clock.readings.count
+
+            clock.now = noon + interval + 40
+            let recorder = recordingAnnouncements {
+                ticks.send()
+                XCTAssertTrue(
+                    waitForReading(after: readingsBeforeTick, in: hostingView, clock: clock),
+                    "The tick refreshed the pane"
+                )
+            }
+
+            XCTAssertEqual(clock.readings.last, noon + interval + 40)
+            let refreshed = ReadingStatsFigures(service: service, at: noon + interval + 40)
+            XCTAssertEqual(refreshed.today, shown.today + 30)
+            XCTAssertEqual(refreshed.thisWeek, shown.thisWeek + 30)
+            XCTAssertEqual(refreshed.allTime, shown.allTime + 30)
+            for tile in ReadingStatsTile.listeningTime {
+                XCTAssertNotEqual(tile.wording(for: refreshed), tile.wording(for: shown), tile.title)
+            }
+            for tile in ReadingStatsTile.progress {
+                XCTAssertEqual(tile.wording(for: refreshed), tile.wording(for: shown), tile.title)
+            }
+            XCTAssertEqual(service.stats.totalListeningSeconds, saved, "The saved statistics did not change")
+            XCTAssertEqual(recorder.announcements, [], "A tick announces nothing")
+        }
+    }
+
+    /// A checkpoint, which changes the saved statistics, refreshes the pane
+    /// at once, without waiting for a tick.
+    @MainActor
+    func testCheckpointRefreshesThePaneWithoutATick() throws {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+        let clock = ManualClock(now: noon + 30)
+
+        try withHostedPane(service: service, clock: clock, ticks: PassthroughSubject()) { hostingView in
+            let readingsBeforeCheckpoint = clock.readings.count
+
+            clock.now = noon + interval
+            service.checkpointActiveSession(at: noon + interval)
+
+            XCTAssertTrue(
+                waitForReading(after: readingsBeforeCheckpoint, in: hostingView, clock: clock),
+                "The checkpoint refreshed the pane"
+            )
+            XCTAssertEqual(clock.readings.last, noon + interval)
+        }
+    }
+
+    /// Between ticks and changes to the statistics the pane reads nothing:
+    /// it refreshes on those, not continuously.
+    @MainActor
+    func testPaneReadsNothingBetweenRefreshes() throws {
+        let service = makeService()
+        service.startSession(bookID: UUID(), at: noon)
+        let clock = ManualClock(now: noon + 30)
+
+        try withHostedPane(service: service, clock: clock, ticks: PassthroughSubject()) { hostingView in
+            let readings = clock.readings.count
+            // Time passing is not something the pane watches.
+            clock.now = noon + 45
+
+            _ = waitUntil(timeout: 0.5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return false
+            }
+
+            XCTAssertEqual(clock.readings.count, readings)
+        }
+    }
+
+    /// A refresh never replaces a tile, which would move VoiceOver's cursor
+    /// off it: the pane identifies each tile's row by the tile, never by
+    /// its figure, and neither the pane nor a row gives any view an
+    /// explicit identity (`.id`) that a refresh could change. A view's type
+    /// records both, and a refresh cannot change a type.
+    @MainActor
+    func testTileRowsKeepTheirIdentityAcrossRefreshes() {
+        // An explicit identity shows in a view's type, so not finding one
+        // below means something.
+        XCTAssertTrue(String(reflecting: type(of: Text("Probe").id(0))).contains("IDView"))
+
+        let pane = String(reflecting: ReadingStatsView.Body.self)
+        let row = String(reflecting: ReadingStatsTileRow.Body.self)
+
+        XCTAssertTrue(
+            pane.contains(
+                "ForEach<Swift.Array<TextMouth.ReadingStatsTile>, TextMouth.ReadingStatsTile, TextMouth.ReadingStatsTileRow>"
+            ),
+            pane
+        )
+        XCTAssertFalse(pane.contains("IDView"), pane)
+        XCTAssertFalse(row.contains("IDView"), row)
+    }
+
     // MARK: - Helpers
+
+    /// Renders the Stats pane for `service` offscreen, reading `clock` and
+    /// refreshing on `ticks`, and passes the hosting view to `body` once
+    /// the pane has drawn and stopped reading the clock, so every later
+    /// reading comes from what the test does.
+    @MainActor
+    private func withHostedPane(
+        service: ReadingStatsService,
+        clock: ManualClock,
+        ticks: PassthroughSubject<Void, Never>,
+        _ body: (NSView) throws -> Void
+    ) throws {
+        let pane = ReadingStatsView(
+            statsService: service,
+            clock: { clock.read() },
+            refreshTicks: ticks.eraseToAnyPublisher()
+        )
+        try withHostedView(pane, until: { _ in !clock.readings.isEmpty }) { hostingView in
+            XCTAssertFalse(clock.readings.isEmpty, "The pane never read its figures")
+            waitUntilQuiet(hostingView, clock: clock)
+            try body(hostingView)
+        }
+    }
+
+    /// Lays out `hostingView` until the pane has gone a tenth of a second
+    /// without reading `clock`, so a refresh left over from the first
+    /// render cannot pass for one a test caused.
+    @MainActor
+    private func waitUntilQuiet(_ hostingView: NSView, clock: ManualClock) {
+        var lastCount = clock.readings.count
+        var quietChecks = 0
+        _ = waitUntil(timeout: 2) {
+            hostingView.layoutSubtreeIfNeeded()
+            if clock.readings.count == lastCount {
+                quietChecks += 1
+            } else {
+                lastCount = clock.readings.count
+                quietChecks = 0
+            }
+            return quietChecks >= 5
+        }
+    }
+
+    /// Lays out `hostingView` until the pane reads `clock` again after its
+    /// first `count` readings. Returns whether it did within five seconds,
+    /// which leaves room for a machine busy with other builds.
+    @MainActor
+    private func waitForReading(after count: Int, in hostingView: NSView, clock: ManualClock) -> Bool {
+        waitUntil(timeout: 5) {
+            hostingView.layoutSubtreeIfNeeded()
+            return clock.readings.count > count
+        }
+    }
 
     /// A service over this test's file. Its checkpoint timer is a day apart
     /// so it never fires during a test: it would checkpoint at the real
@@ -206,5 +386,24 @@ final class ReadingStatsViewTests: XCTestCase {
             booksFinishedThisYear: booksFinishedThisYear,
             booksFinishedAllTime: booksFinishedAllTime
         )
+    }
+}
+
+/// A clock a test sets by hand, which records each reading the pane takes.
+@MainActor
+private final class ManualClock {
+    /// The time the clock gives now.
+    var now: Date
+    /// The times the clock has given, oldest first.
+    private(set) var readings: [Date] = []
+
+    init(now: Date) {
+        self.now = now
+    }
+
+    /// Gives the time now, and records the reading.
+    func read() -> Date {
+        readings.append(now)
+        return now
     }
 }
