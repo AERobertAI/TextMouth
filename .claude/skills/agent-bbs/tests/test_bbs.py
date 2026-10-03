@@ -811,6 +811,71 @@ class HousekeepingTests(BoardTestCase):
         self.assertEqual(self.ok_json("post", "alpha", "--topic", "again")["id"], 2, "ids are never reused")
 
 
+class BuildSlotWrapperTests(BoardTestCase):
+    """scripts/build-slot-with-bbs.sh, run against a scratch slot directory."""
+
+    WRAPPER = SCRIPTS_DIR / "build-slot-with-bbs.sh"
+
+    def setUp(self) -> None:
+        """Give the wrapper its own slot directory, never the real one."""
+        super().setUp()
+        self.slot_root = self.make_temp_dir() / "slots"
+
+    def run_wrapper(self, *command: str, agent: str = "") -> subprocess.CompletedProcess:
+        """Run the wrapper around ``command``, as ``agent`` if one is named."""
+        env = dict(os.environ, BUILD_SLOT_ROOT=str(self.slot_root))
+        env.pop("BBS_AGENT", None)
+        if agent:
+            env["BBS_AGENT"] = agent
+        return subprocess.run(
+            ["bash", str(self.WRAPPER), *command], env=env, capture_output=True, text=True, timeout=120
+        )
+
+    def test_without_an_agent_it_only_holds_a_slot(self) -> None:
+        result = self.run_wrapper("sh", "-c", 'ls "$BUILD_SLOT_ROOT"; echo built; exit 3')
+        self.assertEqual(result.returncode, 3, "the command's exit status passes through")
+        self.assertEqual(result.stdout, "slot1\nbuilt\n", "the slot is held while the command runs")
+        self.assertIn("[build-slot] acquired slot1 at", result.stderr)
+        self.assertNotIn("board", result.stderr)
+        self.assertEqual(list(self.slot_root.iterdir()), [], "the slot is released afterwards")
+        self.assertFalse(self.board_dir.exists(), "no board hooks run without BBS_AGENT")
+
+    def test_with_an_agent_it_shows_unread_messages_and_reports_building(self) -> None:
+        self.register("alpha")
+        self.register("beta")
+        self.ok("post", "beta", "--to", "alpha", "--topic", "Hold off", "--body", "Merging main now.")
+        probe = f'"{sys.executable}" "{SCRIPT}" agents --json'
+        result = self.run_wrapper("sh", "-c", probe, agent="alpha")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        during = {agent["name"]: agent for agent in json.loads(result.stdout)}["alpha"]
+        self.assertEqual(during["activity"], "building")
+        self.assertTrue(during["activity_note"].startswith(f'sh -c "{sys.executable}"'), during["activity_note"])
+        self.assertLessEqual(len(during["activity_note"]), 180, "a long command is cut to fit the note")
+        self.assertIn("unread board messages for alpha", result.stderr)
+        self.assertIn("#1 notice from beta to alpha", result.stderr)
+        self.assertLess(result.stderr.index("Hold off"), result.stderr.index("acquired"))
+        after = {agent["name"]: agent for agent in self.ok_json("agents")}["alpha"]
+        self.assertEqual((after["activity"], after["activity_note"]), ("idle", ""))
+        self.assertEqual([m["id"] for m in self.ok_json("inbox", "alpha", "--unread")], [1], "messages stay unread")
+
+    def test_a_board_problem_never_stops_the_build(self) -> None:
+        result = self.run_wrapper("sh", "-c", "echo built", agent="ghost")
+        self.assertEqual((result.returncode, result.stdout), (0, "built\n"))
+        self.assertEqual(result.stderr.count("unknown agent 'ghost'"), 1, "the board error is shown once")
+        self.assertEqual(list(self.slot_root.iterdir()), [])
+
+    @unittest.skipUnless(sys.platform == "darwin", "the slot lock reads ages with BSD stat")
+    def test_a_live_owners_slot_is_skipped_and_a_dead_owners_is_reclaimed(self) -> None:
+        live, dead = self.slot_root / "slot1", self.slot_root / "slot2"
+        for slot, owner in ((live, os.getpid()), (dead, 999999)):
+            slot.mkdir(parents=True)
+            (slot / "pid").write_text(f"{owner}\n")
+        result = self.run_wrapper("true")
+        self.assertIn("acquired slot3", result.stderr)
+        self.assertTrue(live.exists(), "a slot whose owner is alive stays held")
+        self.assertFalse(dead.exists(), "a slot whose owner died is reclaimed")
+
+
 class ConcurrencyTests(BoardTestCase):
     """Several processes using the board at the same moment."""
 
