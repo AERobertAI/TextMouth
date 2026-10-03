@@ -742,6 +742,39 @@ final class LibraryWindowRouterTests: XCTestCase {
         )
     }
 
+    /// The running app's File menu offers no way to open a reader without a
+    /// book: New Window (Command-N) opens a Library window, and nothing opens
+    /// the Book Reader scene. Open Book... and New from Text... stay enabled,
+    /// since the router takes them whichever window is key, opening a
+    /// Library window when none is open. The items are only read, never
+    /// chosen. Skipped when this run's menu bar has no File menu.
+    func testFileMenuOffersNoReaderWithoutABook() throws {
+        guard let fileMenu = NSApp.mainMenu?.items.first(where: { $0.title == "File" })?.submenu else {
+            throw XCTSkip("This run's menu bar has no File menu")
+        }
+        let items = Self.allItems(of: fileMenu)
+        let titles = items.map(\.title)
+
+        XCTAssertFalse(titles.contains("New Book Reader Window"), "The File menu holds \(titles)")
+        let newWindow = try XCTUnwrap(
+            items.first { $0.keyEquivalent == "n" && $0.keyEquivalentModifierMask == [.command] },
+            "The File menu holds \(titles)"
+        )
+        XCTAssertEqual(newWindow.title, "New Window")
+        for title in ["Open Book...", "New from Text..."] {
+            let item = try XCTUnwrap(items.first { $0.title == title }, "The File menu holds \(titles)")
+            XCTAssertTrue(item.isEnabled, title)
+        }
+    }
+
+    /// Every item of `menu` and of the menus inside it, each menu brought up
+    /// to date first, as it is before it opens.
+    private static func allItems(of menu: NSMenu?) -> [NSMenuItem] {
+        guard let menu else { return [] }
+        menu.delegate?.menuNeedsUpdate?(menu)
+        return menu.items.flatMap { [$0] + allItems(of: $0.submenu) }
+    }
+
     /// The app's Library windows on screen or minimized.
     private static func shownLibraryWindows() -> [NSWindow] {
         NSApp.windows.filter { window in

@@ -54,6 +54,11 @@ struct TextMouthApp: App {
                 .environmentObject(soundEffectService)
             }
         }
+        // Without this, SwiftUI adds File > New > New Book Reader Window,
+        // which opens a reader with no book: an empty window whose Playback
+        // and Navigate menus can do nothing (TODO A05). A reader opens only
+        // for a book, from the Library or through the router.
+        .commandsRemoved()
 
         Settings {
             SettingsView()
