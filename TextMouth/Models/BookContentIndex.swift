@@ -33,6 +33,14 @@ struct BookContentIndex: Codable, Hashable {
     var totalAudioDuration: TimeInterval?
     var audioLayout: AudioLayout?
     var chapters: [BookContentChapterIndex]
+    /// The fingerprints of the source and content.md a text book's index was
+    /// made from, once a cache write or a verified load has recorded them;
+    /// nil for audio and for an index made before fingerprints (TODO T07).
+    /// The index carries them so every path that saves an analysis saves
+    /// them too (`Book.applyContentAnalysis(_:cacheFormatVersion:)`). They
+    /// describe the files, not the counts, so adding them leaves
+    /// `currentVersion` as it is.
+    var textCacheFingerprint: TextCacheFingerprint? = nil
 
     var isCurrent: Bool { version == Self.currentVersion }
 

@@ -29,7 +29,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     // MARK: - The Fields an Analysis Owns
 
-    /// Setting a book's analysis fields changes exactly the five fields an
+    /// Setting a book's analysis fields changes exactly the six fields an
     /// analysis owns. Every other field (reading state, bookmarks, settings,
     /// metadata, and where the package is) keeps its value, so neither a
     /// package record nor a library row can lose user state to an analysis.
@@ -76,6 +76,52 @@ final class ContentAnalysisMergeTests: XCTestCase {
         var summarized = Self.bookWithEveryFieldSet(seed: 3)
         summarized.applyContentIndexSummary(index)
         XCTAssertEqual(summarized.contentAnalysisFields, silent.contentAnalysisFields)
+    }
+
+    /// The text cache fingerprints come from the analysis's index, which
+    /// carries those of the files it was made from. An index without any
+    /// leaves the book without any, even when the book had some: they
+    /// described the files of another index.
+    func testAnalysisFingerprintsTravelWithTheirIndex() {
+        var index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "One", text: "one two three")],
+            format: .txt
+        )
+
+        var unfingerprinted = Self.bookWithEveryFieldSet(seed: 4)
+        unfingerprinted.applyContentAnalysis(index, cacheFormatVersion: "9.9.9")
+        XCTAssertNil(unfingerprinted.textCacheFingerprint)
+
+        index.textCacheFingerprint = Self.fingerprint(seed: 5)
+        var fingerprinted = Self.bookWithEveryFieldSet(seed: 4)
+        fingerprinted.applyContentAnalysis(index, cacheFormatVersion: nil)
+        XCTAssertEqual(fingerprinted.textCacheFingerprint, Self.fingerprint(seed: 5))
+        XCTAssertEqual(fingerprinted.makeBookInfo().state.textCacheFingerprint, Self.fingerprint(seed: 5))
+    }
+
+    /// A fingerprint that cannot be read, in a package record or in a
+    /// library row, counts as none instead of failing the record or the
+    /// whole library: every other field still loads. A valid one loads
+    /// unchanged.
+    func testUnreadableFingerprintsDecodeAsNone() throws {
+        for value in [#""garbage""#, "17", #"{"source": 3}"#] {
+            let state = try Self.decodeState(#""manualSortOrder": 4, "textCacheFingerprint": \#(value)"#)
+            XCTAssertNil(state.textCacheFingerprint, value)
+            XCTAssertEqual(state.manualSortOrder, 4, value)
+        }
+
+        let book = Self.bookWithEveryFieldSet(seed: 6)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var row = try XCTUnwrap(JSONSerialization.jsonObject(with: encoder.encode(book)) as? [String: Any])
+        XCTAssertEqual(try decoder.decode(Book.self, from: encoder.encode(book)).textCacheFingerprint, book.textCacheFingerprint)
+
+        row["textCacheFingerprint"] = "garbage"
+        let damaged = try decoder.decode(Book.self, from: JSONSerialization.data(withJSONObject: row))
+        XCTAssertNil(damaged.textCacheFingerprint)
+        XCTAssertEqual(damaged.title, book.title)
     }
 
     // MARK: - Merging Into the Latest State
@@ -749,13 +795,30 @@ final class ContentAnalysisMergeTests: XCTestCase {
             epubIdentifier: "identifier-\(seed)",
             epubVersion: "version-\(seed)",
             cacheFormatVersion: "cache-\(seed)",
-            contentIndexVersion: "index-\(seed)"
+            contentIndexVersion: "index-\(seed)",
+            textCacheFingerprint: fingerprint(seed: seed)
+        )
+    }
+
+    /// A text cache fingerprint whose every value derives from `seed`, so
+    /// fingerprints made from two different seeds differ throughout.
+    private static func fingerprint(seed: Int) -> TextCacheFingerprint {
+        TextCacheFingerprint(
+            source: FileFingerprint(
+                stamp: FileStamp(byteCount: Int64(seed) * 1_000, modificationTimeNanoseconds: Int64(seed) * 1_000_000_007),
+                digest: "source-\(seed)"
+            ),
+            cache: FileFingerprint(
+                stamp: FileStamp(byteCount: Int64(seed) * 2_000, modificationTimeNanoseconds: Int64(seed) * 2_000_000_011),
+                digest: "cache-\(seed)"
+            )
         )
     }
 
     /// The names of the `Book` properties an analysis owns.
     private static let analysisFieldNames: Set<String> = [
-        "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion"
+        "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion",
+        "textCacheFingerprint"
     ]
 
     /// Blocks the main thread, without running its queue, until `book`'s
