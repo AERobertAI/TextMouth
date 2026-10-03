@@ -7,7 +7,11 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "TextMouthTests",
-            path: "ProductionTestRunner"
+            path: "ProductionTestRunner",
+            // Complete concurrency checking, as every target of the Xcode
+            // project has (project.yml): this is the flag Xcode passes for
+            // SWIFT_STRICT_CONCURRENCY = complete in the Swift 5 mode.
+            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
     ]
 )
