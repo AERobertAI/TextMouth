@@ -279,6 +279,37 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - Saving Around a Move
+
+    /// A position saved just before the library moves the book waits half a
+    /// second to be written, and the move overtakes it. The move writes the
+    /// book's record, that position included, in the package where the book
+    /// now is, and the waiting write, aimed at the old package, is dropped
+    /// rather than bringing that package back.
+    func testAPositionSavedJustBeforeAMoveNeverRecreatesTheOldPackage() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Queued Save")
+        let book = try world.importBook(from: writeTideTablesEPUB())
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        LibraryPersistenceService.flushPendingSave()
+        let oldPackage = book.tmbDirectory
+
+        // Navigating saves the position, written half a second later.
+        reader.navigateTo(chapterIndex: 2, characterOffset: 3)
+        let move = world.library.moveBooksReturningOutcome([book], toFolder: "\(world.folder.path)/Shelf")
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: oldPackage.path),
+            "The waiting write brought the old package back"
+        )
+        let record = try BookInfo.load(from: try row(of: book, in: world.library).tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.chapterIndex, 2)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 3)
+    }
+
     // MARK: - Playback Around Package Moves
 
     /// An audiobook plays when the library moves it to another folder. While
