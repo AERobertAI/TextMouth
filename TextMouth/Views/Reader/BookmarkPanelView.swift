@@ -41,6 +41,12 @@ struct BookmarkPanelView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var mode: BookmarkPanelMode = .list
     @State private var noteText = ""
+    /// The list's rows, in list order, each naming the heading that locates
+    /// its bookmark. Rebuilt only when the bookmarks or the headings change,
+    /// so the many other updates that redraw the panel (a keystroke in the
+    /// note field, the reading position moving during playback) neither
+    /// re-sort the bookmarks nor look up their headings again.
+    @State private var rows: [BookmarkRow] = []
     @FocusState private var focusedBookmarkID: UUID?
     @FocusState private var noteFieldFocused: Bool
 
@@ -58,10 +64,17 @@ struct BookmarkPanelView: View {
         .frame(width: 380, height: 400)
         .navigationTitle(viewModel.book.title)
         .onAppear {
+            rebuildRows()
             guard let firstBookmark = sortedBookmarks.first else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 focusedBookmarkID = firstBookmark.id
             }
+        }
+        .onChange(of: viewModel.bookmarks) { _, _ in
+            rebuildRows()
+        }
+        .onChange(of: viewModel.headings) { _, _ in
+            rebuildRows()
         }
     }
 
@@ -106,9 +119,16 @@ struct BookmarkPanelView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(sortedBookmarks.enumerated()), id: \.element.id) { index, bookmark in
-                            let row = bookmarkRow(for: bookmark)
+                    // Keep every row alive while the panel is open, as the
+                    // headings panel does. LazyVStack recycles rows out of
+                    // view, which can invalidate VoiceOver's current element
+                    // and leaves those rows unable to take focus.
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Identified by bookmark, so a row keeps its identity,
+                        // and with it focus, when the list changes around it.
+                        ForEach(rows, id: \.bookmark.id) { row in
+                            let bookmark = row.bookmark
+                            let isFirst = bookmark.id == rows.first?.bookmark.id
 
                             Button {
                                 viewModel.navigateToBookmark(bookmark)
@@ -121,12 +141,12 @@ struct BookmarkPanelView: View {
                                     .contentShape(Rectangle())
                             }
                                 .buttonStyle(.plain)
-                                .focusable(index == 0)
-                                .focused($focusedBookmarkID, equals: index == 0 ? bookmark.id : nil)
+                                .focusable(isFirst)
+                                .focused($focusedBookmarkID, equals: isFirst ? bookmark.id : nil)
                                 .accessibilityLabel(row.bookmarkAccessibilityLabel)
                                 .accessibilityHint(row.accessibilityHintText)
                                 .modifier(InitialVoiceOverFocusModifier(
-                                    isTarget: index == 0,
+                                    isTarget: isFirst,
                                     delay: 1.2
                                 ))
                                 .contextMenu {
@@ -148,11 +168,8 @@ struct BookmarkPanelView: View {
                 }
                 .accessibilityRotor("Bookmarks") {
                     // Rotor entries speak exactly what the rows say.
-                    ForEach(sortedBookmarks) { bookmark in
-                        AccessibilityRotorEntry(
-                            bookmarkRow(for: bookmark).bookmarkAccessibilityLabel,
-                            id: bookmark.id
-                        )
+                    ForEach(rows, id: \.bookmark.id) { row in
+                        AccessibilityRotorEntry(row.bookmarkAccessibilityLabel, id: row.bookmark.id)
                     }
                 }
             }
@@ -240,6 +257,11 @@ extension BookmarkPanelView {
     /// list and the Bookmarks rotor build rows here so they always agree.
     func bookmarkRow(for bookmark: Bookmark) -> BookmarkRow {
         BookmarkRow(bookmark: bookmark, headingText: viewModel.headingText(forBookmark: bookmark))
+    }
+
+    /// Rebuild the list's rows from the reader's bookmarks, in list order.
+    private func rebuildRows() {
+        rows = Self.listOrder(of: viewModel.bookmarks).map(bookmarkRow(for:))
     }
 }
 

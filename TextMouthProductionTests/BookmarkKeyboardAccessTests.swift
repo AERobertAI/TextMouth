@@ -205,6 +205,33 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertNil(BookmarkPanelView.neighbor(of: UUID(), offset: 1, in: listed))
     }
 
+    // MARK: - Rendered panel
+
+    /// Changing one bookmark's note, and any other reader update, redraws
+    /// the list without re-creating its rows. A re-created row would ask for
+    /// VoiceOver focus again and pull VoiceOver back to it, so the request
+    /// made when the panel opened must be the only one, and unchanged.
+    func testRowsKeepTheirIdentityWhenTheReaderUpdates() throws {
+        let bookmarks = makeBookmarks(count: 3)
+        let reader = makeReader(bookmarks: bookmarks)
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            let opening = focusTriggers(in: hostingView).map(ObjectIdentifier.init)
+
+            reader.updateBookmarkLabel(bookmarks[2], label: "Revised")
+            reader.currentChapterIndex = 2
+            // Let SwiftUI apply both updates.
+            _ = waitUntil(timeout: 0.5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return false
+            }
+
+            XCTAssertEqual(reader.bookmarks.map(\.label), ["", "", "Revised"])
+            XCTAssertEqual(focusTriggers(in: hostingView).map(ObjectIdentifier.init), opening)
+        }
+    }
+
     // MARK: - Hosted test windows
 
     /// The panel asks for VoiceOver focus, so the window hosting it in a
@@ -243,6 +270,26 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
             Bookmark(number: 2, chapterIndex: 0, characterOffset: 50),
             Bookmark(number: 3, chapterIndex: 1, characterOffset: 20),
         ]
+    }
+
+    /// Render the bookmarks panel for `reader` offscreen, wait until it has
+    /// opened and asked for VoiceOver focus, and pass the hosting view to
+    /// `body` while the panel is still on its window.
+    private func withRenderedPanel(for reader: ReaderViewModel, _ body: (NSView) throws -> Void) throws {
+        try withHostedView(
+            BookmarkPanelView(viewModel: reader),
+            size: NSSize(width: 380, height: 400),
+            until: { !focusTriggers(in: $0).isEmpty }
+        ) { hostingView in
+            XCTAssertEqual(focusTriggers(in: hostingView).count, 1, "The open panel asks for VoiceOver focus once")
+            try body(hostingView)
+        }
+    }
+
+    /// The panel's requests for VoiceOver focus: the trigger view
+    /// `InitialVoiceOverFocusModifier` places behind the control it targets.
+    private func focusTriggers(in hostingView: NSView) -> [VoiceOverFocusTriggerView] {
+        descendants(of: hostingView, as: VoiceOverFocusTriggerView.self)
     }
 
     /// A reader for a book holding `bookmarks`, opened at `position`.
