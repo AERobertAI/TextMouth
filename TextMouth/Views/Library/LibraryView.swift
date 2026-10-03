@@ -534,11 +534,13 @@ struct LibraryView: View {
         }
         .trackingRemovalPreferences($removalPreferences)
         // Keeps the books' cloud states refreshed while the window is
-        // visible, and shows Remove Download's refusals (FR02).
+        // visible, shows Remove Download's refusals (FR02), and takes the
+        // Library menu's Keep on This Mac and Stop Keeping on This Mac.
         .modifier(LibraryCloudWindowSupport(
             token: cloudRefreshToken,
             library: libraryViewModel,
-            refusal: $cloudRefusal
+            refusal: $cloudRefusal,
+            performKeepMenuCommand: performKeepMenuCommand
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
@@ -942,6 +944,15 @@ struct LibraryView: View {
         }
     }
 
+    /// Runs Library > Keep on This Mac (`keeping`) or Stop Keeping on This
+    /// Mac, which `notification` carried, for the books selected here, when
+    /// this window takes the command; VoiceOver hears why when nothing
+    /// changes.
+    private func performKeepMenuCommand(_ keeping: Bool, _ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        LibraryCloudCommands.shared.setKeptFromMenu(keeping, for: selectedBooks, in: libraryViewModel, from: hostWindow)
+    }
+
     // MARK: - Finishing Sheets
 
     /// Finishes the operation a sheet started: after a success runs `close`,
@@ -1275,8 +1286,9 @@ private struct ClosedLibraryWindowPlaceholder: View {
 // MARK: - Cloud Library Window Support (FR02)
 
 /// A Library window's part in the cloud library (FR02): while the window is
-/// visible, the shared refresher keeps the books' cloud states current, and
-/// the window shows the refusals of the Remove Download commands run in it.
+/// visible, the shared refresher keeps the books' cloud states current; the
+/// window shows the refusals of the Remove Download commands run in it; and
+/// it hears the Library menu's Keep on This Mac and Stop Keeping on This Mac.
 private struct LibraryCloudWindowSupport: ViewModifier {
     /// The window's token for the refresher.
     let token: UUID
@@ -1284,6 +1296,10 @@ private struct LibraryCloudWindowSupport: ViewModifier {
     let library: LibraryViewModel
     /// The refusal to show, cleared when its alert is dismissed.
     @Binding var refusal: LibraryCloudRefusal?
+    /// Runs Keep on This Mac (true) or Stop Keeping on This Mac (false) from
+    /// the Library menu, with the notification that carried it, which says
+    /// whether this window takes it.
+    let performKeepMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1292,6 +1308,12 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             }
             .onDisappear {
                 LibraryCloudRefresher.shared.libraryWindowDisappeared(token)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .keepOnThisMac)) { notification in
+                performKeepMenuCommand(true, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
+                performKeepMenuCommand(false, notification)
             }
             // Why Remove Download kept a book's download, which VoiceOver
             // has also heard announced.

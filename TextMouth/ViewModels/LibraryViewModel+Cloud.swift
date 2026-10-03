@@ -598,6 +598,46 @@ final class LibraryCloudCommands {
         VoiceOverAnnouncer.announce(LibraryCloudWording.stoppedKeeping(titles: titles), from: window)
     }
 
+    /// Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen in
+    /// the Library menu for `selection`, the books selected in `window`'s
+    /// list, in list order. It runs the command a row of the selection
+    /// offers, on the books that command acts on; when no row would offer
+    /// it, VoiceOver hears why nothing changed: the library isn't in the
+    /// cloud, no book is selected, or every one is already as asked.
+    /// - Returns: The task running the downloads a keep started, which tests
+    ///   await; nil when none started.
+    @discardableResult
+    func setKeptFromMenu(
+        _ keeping: Bool,
+        for selection: [Book],
+        in library: LibraryViewModel,
+        from window: NSWindow?
+    ) -> Task<Void, Never>? {
+        let kind: LibraryCloudCommand.Kind = keeping ? .keepOnThisMac : .stopKeepingOnThisMac
+        let offered = LibraryCloudCommand.commands(
+            for: selection,
+            isSelection: selection.count > 1,
+            states: states,
+            kept: kept.bookIDs
+        )
+        guard let command = offered.first(where: { $0.kind == kind }) else {
+            VoiceOverAnnouncer.announce(
+                LibraryCloudWording.keepMenuRefusal(
+                    keeping: keeping,
+                    selected: selection.map(\.title),
+                    inCloudLibrary: states.showsCloudNotes
+                ),
+                from: window
+            )
+            return nil
+        }
+        guard keeping else {
+            stopKeeping(command.books, from: window)
+            return nil
+        }
+        return keep(command.books, in: library, from: window)
+    }
+
     /// Downloads again each book of `library` kept on this Mac that the
     /// latest refresh recorded as only in the cloud: the sync service
     /// removed its download, while TextMouth ran or before it started. The

@@ -466,6 +466,95 @@ final class KeepOnThisMacTests: XCTestCase {
         }
     }
 
+    // MARK: - The Library Menu
+
+    /// Library > Keep on This Mac keeps the selected books not kept yet,
+    /// and downloads those in the cloud, as a row's command does.
+    func testTheMenuKeepsTheSelectedBooks() async {
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Emma", author: "Jane Austen")]
+        let fixture = CommandFixture(books: books, states: [books[0].id: .inCloud, books[1].id: .downloaded])
+        fixture.kept.keep([books[1].id])
+
+        let said = await announcements {
+            await fixture.commands.setKeptFromMenu(true, for: books, in: fixture.model, from: nil)?.value
+        }
+
+        XCTAssertEqual(fixture.kept.bookIDs, Set(books.map(\.id)))
+        XCTAssertEqual(fixture.fake.downloadsStarted, [books[0].id])
+        XCTAssertEqual(said, ["Keeping Moby-Dick on this Mac. Downloading it now", "Moby-Dick downloaded"])
+    }
+
+    /// Library > Stop Keeping on This Mac stops keeping the selected books
+    /// that are kept, and only those.
+    func testTheMenuStopsKeepingTheSelectedBooks() async {
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Emma", author: "Jane Austen"), cloudTestBook("Dracula")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map {
+            ($0.id, BookCloudState.downloaded)
+        }))
+        fixture.kept.keep([books[0].id, books[2].id])
+
+        let said = await announcements {
+            fixture.commands.setKeptFromMenu(false, for: Array(books.prefix(2)), in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(fixture.kept.bookIDs, [books[2].id])
+        XCTAssertEqual(said, ["Stopped keeping Moby-Dick on this Mac"])
+    }
+
+    /// When the menu's command can change nothing, VoiceOver hears why: no
+    /// book is selected, every one is already as asked, or the library isn't
+    /// in the cloud.
+    func testTheMenuSaysWhyNothingChanged() async {
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Emma", author: "Jane Austen")]
+        let fixture = CommandFixture(books: books, states: [books[0].id: .downloaded, books[1].id: .downloaded])
+
+        let said = await announcements {
+            fixture.commands.setKeptFromMenu(true, for: [], in: fixture.model, from: nil)
+            fixture.commands.setKeptFromMenu(false, for: books, in: fixture.model, from: nil)
+            fixture.kept.keep([books[0].id])
+            fixture.commands.setKeptFromMenu(true, for: [books[0]], in: fixture.model, from: nil)
+            fixture.states.setLibraryLocation(.local)
+            fixture.commands.setKeptFromMenu(true, for: books, in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(said, [
+            "No books are selected.",
+            "None of the 2 selected books is kept on this Mac.",
+            "Moby-Dick is already kept on this Mac.",
+            "The library isn't in a cloud folder, so its books are always on this Mac.",
+        ])
+        XCTAssertEqual(fixture.kept.bookIDs, [books[0].id])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+    }
+
+    /// The menu's refusals cover one book and several, either way.
+    func testTheMenusRefusalsAreWordedForOneBookOrSeveral() {
+        XCTAssertEqual(
+            LibraryCloudWording.keepMenuRefusal(keeping: false, selected: ["Emma"], inCloudLibrary: true),
+            "Emma isn't kept on this Mac."
+        )
+        XCTAssertEqual(
+            LibraryCloudWording.keepMenuRefusal(keeping: true, selected: ["Emma", "Dracula"], inCloudLibrary: true),
+            "The 2 selected books are already kept on this Mac."
+        )
+        XCTAssertEqual(
+            LibraryCloudWording.keepMenuRefusal(keeping: false, selected: [], inCloudLibrary: false),
+            "The library isn't in a cloud folder, so its books are always on this Mac."
+        )
+    }
+
+    /// The Library menu names its commands as a row's menu does for one
+    /// book.
+    func testTheLibraryMenuNamesItsCommandsAsTheRowsDo() {
+        XCTAssertEqual(LibraryCloudWording.keepName, "Keep on This Mac")
+        XCTAssertEqual(LibraryCloudWording.stopKeepingName, "Stop Keeping on This Mac")
+        XCTAssertEqual(LibraryCloudCommand.Kind.keepOnThisMac.title(count: 1, forSelection: false), LibraryCloudWording.keepName)
+        XCTAssertEqual(
+            LibraryCloudCommand.Kind.stopKeepingOnThisMac.title(count: 1, forSelection: false),
+            LibraryCloudWording.stopKeepingName
+        )
+    }
+
     // MARK: - Wording
 
     /// The commands' titles name one book plainly and count a selection's.

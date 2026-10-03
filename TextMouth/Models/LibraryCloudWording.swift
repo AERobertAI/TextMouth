@@ -24,18 +24,26 @@ enum LibraryCloudWording {
         return "Remove \(count == 1 ? "Download" : "Downloads") of \(titleCount(count))"
     }
 
+    /// Keep on This Mac's name: its title in the Library menu, and for the
+    /// one book a row's menu is for.
+    static let keepName = "Keep on This Mac"
+
+    /// Stop Keeping on This Mac's name: its title in the Library menu, and
+    /// for the one book a row's menu is for.
+    static let stopKeepingName = "Stop Keeping on This Mac"
+
     /// Keep on This Mac's title: "Keep on This Mac" for the one book a menu
     /// is for, or "Keep 3 Books on This Mac" for `count` books of a
     /// selection.
     static func keepTitle(count: Int, forSelection: Bool) -> String {
-        forSelection ? "Keep \(titleCount(count)) on This Mac" : "Keep on This Mac"
+        forSelection ? "Keep \(titleCount(count)) on This Mac" : keepName
     }
 
     /// Stop Keeping on This Mac's title: "Stop Keeping on This Mac" for the
     /// one book a menu is for, or "Stop Keeping 3 Books on This Mac" for
     /// `count` books of a selection.
     static func stopKeepingTitle(count: Int, forSelection: Bool) -> String {
-        forSelection ? "Stop Keeping \(titleCount(count)) on This Mac" : "Stop Keeping on This Mac"
+        forSelection ? "Stop Keeping \(titleCount(count)) on This Mac" : stopKeepingName
     }
 
     /// Show in Finder's title: "Show in Finder" for the one book a menu is
@@ -83,6 +91,23 @@ enum LibraryCloudWording {
     /// several.
     static func stoppedKeeping(titles: [String]) -> String {
         "Stopped keeping \(subject(titles)) on this Mac"
+    }
+
+    /// Why Keep on This Mac (`keeping`) or Stop Keeping on This Mac, chosen
+    /// in the Library menu for the books selected, `titles`, changed nothing:
+    /// the library isn't in the cloud, no book is selected, or every one is
+    /// already as asked.
+    static func keepMenuRefusal(keeping: Bool, selected titles: [String], inCloudLibrary: Bool) -> String {
+        guard inCloudLibrary else {
+            return "The library isn't in a cloud folder, so its books are always on this Mac."
+        }
+        guard !titles.isEmpty else { return "No books are selected." }
+        if titles.count == 1, let title = titles.first {
+            return keeping ? "\(title) is already kept on this Mac." : "\(title) isn't kept on this Mac."
+        }
+        return keeping
+            ? "The \(titles.count) selected books are already kept on this Mac."
+            : "None of the \(titles.count) selected books is kept on this Mac."
     }
 
     /// What Download Now announces once every book it started has ended:
