@@ -350,6 +350,78 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(service.thisWeekListeningTime(at: now), 1_000 + 2 * interval + 30)
     }
 
+    /// All Time adds the open session's time since its last checkpoint to
+    /// the saved total, as Today does, so it never lags Today while a book
+    /// plays (TODO C07): until then it showed the saved total alone, up to
+    /// a checkpoint interval behind. At every moment of the session it
+    /// exceeds Today by exactly the listening before today, and once the
+    /// session ends the saved total alone gives the same value.
+    @MainActor
+    func testAllTimeAddsOnlyTheOpenSessionsUncreditedTime() throws {
+        let service = makeService()
+        let twoDaysEarlier = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: -2, to: noon))
+        service.startSession(bookID: UUID(), at: twoDaysEarlier)
+        service.endSession(at: twoDaysEarlier + 1_000)
+        service.startSession(bookID: UUID(), at: noon)
+        service.checkpointActiveSession(at: noon + 2 * interval)
+
+        // From the checkpoint itself to just before the next one.
+        for sinceCheckpoint in [0, 30, 59.5] {
+            let now = noon + 2 * interval + sinceCheckpoint
+            XCTAssertEqual(service.allTimeListeningTime(at: now), 1_000 + 2 * interval + sinceCheckpoint)
+            XCTAssertEqual(
+                service.allTimeListeningTime(at: now) - service.todayListeningTime(at: now), 1_000,
+                "\(sinceCheckpoint) s after the checkpoint"
+            )
+        }
+
+        let end = noon + 2 * interval + 30
+        service.endSession(at: end)
+
+        XCTAssertEqual(service.allTimeListeningTime(at: end), 1_000 + 2 * interval + 30)
+        XCTAssertEqual(service.allTimeListeningTime(at: end), service.stats.totalListeningSeconds)
+    }
+
+    /// While a session crosses midnight, All Time counts its whole
+    /// uncredited slice and Today only the part after midnight: the part
+    /// before belongs to yesterday, which All Time includes as well.
+    @MainActor
+    func testAllTimeCountsTheWholeUncreditedSliceAcrossMidnight() {
+        let service = makeService()
+        let midnight = Calendar.current.startOfDay(for: noon)
+        service.startSession(bookID: UUID(), at: midnight - 90)
+        service.checkpointActiveSession(at: midnight - 30)
+        let now = midnight + 45
+
+        XCTAssertEqual(service.uncreditedSessionTime(at: now), 75)
+        XCTAssertEqual(service.todayListeningTime(at: now), 45)
+        XCTAssertEqual(service.allTimeListeningTime(at: now), 135)
+
+        service.endSession(at: now)
+
+        XCTAssertEqual(service.allTimeListeningTime(at: now), 135)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 135)
+    }
+
+    /// Books Finished This Year counts the books finished in the year
+    /// containing the instant asked about, from its first moment on, so the
+    /// Stats pane can read it at the same instant as every other figure.
+    @MainActor
+    func testBooksFinishedThisYearCountsTheYearContainingTheInstant() throws {
+        let service = makeService()
+        let calendar = Calendar.current
+        let sameDayLastYear = try XCTUnwrap(calendar.date(byAdding: .year, value: -1, to: noon))
+        let startOfYear = try XCTUnwrap(calendar.date(from: calendar.dateComponents([.era, .year], from: noon)))
+        service.stats.finishedBooks = [sameDayLastYear, startOfYear, noon - 3_600].map { date in
+            FinishedBookEntry(bookID: UUID().uuidString, title: "Finished \(date)", dateFinished: date)
+        }
+
+        XCTAssertEqual(service.booksFinishedThisYear(at: noon), 2)
+        XCTAssertEqual(service.booksFinishedThisYear(at: startOfYear), 2)
+        XCTAssertEqual(service.booksFinishedThisYear(at: startOfYear - 1), 1, "The last second of the year before")
+        XCTAssertEqual(service.booksFinishedThisYear(at: sameDayLastYear), 1)
+    }
+
     // MARK: - Helpers
 
     /// A service over this test's file, checkpointing every
