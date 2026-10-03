@@ -211,6 +211,124 @@ struct KeyBinding: Codable, Equatable, Hashable {
     }
 }
 
+// MARK: - Shortcuts as config.json Writes Them
+
+extension KeyBinding {
+    /// The special keys' names, spelled as `from(event:)` records them. Any
+    /// other key is a single character.
+    static let namedKeys = [
+        "space", "tab", "return", "delete", "escape", "leftArrow", "rightArrow", "upArrow", "downArrow",
+    ]
+
+    /// The binding as config.json writes it: its modifiers in the order
+    /// Settings shows them (Control, Option, Shift, Command), then its key,
+    /// joined by "+", such as "space", "command+rightArrow", or
+    /// "option+shift+command+b".
+    var configText: String {
+        (ConfigModifier.allCases.filter { $0.isHeld(in: self) }.map(\.word) + [key]).joined(separator: "+")
+    }
+
+    /// Reads a shortcut written in config.json: modifier names joined to a
+    /// key by "+", as `configText` writes them.
+    ///
+    /// Text edited by hand is read generously: names may be capitalized,
+    /// spaces are ignored, cmd, ctrl, opt, and alt stand for command,
+    /// control, and option, and a letter key may be a capital. The key comes
+    /// last and may itself be the plus key, as in "command++". Returns nil
+    /// for text that names no key, or a key that is neither a special key's
+    /// name nor a single character.
+    init?(configText: String) {
+        var remaining = Substring(configText.filter { !$0.isWhitespace })
+        var binding = KeyBinding(key: "")
+        // Take modifiers off the front while one is followed by "+"; what
+        // remains is the key.
+        while let leading = ConfigModifier.leading(in: remaining) {
+            leading.modifier.hold(in: &binding)
+            remaining = leading.rest
+        }
+        guard let key = Self.storedKey(named: remaining) else { return nil }
+        binding.key = key
+        self = binding
+    }
+
+    /// Reads the shortcuts config.json lists for one action, keeping the
+    /// first of any repeated. Returns nil when any of them cannot be read,
+    /// so a mistyped shortcut leaves the action's bindings as they are
+    /// rather than dropping it and keeping the rest.
+    static func bindings(fromConfigTexts texts: [String]) -> [KeyBinding]? {
+        var bindings: [KeyBinding] = []
+        for text in texts {
+            guard let binding = KeyBinding(configText: text) else { return nil }
+            if !bindings.contains(binding) {
+                bindings.append(binding)
+            }
+        }
+        return bindings
+    }
+
+    /// The key as bindings store it: a special key's name in its usual
+    /// spelling, or a single character in lower case, as recorded; nil for
+    /// anything else.
+    private static func storedKey(named text: Substring) -> String? {
+        if let named = namedKeys.first(where: { $0.caseInsensitiveCompare(text) == .orderedSame }) {
+            return named
+        }
+        return text.count == 1 ? text.lowercased() : nil
+    }
+}
+
+/// A modifier key as config.json names it, in the order Settings shows the
+/// modifiers (⌃⌥⇧⌘).
+private enum ConfigModifier: CaseIterable {
+    case control, option, shift, command
+
+    /// Every name config.json accepts for the modifier, the one it writes
+    /// first.
+    var names: [String] {
+        switch self {
+        case .control: return ["control", "ctrl"]
+        case .option: return ["option", "opt", "alt"]
+        case .shift: return ["shift"]
+        case .command: return ["command", "cmd"]
+        }
+    }
+
+    /// The name config.json writes.
+    var word: String { names[0] }
+
+    /// Whether `binding` holds this modifier down.
+    func isHeld(in binding: KeyBinding) -> Bool {
+        switch self {
+        case .control: return binding.control
+        case .option: return binding.option
+        case .shift: return binding.shift
+        case .command: return binding.command
+        }
+    }
+
+    /// Makes `binding` hold this modifier down.
+    func hold(in binding: inout KeyBinding) {
+        switch self {
+        case .control: binding.control = true
+        case .option: binding.option = true
+        case .shift: binding.shift = true
+        case .command: binding.command = true
+        }
+    }
+
+    /// The modifier `text` starts with, named in any letter case and
+    /// followed by "+", and the text after that "+"; nil when `text` starts
+    /// with none.
+    static func leading(in text: Substring) -> (modifier: ConfigModifier, rest: Substring)? {
+        for modifier in allCases {
+            for name in modifier.names where text.prefix(name.count + 1).lowercased() == name + "+" {
+                return (modifier, text.dropFirst(name.count + 1))
+            }
+        }
+        return nil
+    }
+}
+
 /// All default keyboard shortcut bindings
 extension ShortcutAction {
     /// Default bindings for each action (primary + optional secondary)

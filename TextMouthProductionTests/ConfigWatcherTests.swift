@@ -335,6 +335,32 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(ConfigService.merging(ours: ours, theirs: theirs, base: ours), theirs)
     }
 
+    /// A field holding an object merges entry by entry: TextMouth's change
+    /// to one action's shortcuts and the edit's change to another's both
+    /// stand, as does a sound each changed; when both changed one action,
+    /// TextMouth's later change wins.
+    func testMergeCombinesTheEntriesOfShortcutsAndSounds() {
+        let base = ConfigService.AppConfig.everyFieldCustomized
+        var ours = base
+        ours.keyboardShortcuts["Where Am I?"] = ["control+w"]
+        ours.keyboardShortcuts["Go Back"] = ["control+["]
+        ours.soundEffectAssignments["Play"] = "Ping"
+        var theirs = base
+        theirs.keyboardShortcuts["Add Bookmark"] = ["control+b"]
+        theirs.keyboardShortcuts["Go Back"] = ["option+["]
+        theirs.soundEffectAssignments["Pause"] = "Tink"
+
+        let merged = ConfigService.merging(ours: ours, theirs: theirs, base: base)
+
+        var expected = base
+        expected.keyboardShortcuts["Where Am I?"] = ["control+w"]
+        expected.keyboardShortcuts["Add Bookmark"] = ["control+b"]
+        expected.keyboardShortcuts["Go Back"] = ["control+["]
+        expected.soundEffectAssignments["Play"] = "Ping"
+        expected.soundEffectAssignments["Pause"] = "Tink"
+        XCTAssertEqual(merged, expected)
+    }
+
     /// An edit with a value out of range is applied repaired, and the
     /// repaired snapshot is written back once so the file shows the value in
     /// use. The watcher recognizes that write as TextMouth's own: the edit is
@@ -544,6 +570,300 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(service.config.wordsPerMinute, 300 + Double(replacements - 1))
     }
 
+    // MARK: - Preferences Mirrored Since TODO C04
+
+    /// An edit of the playback bar's preferences, noticed through the
+    /// watcher's handler, is applied once, refreshes open playback bars once
+    /// per change, and writes nothing back.
+    func testExternalEditOfThePlaybackBarIsAppliedOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let recorder = EditRecorder(service)
+        let revision = settings.playbackControlsSettingsRevision
+
+        edit.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.shared.rawValue
+        edit.showBookmarkInPlaybackControls = false
+        edit.showSpeedInPlaybackControls = true
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(settings.playbackNavigationUnitControlMode, .shared)
+        XCTAssertFalse(settings.showBookmarkInPlaybackControls)
+        XCTAssertTrue(settings.showSpeedInPlaybackControls)
+        XCTAssertEqual(settings.playbackControlsSettingsRevision, revision + 3)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
+    /// An edit of the sound preferences, noticed through the watcher's
+    /// handler, is applied once and reaches the sound service at once, each
+    /// changed preference published once; nothing is written back.
+    func testExternalEditOfTheSoundsReachesTheSoundServiceOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let sounds = SoundEffectService(preferences: defaults)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = sounds.objectWillChange.sink { publications += 1 }
+
+        edit.soundEffectsEnabled = true
+        edit.soundEffectsVolume = 0.9
+        edit.soundEffectAssignments[SoundEvent.play.rawValue] = "Ping"
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertTrue(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.9)
+        XCTAssertEqual(sounds.assignments[.play], "Ping")
+        XCTAssertEqual(sounds.assignments[.pause], "None")
+        XCTAssertEqual(publications, 3)
+        XCTAssertEqual(counter.writes, 0)
+        withExtendedLifetime(settings) {}
+    }
+
+    /// A sound preference changed through the sound service, as the Sounds
+    /// settings change it, is saved to config.json at once, and that save
+    /// is never applied back as an edit.
+    func testSoundChangeMadeInSettingsIsSavedToConfig() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let sounds = SoundEffectService(preferences: defaults)
+        let recorder = EditRecorder(service)
+
+        sounds.volume = 0.65
+        sounds.assignments[.whereAmIEnd] = "Sosumi"
+        settle()
+
+        XCTAssertEqual(counter.writes, 2, "one save for each change")
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.soundEffectsVolume, 0.65)
+        XCTAssertEqual(saved.soundEffectAssignments[SoundEvent.whereAmIEnd.rawValue], "Sosumi")
+        XCTAssertEqual(recorder.edits, [])
+        withExtendedLifetime(settings) {}
+    }
+
+    /// An edit of the substitution switch, noticed through the watcher's
+    /// handler, is applied once and reaches the substitution service at
+    /// once, published once, which is what open readers re-prepare their
+    /// speech on; turning it back in the Text settings saves the file once.
+    func testSubstitutionSwitchFollowsEditsAndIsSavedFromSettings() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let substitutions = TextSubstitutionService(rules: [], isEnabled: false, preferences: defaults)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = substitutions.objectWillChange.sink { publications += 1 }
+
+        edit.substitutionsEnabled = true
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertTrue(substitutions.isEnabled)
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(counter.writes, 0)
+
+        substitutions.isEnabled = false
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(counter.writes, 1)
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).substitutionsEnabled, false)
+        XCTAssertEqual(recorder.edits.count, 1, "TextMouth's own save is not applied back")
+        withExtendedLifetime(settings) {}
+    }
+
+    /// An edit of the shortcuts, noticed through the watcher's handler, is
+    /// applied once and reaches the shortcut manager at once, published
+    /// once; the store keeps them where and as every release saved them,
+    /// and nothing is written back.
+    func testExternalEditOfTheShortcutsReachesTheManagerOnce() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let manager = KeyboardShortcutManager(userDefaults: defaults, installsEventMonitor: false)
+        let recorder = EditRecorder(service)
+        var publications = 0
+        let subscription = manager.objectWillChange.sink { publications += 1 }
+
+        edit.keyboardShortcuts[ShortcutAction.whereAmI.rawValue] = ["control+w"]
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        subscription.cancel()
+
+        XCTAssertEqual(recorder.edits, [edit])
+        XCTAssertEqual(manager.bindingsFor(.whereAmI), [KeyBinding(key: "w", control: true)])
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(counter.writes, 0)
+        let stored = try XCTUnwrap(defaults.data(forKey: "customKeyboardBindings"))
+        let saved = try JSONDecoder().decode([String: [KeyBinding]].self, from: stored)
+        XCTAssertEqual(saved["Where Am I?"], [KeyBinding(key: "w", control: true)])
+        withExtendedLifetime(settings) {}
+    }
+
+    /// A shortcut recorded in the Shortcuts settings, which changes the
+    /// manager's bindings, is saved to config.json at once, and that save is
+    /// never applied back as an edit.
+    func testShortcutRecordedInSettingsIsSavedToConfig() throws {
+        let url = try makeConfigFileURL()
+        try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
+        let defaults = try isolatedDefaults()
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: defaults, counter: counter)
+        let manager = KeyboardShortcutManager(userDefaults: defaults, installsEventMonitor: false)
+        let recorder = EditRecorder(service)
+
+        manager.addBinding(KeyBinding(key: "j", control: true), to: .whereAmI)
+        settle()
+
+        XCTAssertEqual(counter.writes, 1)
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.keyboardShortcuts[ShortcutAction.whereAmI.rawValue], ["option+w", "control+j"])
+        XCTAssertEqual(recorder.edits, [])
+        withExtendedLifetime(settings) {}
+    }
+
+    // MARK: - Open Settings Follow Edits
+
+    /// While the Storage settings are open, an edit of config.json reaches
+    /// what their controls are bound to: the removal preferences model
+    /// publishes the edit's removal choices once, and the settings model
+    /// announces the edit's import choice once and reads it.
+    func testStorageChoicesFollowAnExternalEdit() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let removal = RemovalPreferencesModel(configService: service)
+        var publishedRemoval: [RemovalPreferences] = []
+        let removalSubscription = removal.$preferences.dropFirst().sink { publishedRemoval.append($0) }
+        var settingsAnnouncements = 0
+        let settingsSubscription = settings.objectWillChange.sink { settingsAnnouncements += 1 }
+
+        edit.confirmBeforeDelete = true
+        edit.moveToTrashInsteadOfDeleting = true
+        edit.importDeleteBehavior = .deleteAfterImport
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        settle()
+        removalSubscription.cancel()
+        settingsSubscription.cancel()
+
+        let edited = RemovalPreferences(confirmsFirst: true, movesToTrash: true)
+        XCTAssertEqual(publishedRemoval, [edited])
+        XCTAssertEqual(removal.preferences, edited)
+        XCTAssertEqual(settings.importDeleteBehavior, .deleteAfterImport)
+        XCTAssertEqual(settingsAnnouncements, 1)
+        XCTAssertEqual(counter.writes, 0)
+    }
+
+    /// A Storage control changed after an edit of config.json starts from
+    /// the edit's value and saves only its own choice, so the edit's other
+    /// choices stay in force; no control writes back a copy taken when the
+    /// window opened.
+    func testStorageControlsChangeOnlyTheirOwnChoiceAfterAnEdit() throws {
+        let url = try makeConfigFileURL()
+        var edit = launchConsistentConfig()
+        try ConfigService.fileData(for: edit).write(to: url)
+        let counter = FileOperationCounter()
+        let (service, settings) = launch(url, defaults: try isolatedDefaults(), counter: counter)
+        let removal = RemovalPreferencesModel(configService: service)
+
+        edit.confirmBeforeDelete = true
+        edit.importDeleteBehavior = .deleteAfterImport
+        try editorSave(ConfigService.fileData(for: edit), to: url)
+        service.handleFileEvent(.rename)
+        // The user turns off confirmation, which the window shows as on.
+        removal.setConfirmsFirst(!removal.preferences.confirmsFirst)
+        removal.setMovesToTrash(true)
+        settings.importDeleteBehavior = .keepOriginal
+        settle()
+
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertFalse(saved.confirmBeforeDelete)
+        XCTAssertTrue(saved.moveToTrashInsteadOfDeleting)
+        XCTAssertEqual(saved.importDeleteBehavior, .keepOriginal)
+        XCTAssertEqual(removal.preferences, RemovalPreferences(confirmsFirst: false, movesToTrash: true))
+        XCTAssertEqual(counter.writes, 3, "one save for each change")
+
+        removal.setMovesToTrash(true)
+        settings.importDeleteBehavior = .keepOriginal
+        XCTAssertEqual(counter.writes, 3, "choosing a value already in force saves nothing")
+    }
+
+    /// The open Storage settings, as AppKit draws them, show their choices
+    /// changing when the configuration changes outside them, as applying an
+    /// edit of config.json changes it: both removal checkboxes and the
+    /// import pop-up follow. The app's shared configuration is changed in
+    /// memory only, and put back.
+    func testOpenStorageSettingsShowChoicesChangedOutsideThem() throws {
+        let service = ConfigService.shared
+        let original = service.config
+        defer {
+            service.config.confirmBeforeDelete = original.confirmBeforeDelete
+            service.config.moveToTrashInsteadOfDeleting = original.moveToTrashInsteadOfDeleting
+            service.config.importDeleteBehavior = original.importDeleteBehavior
+        }
+        service.config.confirmBeforeDelete = false
+        service.config.moveToTrashInsteadOfDeleting = false
+        service.config.importDeleteBehavior = .keepOriginal
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: try isolatedDefaults()
+        )
+        let view = StorageSettingsView()
+            .environmentObject(LibraryViewModel(initializeServices: false))
+            .environmentObject(settings)
+
+        try withHostedView(view, size: NSSize(width: 600, height: 900), until: { StorageControls($0) != nil }) { hosting in
+            guard let before = StorageControls(hosting) else {
+                throw XCTSkip("This macOS does not draw the Storage choices with AppKit controls")
+            }
+            XCTAssertEqual(before.confirm.state, .off)
+            XCTAssertEqual(before.moveToTrash.state, .off)
+            XCTAssertEqual(before.afterImport.titleOfSelectedItem, ImportDeleteBehavior.keepOriginal.rawValue)
+
+            service.config.confirmBeforeDelete = true
+            service.config.moveToTrashInsteadOfDeleting = true
+            service.config.importDeleteBehavior = .askEachTime
+
+            // SwiftUI redraws on a later turn of the run loop, and may draw
+            // new controls, so each look finds them again.
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let after = StorageControls(hosting) else { return false }
+                return after.confirm.state == .on
+                    && after.moveToTrash.state == .on
+                    && after.afterImport.titleOfSelectedItem == ImportDeleteBehavior.askEachTime.rawValue
+            })
+        }
+    }
+
     // MARK: - Saving
 
     /// A save writes only when the file's bytes would change: saving the
@@ -679,6 +999,47 @@ final class ConfigWatcherTests: XCTestCase {
         }
     }
 
+    /// The Storage settings' three choices as AppKit draws them: the import
+    /// pop-up, found by its choices, and the two removal checkboxes. Nil
+    /// until all three are drawn.
+    @MainActor
+    private struct StorageControls {
+        let confirm: NSButton
+        let moveToTrash: NSButton
+        let afterImport: NSPopUpButton
+
+        init?(_ root: NSView) {
+            let importChoices = ImportDeleteBehavior.allCases.map(\.rawValue)
+            // SwiftUI draws each checkbox's label itself, beside an untitled
+            // AppKit checkbox, so the two are told apart by their order in
+            // the pane: "Confirm before removing a book", then "Move to Trash
+            // instead of deleting".
+            let checkboxes = Self.descendants(of: root, as: NSButton.self).filter {
+                !($0 is NSPopUpButton) && $0.title.isEmpty
+            }
+            guard checkboxes.count == 2,
+                  let afterImport = Self.descendants(of: root, as: NSPopUpButton.self)
+                      .first(where: { $0.itemTitles == importChoices }) else {
+                return nil
+            }
+            confirm = checkboxes[0]
+            moveToTrash = checkboxes[1]
+            self.afterImport = afterImport
+        }
+
+        /// Every view of type `T` inside `view`, depth first.
+        private static func descendants<T: NSView>(of view: NSView, as type: T.Type) -> [T] {
+            var found: [T] = []
+            for subview in view.subviews {
+                if let match = subview as? T {
+                    found.append(match)
+                }
+                found += descendants(of: subview, as: type)
+            }
+            return found
+        }
+    }
+
     /// One version of a file on disk: its identity, which an atomic write
     /// replaces, and its modification date.
     private struct FileStamp: Equatable {
@@ -690,15 +1051,5 @@ final class ConfigWatcherTests: XCTestCase {
     private func fileStamp(_ url: URL) throws -> FileStamp {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         return FileStamp(identity: FileIdentity(of: url), modified: attributes[.modificationDate] as? Date)
-    }
-
-    /// A config.json location in a directory of this test's own inside the
-    /// isolated test root. The directory is removed when the test ends.
-    private func makeConfigFileURL() throws -> URL {
-        let directory = TextMouthPaths.root
-            .appendingPathComponent("ConfigWatcherTests-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
-        return directory.appendingPathComponent("config.json")
     }
 }

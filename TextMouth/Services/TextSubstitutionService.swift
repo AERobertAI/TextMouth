@@ -127,18 +127,32 @@ struct TextTransformation {
 @MainActor
 final class TextSubstitutionService: ObservableObject {
     @Published var rules: [SubstitutionRule] = []
+    /// Whether the rules apply at all. A change made here is saved to the
+    /// preferences store; a change made there by anyone else, such as the
+    /// settings model applying an edit of config.json, is taken up here at
+    /// once, and published, so open readers prepare their speech again.
     @Published var isEnabled: Bool = true {
-        didSet { preferences?.set(isEnabled, forKey: Self.isEnabledKey) }
+        didSet {
+            guard !isFollowingStore, let preferences else { return }
+            Self.enabledPreference.write(isEnabled, to: preferences)
+        }
     }
 
-    /// Preferences key for `isEnabled`. Every release has used it, so the
-    /// user's choice keeps loading.
-    private static let isEnabledKey = "substitutionsEnabled"
+    /// The substitution switch in the preferences store: on until the user
+    /// turns it off. Every release has used its key, so the choice keeps
+    /// loading; the settings model mirrors it in config.json through this
+    /// same definition.
+    nonisolated static let enabledPreference = StoredPreference.flag("substitutionsEnabled", default: true)
 
-    /// The store `isEnabled` is saved to: this process's preferences for the
-    /// app's shared service, and for a test's own service only a store the
-    /// test passes. Nil saves nothing.
+    /// The store `isEnabled` is saved to and followed in: this process's
+    /// preferences for the app's shared service, and for a test's own
+    /// service only a store the test passes. Nil saves and follows nothing.
     private let preferences: UserDefaults?
+    /// Reports changes to the switch in `preferences`.
+    private var storeObserver: PreferenceObserver?
+    /// True while `isEnabled` takes the store's value, which the store
+    /// already holds, so nothing is written back.
+    private var isFollowingStore = false
 
     /// Cached compiled regexes keyed by rule ID
     private var regexCache: [UUID: NSRegularExpression] = [:]
@@ -152,19 +166,21 @@ final class TextSubstitutionService: ObservableObject {
 
     static let shared = TextSubstitutionService()
 
-    /// The app's service: `isEnabled` from this process's preferences, and
-    /// the rules from substitutions.json.
+    /// The app's service: `isEnabled` from this process's preferences, which
+    /// it then follows, and the rules from substitutions.json.
     private init() {
         let preferences = TextMouthRuntime.current.preferences
         self.preferences = preferences
         isEnabled = Self.storedIsEnabled(in: preferences)
         loadRules()
+        followSwitch(in: preferences)
     }
 
-    /// Dependency-injected initializer for deterministic production-target
-    /// tests. It deliberately does not read or write the persisted rule file,
-    /// and it saves `isEnabled` only to `preferences` when the test passes a
-    /// store, so changing the switch leaves nothing behind for other tests.
+    /// A service of the caller's own: for deterministic production-target
+    /// tests, and for the rule editor's Test button, which shows what one
+    /// rule does. It deliberately does not read or write the persisted rule
+    /// file, and it saves and follows `isEnabled` only in `preferences` when
+    /// given a store, so changing the switch leaves nothing behind.
     init(
         rules: [SubstitutionRule],
         isEnabled: Bool = true,
@@ -173,12 +189,33 @@ final class TextSubstitutionService: ObservableObject {
         self.preferences = preferences
         self.rules = rules
         self.isEnabled = isEnabled
+        if let preferences {
+            followSwitch(in: preferences)
+        }
     }
 
     /// Whether substitutions are on as `preferences` records it: on unless
     /// the user turned them off.
     static func storedIsEnabled(in preferences: UserDefaults) -> Bool {
-        preferences.object(forKey: isEnabledKey) as? Bool ?? true
+        enabledPreference.read(from: preferences)
+    }
+
+    /// Takes up each change to the switch in `preferences` from then on.
+    private func followSwitch(in preferences: UserDefaults) {
+        storeObserver = PreferenceObserver(keys: [Self.enabledPreference.key], in: preferences) { [weak self] _ in
+            self?.takeSwitchFromStore()
+        }
+    }
+
+    /// Sets `isEnabled` to the store's value when someone else changed it
+    /// there, writing nothing back.
+    private func takeSwitchFromStore() {
+        guard let preferences else { return }
+        let stored = Self.storedIsEnabled(in: preferences)
+        guard stored != isEnabled else { return }
+        isFollowingStore = true
+        defer { isFollowingStore = false }
+        isEnabled = stored
     }
 
     // MARK: - Rule Management

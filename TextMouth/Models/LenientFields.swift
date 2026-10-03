@@ -141,6 +141,91 @@ extension LenientFields {
         }
         return rule.value(fromRaw: rawValue)
     }
+
+    /// A `config.json` switch that may be absent: nil when the field is
+    /// missing, null, or unreadable, which leaves the preference as it is.
+    /// Switches added to the file after it first shipped read this way, so a
+    /// file from an earlier version never turns one back to its default.
+    func optionalFlag(_ key: Key) -> Bool? {
+        optionalValue(key) { (flag: Bool) in flag }
+    }
+
+    /// A `config.json` number validated by `rule` that may be absent: nil
+    /// when the field is missing, null, or unreadable, which leaves the
+    /// preference as it is; any other number is clamped into the rule's range.
+    func optionalNumber(_ key: Key, rule: NumericSettingRule) -> Double? {
+        optionalValue(key) { (number: Double) in rule.validatedConfigValue(number) }
+    }
+
+    /// A `config.json` object holding an entry for each case of `rule`'s enum
+    /// that it sets, read entry by entry so that one unusable entry never
+    /// discards the others.
+    ///
+    /// An entry that names no case, cannot be read, or holds a value the rule
+    /// cannot use is logged and left out, which keeps that case's current
+    /// value; a usable value is kept as TextMouth writes it. A missing or
+    /// null field holds no entries, and so does one that is not an object,
+    /// which is logged.
+    func entries<Case, FileValue: Decodable & Equatable, Value>(
+        _ key: Key,
+        rule: KeyedSettingRule<Case, FileValue, Value>
+    ) -> [String: FileValue] {
+        guard let object = object(at: key) else { return [:] }
+        var kept: [String: FileValue] = [:]
+        for entry in object.allKeys {
+            let path = container.codingPath + [key, entry]
+            guard rule.names(entry.stringValue) else {
+                StoredValueRepair.log(source: source, codingPath: path,
+                                      detail: "names nothing TextMouth knows; ignoring it",
+                                      supported: rule.supportedDescription)
+                continue
+            }
+            guard let value = try? object.decode(FileValue.self, forKey: entry) else {
+                StoredValueRepair.log(source: source, codingPath: path,
+                                      detail: "could not be read as \(FileValue.self); keeping the current value",
+                                      supported: rule.supportedDescription)
+                continue
+            }
+            kept[entry.stringValue] = StoredValueRepair.validated(
+                value,
+                source: source,
+                codingPath: path,
+                supported: rule.supportedDescription,
+                validate: rule.validatedConfigValue
+            )
+        }
+        return kept
+    }
+
+    /// The JSON object at `key`, to read entry by entry: nil when the field
+    /// is missing or null, and nil, logged, when it is not an object.
+    private func object(at key: Key) -> KeyedDecodingContainer<EntryKey>? {
+        // decodeNil is true for null and throws for a missing field, so only
+        // a field holding a value goes on.
+        guard (try? container.decodeNil(forKey: key)) == false else { return nil }
+        do {
+            return try container.nestedContainer(keyedBy: EntryKey.self, forKey: key)
+        } catch {
+            log(key, "could not be read as an object; using no entries", supported: nil)
+            return nil
+        }
+    }
+}
+
+/// Names an entry of a JSON object whose keys are not known in advance, such
+/// as the events of `soundEffectAssignments`.
+private struct EntryKey: CodingKey {
+    let stringValue: String
+    var intValue: Int? { nil }
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+    }
+
+    /// Entries are named by text, never by position.
+    init?(intValue: Int) {
+        nil
+    }
 }
 
 // MARK: - Saved book state fields

@@ -175,6 +175,9 @@ final class ConfigService: ObservableObject {
     /// The contents of config.json. Numeric and enum-backed fields follow
     /// `SettingsPolicy`, which supplies their defaults and validates them
     /// when the file is decoded.
+    ///
+    /// Which preferences the file carries, and why the others stay out of
+    /// it, is set out in `Portability`, below.
     struct AppConfig: Codable, Equatable {
         var selectedVoiceID: String = ""
         /// Words per minute (50–650). 0 means "not yet set by user".
@@ -229,6 +232,39 @@ final class ConfigService: ObservableObject {
         /// sequence. Anything longer breaks the match and starts the
         /// pattern over.
         var restartTimerGestureWindow: Double = SettingsPolicy.restartTimerGestureWindow.configDefault
+
+        // MARK: Fields added after the file first shipped
+        //
+        // A file written before one of these existed lacks it. Each reads as
+        // nil or empty then, which leaves the preference as it is, so a file
+        // from an earlier version never resets a newer preference.
+
+        /// Which per-book navigation menus the playback bar shows (a
+        /// `PlaybackNavigationUnitControlMode` raw value); empty keeps the
+        /// current choice.
+        var playbackNavigationUnitControlMode: String = ""
+        /// Whether the playback bar shows the bookmark button.
+        var showBookmarkInPlaybackControls: Bool?
+        /// Whether the playback bar shows the speed controls.
+        var showSpeedInPlaybackControls: Bool?
+        /// Whether sound effects play.
+        var soundEffectsEnabled: Bool?
+        /// How loud sound effects play, from 0 to 1, written to the
+        /// hundredth: the precision Settings shows, as a percentage.
+        var soundEffectsVolume: Double?
+        /// The sound each playback event plays, keyed by the event's name as
+        /// Settings shows it; "None" plays nothing. TextMouth writes every
+        /// event; an event the file leaves out keeps its sound.
+        var soundEffectAssignments: [String: String] = [:]
+        /// Whether the text substitution rules apply. The rules themselves
+        /// are kept in substitutions.json, beside this file.
+        var substitutionsEnabled: Bool?
+        /// The keyboard shortcuts of each action, keyed by the action's name
+        /// as Settings shows it, each a list of shortcuts such as
+        /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
+        /// leaves the action without one. TextMouth writes every action; an
+        /// action the file leaves out keeps its shortcuts.
+        var keyboardShortcuts: [String: [String]] = [:]
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -289,6 +325,20 @@ final class ConfigService: ObservableObject {
                 .restartTimerGestureWindow,
                 rule: SettingsPolicy.restartTimerGestureWindow
             )
+            playbackNavigationUnitControlMode = fields.rawChoice(
+                .playbackNavigationUnitControlMode,
+                rule: SettingsPolicy.playbackNavigationUnitControlMode
+            )
+            showBookmarkInPlaybackControls = fields.optionalFlag(.showBookmarkInPlaybackControls)
+            showSpeedInPlaybackControls = fields.optionalFlag(.showSpeedInPlaybackControls)
+            soundEffectsEnabled = fields.optionalFlag(.soundEffectsEnabled)
+            soundEffectsVolume = fields.optionalNumber(.soundEffectsVolume, rule: SettingsPolicy.soundEffectsVolume)
+            soundEffectAssignments = fields.entries(
+                .soundEffectAssignments,
+                rule: SettingsPolicy.soundEffectAssignments
+            )
+            substitutionsEnabled = fields.optionalFlag(.substitutionsEnabled)
+            keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
         }
 
         init() {}
@@ -302,6 +352,79 @@ final class ConfigService: ObservableObject {
         /// Three previous-track presses in a row: the restart-timer gesture
         /// until the user picks another, shared with the Settings model.
         static let defaultRestartTimerGesturePattern = "previousTrack,previousTrack,previousTrack"
+
+        // MARK: Portability
+
+        /// Which preferences config.json carries (TODO C04).
+        ///
+        /// Every preference TextMouth keeps is portable or machine-local. A
+        /// portable preference is mirrored in config.json, so it can be set
+        /// by editing the file and travels with it to another Mac: the
+        /// settings model writes it into the file and applies the file's
+        /// value back. A machine-local one describes this Mac, or what
+        /// TextMouth was last doing on it, so it stays out of the mirror.
+        ///
+        /// The tests take their expected sets from these lists: every
+        /// preference the settings model and the services keep must be
+        /// listed, every listed config.json field must be in the file, and
+        /// every portable preference must survive a round trip through it.
+        enum Portability {
+            /// Portable preferences kept in the preferences store, each with
+            /// the config.json field that carries it, by Settings tab.
+            static let mirrored: [(storeKey: String, field: String)] = {
+                // Voice.
+                var mirrored = sameNames(["selectedVoiceID", "wordsPerMinute", "pitchMultiplier", "selectedLanguage"])
+                // Playback.
+                mirrored += sameNames([
+                    "skipForwardUnit", "skipBackwardUnit", "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
+                    "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
+                    "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
+                    "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
+                    "showSpeedInPlaybackControls",
+                ])
+                // Shortcuts: the store's key is older than the file's field.
+                mirrored.append((storeKey: "customKeyboardBindings", field: "keyboardShortcuts"))
+                // Text: the switch. The rules are kept in substitutions.json.
+                mirrored += sameNames(["substitutionsEnabled"])
+                // Sounds.
+                mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
+                // Miscellaneous.
+                mirrored += sameNames([
+                    "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay", "restartTimerGestureEnabled",
+                    "restartTimerGesturePattern", "restartTimerGestureWindow",
+                ])
+                return mirrored
+            }()
+
+            /// Portable preferences config.json alone holds: the Storage
+            /// settings' import and removal choices.
+            static let fileOnly = ["importDeleteBehavior", "confirmBeforeDelete", "moveToTrashInsteadOfDeleting"]
+
+            /// Machine-local values config.json holds without mirroring them.
+            /// - `dataDirectoryPath`: where this Mac keeps its library. The
+            ///   Storage settings manage it: TextMouth always writes the
+            ///   directory in use, and a different path in the file asks the
+            ///   library to move there rather than being copied as a setting.
+            /// - `lastOpenedBookID`: a book in this Mac's library, which the
+            ///   library records when a book opens.
+            static let localFields = ["dataDirectoryPath", "lastOpenedBookID"]
+
+            /// Machine-local preferences-store keys, never written to
+            /// config.json.
+            /// - `textMouthDataDirectory`: the data directory's location, the
+            ///   store's copy of `dataDirectoryPath`.
+            /// - `sleepTimer.lastUsedDuration`: the last sleep timer started,
+            ///   which restarting the timer reuses: state, not a setting.
+            /// - `NSQuitAlwaysKeepsWindows`: window restoration, which
+            ///   TextMouth turns off at every launch. AppKit keeps this Mac's
+            ///   window positions in the store too, and they stay there.
+            static let localStoreKeys = ["textMouthDataDirectory", "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
+
+            /// Pairs each key with the config.json field of the same name.
+            private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
+                keys.map { (storeKey: $0, field: $0) }
+            }
+        }
     }
 
     // MARK: - Lifecycle
@@ -532,21 +655,44 @@ final class ConfigService: ObservableObject {
     /// process changed keeps its value, and every other field takes the
     /// edit's. When both changed a field, this process's value wins, being
     /// the later change: the edit was already on disk when this process saved.
+    /// A field holding an object, such as the shortcuts of every action, is
+    /// merged entry by entry the same way, so this process's change to one
+    /// action's shortcuts and the edit's change to another's both stand.
     ///
     /// Fields are compared as config.json holds them, so the merge follows
     /// `AppConfig`'s coding keys and needs no list of fields of its own.
     nonisolated static func merging(ours: AppConfig, theirs: AppConfig, base: AppConfig) -> AppConfig {
         guard let oursFields = try? jsonFields(of: ours),
               let baseFields = try? jsonFields(of: base),
-              var mergedFields = try? jsonFields(of: theirs) else {
+              let theirsFields = try? jsonFields(of: theirs) else {
             return ours
         }
-        for (key, value) in oursFields where !sameJSONValue(value, baseFields[key]) {
-            mergedFields[key] = value
-        }
+        let mergedFields = mergedJSONObject(ours: oursFields, theirs: theirsFields, base: baseFields)
         guard let data = try? JSONSerialization.data(withJSONObject: mergedFields),
               let merged = try? decode(data) else {
             return ours
+        }
+        return merged
+    }
+
+    /// One JSON object merged: `theirs`, with each entry this process changed
+    /// from `base` taking this process's value. An entry that is an object on
+    /// all three sides is merged the same way, one level further in; any
+    /// other changed entry is taken whole.
+    private nonisolated static func mergedJSONObject(
+        ours: [String: Any],
+        theirs: [String: Any],
+        base: [String: Any]
+    ) -> [String: Any] {
+        var merged = theirs
+        for (key, value) in ours where !sameJSONValue(value, base[key]) {
+            if let oursObject = value as? [String: Any],
+               let theirsObject = theirs[key] as? [String: Any],
+               let baseObject = base[key] as? [String: Any] {
+                merged[key] = mergedJSONObject(ours: oursObject, theirs: theirsObject, base: baseObject)
+            } else {
+                merged[key] = value
+            }
         }
         return merged
     }

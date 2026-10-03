@@ -566,15 +566,16 @@ struct SubstitutionRuleEditorView: View {
 
     private func runTest() {
         guard !rule.pattern.isEmpty, !testInput.isEmpty else { return }
-        let service = TextSubstitutionService.shared
-        // Temporarily create a service-like transform with just this rule
-        let tempRules = service.rules
-        let tempEnabled = service.isEnabled
-        service.rules = [rule]
-        service.isEnabled = true
-        let result = service.transform(testInput)
-        testOutput = result.modifiedText
-        service.rules = tempRules
-        service.isEnabled = tempEnabled
+        testOutput = Self.testResult(of: rule, on: testInput)
+    }
+
+    /// What `rule` alone makes of `text`, as the Test button shows it.
+    ///
+    /// A service of its own works it out, with only this rule and with
+    /// substitutions on, so showing a test never touches the app's rules or
+    /// its substitution switch. The switch is mirrored in config.json, so
+    /// turning it on and back off to show a test would save the file twice.
+    static func testResult(of rule: SubstitutionRule, on text: String) -> String {
+        TextSubstitutionService(rules: [rule]).transform(text).modifiedText
     }
 }

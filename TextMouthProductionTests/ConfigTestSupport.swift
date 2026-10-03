@@ -35,6 +35,23 @@ extension ConfigService.AppConfig {
         config.restartTimerGestureEnabled = true
         config.restartTimerGesturePattern = "togglePlayPause,nextTrack"
         config.restartTimerGestureWindow = 3.5
+        config.playbackNavigationUnitControlMode = PlaybackNavigationUnitControlMode.separate.rawValue
+        config.showBookmarkInPlaybackControls = true
+        config.showSpeedInPlaybackControls = false
+        config.soundEffectsEnabled = false
+        config.soundEffectsVolume = 0.35
+        // Every event, as TextMouth writes them, each with another sound.
+        config.soundEffectAssignments = ([
+            .play: "Glass", .pause: "None", .skipForward: "Funk",
+            .skipBackward: "Bottle", .whereAmIStart: "Hero", .whereAmIEnd: "Purr",
+        ] as [SoundEvent: String]).keyedByRawValue
+        config.substitutionsEnabled = false
+        // Every action, as TextMouth writes them, three of them changed.
+        var shortcuts = ShortcutAction.defaultBindings
+        shortcuts[.togglePlayback] = [KeyBinding(key: "space"), KeyBinding(key: "p", control: true)]
+        shortcuts[.whereAmI] = [KeyBinding(key: "w", option: true)]
+        shortcuts[.releaseMediaControls] = [KeyBinding(key: "escape", shift: true)]
+        config.keyboardShortcuts = SettingsPolicy.keyboardShortcuts.fileEntries(shortcuts)
         return config
     }
 }
@@ -45,6 +62,16 @@ extension XCTestCase {
     /// settings (see `makeSandboxedPreferences`).
     func isolatedDefaults() throws -> UserDefaults {
         makeSandboxedPreferences("config")
+    }
+
+    /// A config.json location in a directory of this test's own inside the
+    /// isolated test root. The directory is removed when the test ends.
+    func makeConfigFileURL() throws -> URL {
+        let directory = TextMouthPaths.root
+            .appendingPathComponent("ConfigTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        return directory.appendingPathComponent("config.json")
     }
 
     /// The debug log's lines that contain `text`, waiting first for every
