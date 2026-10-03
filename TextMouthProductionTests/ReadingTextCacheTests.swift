@@ -223,6 +223,22 @@ final class ReadingTextCacheTests: XCTestCase {
         XCTAssertEqual(cache.removeExpired(), 0, "nothing more to sweep")
     }
 
+    /// The sweep at launch runs off the main thread, on the cache's queue,
+    /// and removes what went unused for a day.
+    func testSweepInBackgroundRemovesFilesUnusedForADay() throws {
+        let cache = try makeCache()
+        let stale = UUID()
+        let fresh = UUID()
+        try cache.store(Self.sampleChapters, for: stale, key: Self.key())
+        try cache.store(Self.sampleChapters, for: fresh, key: Self.key())
+        try setModificationTime(of: cache.url(for: stale), nanoseconds: Self.nanoseconds(hoursAgo: 26))
+
+        cache.removeExpiredInBackground()
+        ReadingTextCache.waitForBackgroundWork()
+
+        XCTAssertEqual(try fileNames(in: cache), ["\(fresh.uuidString).readingtext"])
+    }
+
     /// A sweep of a folder that was never made finds nothing to remove.
     func testSweepOfAMissingFolderRemovesNothing() throws {
         let folder = try makeSandboxDirectory("ReadingTextCache").appendingPathComponent("Never Made", isDirectory: true)
