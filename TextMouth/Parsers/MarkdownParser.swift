@@ -69,17 +69,43 @@ private struct PlainTextExtractor: MarkupWalker {
     /// 3.0.5 could place an annotation inside a heading line; it names that
     /// heading, so it takes the heading's offset rather than a later one.
     private var currentHeadingOffset: Int?
+    /// Whether a table cell has begun and written none of its words yet.
+    /// Its first words are kept apart from the words before them in its row
+    /// (`append(_:)`), so an empty cell writes nothing, not even a space.
+    private var cellBoundaryIsPending = false
 
     /// Only generated cache/EPUB Markdown opts into navigation annotations.
     init(includeNavigationHeadings: Bool) {
         self.includeNavigationHeadings = includeNavigationHeadings
     }
 
+    /// Append text to the reading. A table cell's first words are kept apart
+    /// from the words of its row before them by one space, unless whitespace
+    /// on either side already keeps them apart.
+    private mutating func append(_ text: String) {
+        if cellBoundaryIsPending, !text.isEmpty {
+            cellBoundaryIsPending = false
+            if runsOn(into: text) {
+                write(" ")
+            }
+        }
+        write(text)
+    }
+
     /// Track offsets incrementally so books with many headings remain linear
     /// in size, including text containing emoji and combining characters.
-    private mutating func append(_ text: String) {
+    private mutating func write(_ text: String) {
         result += text
         utf16Length += text.utf16.count
+    }
+
+    /// Whether `text` would run on into the words written so far: there are
+    /// some, and no whitespace (Unicode White_Space) on either side of the
+    /// join. Scalars decide, as in `HTMLReadingText`, so a combining mark
+    /// joined to a space cannot hide it.
+    private func runsOn(into text: String) -> Bool {
+        guard let last = result.unicodeScalars.last, let first = text.unicodeScalars.first else { return false }
+        return !last.properties.isWhitespace && !first.properties.isWhitespace
     }
 
     /// Separate block elements while preserving the extractor's existing
@@ -121,6 +147,43 @@ private struct PlainTextExtractor: MarkupWalker {
     mutating func visitParagraph(_ paragraph: Markdown.Paragraph) -> () {
         separateBlock()
         descendInto(paragraph)
+    }
+
+    /// A table reads as an HTML table does (`HTMLReadingText`, TODO T03): a
+    /// block of its own, apart from the text before and after it, in which
+    /// each row, the header row included, is a paragraph of its cells'
+    /// words with one space between cells. Speech pauses after each row, as
+    /// after any paragraph, and reads the cells of a row as distinct words.
+    mutating func visitTable(_ table: Markdown.Table) -> () {
+        separateBlock()
+        descendInto(table)
+        cellBoundaryIsPending = false
+        separateBlock()
+    }
+
+    /// The header row is a paragraph like any other row.
+    mutating func visitTableHead(_ tableHead: Markdown.Table.Head) -> () {
+        readRow(tableHead)
+    }
+
+    /// Each body row is a paragraph of its own.
+    mutating func visitTableRow(_ tableRow: Markdown.Table.Row) -> () {
+        readRow(tableRow)
+    }
+
+    /// A cell's first words, when it has any, stand apart from the words
+    /// before them in its row (`cellBoundaryIsPending`).
+    mutating func visitTableCell(_ tableCell: Markdown.Table.Cell) -> () {
+        cellBoundaryIsPending = true
+        descendInto(tableCell)
+    }
+
+    /// Read a table row as a paragraph of its own, which its first cell's
+    /// words begin.
+    private mutating func readRow(_ row: Markup) {
+        separateBlock()
+        cellBoundaryIsPending = false
+        descendInto(row)
     }
 
     /// Record the exact text position before walking the heading's children.

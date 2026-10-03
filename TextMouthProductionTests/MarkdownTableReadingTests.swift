@@ -22,8 +22,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// Each row is a paragraph of its cells' words, one space between cells,
     /// and the table is a block of its own between the paragraphs around it.
     func testRowsAreParagraphsOfTheirCellsWords() throws {
-        expectFusedTables()
-
         let reading = try read("""
         Barometer notes.
 
@@ -51,8 +49,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// A table that starts on the line right after a paragraph, with no
     /// blank line between, still begins a paragraph of its own.
     func testATableRightBelowAParagraphStillStandsApartFromIt() throws {
-        expectFusedTables()
-
         let reading = try read("""
         Pressure chart:
         | Reading | Trend |
@@ -68,8 +64,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// paragraph for a row of empty cells. A row with fewer cells than the
     /// header reads the cells it has.
     func testEmptyCellsAddNoSpacesAndEmptyRowsNoParagraphs() throws {
-        expectFusedTables()
-
         let reading = try read("""
         | Gauge | | Notes |
         | --- | --- | --- |
@@ -86,8 +80,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// emphasis, code, a link, an image's alternative text, and
     /// strikethrough. An escaped vertical bar is a word of its cell.
     func testCellsKeepTheirWordsWithoutTheirFormatting() throws {
-        expectFusedTables()
-
         let reading = try read("""
         | **Bold** words | `inline code` | [a link](https://example.org) | ![alt text](gauge.png) |
         | --- | --- | --- | --- |
@@ -100,16 +92,12 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// A table that opens and closes its chapter leaves no space or blank
     /// line at either end of the chapter's text.
     func testATableFillingAChapterLeavesNothingAtItsEnds() throws {
-        expectFusedTables()
-
         XCTAssertEqual(try read("| A | B |\n| --- | --- |\n| 1 | 2 |"), "A B\n\n1 2")
     }
 
     /// Two tables in a row stay two blocks: the last row of the first and
     /// the header row of the second are paragraphs of their own.
     func testTablesBackToBackStayApart() throws {
-        expectFusedTables()
-
         let reading = try read("""
         | Morning |
         | --- |
@@ -126,8 +114,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// A heading after a table is found where its label begins in the text
     /// that holds the table's separators, so heading navigation lands on it.
     func testHeadingsAfterATableAreFoundWhereTheirLabelsBegin() throws {
-        expectFusedTables()
-
         let chapter = try MarkdownDocParser.parseChapter(markdown: """
         # Pressure
 
@@ -153,7 +139,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// the chapter heading after it. content.md keeps the Markdown table the
     /// DOCX converter writes, so only the reading of it changed.
     func testDOCXFixtureTableIsReadRowByRowThroughItsCache() throws {
-        expectFusedTables()
         let book = try importBook(requireFile("test_book.docx"))
 
         let chapters = try BookContentAnalysisService.load(book: book).content.chapters
@@ -187,7 +172,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     /// that the saved index no longer matches the reading text, reports it,
     /// and indexes the text afresh.
     func testAnIndexSavedFromTheFusedReadingIsReplacedOnTheNextLoad() throws {
-        expectFusedTables()
         let book = try importBook(writingMarkdown: """
         Before the table.
 
@@ -219,17 +203,6 @@ final class MarkdownTableReadingTests: XCTestCase {
     }
 
     // MARK: - Helpers
-
-    /// Every test here fails until the reader separates a table's cells and
-    /// rows. This marks those assertion failures as expected, and requires
-    /// at least one, so the suite stays green until the fix, which removes
-    /// it; any other issue, such as a thrown error, still fails the test.
-    private func expectFusedTables() {
-        XCTExpectFailure(
-            "Markdown tables are read as fused words",
-            issueMatcher: { $0.type == .assertionFailure }
-        )
-    }
 
     /// The reading text of `markdown` as one chapter.
     private func read(_ markdown: String) throws -> String {
