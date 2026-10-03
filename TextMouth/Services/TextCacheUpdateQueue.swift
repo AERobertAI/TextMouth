@@ -13,6 +13,11 @@ enum TextCacheUpdateQueue {
     /// can be minutes old by its turn. That copy names the content to analyze;
     /// the result is committed through `LibraryPersistenceService.saveContentAnalysis`,
     /// which merges it into the book's latest state instead of saving the copy.
+    ///
+    /// Each update is storage work (TODO S04): a data-directory move waits
+    /// for the updates under way and holds the rest until it has published.
+    /// A book queued before the move then reaches its update with its file
+    /// path in the new data directory.
     static func run(
         books: [Book],
         concurrentEPUBs: Int = 2,
@@ -47,7 +52,11 @@ enum TextCacheUpdateQueue {
             let size = try? URL(fileURLWithPath: book.filePath).resourceValues(forKeys: [.fileSizeKey]).fileSize
             let canOverlap = book.format == .epub && !isRepeatedPackage
                 && size.map { $0 <= maximumParallelEPUBBytes } == true
-            let operation: @Sendable () -> Void = { update(book) }
+            let operation: @Sendable () -> Void = {
+                StorageBoundary.shared.perform(.textExtraction) { _ in
+                    update(StorageBoundary.shared.rebasedToCurrent(book))
+                }
+            }
             if canOverlap {
                 queue.addOperation(operation)
             } else {

@@ -91,6 +91,65 @@ final class StorageGenerationStaleWriterTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: Self.package(of: analyzed, under: old).appendingPathComponent("bookInfo.json")), oldRecord)
     }
 
+    // MARK: - Text Caches
+
+    /// A text cache generated for a book captured before the move is read
+    /// from the moved source and written in the moved package, and the old
+    /// data directory is not recreated.
+    func testCacheGeneratedForABookCapturedBeforeAMoveIsWrittenInTheMovedPackage() throws {
+        let old = try makeCurrentDataDirectory("StaleCacheOld")
+        let book = try makeTextBook(in: old)
+        let new = try moveDataDirectory(from: old, label: "StaleCacheNew")
+        try FileManager.default.removeItem(at: old)
+
+        let generated = try MarkdownCacheService.generateReportedCacheContent(for: book)
+
+        let movedCache = Self.package(of: book, under: new).appendingPathComponent("content.md")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: movedCache.path), "The moved package has no content.md")
+        XCTAssertNotNil(generated?.content.contentIndex.textCacheFingerprint, "The moved source was not fingerprinted")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old.path), "The old data directory was recreated")
+    }
+
+    /// A text cache batch that queued a book before the move gives its
+    /// update the book with its file in the new data directory.
+    func testTextCacheBatchGetsABookQueuedBeforeAMoveInTheNewDataDirectory() async throws {
+        let old = try makeCurrentDataDirectory("StaleBatchOld")
+        let book = try makeTextBook(in: old)
+        let new = try moveDataDirectory(from: old, label: "StaleBatchNew")
+        try FileManager.default.removeItem(at: old)
+        let expectedPath = Self.path(of: book, under: new)
+        let updated = expectation(description: "the batch updated the book")
+
+        TextCacheUpdateQueue.run(books: [book], update: { queued in
+            XCTAssertEqual(queued.filePath, expectedPath)
+            updated.fulfill()
+        }, completion: {})
+
+        await fulfillment(of: [updated], timeout: 10)
+    }
+
+    /// The statistics pass for a book the library listed before the move
+    /// analyzes the moved book and commits the result to its moved package,
+    /// without recreating the old data directory.
+    func testStatisticsPassForABookListedBeforeAMoveAnalyzesTheMovedBook() throws {
+        let old = try makeCurrentDataDirectory("StaleStatisticsOld")
+        let book = try makeTextBook(in: old)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.library.books = [book]
+        let new = try moveDataDirectory(from: old, label: "StaleStatisticsNew")
+        try FileManager.default.removeItem(at: old)
+
+        model.calculateMissingBookStats()
+
+        XCTAssertTrue(
+            waitUntil(timeout: 10) { model.library.books.first?.totalWordCount != nil },
+            "The pass never analyzed the book"
+        )
+        XCTAssertNotNil(try BookInfo.load(from: Self.package(of: book, under: new)).contentIndex)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old.path), "The old data directory was recreated")
+    }
+
     // MARK: - Fixtures
 
     /// A new data directory of the test's own, with its folders, made the

@@ -8,9 +8,10 @@ extension XCTestCase {
     ///
     /// A published move takes the data directory of the whole test process
     /// with it (TODO S04), so when the test ends, before anything else this
-    /// helper arranges, the data directory goes back to where it is now.
-    /// Then config.json's copy of the setting is put back, then the scratch
-    /// folder is removed; the data-directory preference is put back too.
+    /// helper arranges, the writes still queued are made and the data
+    /// directory goes back to where it is now. Then config.json's copy of
+    /// the setting is put back, then the scratch folder is removed; the
+    /// data-directory preference is put back too.
     /// Call it after making any fixture whose teardown writes into the data
     /// directory, such as an integration world, so those writes land where
     /// they began.
@@ -38,8 +39,11 @@ extension XCTestCase {
 }
 
 /// Makes the data directory at `root` the current one again, when a test
-/// moved it elsewhere. Nothing changes when it is already there.
+/// moved it elsewhere. Writes still queued are made first, so they land in
+/// the test's data directory and never in the one put back. Nothing
+/// changes when it is already there.
 func restoreDataDirectory(_ root: URL) {
     guard TextMouthPaths.root.path != root.path else { return }
+    LibraryPersistenceService.flushPendingSave()
     StorageBoundary.shared.publish(root: root)
 }

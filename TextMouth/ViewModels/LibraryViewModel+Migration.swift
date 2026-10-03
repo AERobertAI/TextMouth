@@ -213,39 +213,50 @@ extension LibraryViewModel {
     /// Build any missing/outdated per-package content indexes. Parsing and word
     /// counting stay on the utility queue; the main actor receives only compact
     /// Book summary assignments and progress-independent persistence requests.
+    ///
+    /// Each book's analysis is storage work (TODO S04): a data-directory move
+    /// waits for the one under way and holds the rest until it has published,
+    /// and a book listed before the move is then analyzed in the new data
+    /// directory.
     func calculateMissingBookStats() {
         let booksNeedingStats = library.books.filter(Self.needsContentAnalysis)
         guard !booksNeedingStats.isEmpty else { return }
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            for book in booksNeedingStats {
+            let boundary = StorageBoundary.shared
+            for listedBook in booksNeedingStats {
                 let shouldContinue = autoreleasepool {
-                    guard let self = self else { return false }
-                    guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
+                    boundary.perform(.contentAnalysis) { _ -> Bool in
+                        // The book as listed when the pass began, with its
+                        // paths in the data directory in use now.
+                        let book = boundary.rebasedToCurrent(listedBook)
+                        guard let self = self else { return false }
+                        guard FileManager.default.fileExists(atPath: book.filePath) else { return true }
 
-                    do {
-                        let analysis = try BookContentAnalysisService.load(book: book)
-                        // `book` is the row as it was when this pass began. The
-                        // result lands on the book's latest state; a dropped one
-                        // leaves the row alone, so a later pass tries again.
-                        guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                            for: book,
-                            index: analysis.index,
-                            cacheFormatVersion: analysis.cacheFormatVersion
-                        ) else { return true }
-                        let summary = ContentAnalysisSummary(committed: committed)
+                        do {
+                            let analysis = try BookContentAnalysisService.load(book: book)
+                            // `book` is the row as it was when this pass began. The
+                            // result lands on the book's latest state; a dropped one
+                            // leaves the row alone, so a later pass tries again.
+                            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                                for: book,
+                                index: analysis.index,
+                                cacheFormatVersion: analysis.cacheFormatVersion
+                            ) else { return true }
+                            let summary = ContentAnalysisSummary(committed: committed)
 
-                        DispatchQueue.main.async {
-                            guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
-                                return
+                            DispatchQueue.main.async {
+                                guard let index = self.library.books.firstIndex(where: { $0.id == summary.bookID }) else {
+                                    return
+                                }
+                                summary.apply(to: &self.library.books[index])
+                                self.save()
                             }
-                            summary.apply(to: &self.library.books[index])
-                            self.save()
+                        } catch {
+                            // Silently skip books that fail to parse — they'll be parsed when opened
                         }
-                    } catch {
-                        // Silently skip books that fail to parse — they'll be parsed when opened
+                        return true
                     }
-                    return true
                 }
                 releaseBatchParserMemory()
                 guard shouldContinue else { return }
