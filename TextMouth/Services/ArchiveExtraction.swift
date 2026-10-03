@@ -303,7 +303,8 @@ private struct ProgressReporter {
 /// Its name is `extract-<process>-<UUID>`: recognizable, so the sweep at
 /// startup removes only extraction directories, and naming the process that
 /// made it, so the sweep leaves alone one that another running copy of
-/// TextMouth on this Mac is still using.
+/// TextMouth on this Mac is still using. When the directory was made tells
+/// that copy from a later process that took its identifier (#652).
 final class ArchiveExtractionDirectory {
     /// The name of the folder extraction directories are made in.
     static let folderName = "Archive Extraction"
@@ -391,33 +392,48 @@ final class ArchiveExtractionDirectory {
     }
 
     /// Removes the extraction directories in `parent` that no import is
-    /// using, as a crash or a forced quit leaves them: those of processes no
-    /// longer running, and this process's own that none of its imports is
-    /// using (a process before it had the same identifier). An interrupted
-    /// extraction is never resumed, so each goes with everything inside it,
-    /// and the removal is logged, naming the directory by its path inside
-    /// this Mac's TextMouth folder or the data directory
-    /// (`ImportScratchSpace.loggablePath`). A directory of another running
-    /// process is left alone, as is anything not named as an extraction
-    /// directory.
-    /// - Parameter isRunning: whether the process with an identifier still
-    ///   runs; tests supply their own answer.
+    /// using, as a crash or a forced quit leaves them: those whose process
+    /// has ended, and this process's own that none of its imports is using
+    /// (a process before it had the same identifier). Whether another
+    /// process's directory is still its maker's follows the sandbox sweep's
+    /// rule (`TextMouthRuntime.isFolderMakerRunning`): a running process
+    /// with the identifier in its name made it only if that process started
+    /// no later than an hour after the directory was made, so a later
+    /// process that took the identifier keeps no leftover (#652). An
+    /// interrupted extraction is never resumed, so each goes with everything
+    /// inside it, and the removal is logged, naming the directory by its
+    /// path inside this Mac's TextMouth folder or the data directory
+    /// (`ImportScratchSpace.loggablePath`). A directory another running
+    /// process made is left alone, as is anything not named as an
+    /// extraction directory, and anything so named that is not a plain
+    /// folder, such as a symbolic link, which could lead anywhere.
+    /// - Parameter isMakerRunning: Whether the process that made a
+    ///   directory named for a process identifier still runs, given when
+    ///   the directory was made (nil when unknown); tests supply their own
+    ///   answer.
     /// - Returns: How many directories were removed.
     @discardableResult
     static func removeLeftovers(
         in parent: URL,
-        isRunning: (Int32) -> Bool = isProcessRunning
+        isMakerRunning: (_ process: Int32, _ directoryMade: Date?) -> Bool = TextMouthRuntime.isFolderMakerRunning
     ) -> Int {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: parent.path)) ?? []
         let ownProcess = getpid()
+        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]
         var removed = 0
         for name in names {
             guard let process = processIdentifier(inName: name) else { continue }
-            let isAbandoned = process == ownProcess ? !inUse.contains(name) : !isRunning(process)
-            guard isAbandoned else { continue }
             let leftover = parent.appendingPathComponent(name, isDirectory: true)
-            let values = try? leftover.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-            guard values?.isDirectory == true, values?.isSymbolicLink != true else { continue }
+            // Read before deciding anything: only a plain folder can go, and
+            // when it was made tells whether another process made it.
+            guard let values = try? leftover.resourceValues(forKeys: keys),
+                  values.isDirectory == true, values.isSymbolicLink != true else { continue }
+            // This process's own directory is abandoned once none of its
+            // imports holds it; another's, once the process that made it ended.
+            let isAbandoned = process == ownProcess
+                ? !inUse.contains(name)
+                : !isMakerRunning(process, values.creationDate)
+            guard isAbandoned else { continue }
             if removeDirectory(leftover) {
                 removed += 1
                 DiagnosticLog.event(
@@ -443,13 +459,6 @@ final class ArchiveExtractionDirectory {
             return nil
         }
         return process
-    }
-
-    /// Whether the process with identifier `process` is running: signal 0,
-    /// which only checks, reaches it, or is refused because it belongs to
-    /// another user.
-    static func isProcessRunning(_ process: Int32) -> Bool {
-        kill(process, 0) == 0 || errno == EPERM
     }
 
     // MARK: Helpers
