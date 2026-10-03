@@ -240,6 +240,9 @@ final class ImportStaging {
 /// the staged packages (`ImportStaging`) or the extraction directories
 /// (`ArchiveExtractionDirectory`) this process's imports are using, which
 /// the cleanup of abandoned ones leaves alone.
+///
+/// `@unchecked Sendable`: `directories` is read and changed only under
+/// `lock`.
 final class NamesInUse: @unchecked Sendable {
     private let lock = NSLock()
     /// Each name in use, with the directory it names.

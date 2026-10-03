@@ -1,6 +1,9 @@
 import AVFoundation
 import Combine
 
+/// Whether a render succeeded, kept by the render's completion for the
+/// render coordinator, which waits for that completion before it reports.
+/// `@unchecked Sendable`: the value is read and changed only under `lock`.
 private final class RenderResultBox: @unchecked Sendable {
     private let lock = NSLock()
     private var storedValue = false
@@ -307,6 +310,12 @@ extension SpeechRenderCoordinator: SpeechRenderScheduling {}
 /// 1. **Audio Engine mode** (default): Pre-renders speech with AVSpeechSynthesizer.write(),
 ///    plays through AVAudioEngine + AVAudioUnitTimePitch for real-time speed changes and instant seeking.
 /// 2. **Direct mode** (fallback): Uses AVSpeechSynthesizer.speak() directly with word-by-word callbacks.
+///
+/// `@unchecked Sendable`: everything it holds is read and changed on the
+/// main thread, where its owner, the main-actor reader, calls it. The
+/// synthesizer's callbacks hand their work to the main queue without
+/// reading any of it (see the delegate extension), its timers run on the
+/// main run loop, and the position queue works only on a copy of the text.
 final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     let audioEngine = AudioEngineService()
 

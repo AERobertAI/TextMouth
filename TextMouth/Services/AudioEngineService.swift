@@ -165,6 +165,14 @@ enum SpeechSegmentEndPolicy {
 ///
 /// Position tracking uses the AVAudioEngine's node time (not wall clock)
 /// for accurate position reporting.
+///
+/// `@unchecked Sendable`: everything it holds is read and changed on the
+/// main thread, where its owners, the speech service and the reader's
+/// look-ahead, call it, except `currentRender`, which the render queue
+/// shares under `renderLock`. The render queue otherwise works on a
+/// synthesizer and buffers of its own and hands the result over
+/// (`HandedOverBuffer`), and the player node's reports hop to the main
+/// queue, reading only the test hook `_segmentPlayedBackForTesting` first.
 final class AudioEngineService: ObservableObject, @unchecked Sendable {
     private var engine = AVAudioEngine()
     private var playerNode = AVAudioPlayerNode()

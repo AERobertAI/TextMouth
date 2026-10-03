@@ -1363,6 +1363,9 @@ final class ReaderViewModel: ObservableObject {
 // MARK: - Helpers
 
 /// Helper delegate for the Where Am I synthesizer (separate from the book speech service)
+///
+/// `@unchecked Sendable`: its one property is a constant, and `onFinished`
+/// runs only on the main queue, where the synthesizer's callback sends it.
 final class WhereAmIDelegateHelper: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     let onFinished: () -> Void
 
