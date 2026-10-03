@@ -480,7 +480,7 @@ final class LibraryCloudCommands {
         }
         let titles = queued.map(\.title)
         VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
-        DiagnosticLog.event(.storage, "CLOUD_DOWNLOAD_STARTED: \(LibraryCloudWording.list(titles))")
+        DiagnosticLog.event(.storage, "DOWNLOAD_NOW_STARTED: \(LibraryCloudWording.list(titles))")
 
         let queuedIDs = queued.map(\.id)
         return Task { [self, weak window] in
@@ -498,7 +498,7 @@ final class LibraryCloudCommands {
             }
             DiagnosticLog.event(
                 .storage,
-                "CLOUD_DOWNLOAD_FINISHED: \(downloaded.count) downloaded, \(failed.count) failed"
+                "DOWNLOAD_NOW_FINISHED: \(downloaded.count) downloaded, \(failed.count) failed"
             )
             if let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
                 VoiceOverAnnouncer.announce(summary, from: window)
@@ -549,7 +549,7 @@ final class LibraryCloudCommands {
             guard !Task.isCancelled, !(error is CancellationError) else { return nil }
             let failure = (error as? BookCloudError) ?? .provider(error.localizedDescription)
             let explanation = failure.explanation(in: provider)
-            DiagnosticLog.event(.storage, "CLOUD_DOWNLOAD_FAILED: \(book.title): \(explanation)")
+            DiagnosticLog.event(.storage, "DOWNLOAD_NOW_FAILED: \(book.title): \(explanation)")
             ending = .failed(title: book.title, explanation: explanation)
         }
         // A book removed from the library meanwhile has no row to tell.
@@ -587,7 +587,7 @@ final class LibraryCloudCommands {
         let packages = targets.map { library.openBookIDs.contains($0.id) ? nil : BookPackage($0) }
         DiagnosticLog.event(
             .storage,
-            "CLOUD_REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
+            "REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
         )
 
         let failures = await Task.detached(priority: .userInitiated) {
@@ -608,7 +608,7 @@ final class LibraryCloudCommands {
             if let failure {
                 let explanation = failure.explanation(in: provider)
                 refused.append((title: book.title, explanation: explanation))
-                DiagnosticLog.event(.storage, "CLOUD_REMOVE_DOWNLOAD_REFUSED: \(book.title): \(explanation)")
+                DiagnosticLog.event(.storage, "REMOVE_DOWNLOAD_REFUSED: \(book.title): \(explanation)")
             } else {
                 removed.append(book.title)
                 states.record(.inCloud, for: book.id)
@@ -619,7 +619,7 @@ final class LibraryCloudCommands {
         }
         DiagnosticLog.event(
             .storage,
-            "CLOUD_REMOVE_DOWNLOAD_FINISHED: \(removed.count) removed, \(refused.count) refused"
+            "REMOVE_DOWNLOAD_FINISHED: \(removed.count) removed, \(refused.count) refused"
         )
 
         guard let message = LibraryCloudWording.removalFinished(

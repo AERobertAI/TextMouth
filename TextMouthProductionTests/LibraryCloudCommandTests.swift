@@ -373,6 +373,31 @@ final class LibraryCloudCommandTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsRemoved, [])
     }
 
+    // MARK: - Logging
+
+    /// Each command's start, its failures and refusals, and its end are
+    /// events whose tags name the command, apart from the storage service's
+    /// own CLOUD_DOWNLOAD lines.
+    func testCommandsLogUnderTheirOwnTags() async {
+        let marker = UUID().uuidString
+        let failing = cloudTestBook("Failing \(marker)")
+        let open = cloudTestBook("Open \(marker)")
+        let fixture = CommandFixture(books: [failing, open], states: [failing.id: .inCloud, open.id: .downloaded])
+        fixture.fake.scriptDownload(of: failing.id, steps: [], failingWith: .offline)
+        fixture.model.openBookIDs = [open.id]
+
+        _ = await announcements {
+            await fixture.downloadAndWait([failing])
+            _ = await fixture.commands.removeDownloads(of: [open], in: fixture.model, from: nil)
+        }
+
+        let lines = debugLogLines(containing: marker)
+        for tag in ["DOWNLOAD_NOW_STARTED", "DOWNLOAD_NOW_FAILED", "REMOVE_DOWNLOAD_STARTED", "REMOVE_DOWNLOAD_REFUSED"] {
+            XCTAssertTrue(lines.contains { $0.contains(": \(tag): ") }, "\(tag) is missing from \(lines)")
+        }
+        XCTAssertFalse(lines.contains { $0.contains("CLOUD_DOWNLOAD") }, "the service's tags are its own")
+    }
+
     // MARK: - Show in Finder
 
     /// Show in Finder selects each book's package: its .tmb folder, or the
