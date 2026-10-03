@@ -17,7 +17,18 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 BUILD_NUMBER := $(shell date -u +"%Y%m%d%H%M%S")
 
-.PHONY: all clean build debug run install uninstall generate test open xcode help
+# Xcode records the exact Swift package revisions here. The file is committed,
+# so every checkout and CI run builds the same package versions.
+PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# Package resolution uses the same derived data folder as `make build`, so the
+# build reuses the package checkouts that resolution creates.
+RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
+	-project $(PROJECT) \
+	-scheme $(SCHEME) \
+	-derivedDataPath "$(DERIVED_BUILD_DIR)"
+
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test open xcode help
 
 ## Default: build the app
 all: build
@@ -35,6 +46,8 @@ help:
 	@echo "  make uninstall  - Remove from /Applications"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
+	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
+	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
 	@echo "  make clean      - Remove build artifacts"
 	@echo "  make xcode      - Open the project in Xcode"
 	@echo ""
@@ -44,6 +57,23 @@ generate:
 	@echo "==> Generating Xcode project..."
 	xcodegen generate
 	@echo "==> Done."
+
+## Resolve Swift packages exactly as the committed Package.resolved pins them.
+## xcodebuild then refuses to move any pin, so a project.yml version that no
+## longer matches Package.resolved fails here instead of silently re-resolving.
+## That flag accepts a missing Package.resolved, so its presence is checked first.
+resolve-packages: generate
+	@test -f "$(PACKAGE_RESOLVED)" || { echo "error: $(PACKAGE_RESOLVED) is missing; restore it with: git checkout -- $(PACKAGE_RESOLVED)"; exit 1; }
+	@echo "==> Resolving Swift packages from Package.resolved..."
+	$(RESOLVE_PACKAGES) -onlyUsePackageVersionsFromResolvedFile
+
+## Re-resolve after deliberately changing a package version in project.yml.
+## Xcode rewrites Package.resolved to satisfy the new requirements while keeping
+## every other pin; review that diff and commit it together with project.yml.
+update-packages: generate
+	@echo "==> Re-resolving Swift packages for project.yml..."
+	$(RESOLVE_PACKAGES)
+	@echo "==> Review the Package.resolved diff, then commit it with project.yml."
 
 ## Build Release
 build: generate
