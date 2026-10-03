@@ -27,6 +27,12 @@ PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.r
 # compiled code earlier builds left there.
 TEST_DERIVED_DATA =
 
+# Set to 1, as `make check` sets it, to have the performance baselines tests
+# (PerformanceBaselineTests) measure even on a busy Mac rather than skip.
+# The runner hands it to xcodebuild as TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT,
+# which reaches the test host without its TEST_RUNNER_ prefix.
+PERFORMANCE_STRICT =
+
 # Package resolution uses the same derived data folder as `make build`, so the
 # build reuses the package checkouts that resolution creates.
 RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
@@ -135,10 +141,12 @@ uninstall:
 	@echo "==> Removed."
 
 ## Run tests against the real application through the hosted test runner,
-## building in TEST_DERIVED_DATA when it names a folder
+## building in TEST_DERIVED_DATA when it names a folder, with the performance
+## baselines tests strict when PERFORMANCE_STRICT is 1
 test:
 	@echo "==> Running hosted production tests..."
-	@cd TextMouthTests && TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" swift run 2>&1
+	@cd TextMouthTests && TEXTMOUTH_TEST_DERIVED_DATA="$(TEST_DERIVED_DATA)" \
+		$(if $(filter 1,$(PERFORMANCE_STRICT)),TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1) swift run 2>&1
 	@echo ""
 
 ## Run the reproducibility gate: regenerate the project, verify the package

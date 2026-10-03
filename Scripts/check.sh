@@ -11,7 +11,9 @@
 #      the build reports no Swift warning;
 #   4. runs the hosted XCTest suite with the Makefile's flags (make test),
 #      built from scratch in the same folder, and requires that this build
-#      reports no Swift warning either;
+#      reports no Swift warning either. The performance baselines tests run
+#      strictly (PERFORMANCE_STRICT=1): a busy Mac does not skip them, so a
+#      number more than twice its baseline fails the gate;
 # and finally confirms that no step changed the pins. It fails on any
 # generation, resolution, compile, or test error, on any Swift warning, and
 # when the test run reports no executed tests.
@@ -526,7 +528,7 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
 
   begin_step 4 "run the hosted XCTest suite"
-  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" || step_failed test $?
+  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" PERFORMANCE_STRICT=1 || step_failed test $?
   report_tests
   require_no_swift_warnings "$LOG_DIR/test.log"
 
