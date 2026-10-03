@@ -36,6 +36,13 @@ struct StorageStatus: Equatable {
         StorageStatus(message: operation.runningMessage, isFailure: false)
     }
 
+    /// The status while a data-directory move waits for `work` to finish
+    /// before it copies anything (TODO S04), such as "Waiting for the
+    /// current import to finish...".
+    static func waiting(for work: StorageWork) -> StorageStatus {
+        StorageStatus(message: work.waitingMessage, isFailure: false)
+    }
+
     /// The status once an operation has finished with `outcome`: its own
     /// words, which after a failure are those of the library's error alert.
     static func finished(_ outcome: OperationOutcome) -> StorageStatus {
@@ -47,9 +54,16 @@ struct StorageStatus: Equatable {
     /// spoken when it is shown.
     @MainActor
     static func announced(after outcome: OperationOutcome) -> StorageStatus {
-        let status = finished(outcome)
-        VoiceOverAnnouncer.announce(status.message)
-        return status
+        finished(outcome).announced()
+    }
+
+    /// This status, announced once, as every status that changes while the
+    /// user waits is: an operation's result, what a move waits for, and the
+    /// move going on once it waits no more.
+    @MainActor
+    func announced() -> StorageStatus {
+        VoiceOverAnnouncer.announce(message)
+        return self
     }
 }
 
@@ -408,10 +422,10 @@ struct StorageSettingsView: View {
         status = .running(operation)
         Task { @MainActor in
             // The work runs on the main actor and holds the interface while
-            // it does. A short pause first lets the run loop draw the running
-            // status and the unavailable buttons before the work begins.
-            try? await Task.sleep(for: .milliseconds(50))
-            let outcome = libraryViewModel.outcomeConfirmingSaves(perform(operation))
+            // it copies. A short pause first lets the run loop draw the
+            // running status and the unavailable buttons before it begins.
+            await letTheStatusBeDrawn()
+            let outcome = libraryViewModel.outcomeConfirmingSaves(await perform(operation))
             status = .announced(after: outcome)
             runningOperation = nil
         }
@@ -419,14 +433,37 @@ struct StorageSettingsView: View {
 
     /// Does the work of `operation` through the library model, which
     /// returns its outcome instead of raising an alert in the Library window.
-    private func perform(_ operation: StorageOperation) -> OperationOutcome {
+    private func perform(_ operation: StorageOperation) async -> OperationOutcome {
         switch operation {
         case .rebuild:
             return libraryViewModel.rebuildDirectoryReturningOutcome()
         case .resetToDefault:
-            return libraryViewModel.rebuildToDefaultReturningOutcome()
+            return await libraryViewModel.rebuildToDefaultReturningOutcome { work in
+                await showWaiting(for: work, during: operation)
+            }
         case .move(let destination):
-            return libraryViewModel.moveDataDirectoryReturningOutcome(to: destination)
+            return await libraryViewModel.moveDataDirectoryReturningOutcome(to: destination) { work in
+                await showWaiting(for: work, during: operation)
+            }
         }
+    }
+
+    /// Shows, and announces once, what a move waits for before it copies
+    /// anything, such as the import under way (TODO S04); with nil, the
+    /// move waits no more, and the status line says it is moving again,
+    /// drawn before the copy holds the interface.
+    private func showWaiting(for work: StorageWork?, during operation: StorageOperation) async {
+        guard let work else {
+            status = StorageStatus.running(operation).announced()
+            await letTheStatusBeDrawn()
+            return
+        }
+        status = StorageStatus.waiting(for: work).announced()
+    }
+
+    /// Pauses briefly, so the run loop draws the status line, and the
+    /// buttons' state, before work that holds the interface begins.
+    private func letTheStatusBeDrawn() async {
+        try? await Task.sleep(for: .milliseconds(50))
     }
 }

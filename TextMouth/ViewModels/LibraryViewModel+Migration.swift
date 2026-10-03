@@ -468,9 +468,14 @@ extension LibraryViewModel {
     }
 
     /// Rebuild to the default location (~/.TextMouth), moving data there.
-    /// Problems are explained through the library's alerts.
-    func rebuildToDefault() {
-        presentThroughAlerts(runRebuildToDefault(), failureContext: Self.resetFailureContext)
+    /// Problems are explained through the library's alerts. Returns the
+    /// task doing the work, which first waits for the storage work under way
+    /// (TODO S04); callers need not wait for it.
+    @discardableResult
+    func rebuildToDefault() -> Task<Void, Never> {
+        Task {
+            presentThroughAlerts(await runRebuildToDefault(waiting: { _ in }), failureContext: Self.resetFailureContext)
+        }
     }
 
     /// Reset to Default, returning its outcome and presenting nothing. It
@@ -478,9 +483,13 @@ extension LibraryViewModel {
     /// `dataLocationDone(since:)`), followed by any legacy books that could
     /// not move into packages, or fails with the reason, such as a default
     /// location that already holds other files.
-    func rebuildToDefaultReturningOutcome() -> OperationOutcome {
+    /// - Parameter waiting: Told what the move waits for before it copies
+    ///   anything (see `withStorageWorkHeld(waiting:_:)`).
+    func rebuildToDefaultReturningOutcome(
+        waiting: (StorageWork?) async -> Void = { _ in }
+    ) async -> OperationOutcome {
         let previousRoot = DataDirectoryLocation(TextMouthPaths.root)
-        let run = runRebuildToDefault()
+        let run = await runRebuildToDefault(waiting: waiting)
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.resetFailureContext,
@@ -489,28 +498,45 @@ extension LibraryViewModel {
     }
 
     /// The work of Reset to Default: the legacy migration report, or the
-    /// error that stopped it.
-    private func runRebuildToDefault() -> Result<LegacyMigrationReport?, Error> {
-        Result {
+    /// error that stopped it. Like a move, it holds back the storage work
+    /// that writes into the data directory until it is done, the rebuild in
+    /// the default location included.
+    private func runRebuildToDefault(
+        waiting: (StorageWork?) async -> Void
+    ) async -> Result<LegacyMigrationReport?, Error> {
+        do {
             try ensureLibraryIndexIsReadable()
-            let defaultRoot = TextMouthPaths.defaultRoot
-            if TextMouthPaths.root.path != defaultRoot.path {
-                try TextMouthPaths.moveDataDirectory(to: defaultRoot, library: &library)
+            let migration = try await withStorageWorkHeld(waiting: waiting) { () throws -> LegacyMigrationReport? in
+                let defaultRoot = TextMouthPaths.defaultRoot
+                if TextMouthPaths.root.path != defaultRoot.path {
+                    try publishDataDirectoryMove(to: defaultRoot)
+                }
+                try TextMouthPaths.ensureDirectoryStructure()
+                let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
+                configService.config.dataDirectoryPath = ""
+                configService.saveToDisk()
+                save()
+                return migration
             }
-            try TextMouthPaths.ensureDirectoryStructure()
-            let migration = try FileImportService.rebuildDirectoryStructure(library: &library)
-            configService.config.dataDirectoryPath = ""
-            configService.saveToDisk()
-            save()
-            return migration
+            return .success(migration)
+        } catch {
+            return .failure(error)
         }
     }
 
     /// Move the data directory to a new location. A failure is explained
     /// through the library's error alert; a location requested by editing
-    /// config.json arrives this way.
-    func moveDataDirectory(to newURL: URL) {
-        presentThroughAlerts(runDataDirectoryMove(to: newURL), failureContext: Self.moveFailureContext)
+    /// config.json arrives this way. Returns the task doing the work, which
+    /// first waits for the storage work under way (TODO S04); callers need
+    /// not wait for it.
+    @discardableResult
+    func moveDataDirectory(to newURL: URL) -> Task<Void, Never> {
+        Task {
+            presentThroughAlerts(
+                await runDataDirectoryMove(to: newURL, waiting: { _ in }),
+                failureContext: Self.moveFailureContext
+            )
+        }
     }
 
     /// Change Location, returning its outcome and presenting nothing. It
@@ -518,9 +544,14 @@ extension LibraryViewModel {
     /// `dataLocationDone(since:)`) or fails with the reason nothing moved,
     /// such as a destination that is not empty or that changed while the
     /// data was copied.
-    func moveDataDirectoryReturningOutcome(to newURL: URL) -> OperationOutcome {
+    /// - Parameter waiting: Told what the move waits for before it copies
+    ///   anything (see `withStorageWorkHeld(waiting:_:)`).
+    func moveDataDirectoryReturningOutcome(
+        to newURL: URL,
+        waiting: (StorageWork?) async -> Void = { _ in }
+    ) async -> OperationOutcome {
         let previousRoot = DataDirectoryLocation(TextMouthPaths.root)
-        let run = runDataDirectoryMove(to: newURL)
+        let run = await runDataDirectoryMove(to: newURL, waiting: waiting)
         return Self.maintenanceOutcome(
             run,
             failureContext: Self.moveFailureContext,
@@ -543,19 +574,76 @@ extension LibraryViewModel {
     /// The work of moving the data directory: no legacy migration report,
     /// or the error that stopped the move. A failed move leaves config.json
     /// naming the directory still in use.
-    private func runDataDirectoryMove(to newURL: URL) -> Result<LegacyMigrationReport?, Error> {
+    private func runDataDirectoryMove(
+        to newURL: URL,
+        waiting: (StorageWork?) async -> Void
+    ) async -> Result<LegacyMigrationReport?, Error> {
         do {
             try ensureLibraryIndexIsReadable()
-            try TextMouthPaths.moveDataDirectory(to: newURL, library: &library)
-            configService.config.dataDirectoryPath = newURL.path
-            configService.saveToDisk()
-            save()
+            try await withStorageWorkHeld(waiting: waiting) {
+                try publishDataDirectoryMove(to: newURL)
+                configService.config.dataDirectoryPath = newURL.path
+                configService.saveToDisk()
+                save()
+            }
             return .success(nil)
         } catch {
             configService.config.dataDirectoryPath = TextMouthPaths.isCustomPath ? TextMouthPaths.rootPath : ""
             configService.saveToDisk()
             return .failure(error)
         }
+    }
+
+    /// Runs `body`, the part of a data-directory move that copies the data
+    /// directory and publishes the copy, with no other storage work under
+    /// way (TODO S04), and returns what it returns.
+    ///
+    /// New imports, text extractions, and book analyses are held back first,
+    /// until `body` is done. Then the move waits for those under way,
+    /// telling `waiting` each kind it waits for, an import first, and nil
+    /// once it waits for nothing more and is about to copy. `waiting` is
+    /// awaited, so the status line can be drawn before the copy holds the
+    /// interface. Next the writes still queued are made, in the data
+    /// directory about to be copied, so the copy holds them and none is
+    /// written after the publication. The held work goes on once `body`
+    /// returns or throws, under whichever generation is current then.
+    ///
+    /// Everything from the wait's end to the publication runs on the main
+    /// actor without a break, so no removal or other change of the library
+    /// can come between the copy and the library it is made from. Only one
+    /// move runs at a time: another throws
+    /// `DataDirectoryMigrationError.moveInProgress`.
+    private func withStorageWorkHeld<Value>(
+        waiting: (StorageWork?) async -> Void,
+        _ body: () throws -> Value
+    ) async throws -> Value {
+        guard let hold = StorageBoundary.shared.holdWork() else {
+            throw DataDirectoryMigrationError.moveInProgress
+        }
+        defer { hold.release() }
+        var waited = false
+        await hold.waitForWorkUnderWay { work in
+            waited = true
+            DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: \(work.waitingMessage)")
+            await waiting(work)
+        }
+        if waited {
+            await waiting(nil)
+        }
+        LibraryPersistenceService.flushPendingSave()
+        TextMouthPaths.flushLogs()
+        return try body()
+    }
+
+    /// Copies the data directory to `newRoot` and publishes the copy
+    /// (`TextMouthPaths.moveDataDirectory`), which gives the library its
+    /// books' places there, and then gives the books held by the questions
+    /// imports are waiting to ask theirs: a duplicate's new copy and a ZIP
+    /// archive's books, published before the move, are answered about in
+    /// the new data directory (TODO S04).
+    private func publishDataDirectoryMove(to newRoot: URL) throws {
+        try TextMouthPaths.moveDataDirectory(to: newRoot, library: &library)
+        importDecisions.mapBooks(StorageBoundary.shared.rebasedToCurrent)
     }
 
     /// Reports a maintenance run through the library's alerts: a failure as

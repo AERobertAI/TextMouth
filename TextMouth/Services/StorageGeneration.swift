@@ -360,13 +360,14 @@ final class StorageWorkHold: @unchecked Sendable {
 
     /// Returns once no work is under way, telling `report` each kind of
     /// work it waits for, in turn: an import first when several kinds are
-    /// under way. Work started meanwhile is held, so the wait ends.
+    /// under way. Work started meanwhile is held, so the wait ends. `report`
+    /// is awaited, so a status line can be drawn before the wait goes on.
     @MainActor
-    func waitForWorkUnderWay(reporting report: (StorageWork) -> Void) async {
+    func waitForWorkUnderWay(reporting report: (StorageWork) async -> Void) async {
         var reported: StorageWork?
         while let underWay = boundary.firstWorkUnderWay() {
             if underWay.work != reported {
-                report(underWay.work)
+                await report(underWay.work)
                 reported = underWay.work
             }
             await boundary.workFinished(after: underWay.finished)
