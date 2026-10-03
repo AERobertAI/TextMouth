@@ -111,4 +111,58 @@ final class KeepOnThisMacTests: XCTestCase {
             "the set must not sync with the library"
         )
     }
+
+    // MARK: - Remove Download
+
+    /// Remove Download refuses a kept book without asking the storage: the
+    /// book keeps its download, and the window shows, and VoiceOver hears,
+    /// why and what to do.
+    func testRemoveDownloadRefusesAKeptBook() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.keep([book.id])
+
+        var refusal: LibraryCloudRefusal?
+        let said = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        }
+
+        let explanation = BookCloudError.keptOnThisMac.explanation(in: .iCloudDrive)
+        XCTAssertEqual(refusal, LibraryCloudRefusal(title: "Download Not Removed", message: explanation))
+        XCTAssertEqual(said, [explanation])
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0)
+    }
+
+    /// In a selection, the books not kept lose their downloads, and the kept
+    /// one keeps its own, with the reason said once.
+    func testRemoveDownloadOfASelectionSparesTheKeptBooks() async {
+        let kept = cloudTestBook("Moby-Dick")
+        let other = cloudTestBook("Emma", author: "Jane Austen")
+        let fixture = CommandFixture(books: [kept, other], states: [kept.id: .downloaded, other.id: .downloaded])
+        fixture.kept.keep([kept.id])
+
+        var refusal: LibraryCloudRefusal?
+        _ = await announcements {
+            refusal = await fixture.commands.removeDownloads(of: [kept, other], in: fixture.model, from: nil)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsRemoved, [other.id])
+        XCTAssertEqual(fixture.states.state(of: other.id), .inCloud)
+        XCTAssertEqual(fixture.states.state(of: kept.id), .downloaded)
+        XCTAssertEqual(
+            refusal?.message,
+            "Removed the download of Emma. It stays in iCloud Drive. The download of Moby-Dick wasn't removed. "
+                + BookCloudError.keptOnThisMac.explanation(in: .iCloudDrive)
+        )
+    }
+
+    /// The refusal says why, and names the command that lifts it.
+    func testTheRefusalNamesTheCommandThatLiftsIt() {
+        XCTAssertEqual(
+            BookCloudError.keptOnThisMac.explanation(in: .dropbox),
+            "The book is kept on this Mac, so its download can't be removed. Choose Stop Keeping on This Mac first."
+        )
+    }
 }

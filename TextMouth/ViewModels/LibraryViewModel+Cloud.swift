@@ -452,6 +452,8 @@ final class LibraryCloudCommands {
 
     /// The store the commands record into.
     private let states: BookCloudStates
+    /// The books this Mac keeps downloaded (Keep on This Mac).
+    private let kept: KeptBooks
     /// The book storage, looked up when each command runs.
     private let storage: @MainActor () -> any BookCloudStorage
     /// Asks for a refresh once a removal has recorded its states, so that a
@@ -464,17 +466,20 @@ final class LibraryCloudCommands {
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
     ///   - states: The store to record into.
+    ///   - kept: The books this Mac keeps downloaded.
     ///   - storage: The book storage to act through, looked up when each
     ///     command runs, so a storage installed later is used.
     ///   - refreshAfterRemoval: Asks for a refresh after a removal.
     ///   - revealInFinder: Selects files in Finder.
     init(
         states: BookCloudStates = .shared,
+        kept: KeptBooks = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() },
         revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
     ) {
         self.states = states
+        self.kept = kept
         self.storage = storage
         self.refreshAfterRemoval = refreshAfterRemoval
         self.revealInFinder = revealInFinder
@@ -630,11 +635,12 @@ final class LibraryCloudCommands {
     ///
     /// Only downloaded books take part, and none whose download the list is
     /// removing already, so asking twice removes once. A book open in a
-    /// reader is refused at once, without asking the storage
-    /// (`BookCloudError.bookIsOpen`), and the storage refuses a book with
-    /// changes not uploaded yet (`.notUploaded`); a refused book keeps its
-    /// download. Nothing is deleted from the cloud, so nothing asks first.
-    /// The removals read and change files, so they run off the main thread.
+    /// reader, or one kept on this Mac, is refused at once, without asking
+    /// the storage (`BookCloudError.bookIsOpen`, `.keptOnThisMac`), and the
+    /// storage refuses a book with changes not uploaded yet (`.notUploaded`);
+    /// a refused book keeps its download. Nothing is deleted from the cloud,
+    /// so nothing asks first. The removals read and change files, so they
+    /// run off the main thread.
     /// - Returns: The refusal for `window` to show when any book keeps its
     ///   download; nil when every download was removed, or none could be.
     @discardableResult
@@ -648,16 +654,27 @@ final class LibraryCloudCommands {
         defer { booksBeingRemoved.subtract(targetIDs) }
         let provider = states.libraryLocation.provider
         let storage = storage()
-        // Each book's package, or nil for a book open in a reader.
-        let packages = targets.map { library.openBookIDs.contains($0.id) ? nil : BookPackage($0) }
+        // Each book's package, or why its download stays without asking the
+        // storage: the book is open in a reader, or kept on this Mac.
+        let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
+            if library.openBookIDs.contains(book.id) { return .failure(.bookIsOpen) }
+            if kept.contains(book.id) { return .failure(.keptOnThisMac) }
+            return .success(BookPackage(book))
+        }
         DiagnosticLog.event(
             .storage,
             "REMOVE_DOWNLOAD_STARTED: \(LibraryCloudWording.list(targets.map(\.title)))"
         )
 
         let failures = await Task.detached(priority: .userInitiated) {
-            packages.map { package -> BookCloudError? in
-                guard let package else { return .bookIsOpen }
+            requests.map { request -> BookCloudError? in
+                let package: BookPackage
+                switch request {
+                case .failure(let refusal):
+                    return refusal
+                case .success(let found):
+                    package = found
+                }
                 do {
                     try storage.removeDownload(of: package)
                     return nil

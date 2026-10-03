@@ -279,6 +279,9 @@ enum BookCloudError: Error, Equatable, Sendable {
     case notUploaded
     /// Remove Download refused: the book is open in a reader.
     case bookIsOpen
+    /// Remove Download refused: the book is kept on this Mac (Keep on This
+    /// Mac, `KeptBooks`).
+    case keptOnThisMac
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
@@ -305,6 +308,9 @@ enum BookCloudError: Error, Equatable, Sendable {
                 + "so its download can't be removed. Try again in a moment."
         case .bookIsOpen:
             return "The book is open, so its download can't be removed. Close it first."
+        case .keptOnThisMac:
+            return "The book is kept on this Mac, so its download can't be removed. "
+                + "Choose Stop Keeping on This Mac first."
         case .removalFailed(let message):
             return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
         case .packageMissing:

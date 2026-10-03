@@ -556,12 +556,14 @@ final class LibraryCloudCommandTests: XCTestCase {
 
 /// The library list's cloud commands with everything of their own: a store
 /// and fake storage for a library in iCloud Drive whose books start in the
-/// states given, and an inert library model holding the books. The storage
-/// counts the calls made on the main thread, and the fixture counts the
-/// refreshes the commands ask for.
+/// states given, a set of kept books in memory, empty at first, and an inert
+/// library model holding the books. The storage counts the calls made on the
+/// main thread, and the fixture counts the refreshes the commands ask for.
 @MainActor
 final class CommandFixture {
     let states: BookCloudStates
+    /// The books this Mac keeps downloaded, in memory only.
+    let kept: KeptBooks
     let fake: FakeBookCloudStorage
     let storage: CountingBookCloudStorage
     let model: LibraryViewModel
@@ -573,11 +575,13 @@ final class CommandFixture {
 
     init(books: [Book], states recorded: [UUID: BookCloudState]) {
         let states = BookCloudStates()
+        let kept = KeptBooks(file: nil)
         let fake = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
         let storage = CountingBookCloudStorage(fake)
         let refreshRequests = RequestCounter()
         let revealed = RevealLog()
         self.states = states
+        self.kept = kept
         self.fake = fake
         self.storage = storage
         self.refreshRequests = refreshRequests
@@ -585,6 +589,7 @@ final class CommandFixture {
         model = LibraryViewModel(initializeServices: false)
         commands = LibraryCloudCommands(
             states: states,
+            kept: kept,
             storage: { storage },
             refreshAfterRemoval: { refreshRequests.count += 1 },
             revealInFinder: { revealed.files.append($0) }
