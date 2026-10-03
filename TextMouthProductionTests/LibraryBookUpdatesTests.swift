@@ -133,10 +133,10 @@ final class LibraryBookUpdatesTests: XCTestCase {
         let recorder = EventRecorder()
         var changedInResponse = false
         recorder.subscriptions = books.map { book in
-            model.bookUpdates.events(for: book.id).sink { event in
-                recorder.events.append(event)
+            model.bookUpdates.events(for: book.id).sink { [weak model, weak recorder] event in
+                recorder?.events.append(event)
                 // The first update heard renames both books again at once.
-                guard !changedInResponse else { return }
+                guard !changedInResponse, let model else { return }
                 changedInResponse = true
                 var library = model.library
                 for index in library.books.indices {
@@ -219,7 +219,7 @@ final class LibraryBookUpdatesTests: XCTestCase {
     private func record(_ book: Book, in model: LibraryViewModel) -> EventRecorder {
         let recorder = EventRecorder()
         recorder.subscriptions = [
-            model.bookUpdates.events(for: book.id).sink { recorder.events.append($0) }
+            model.bookUpdates.events(for: book.id).sink { [weak recorder] in recorder?.events.append($0) }
         ]
         return recorder
     }
