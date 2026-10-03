@@ -161,10 +161,6 @@ final class ReaderRefreshTests: XCTestCase {
     /// copy keeps the original, so nothing is missing; the reader must
     /// still play the book's files from where the library now has them.
     func testPlayingAudioReaderFollowsADataDirectoryMove() throws {
-        // The move records the new location in this process's preferences
-        // (the sandbox's, never the user's; see TextMouthRuntime). Under
-        // hosted tests the data directory itself never leaves the sandbox.
-        preservePreferences(["textMouthDataDirectory"])
         let world = try makeIntegrationWorld("Reader Refresh Data Directory")
         let book = try world.makeSilentAudioBook(
             title: "Estuary Survey",
@@ -178,8 +174,10 @@ final class ReaderRefreshTests: XCTestCase {
         XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
         // Every queued write is made first, so the copy is made of settled files.
         LibraryPersistenceService.flushPendingSave()
-        let destination = try makeSandboxDirectory("ReaderRefreshMovedData")
-            .appendingPathComponent("Moved Data", isDirectory: true)
+        // The move takes this process's data directory with it (TODO S04);
+        // the destination's helper puts it back, and the location the move
+        // records in the sandbox's preferences, when the test ends.
+        let destination = try makeDataDirectoryMoveDestination("ReaderRefreshMovedData")
 
         try TextMouthPaths.moveDataDirectory(to: destination, library: &world.library.library)
 

@@ -9,6 +9,38 @@ final class TextMouthTestBundle: NSObject {
     override init() {
         super.init()
         XCTestObservationCenter.shared.addTestObserver(ReaderWindowLeakCheck.shared)
+        XCTestObservationCenter.shared.addTestObserver(DataDirectoryLeakCheck.shared)
+    }
+}
+
+/// Fails a test that leaves the data directory somewhere else (TODO S04).
+///
+/// A data-directory move a test publishes takes the data directory of the
+/// whole test process with it, so every later test would read and write in
+/// that test's scratch folder, which is removed when it ends. A test moves
+/// it with `makeDataDirectoryMoveDestination(_:)`, which puts it back. When
+/// a test starts this check notes the data directory, and once the test
+/// method and its teardown blocks have run it puts back any other and fails
+/// the test, naming where it was left.
+///
+/// `@unchecked Sendable`: it has no stored state of its own.
+final class DataDirectoryLeakCheck: NSObject, XCTestObservation, @unchecked Sendable {
+    /// The check the principal class registers.
+    static let shared = DataDirectoryLeakCheck()
+
+    func testCaseWillStart(_ testCase: XCTestCase) {
+        let root = TextMouthPaths.root
+        // Registered first, so it runs after every teardown block the test
+        // itself adds.
+        testCase.addTeardownBlock {
+            let left = TextMouthPaths.root
+            guard left.path != root.path else { return }
+            restoreDataDirectory(root)
+            XCTFail(
+                "Left the data directory at \(left.path). Move it with makeDataDirectoryMoveDestination(_:), "
+                    + "which puts it back when the test ends."
+            )
+        }
     }
 }
 

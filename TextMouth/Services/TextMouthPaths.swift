@@ -29,7 +29,7 @@ enum TextMouthPaths {
 
     // MARK: - Root
 
-    /// The active data directory of a process with `runtime`: the custom
+    /// The data directory a process with `runtime` starts with: the custom
     /// location when one is in use (see `customRootPath(for:)`), otherwise
     /// the default location in the runtime's home.
     static func root(for runtime: TextMouthRuntime) -> URL {
@@ -39,9 +39,12 @@ enum TextMouthPaths {
         return defaultRoot(in: runtime.homeDirectory)
     }
 
-    /// The active data directory of this process (see `root(for:)`).
+    /// The active data directory of this process: the root of the current
+    /// storage generation (TODO S04). It starts where `root(for:)` says and
+    /// changes only when a data-directory move publishes its copy
+    /// (`moveDataDirectory`), never because the preference changed.
     static var root: URL {
-        root(for: .current)
+        StorageBoundary.shared.current.root
     }
 
     /// Set a custom data directory path. Pass nil to reset to default.
@@ -72,10 +75,12 @@ enum TextMouthPaths {
     ///
     /// The app uses the location the user chose, when the preferences hold
     /// one; an empty path counts as none, as it always has. A process
-    /// hosting tests always uses the default location in its sandbox and
-    /// ignores a custom one, even one a test sets through `setCustomRoot`,
-    /// so hosted startup, migrations, cache maintenance, and the background
-    /// saves and logs that follow the root never leave the sandbox.
+    /// hosting tests always starts at the default location in its sandbox
+    /// and ignores a custom one, even one a test sets through
+    /// `setCustomRoot`, so hosted startup, migrations, cache maintenance,
+    /// and the background saves and logs that follow the root never leave
+    /// the sandbox. Only a move a test publishes, into a folder of its own,
+    /// takes the root elsewhere, until the test puts it back.
     private static func customRootPath(for runtime: TextMouthRuntime) -> String? {
         guard !runtime.isHostedTest,
               let path = runtime.preferences.string(forKey: customPathKey),
@@ -259,11 +264,13 @@ enum TextMouthPaths {
     // MARK: - Move Directory
 
     /// Move the entire data directory from the current location to a new one.
-    /// Updates the custom path setting and rewrites file paths in the library.
+    /// Updates the custom path setting, starts the next storage generation,
+    /// and rewrites file paths in the library.
     ///
-    /// Both change only once the copy is published. A migration refused or
-    /// stopped before then (TODO S10) throws with the data directory in use,
-    /// its setting, and `library` as they were.
+    /// All three change only once the copy is published. A migration refused
+    /// or stopped before then (TODO S10) throws with the data directory in
+    /// use, its setting, and `library` as they were. From the publication on,
+    /// `root` and every path built from it name the new location (TODO S04).
     /// - Parameter fileManager: The file manager the migration works with;
     ///   tests pass one that changes the new location while it copies.
     static func moveDataDirectory(
@@ -280,12 +287,17 @@ enum TextMouthPaths {
             fileManager: fileManager
         )
 
-        // Update the path setting
+        // Update the path setting, and use the new location from now on,
+        // spelled exactly as `root(for:)` will read it at the next launch.
+        let publishedRoot: URL
         if newRoot.path == defaultRoot.path {
             setCustomRoot(nil) // Reset to default
+            publishedRoot = defaultRoot
         } else {
             setCustomRoot(newRoot)
+            publishedRoot = URL(fileURLWithPath: newRoot.path)
         }
+        StorageBoundary.shared.publish(root: publishedRoot)
 
         library = migratedLibrary
     }
