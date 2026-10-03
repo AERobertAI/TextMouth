@@ -13,13 +13,30 @@ import Foundation
 /// its copy takes the library's fields and keeps everything that is the
 /// reader's own, and whatever the reader shows from those fields follows.
 /// Nothing is reloaded, and playback goes on.
+///
+/// Before the library moves the book's package on disk, it says so, and
+/// audio that is playing stops reading the book's files until the move is
+/// over, then plays on from the same place.
 extension ReaderViewModel {
+
+    /// Audio set aside while the book's package moves: playing when the
+    /// move was announced, at `volume`, which a sleep timer may be fading.
+    struct AudioPausedForMove: Equatable {
+        let volume: Float
+    }
 
     /// Handles one event the library sent about this reader's book. A
     /// closed reader has nothing left to keep current.
     func handleLibraryEvent(_ event: LibraryBookEvent) {
-        guard !hasClosed, case .updated(let update) = event else { return }
-        applyLibraryUpdate(update)
+        guard !hasClosed else { return }
+        switch event {
+        case .packageWillMove:
+            pauseAudioForPackageMove()
+        case .updated(let update):
+            applyLibraryUpdate(update)
+        case .packageMoveEnded:
+            resumeAudioAfterPackageMove()
+        }
     }
 
     /// Applies `update` when it is about this reader's book and newer than
@@ -72,14 +89,39 @@ extension ReaderViewModel {
     /// audio plays on at once from the same place in the book's files where
     /// they are now. Paused audio stays paused, and resuming plays from the
     /// files where they are then. With no file loaded, the next play finds
-    /// the files where they are anyway.
+    /// the files where they are anyway, and audio set aside for a package
+    /// move plays on from the new place when the move ends.
     private func retargetAudioPlayback() {
-        guard isAudioBook, audioPlaybackService.loadedURL != nil else { return }
+        guard isAudioBook, audioPausedForMove == nil, audioPlaybackService.loadedURL != nil else { return }
         if audioPlaybackService.isPlaying && !audioPlaybackService.isPaused {
             restartAudioAtCursor(volume: audioPlaybackService.intendedVolume)
         } else {
             restartPlaybackBackendOnNextResume = true
         }
+    }
+
+    // MARK: - Package Moves
+
+    /// The library is about to move the book's package. Audio that is
+    /// playing stops now, releasing the file it plays, so nothing reads the
+    /// book's files while they move or after they are gone; the reader goes
+    /// on showing Playing, its cursor where the audio stopped. Paused audio
+    /// reads nothing and is left alone. Speech reads no files as it plays.
+    private func pauseAudioForPackageMove() {
+        guard isAudioBook, audioPausedForMove == nil,
+              audioPlaybackService.isPlaying, !audioPlaybackService.isPaused else { return }
+        audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
+        audioPlaybackService.stop()
+    }
+
+    /// The move announced before is over. Audio set aside for it plays on
+    /// from the cursor, from wherever the book's files now are: the new
+    /// place, which the library's update has already given the reader, or
+    /// the old one when the move was put back.
+    private func resumeAudioAfterPackageMove() {
+        guard let paused = audioPausedForMove else { return }
+        audioPausedForMove = nil
+        restartAudioAtCursor(volume: paused.volume)
     }
 
     /// Plays the cursor's chapter again from the cursor, loading its audio

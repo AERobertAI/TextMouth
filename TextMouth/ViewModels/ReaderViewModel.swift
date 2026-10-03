@@ -183,6 +183,10 @@ final class ReaderViewModel: ObservableObject {
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
     /// when the reader starts watching its book.
     var appliedLibraryRevision = 0
+    /// Audio that was playing when the library said the book's package was
+    /// about to move, set aside until the move ends and playback goes on
+    /// from the cursor (TODO P10); nil the rest of the time.
+    var audioPausedForMove: AudioPausedForMove?
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false

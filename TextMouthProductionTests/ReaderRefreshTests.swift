@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -278,6 +279,141 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - Playback Around Package Moves
+
+    /// An audiobook plays when the library moves it to another folder. While
+    /// its package moves on disk, nothing plays from it: the player holds no
+    /// file. Once the move is over, playback goes on from the same place in
+    /// the moved package, still showing Playing.
+    func testAudioStopsReadingBeforeItsPackageMovesAndPlaysOnAtTheSamePlace() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Audio Before Move")
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+        let duringMove = PlayerObservation()
+
+        try world.library.commitLibraryTransition(
+            Self.library(world.library.library, moving: book.id, to: "\(world.folder.path)/Shelf"),
+            affectedBookIDs: [book.id],
+            disk: observingDisk(reader, into: duringMove)
+        )
+
+        XCTAssertEqual(duringMove.moves, 1)
+        XCTAssertNil(duringMove.loadedURL, "The player held a file while its package moved")
+        XCTAssertFalse(duringMove.isPlaying, "Audio played while its package moved")
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the move")
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: book, in: world.library).filePath)
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 5)
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertFalse(reader.isCurrentlyPaused)
+        reader.stop()
+    }
+
+    /// A package move that fails is put back, and audio that was playing
+    /// when it started plays on from the same place in the book's files,
+    /// where they still are, with no error.
+    func testAudioPlaysOnFromTheOldPlaceWhenAMoveFails() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Failed Move")
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        let duringMove = PlayerObservation()
+
+        XCTAssertThrowsError(try world.library.commitLibraryTransition(
+            Self.library(world.library.library, moving: book.id, to: "\(world.folder.path)/Shelf"),
+            affectedBookIDs: [book.id],
+            disk: observingDisk(reader, into: duringMove, failing: true)
+        ))
+
+        XCTAssertEqual(duringMove.moves, 1)
+        XCTAssertNil(duringMove.loadedURL, "The player held a file while its package moved")
+        XCTAssertEqual(try row(of: book, in: world.library).folderPath, world.folder.path, "The failed move was kept")
+        XCTAssertEqual(reader.book.filePath, book.filePath)
+        XCTAssertNil(reader.errorMessage)
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the failed move")
+        XCTAssertEqual(Self.folderPath(of: reader.audioPlaybackService.loadedURL), Self.standardizedPath(book.filePath))
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
+        reader.stop()
+    }
+
+    /// A capitalization-only rename of the folder holding a playing
+    /// audiobook renames the folder's directory in place, before the
+    /// library's transition runs. The book's readers hear that its package
+    /// will move while the directory still has its old spelling, the player
+    /// holds no file when the library publishes the new path, and playback
+    /// goes on from the same place under the new spelling once the rename
+    /// is done.
+    func testRespellingAPlayingBooksFolderStopsItsAudioUntilTheRenameIsDone() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Respelled Folder")
+        let shelf = BookFolder(name: "shelf", parentPath: world.folder.path)
+        world.library.library.folders = [BookFolder(name: world.folder.path), shelf]
+        let created = try world.makeSilentAudioBook(
+            title: "Breakwater Soundings",
+            trackDurations: [2, 2],
+            savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: 5)
+        )
+        let move = world.library.moveBooksReturningOutcome([created], toFolder: shelf.fullPath)
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        let book = try row(of: created, in: world.library)
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+        reader.play()
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not start")
+
+        let log = MoveEventLog()
+        let folder = world.folder
+        log.subscription = world.library.bookUpdates.events(for: book.id).sink { [weak log, weak reader] event in
+            switch event {
+            case .packageWillMove:
+                log?.entries.append("will move")
+                log?.listingWhenAnnounced = (try? folder.entries()) ?? []
+            case .updated:
+                log?.entries.append("updated")
+                log?.playerFileWhenUpdated = reader?.audioPlaybackService.loadedURL
+            case .packageMoveEnded:
+                log?.entries.append("move ended")
+            }
+        }
+        defer { log.subscription?.cancel() }
+
+        let rename = FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            world.library.renameFolderReturningOutcome(shelf, to: "Shelf")
+        }
+
+        XCTAssertTrue(rename.succeeded, rename.failureMessage ?? "")
+        XCTAssertEqual(log.entries, ["will move", "updated", "move ended"])
+        XCTAssertTrue(log.listingWhenAnnounced.contains("shelf"), "The directory was renamed before readers heard")
+        XCTAssertNil(log.playerFileWhenUpdated, "The player held a file while the folder was renamed")
+        XCTAssertTrue(try world.folder.entries().contains("Shelf"))
+        XCTAssertEqual(reader.book.folderPath, "\(world.folder.path)/Shelf")
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Playback did not go on after the rename")
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: book, in: world.library).filePath)
+        )
+        XCTAssertEqual(reader.audioPlaybackService.currentTime, 0.5, accuracy: 0.001)
+        reader.stop()
+    }
+
     // MARK: - Applying Updates
 
     /// Two readers have the same book open when the library renames it:
@@ -490,6 +626,62 @@ final class ReaderRefreshTests: XCTestCase {
     /// `book`'s row in `library` now.
     private func row(of book: Book, in library: LibraryViewModel) throws -> Book {
         try XCTUnwrap(library.bookByID(book.id), "\(book.title) is no longer in the library")
+    }
+
+    /// `library` with the book `bookID` in the folder `folderPath`, as Move
+    /// to Folder… proposes it to the library's transition.
+    private static func library(_ library: Library, moving bookID: UUID, to folderPath: String) -> Library {
+        var proposed = library
+        for index in proposed.books.indices where proposed.books[index].id == bookID {
+            proposed.books[index].folderPath = folderPath
+        }
+        return proposed
+    }
+
+    /// What a reader's audio player held at the moment a package moved.
+    /// Main-actor isolated, as the transition's disk operations are.
+    @MainActor
+    private final class PlayerObservation {
+        /// How many packages moved.
+        var moves = 0
+        /// The file the player held at the last move, if any.
+        var loadedURL: URL?
+        /// Whether the player was playing at the last move.
+        var isPlaying = false
+    }
+
+    /// The events the library sent about one book, as the respelling test
+    /// records them, and what was on disk and in the player when it heard.
+    private final class MoveEventLog {
+        var entries: [String] = []
+        var listingWhenAnnounced: Set<String> = []
+        var playerFileWhenUpdated: URL?
+        var subscription: AnyCancellable?
+    }
+
+    /// The disk operations a library transition makes, recording into
+    /// `observation` what `reader`'s audio player holds as each package
+    /// moves. With `failing`, each move throws instead of moving, as a full
+    /// disk or a permission problem would, and the transition is put back.
+    private func observingDisk(
+        _ reader: ReaderViewModel,
+        into observation: PlayerObservation,
+        failing: Bool = false
+    ) -> LibraryTransitionDisk {
+        LibraryTransitionDisk(
+            moveItem: { source, destination in
+                observation.moves += 1
+                observation.loadedURL = reader.audioPlaybackService.loadedURL
+                observation.isPlaying = reader.audioPlaybackService.isPlaying
+                if failing {
+                    throw CocoaError(.fileWriteNoPermission)
+                }
+                try FileManager.default.moveItem(at: source, to: destination)
+            },
+            writeRecord: { book in
+                try book.saveBookInfoThrowing()
+            }
+        )
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table

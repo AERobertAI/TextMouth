@@ -214,6 +214,10 @@ extension LibraryViewModel {
     /// transition is never silent: what cannot be put back is reported to the
     /// failure center (`rollBack`). `disk` makes the moves and writes; tests
     /// replace it to make one of them fail.
+    ///
+    /// Readers with a moving book open hear of the move before any package
+    /// moves, and that it ended once the library holds the books' new rows,
+    /// or once a failed transition has been put back (TODO P10).
     func commitLibraryTransition(
         _ proposedLibrary: Library,
         affectedBookIDs: Set<UUID>,
@@ -265,6 +269,14 @@ extension LibraryViewModel {
                 needsDiskMove: needsDiskMove
             ))
         }
+
+        // A reader playing a moving book's audio stops reading its files
+        // before they move, and plays on from the same place once the move
+        // is over: from the new place, or from the old one when the move is
+        // put back.
+        let movingBookIDs = moves.filter(\.needsDiskMove).map(\.original.id)
+        bookUpdates.packagesWillMove(movingBookIDs)
+        defer { bookUpdates.packagesDidMove(movingBookIDs) }
 
         var completedMoves: [Move] = []
         var rewrittenRecordIDs: Set<UUID> = []
