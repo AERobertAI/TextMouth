@@ -81,8 +81,10 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
 
     // MARK: - Test Sandboxes (PERF26)
 
-    /// The hosted-test sandboxes in the temporary folder, and how many
-    /// belong to a process that has ended.
+    /// The hosted-test sandboxes in the temporary folder, how many are named
+    /// for a process identifier no process has now, and how many a sweep
+    /// would delete, which also counts those whose identifier a later
+    /// process took.
     func testSandboxInventory() throws {
         try requireOptIn()
         let temporary = FileManager.default.temporaryDirectory
@@ -90,10 +92,15 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
             .filter { $0.hasPrefix(TextMouthRuntime.sandboxNamePrefix) }
         let processes = names.compactMap(TextMouthRuntime.sandboxProcess(named:))
         let running = processes.filter(TextMouthRuntime.isProcessRunning)
+        let abandoned = TextMouthRuntime.abandonedSandboxes(
+            in: temporary,
+            currentProcess: ProcessInfo.processInfo.processIdentifier
+        )
         emit("sandboxes", [
             "total": names.count,
             "processRunning": running.count,
             "processEnded": processes.count - running.count,
+            "abandoned": abandoned.count,
         ])
     }
 

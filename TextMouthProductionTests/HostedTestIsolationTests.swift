@@ -581,13 +581,26 @@ final class HostedTestIsolationTests: XCTestCase {
         let linkTarget = try folder("Elsewhere", holding: "precious.txt")
         let link = temporary.appendingPathComponent("TextMouthTests-555")
         try manager.createSymbolicLink(at: link, withDestinationURL: linkTarget)
-        // Process 1000 is "this" process; 222 is running; every other has ended.
-        let isRunning: (Int32) -> Bool = { $0 == 222 }
+        // Process 1000 is "this" process; 222 is running; every other has
+        // ended. Each process asked about is told when its folder was made.
+        var madeDates: [Int32: Date] = [:]
+        let isMakerRunning: (Int32, Date?) -> Bool = { process, made in
+            madeDates[process] = made ?? .distantPast
+            return process == 222
+        }
 
-        let found = TextMouthRuntime.abandonedSandboxes(in: temporary, currentProcess: 1000, isRunning: isRunning)
+        let found = TextMouthRuntime.abandonedSandboxes(in: temporary, currentProcess: 1000, isMakerRunning: isMakerRunning)
         XCTAssertEqual(found.map(\.lastPathComponent), ["TextMouthTests-111", "TextMouthTests-112"])
+        XCTAssertEqual(Set(madeDates.keys), [111, 112, 222], "Only plain, unkept folders of other processes are asked about")
+        for (process, made) in madeDates {
+            XCTAssertLessThan(abs(made.timeIntervalSinceNow), 600, "process \(process) was not told when its folder was made")
+        }
 
-        let removed = TextMouthRuntime.removeAbandonedSandboxes(in: temporary, currentProcess: 1000, isRunning: isRunning)
+        let removed = TextMouthRuntime.removeAbandonedSandboxes(
+            in: temporary,
+            currentProcess: 1000,
+            isMakerRunning: isMakerRunning
+        )
         XCTAssertEqual(removed.map(\.lastPathComponent), ["TextMouthTests-111", "TextMouthTests-112"])
         XCTAssertFalse(manager.fileExists(atPath: ended.path))
         XCTAssertFalse(manager.fileExists(atPath: endedWithLibrary.path))
@@ -606,6 +619,52 @@ final class HostedTestIsolationTests: XCTestCase {
         // launchd, which belongs to root: signalling it is refused, yet it runs.
         XCTAssertTrue(TextMouthRuntime.isProcessRunning(1))
         XCTAssertFalse(TextMouthRuntime.isProcessRunning(Int32.max))
+    }
+
+    /// A running process's start is known, and comes after the Mac's own
+    /// start, launchd's; a process that does not exist has none.
+    func testProcessStartDates() throws {
+        let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
+        let ownStart = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: ProcessInfo.processInfo.processIdentifier))
+        XCTAssertLessThanOrEqual(launchdStarted, ownStart)
+        XCTAssertLessThanOrEqual(ownStart, Date())
+        XCTAssertNil(TextMouthRuntime.startDate(ofProcess: Int32.max))
+    }
+
+    /// Process identifiers are reused. A sandbox named for a running process
+    /// that started well after the sandbox was made belongs to an earlier
+    /// process with that identifier, which has ended: the sweep deletes it.
+    /// One made after its process started stays, and so does one made up to
+    /// an hour before, which only a change of the clock explains.
+    func testSandboxOfAnIdentifierALaterProcessTookIsSwept() throws {
+        // launchd, process 1, has been running since the Mac started up.
+        let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
+        let hour: TimeInterval = 60 * 60
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: Date()))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-0.5 * hour)))
+        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-2 * hour)))
+        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: nil), "An unknown date keeps a running process's")
+        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(Int32.max, sandboxMade: Date()))
+
+        // The sweep, as runs make it, judging by when each folder was made.
+        let manager = FileManager.default
+        let currentProcess = ProcessInfo.processInfo.processIdentifier
+        let earlier = try makeSandboxDirectory("sandbox-identifier-taken")
+        let taken = earlier.appendingPathComponent("TextMouthTests-1", isDirectory: true)
+        try manager.createDirectory(at: taken, withIntermediateDirectories: true)
+        try manager.setAttributes([.creationDate: launchdStarted.addingTimeInterval(-2 * hour)], ofItemAtPath: taken.path)
+        let later = try makeSandboxDirectory("sandbox-identifier-kept")
+        let current = later.appendingPathComponent("TextMouthTests-1", isDirectory: true)
+        try manager.createDirectory(at: current, withIntermediateDirectories: true)
+
+        XCTAssertEqual(
+            TextMouthRuntime.removeAbandonedSandboxes(in: earlier, currentProcess: currentProcess).map(\.lastPathComponent),
+            ["TextMouthTests-1"]
+        )
+        XCTAssertFalse(manager.fileExists(atPath: taken.path))
+        XCTAssertEqual(TextMouthRuntime.removeAbandonedSandboxes(in: later, currentProcess: currentProcess), [])
+        XCTAssertTrue(manager.fileExists(atPath: current.path))
     }
 
     /// As its tests finish, a hosted process deletes its sandbox, with
@@ -635,7 +694,7 @@ final class HostedTestIsolationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: runtime.homeDirectory.path))
         XCTAssertTrue(TextMouthRuntime.isKept(runtime.homeDirectory))
         XCTAssertEqual(
-            TextMouthRuntime.removeAbandonedSandboxes(in: temporary, currentProcess: 1, isRunning: { _ in false }),
+            TextMouthRuntime.removeAbandonedSandboxes(in: temporary, currentProcess: 1, isMakerRunning: { _, _ in false }),
             []
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: runtime.homeDirectory.path))

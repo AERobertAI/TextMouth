@@ -222,6 +222,37 @@ struct TextMouthRuntime: @unchecked Sendable {
         kill(process, 0) == 0 || errno == EPERM
     }
 
+    /// When the process `process` started, or nil when no process has that
+    /// identifier.
+    static func startDate(ofProcess process: Int32) -> Date? {
+        var name: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, process]
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.size
+        // With no such process the call succeeds but reports nothing.
+        guard sysctl(&name, u_int(name.count), &info, &size, nil, 0) == 0, size > 0 else { return nil }
+        let started = info.kp_proc.p_un.__p_starttime
+        return Date(timeIntervalSince1970: TimeInterval(started.tv_sec) + TimeInterval(started.tv_usec) / 1_000_000)
+    }
+
+    /// How long after a sandbox was made a process with its identifier may
+    /// have started and still be the one that made it. A process makes its
+    /// sandbox as it starts, so only a change of the clock between the two
+    /// can put its start later; an hour allows for any such change.
+    static let sandboxMakerStartAllowance: TimeInterval = 60 * 60
+
+    /// Whether the process that made a sandbox named for `process`, made at
+    /// `made`, is still running. Process identifiers are reused, so a
+    /// running process with the identifier that started more than
+    /// `sandboxMakerStartAllowance` after `made` is a later process, and the
+    /// one that made the sandbox has ended. When either date is unknown, a
+    /// running process with the identifier counts as the maker, so a sweep
+    /// never deletes a sandbox a run may still be using.
+    static func isSandboxMakerRunning(_ process: Int32, sandboxMade made: Date?) -> Bool {
+        guard isProcessRunning(process) else { return false }
+        guard let made, let started = startDate(ofProcess: process) else { return true }
+        return started <= made.addingTimeInterval(sandboxMakerStartAllowance)
+    }
+
     /// Whether `sandbox` was kept by its process (see `keepsSandbox`).
     static func isKept(_ sandbox: URL) -> Bool {
         FileManager.default.fileExists(atPath: sandbox.appendingPathComponent(keptSandboxMarker).path)
@@ -229,15 +260,16 @@ struct TextMouthRuntime: @unchecked Sendable {
 
     /// The sandboxes in `temporaryDirectory` that hosted-test processes left
     /// behind and nothing uses any more: folders named for a process other
-    /// than `currentProcess` that `isRunning` says has ended. Kept sandboxes
-    /// stay, and so does anything that is not a plain folder, such as a
-    /// symbolic link, which could lead anywhere. In name order.
+    /// than `currentProcess` that, as `isMakerRunning` decides from that
+    /// process's identifier and when the folder was made, has ended. Kept
+    /// sandboxes stay, and so does anything that is not a plain folder, such
+    /// as a symbolic link, which could lead anywhere. In name order.
     static func abandonedSandboxes(
         in temporaryDirectory: URL,
         currentProcess: Int32,
-        isRunning: (Int32) -> Bool
+        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isSandboxMakerRunning
     ) -> [URL] {
-        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
+        let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]
         let entries = (try? FileManager.default.contentsOfDirectory(
             at: temporaryDirectory,
             includingPropertiesForKeys: keys
@@ -249,7 +281,7 @@ struct TextMouthRuntime: @unchecked Sendable {
                   values.isDirectory == true,
                   values.isSymbolicLink != true,
                   !isKept(entry) else { return false }
-            return !isRunning(process)
+            return !isMakerRunning(process, values.creationDate)
         }
         .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
@@ -265,9 +297,9 @@ struct TextMouthRuntime: @unchecked Sendable {
     static func removeAbandonedSandboxes(
         in temporaryDirectory: URL = FileManager.default.temporaryDirectory,
         currentProcess: Int32 = ProcessInfo.processInfo.processIdentifier,
-        isRunning: (Int32) -> Bool = isProcessRunning
+        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isSandboxMakerRunning
     ) -> [URL] {
-        abandonedSandboxes(in: temporaryDirectory, currentProcess: currentProcess, isRunning: isRunning)
+        abandonedSandboxes(in: temporaryDirectory, currentProcess: currentProcess, isMakerRunning: isMakerRunning)
             .filter { (try? FileManager.default.removeItem(at: $0)) != nil }
     }
 
