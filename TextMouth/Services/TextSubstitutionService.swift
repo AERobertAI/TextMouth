@@ -176,11 +176,11 @@ final class TextSubstitutionService: ObservableObject {
         followSwitch(in: preferences)
     }
 
-    /// Dependency-injected initializer for deterministic production-target
-    /// tests. It deliberately does not read or write the persisted rule file,
-    /// and it saves and follows `isEnabled` only in `preferences` when the
-    /// test passes a store, so changing the switch leaves nothing behind for
-    /// other tests.
+    /// A service of the caller's own: for deterministic production-target
+    /// tests, and for the rule editor's Test button, which shows what one
+    /// rule does. It deliberately does not read or write the persisted rule
+    /// file, and it saves and follows `isEnabled` only in `preferences` when
+    /// given a store, so changing the switch leaves nothing behind.
     init(
         rules: [SubstitutionRule],
         isEnabled: Bool = true,

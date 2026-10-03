@@ -186,6 +186,30 @@ final class PreferenceStoreTests: XCTestCase {
         XCTAssertEqual(shared.isEnabled, !wasEnabled)
     }
 
+    /// Testing a rule in its editor shows what that rule alone does, with
+    /// substitutions on, and leaves the app's rules and its substitution
+    /// switch untouched: the switch never changes in the store, so nothing
+    /// that follows it, config.json included, hears of the test.
+    func testTestingARuleLeavesTheAppsRulesAndSwitchAlone() {
+        let preferences = TextMouthRuntime.current.preferences
+        let key = TextSubstitutionService.enabledPreference.key
+        preservePreferences([key])
+        let shared = TextSubstitutionService.shared
+        TextSubstitutionService.enabledPreference.write(false, to: preferences)
+        let rules = shared.rules
+        var switchChanges = 0
+        let observer = PreferenceObserver(keys: [key], in: preferences) { _ in switchChanges += 1 }
+        let rule = SubstitutionRule(pattern: "TM", replacement: "TextMouth")
+
+        let result = SubstitutionRuleEditorView.testResult(of: rule, on: "TM reads aloud")
+
+        XCTAssertEqual(result, "TextMouth reads aloud")
+        XCTAssertEqual(switchChanges, 0)
+        XCTAssertFalse(shared.isEnabled)
+        XCTAssertEqual(shared.rules, rules)
+        withExtendedLifetime(observer) {}
+    }
+
     // MARK: - Keyboard Shortcuts
 
     /// Bindings written to the store by someone else take effect in the
