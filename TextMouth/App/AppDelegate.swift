@@ -101,6 +101,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    // MARK: - Termination
+
+    /// Holds a quit while the failure center reports unsaved changes.
+    private let terminationGuard = UnsavedChangesTerminationGuard()
+
+    /// Whether TextMouth may quit now (TODO S09). The exact sequence:
+    ///
+    /// 1. Here, everything pending is flushed as the termination path
+    ///    flushes it, but nothing is ended: the library index and every
+    ///    queued book record (`LibraryPersistenceService.flushPendingSave`),
+    ///    then the statistics, whose open listening session is credited so
+    ///    far and left open (`ReadingStatsService.flushPendingSaves`).
+    ///    Settings and substitution rules are written as they change. Each
+    ///    write's failure reaches the failure center before its flush ends.
+    /// 2. With nothing unsaved, TextMouth quits: `applicationWillTerminate`
+    ///    then shuts down as it always has, in its order: menu observation
+    ///    stops, the config watcher stops, pending saves are flushed again,
+    ///    the listening session ends, the statistics are flushed, and their
+    ///    timer stops.
+    /// 3. With changes unsaved, this request is cancelled, once, and an
+    ///    alert names what is unsaved, with Retry, Quit Anyway, and Cancel.
+    ///    Retry runs every unsaved write again and asks to quit again,
+    ///    which starts over at step 1. Quit Anyway asks to quit again, and
+    ///    that second request quits at step 2, whatever is unsaved. Cancel
+    ///    keeps TextMouth open.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        terminationGuard.reply()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         menuVisibilityManager.stopObserving()
         ConfigService.shared.shutdown()
