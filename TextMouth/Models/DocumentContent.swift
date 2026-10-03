@@ -310,20 +310,26 @@ enum SleepTimerDuration: Hashable {
     /// took the place of the timer once called End of document, which a
     /// saved preference may still name (`SleepTimerService`).
     case endOfChapter
+    /// The end of the book: the end of its last chapter, before the book
+    /// starts again or the next book starts, whatever its end-of-book
+    /// behavior.
+    case endOfBook
 
     var displayName: String {
         switch self {
         case .minutes(let m): return "\(m) minutes"
         case .endOfHeading: return "End of heading"
         case .endOfChapter: return "End of chapter"
+        case .endOfBook: return "End of book"
         }
     }
 
     /// Whether a timer set for this stops playback where a chapter ends,
     /// before anything after that chapter plays (TODO P01). End of chapter
     /// stops at the end of whichever chapter is playing, the book's last
-    /// included; a timer counting minutes, or waiting for a heading's end,
-    /// stops at no chapter's end.
+    /// included; End of book only at the end of the book's last chapter; a
+    /// timer counting minutes, or waiting for a heading's end, stops at no
+    /// chapter's end.
     ///
     /// - Parameter endingTheBook: Whether the chapter ending is the book's
     ///   last, with nothing after it to play, so that its end is the book's.
@@ -331,6 +337,8 @@ enum SleepTimerDuration: Hashable {
         switch self {
         case .endOfChapter:
             return true
+        case .endOfBook:
+            return endingTheBook
         case .minutes, .endOfHeading:
             return false
         }
@@ -339,7 +347,7 @@ enum SleepTimerDuration: Hashable {
     static let presets: [SleepTimerDuration] = [
         .minutes(10), .minutes(15), .minutes(30),
         .minutes(45), .minutes(60),
-        .endOfHeading, .endOfChapter
+        .endOfHeading, .endOfChapter, .endOfBook
     ]
 }
 

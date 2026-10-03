@@ -172,6 +172,8 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(service.formattedRemaining, "End of heading")
         start(.endOfChapter)
         XCTAssertEqual(service.formattedRemaining, "End of chapter")
+        start(.endOfBook)
+        XCTAssertEqual(service.formattedRemaining, "End of book")
         service.stop()
         XCTAssertEqual(service.formattedRemaining, "")
     }
@@ -470,7 +472,8 @@ final class SleepTimerServiceTests: XCTestCase {
 
     /// Which timers stop playback where a chapter ends: the owner's, while
     /// in effect, when set for the end of the chapter, at every chapter's
-    /// end, the book's last included. A timer counting minutes or waiting
+    /// end, the book's last included, and when set for the end of the book,
+    /// at the last chapter's end only. A timer counting minutes or waiting
     /// for a heading's end stops at none, and neither does another owner's
     /// or one that has ended.
     func testOnlyTheOwnersEndOfChapterTimerStopsPlaybackAtAChaptersEnd() {
@@ -479,6 +482,9 @@ final class SleepTimerServiceTests: XCTestCase {
             ("end of chapter, a chapter before the last", .endOfChapter, owner, false, true),
             ("end of chapter, the book's last chapter", .endOfChapter, owner, true, true),
             ("end of chapter, asked by another owner", .endOfChapter, otherOwner, false, false),
+            ("end of book, a chapter before the last", .endOfBook, owner, false, false),
+            ("end of book, the book's last chapter", .endOfBook, owner, true, true),
+            ("end of book, asked by another owner", .endOfBook, otherOwner, true, false),
             ("end of a heading", .endOfHeading, owner, false, false),
             ("end of a heading, the book's last chapter", .endOfHeading, owner, true, false),
             ("minutes", .minutes(30), owner, false, false),
@@ -572,12 +578,13 @@ final class SleepTimerServiceTests: XCTestCase {
     }
 
     func testLastUsedDurationPersistsAcrossServiceInstances() {
-        start(.endOfChapter)
+        for duration: SleepTimerDuration in [.endOfChapter, .endOfBook, .endOfHeading, .minutes(25)] {
+            start(duration)
 
-        let restored = SleepTimerService(userDefaults: testDefaults)
+            let restored = SleepTimerService(userDefaults: testDefaults)
 
-        XCTAssertEqual(restored.lastUsedDuration, .endOfChapter)
-        restored._resetForTesting()
+            XCTAssertEqual(restored.lastUsedDuration, duration)
+        }
     }
 
     /// A duration saved as "endOfDocument", before End of chapter took the

@@ -195,6 +195,9 @@ final class SleepTimerService: ObservableObject {
             case .endOfChapter:
                 kind = "endOfChapter"
                 minutes = nil
+            case .endOfBook:
+                kind = "endOfBook"
+                minutes = nil
             }
         }
 
@@ -215,6 +218,7 @@ final class SleepTimerService: ObservableObject {
                 return .minutes(min(minutes, supported.upperBound))
             case "endOfHeading": return .endOfHeading
             case "endOfChapter", "endOfDocument": return .endOfChapter
+            case "endOfBook": return .endOfBook
             default: return nil
             }
         }
@@ -227,7 +231,7 @@ final class SleepTimerService: ObservableObject {
     /// callbacks; the previous owner's callbacks are dropped.
     ///
     /// - Parameters:
-    ///   - duration: minutes, end-of-heading, or end-of-chapter
+    ///   - duration: minutes, end-of-heading, end-of-chapter, or end-of-book
     ///   - ownerID: UUID of the reader starting the timer (use its
     ///     `readerID`, never its book's ID, which a second window of the
     ///     same book shares). Optional only because some unit tests don't
@@ -282,6 +286,9 @@ final class SleepTimerService: ObservableObject {
         case .endOfChapter:
             remainingSeconds = 0
             timerLog(.event, "START kind=end-of-chapter fadeSeconds=\(fadeOutDuration)")
+        case .endOfBook:
+            remainingSeconds = 0
+            timerLog(.event, "START kind=end-of-book fadeSeconds=\(fadeOutDuration)")
         }
     }
 
@@ -374,7 +381,8 @@ final class SleepTimerService: ObservableObject {
     /// Called from the playback layer when the user pauses, so the
     /// timer doesn't keep ticking in the background and expire while
     /// the user is away on a break.
-    /// - No-op for heading-end / chapter-end modes (no wall-clock).
+    /// - No-op for heading-end / chapter-end / book-end modes (no
+    ///   wall-clock).
     /// - No-op when a fade is already in progress.
     /// - No-op when called by a non-owner — another reader pausing, even
     ///   one of the same book, must not affect this reader's timer.
@@ -449,8 +457,10 @@ final class SleepTimerService: ObservableObject {
 
     /// Whether the timer `callerID` owns is in effect and stops playback
     /// where the chapter playing now ends (TODO P01): a timer set for the end
-    /// of the chapter. Another owner's timer, one that has ended, and one
-    /// counting minutes or waiting for a heading's end stop nothing there.
+    /// of the chapter, at any chapter's end, or for the end of the book, at
+    /// the end of its last chapter. Another owner's timer, one that has
+    /// ended, and one counting minutes or waiting for a heading's end stop
+    /// nothing there.
     ///
     /// - Parameters:
     ///   - endingTheBook: Whether that chapter is the book's last, with
@@ -609,11 +619,14 @@ final class SleepTimerService: ObservableObject {
         VoiceOverAnnouncer.announce(message, priority: .medium)
     }
 
+    /// The timer's state as the sheet and the reader show it: the time left
+    /// as minutes and seconds, the place a timer waits for (End of heading,
+    /// End of chapter, End of book), or Fading out; empty with no timer.
     var formattedRemaining: String {
-        guard isActive else { return "" }
+        guard isActive, let duration else { return "" }
         if isFadingOut { return "Fading out" }
-        if case .endOfHeading = duration { return "End of heading" }
-        if case .endOfChapter = duration { return "End of chapter" }
+        // A timer waiting for a place in the book shows the place.
+        guard case .minutes = duration else { return duration.displayName }
         let minutes = remainingSeconds / 60
         let seconds = remainingSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)

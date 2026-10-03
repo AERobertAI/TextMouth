@@ -9,7 +9,9 @@ import XCTest
 ///
 /// A timer set for a place in the book stops playback where the book gets
 /// there, for text and audio alike (TODO P01, finding #676): at the end of
-/// the chapter playing, before the next one starts. Audiobooks play real,
+/// the chapter playing, before the next one starts, or at the end of the
+/// book, before the book starts again or the next book does; and it belongs
+/// to the reader that set it, not to its book. Audiobooks play real,
 /// silent tracks; a text book's speech is stopped before the main run loop
 /// turns, and its look-ahead renders are held; so nothing is ever heard.
 @MainActor
@@ -204,6 +206,104 @@ final class IntegrationSleepTimerTests: XCTestCase {
 
                 let behavior = outcome.behavior.rawValue
                 XCTAssertFalse(spokeOn, "\(behavior): the book was spoken again")
+                XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
+                XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
+                XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+                XCTAssertFalse(speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id), behavior)
+                XCTAssertEqual(reader.currentChapterIndex, outcome.chapterAfter, behavior)
+            }
+        }
+    }
+
+    // MARK: - Stopping Where the Book Ends (TODO P01)
+
+    /// A timer set for the end of the book lets an audiobook play on from
+    /// chapter to chapter, rolling straight on into the next chapter's file,
+    /// and stops it where the last chapter ends. With Continue to Next Book
+    /// on, the next book is not started; with it off, the book would have
+    /// stopped there anyway. The listener hears once that the book finished
+    /// and that the timer stopped it, and the timer has ended.
+    func testEndOfBookTimerPlaysAnAudiobookToItsEndAndStartsNothingAfter() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let outcomes: [(behavior: EndOfBookBehavior, announcement: String)] = [
+            (.continueNext, "Finished: Ferry Timetable. Next book not started because of the sleep timer."),
+            (.stop, "Finished: Ferry Timetable. Sleep timer expired."),
+        ]
+        for outcome in outcomes {
+            let behavior = outcome.behavior.rawValue
+            let world = try makeIntegrationWorld("Sleep Timer Audio Book End \(behavior)")
+            world.settings.sleepFadeOutDuration = 0
+            let book = try world.makeSilentAudioBook(
+                title: "Ferry Timetable",
+                trackDurations: [0.5, 0.5],
+                endOfBook: outcome.behavior
+            )
+            let nextBook = try world.makeSilentAudioBook(title: "Harbour Almanac", trackDurations: [5])
+            let reader = world.openReader(for: book)
+            waitForReaderToLoad(reader)
+            let service = reader.audioPlaybackService
+            let files = reader.audioChapterFiles.map(resolvedPath)
+            let continued = recordContinueRequests(in: world)
+            defer { reader.stop() }
+
+            let recorder = recordingAnnouncements {
+                reader.startSleepTimer(duration: .endOfBook)
+                reader.play()
+                XCTAssertEqual(service.queuedFilePaths, files, "\(behavior): the last chapter's file was not named to follow")
+                XCTAssertTrue(eventually(within: 10) { reader.currentChapterIndex == 1 }, "\(behavior): the first chapter never ended")
+                XCTAssertTrue(service.isPlaying, "\(behavior): the timer stopped playback before the last chapter")
+                XCTAssertTrue(
+                    eventually(within: 10) { !reader.isCurrentlyPlaying && !service.isPlaying },
+                    "\(behavior): the book never ended"
+                )
+                // Long enough for the next book to have been asked for.
+                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+            }
+
+            XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
+            XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
+            XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")
+            XCTAssertFalse(world.autoplayRequests.hasRequest(for: nextBook.id), behavior)
+        }
+    }
+
+    /// The same for a text book: a timer set for the end of the book lets
+    /// speech go on from chapter to chapter and stops it where the last
+    /// chapter ends, whatever the book does at its end: it neither starts
+    /// again nor continues to the next book. The listener hears once that
+    /// the book finished and why nothing follows.
+    func testEndOfBookTimerSpeaksATextBookToItsEndAndStartsNothingAfter() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        let outcomes: [(behavior: EndOfBookBehavior, announcement: String, chapterAfter: Int)] = [
+            (.stop, "Finished: Quay Notes. Sleep timer expired.", 2),
+            (.loop, "Finished: Quay Notes. Not restarted because of the sleep timer.", 0),
+            (.continueNext, "Finished: Quay Notes. Next book not started because of the sleep timer.", 2),
+        ]
+        for outcome in outcomes {
+            let behavior = outcome.behavior.rawValue
+            try withSpeechReader("Sleep Timer Speech Book End \(behavior)", endOfBook: outcome.behavior) { speech in
+                let reader = speech.reader
+                let continued = recordContinueRequests(in: speech.world)
+                reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+                reader.startSleepTimer(duration: .endOfBook)
+                let endOfSecondChapter = try startSpeakingSilently(reader)
+
+                var spokeTheLastChapter = false
+                var spokeAfterTheBook = false
+                let recorder = recordingAnnouncements {
+                    spokeTheLastChapter = endSpeechSilently(endOfSecondChapter, of: reader)
+                    XCTAssertEqual(reader.currentChapterIndex, 2, "\(behavior): the last chapter did not start")
+                    if let endOfLastChapter = reader.speechService.onUtteranceFinished {
+                        spokeAfterTheBook = endSpeechSilently(endOfLastChapter, of: reader)
+                    }
+                    // Long enough for the next book to have been asked for.
+                    spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+                }
+
+                XCTAssertTrue(spokeTheLastChapter, "\(behavior): the timer stopped speech before the last chapter")
+                XCTAssertFalse(spokeAfterTheBook, "\(behavior): the book was spoken again")
                 XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
                 XCTAssertFalse(timer.isActive, "\(behavior): the timer is still in effect")
                 XCTAssertTrue(continued().isEmpty, "\(behavior): the next book was asked for")

@@ -1522,11 +1522,12 @@ extension ReaderViewModel {
     /// nothing left to say. Behavior depends on per-book override or global
     /// setting: stop, loop, or continue to next book.
     ///
-    /// This reader's sleep timer set to stop playback where a chapter ends
-    /// stops it here, where the book's last chapter ends (TODO P01): the
-    /// timer ends, and the book neither starts again nor continues to the
-    /// next book, whatever its end-of-book behavior. The listener hears once
-    /// that the book finished and why nothing follows.
+    /// This reader's sleep timer set for the end of the chapter, or for the
+    /// end of the book, stops playback here, where the book's last chapter
+    /// ends (TODO P01): the timer ends, and the book neither starts again
+    /// nor continues to the next book, whatever its end-of-book behavior.
+    /// The listener hears once that the book finished and why nothing
+    /// follows.
     func handleEndOfBook() {
         // Time after the end of the book is not listening time, so close this
         // book's session here, once, for every way a book can end. Another

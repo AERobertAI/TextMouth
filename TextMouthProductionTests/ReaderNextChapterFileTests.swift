@@ -93,7 +93,9 @@ final class ReaderNextChapterFileTests: XCTestCase {
     /// which expires as every audiobook chapter ends, no file is named to
     /// follow the chapter playing, so playback stops at its end. Setting such
     /// a timer while a chapter plays withdraws the file named; cancelling it,
-    /// or setting a timer that counts minutes instead, names it again.
+    /// or setting a timer that counts minutes instead, names it again, and so
+    /// does a timer set for the end of the book, which lets every chapter but
+    /// the last roll on into the next.
     func testAnEndOfChapterSleepTimerNamesNoFileToFollow() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("Next Chapter File Timer")
@@ -117,6 +119,14 @@ final class ReaderNextChapterFileTests: XCTestCase {
 
         reader.startSleepTimer(duration: .minutes(30))
         XCTAssertEqual(service.queuedFilePaths, files, "A timer counting minutes kept the next chapter's file from following")
+
+        reader.startSleepTimer(duration: .endOfChapter)
+        reader.startSleepTimer(duration: .endOfBook)
+        XCTAssertEqual(
+            service.queuedFilePaths,
+            files,
+            "A timer for the end of the book kept the next chapter's file from following"
+        )
     }
 }
 
