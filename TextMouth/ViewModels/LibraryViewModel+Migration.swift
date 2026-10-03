@@ -1050,6 +1050,7 @@ extension LibraryViewModel {
             await waiting(nil)
         }
         LibraryPersistenceService.flushPendingSave()
+        configService.flushScheduledSave()
         TextMouthPaths.flushLogs()
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)
@@ -1272,6 +1273,7 @@ extension LibraryViewModel {
             return .failure(Self.switchFailureContext, DataDirectoryMigrationError.moveInProgress)
         }
         LibraryPersistenceService.flushPendingSave()
+        configService.flushScheduledSave()
         let unsaved = failureCenter.unsavedFailures()
         if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
             let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)

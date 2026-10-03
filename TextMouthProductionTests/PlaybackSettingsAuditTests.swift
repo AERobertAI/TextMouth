@@ -185,15 +185,22 @@ final class PlaybackSettingsAuditTests: XCTestCase {
     }
 
     /// A save of those settings that fails is the settings model's to
-    /// report, and it is: config.json's failure reaches the failure banner,
-    /// which announces it on its own. The reader adds no second message.
+    /// report, and it is: config.json's failure, once the save follows the
+    /// change a moment later (PERF17), reaches the failure banner, which
+    /// announces it on its own. The reader adds no second message.
     func testAFailedSettingsSaveIsLeftToTheFailureBanner() throws {
         let center = cleanSharedFailureCenter()
         let settings = try makeIsolatedSettings(configWrite: { _, _ in throw WriteRefused() })
         let reader = makeReader(format: .txt, localWPM: 310, settingsViewModel: settings)
         defer { reader.close() }
+        // Opening the reader recorded its book as the last one opened, which
+        // the app's own config.json takes once changes pause (PERF17). That
+        // save succeeds, so it is made now: made later, it would settle the
+        // failure this test looks for.
+        ConfigService.shared.flushScheduledSave()
 
         let recorder = recordingAnnouncements { reader.saveSettingsToGlobal() }
+        waitPastConfigSaveDelay()
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
         XCTAssertEqual(center.outstandingFailures().map(\.subject), [.configuration])

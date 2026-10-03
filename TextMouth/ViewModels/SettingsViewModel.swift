@@ -538,12 +538,15 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Config Sync
 
-    /// Push current AppStorage settings to config.json
+    /// Push current AppStorage settings to config.json. The configuration
+    /// takes them at once; the file once changes pause for a moment
+    /// (`ConfigService.scheduleSave()`, PERF17), so a slider moved through
+    /// its steps writes config.json once rather than at every step.
     func syncToConfig() {
         guard !isSyncingFromConfig else { return }
         // One in-place update publishes a single complete snapshot.
         writePreferences(into: &configService.config)
-        configService.saveToDisk()
+        configService.scheduleSave()
     }
 
     /// Copies the mirrored preferences into `config`, this model's own and

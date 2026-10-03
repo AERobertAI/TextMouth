@@ -735,10 +735,11 @@ extension LibraryViewModel {
 
     func registerOpenBook(_ id: UUID) {
         openBookIDs.insert(id)
-        // Track last opened book for quick-resume
+        // Track last opened book for quick-resume. config.json takes it once
+        // changes pause (PERF17), not as the reader window opens.
         let config = ConfigService.shared
         config.config.lastOpenedBookID = id.uuidString
-        config.saveToDisk()
+        config.scheduleSave()
     }
 
     /// Notes that the book `id`'s reader closed. Its last reading checkpoint,

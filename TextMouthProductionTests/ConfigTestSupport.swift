@@ -78,6 +78,18 @@ extension XCTestCase {
         return directory.appendingPathComponent("config.json")
     }
 
+    /// Lets a save that `ConfigService.scheduleSave()` left waiting happen
+    /// (PERF17), as it does a moment after a settings change: the main run
+    /// loop turns for twice the default save delay, which is all the test
+    /// waits for, since nothing is expected meanwhile.
+    func waitPastConfigSaveDelay() {
+        let quiet = expectation(description: "nothing is expected while a config.json save waits")
+        quiet.isInverted = true
+        let delay = ConfigService.defaultSaveDelay.components
+        let seconds = Double(delay.seconds) + Double(delay.attoseconds) / 1e18
+        wait(for: [quiet], timeout: seconds * 2)
+    }
+
     /// The debug log's lines that contain `text`, waiting first for every
     /// queued log write. Lines go to the data directory's Logs folder, or to
     /// this Mac's while the data directory can't take them, so both debug
@@ -114,5 +126,36 @@ extension XCTestCase {
             line: line
         )
         return debugLogLines(containing: DiagnosticLog.loggablePath(url))
+    }
+}
+
+/// Writes, as each test ends, a config.json save the test left waiting
+/// (PERF17). A settings change, or a reader opening, asks
+/// `ConfigService.shared` for a save that waits a moment for more changes;
+/// left waiting, it would happen during the next test, writing the test
+/// root's config.json and settling that test's settings failures as it
+/// runs. Written as the test that asked for it ends, it can touch no other
+/// test. The test bundle's principal class registers it.
+///
+/// `@unchecked Sendable`: XCTest reports to observers on the main thread,
+/// where `sawBundleStart` alone is set.
+final class ConfigSaveFlush: NSObject, XCTestObservation, @unchecked Sendable {
+    /// The observer the principal class registers.
+    static let shared = ConfigSaveFlush()
+
+    /// Whether XCTest reported the start of the bundle to this observer,
+    /// which proves the principal class registered it.
+    private(set) var sawBundleStart = false
+
+    func testBundleWillStart(_ testBundle: Bundle) {
+        sawBundleStart = true
+    }
+
+    func testCaseDidFinish(_ testCase: XCTestCase) {
+        // XCTest reports test cases on the main thread, where the service lives.
+        guard Thread.isMainThread else { return }
+        MainActor.assumeIsolated {
+            ConfigService.shared.flushScheduledSave()
+        }
     }
 }

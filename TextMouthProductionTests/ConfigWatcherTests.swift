@@ -255,10 +255,11 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(settings.pitchMultiplier, 1.8)
     }
 
-    /// An editor's atomic save that lands right after TextMouth saved twice
-    /// in quick succession is applied exactly once, and applying it saves
-    /// nothing. The half-second window that used to follow every save
-    /// dropped such an edit.
+    /// An editor's atomic save that lands right after TextMouth saved two
+    /// quick changes is applied exactly once, and applying it saves nothing.
+    /// The half-second window that used to follow every save dropped such an
+    /// edit. The two changes are saved once, as changes that come in a burst
+    /// are (PERF17).
     func testEditorSaveRightAfterRepeatedAppSavesIsAppliedOnce() throws {
         let url = try makeConfigFileURL()
         try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
@@ -268,6 +269,9 @@ final class ConfigWatcherTests: XCTestCase {
 
         settings.wordsPerMinute = 300
         settings.wordsPerMinute = 310
+        // TextMouth's save of the two changes, which would follow them in a
+        // moment, happens now.
+        service.flushScheduledSave()
         // The editor opened the file as it is now and changes one value.
         var edit = service.config
         edit.sleepFadeOutDuration = 9
@@ -279,13 +283,14 @@ final class ConfigWatcherTests: XCTestCase {
         XCTAssertEqual(recorder.edits, [edit])
         XCTAssertEqual(settings.sleepFadeOutDuration, 9)
         XCTAssertEqual(settings.wordsPerMinute, 310)
-        XCTAssertEqual(counter.writes, 2, "only the two settings changes wrote")
+        XCTAssertEqual(counter.writes, 1, "only the settings changes wrote, once")
         XCTAssertEqual(try Data(contentsOf: url), editBytes)
     }
 
-    /// An editor's save that lands between two of TextMouth's saves, before
-    /// the watcher has handled it, is not lost to the second save: that save
-    /// merges it in, applies it exactly once, and writes both changes.
+    /// An editor's save that lands between two of TextMouth's changes, before
+    /// the watcher has handled it and while the save of those changes waits
+    /// for them to pause (PERF17), is not lost to that save: it merges the
+    /// edit in, applies it exactly once, and writes both changes.
     func testEditorSaveBetweenTwoAppSavesIsMergedAndAppliedOnce() throws {
         let url = try makeConfigFileURL()
         try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
@@ -298,13 +303,16 @@ final class ConfigWatcherTests: XCTestCase {
         edit.sleepFadeOutDuration = 9
         try editorSave(ConfigService.fileData(for: edit), to: url)
         settings.wordsPerMinute = 310
+        // TextMouth's save, which would follow the changes in a moment,
+        // happens now, before the watcher has handled the edit.
+        service.flushScheduledSave()
 
-        XCTAssertEqual(recorder.edits.count, 1, "the second save applied the edit at once")
+        XCTAssertEqual(recorder.edits.count, 1, "the save applied the edit at once")
         XCTAssertEqual(settings.sleepFadeOutDuration, 9)
         settle()
         XCTAssertEqual(recorder.edits.count, 1)
         XCTAssertEqual(settings.wordsPerMinute, 310)
-        XCTAssertEqual(counter.writes, 2)
+        XCTAssertEqual(counter.writes, 1)
         let saved = try ConfigService.decode(Data(contentsOf: url))
         XCTAssertEqual(saved.wordsPerMinute, 310)
         XCTAssertEqual(saved.sleepFadeOutDuration, 9)
@@ -632,9 +640,9 @@ final class ConfigWatcherTests: XCTestCase {
         withExtendedLifetime(settings) {}
     }
 
-    /// A sound preference changed through the sound service, as the Sounds
-    /// settings change it, is saved to config.json at once, and that save
-    /// is never applied back as an edit.
+    /// Sound preferences changed through the sound service, as the Sounds
+    /// settings change them, are saved to config.json once the changes pause
+    /// (PERF17), and that save is never applied back as an edit.
     func testSoundChangeMadeInSettingsIsSavedToConfig() throws {
         let url = try makeConfigFileURL()
         try ConfigService.fileData(for: launchConsistentConfig()).write(to: url)
@@ -648,7 +656,7 @@ final class ConfigWatcherTests: XCTestCase {
         sounds.assignments[.whereAmIEnd] = "Sosumi"
         settle()
 
-        XCTAssertEqual(counter.writes, 2, "one save for each change")
+        XCTAssertEqual(counter.writes, 1, "one save once the changes paused")
         let saved = try ConfigService.decode(Data(contentsOf: url))
         XCTAssertEqual(saved.soundEffectsVolume, 0.65)
         XCTAssertEqual(saved.soundEffectAssignments[SoundEvent.whereAmIEnd.rawValue], "Sosumi")
