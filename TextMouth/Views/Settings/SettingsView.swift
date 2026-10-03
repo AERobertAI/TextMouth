@@ -238,13 +238,16 @@ struct PlaybackSettingsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Minimum pause: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
                                 .accessibilityLabel("Minimum pause before rewinding: \(Int(settingsViewModel.rewindSmartThreshold)) seconds")
+                            // The stepper's own label is empty: a hidden
+                            // title would be spoken before the accessibility
+                            // label ("Seconds, Minimum pause threshold").
                             Stepper(
-                                "Seconds",
                                 value: $settingsViewModel.rewindSmartThreshold,
                                 in: 5...600,
                                 step: 5
-                            )
-                            .labelsHidden()
+                            ) {
+                                EmptyView()
+                            }
                             .accessibilityLabel("Minimum pause threshold")
                             .accessibilityValue("\(Int(settingsViewModel.rewindSmartThreshold)) seconds")
 
@@ -323,13 +326,16 @@ struct PlaybackSettingsView: View {
                         Text("Fade out: Off")
                             .accessibilityLabel("Sleep timer fade out: off, playback stops instantly")
                     }
+                    // The stepper's own label is empty: a hidden title
+                    // would be spoken before the accessibility label
+                    // ("Seconds, Fade out duration").
                     Stepper(
-                        "Seconds",
                         value: $settingsViewModel.sleepFadeOutDuration,
                         in: 0...10,
                         step: 1
-                    )
-                    .labelsHidden()
+                    ) {
+                        EmptyView()
+                    }
                     .accessibilityLabel("Fade out duration")
                     .accessibilityValue(settingsViewModel.sleepFadeOutDuration > 0 ? "\(Int(settingsViewModel.sleepFadeOutDuration)) seconds" : "Off")
 
