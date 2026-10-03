@@ -31,6 +31,10 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// Another move of the data directory is under way, waiting for work to
     /// finish or copying (TODO S04), so this one did not start.
     case moveInProgress
+    /// The move was cancelled before its copy was published (FR02): the
+    /// partial copy is deleted, and the data directory in use, its setting,
+    /// and the library stay as they were.
+    case cancelled
 
     var errorDescription: String? {
         switch self {
@@ -48,6 +52,8 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .destinationChanged(let change): return change.explanation
         case .moveInProgress:
             return "TextMouth is already moving its data directory. Try again once that move is done."
+        case .cancelled:
+            return "The move was cancelled, so nothing changed."
         }
     }
 }
@@ -324,7 +330,10 @@ enum DataDirectoryMigrator {
         // only the link, so the package records and library.json written
         // below would land in the data directory itself, and publication
         // would leave a second name for it instead of a copy (TODO S10).
-        try fileManager.copyItem(at: source.real, to: staging)
+        // The copy goes item by item, telling the move that runs it how far
+        // it has got and stopping at its Cancel (FR02); a cancelled copy is
+        // deleted by the line above, like any copy that is not published.
+        try copyItems(of: source.real, into: staging, fileManager: fileManager)
 
         let migratedLibrary = try stage(library, from: source, to: destination, in: staging, fileManager: fileManager)
         try publish(staging, at: destination, keeping: source, fileManager: fileManager)
@@ -383,6 +392,84 @@ enum DataDirectoryMigrator {
             guard names.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
         case .notAFolder:
             throw DataDirectoryMigrationError.destinationNotAFolder(destination)
+        }
+    }
+
+    /// Copies the data directory in the folder `source` into a new folder at
+    /// `staging`, one item at a time (FR02), in the order of its
+    /// `DataDirectoryCopyPlan`: each ordinary folder is made, and each file,
+    /// link, and package is copied whole with `copyItem`, which clones it
+    /// when both folders are on one APFS volume.
+    ///
+    /// The observer bound for this copy (`copyObserver`), when there is one,
+    /// hears how far it has got before the first item and after each one,
+    /// on this thread, and is asked before each item whether the move was
+    /// cancelled, which stops the copy with
+    /// `DataDirectoryMigrationError.cancelled`. The caller deletes whatever
+    /// was copied by then, as it deletes any copy it does not publish.
+    ///
+    /// Once every item is in, each folder made here takes its original's
+    /// permissions, extended attributes, and dates, as copying the whole
+    /// folder at once did.
+    private static func copyItems(of source: URL, into staging: URL, fileManager: FileManager) throws {
+        let observer = copyObserver
+        let plan = try DataDirectoryCopyPlan(of: source, fileManager: fileManager)
+        var progress = DataDirectoryCopyProgress(
+            copiedBytes: 0,
+            totalBytes: plan.totalBytes,
+            copiedItems: 0,
+            totalItems: plan.items.count
+        )
+        observer?.report(progress)
+        try stopIfCancelled(observer)
+        try fileManager.createDirectory(at: staging, withIntermediateDirectories: false)
+
+        for item in plan.items {
+            try stopIfCancelled(observer)
+            let copy = staging.appendingPathComponent(item.relativePath)
+            switch item.kind {
+            case .folder:
+                try fileManager.createDirectory(at: copy, withIntermediateDirectories: false)
+            case .whole:
+                try fileManager.copyItem(at: source.appendingPathComponent(item.relativePath), to: copy)
+            }
+            progress.copiedBytes += item.byteCount
+            progress.copiedItems += 1
+            observer?.report(progress)
+        }
+
+        // Deepest first, and the data directory's own folder last: a folder's
+        // dates are set once nothing more goes into it.
+        let foldersMadeHere = plan.items.filter { $0.kind == .folder }.map(\.relativePath)
+        for relativePath in foldersMadeHere.reversed() {
+            copyFolderMetadata(
+                from: source.appendingPathComponent(relativePath),
+                to: staging.appendingPathComponent(relativePath)
+            )
+        }
+        copyFolderMetadata(from: source, to: staging)
+    }
+
+    /// Throws `DataDirectoryMigrationError.cancelled` when `observer` says
+    /// the move was cancelled.
+    private static func stopIfCancelled(_ observer: DataDirectoryCopyObserver?) throws {
+        if observer?.isCancelled() == true {
+            throw DataDirectoryMigrationError.cancelled
+        }
+    }
+
+    /// Gives the folder at `copy` the permissions, access control list,
+    /// extended attributes, flags, and dates of the folder at `original`
+    /// (copyfile(3) with `COPYFILE_METADATA`), as `copyItem` gives a folder
+    /// it copies whole. Best effort, as a folder's metadata is no part of
+    /// the library: a volume that cannot hold some of it, such as an exFAT
+    /// drive's missing extended attributes, keeps the copy as it is.
+    private static func copyFolderMetadata(from original: URL, to copy: URL) {
+        _ = original.withUnsafeFileSystemRepresentation { from -> Int32 in
+            copy.withUnsafeFileSystemRepresentation { to -> Int32 in
+                guard let from, let to else { return -1 }
+                return copyfile(from, to, nil, copyfile_flags_t(COPYFILE_METADATA))
+            }
         }
     }
 
@@ -544,6 +631,196 @@ private enum DestinationContents: Equatable {
         case .nothing: return nil
         case .folder(let names): return names.isEmpty ? nil : .items(names)
         case .notAFolder: return .replaced
+        }
+    }
+}
+
+// MARK: - Copying One Item at a Time (FR02)
+
+/// How far a migration's copy has got: the bytes and items copied so far,
+/// of all the copy's. Sizes are the lengths the file system reports for the
+/// files, so they count the bytes the copy reads.
+struct DataDirectoryCopyProgress: Equatable, Sendable {
+    /// Bytes of the items copied so far.
+    var copiedBytes: Int64
+    /// Bytes of every item the copy copies.
+    let totalBytes: Int64
+    /// Items copied so far: folders made, and files, links, and packages
+    /// copied.
+    var copiedItems: Int
+    /// Every item the copy copies.
+    let totalItems: Int
+
+    /// Whether every item has been copied.
+    var isComplete: Bool {
+        copiedItems >= totalItems
+    }
+
+    /// Whole percent copied, from 0 to 100, rounded down: by bytes when the
+    /// items hold any, otherwise by items. It is 100 exactly when every item
+    /// has been copied, so a file the file system sizes at 0 never makes a
+    /// copy look finished early.
+    var percent: Int {
+        guard !isComplete else { return 100 }
+        let fraction = totalBytes > 0
+            ? Double(copiedBytes) / Double(totalBytes)
+            : Double(copiedItems) / Double(totalItems)
+        let whole = Int((min(1, max(0, fraction)) * 100).rounded(.down))
+        return min(whole, 99)
+    }
+}
+
+/// What a migration's copy tells the move that runs it, and asks it (FR02).
+/// The copy calls both on its own thread, so they must be quick: a move
+/// hands the progress to the main actor and answers from a locked flag.
+struct DataDirectoryCopyObserver: Sendable {
+    /// Hears how far the copy has got: once before its first item, then
+    /// after each item.
+    let report: @Sendable (DataDirectoryCopyProgress) -> Void
+    /// Whether the move was cancelled, asked before each item.
+    let isCancelled: @Sendable () -> Bool
+}
+
+extension DataDirectoryMigrator {
+    /// The observer of the copies made where it is bound (FR02): a move binds
+    /// one around `TextMouthPaths.moveDataDirectory`, which calls
+    /// `prepareMigration` with no room for one, on the thread or in the task
+    /// that copies (`$copyObserver.withValue(_:operation:)`). Unbound, a copy
+    /// reports to no one and is never cancelled.
+    @TaskLocal static var copyObserver: DataDirectoryCopyObserver?
+}
+
+/// The items a migration copies, in the order it copies them, with their
+/// sizes (FR02): every item in the data directory's folder, hidden ones
+/// included, as a folder to make or an item to copy whole.
+///
+/// A book's package (a .tmb folder, or any folder the system treats as a
+/// package) is one item, copied whole, so each book arrives in one piece
+/// and a copy on one APFS volume clones it. Other folders are made and
+/// filled one item at a time. Within each folder, folders and packages come
+/// before files, each in order of name: the books, the bulk of the copy,
+/// are copied first, and the small files at the top, such as config.json,
+/// which a setting changed during the copy rewrites, last.
+struct DataDirectoryCopyPlan: Equatable {
+    /// One item of the copy.
+    struct Item: Equatable {
+        /// How the copy makes an item.
+        enum Kind: Equatable {
+            /// An ordinary folder: made empty, and filled by the items after
+            /// it whose paths lie inside it.
+            case folder
+            /// A file, a link, or a package, copied whole.
+            case whole
+        }
+
+        /// The item's path inside the data directory, such as
+        /// "Library/Fiction/Book.tmb".
+        let relativePath: String
+        /// How the copy makes it.
+        let kind: Kind
+        /// Its size in bytes: the lengths of every file inside a package,
+        /// and 0 for a folder, whose items count for themselves.
+        let byteCount: Int64
+    }
+
+    /// Every item, in the order the copy makes them: each folder before
+    /// the items inside it.
+    let items: [Item]
+
+    /// The bytes of every item.
+    var totalBytes: Int64 {
+        items.reduce(0) { $0 + $1.byteCount }
+    }
+
+    /// The plan for the data directory in the folder at `root`, read
+    /// through `fileManager` without following any link inside it.
+    /// - Throws: The file system's error for anything that cannot be listed
+    ///   or looked at, such as a folder that is only in the cloud while
+    ///   dataless files are left there (`DatalessFiles.withoutDownloading`).
+    init(of root: URL, fileManager: FileManager = .default) throws {
+        items = try Self.items(in: root, at: "", fileManager: fileManager)
+    }
+
+    /// The items inside the folder `folder`, whose path inside the data
+    /// directory is `relativePath` (empty for the data directory itself),
+    /// with the items inside each ordinary folder after it.
+    private static func items(in folder: URL, at relativePath: String, fileManager: FileManager) throws -> [Item] {
+        var folders: [(item: Item, url: URL)] = []
+        var others: [Item] = []
+        for name in try fileManager.contentsOfDirectory(atPath: folder.path).sorted() {
+            let url = folder.appendingPathComponent(name)
+            let path = relativePath.isEmpty ? name : relativePath + "/" + name
+            // The item itself, never a link's target.
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            if attributes[.type] as? FileAttributeType == .typeDirectory {
+                if isPackage(url) {
+                    let item = Item(relativePath: path, kind: .whole, byteCount: try byteCount(ofFolder: url))
+                    folders.append((item, url))
+                } else {
+                    folders.append((Item(relativePath: path, kind: .folder, byteCount: 0), url))
+                }
+            } else {
+                let size = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+                others.append(Item(relativePath: path, kind: .whole, byteCount: size))
+            }
+        }
+        var ordered: [Item] = []
+        for (item, url) in folders {
+            ordered.append(item)
+            if item.kind == .folder {
+                ordered += try items(in: url, at: item.relativePath, fileManager: fileManager)
+            }
+        }
+        return ordered + others
+    }
+
+    /// Whether the folder at `url` is copied whole: a book's .tmb package,
+    /// or any folder the system treats as a package.
+    private static func isPackage(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "tmb"
+            || (try? url.resourceValues(forKeys: [.isPackageKey]))?.isPackage == true
+    }
+
+    /// The lengths of every file inside the folder at `url`, at any depth,
+    /// links not followed.
+    /// - Throws: The first error met listing the folder.
+    private static func byteCount(ofFolder url: URL) throws -> Int64 {
+        let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
+        let listingFailure = FolderListingFailure()
+        let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: keys,
+            options: [],
+            errorHandler: { _, error in
+                // Stop at the first folder that cannot be listed.
+                listingFailure.note(error)
+                return false
+            }
+        )
+        var total: Int64 = 0
+        while let item = enumerator?.nextObject() as? URL {
+            let values = try item.resourceValues(forKeys: Set(keys))
+            if values.isRegularFile == true {
+                total += Int64(values.fileSize ?? 0)
+            }
+        }
+        if let error = listingFailure.error {
+            throw error
+        }
+        return total
+    }
+}
+
+/// The first error a folder enumeration met, noted by its error handler,
+/// which runs while the enumeration does.
+private final class FolderListingFailure {
+    /// The first error noted, if any.
+    private(set) var error: Error?
+
+    /// Notes `error`, unless one was noted already.
+    func note(_ error: Error) {
+        if self.error == nil {
+            self.error = error
         }
     }
 }
