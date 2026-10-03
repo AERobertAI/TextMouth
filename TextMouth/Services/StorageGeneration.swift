@@ -218,10 +218,19 @@ final class StorageBoundary: @unchecked Sendable {
     /// then. A move waits for the work under way before it copies anything,
     /// so no piece of work runs across a publication.
     ///
-    /// Two kinds of work run at once, unrecorded. Work on the main thread:
-    /// a move copies and publishes on the main actor too, so such work can
-    /// never run across that, and waiting there would stall the very work
-    /// a move waits for, such as an import adding its book to the library.
+    /// Two kinds of work run at once, unrecorded. Work on the main thread,
+    /// where waiting would stall the very work a move waits for, such as an
+    /// import adding its book to the library. A move copies and publishes
+    /// on a background queue (`copyAndPublish`), not on the main actor, so
+    /// nothing here keeps main-thread work from running across a
+    /// publication: its callers must. Today they do. They are the startup
+    /// repair and the migration of a legacy library index, which run as the
+    /// library loads, and no move runs before the library has loaded or
+    /// while its index is being recovered; and the legacy migration of
+    /// Rebuild Directory and Reset to Default, which runs inside their own
+    /// hold on storage work (`withStorageWorkHeld`), where no other move
+    /// can begin. Main-thread work added later that writes into the data
+    /// directory needs the same care, or belongs on a background thread.
     /// And work started inside other work on the same thread, such as the
     /// text extraction an import does: it is part of that work.
     func perform<Result>(
