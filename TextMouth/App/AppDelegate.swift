@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -8,9 +7,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// empty, non-interactive menus.
     let menuVisibilityManager = MenuVisibilityManager()
 
-    /// Opens the next book's reader for Continue to Next Book when no
-    /// Library window is open to receive the notification and open it.
-    private var continueToNextBookFallback: AnyCancellable?
+    /// The router that takes app-wide actions: the shared one, which the
+    /// Library and reader windows register with, unless a test sets its own.
+    var router = LibraryWindowRouter.shared
+
+    /// Starts routing app-wide actions (TODO A05) before Finder can hand
+    /// over a book at launch. SwiftUI opens the first Library window itself,
+    /// so an action that arrives before that window registers waits for it
+    /// instead of opening a second. Later, an action no open window can take
+    /// opens a Library window through SwiftUI's main scene.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        router.openLibraryWindow = Self.openLibraryWindowThroughSwiftUI
+        router.expectLibraryWindow()
+        router.listen(to: .default)
+    }
+
+    /// Opens a new Library window the way AppKit asks SwiftUI for one when
+    /// the app is reopened with no window: SwiftUI's own application
+    /// delegate, which forwards to this one, answers
+    /// `applicationOpenUntitledFile(_:)` by opening a window of the app's
+    /// main scene, the Library. In the running app this opens exactly one
+    /// Library window, which registers with the router at once, whether a
+    /// Library window, only readers, or no window at all is open.
+    ///
+    /// This delegate must never implement `applicationOpenUntitledFile(_:)`
+    /// itself: SwiftUI would hand the call here instead of opening a window.
+    ///
+    /// Other ways fall short (tried in the running app, TODO A05). No
+    /// responder answers `newWindow:`, so sending it does nothing. A reader
+    /// window's `openWindow` cannot name the Library scene, which has no
+    /// identifier, and exists only while a reader is open. A reopen event
+    /// opens a window only while no window at all is visible. File > New >
+    /// New Window works, but only by finding the menu item by its title.
+    ///
+    /// - Returns: Whether SwiftUI opened a Library window.
+    static func openLibraryWindowThroughSwiftUI() -> Bool {
+        NSApp.delegate?.applicationOpenUntitledFile?(NSApp) ?? false
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let buildIdentity = BuildIdentity.current
@@ -28,19 +61,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start hiding/showing context-specific menus based on active window type
         menuVisibilityManager.startObserving()
-
-        // A Library window opens the next book's reader for Continue to
-        // Next Book. With none open, nothing would, so the app does.
-        continueToNextBookFallback = NotificationCenter.default
-            .publisher(for: .continueToNextBook)
-            .sink { notification in
-                guard let bookID = notification.nextBookID else { return }
-                Self.openContinuedBookIfNoLibraryWindow(
-                    bookID,
-                    router: .shared,
-                    keyWindow: NSApp.keyWindow
-                )
-            }
     }
 
     /// Disables macOS automatic window state restoration
@@ -65,7 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// document-style URL into an already-windowed application.
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         Self.shouldOpenUntitledLibrary(
-            hasOpenLibraryWindow: LibraryWindowRouter.shared.hasRegisteredWindow
+            hasOpenLibraryWindow: router.hasRegisteredWindow
         )
     }
 
@@ -73,42 +93,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// driving an application-launch Apple event.
     static func shouldOpenUntitledLibrary(hasOpenLibraryWindow: Bool) -> Bool {
         !hasOpenLibraryWindow
-    }
-
-    /// The app-level fallback for Continue to Next Book: when no Library
-    /// window is registered to open the next book's reader, open it
-    /// through an open reader window instead.
-    ///
-    /// The router's choice keeps this and the Library windows mutually
-    /// exclusive: while any Library window is registered, exactly one of
-    /// them opens the reader and this does nothing. SwiftUI gives
-    /// `openWindow` only to views, never to the app or its delegate, so
-    /// the reader opens through the action a reader window lent the
-    /// router. With no window open at all there is none, and the request
-    /// left for the book simply expires.
-    ///
-    /// - Parameters:
-    ///   - bookID: The next book, named by the notification.
-    ///   - router: The registry of open Library and reader windows.
-    ///   - keyWindow: The window currently receiving keystrokes.
-    /// - Returns: Whether this fallback opened the reader window.
-    @discardableResult
-    static func openContinuedBookIfNoLibraryWindow(
-        _ bookID: UUID,
-        router: LibraryWindowRouter,
-        keyWindow: NSWindow?
-    ) -> Bool {
-        guard case .appFallback = router.continueToNextBookOpener(keyWindow: keyWindow) else {
-            return false
-        }
-        if router.openReaderWindow(for: bookID, keyWindow: keyWindow) {
-            return true
-        }
-        TextMouthPaths.appendLog(
-            to: TextMouthPaths.debugLogFile,
-            message: "continue to next book: no window is open to open \(bookID) from"
-        )
-        return false
     }
 
     // MARK: - Termination
@@ -150,16 +134,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statsService.shutdown()
     }
 
-    /// Handle files opened via Finder "Open With" or drag-to-dock
+    /// Takes the items opened from Finder, with Open With, a drop on the
+    /// Dock icon, or a launch to open them, as one app-wide action: the
+    /// Library window the router chooses imports them and opens each book
+    /// (TODO A05). With every Library window closed, SwiftUI shows one again
+    /// before this is called; on a cold launch, before any Library window
+    /// has registered, the items wait for the first one.
     func application(_ application: NSApplication, open urls: [URL]) {
-        NotificationCenter.default.post(
-            name: .openFilesFromFinder,
-            object: nil,
-            userInfo: ["urls": urls]
-        )
+        router.route(.openFiles(urls))
     }
-}
-
-extension Notification.Name {
-    static let openFilesFromFinder = Notification.Name("openFilesFromFinder")
 }

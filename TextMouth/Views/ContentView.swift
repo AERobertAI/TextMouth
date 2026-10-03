@@ -11,6 +11,9 @@ struct LibraryWindowView: View {
     @State private var currentFolderPath = ""
     @State private var category: LibraryCategory = .folders
     @State private var showFileImporter = false
+    /// Presents the New from Text sheet, from the toolbar or through the
+    /// router for File > New from Text....
+    @State private var showTextInput = false
     @State private var zipFolderName = ""
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: NSWindow?
@@ -22,11 +25,15 @@ struct LibraryWindowView: View {
     @ObservedObject private var removal = RemovalPreferencesModel.shared
 
     var body: some View {
+        // Read while the view is installed, as SwiftUI requires, and lent to
+        // the router with this window's way of taking app-wide actions.
+        let openReaderWindow = openWindow
         ZStack {
             LibraryView(
                 currentFolderPath: $currentFolderPath,
                 category: $category,
                 showFileImporter: $showFileImporter,
+                showTextInput: $showTextInput,
                 onOpenBook: { book in
                     openWindow(id: "book-reader", value: book.id)
                 }
@@ -59,7 +66,7 @@ struct LibraryWindowView: View {
                 libraryWindowRouter.unregister(previousWindow)
             }
             hostWindow = window
-            libraryWindowRouter.register(window)
+            registerForGlobalActions(window, openingReadersWith: openReaderWindow)
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }))
         // Tell SwiftUI that an existing Library scene can receive any incoming
@@ -68,6 +75,13 @@ struct LibraryWindowView: View {
         .handlesExternalEvents(preferring: [], allowing: ["*"])
         .focusedValue(\.activeWindowType, .library)
         .onAppear {
+            // SwiftUI shows a closed Library window again, rather than open
+            // a new one, for a book opened from Finder; the window takes
+            // app-wide actions again from then on. A window appearing for
+            // the first time registers once its hosting window is found.
+            if let hostWindow {
+                registerForGlobalActions(hostWindow, openingReadersWith: openReaderWindow)
+            }
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }
         .onDisappear {
@@ -172,27 +186,11 @@ struct LibraryWindowView: View {
                 Text(verbatim: choice + incomplete)
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .openBookFile)) { _ in
-            // Route to one Library even when a reader window currently has
-            // focus, while still preventing duplicate file dialogs.
-            if shouldHandleGlobalLibraryAction {
-                showFileImporter = true
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .importDAISYFolder)) { _ in
-            // One Library window presents the panel, as for Open Book...
-            if shouldHandleGlobalLibraryAction {
-                presentDAISYFolderPanel()
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openBookWindow)) { notification in
-            // Finder imports complete while a reader may be key. The shared
-            // router selects one existing Library as the openWindow host.
-            if shouldHandleGlobalLibraryAction,
-               let bookID = notification.object as? UUID {
-                openWindow(id: "book-reader", value: bookID)
-            }
-        }
+        // Open Book..., New from Text..., Import DAISY Folder…, Go to Library,
+        // items opened from Finder, opening a book's reader, and Continue to
+        // Next Book are app-wide actions: the router hands each to exactly
+        // one window (TODO A05), this one through
+        // `takeGlobalAction(_:openingReadersWith:)` when it is chosen.
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
             if isKeyLibraryWindow, let path = folderNav.goBack() {
                 currentFolderPath = path
@@ -214,15 +212,6 @@ struct LibraryWindowView: View {
         .onChange(of: currentFolderPath) { _, newPath in
             folderNav.recordVisit(to: newPath)
             announceFolderChange(newPath)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .continueToNextBook)) { notification in
-            // Exactly one Library window opens the next book's reader, or
-            // brings it forward when it is already open. While no Library
-            // window is registered, the app delegate opens it instead.
-            if libraryWindowRouter.shouldOpenContinuedBook(in: hostWindow, keyWindow: NSApp.keyWindow),
-               let bookID = notification.nextBookID {
-                openWindow(id: BookReaderWindowView.windowID, value: bookID)
-            }
         }
     }
 
@@ -270,10 +259,62 @@ struct LibraryWindowView: View {
         return hostWindow.isKeyWindow
     }
 
-    /// Selects one Library window for notifications that may originate while
-    /// a reader or another non-Library window has focus.
-    private var shouldHandleGlobalLibraryAction: Bool {
-        libraryWindowRouter.shouldHandleGlobalAction(in: hostWindow)
+    // MARK: - App-Wide Actions (TODO A05)
+
+    /// Registers this Library window with the router, lending it the way
+    /// this window takes app-wide actions. The router decides which one
+    /// window takes each action; this window never acts on an app-wide
+    /// notification by itself, since SwiftUI keeps a closed Library window's
+    /// view alive and still receiving notifications.
+    ///
+    /// - Parameters:
+    ///   - window: This view's hosting window.
+    ///   - openReaderWindow: This window's `openWindow` action, read while
+    ///     the view was installed, which opens a book's reader window.
+    private func registerForGlobalActions(_ window: NSWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
+        libraryWindowRouter.register(window) { action in
+            takeGlobalAction(action, openingReadersWith: openReaderWindow)
+        }
+    }
+
+    /// Takes an app-wide action the router chose this Library window for.
+    /// A panel is presented on this window, brought to the front first: a
+    /// reader, Settings, or another Library window may be key, and the panel
+    /// must appear where the user and VoiceOver are.
+    private func takeGlobalAction(_ action: GlobalAction, openingReadersWith openReaderWindow: OpenWindowAction) {
+        switch action {
+        case .openBookFile:
+            bringToFront()
+            showFileImporter = true
+        case .newFromText:
+            bringToFront()
+            showTextInput = true
+        case .importDAISYFolder:
+            bringToFront()
+            presentDAISYFolderPanel()
+        case .goToLibrary:
+            bringToFront()
+        case .openFiles(let items):
+            // A Library window is already on screen for the items: SwiftUI
+            // shows one for them, or the router opened one. The import's
+            // progress and questions appear there, and each book imported
+            // opens afterwards.
+            libraryViewModel.importAndOpenFiles(urls: items)
+        case .openBookWindow(let bookID), .continueToNextBook(let bookID):
+            // Opens the book's reader window, or brings it forward when it
+            // is already open.
+            openReaderWindow(id: BookReaderWindowView.windowID, value: bookID)
+        }
+    }
+
+    /// Brings this Library window to the front as the key window, out of
+    /// the Dock first when it was minimized.
+    private func bringToFront() {
+        guard let hostWindow else { return }
+        if hostWindow.isMiniaturized {
+            hostWindow.deminiaturize(nil)
+        }
+        hostWindow.makeKeyAndOrderFront(nil)
     }
 
     /// Presents the folder-only panel of Library > Import DAISY Folder… as a

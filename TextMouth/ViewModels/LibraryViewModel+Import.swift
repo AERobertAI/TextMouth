@@ -54,7 +54,9 @@ final class SerialImportQueue: @unchecked Sendable {
 /// TMB packages, and text input.
 extension LibraryViewModel {
 
-    /// Import files and post notification to open them
+    /// Imports the items opened from Finder and opens each book once it is
+    /// in the library. The Library window the router chooses for the items
+    /// calls this (TODO A05).
     func importAndOpenFiles(urls: [URL]) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
@@ -458,15 +460,5 @@ extension LibraryViewModel {
                 importBooks(in: url, toFolder: folderPath)
             }
         }
-    }
-
-    /// Listen for files opened via Finder "Open With" or drag-to-dock
-    func setupFinderOpenHandler() {
-        NotificationCenter.default.publisher(for: .openFilesFromFinder)
-            .compactMap { $0.userInfo?["urls"] as? [URL] }
-            .sink { [weak self] urls in
-                self?.importAndOpenFiles(urls: urls)
-            }
-            .store(in: &cancellables)
     }
 }

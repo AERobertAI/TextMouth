@@ -131,7 +131,6 @@ final class LibraryViewModel: ObservableObject {
         // Load the index and run the startup repair; an unreadable index
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
-        setupFinderOpenHandler()
         setupDataDirectoryChangeHandler()
         importOperationQueue.onActivityChanged = { [weak self] activeCount in
             guard let self else { return }
