@@ -230,7 +230,102 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertEqual(try publishedLibrary(in: destination).books.map(\.filePath), migrated.books.map(\.filePath))
     }
 
+    /// Acceptance (TODO S10): a new location that is a link to an empty
+    /// folder elsewhere receives the data in that folder. The link stays,
+    /// still leading there, nothing is put beside it, and the books are
+    /// named through it, as the preferences will name the data directory.
+    func testLinkToAnEmptyFolderReceivesTheDataInThatFolder() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let elsewhere = base.appendingPathComponent("Elsewhere", isDirectory: true)
+        let folder = elsewhere.appendingPathComponent("Empty", isDirectory: true)
+        let chosen = base.appendingPathComponent("Chosen", isDirectory: true)
+        let link = chosen.appendingPathComponent(".TextMouth")
+        let library = try makeLibrary(at: source)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: chosen, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
+        let sourceBefore = try snapshot(of: source)
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: link, library: library)
+
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: link.path), folder.path)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: chosen.path), [".TextMouth"])
+        XCTAssertEqual(
+            Set(try FileManager.default.contentsOfDirectory(atPath: folder.path)),
+            ["Library", "Logs", "library.json"]
+        )
+        let book = try XCTUnwrap(migrated.books.first)
+        XCTAssertTrue(book.filePath.hasPrefix(link.path + "/Library/"), book.filePath)
+        XCTAssertEqual(try String(contentsOfFile: book.filePath, encoding: .utf8), "migration")
+        XCTAssertEqual(try publishedLibrary(in: folder).books.map(\.filePath), [book.filePath])
+        XCTAssertEqual(try snapshot(of: source), sourceBefore)
+        XCTAssertEqual(stagingLeft(in: elsewhere), [])
+    }
+
+    /// A new location that is a link leading nowhere, to a missing folder or
+    /// back to itself, is refused before anything is copied, naming the
+    /// link and what it points to. Nothing is created where it points.
+    func testLinkThatLeadsNowhereIsRefused() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let missing = base.appendingPathComponent("Unmounted/Data").path
+        let dangling = base.appendingPathComponent("Dangling")
+        let looping = base.appendingPathComponent("Looping")
+        try FileManager.default.createSymbolicLink(atPath: dangling.path, withDestinationPath: missing)
+        try FileManager.default.createSymbolicLink(atPath: looping.path, withDestinationPath: looping.path)
+        let before = try snapshot(of: base)
+
+        for (link, target) in [(dangling, missing), (looping, looping.path)] {
+            XCTAssertThrowsError(
+                try DataDirectoryMigrator.prepareMigration(from: source, to: link, library: library)
+            ) { error in
+                guard case DataDirectoryMigrationError.unreachableLink(let refused, let refusedTarget) = error else {
+                    return XCTFail("Expected the unreachable-link refusal, received \(error)")
+                }
+                XCTAssertEqual(refused.named.path, link.path)
+                XCTAssertEqual(refusedTarget, target)
+                XCTAssertEqual(
+                    error.localizedDescription,
+                    "The new location, \(link.path), is a link to \(target), which cannot be found. "
+                        + "Choose another location."
+                )
+            }
+        }
+        XCTAssertEqual(try snapshot(of: base), before, "nothing was created, copied, or changed")
+    }
+
+    /// A new location that is a link to a folder holding anything is
+    /// refused as that folder would be, and the folder is left as it was.
+    func testLinkToAFolderThatIsNotEmptyIsRefused() throws {
+        let base = try makeMigrationBase()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let library = try makeLibrary(at: source)
+        let folder = base.appendingPathComponent("Elsewhere/Occupied", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("keep".utf8).write(to: folder.appendingPathComponent("keep.txt"))
+        let link = base.appendingPathComponent("Link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: folder)
+        let before = try snapshot(of: base)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.prepareMigration(from: source, to: link, library: library)
+        ) { error in
+            guard case DataDirectoryMigrationError.destinationNotEmpty = error else {
+                return XCTFail("Expected the not-empty refusal, received \(error)")
+            }
+        }
+        XCTAssertEqual(try snapshot(of: base), before)
+    }
+
     // MARK: - Fixtures
+
+    /// The names of the hidden staging folders a migration left in `folder`.
+    private func stagingLeft(in folder: URL) -> [String] {
+        ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+            .filter { $0.hasPrefix(DataDirectoryMigrator.stagingNamePrefix) }
+    }
 
     /// The library index published in the data directory at `root`.
     private func publishedLibrary(in root: URL) throws -> Library {

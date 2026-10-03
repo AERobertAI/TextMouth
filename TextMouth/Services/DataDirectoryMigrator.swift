@@ -13,6 +13,10 @@ enum DataDirectoryMigrationError: LocalizedError {
         source: DataDirectoryLocation,
         destination: DataDirectoryLocation
     )
+    /// The new location is a symbolic link that leads to no folder: what it
+    /// points to, `target` as written in the link, is missing, or leads back
+    /// to the link (TODO S10).
+    case unreachableLink(DataDirectoryLocation, target: String)
     case destinationNotEmpty
     case missingSource
     case missingBook(String)
@@ -22,6 +26,9 @@ enum DataDirectoryMigrationError: LocalizedError {
         switch self {
         case .invalidRelationship(let overlap, let source, let destination):
             return overlap.explanation(source: source, destination: destination)
+        case .unreachableLink(let link, let target):
+            return "The new location, \(link.named.path), is a link to \(target), which cannot be found. "
+                + "Choose another location."
         case .destinationNotEmpty: return "The selected data directory is not empty. Choose an empty location."
         case .missingSource: return "The current data directory does not exist."
         case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
@@ -153,6 +160,10 @@ enum DataDirectoryOverlap: Equatable {
 /// Copy-and-validate migration primitive. It does not mutate global path state,
 /// which makes failure behavior deterministic and independently testable.
 enum DataDirectoryMigrator {
+    /// The start of the hidden name a migration stages its copy under,
+    /// beside the destination's real folder, followed by a UUID.
+    static let stagingNamePrefix = ".TextMouth-migration-"
+
     static func prepareMigration(
         from oldRoot: URL,
         to newRoot: URL,
@@ -177,13 +188,26 @@ enum DataDirectoryMigrator {
         guard fileManager.fileExists(atPath: source.real.path) else {
             throw DataDirectoryMigrationError.missingSource
         }
-        if fileManager.fileExists(atPath: destinationPath) {
-            let contents = try fileManager.contentsOfDirectory(atPath: destinationPath)
+        // A new location that is a link leading nowhere has no folder to
+        // receive the data; publishing at its name would replace the link
+        // with the data instead. `fileExists` follows links, so it is false
+        // for a link whose target is missing or leads back to itself.
+        if let target = try? fileManager.destinationOfSymbolicLink(atPath: destinationPath),
+           !fileManager.fileExists(atPath: destinationPath) {
+            throw DataDirectoryMigrationError.unreachableLink(destination, target: target)
+        }
+        if fileManager.fileExists(atPath: destination.real.path) {
+            let contents = try fileManager.contentsOfDirectory(atPath: destination.real.path)
             guard contents.isEmpty else { throw DataDirectoryMigrationError.destinationNotEmpty }
         }
 
-        let staging = destination.named.deletingLastPathComponent()
-            .appendingPathComponent(".TextMouth-migration-\(UUID().uuidString)", isDirectory: true)
+        // The copy is staged and published in the folder that holds the
+        // destination's real folder, so a new location that is a link to an
+        // empty folder receives the data in that folder, the link staying
+        // as it is, and the final rename never crosses volumes (TODO S10).
+        // Book paths keep the name the preferences will hold.
+        let staging = destination.real.deletingLastPathComponent()
+            .appendingPathComponent(stagingNamePrefix + UUID().uuidString, isDirectory: true)
         defer { try? fileManager.removeItem(at: staging) }
         // Copy the folder the data directory leads to. Copying a link copies
         // only the link, so the package records and library.json written
@@ -233,10 +257,10 @@ enum DataDirectoryMigrator {
             throw DataDirectoryMigrationError.invalidLibrary
         }
 
-        if fileManager.fileExists(atPath: destinationPath) {
-            try fileManager.removeItem(at: destination.named)
+        if fileManager.fileExists(atPath: destination.real.path) {
+            try fileManager.removeItem(at: destination.real)
         }
-        try fileManager.moveItem(at: staging, to: destination.named)
+        try fileManager.moveItem(at: staging, to: destination.real)
         return migratedLibrary
     }
 }
