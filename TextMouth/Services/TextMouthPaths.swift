@@ -133,13 +133,14 @@ enum TextMouthPaths {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
-    /// The diagnostic logs' folder: this Mac's ~/Library/Logs/TextMouth
-    /// (`MachineLocalPaths.logs`), never the data directory (FR02), so
-    /// logging works while the data directory is missing and the logs
-    /// never sync to the cloud. Logs written into the data directory's own
-    /// Logs folder by earlier releases stay there.
+    /// The name of the folder of logs inside the data directory.
+    static let logsFolderName = "Logs"
+
+    /// The folder the diagnostic logs are written to now (`logDestination`):
+    /// the data directory's Logs folder, or this Mac's
+    /// ~/Library/Logs/TextMouth.
     static var logsDir: URL {
-        MachineLocalPaths.logs
+        logDestination.folder
     }
 
     static var configFile: URL {
@@ -158,12 +159,71 @@ enum TextMouthPaths {
         root.appendingPathComponent("reading_stats.json")
     }
 
-    // MARK: - Debug Log
+    // MARK: - Where the Logs Go
 
     /// The main diagnostic log (`DiagnosticLog.File.debug`), which names
-    /// every log file.
+    /// every log file, in the folder lines go to now.
     static var debugLogFile: URL {
         DiagnosticLog.File.debug.url
+    }
+
+    /// Where the diagnostic logs are written now, and why there: under
+    /// Storage settings' choice, in the data directory in use, as the app's
+    /// log writer resolves it for every line (`LogWriter.Environment.app`).
+    static var logDestination: LogDestination {
+        LogWriter.Environment.app.destination
+    }
+
+    /// Where the logs would go under `location`, with the data directory in
+    /// use and this Mac's Logs folder as they are now: what Storage settings
+    /// show for the choice on screen.
+    static func logDestination(for location: LogLocation) -> LogDestination {
+        LogWriter.Environment.app.destination(for: location)
+    }
+
+    /// The one resolution of the logs' folder (the user's decision of
+    /// October 3), with everything it depends on given, so tests can give
+    /// their own; every log line's folder is resolved here.
+    ///
+    /// - `machine`: this Mac's Logs folder, `thisMacsFolder`.
+    /// - `dataDirectory`: the Logs folder inside `dataDirectory`, while the
+    ///   library model has not found the data directory unavailable
+    ///   (`isUnavailable`) and that folder is there. Otherwise this Mac's
+    ///   Logs folder, with the reason, until the data directory's can take
+    ///   lines again. Nothing is made here: the data directory's Logs folder
+    ///   is made with its other folders (`ensureDirectoryStructure`), so a
+    ///   line never brings back a data directory that is gone (FR02).
+    ///
+    /// Reads metadata only, never downloading anything, since it runs for
+    /// every line and on the main thread for Storage settings.
+    static func logDestination(
+        for location: LogLocation,
+        dataDirectory: URL,
+        thisMacsFolder: URL,
+        isUnavailable: (URL) -> Bool
+    ) -> LogDestination {
+        guard location == .dataDirectory else {
+            return LogDestination(folder: thisMacsFolder, reason: .thisMac)
+        }
+        let fallback = { (why: LogFallback) in LogDestination(folder: thisMacsFolder, reason: .fallback(why)) }
+        guard !isUnavailable(dataDirectory) else {
+            return fallback(.libraryUnavailable)
+        }
+        let logs = dataDirectory.appendingPathComponent(logsFolderName, isDirectory: true)
+        switch DatalessFiles.withoutDownloading({ FolderState(of: logs) }) {
+        case .folder:
+            return LogDestination(folder: logs, reason: .dataDirectory)
+        case .missing:
+            // Either the Logs folder or the data directory itself is gone.
+            let isDataDirectoryThere = DatalessFiles.withoutDownloading { FolderState(of: dataDirectory).isFolder }
+            return fallback(isDataDirectoryThere ? .logsFolderMissing : .dataDirectoryMissing)
+        case .notAFolder:
+            return fallback(.logsFolderUnusable("it is a file, not a folder"))
+        case .unreadable(let reason):
+            return fallback(.logsFolderUnusable(reason))
+        case .onlyInCloud:
+            return fallback(.logsFolderUnusable("it is only in the cloud"))
+        }
     }
 
     // MARK: - TMB Package Helpers
@@ -256,8 +316,11 @@ enum TextMouthPaths {
         } else {
             try requireExistingDataDirectory(root)
         }
-        // The data directory's own folder of books, directly inside it.
-        try createFolders([libraryFolderName], inside: root)
+        // The data directory's own folders, each directly inside it: its
+        // books, and its logs, which the log writer never makes itself.
+        for name in [libraryFolderName, logsFolderName] {
+            try createFolders([name], inside: root)
+        }
     }
 
     /// Creates the library subfolder `folderPath`, with any folder above it

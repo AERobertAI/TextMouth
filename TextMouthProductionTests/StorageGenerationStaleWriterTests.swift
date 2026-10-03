@@ -152,20 +152,22 @@ final class StorageGenerationStaleWriterTests: XCTestCase {
 
     // MARK: - Logs
 
-    /// A log line written after the move is written, and the old data
-    /// directory, which the move left and was removed since, is not made
-    /// again: a line is addressed by its log's name, and its folder is
-    /// resolved only as it is written.
-    func testALogLineAfterTheMoveDoesNotRecreateTheOldDataDirectory() throws {
+    /// A log line written after the move goes to the debug log in the new
+    /// data directory, and the old data directory, which the move left and
+    /// was removed since, is not made again: a line is addressed by its
+    /// log's name, and its folder is resolved only as it is written.
+    func testALogLineAfterTheMoveIsWrittenUnderTheNewRoot() throws {
         let old = try makeCurrentDataDirectory("StaleLogOld")
         try FileManager.default.createDirectory(at: old.appendingPathComponent("Logs"), withIntermediateDirectories: true)
-        _ = try moveDataDirectory(from: old, label: "StaleLogNew")
+        let new = try moveDataDirectory(from: old, label: "StaleLogNew")
         try FileManager.default.removeItem(at: old)
         let marker = UUID().uuidString
 
         DiagnosticLog.event(.storage, "DATA_DIRECTORY_TEST: written after the move \(marker)")
 
         XCTAssertEqual(debugLogLines(containing: marker).count, 1)
+        let written = try String(contentsOf: new.appendingPathComponent("Logs/textmouth_debug.log"), encoding: .utf8)
+        XCTAssertTrue(written.contains(marker), "The line is not in the new data directory's log")
         XCTAssertFalse(FileManager.default.fileExists(atPath: old.path), "The old data directory was recreated")
     }
 

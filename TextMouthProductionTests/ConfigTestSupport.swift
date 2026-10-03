@@ -78,12 +78,21 @@ extension XCTestCase {
     }
 
     /// The debug log's lines that contain `text`, waiting first for every
-    /// queued log write. The rotated generation is read too, in case one of
-    /// the lines started a new file.
+    /// queued log write. Lines go to the data directory's Logs folder, or to
+    /// this Mac's while the data directory can't take them, so both debug
+    /// logs are read, each line being in one of them only. The rotated
+    /// generations are read too, in case one of the lines started a new file.
     func debugLogLines(containing text: String) -> [String] {
         TextMouthPaths.flushLogs()
-        let logFile = TextMouthPaths.debugLogFile
-        return [logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension), logFile]
+        let folders = [
+            TextMouthPaths.root.appendingPathComponent(TextMouthPaths.logsFolderName, isDirectory: true),
+            MachineLocalPaths.logs,
+        ]
+        return folders
+            .flatMap { folder -> [URL] in
+                let logFile = folder.appendingPathComponent(DiagnosticLog.File.debug.rawValue, isDirectory: false)
+                return [logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension), logFile]
+            }
             .compactMap { try? String(contentsOf: $0, encoding: .utf8) }
             .joined(separator: "\n")
             .split(separator: "\n")

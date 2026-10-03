@@ -124,7 +124,7 @@ final class LogWriteSafetyTests: XCTestCase {
         let first = directory.appendingPathComponent("First", isDirectory: true)
         let second = directory.appendingPathComponent("Second", isDirectory: true)
         let folder = LockedValue(first)
-        let writer = LogWriter(environment: LogWriter.Environment(folder: { folder.value }))
+        let writer = LogWriter(environment: .writing(into: { folder.value }))
 
         writer.append("into the first", to: .debug)
         writer.flush()
@@ -239,7 +239,7 @@ final class LogWriteSafetyTests: XCTestCase {
         rename: @escaping @Sendable (_ from: URL, _ to: URL) throws -> Void = { try LogWriter.renameReplacing($0, $1) },
         isOnlyInCloud: @escaping @Sendable (_ file: URL) -> Bool = { _ in false }
     ) -> LogWriter {
-        LogWriter(environment: LogWriter.Environment(folder: { folder }, rename: rename, isOnlyInCloud: isOnlyInCloud))
+        LogWriter(environment: .writing(into: { folder }, rename: rename, isOnlyInCloud: isOnlyInCloud))
     }
 
     /// The debug log in the test's directory, filled to the cap, the path of
