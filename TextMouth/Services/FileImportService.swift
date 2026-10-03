@@ -1671,10 +1671,16 @@ enum FileImportService {
             // The user removed this book from the library; it stays out.
             if RemovedFromLibraryMarker.retires(info.metadata.bookID, in: url) { continue }
 
-            // Find the actual book file inside the .tmb (skip metadata/cache
-            // files, including a removal marker that names some other book)
+            // Find the actual book file inside the .tmb: the one its record
+            // names, since a DAISY book's package holds many files (TODO
+            // I02); for a record naming none there, the first entry that is
+            // not metadata or cache (a removal marker naming some other book
+            // included)
             let tmbContents = (try? fm.contentsOfDirectory(atPath: url.path)) ?? []
-            let bookFileName = tmbContents.first(where: isPackageContentName)
+            let recordedName = info.metadata.originalFileName
+            let bookFileName = tmbContents.contains(recordedName) && isPackageContentName(recordedName)
+                ? recordedName
+                : tmbContents.first(where: isPackageContentName)
 
             guard let fileName = bookFileName else { continue }
             let bookFilePath = url.appendingPathComponent(fileName).path

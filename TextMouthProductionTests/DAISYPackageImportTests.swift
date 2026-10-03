@@ -462,6 +462,42 @@ final class DAISYPackageImportTests: XCTestCase {
         }
     }
 
+    /// When the library index is lost, the packages of loose DAISY books
+    /// are adopted with their book's file as the OPF or ncc.html their
+    /// record names, not whichever of their many files happens to be listed
+    /// first, so each still opens and reads in full.
+    func testOrphanedPackageIsAdoptedByTheFileItsRecordNames() throws {
+        let packageFolder = try Fixtures.writeFolder(Fixtures.packageBook, named: "Ferry Timetables", in: sources)
+        let navigationFolder = try Fixtures.writeFolder(Fixtures.navigationBook, named: "Rope Splicing", in: sources)
+        let books = [
+            (try FileImportService.importFileWithReport(from: packageFolder, toFolder: folderPath).book, Fixtures.packageBookSentences),
+            (try FileImportService.importFileWithReport(from: navigationFolder, toFolder: folderPath).book, Fixtures.navigationBookSentences)
+        ]
+        // A library of the packages alone, in the same folder, as a lost
+        // index leaves them: nothing else in the shared test library joins.
+        let library = sources.appendingPathComponent("Recovered Library", isDirectory: true)
+        let folder = library.appendingPathComponent(folderPath, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for (book, _) in books {
+            try FileManager.default.copyItem(at: book.tmbDirectory, to: folder.appendingPathComponent(book.tmbDirectoryName))
+        }
+
+        var recovered = Library()
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &recovered, libraryDirectory: library)
+
+        XCTAssertEqual(adopted, 2)
+        for (book, sentences) in books {
+            let adoptedBook = try XCTUnwrap(recovered.books.first { $0.id == book.id })
+            XCTAssertEqual(adoptedBook.bookFileURL.lastPathComponent, book.bookFileURL.lastPathComponent)
+            XCTAssertEqual(adoptedBook.tmbDirectoryName, book.tmbDirectoryName)
+            XCTAssertEqual(adoptedBook.folderPath, folderPath)
+            let spoken = try Fixtures.spokenText(of: DAISYParser.extractMarkdown(from: adoptedBook.bookFileURL))
+            for sentence in sentences {
+                XCTAssertTrue(spoken.contains(sentence), "\(book.title): missing “\(sentence)”")
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     /// A copy of `book`'s package, record and cache included, in a new
