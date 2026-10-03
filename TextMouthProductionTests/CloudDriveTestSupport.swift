@@ -617,11 +617,18 @@ extension XCTestCase {
         CloudDriveFindings.shared.record(finding)
         let line = "\(finding.drive), question \(question.rawValue) (\(question.title)): \(answer)"
         print("CLOUD DRIVE FINDING: \(line)")
+        await keepNote(line, as: "\(finding.drive), question \(question.rawValue)")
+    }
+
+    /// Keeps `text` with the test's results: an activity named `text`, with
+    /// `text` attached under `attachmentName` and kept even when the test
+    /// passes.
+    func keepNote(_ text: String, as attachmentName: String) async {
         // XCTest makes activities on the main actor only.
         await MainActor.run {
-            XCTContext.runActivity(named: line) { activity in
-                let attachment = XCTAttachment(string: line)
-                attachment.name = "\(finding.drive), question \(question.rawValue)"
+            XCTContext.runActivity(named: text) { activity in
+                let attachment = XCTAttachment(string: text)
+                attachment.name = attachmentName
                 attachment.lifetime = .keepAlways
                 activity.add(attachment)
             }

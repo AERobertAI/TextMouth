@@ -8,7 +8,8 @@ import XCTest
 /// otherwise, as in every ordinary run.
 ///
 /// On each listed drive, every test works only inside a new run folder of
-/// its own, writes only small synthetic files there, and deletes the folder
+/// its own, writes only small test files there (random bytes, or, for the
+/// small library, the repository's TestData books), and deletes the folder
 /// when it ends, even after a failure. Nothing else on the drive is read,
 /// listed, or changed, and the library stays in the hosted tests' sandbox.
 /// Uploads and downloads are checked once a second, up to a limit
@@ -222,6 +223,150 @@ final class CloudDriveIntegrationTests: XCTestCase {
                 to: .removalWhileUploading,
                 on: root
             )
+        }
+    }
+
+    // MARK: - A Small Library for the Manual Test Matrix
+
+    /// The variable that, set to 1, keeps the small library on each drive
+    /// for the manual test matrix, at the top of its test folder.
+    private static let keepSmallLibraryVariable = "TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY"
+
+    /// The small library's folder name.
+    private static let smallLibraryName = "Small Library"
+
+    /// The library index's file name in a data directory, as the app's
+    /// own check for a library names it (`DataDirectoryRequest`).
+    private static let libraryIndexName = "library.json"
+
+    /// The ten TestData books of the small library: text in every format
+    /// the app reads, and two DAISY books with audio.
+    private static let smallLibraryBooks = [
+        "alice.epub", "alice.docx", "frankenstein.html", "pride.txt", "sample.md",
+        "test_book.docx", "test_formatted.pdf", "test_with_outline.pdf",
+        "hyperion_daisy.zip", "lathe_of_heaven_daisy.zip",
+    ]
+
+    /// Builds “Small Library”, a ten-book TextMouth library, on each drive,
+    /// for the manual test matrix. The books are imported by the app's own
+    /// import path inside the sandbox, gathered with a library index and an
+    /// identity into a library folder in this Mac's Import Staging folder,
+    /// and renamed into the drive, where the app's own check finds a library
+    /// to use. Notes how long the drive took to upload it.
+    ///
+    /// The library is built in the run folder and deleted with it, unless
+    /// `TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY` is 1: then it is built at
+    /// the top of the test folder and stays there, for a person to choose
+    /// with Use This Library. A small library already there is never
+    /// replaced.
+    func testASmallLibraryForManualTesting() async throws {
+        let keep = ProcessInfo.processInfo.environment[Self.keepSmallLibraryVariable] == "1"
+        await forEachRoot(label: "small-library") { root, run in
+            let library = (keep ? root.folder : run).appendingPathComponent(Self.smallLibraryName, isDirectory: true)
+            guard !FileManager.default.fileExists(atPath: library.path) else {
+                throw CloudDriveStepFailure(reason: "\(library.path) is there already; remove it to build a new one.")
+            }
+            let staged = try buildSmallLibrary(toBePublishedAt: library)
+            try Self.renameItem(staged, to: library)
+            try assertHoldsTheSmallLibrary(library, on: root)
+
+            let files = Self.regularFiles(in: library)
+            let bytes = files.compactMap { FileSnapshot.read($0)?.byteCount }.reduce(0, +)
+            let uploaded = try await CloudDriveWait.until(limit: CloudDriveWait.upload) { areUploaded(files) }
+            let upload = uploaded.map { "uploaded within \(CloudDriveWait.describe($0))" }
+                ?? "not all reported uploaded within \(CloudDriveWait.describe(CloudDriveWait.upload))"
+            let note = "\(root.driveName): Small Library, \(Self.smallLibraryBooks.count) books in \(files.count) files "
+                + "(\(bytes) bytes), \(upload); "
+                + (keep ? "kept at \(library.path)." : "deleted with the run folder.")
+            print("CLOUD DRIVE SMALL LIBRARY: \(note)")
+            await keepNote(note, as: "\(root.driveName), small library")
+        }
+    }
+
+    /// Imports the small library's books through the app's own import path
+    /// into the sandbox's library, then gathers them into a new library
+    /// folder in this Mac's Import Staging folder: their packages in its
+    /// Library folder, a library index naming where each book's file will
+    /// be once the folder is at `destination`, and a library identity.
+    /// Returns the folder, which the test's end removes if it is still
+    /// there.
+    private func buildSmallLibrary(toBePublishedAt destination: URL) throws -> URL {
+        let staging = MachineLocalPaths.importStaging
+            .appendingPathComponent("CloudDriveSmallLibrary-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: staging) }
+        let folder = staging.appendingPathComponent(Self.smallLibraryName, isDirectory: true)
+        let packages = folder.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+        try FileManager.default.createDirectory(at: packages, withIntermediateDirectories: true)
+        let publishedPackages = destination.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+
+        var books: [Book] = []
+        for name in Self.smallLibraryBooks {
+            var book = try FileImportService.importFile(from: requireFile(name))
+            let imported = book.tmbDirectory
+            addTeardownBlock { try? FileManager.default.removeItem(at: imported) }
+            let packageName = imported.lastPathComponent
+            try FileManager.default.moveItem(at: imported, to: packages.appendingPathComponent(packageName, isDirectory: true))
+            let published = publishedPackages.appendingPathComponent(packageName, isDirectory: true)
+            guard let filePath = Self.relocated(book.filePath, from: imported, to: published) else {
+                throw CloudDriveStepFailure(reason: "\(name)'s book file, \(book.filePath), is outside its package.")
+            }
+            book.filePath = filePath
+            books.append(book)
+        }
+        let index = folder.appendingPathComponent(Self.libraryIndexName, isDirectory: false)
+        try Self.libraryIndexData(of: Library(books: books)).write(to: index, options: .withoutOverwriting)
+        _ = try LibraryIdentity.adopt(in: folder)
+        return folder
+    }
+
+    /// Asserts that the folder at `library` holds the small library as the
+    /// app would use it: an index of the ten books, each book's file where
+    /// the index says, an identity, and the app's own check finding a
+    /// library there.
+    private func assertHoldsTheSmallLibrary(_ library: URL, on root: CloudDriveTestRoot) throws {
+        let drive = root.driveName
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let index = library.appendingPathComponent(Self.libraryIndexName, isDirectory: false)
+        let books = try decoder.decode(Library.self, from: Data(contentsOf: index)).books
+
+        XCTAssertEqual(books.count, Self.smallLibraryBooks.count, "\(drive): the index lists \(books.map(\.title))")
+        for book in books {
+            XCTAssertTrue(book.filePath.hasPrefix(library.path + "/"), "\(drive): \(book.title) is at \(book.filePath)")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: book.filePath), "\(drive): \(book.title) has no file")
+        }
+        XCTAssertNotNil(try LibraryIdentity.read(in: library), "\(drive): the library has no identity")
+        XCTAssertEqual(DataDirectoryRequest.reasonToIgnore(library), "it holds a TextMouth library already", drive)
+    }
+
+    /// The library index of `library` as the app writes library.json: ISO
+    /// 8601 dates, pretty printed, as `LibraryPersistenceService` encodes it.
+    private static func libraryIndexData(of library: Library) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        return try encoder.encode(library)
+    }
+
+    /// `path`, of the package at `oldPackage` or of a file inside it, at the
+    /// same place in the package at `newPackage`; nil for a path outside the
+    /// package.
+    private static func relocated(_ path: String, from oldPackage: URL, to newPackage: URL) -> String? {
+        let old = oldPackage.standardizedFileURL.path
+        let new = newPackage.standardizedFileURL.path
+        let moving = URL(fileURLWithPath: path).standardizedFileURL.path
+        if moving == old {
+            return new
+        }
+        guard moving.hasPrefix(old + "/") else { return nil }
+        return new + moving.dropFirst(old.count)
+    }
+
+    /// Every regular file inside `folder`, at any depth, hidden ones too.
+    private static func regularFiles(in folder: URL) -> [URL] {
+        let items = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey])
+        return (items?.allObjects as? [URL] ?? []).filter { item in
+            (try? item.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true
         }
     }
 
