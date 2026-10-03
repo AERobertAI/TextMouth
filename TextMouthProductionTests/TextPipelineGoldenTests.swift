@@ -289,15 +289,19 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     /// Members of an archive whose paths repeat, differ only in case, or
     /// differ only in how an accented letter is encoded, in that order.
-    private static let lookupEntries: [TestZIPEntry] = [
-        .folder("Text/"),
-        TestZIPEntry("Text/Page.html", Data("first exact".utf8)),
-        TestZIPEntry("text/page.HTML", Data("first by case".utf8)),
-        TestZIPEntry("Text/Page.html", Data("second exact".utf8)),
-        TestZIPEntry("TEXT/PAGE.HTML", Data("second by case".utf8)),
-        TestZIPEntry("cafe\u{301}.html", Data("decomposed".utf8)),
-        TestZIPEntry("caf\u{E9}.html", Data("composed".utf8)),
-    ]
+    /// Made on each use: `TestZIPEntry` is not `Sendable`, so a static
+    /// constant holding it would be shared mutable state.
+    private static var lookupEntries: [TestZIPEntry] {
+        [
+            .folder("Text/"),
+            TestZIPEntry("Text/Page.html", Data("first exact".utf8)),
+            TestZIPEntry("text/page.HTML", Data("first by case".utf8)),
+            TestZIPEntry("Text/Page.html", Data("second exact".utf8)),
+            TestZIPEntry("TEXT/PAGE.HTML", Data("second by case".utf8)),
+            TestZIPEntry("cafe\u{301}.html", Data("decomposed".utf8)),
+            TestZIPEntry("caf\u{E9}.html", Data("composed".utf8)),
+        ]
+    }
 
     /// An indexed archive lists every entry in the archive's order, and
     /// finds each path, exactly and without regard to case, as the archive's
