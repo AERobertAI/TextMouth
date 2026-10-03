@@ -18,6 +18,7 @@ final class SettingsPolicyTests: XCTestCase {
             (SettingsPolicy.punctuationPauseLevel, 0...3, 0),
             (SettingsPolicy.bluetoothDisconnectDelay, 1...10, 2),
             (SettingsPolicy.restartTimerGestureWindow, 0.5...10, 2),
+            (SettingsPolicy.soundEffectsVolume, 0...1, 0.5),
         ]
         for (rule, range, defaultValue) in expected {
             XCTAssertEqual(rule.range, range, rule.key)

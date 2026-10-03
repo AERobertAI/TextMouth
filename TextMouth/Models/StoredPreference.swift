@@ -54,6 +54,24 @@ extension StoredPreference where Value == Bool {
     }
 }
 
+// MARK: - Dictionaries Keyed by Enum Cases
+
+extension Dictionary where Key: RawRepresentable, Key.RawValue == String {
+    /// The entries keyed by their keys' raw values: the form the preferences
+    /// store and config.json hold a value for each event or action in.
+    var keyedByRawValue: [String: Value] {
+        Dictionary<String, Value>(uniqueKeysWithValues: map { ($0.key.rawValue, $0.value) })
+    }
+
+    /// The entries of `rawKeyed` whose keys name a case; an entry naming
+    /// none, such as one a later version saved, is left out.
+    init(keyedByRawValue rawKeyed: [String: Value]) {
+        self.init(uniqueKeysWithValues: rawKeyed.compactMap { rawKey, value in
+            Key(rawValue: rawKey).map { ($0, value) }
+        })
+    }
+}
+
 // MARK: - Following Changes in the Store
 
 /// Calls a handler on the main actor each time one of some keys changes in

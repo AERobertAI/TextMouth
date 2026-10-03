@@ -95,4 +95,59 @@ final class PreferenceStoreTests: XCTestCase {
         XCTAssertNil(observer)
         XCTAssertEqual(reports, 1)
     }
+
+    // MARK: - Sound Effects
+
+    /// Sound preferences written to the store by someone else, as the
+    /// settings model writes an edit of config.json, take effect in the
+    /// service at once, each published once.
+    func testSoundEffectsFollowChangesMadeInTheirStore() {
+        let store = makeSandboxedPreferences("sounds-follow")
+        let sounds = SoundEffectService(preferences: store)
+        var publications = 0
+        let subscription = sounds.objectWillChange.sink { publications += 1 }
+
+        SoundEffectService.enabledPreference.write(false, to: store)
+        SoundEffectService.volumePreference.write(0.2, to: store)
+        SoundEffectService.assignmentsPreference.write([.play: "Glass", .pause: "None"], to: store)
+
+        XCTAssertFalse(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.2)
+        XCTAssertEqual(sounds.assignments, [.play: "Glass", .pause: "None"])
+        XCTAssertEqual(publications, 3)
+        subscription.cancel()
+    }
+
+    /// Taking a value from the store writes nothing back: once a preference
+    /// is removed, the service uses its default and the store stays empty.
+    func testSoundEffectsWriteNothingBackWhileFollowingTheirStore() {
+        let store = makeSandboxedPreferences("sounds-no-write-back")
+        store.set(false, forKey: "soundEffectsEnabled")
+        store.set(Float(0.3), forKey: "soundEffectsVolume")
+        let sounds = SoundEffectService(preferences: store)
+
+        store.removeObject(forKey: "soundEffectsEnabled")
+        store.removeObject(forKey: "soundEffectsVolume")
+
+        XCTAssertTrue(sounds.soundsEnabled)
+        XCTAssertEqual(sounds.volume, 0.5)
+        XCTAssertNil(store.object(forKey: "soundEffectsEnabled"))
+        XCTAssertNil(store.object(forKey: "soundEffectsVolume"))
+    }
+
+    /// The volume reads any stored number, as other numeric preferences do,
+    /// clamped to the slider's range: a Double written with `defaults write`
+    /// no longer falls back to half volume.
+    func testSoundEffectVolumeReadsAnyStoredNumberWithinRange() {
+        let store = makeSandboxedPreferences("sounds-volume")
+        let cases: [(stored: Any, expected: Float)] = [
+            (Float(0.25), 0.25), (0.3, 0.3), (4.0, 1), (-1.0, 0), (1, 1), (Double.nan, 0.5),
+        ]
+        for (stored, expected) in cases {
+            store.set(stored, forKey: "soundEffectsVolume")
+            XCTAssertEqual(SoundEffectService.volumePreference.read(from: store), expected, "\(stored)")
+        }
+        store.removeObject(forKey: "soundEffectsVolume")
+        XCTAssertEqual(SoundEffectService.volumePreference.read(from: store), 0.5, "nothing stored")
+    }
 }

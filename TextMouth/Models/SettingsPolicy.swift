@@ -160,6 +160,11 @@ enum SettingsPolicy {
     static let restartTimerGestureWindow = NumericSettingRule(
         key: "restartTimerGestureWindow", range: 0.5...10, defaultValue: 2
     )
+    /// How loud sound effects play, from silent (0) to full volume (1)
+    /// (Sounds settings slider).
+    static let soundEffectsVolume = NumericSettingRule(
+        key: "soundEffectsVolume", range: 0...1, defaultValue: 0.5
+    )
 
     // MARK: Enum-backed
 
