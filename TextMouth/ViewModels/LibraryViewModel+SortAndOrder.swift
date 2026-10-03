@@ -67,6 +67,31 @@ extension LibraryViewModel {
         return folderBooks[nextIndex]
     }
 
+    // MARK: - Sorting a Location
+
+    /// The sort `location` shows, restored from the setting saved for it.
+    /// Showing a sort never saves it (TODO A06).
+    func sortState(at location: LibraryLocation) -> LibrarySortState {
+        library.sortState(at: location)
+    }
+
+    /// Makes a change the user chose in the Sort menu at `location`, and
+    /// saves the result under that location's key: the one path that saves
+    /// a sort (TODO A06). The key is the one the change was made in, so no
+    /// change can land on a folder or category shown before it, however
+    /// fast the window moved on. A change that leaves the sort as it was,
+    /// such as reversing manual order, saves nothing. Returns the sort now
+    /// shown.
+    @discardableResult
+    func userChangedSort(_ change: LibrarySortChange, at location: LibraryLocation) -> LibrarySortState {
+        let shown = sortState(at: location)
+        let changed = shown.applying(change)
+        if changed != shown {
+            setFolderSortSetting(changed.setting, for: location.sortSettingsKey)
+        }
+        return changed
+    }
+
     /// Update the sort setting for a specific folder path and persist.
     func setFolderSortSetting(_ setting: FolderSortSetting, for folderPath: String) {
         library.setSortSetting(setting, for: folderPath)
