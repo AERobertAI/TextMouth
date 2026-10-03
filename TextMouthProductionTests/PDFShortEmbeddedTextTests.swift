@@ -55,13 +55,16 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// only the picture, and the picture's words come before the caption
     /// below it.
     func testPictureWithACaptionKeepsTheCaptionAndReadsThePicture() throws {
-        let url = try Self.captionedPicture(for: self)
+        let url = try PDFFixtures.captionedPicture(for: self)
         let recognizer = ScriptedTextRecognizer { _ in Self.signLines }
 
         let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
 
-        XCTAssertEqual(extraction.markdown, "PIER 2\nNO MOORING\n\n\(Self.caption)")
-        XCTAssertEqual(recognizer.requests, [ScriptedTextRecognizer.Request(pageNumber: 1, region: Self.pictureRect)])
+        XCTAssertEqual(extraction.markdown, "PIER 2\nNO MOORING\n\n\(PDFFixtures.caption)")
+        XCTAssertEqual(
+            recognizer.requests,
+            [ScriptedTextRecognizer.Request(pageNumber: 1, region: PDFFixtures.captionedPictureRect)]
+        )
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .both, .recognizedText)])
     }
 
@@ -69,12 +72,13 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// and still appears once.
     func testCaptionLaidOverThePictureIsNotRepeated() throws {
         let url = try PDFFixtures.makePDF(for: self) { context, _ in
-            context.draw(PDFFixtures.picture(size: Self.pictureRect.size), in: Self.pictureRect)
-            PDFFixtures.drawText(Self.caption, size: 11, at: CGPoint(x: 100, y: 410), in: context)
+            let pictureRect = PDFFixtures.captionedPictureRect
+            context.draw(PDFFixtures.picture(size: pictureRect.size), in: pictureRect)
+            PDFFixtures.drawText(PDFFixtures.caption, size: 11, at: CGPoint(x: 100, y: 410), in: context)
         }
         let (document, firstPage) = try PDFFixtures.firstPage(of: url)
         let captionBounds = try XCTUnwrap(
-            firstPage.selection(for: NSRange(location: 0, length: (Self.caption as NSString).length))?
+            firstPage.selection(for: NSRange(location: 0, length: (PDFFixtures.caption as NSString).length))?
                 .bounds(for: firstPage)
         )
         withExtendedLifetime(document) {}
@@ -84,7 +88,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
 
         let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
 
-        XCTAssertEqual(extraction.markdown, "PIER 2\n\n\(Self.caption)")
+        XCTAssertEqual(extraction.markdown, "PIER 2\n\n\(PDFFixtures.caption)")
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .both, .recognizedText)])
     }
 
@@ -106,11 +110,11 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
 
     /// A page OCR finds nothing in is still read, and says so.
     func testPictureWithoutWordsIsReportedAsOCRFindingNothing() throws {
-        let url = try Self.captionedPicture(for: self)
+        let url = try PDFFixtures.captionedPicture(for: self)
 
         let extraction = try PDFTextParser.extract(from: url, recognizer: ScriptedTextRecognizer.findingNothing())
 
-        XCTAssertEqual(extraction.markdown, Self.caption)
+        XCTAssertEqual(extraction.markdown, PDFFixtures.caption)
         XCTAssertTrue(extraction.report.isComplete)
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .embedded, .foundNothing)])
         XCTAssertEqual(extraction.report.pdf?.summary, "Its only page has embedded text only. OCR found no text on page 1.")
@@ -192,12 +196,12 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// the original.
     func testWithoutOCREmbeddedTextIsKeptAndTheReportSaysWhy() throws {
         let first = try Self.paragraphAbovePicture(for: self)
-        let second = try Self.captionedPicture(for: self)
+        let second = try PDFFixtures.captionedPicture(for: self)
         let url = try Self.joined([first, second], for: self)
 
         let extraction = try PDFTextParser.extract(from: url, recognizer: nil)
 
-        XCTAssertEqual(extraction.markdown, "\(Self.paragraph.joined(separator: " "))\n\n\(Self.caption)")
+        XCTAssertEqual(extraction.markdown, "\(Self.paragraph.joined(separator: " "))\n\n\(PDFFixtures.caption)")
         let reason = "text recognition is not available"
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .embedded, .couldNotRun(reason)), page(2, .embedded, .couldNotRun(reason))])
         XCTAssertEqual(extraction.report.pdf?.ocrUnavailableReason, reason)
@@ -214,7 +218,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// after it records the same reason without asking again.
     func testUnavailableRecognizerIsAskedOnlyOnce() throws {
         let reason = "Vision has no text model here"
-        let url = try Self.joined((0..<3).map { _ in try Self.captionedPicture(for: self) }, for: self)
+        let url = try Self.joined((0..<3).map { _ in try PDFFixtures.captionedPicture(for: self) }, for: self)
         let recognizer = ScriptedTextRecognizer { _ in throw PDFTextRecognitionError.unavailable(reason) }
 
         let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
@@ -222,13 +226,13 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         XCTAssertEqual(recognizer.requests.count, 1)
         XCTAssertEqual(extraction.report.pdf?.pagesWhereOCRCouldNotRun, [1, 2, 3])
         XCTAssertEqual(extraction.report.pdf?.ocrUnavailableReason, reason)
-        XCTAssertEqual(extraction.markdown, [Self.caption, Self.caption, Self.caption].joined(separator: "\n\n"))
+        XCTAssertEqual(extraction.markdown, Array(repeating: PDFFixtures.caption, count: 3).joined(separator: "\n\n"))
     }
 
     /// One picture OCR fails on does not stop the others, and each failure
     /// keeps its own reason.
     func testFailureOnOnePictureDoesNotStopTheOthers() throws {
-        let url = try Self.joined((0..<3).map { _ in try Self.captionedPicture(for: self) }, for: self)
+        let url = try Self.joined((0..<3).map { _ in try PDFFixtures.captionedPicture(for: self) }, for: self)
         let recognizer = ScriptedTextRecognizer { request in
             switch request.pageNumber {
             case 1: throw PDFTextRecognitionError.failed("the picture could not be drawn")
@@ -272,7 +276,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// test can replace and put back.
     func testExtractionWithoutARecognizerUsesTheDefaultOne() throws {
         XCTAssertTrue(PDFTextParser.defaultRecognizer is VisionPDFTextRecognizer)
-        let url = try Self.captionedPicture(for: self)
+        let url = try PDFFixtures.captionedPicture(for: self)
         let recognizer = ScriptedTextRecognizer { _ in Self.signLines }
 
         let markdown = try PDFFixtures.withDefaultRecognizer(recognizer) {
@@ -282,7 +286,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             try PDFTextParser.extract(from: url).report.pdf?.ocrUnavailableReason
         }
 
-        XCTAssertEqual(markdown, "PIER 2\nNO MOORING\n\n\(Self.caption)")
+        XCTAssertEqual(markdown, "PIER 2\nNO MOORING\n\n\(PDFFixtures.caption)")
         XCTAssertEqual(recognizer.requests.count, 1)
         XCTAssertEqual(unavailable, "text recognition is not available")
         XCTAssertTrue(PDFTextParser.defaultRecognizer is VisionPDFTextRecognizer)
@@ -313,17 +317,17 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         let title = try PDFFixtures.makePDF(for: self) { context, _ in
             PDFFixtures.drawText("Ballast", size: 36, at: CGPoint(x: 230, y: 500), in: context)
         }
-        let captioned = try Self.captionedPicture(for: self, words: ["PIER 2", "NO MOORING"])
+        let captioned = try PDFFixtures.captionedPicture(for: self, words: ["PIER 2", "NO MOORING"])
         let mixed = try Self.paragraphAbovePicture(for: self)
 
         XCTAssertEqual(try extractWithVision(title).markdown, "Ballast")
 
         let captionedMarkdown = try extractWithVision(captioned).markdown
-        XCTAssertTrue(captionedMarkdown.hasSuffix("\n\n\(Self.caption)"), captionedMarkdown)
-        XCTAssertEqual(captionedMarkdown.components(separatedBy: Self.caption).count, 2, captionedMarkdown)
+        XCTAssertTrue(captionedMarkdown.hasSuffix("\n\n\(PDFFixtures.caption)"), captionedMarkdown)
+        XCTAssertEqual(captionedMarkdown.components(separatedBy: PDFFixtures.caption).count, 2, captionedMarkdown)
         XCTAssertEqual(
             PDFPageTextMerger.normalized(captionedMarkdown),
-            PDFPageTextMerger.normalized("PIER 2 NO MOORING \(Self.caption)")
+            PDFPageTextMerger.normalized("PIER 2 NO MOORING \(PDFFixtures.caption)")
         )
 
         let mixedMarkdown = try extractWithVision(mixed).markdown
@@ -336,10 +340,6 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// The caption under the picture.
-    private static let caption = "Plate 4. The north pier at low water."
-    /// Where the captioned picture is drawn.
-    private static let pictureRect = CGRect(x: 90, y: 400, width: 432, height: 288)
     /// The words OCR finds on the captioned picture's sign, inside it.
     private static let signLines = [
         PDFFixtures.line("PIER 2", at: CGRect(x: 110, y: 640, width: 100, height: 30)),
@@ -359,15 +359,6 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         PDFFixtures.line("TIMETABLE CHANGES FROM MONDAY", at: CGRect(x: 109, y: 492, width: 377, height: 16)),
         PDFFixtures.line("Evening sailing now 21:40", at: CGRect(x: 109, y: 455, width: 250, height: 23))
     ]
-
-    /// A page with a picture (a sign reading `words`) and the one-line
-    /// caption under it.
-    private static func captionedPicture(for test: XCTestCase, words: [String] = []) throws -> URL {
-        try PDFFixtures.makePDF(for: test) { context, _ in
-            context.draw(PDFFixtures.picture(size: pictureRect.size, words: words, fontSize: 40), in: pictureRect)
-            PDFFixtures.drawText(caption, size: 11, at: CGPoint(x: 90, y: 380), in: context)
-        }
-    }
 
     /// A page with the embedded paragraph above a picture of the timetable.
     private static func paragraphAbovePicture(for test: XCTestCase) throws -> URL {

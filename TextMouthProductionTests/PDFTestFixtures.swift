@@ -16,13 +16,15 @@ enum PDFFixtures {
 
     /// A new PDF of `pageCount` letter-size pages, each drawn by `draw`
     /// (given the context and the page's index), in a temporary file that
-    /// is removed when `test` ends.
+    /// is removed when `test` ends: named `fileName` when one is given, so
+    /// an import lists the book under that name.
     static func makePDF(
         for test: XCTestCase,
         pages pageCount: Int = 1,
+        named fileName: String? = nil,
         draw: (CGContext, Int) -> Void
     ) throws -> URL {
-        let url = temporaryURL(for: test)
+        let url = try temporaryURL(for: test, named: fileName)
         var box = letter
         let context = try XCTUnwrap(CGContext(url as CFURL, mediaBox: &box, nil))
         for index in 0..<pageCount {
@@ -36,16 +38,24 @@ enum PDFFixtures {
 
     /// `pdf` written to a temporary file that is removed when `test` ends.
     static func write(_ pdf: RawPDF, for test: XCTestCase) throws -> URL {
-        let url = temporaryURL(for: test)
+        let url = try temporaryURL(for: test)
         try pdf.data().write(to: url)
         return url
     }
 
-    /// A fresh path for a PDF, removed when `test` ends.
-    private static func temporaryURL(for test: XCTestCase) -> URL {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
-        test.addTeardownBlock { try? FileManager.default.removeItem(at: url) }
-        return url
+    /// A fresh path for a PDF, removed when `test` ends: `fileName` in a
+    /// directory of its own, or a unique name when none is given.
+    private static func temporaryURL(for test: XCTestCase, named fileName: String? = nil) throws -> URL {
+        let temporary = FileManager.default.temporaryDirectory
+        guard let fileName else {
+            let url = temporary.appendingPathComponent("\(UUID().uuidString).pdf")
+            test.addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+            return url
+        }
+        let directory = temporary.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        test.addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        return directory.appendingPathComponent(fileName)
     }
 
     // MARK: - Drawing
@@ -98,6 +108,21 @@ enum PDFFixtures {
     }
 
     // MARK: - Pages
+
+    /// The one-line caption `captionedPicture` draws under its picture.
+    static let caption = "Plate 4. The north pier at low water."
+    /// Where `captionedPicture` draws its picture.
+    static let captionedPictureRect = CGRect(x: 90, y: 400, width: 432, height: 288)
+
+    /// A one-page PDF (named `fileName` when one is given) with a picture,
+    /// a sign reading `words` (none by default), and `caption` as one line
+    /// of embedded text under it.
+    static func captionedPicture(for test: XCTestCase, named fileName: String? = nil, words: [String] = []) throws -> URL {
+        try makePDF(for: test, named: fileName) { context, _ in
+            context.draw(picture(size: captionedPictureRect.size, words: words, fontSize: 40), in: captionedPictureRect)
+            drawText(caption, size: 11, at: CGPoint(x: 90, y: 380), in: context)
+        }
+    }
 
     /// The first page of the PDF at `url`, kept alive with its document
     /// (PDFKit cannot draw a page whose document is gone).
