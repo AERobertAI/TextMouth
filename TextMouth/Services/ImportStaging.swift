@@ -1,7 +1,14 @@
 import Foundation
 
-/// A package an import builds under a hidden name, `.import-<UUID>.tmb`, in
-/// the folder it will be published in (TODO S02).
+/// A package an import builds under a hidden name, `.import-<UUID>.tmb`,
+/// before publishing it in a folder of the library (TODO S02).
+///
+/// It is built in this Mac's Import Staging folder
+/// (`MachineLocalPaths.importStaging`) while the data directory is on that
+/// folder's volume, and otherwise beside its destination, in the folder it
+/// will be published in (FR02, `ImportScratchSpace`). A data directory in a
+/// cloud folder then never uploads a package that is still being built, and
+/// publishing is one rename on one volume either way.
 ///
 /// Nothing in TextMouth treats a hidden directory as a book or a folder:
 /// orphan adoption, folder adoption, and empty-folder cleanup all skip
@@ -11,7 +18,12 @@ import Foundation
 /// its final name, the single step that makes the book exist. `discard()`
 /// removes it after a failure. A staged package that an interrupted import
 /// (a crash or a forced quit) left behind is removed by the next import
-/// into the same folder.
+/// that stages in the same folder; one that an earlier version left in a
+/// library folder is removed by the next import into that folder.
+///
+/// While an import stages a book, the book's package name is the staged
+/// package's name, and its `tmbDirectory` is the staged package, wherever
+/// that is (`directory(ofStagedPackage:)`).
 final class ImportStaging {
     /// What every staged package's name starts with.
     static let namePrefix = ".import-"
@@ -26,17 +38,18 @@ final class ImportStaging {
     /// nothing.
     private(set) var isPublished = false
 
-    /// The names of the packages imports in this process are staging, which
-    /// the cleanup of abandoned ones leaves alone. Imports normally run one
-    /// at a time on the import queue, but tests and other callers can run
-    /// them on other threads, so the set is locked.
+    /// The packages imports in this process are staging, by name, which the
+    /// cleanup of abandoned ones leaves alone and through which a staged
+    /// book finds its package. Imports normally run one at a time on the
+    /// import queue, but tests and other callers can run them on other
+    /// threads, so the record is locked.
     private static let inUse = NamesInUse()
 
-    /// A staging location beside `destination`, with a name no other import
-    /// can choose.
-    private init(destination: URL) {
+    /// A staging location in `folder`, with a name no other import can
+    /// choose, for a package to be published at `destination`.
+    private init(destination: URL, folder: URL) {
         self.destination = destination
-        directory = destination.deletingLastPathComponent().appendingPathComponent(
+        directory = folder.appendingPathComponent(
             "\(Self.namePrefix)\(UUID().uuidString)\(Self.nameSuffix)",
             isDirectory: true
         )
@@ -64,17 +77,29 @@ final class ImportStaging {
         }
     }
 
-    /// Creates a staged package with `create`, after removing any that
-    /// interrupted imports left in the same folder. The new name is marked
-    /// in use before anything exists under it, so no other import's cleanup
-    /// can take it. When `create` fails, whatever it made is removed.
+    /// Creates a staged package with `create`, in the folder
+    /// `ImportScratchSpace` stages in, after removing any that interrupted
+    /// imports left there. When that is this Mac's folder, the packages an
+    /// earlier version left in the destination's own folder go too; that
+    /// folder is listed with dataless files left in the cloud. The new name
+    /// is marked in use before anything exists under it, so no other
+    /// import's cleanup can take it. When `create` fails, whatever it made
+    /// is removed.
     private static func reserve(
         publishingTo destination: URL,
         create: (URL) throws -> Void
     ) throws -> ImportStaging {
-        let staging = ImportStaging(destination: destination)
-        removeAbandoned(in: destination.deletingLastPathComponent())
-        inUse.insert(staging.name)
+        let destinationFolder = destination.deletingLastPathComponent()
+        let folder = ImportScratchSpace.stagingFolder(publishingTo: destination)
+        if folder.standardizedFileURL.path != destinationFolder.standardizedFileURL.path {
+            try ImportScratchSpace.prepareFolder(folder)
+            DatalessFiles.withoutDownloading {
+                _ = removeAbandoned(in: destinationFolder)
+            }
+        }
+        let staging = ImportStaging(destination: destination, folder: folder)
+        removeAbandoned(in: folder)
+        inUse.insert(staging.name, at: staging.directory)
         do {
             try create(staging.directory)
         } catch {
@@ -82,6 +107,14 @@ final class ImportStaging {
             throw error
         }
         return staging
+    }
+
+    /// The package an import in this process is staging under the name
+    /// `name`, wherever it is building it; nil for any other name. A staged
+    /// book's `tmbDirectory` is found this way.
+    static func directory(ofStagedPackage name: String) -> URL? {
+        guard name.hasPrefix(namePrefix) else { return nil }
+        return inUse.directory(named: name)
     }
 
     // MARK: - Finishing
@@ -131,8 +164,9 @@ final class ImportStaging {
     /// `folder`: directories named as staged packages that no import in
     /// this process is building. Only an import names a directory that way,
     /// and an interrupted import can never be resumed, so each is removed
-    /// with everything inside it and the removal is logged. Returns how many
-    /// were removed.
+    /// with everything inside it and the removal is logged, naming it by its
+    /// path inside this Mac's TextMouth folder or the data directory
+    /// (`ImportScratchSpace.loggablePath`). Returns how many were removed.
     @discardableResult
     static func removeAbandoned(in folder: URL) -> Int {
         let fileManager = FileManager.default
@@ -146,7 +180,7 @@ final class ImportStaging {
                 removed += 1
                 DiagnosticLog.event(
                     .import,
-                    "IMPORT_STAGING_REMOVED: \(DiagnosticLog.loggablePath(leftover)): left by an interrupted import"
+                    "IMPORT_STAGING_REMOVED: \(ImportScratchSpace.loggablePath(leftover)): left by an interrupted import"
                 )
             }
         }
@@ -174,7 +208,7 @@ final class ImportStaging {
         } catch {
             DiagnosticLog.event(
                 .import,
-                "IMPORT_STAGING_LEFT: \(DiagnosticLog.loggablePath(directory)): could not be removed: "
+                "IMPORT_STAGING_LEFT: \(ImportScratchSpace.loggablePath(directory)): could not be removed: "
                     + error.localizedDescription
             )
             return false
@@ -202,32 +236,38 @@ final class ImportStaging {
     }
 }
 
-/// A set of names shared by every thread that imports: the staged packages
-/// (`ImportStaging`) or the extraction directories
+/// The names, with their directories, shared by every thread that imports:
+/// the staged packages (`ImportStaging`) or the extraction directories
 /// (`ArchiveExtractionDirectory`) this process's imports are using, which
 /// the cleanup of abandoned ones leaves alone.
 final class NamesInUse: @unchecked Sendable {
     private let lock = NSLock()
-    private var names: Set<String> = []
+    /// Each name in use, with the directory it names.
+    private var directories: [String: URL] = [:]
 
-    /// Marks `name` in use.
-    func insert(_ name: String) {
+    /// Marks `name`, the name of `directory`, in use.
+    func insert(_ name: String, at directory: URL) {
         lock.lock()
-        names.insert(name)
+        directories[name] = directory
         lock.unlock()
     }
 
     /// Marks `name` no longer in use.
     func remove(_ name: String) {
         lock.lock()
-        names.remove(name)
+        directories[name] = nil
         lock.unlock()
     }
 
     /// Whether `name` is in use.
     func contains(_ name: String) -> Bool {
+        directory(named: name) != nil
+    }
+
+    /// The directory `name` names while it is in use; nil otherwise.
+    func directory(named name: String) -> URL? {
         lock.lock()
         defer { lock.unlock() }
-        return names.contains(name)
+        return directories[name]
     }
 }

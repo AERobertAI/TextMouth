@@ -346,7 +346,7 @@ final class ArchiveExtractionDirectory {
         let made = ArchiveExtractionDirectory(
             directory: parent.appendingPathComponent("\(namePrefix)\(getpid())-\(UUID().uuidString)", isDirectory: true)
         )
-        inUse.insert(made.name)
+        inUse.insert(made.name, at: made.directory)
         do {
             try FileManager.default.createDirectory(at: made.directory, withIntermediateDirectories: false)
         } catch {

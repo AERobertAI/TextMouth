@@ -71,6 +71,17 @@ enum ImportScratchSpace {
         TextMouthPaths.root.appendingPathComponent(ArchiveExtractionDirectory.folderName, isDirectory: true)
     }
 
+    /// The folder a package to be published at `destination` is staged in:
+    /// this Mac's Import Staging folder (`MachineLocalPaths.importStaging`)
+    /// when `onThisMac` and the destination is in the data directory, and
+    /// otherwise the folder `destination` is in, as before.
+    static func stagingFolder(publishingTo destination: URL, onThisMac: Bool = isOnThisMac()) -> URL {
+        let isInDataDirectory = StorageBoundary.shared.current.location.contains(destination.path)
+        return onThisMac && isInDataDirectory
+            ? MachineLocalPaths.importStaging
+            : destination.deletingLastPathComponent()
+    }
+
     /// Creates the scratch folder `folder`, with the folders above it, when
     /// it is not there yet, and keeps it out of Time Machine backups, since
     /// what it holds lasts only as long as an import. Failing to keep it out
