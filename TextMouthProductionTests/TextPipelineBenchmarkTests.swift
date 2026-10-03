@@ -43,6 +43,28 @@ final class TextPipelineBenchmarkTests: XCTestCase {
         }
     }
 
+    // MARK: - PERF19: EPUB Preparation
+
+    /// Preparing every chapter of a converted EPUB of 60 documents (about
+    /// 1.8 MB of XHTML whose every element carries attributes), of the
+    /// generated navigation EPUB, and of TestData's Alice.
+    func testPERF19EPUBPreparation() throws {
+        let converted = try TextPipelineFixtures.writeEPUB(
+            TextPipelineFixtures.convertedBookEPUB(documents: 60, paragraphs: 40), named: "converted-60.epub", for: self
+        )
+        try benchmark("PERF19", "EPUBParser.prepareBook, converted EPUB of 60 documents") {
+            try EPUBParser.prepareBook(url: converted)
+        }
+        let navigation = try TextPipelineFixtures.writeEPUB(TextPipelineFixtures.navigationEPUB(), named: "navigation.epub", for: self)
+        try benchmark("PERF19", "EPUBParser.prepareBook, navigation EPUB", repetitions: 10) {
+            try EPUBParser.prepareBook(url: navigation)
+        }
+        let alice = try requireFile("alice.epub")
+        try benchmark("PERF19", "EPUBParser.prepareBook, alice.epub", repetitions: 5) {
+            try EPUBParser.prepareBook(url: alice)
+        }
+    }
+
     // MARK: - Measuring
 
     /// Run `body` `repetitions` times, then once more under a heap sampler,

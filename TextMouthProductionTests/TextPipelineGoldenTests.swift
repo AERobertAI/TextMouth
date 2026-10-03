@@ -165,6 +165,48 @@ final class TextPipelineGoldenTests: XCTestCase {
         }
     }
 
+    /// What the generated EPUBs' navigation gives their chapters, named
+    /// outright: destinations that only a contents page late in the
+    /// reading order names still reach the earlier chapters they lie in,
+    /// hidden elements are never read whatever case their attribute is
+    /// written in (though a hidden branch of a navigation document's TOC
+    /// still names a heading, as EPUB 3.3 asks), the word "hidden" in a
+    /// chapter's text is read like any other, an id written with a
+    /// character reference is a destination, and a later copy of a member
+    /// in the archive is never read.
+    func testGeneratedEPUBsKeepEveryDestinationAndLeaveHiddenContentOut() throws {
+        typealias Fixtures = TextPipelineFixtures
+        let navigation = try EPUBParser.prepareBook(
+            url: try Fixtures.writeEPUB(Fixtures.navigationEPUB(), named: "navigation.epub", for: self)
+        ).chapters.map(\.chapter)
+        let lockKeeping = try EPUBParser.prepareBook(
+            url: try Fixtures.writeEPUB(Fixtures.ncxEPUB(), named: "ncx.epub", for: self)
+        ).chapters.map(\.chapter)
+        let headings = Set((navigation + lockKeeping).flatMap { $0.headings.map(\.text) })
+        let text = (navigation + lockKeeping).map(\.text).joined(separator: "\n")
+
+        // Named only by the index at the back of the book.
+        for label in ["First mooring", "Second mooring", "Late notes"] {
+            XCTAssertTrue(headings.contains(label), label)
+        }
+        XCTAssertEqual(navigation.last?.title, "Index of places")
+        // Named by the navigation document, the NCX, the guide, and a
+        // contents page early in the reading order.
+        for label in ["Weekday sailings & times", "Night boats", "Fares table", "Signal codes", "The Crossing",
+                      "On deck", "Harbor notes", "Moorings", "A hidden branch", "The first lock", "Gates", "Upstream"] {
+            XCTAssertTrue(headings.contains(label), label)
+        }
+        for hidden in ["This paragraph is hidden", "Hidden words", "Mixed-case hidden words", "A hidden item",
+                       "A hidden heading", "Capital hidden words", "More capital hidden words",
+                       "A contents page that is hidden"] {
+            XCTAssertFalse(text.contains(hidden), hidden)
+            XCTAssertFalse(headings.contains(hidden), hidden)
+        }
+        XCTAssertTrue(text.contains("nobody marked it hidden in the markup"))
+        XCTAssertTrue(text.contains("Café on the üpper reach"))
+        XCTAssertFalse(text.contains("A LATER COPY"))
+    }
+
     // MARK: - HTML Conversion (PERF18)
 
     /// Small documents whose emphasis and links take every branch of the
