@@ -516,9 +516,7 @@ extension ReaderViewModel {
     /// and Close; a chapter's leaves the reader stopped at that chapter.
     func cancelDownload() {
         guard case .downloading = cloudPhase, let purpose = cloudSession.downloadPurpose else { return }
-        endDownloadWork(cancelling: true)
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose))")
-        recordStateFoundAfterDownload()
+        stopWaitingForDownload(purpose)
         switch purpose {
         case .opening:
             stopOpening(at: .notDownloaded, announcing: ReaderCloudWording.notDownloaded(title: book.title))
@@ -527,6 +525,33 @@ extension ReaderViewModel {
             stop()
             announceCloud(ReaderCloudWording.chapterNotDownloaded(number: number, title: book.title))
         }
+    }
+
+    /// Whether the reader waits for the files of the chapter about to play
+    /// to download: it shows Playing, but nothing plays until they are here
+    /// (`chapterFilesReadyToPlay()`).
+    var isWaitingForChapterDownload: Bool {
+        cloudSession.downloadPurpose?.chapterNumber != nil
+    }
+
+    /// Stops waiting for the download of the chapter about to play, when one
+    /// is under way, so the chapter does not start once the download ends:
+    /// playback was paused, or the book's package is about to move. The
+    /// sync service may finish the download anyway. The download view gives
+    /// way to the book, VoiceOver hears nothing of it (a sleep timer may be
+    /// pausing a listener who has fallen asleep), and the book's state is
+    /// recorded as found afterwards. When the chapter next plays, its files
+    /// are checked afresh, and downloaded again if they are still only in
+    /// the cloud.
+    ///
+    /// - Parameter reason: Why, for the log line.
+    /// - Returns: Whether a chapter's download was under way.
+    @discardableResult
+    func stopWaitingForChapterDownload(because reason: String) -> Bool {
+        guard let purpose = cloudSession.downloadPurpose, purpose.chapterNumber != nil else { return false }
+        stopWaitingForDownload(purpose, because: reason)
+        cloudPhase = nil
+        return true
     }
 
     /// Try Again: opens the book afresh, from the check of its state.
@@ -611,6 +636,16 @@ extension ReaderViewModel {
         cloudSession.downloadPurpose = nil
         cloudSession.quietAnnouncementTask?.cancel()
         cloudSession.quietAnnouncementTask = nil
+    }
+
+    /// Stops waiting for the download under way for `purpose` (the sync
+    /// service may finish it anyway), logs that it was cancelled, and why
+    /// when `reason` says, and records the book's state as found afterwards.
+    private func stopWaitingForDownload(_ purpose: ReaderDownloadPurpose, because reason: String? = nil) {
+        endDownloadWork(cancelling: true)
+        let why = reason.map { ": \($0)" } ?? ""
+        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose))\(why)")
+        recordStateFoundAfterDownload()
     }
 
     /// Reads the book's state off the main thread after a download ended
@@ -749,11 +784,11 @@ extension ReaderViewModel {
     /// Stops waiting for a download as the reader closes, recording the
     /// book's state as found afterwards.
     func endCloudWorkForClose() {
-        let purpose = cloudSession.downloadPurpose
-        endDownloadWork(cancelling: true)
-        guard let purpose else { return }
-        DiagnosticLog.event(.storage, "READER_DOWNLOAD_CANCELLED: \(book.title)\(Self.logSuffix(for: purpose)): the reader closed")
-        recordStateFoundAfterDownload()
+        guard let purpose = cloudSession.downloadPurpose else {
+            endDownloadWork(cancelling: true)
+            return
+        }
+        stopWaitingForDownload(purpose, because: "the reader closed")
     }
 
     /// Deletes the working copy, off the main thread, once nothing plays from

@@ -643,6 +643,56 @@ final class ReaderCloudDownloadTests: XCTestCase {
         XCTAssertEqual(announcements(since: mark), ["Chapter 2 of Ferry Timetable isn't downloaded."])
     }
 
+    /// Pausing while a chapter's files download stops waiting for them: the
+    /// reader is paused at the chapter, saying nothing of the download, the
+    /// download's end plays nothing, and Play plays the chapter once its
+    /// files are here.
+    func testPausingDuringAChaptersDownloadStopsWaitingForIt() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Pause", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = reader.audioChapterFiles[1]
+        let mark = announcementMark()
+
+        reader.pause()
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertTrue(reader.isCurrentlyPlaying)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        XCTAssertEqual(announcements(since: mark), [])
+
+        reader.togglePlayPause()
+
+        XCTAssertTrue(reader.audioPlaybackService.isPlaying, "Play did not play the chapter")
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertFalse(reader.isCurrentlyPaused)
+        reader.stop()
+    }
+
+    /// The sleep timer running out while a chapter's files download pauses
+    /// the reader for good: the download's end plays nothing.
+    func testSleepTimerRunningOutDuringAChaptersDownloadLeavesTheReaderPaused() throws {
+        preserveSharedSleepTimer()
+        let cloud = try makeCloudReaders("Cloud Chapter Sleep Timer", clone: Self.failingClone)
+        // No fade, so the timer pauses the reader as it runs out.
+        cloud.world.settings.sleepFadeOutDuration = 0
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        reader.startSleepTimer(duration: .minutes(5))
+        let mark = announcementMark()
+
+        SleepTimerService.shared._expireForTesting()
+
+        XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id])
+        XCTAssertNil(reader.cloudPhase)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        assertNothingPlaysOnceTheDownloadEnds(for: book, in: cloud, reader: reader)
+        XCTAssertTrue(reader.isCurrentlyPaused)
+        XCTAssertEqual(announcements(since: mark), ["Sleep timer expired. Playback paused."])
+    }
+
     /// In a library that is not in a cloud location, chapters play without
     /// any check, exactly as before.
     func testLocalLibraryPlaysChaptersWithoutCheckingThem() throws {
@@ -670,6 +720,44 @@ final class ReaderCloudDownloadTests: XCTestCase {
 
     /// A four-file download at 0, 25, 50, and 75 percent.
     private static let quarterSteps = (0...3).map { progress($0, of: 4, bytes: Int64($0) * 100, of: 400) }
+
+    /// A two-file download with one file here.
+    private static let halfway = progress(1, of: 2, bytes: 100, of: 200)
+
+    /// A reader of a two-chapter audiobook in `cloud`'s library, playing
+    /// without a working copy and waiting for the download of its second
+    /// chapter, whose file is only in the cloud: the download has reported
+    /// `halfway` and is held open.
+    private func readerWaitingForSecondChapter(in cloud: CloudReaders) throws -> (ReaderViewModel, Book) {
+        let book = try cloud.world.makeSilentAudioBook(title: "Ferry Timetable", trackDurations: [2, 2])
+        let reader = cloud.open(book)
+        waitForReaderToLoad(reader)
+        cloud.cloudOnly.mark(reader.audioChapterFiles[1])
+        cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+        reader.play()
+        reader.navigateTo(chapterIndex: 1, characterOffset: 0)
+        waitFor("the chapter's download") { reader.shownDownload?.progress == Self.halfway }
+        return (reader, book)
+    }
+
+    /// Checks that `reader`, which stopped waiting for its chapter's
+    /// download, plays nothing when the sync service finishes the download
+    /// anyway, with the chapter's files then on this Mac.
+    private func assertNothingPlaysOnceTheDownloadEnds(
+        for book: Book,
+        in cloud: CloudReaders,
+        reader: ReaderViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        // A download that ends plays its chapter within a turn or two of the
+        // main run loop; give it far longer before deciding it never will.
+        let played = waitUntil(timeout: 0.5) { reader.audioPlaybackService.loadedURL != nil }
+        XCTAssertFalse(played, "The chapter played once its download ended", file: file, line: line)
+        XCTAssertNil(reader.cloudPhase, file: file, line: line)
+    }
 
     /// A cloner that always fails, so a reader has no working copy.
     private static let failingClone: ReaderWorkingCopies.Cloner = { _, _ in throw CocoaError(.fileWriteUnknown) }

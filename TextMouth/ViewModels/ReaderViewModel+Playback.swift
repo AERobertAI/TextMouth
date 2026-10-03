@@ -1594,10 +1594,13 @@ extension ReaderViewModel {
         // would never apply.
         let wasPlaying: Bool
         if isAudioBook {
+            // A reader waiting for its chapter's files to download (FR02)
+            // shows Playing while nothing plays yet, so it counts as
+            // playing: it is left paused at the chapter, below.
             wasPlaying = Self.wasActivelyPlaying(
                 isPlaying: audioPlaybackService.isPlaying,
                 isPaused: audioPlaybackService.isPaused
-            )
+            ) || isWaitingForChapterDownload
         } else {
             wasPlaying = Self.wasActivelyPlaying(
                 isPlaying: speechService.isSpeaking,
@@ -1621,6 +1624,10 @@ extension ReaderViewModel {
         // engine is stopped at volume 0 so downstream time-pitch/mixer
         // buffers cannot be exposed when volume is restored.
         if isAudioBook {
+            // Stop waiting for a chapter's download, so the chapter does not
+            // start when the download ends (a sleep timer that ran out would
+            // otherwise have the book play on).
+            stopWaitingForChapterDownload(because: "playback paused")
             audioPlaybackService.pause()
             // Only advertise the "playing-but-paused" state when there
             // was something to pause. Otherwise (book stopped or never
