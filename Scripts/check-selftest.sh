@@ -249,7 +249,7 @@ expect_commands() {
 # end_case: prints the case's verdict, and under a failure its reasons and
 # the gate's report.
 end_case() {
-  local number=$(( passed + failed + 1 ))
+  local number=$(( passed + failed + 1 )) line
   if [[ -z $case_problems ]]; then
     passed=$(( passed + 1 ))
     printf 'ok %d - %s\n' "$number" "$case_name"
@@ -257,7 +257,9 @@ end_case() {
     failed=$(( failed + 1 ))
     printf 'not ok %d - %s\n%s' "$number" "$case_name" "$case_problems"
     printf '    report of the gate:\n'
-    sed 's/^/      /' <<<"$output"
+    while IFS= read -r line; do
+      printf '      %s\n' "$line"
+    done <<<"$output"
   fi
 }
 

@@ -48,7 +48,8 @@ set -o pipefail
 # The repository root is this script's parent folder; the gate runs there.
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P) || exit 2
 readonly SCRIPT_DIR
-readonly SCRIPT="$SCRIPT_DIR/$(basename "$0")"
+SCRIPT="$SCRIPT_DIR/$(basename "$0")"
+readonly SCRIPT
 ROOT=$(dirname "$SCRIPT_DIR")
 readonly ROOT
 
@@ -378,7 +379,7 @@ report_tests() {
     fail "the hosted test run printed no XCTest totals, so no test is known to have run"
   fi
   detail "$summary"
-  if [[ $summary =~ $count_pattern ]] && (( ${BASH_REMATCH[1]} > 0 )); then
+  if [[ $summary =~ $count_pattern ]] && (( BASH_REMATCH[1] > 0 )); then
     return 0
   fi
   detail "full log: $log"
