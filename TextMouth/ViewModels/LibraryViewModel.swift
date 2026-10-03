@@ -90,6 +90,14 @@ final class LibraryViewModel: ObservableObject {
     @Published var importProgressTotal = 0
     @Published var importProgressMessage = ""
     let importOperationQueue = SerialImportQueue()
+    /// Opens a book's reader window, as an import that was asked to open its
+    /// book does once the book is in the library. The app posts
+    /// `.openBookWindow`, which the window router hands to one window (TODO
+    /// A05); tests replace it to see which book an import opens without
+    /// opening a window.
+    var readerOpener: @MainActor (UUID) -> Void = { bookID in
+        NotificationCenter.default.post(name: .openBookWindow, object: bookID)
+    }
 
     /// Text extraction progress tracking (for startup cache generation and re-extraction)
     @Published var isExtracting = false

@@ -143,7 +143,7 @@ extension LibraryViewModel {
                 DispatchQueue.main.sync {
                     if let listedBookID = self.listedBookID(for: source) {
                         isListed = true
-                        NotificationCenter.default.post(name: .openBookWindow, object: listedBookID)
+                        self.readerOpener(listedBookID)
                     }
                 }
                 guard !isListed else { return }
@@ -207,7 +207,7 @@ extension LibraryViewModel {
         if let warning = imported.warning {
             presentImportMessage(warning)
         } else if openAfterImport {
-            NotificationCenter.default.post(name: .openBookWindow, object: imported.book.id)
+            readerOpener(imported.book.id)
         }
     }
 
@@ -384,7 +384,7 @@ extension LibraryViewModel {
         if let warning = imported.warning {
             presentImportMessage(warning)
         } else if openAfterImport {
-            NotificationCenter.default.post(name: .openBookWindow, object: book.id)
+            readerOpener(book.id)
         }
     }
 
