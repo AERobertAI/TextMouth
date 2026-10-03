@@ -92,6 +92,8 @@ TextMouth was measured against a library the size of its developer's on October 
   - Storage settings check the data directory in the background, so a slow or unplugged drive can't hold up the window.
   - A VoiceOver focus request for a window that closes before the request runs is dropped; it once could crash TextMouth.
 
+PerformanceBaselineTests keep these gains: a number they measure that grows to more than twice its recorded baseline fails the test suite (see The performance baselines, under Building and testing).
+
 ## Where TextMouth keeps your library
 
 TextMouth keeps everything in one data directory: .TextMouth in your home folder unless you chose another folder in Storage settings. Any folder can hold it, hidden or not: on this Mac, on an external or network drive, or in a cloud folder such as iCloud Drive, Dropbox, or Google Drive (see Keeping your library in the cloud). That choice itself is kept in TextMouth's preferences, with a bookmark of the folder and the identity of the library in it, because config.json lives inside the directory it names.
@@ -211,7 +213,8 @@ Run these from the repository root:
 - `make run` and `make open` build the app and open it.
 - `make install` builds the app, copies it to /Applications, and registers it so it appears in Open With menus. `make uninstall` removes it.
 - `make test` runs the hosted test suite, described below.
-- `make check` runs the reproducibility gate, and `make check-selftest` tests the gate itself, both described below.
+- `make check` runs the reproducibility gate, and `make check-selftest` tests the gate and the baseline-recording script themselves, both described below.
+- `make perf-baselines` records new performance baselines after a deliberate change, as The performance baselines describes below.
 - `make generate` regenerates TextMouth.xcodeproj from project.yml. Run it after adding or removing a source or test file, and commit the changed project file with that file.
 - `make resolve-packages` resolves the Swift packages exactly as Package.resolved pins them, and `make update-packages` resolves them again after a deliberate version change.
 - `make xcode` regenerates the project and opens it in Xcode.
@@ -239,7 +242,8 @@ Each run deletes its sandbox as it finishes, and, as it starts, deletes in the b
   - The bookmark keyboard tests, which need Keyboard navigation turned on in System Settings.
   - The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
   - The opt-in benchmarks of the performance work (below).
-- GitHub's macOS runner, where `make check` runs for every push to main and every pull request (see The make check gate), skips more tests than the development Mac. There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility, and keyboard navigation is off, so the three kinds of test above that read accessibility or need keyboard navigation skip rather than fail, as do the opt-in tests and benchmarks.
+  - The performance baselines tests, while the Mac is busy, and on a Mac model or in a build configuration other than their baselines' (see The performance baselines).
+- GitHub's macOS runner, where `make check` runs for every push to main and every pull request (see The make check gate), skips more tests than the development Mac. There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility, and keyboard navigation is off, so the three kinds of test above that read accessibility or need keyboard navigation skip rather than fail, as do the opt-in tests and benchmarks, and the performance baselines tests, whose baselines belong to the development Mac's model.
 - The benchmarks of the performance work of October 3, 2026, time what each change made faster and print their figures in the test log. They are opt-in, since they take minutes or need a run of their own, and each group runs when its variable is 1; xcodebuild hands a variable whose name starts with TEST_RUNNER_ to the test host without that prefix:
   - TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS: the speech-preparation benchmarks at the sizes too slow to time in every run, and four that time the system synthesizer, muted, and the first speech engine. Three of those four mean something only when each runs alone, named with -only-testing, in a process of its own.
   - TEST_RUNNER_TEXTMOUTH_VIEW_BENCHMARKS: ViewsAndWindowsBenchmarks, which measure what a change of the library costs the list, what a playing reader costs its sheets, what a closed reader still holds, and how many test sandboxes the temporary folder holds.
@@ -247,6 +251,44 @@ Each run deletes its sandbox as it finishes, and, as it starts, deletes in the b
   - TEST_RUNNER_TEXTMOUTH_RENDER_BENCHMARK: what rendering a chapter's speech costs in memory and main-thread time. It takes about half a minute, and nothing is heard.
   - TEST_RUNNER_TEXTMOUTH_TRACK_CHANGE_BENCHMARK: how long an audiobook's next file takes to start playing, timed with silent files.
   - PersistenceCostTests and LibraryModelBenchmarkTests run in every run instead. They check what a change costs in counts that follow from the code alone, such as bytes written, file-system calls, and publishes of the library, never in time, which a busy Mac would change, and print their figures on lines beginning PERSISTENCE_COST: and PERFMODEL:.
+
+### The performance baselines
+
+PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
+
+- launch with a 643-book library: reading library.json, the startup repair, and finding the text caches that need rebuilding;
+- the first sort of the library by File Size, and one derivation of the All Items list for each of the six sorts;
+- one live reading position update, and the bytes one 30-second reading checkpoint writes for a book whose record is as large as the developer's largest;
+- opening a 1 MB EPUB until the speech of its first chapter is prepared, and opening a 3-file audiobook until it has loaded;
+- preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules, which TextMouthProductionTests/performance-substitutions.json keeps a copy of;
+- the most memory a 40,000-character chapter's rendered speech takes while it is built, and what it keeps;
+- extracting the 1 MB EPUB's text;
+- the processor time of one cloud refresh of a library outside the cloud;
+- the main-thread time one reader publish costs the open Headings sheet.
+
+How they judge:
+
+- Each number is the median of five runs, after one more that warms caches and is not counted. TextMouthProductionTests/performance-baselines.json holds each one's baseline, with the Mac model, build configuration, and date they were recorded on.
+- A number more than twice its baseline is measured five times more, and the test fails only when the lower median is still more than twice its baseline. A number at 1.5 times its baseline or more prints a line beginning PERFORMANCE WARNING:, and one at half its baseline or less a line beginning PERFORMANCE NOTE:, since new baselines would tighten the check. Every number is printed on a line beginning PERFORMANCE:.
+- The tests skip, printing PERFORMANCE SKIPPED: and why, while the Mac is busy (its one-minute load average above its number of cores), so other work cannot fail them, and on any Mac model or build configuration other than the baselines', where the numbers say nothing. With TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 a busy Mac measures anyway: `make test PERFORMANCE_STRICT=1` sets it, and `make check` uses it. A baselines file that is missing or can't be read fails the tests rather than skipping them.
+
+Recording new baselines:
+
+- After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own. It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
+- It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED. Nothing changes unless the whole run succeeds. Review the file's diff and commit it with the change it records.
+- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build with VoiceOver running, each the median of five runs:
+  - Launch with 643 books: 132.724 milliseconds.
+  - First sort by File Size: 26.012 milliseconds.
+  - One list derivation, in milliseconds: Title 4.200, Author 4.458, Date Added 1.056, Last Opened 2.874, File Size 2.789, Manual Order 4.172.
+  - One live reading position update: 146.803 microseconds.
+  - One 30-second checkpoint: 851 bytes.
+  - Opening the 1 MB EPUB to its first chapter's speech: 208.406 milliseconds.
+  - Opening the 3-file audiobook: 4.597 milliseconds.
+  - Speech for the 1,000,000-character chapter with the 16 rules: 236.652 milliseconds.
+  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.349 megabytes kept.
+  - Extracting the 1 MB EPUB: 1,195.592 milliseconds.
+  - One cloud refresh of a local library: 0.173 milliseconds of processor time.
+  - One reader publish to the Headings sheet: 1.740 milliseconds of main-thread time.
 
 ### Testing on real cloud drives
 
@@ -272,7 +314,7 @@ CloudDriveIntegrationTests runs the cloud services against real sync services. I
 
 ### The make check gate
 
-**Reproducible builds and `make check`.** TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark. Run `make check` before merging. It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five. Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file. It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`. A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests). To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files. `make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds. GitHub Actions runs the same gate (`.github/workflows/check.yml`) on macOS 26 with Xcode 26.0.1 for every push to main and every pull request.
+**Reproducible builds and `make check`.** TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark. Run `make check` before merging. It regenerates the project, resolves packages strictly from `Package.resolved` (failing if anything would change), builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac, and fails on any Swift warning in either build, about concurrency or anything else, naming the first five. It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test. Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file. It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`. A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests). To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files. `make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds, and `make check-selftest` tests the baseline-recording script too. GitHub Actions runs the same gate (`.github/workflows/check.yml`) on macOS 26 with Xcode 26.0.1 for every push to main and every pull request.
 
 ## Editing settings in config.json
 
