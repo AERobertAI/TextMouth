@@ -259,11 +259,19 @@ final class TextSubstitutionService: ObservableObject {
     /// user toggles it through plain+wholeWord and back.
     private var wholeWordRegexCache: [UUID: NSRegularExpression] = [:]
 
+    /// Whether the rules in use only stand in for substitutions.json, left
+    /// unread because the library model found the data directory unavailable
+    /// (FR02); they are replaced by the file's once the library is back.
+    private(set) var rulesAwaitDataDirectory = false
+    /// Hears when the data directory is available again.
+    private var availabilitySubscription: AnyCancellable?
+
     static let shared = TextSubstitutionService()
 
     /// The app's service: `isEnabled` and the repeated-symbol settings from
     /// this process's preferences, which it then follows, and the rules from
-    /// substitutions.json.
+    /// substitutions.json, read again when the data directory comes back
+    /// after it was unavailable.
     private init() {
         let preferences = TextMouthRuntime.current.preferences
         self.preferences = preferences
@@ -273,6 +281,9 @@ final class TextSubstitutionService: ObservableObject {
         storedRepeatedSymbolSet = Self.repeatedSymbolSetPreference.read(from: preferences)
         loadRules()
         followStore(in: preferences)
+        availabilitySubscription = NotificationCenter.default
+            .publisher(for: .dataDirectoryDidBecomeAvailable)
+            .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
     }
 
     /// A service of the caller's own: for deterministic production-target
@@ -597,6 +608,15 @@ final class TextSubstitutionService: ObservableObject {
     }
 
     func loadRules() {
+        // Nothing is read from a data directory the library model found
+        // unavailable, and a file missing there is no first launch (FR02):
+        // the standard rules stand in, unsaved, until the library is back.
+        guard !TextMouthPaths.isDataDirectoryUnavailable else {
+            rules = Self.defaultRules
+            rulesAwaitDataDirectory = true
+            return
+        }
+        rulesAwaitDataDirectory = false
         let url = TextMouthPaths.substitutionsFile
         guard FileManager.default.fileExists(atPath: url.path) else {
             // First launch: install default rules
@@ -611,6 +631,22 @@ final class TextSubstitutionService: ObservableObject {
             print("Failed to load substitutions: \(error)")
             rules = Self.defaultRules
         }
+    }
+
+    /// Reads substitutions.json once the data directory is back, when the
+    /// rules in use only stood in for it (FR02). Changes made to the
+    /// stand-ins meanwhile are dropped, with their unsaved-change notice:
+    /// the file holds the user's own rules, which they never saw.
+    func dataDirectoryBecameAvailable() {
+        guard rulesAwaitDataDirectory, !TextMouthPaths.isDataDirectoryUnavailable else { return }
+        loadRules()
+        regexCache.removeAll()
+        wholeWordRegexCache.removeAll()
+        PersistenceFailureCenter.shared.withdraw(.substitutions)
+        DiagnosticLog.event(
+            .storage,
+            "SUBSTITUTIONS_FILE: read \(rules.count) rules now that the library is available"
+        )
     }
 
     func resetToDefaults() {
