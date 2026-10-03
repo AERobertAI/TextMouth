@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -9,27 +10,22 @@ final class ImportConcurrencyTests: XCTestCase {
         let firstFinished = expectation(description: "first finished")
         let secondStarted = DispatchSemaphore(value: 0)
         let releaseFirst = DispatchSemaphore(value: 0)
-        let lock = NSLock()
-        var firstIsRunning = false
-        var overlapDetected = false
+        // What the operations saw, under one lock, as they run on the
+        // import queue: whether the first is running, and whether the
+        // second found it running.
+        let seen = OSAllocatedUnfairLock(initialState: (firstIsRunning: false, overlapDetected: false))
 
         queue.enqueue {
             XCTAssertFalse(Thread.isMainThread)
-            lock.lock()
-            firstIsRunning = true
-            lock.unlock()
+            seen.withLock { $0.firstIsRunning = true }
             firstStarted.fulfill()
             releaseFirst.wait()
-            lock.lock()
-            firstIsRunning = false
-            lock.unlock()
+            seen.withLock { $0.firstIsRunning = false }
             firstFinished.fulfill()
         }
         queue.enqueue {
             XCTAssertFalse(Thread.isMainThread)
-            lock.lock()
-            overlapDetected = firstIsRunning
-            lock.unlock()
+            seen.withLock { $0.overlapDetected = $0.firstIsRunning }
             secondStarted.signal()
         }
 
@@ -38,7 +34,7 @@ final class ImportConcurrencyTests: XCTestCase {
         releaseFirst.signal()
         wait(for: [firstFinished], timeout: 1)
         XCTAssertEqual(secondStarted.wait(timeout: .now() + 1), .success)
-        XCTAssertFalse(overlapDetected)
+        XCTAssertFalse(seen.withLock { $0.overlapDetected })
     }
 
     func testActivityCountIncludesQueuedOperations() {

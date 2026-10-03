@@ -1,5 +1,6 @@
 import Darwin
 import AVFoundation
+import os
 import XCTest
 @testable import TextMouth
 
@@ -100,23 +101,27 @@ final class ProductionPlaybackProfilingTests: XCTestCase {
         let engine = AudioEngineService()
         engine.setVolume(0)
         let rendered = expectation(description: "production TTS render completed")
-        var renderSucceeded = false
+        // The timer's block and the render's completion are @Sendable, so
+        // what they record is kept under locks: the highest memory the
+        // sampler saw, folded into peakRSS once it stops, and the result.
+        let renderPeakRSS = OSAllocatedUnfairLock(initialState: peakRSS)
+        let renderSucceeded = OSAllocatedUnfairLock(initialState: false)
         let renderStart = ContinuousClock.now
         let renderSampler = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
-            peakRSS = max(peakRSS, residentBytes())
+            renderPeakRSS.withLock { $0 = max($0, residentBytes()) }
         }
         engine.render(
             SpeechRenderRequest(text: profileText, voice: AVSpeechSynthesisVoice(language: "en-US"))
         ) { success in
-            renderSucceeded = success
+            renderSucceeded.withLock { $0 = success }
             rendered.fulfill()
         }
         wait(for: [rendered], timeout: 125)
         renderSampler.invalidate()
         let renderMilliseconds = milliseconds(since: renderStart)
-        peakRSS = max(peakRSS, residentBytes())
+        peakRSS = max(peakRSS, renderPeakRSS.withLock { $0 }, residentBytes())
         let rssAfterRender = residentBytes()
-        XCTAssertTrue(renderSucceeded, "System TTS failed to render the selected production chapter")
+        XCTAssertTrue(renderSucceeded.withLock { $0 }, "System TTS failed to render the selected production chapter")
 
         let configuredPlaybackSeconds = environment["TEXTMOUTH_PROFILE_PLAY_SECONDS"]
             ?? bundle.object(forInfoDictionaryKey: "TextMouthProfilePlaySeconds") as? String

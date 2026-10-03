@@ -1,23 +1,28 @@
+import os
 import XCTest
 @testable import TextMouth
 
+/// The coordinator's closures are `@Sendable`, so what they record lives
+/// in `OSAllocatedUnfairLock`s rather than captured variables.
 final class SpeechRenderCoordinatorTests: XCTestCase {
     func testRendersAreSerialized() {
         let coordinator = SpeechRenderCoordinator()
         let bothFinished = expectation(description: "both renders finished")
         bothFinished.expectedFulfillmentCount = 2
-        var activeRenders = 0
-        var overlapDetected = false
+        // How many renders are running, and whether two ever ran at once.
+        let renders = OSAllocatedUnfairLock(initialState: (active: 0, overlapDetected: false))
 
         for _ in 0..<2 {
             coordinator.enqueue(
                 textLength: 10,
                 shouldStart: { true },
                 start: { finish in
-                    activeRenders += 1
-                    overlapDetected = overlapDetected || activeRenders > 1
+                    renders.withLock { state in
+                        state.active += 1
+                        state.overlapDetected = state.overlapDetected || state.active > 1
+                    }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
-                        activeRenders -= 1
+                        renders.withLock { $0.active -= 1 }
                         finish(true)
                     }
                 },
@@ -29,18 +34,18 @@ final class SpeechRenderCoordinatorTests: XCTestCase {
         }
 
         wait(for: [bothFinished], timeout: 1)
-        XCTAssertFalse(overlapDetected)
+        XCTAssertFalse(renders.withLock { $0.overlapDetected })
     }
 
     func testOversizedRenderIsRejectedWithoutStarting() {
         let coordinator = SpeechRenderCoordinator()
         let rejected = expectation(description: "oversized render rejected")
-        var started = false
+        let started = OSAllocatedUnfairLock(initialState: false)
 
         coordinator.enqueue(
             textLength: SpeechRenderCoordinator.maximumTextLength + 1,
             shouldStart: { true },
-            start: { _ in started = true },
+            start: { _ in started.withLock { $0 = true } },
             completion: { success in
                 XCTAssertFalse(success)
                 rejected.fulfill()
@@ -48,15 +53,17 @@ final class SpeechRenderCoordinatorTests: XCTestCase {
         )
 
         wait(for: [rejected], timeout: 1)
-        XCTAssertFalse(started)
+        XCTAssertFalse(started.withLock { $0 })
     }
 
     func testStaleQueuedRenderIsRejectedBeforeStarting() {
         let coordinator = SpeechRenderCoordinator()
         let firstStarted = expectation(description: "first render started")
         let staleRejected = expectation(description: "stale render rejected")
-        var generation = 1
-        var staleStarted = false
+        // The generation the queued render was made for is 1; the test
+        // moves on to 2 while it waits.
+        let generation = OSAllocatedUnfairLock(initialState: 1)
+        let staleStarted = OSAllocatedUnfairLock(initialState: false)
 
         coordinator.enqueue(
             textLength: 10,
@@ -69,8 +76,8 @@ final class SpeechRenderCoordinatorTests: XCTestCase {
         )
         coordinator.enqueue(
             textLength: 10,
-            shouldStart: { generation == 1 },
-            start: { _ in staleStarted = true },
+            shouldStart: { generation.withLock { $0 } == 1 },
+            start: { _ in staleStarted.withLock { $0 = true } },
             completion: { success in
                 XCTAssertFalse(success)
                 staleRejected.fulfill()
@@ -78,8 +85,8 @@ final class SpeechRenderCoordinatorTests: XCTestCase {
         )
 
         wait(for: [firstStarted], timeout: 1)
-        generation = 2
+        generation.withLock { $0 = 2 }
         wait(for: [staleRejected], timeout: 1)
-        XCTAssertFalse(staleStarted)
+        XCTAssertFalse(staleStarted.withLock { $0 })
     }
 }
