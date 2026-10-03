@@ -1493,6 +1493,41 @@ def cmd_reset(args: argparse.Namespace, conn: sqlite3.Connection) -> Outcome:
 
 
 # ---------------------------------------------------------------------------
+# Protocol
+# ---------------------------------------------------------------------------
+
+#: The skill's documentation; the protocol is the text between the markers.
+SKILL_DOCUMENT = Path(__file__).resolve().parent.parent / "SKILL.md"
+PROTOCOL_BEGIN = "<!-- protocol:begin -->"
+PROTOCOL_END = "<!-- protocol:end -->"
+
+
+def protocol_text() -> str:
+    """Return the agents' protocol, read from between its markers in SKILL.md.
+
+    SKILL.md is the protocol's only copy, so what this prints can never
+    drift from what the skill documents.
+    """
+    try:
+        document = SKILL_DOCUMENT.read_text(encoding="utf-8")
+    except OSError as error:
+        raise UserError(f"cannot read the protocol from {SKILL_DOCUMENT}: {error.strerror or error}") from error
+    begin, end = document.find(PROTOCOL_BEGIN), document.find(PROTOCOL_END)
+    if begin < 0 or end < begin:
+        raise UserError(f"{SKILL_DOCUMENT} lacks the {PROTOCOL_BEGIN} and {PROTOCOL_END} markers")
+    return document[begin + len(PROTOCOL_BEGIN) : end].strip()
+
+
+def cmd_protocol(args: argparse.Namespace, conn: Optional[sqlite3.Connection]) -> Outcome:
+    """Print the protocol agents follow, ready to paste into a brief.
+
+    It needs no board, so ``conn`` is None.
+    """
+    text = protocol_text()
+    return Outcome({"protocol": text}, text)
+
+
+# ---------------------------------------------------------------------------
 # Command line
 # ---------------------------------------------------------------------------
 
@@ -1550,12 +1585,12 @@ def build_parser() -> BoardArgumentParser:
     parser.add_argument("--json", action="store_true", help="print JSON instead of text")
     commands = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
 
-    def command(name: str, handler: Any, summary: str) -> argparse.ArgumentParser:
+    def command(name: str, handler: Any, summary: str, *, needs_board: bool = True) -> argparse.ArgumentParser:
         """Add one command, remembering the function that runs it."""
         sub = commands.add_parser(
             name, help=summary, description=summary, parents=[json_flag], allow_abbrev=False
         )
-        sub.set_defaults(handler=handler)
+        sub.set_defaults(handler=handler, needs_board=needs_board)
         return sub
 
     register = command("register", cmd_register, "create or update an agent")
@@ -1679,11 +1714,15 @@ def build_parser() -> BoardArgumentParser:
 
     reset = command("reset", cmd_reset, "delete every agent, claim, and message")
     reset.add_argument("--yes", action="store_true", help="confirm that everything should go")
+
+    command("protocol", cmd_protocol, "print the protocol agents follow, for an agent brief", needs_board=False)
     return parser
 
 
 def run_command(args: argparse.Namespace) -> Outcome:
-    """Open the board and run the parsed command against it."""
+    """Run the parsed command, opening the board only for commands that use it."""
+    if not args.needs_board:
+        return args.handler(args, None)
     with contextlib.closing(open_board()) as conn:
         return args.handler(args, conn)
 

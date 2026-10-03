@@ -17,6 +17,7 @@ import io
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -809,6 +810,51 @@ class HousekeepingTests(BoardTestCase):
         self.assertEqual((self.ok_json("agents"), self.ok_json("read")), ([], []))
         self.register("alpha")
         self.assertEqual(self.ok_json("post", "alpha", "--topic", "again")["id"], 2, "ids are never reused")
+
+
+class SkillDocumentTests(BoardTestCase):
+    """SKILL.md, and the protocol that `bbs.py protocol` prints from it."""
+
+    DOCUMENT = SKILL_DIR / "SKILL.md"
+
+    def test_protocol_prints_the_protocol_section_of_the_skill(self) -> None:
+        text = self.ok("protocol").strip()
+        self.assertIn(text, self.DOCUMENT.read_text(encoding="utf-8"))
+        self.assertNotIn("<!--", text)
+        for step in (
+            "bbs register NAME --role",
+            "bbs inbox NAME --unread",
+            "before every build, before every commit, and before your final report",
+            "--tag build",
+            "--tag commit",
+            "--tag finding --file",
+            "--tag question",
+            "bbs release NAME --all",
+            "--tag notice",
+            "not reports",
+        ):
+            self.assertIn(step, text)
+        self.assertFalse(self.board_dir.exists(), "printing the protocol needs no board")
+
+    def test_protocol_as_json(self) -> None:
+        self.assertEqual(self.ok_json("protocol"), {"protocol": self.ok("protocol").strip()})
+
+    def test_the_front_matter_names_and_describes_the_skill(self) -> None:
+        lines = self.DOCUMENT.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "---")
+        fields = dict(line.split(": ", 1) for line in lines[1 : lines.index("---", 1)])
+        self.assertEqual(set(fields), {"name", "description"})
+        self.assertEqual(fields["name"], "agent-bbs")
+        self.assertNotIn(": ", fields["description"], "a plain YAML value cannot hold ': '")
+
+    def test_every_documented_command_exists(self) -> None:
+        documented = set(re.findall(r"\bbbs ([a-z]+)\b", self.DOCUMENT.read_text(encoding="utf-8")))
+        self.assertGreaterEqual(len(documented), 15)
+        for name in sorted(documented):
+            with self.subTest(command=name):
+                with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as exit_info:
+                    bbs.main([name, "--help"])
+                self.assertEqual(exit_info.exception.code, 0)
 
 
 class BuildSlotWrapperTests(BoardTestCase):
