@@ -375,6 +375,31 @@ final class DAISYPackageImportTests: XCTestCase {
         )
     }
 
+    /// The library's own ZIP import reads an archive holding one DAISY book
+    /// and no audio as a text book: it opens the archive a second time,
+    /// finds no audio there, and imports the book's text (TODO Q06 pins
+    /// this before the archive is opened through another initializer;
+    /// `AudioMediaImportTests` covers the archive with audio).
+    @MainActor
+    func testLibraryImportsADAISYArchiveWithoutAudioAsATextBook() throws {
+        let archive = try makeArchive(Fixtures.packageBook.mapValues { Data($0.utf8) })
+        XCTAssertTrue(DAISYParser.isDAISYZip(url: archive))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        withImportDeleteBehavior(.keepOriginal) {
+            model.importZipAsync(from: archive, toFolder: folderPath)
+            XCTAssertTrue(
+                eventually(within: 60) { !model.library.books.isEmpty || model.showError },
+                "the import never finished"
+            )
+        }
+
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertEqual(model.library.books.map(\.format), [.daisy])
+        XCTAssertEqual(model.library.books.map(\.title), ["Ferry Timetables of the Outer Sound"])
+    }
+
     /// A DAISY book that appears twice in an archive, in two folders, is
     /// imported once, and a book the library already holds is not imported
     /// again: both are recognized by the package's checksum before anything

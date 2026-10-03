@@ -95,6 +95,42 @@ final class DAISYPackageInventoryTests: XCTestCase {
         XCTAssertTrue(DAISYParser.isDAISYZip(url: withMacCopies))
     }
 
+    /// A file that cannot be opened as a ZIP archive, whether it holds
+    /// something else (here a navigation file on its own) or is not there at
+    /// all, is never a DAISY archive: the check answers false rather than
+    /// failing (TODO Q06 pins this before the archive is opened through
+    /// another initializer).
+    func testFileThatCannotBeOpenedAsAnArchiveIsNotADAISYArchive() throws {
+        let folder = try makeSandboxDirectory("daisy-not-archives")
+        let notAnArchive = folder.appendingPathComponent("Rope Splicing.zip")
+        try Data(Fixtures.navigationBook["ncc.html", default: ""].utf8).write(to: notAnArchive)
+
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: notAnArchive))
+        XCTAssertFalse(DAISYParser.isDAISYZip(url: folder.appendingPathComponent("Missing.zip")))
+    }
+
+    /// A file whose extension is neither an archive's nor a DAISY entry
+    /// file's is tried as an archive, since some DAISY archives carry other
+    /// names: one that opens is read as the book it holds, and one that does
+    /// not open is not a DAISY book (TODO Q06 pins this before the archive
+    /// is opened through another initializer).
+    func testFileWithAnotherExtensionIsReadAsAnArchiveOnlyWhenItIsOne() throws {
+        let folder = try makeSandboxDirectory("daisy-other-extensions")
+        let zip = try makeTemporaryDAISYZip(entries: Fixtures.navigationBook)
+        addTeardownBlock { try? FileManager.default.removeItem(at: zip) }
+        let archive = folder.appendingPathComponent("Rope Splicing.dtb")
+        try FileManager.default.copyItem(at: zip, to: archive)
+        let notAnArchive = folder.appendingPathComponent("Harbor Notes.dtb")
+        try Data("Unlay the strands for twelve turns.".utf8).write(to: notAnArchive)
+
+        XCTAssertEqual(try DAISYParser.readMetadata(from: archive)?.title, "Notes on Rope Splicing")
+        XCTAssertThrowsError(try DAISYParser.readMetadata(from: notAnArchive)) { error in
+            guard case DAISYParserError.notDAISYBook = error else {
+                return XCTFail("expected notDAISYBook, got \(error)")
+            }
+        }
+    }
+
     // MARK: - Listing a Folder
 
     /// A folder's files are listed by their paths inside it wherever the

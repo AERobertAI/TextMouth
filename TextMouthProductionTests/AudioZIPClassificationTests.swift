@@ -52,6 +52,19 @@ final class AudioZIPClassificationTests: XCTestCase {
         XCTAssertFalse(DAISYParser.isDAISYZip(url: zip))
     }
 
+    /// A file that cannot be opened as a ZIP archive, whether it holds
+    /// something else or is not there at all, is never an audio archive:
+    /// the check answers false rather than failing (TODO Q06 pins this
+    /// before the archive is opened through another initializer).
+    func testFileThatCannotBeOpenedAsAnArchiveIsNotAnAudioArchive() throws {
+        let folder = try makeSandboxDirectory("audio-classification")
+        let notAnArchive = folder.appendingPathComponent("Episode 01.zip")
+        try Data("plain text, not a ZIP archive".utf8).write(to: notAnArchive)
+
+        XCTAssertFalse(LibraryViewModel.isAudioZip(url: notAnArchive))
+        XCTAssertFalse(LibraryViewModel.isAudioZip(url: folder.appendingPathComponent("Missing.zip")))
+    }
+
     private func makeZIP(entries: [String: String]) throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("TextMouthAudioClassification-\(UUID().uuidString).zip")
