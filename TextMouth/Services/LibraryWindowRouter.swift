@@ -391,6 +391,9 @@ final class LibraryWindowRouter: ObservableObject {
 enum GlobalAction: Equatable {
     /// File > Open Book...: a Library window presents the Open panel.
     case openBookFile
+    /// File > New from Text...: a Library window presents the sheet that
+    /// makes a book from pasted or typed text.
+    case newFromText
     /// Library > Import DAISY Folder…: a Library window presents the
     /// folder-only panel (TODO I02).
     case importDAISYFolder
@@ -410,7 +413,7 @@ enum GlobalAction: Equatable {
         switch self {
         case .openBookWindow(let bookID), .continueToNextBook(let bookID):
             return bookID
-        case .openBookFile, .importDAISYFolder:
+        case .openBookFile, .newFromText, .importDAISYFolder:
             return nil
         }
     }
@@ -419,6 +422,7 @@ enum GlobalAction: Equatable {
     /// listens for (`LibraryWindowRouter.listen(to:)`).
     static let routedNotificationNames: [Notification.Name] = [
         .openBookFile,
+        .newFromText,
         .importDAISYFolder,
         .openBookWindow,
         .continueToNextBook,
@@ -430,6 +434,8 @@ enum GlobalAction: Equatable {
         switch notification.name {
         case .openBookFile:
             self = .openBookFile
+        case .newFromText:
+            self = .newFromText
         case .importDAISYFolder:
             self = .importDAISYFolder
         case .openBookWindow:
@@ -449,6 +455,8 @@ enum GlobalAction: Equatable {
         switch self {
         case .openBookFile:
             return "Open Book"
+        case .newFromText:
+            return "New from Text"
         case .importDAISYFolder:
             return "Import DAISY Folder"
         case .openBookWindow(let bookID):

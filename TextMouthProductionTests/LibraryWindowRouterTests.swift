@@ -202,6 +202,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         XCTAssertEqual(GlobalAction.openBookWindow(book).bookToOpen, book)
         XCTAssertEqual(GlobalAction.continueToNextBook(book).bookToOpen, book)
         XCTAssertNil(GlobalAction.openBookFile.bookToOpen)
+        XCTAssertNil(GlobalAction.newFromText.bookToOpen)
         XCTAssertNil(GlobalAction.importDAISYFolder.bookToOpen)
     }
 
@@ -221,7 +222,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         // Settings, or any other window that is neither Library nor reader.
         let otherWindow = makeWindow()
         let book = UUID()
-        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .importDAISYFolder]
+        let actionsNeedingALibrary: [GlobalAction] = [.openBookFile, .newFromText, .importDAISYFolder]
         let actionsOpeningAReader: [GlobalAction] = [.openBookWindow(book), .continueToNextBook(book)]
 
         let arrangements: [(
@@ -274,6 +275,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         let book = UUID()
         let samples: [(notification: Notification, action: GlobalAction)] = [
             (Notification(name: .openBookFile), .openBookFile),
+            (Notification(name: .newFromText), .newFromText),
             (Notification(name: .importDAISYFolder), .importDAISYFolder),
             (Notification(name: .openBookWindow, object: book), .openBookWindow(book)),
             (
@@ -305,6 +307,7 @@ final class LibraryWindowRouterTests: XCTestCase {
         let book = UUID()
         let posts: [(name: Notification.Name, object: Any?, userInfo: [AnyHashable: Any]?, action: GlobalAction)] = [
             (.openBookFile, nil, nil, .openBookFile),
+            (.newFromText, nil, nil, .newFromText),
             (.importDAISYFolder, nil, nil, .importDAISYFolder),
             (.openBookWindow, book, nil, .openBookWindow(book)),
             (.continueToNextBook, nil, [Notification.ContinueToNextBookKey.bookID: book], .continueToNextBook(book)),

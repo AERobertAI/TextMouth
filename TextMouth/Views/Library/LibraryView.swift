@@ -131,6 +131,10 @@ struct LibraryView: View {
     @Binding var currentFolderPath: String
     @Binding var category: LibraryCategory
     @Binding var showFileImporter: Bool
+    /// Presents the New from Text sheet. The Library window owns it, so
+    /// File > New from Text... can present the sheet through the router
+    /// whichever window is key (TODO A05).
+    @Binding var showTextInput: Bool
     let onOpenBook: (Book) -> Void
 
     @State private var showNewFolderSheet = false
@@ -154,7 +158,6 @@ struct LibraryView: View {
     @State private var richInfoEPUBMetadata: EPUBMetadata?
     /// Audio metadata loaded on-demand when showing the rich editor from the library
     @State private var richInfoAudioMetadata: AudioMetadata?
-    @State private var showTextInput = false
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
     /// Whether removing asks first and where deleted files go, kept current
@@ -628,11 +631,6 @@ struct LibraryView: View {
                let book = filteredBooks.first(where: { $0.id == id }) {
                 onOpenBook(book)
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .newFromText)) { _ in
-            // Only open in the focused library window
-            if let hw = hostWindow, !hw.isKeyWindow { return }
-            showTextInput = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
             // Cmd+Delete: remove selected books from library

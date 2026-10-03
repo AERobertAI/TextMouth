@@ -11,6 +11,9 @@ struct LibraryWindowView: View {
     @State private var currentFolderPath = ""
     @State private var category: LibraryCategory = .folders
     @State private var showFileImporter = false
+    /// Presents the New from Text sheet, from the toolbar or through the
+    /// router for File > New from Text....
+    @State private var showTextInput = false
     @State private var zipFolderName = ""
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: NSWindow?
@@ -30,6 +33,7 @@ struct LibraryWindowView: View {
                 currentFolderPath: $currentFolderPath,
                 category: $category,
                 showFileImporter: $showFileImporter,
+                showTextInput: $showTextInput,
                 onOpenBook: { book in
                     openWindow(id: "book-reader", value: book.id)
                 }
@@ -182,10 +186,11 @@ struct LibraryWindowView: View {
                 Text(verbatim: choice + incomplete)
             }
         }
-        // Open Book..., Import DAISY Folder…, opening a book's reader, and
-        // Continue to Next Book are app-wide actions: the router takes each
-        // posted one and hands it to exactly one window (TODO A05), this one
-        // through `takeGlobalAction(_:openingReadersWith:)` when it is chosen.
+        // Open Book..., New from Text..., Import DAISY Folder…, opening a
+        // book's reader, and Continue to Next Book are app-wide actions: the
+        // router takes each posted one and hands it to exactly one window
+        // (TODO A05), this one through `takeGlobalAction(_:openingReadersWith:)`
+        // when it is chosen.
         .onReceive(NotificationCenter.default.publisher(for: .goBack)) { _ in
             if isKeyLibraryWindow, let path = folderNav.goBack() {
                 currentFolderPath = path
@@ -281,6 +286,9 @@ struct LibraryWindowView: View {
         case .openBookFile:
             bringToFront()
             showFileImporter = true
+        case .newFromText:
+            bringToFront()
+            showTextInput = true
         case .importDAISYFolder:
             bringToFront()
             presentDAISYFolderPanel()
