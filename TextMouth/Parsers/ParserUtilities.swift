@@ -77,29 +77,42 @@ enum ParserUtilities {
     /// - Trim trailing whitespace from each line
     /// - Collapse 3+ consecutive blank lines down to 2
     /// - Trim leading/trailing whitespace from the whole string
+    ///
+    /// A line ends at each line feed. Its trailing whitespace is the run of
+    /// Unicode White_Space scalars that ends it: exactly what the regular
+    /// expression `\s+$` once removed line by line, since `\s` matches
+    /// exactly those scalars, and every other scalar `$` treats as a line
+    /// end is one of them. One pass over the text replaces a regular
+    /// expression and a new string for every line (PERF25: 50 ms and 11 MB
+    /// of memory per MB of Markdown).
     static func normalizeMarkdownWhitespace(_ text: String) -> String {
-        var lines = text.components(separatedBy: "\n")
-
-        // Trim trailing whitespace from each line
-        lines = lines.map {
-            $0.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
-        }
-
-        // Collapse 3+ consecutive blank lines to 2
-        var result: [String] = []
+        let scalars = text.unicodeScalars
+        var result = ""
+        result.reserveCapacity(text.utf8.count)
+        // Blank lines in a row so far, and whether a line has been written,
+        // after which each line kept begins with the line feed before it.
         var blankCount = 0
-        for line in lines {
-            if line.isEmpty {
-                blankCount += 1
-                if blankCount <= 2 { result.append(line) }
-            } else {
-                blankCount = 0
-                result.append(line)
+        var wroteLine = false
+        var lineStart = scalars.startIndex
+        while true {
+            let lineEnd = text.utf8[lineStart...].firstIndex(of: UInt8(ascii: "\n")) ?? scalars.endIndex
+            var contentEnd = lineEnd
+            while contentEnd > lineStart {
+                let previous = scalars.index(before: contentEnd)
+                guard scalars[previous].properties.isWhitespace else { break }
+                contentEnd = previous
             }
+            // Collapse 3+ consecutive blank lines to 2
+            blankCount = contentEnd == lineStart ? blankCount + 1 : 0
+            if blankCount <= 2 {
+                if wroteLine { result.append("\n") }
+                result.append(contentsOf: Substring(scalars[lineStart..<contentEnd]))
+                wroteLine = true
+            }
+            guard lineEnd < scalars.endIndex else { break }
+            lineStart = scalars.index(after: lineEnd)
         }
-
-        return result.joined(separator: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func normalizePackagePath(_ path: String) -> String {
