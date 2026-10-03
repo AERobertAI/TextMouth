@@ -234,6 +234,20 @@ write_fixtures() {
     printf '** TEST SUCCEEDED **\n'
   } > "$FIXTURES/tests-warning.log"
 
+  # A passing run whose performance tests printed every kind of line: the
+  # gate repeats each warning and skip once, and nothing else.
+  {
+    printf "Test Case '-[PerformanceBaselineTests testLaunch]' started.\n"
+    printf 'PERFORMANCE: launch: median 120.000 milliseconds of 120.000 (load 1.00 on 8 cores)\n'
+    printf 'PERFORMANCE WARNING: launch: 182.000 milliseconds, 1.52 times its baseline of 120.000 milliseconds; the test fails above twice its baseline.\n'
+    printf 'PERFORMANCE NOTE: open.audiobook: 4.000 milliseconds, 0.40 times its baseline of 10.000 milliseconds; make perf-baselines would tighten the check.\n'
+    printf 'PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12, and this Mac is a VirtualMac2,1\n'
+    printf 'PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12, and this Mac is a VirtualMac2,1\n'
+    printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
+    printf '\t Executed 3 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.020 (0.021) seconds\n'
+    printf '** TEST SUCCEEDED **\n'
+  } > "$FIXTURES/tests-performance.log"
+
   printf '** TEST SUCCEEDED **\n' > "$FIXTURES/tests-without-totals.log"
   {
     printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
@@ -373,6 +387,7 @@ dry_run_cases() {
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
   expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
+  expect_report "would repeat the performance tests' warnings and skips from build/check/test.log"
   expect_report "would require no Swift warnings in build/check/test.log"
   expect_report "pins match Package.resolved: "
   expect_report "$first_identity $first_version"
@@ -671,6 +686,19 @@ real_run_cases() {
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "revision 000000000000"
   expect_verdict "check: FAILED: Package.resolved changed during the build or tests"
+  end_case
+
+  begin_case "the gate repeats the performance tests' warnings and skips, once each, and still passes"
+  run_gate STUB_TEST_OUTPUT="$FIXTURES/tests-performance.log"
+  expect_status 0
+  expect_report "check:   PERFORMANCE WARNING: launch: 182.000 milliseconds, 1.52 times its baseline"
+  expect_report "check:   PERFORMANCE SKIPPED: the baselines were recorded on a Mac15,12"
+  if [[ $(grep -c -F 'PERFORMANCE SKIPPED:' <<<"$output") -ne 1 ]]; then
+    problem "the skip was not repeated exactly once"
+  fi
+  refute_report "PERFORMANCE NOTE:"
+  refute_report "PERFORMANCE: launch"
+  expect_verdict "check: PASSED"
   end_case
 
   begin_case "a test run without XCTest totals fails the gate"
