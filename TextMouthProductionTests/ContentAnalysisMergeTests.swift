@@ -139,20 +139,24 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// When the merged record cannot be written, the analysis fails with
     /// the error, and the newer state waiting to be saved is not lost with
-    /// it: its own debounce still writes it once the package can take it.
+    /// it: its own debounce, or the quit flush, still writes it.
+    ///
+    /// The merged write fails because the index holds a duration that is
+    /// not a number, which JSON cannot hold. That fails this write alone,
+    /// so the outcome is the same whenever the waiting save's debounce
+    /// fires; a read-only package would also fail that save if a busy
+    /// machine delayed the test past the debounce.
     func testFailedAnalysisWriteKeepsTheWaitingSnapshot() throws {
-        let book = try makePackage(title: "Read-Only For A Moment")
-        let analysis = try analyze(book)
+        let book = try makePackage(title: "Unwritable Result")
+        var unwritable = try analyze(book)
+        unwritable.index.totalAudioDuration = .nan
         var newer = book
         newer.manualSortOrder = 7
         LibraryPersistenceService.saveBookInfo(for: newer)
-        XCTAssertEqual(chmod(book.tmbDirectory.path, 0o555), 0)
-        defer { chmod(book.tmbDirectory.path, 0o755) }
 
         XCTAssertThrowsError(try LibraryPersistenceService.saveContentAnalysis(
-            for: analysis.book, index: analysis.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+            for: unwritable.book, index: unwritable.index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
         ))
-        XCTAssertEqual(chmod(book.tmbDirectory.path, 0o755), 0)
         LibraryPersistenceService.flushPendingSave()
 
         let record = try BookInfo.load(from: book.tmbDirectory)
