@@ -6,7 +6,8 @@ import XCTest
 /// could be read, the reader is warned once with the pages and why, the
 /// original file is kept whatever the "After Importing a Book" preference
 /// says, and every cache generation logs the pages as one
-/// `PDF_INCOMPLETE_CONTENT` line.
+/// `PDF_INCOMPLETE_CONTENT` line. A ZIP batch lists such a PDF as a book
+/// with pages that could not be read, not as one missing chapters.
 ///
 /// Vision works on the Macs these tests run on, so each test chooses how
 /// PDF extraction reads pictures (`PDFFixtures.withDefaultRecognizer`):
@@ -76,6 +77,78 @@ final class PDFImportReportTests: XCTestCase {
             XCTAssertTrue(
                 lines.first?.hasSuffix("PDF_INCOMPLETE_CONTENT: \(title): \(Self.unreadPictureProblem)") == true,
                 "\(lines)"
+            )
+        }
+    }
+
+    // MARK: - ZIP Batches
+
+    /// A batch's summary lists PDFs whose pictures OCR could not read as
+    /// books with pages that could not be read, after the books missing
+    /// chapters, each with its report's sentence.
+    func testZIPSummaryListsPDFsWithUnreadPagesApartFromBooksMissingChapters() {
+        let twoOfNine = "OCR could not run on 2 of 9 pages, so text that appears only in their images is missing: "
+            + "pages 4 and 5 (text recognition is not available)."
+        let result = ZipImportResult(
+            books: [
+                Book(title: "Partial", format: .epub, filePath: "/tmp/partial.epub", md5Hash: "a"),
+                Book(title: "Plates", format: .pdf, filePath: "/tmp/plates.pdf", md5Hash: "b"),
+                Book(title: "Charts", format: .pdf, filePath: "/tmp/charts.pdf", md5Hash: "c")
+            ],
+            failures: [],
+            incompleteBooks: [
+                ZipImportFailure(fileName: "partial.epub", message: "1 of 3 chapters could not be read."),
+                ZipImportFailure(fileName: "plates.pdf", message: Self.unreadPictureProblem, missing: .pages),
+                ZipImportFailure(fileName: "charts.pdf", message: twoOfNine, missing: .pages)
+            ]
+        )
+
+        XCTAssertTrue(result.keepsOriginal)
+        XCTAssertEqual(
+            result.failureSummary,
+            "Imported 3 books, but 1 book is missing chapters:\npartial.epub: 1 of 3 chapters could not be read.\n"
+                + "2 books have pages that could not be read:\nplates.pdf: \(Self.unreadPictureProblem)\n"
+                + "charts.pdf: \(twoOfNine)\nThe original file was kept."
+        )
+    }
+
+    /// End to end: a batch with a PDF whose picture OCR could not read adds
+    /// every book, lists that PDF's file and pages, and keeps the archive
+    /// although the preference says to delete it.
+    @MainActor
+    func testZIPBatchListsThePDFWithUnreadPagesAndKeepsTheArchive() throws {
+        let notes = try PDFFixtures.makePDF(for: self, named: "notes.pdf") { context, _ in
+            PDFFixtures.drawText("Tide tables are posted beside the ramp.", size: 12, at: CGPoint(x: 72, y: 700), in: context)
+        }
+        let plates = try PDFFixtures.captionedPicture(for: self, named: "plates.pdf")
+        let archive = plates.deletingLastPathComponent().appendingPathComponent("batch.zip")
+        try Data("stands in for the ZIP the books came from".utf8).write(to: archive)
+
+        let result = PDFFixtures.withDefaultRecognizer(nil) {
+            FileImportService.importSupportedFiles([notes, plates], toFolder: "")
+        }
+        for package in result.books.map(\.tmbDirectory) {
+            addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        }
+
+        XCTAssertEqual(result.books.count, 2)
+        XCTAssertEqual(result.failures, [])
+        XCTAssertEqual(
+            result.incompleteBooks,
+            [ZipImportFailure(fileName: "plates.pdf", message: Self.unreadPictureProblem, missing: .pages)]
+        )
+        withImportDeleteBehavior(.deleteAfterImport) {
+            let library = Self.emptyLibrary()
+
+            library.completeZIPImport(result, originalURL: archive, folderPath: "")
+
+            XCTAssertEqual(library.library.books.count, 2)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path))
+            XCTAssertTrue(library.showError)
+            XCTAssertEqual(
+                library.errorMessage,
+                "Imported 2 books, but 1 book has pages that could not be read:\n"
+                    + "plates.pdf: \(Self.unreadPictureProblem)\nThe original file was kept."
             )
         }
     }
