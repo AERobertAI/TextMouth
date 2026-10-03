@@ -583,6 +583,79 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertTrue(center.outstandingFailures().isEmpty, "the stand-ins' change is still reported")
     }
 
+    /// On a new Mac whose library is in the cloud, a first launch that finds
+    /// no substitutions.json, which the sync service hasn't brought down
+    /// yet, has the standard rules stand in and writes nothing, so it makes
+    /// no file of its own for the sync service to set against another
+    /// Mac's. A rule changed then writes the rules, the change with them.
+    func testTheStandardRulesAreWrittenOnlyOnceARuleChanges() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeOwnDataDirectory("RulesFirstLaunch")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+
+        service.loadRules()
+
+        XCTAssertTrue(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), TextSubstitutionService.defaultRules.map(\.name))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: file.path),
+            "the standard rules were written before any rule changed"
+        )
+
+        service.addRule(SubstitutionRule(name: "Galley", pattern: "galley", replacement: "galley", isRegex: false))
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(
+            try JSONDecoder().decode([SubstitutionRule].self, from: Data(contentsOf: file)).map(\.name),
+            TextSubstitutionService.defaultRules.map(\.name) + ["Galley"]
+        )
+    }
+
+    /// The rules the sync service brings down after that first launch, from
+    /// another Mac, are taken up as the app becomes active, in place of the
+    /// standard rules, and the file stays exactly as it came, with no copy
+    /// of this Mac's beside it.
+    func testSubstitutionsThatArriveLaterAreTakenUpAsTheyCame() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeOwnDataDirectory("RulesArriveLater")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+        service.loadRules()
+        let theirs = try rulesData(named: ["Harbor", "Chart Room"])
+        try theirs.write(to: file)
+
+        // As the app becomes active.
+        service.readFileThatArrived()
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), ["Harbor", "Chart Room"])
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the rules that arrived were written over")
+        XCTAssertEqual(try rulesFiles(in: root), ["substitutions.json"], "another copy of the rules was made")
+    }
+
+    /// A rule changed before the app has taken up rules that arrived
+    /// meanwhile takes them up instead of writing the standard rules over
+    /// them: the file holds the user's own rules, from another Mac, and stays
+    /// exactly as it came, while the change made to the stand-ins is dropped,
+    /// as one made while the library was unavailable is.
+    func testARuleChangedAfterTheRulesArriveWritesNothingOverThem() throws {
+        reloadTheAppsRulesWhenTheTestEnds()
+        let root = try makeOwnDataDirectory("RulesArriveBeforeAChange")
+        let file = root.appendingPathComponent("substitutions.json")
+        let service = TextSubstitutionService.shared
+        service.loadRules()
+        let theirs = try rulesData(named: ["Harbor"])
+        try theirs.write(to: file)
+
+        service.addRule(SubstitutionRule(name: "Galley", pattern: "galley", replacement: "galley", isRegex: false))
+
+        XCTAssertFalse(service.rulesStandInForMissingFile)
+        XCTAssertEqual(service.rules.map(\.name), ["Harbor"])
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the standard rules were written over the rules that arrived")
+        XCTAssertEqual(try rulesFiles(in: root), ["substitutions.json"], "another copy of the rules was made")
+    }
+
     // MARK: - reading-checkpoints.json
 
     /// A checkpoint journal cut short names no book, and the startup repair
@@ -732,6 +805,14 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let previous = CloudServices.itemStatus
         CloudServices.itemStatus = provider
         addTeardownBlock { @MainActor in CloudServices.itemStatus = previous }
+    }
+
+    /// The names of the files in the data directory at `root` that hold
+    /// substitution rules: substitutions.json, and any copy beside it.
+    private func rulesFiles(in root: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: root.path)
+            .filter { $0.hasPrefix("substitutions") }
+            .sorted()
     }
 
     /// substitutions.json's bytes for plain rules with the names given.
