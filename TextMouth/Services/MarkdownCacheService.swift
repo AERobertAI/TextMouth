@@ -140,7 +140,7 @@ enum MarkdownCacheService {
         let parsed: DocumentContent
         if let chapters = extracted.chapters, !chapters.isEmpty {
             parsed = DocumentContent(
-                title: chapters.first?.title.isEmpty == false ? chapters[0].title : book.title,
+                title: documentTitle(of: chapters, bookTitle: book.title),
                 author: book.author,
                 chapters: chapters,
                 contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
@@ -394,7 +394,7 @@ enum MarkdownCacheService {
             let chapter = (try? MarkdownDocParser.parseChapter(markdown: markdown, title: bookTitle, includeNavigationHeadings: true))
                 ?? Chapter(title: bookTitle, text: markdown, headings: [])
             return DocumentContent(
-                title: chapter.title.isEmpty ? bookTitle : chapter.title,
+                title: documentTitle(of: [chapter], bookTitle: bookTitle),
                 author: bookAuthor,
                 chapters: [chapter],
                 contentIndex: contentIndex
@@ -425,15 +425,21 @@ enum MarkdownCacheService {
             }
         }
 
-        // Use the first chapter's title as the document title, or fall back to book title
-        let docTitle = chapters.first?.title.isEmpty == false ? chapters.first!.title : bookTitle
-
         return DocumentContent(
-            title: docTitle,
+            title: documentTitle(of: chapters, bookTitle: bookTitle),
             author: bookAuthor,
             chapters: chapters,
             contentIndex: contentIndex
         )
+    }
+
+    /// The title of a book whose reading text is `chapters`: its first
+    /// chapter's title, or `bookTitle` when that is empty or there is no
+    /// chapter. Extraction, parsing content.md, and reading a book's cached
+    /// reading text (`ReadingTextCache`) all name a book's content this way.
+    static func documentTitle(of chapters: [Chapter], bookTitle: String) -> String {
+        guard let first = chapters.first, !first.title.isEmpty else { return bookTitle }
+        return first.title
     }
 
     /// Split cached Markdown into chapter sections based on chapter markers.
