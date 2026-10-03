@@ -601,8 +601,9 @@ extension ReaderViewModel {
         let chapterIndex: Int
         /// Result of the text substitutions, the pipeline's last stage.
         let transformation: TextTransformation
-        /// Offsets through every stage (skipped sections, punctuation
-        /// pauses, substitutions), between original and spoken text.
+        /// Offsets through every stage (skipped sections, repeated symbols,
+        /// punctuation pauses, substitutions), between original and spoken
+        /// text.
         let offsetMap: ComposedOffsetMap
 
         /// The exact text handed to the speech engine.
@@ -610,9 +611,11 @@ extension ReaderViewModel {
     }
 
     /// Run one chapter through the playback text pipeline: remove skipped
-    /// sections, add punctuation pauses, then apply text substitutions.
-    /// Speaking a chapter and pre-rendering the next one both use this, so
-    /// look-ahead audio always matches what playback would speak.
+    /// sections, rewrite runs of a repeated symbol, add punctuation pauses,
+    /// then apply text substitutions. Speaking a chapter and pre-rendering
+    /// the next one both use this, so look-ahead audio always matches what
+    /// playback would speak. Every setting is read as the chapter is
+    /// prepared, so a change applies from the next chapter spoken.
     ///
     /// - Returns: Nil when no content is loaded or the index is out of range.
     func preparedSpeech(forChapterAt chapterIndex: Int) -> ChapterSpeech? {
@@ -623,12 +626,16 @@ extension ReaderViewModel {
             chapterIndex: chapterIndex,
             text: content.chapters[chapterIndex].text
         )
-        let (pausedText, pauseMap) = applyPunctuationPauses(filteredText)
+        // Repeated symbols are rewritten before the pauses are added: the
+        // pause marks are periods and commas, which would lengthen runs of
+        // those symbols, and the substitution rules then see the counts.
+        let (symbolText, symbolMap) = substitutionService.repeatedSymbolRule.apply(to: filteredText)
+        let (pausedText, pauseMap) = applyPunctuationPauses(symbolText)
         let transformation = substitutionService.transform(pausedText)
         return ChapterSpeech(
             chapterIndex: chapterIndex,
             transformation: transformation,
-            offsetMap: ComposedOffsetMap(stages: [filterMap, pauseMap] + transformation.offsetMap.stages)
+            offsetMap: ComposedOffsetMap(stages: [filterMap, symbolMap, pauseMap] + transformation.offsetMap.stages)
         )
     }
 

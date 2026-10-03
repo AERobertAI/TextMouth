@@ -259,6 +259,17 @@ final class ConfigService: ObservableObject {
         /// Whether the text substitution rules apply. The rules themselves
         /// are kept in substitutions.json, beside this file.
         var substitutionsEnabled: Bool?
+        /// How speech reads a run of a repeated symbol: "repeat" (every
+        /// symbol), "count" ("7 asterisks"), or "omit" (a pause instead).
+        /// Empty keeps the current choice.
+        var repeatedSymbolStyle: String = ""
+        /// The fewest symbols a run must have to be read as a count or left
+        /// out, from 2 to 99, or -1 to read every symbol.
+        var repeatedSymbolThreshold: Int?
+        /// The symbols that can form runs, written together, such as
+        /// "*-=_~#"; spaces, letters, and digits are ignored. Empty, like
+        /// any empty text here, keeps the current symbols.
+        var repeatedSymbolSet: String?
         /// The keyboard shortcuts of each action, keyed by the action's name
         /// as Settings shows it, each a list of shortcuts such as
         /// "option+shift+command+b" (`KeyBinding.configText`); an empty list
@@ -338,6 +349,12 @@ final class ConfigService: ObservableObject {
                 rule: SettingsPolicy.soundEffectAssignments
             )
             substitutionsEnabled = fields.optionalFlag(.substitutionsEnabled)
+            repeatedSymbolStyle = fields.rawChoice(.repeatedSymbolStyle, rule: SettingsPolicy.repeatedSymbolStyle)
+            repeatedSymbolThreshold = fields.optionalThreshold(
+                .repeatedSymbolThreshold,
+                rule: SettingsPolicy.repeatedSymbolThreshold
+            )
+            repeatedSymbolSet = fields.optionalCharacterSet(.repeatedSymbolSet, rule: SettingsPolicy.repeatedSymbolSet)
             keyboardShortcuts = fields.entries(.keyboardShortcuts, rule: SettingsPolicy.keyboardShortcuts)
         }
 
@@ -384,8 +401,11 @@ final class ConfigService: ObservableObject {
                 ])
                 // Shortcuts: the store's key is older than the file's field.
                 mirrored.append((storeKey: "customKeyboardBindings", field: "keyboardShortcuts"))
-                // Text: the switch. The rules are kept in substitutions.json.
-                mirrored += sameNames(["substitutionsEnabled"])
+                // Text: the switch and the repeated-symbol settings. The rules
+                // are kept in substitutions.json.
+                mirrored += sameNames([
+                    "substitutionsEnabled", "repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet",
+                ])
                 // Sounds.
                 mirrored += sameNames(["soundEffectsEnabled", "soundEffectsVolume", "soundEffectAssignments"])
                 // Miscellaneous.

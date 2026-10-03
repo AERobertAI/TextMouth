@@ -101,6 +101,27 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         )
     }
 
+    /// Every repeated-symbol setting shapes the spoken text, and so the
+    /// signature: another style, Never collapse, or a set without the
+    /// separator's symbol each sign a chapter with a separator differently.
+    func testRepeatedSymbolSettingsChangeTheSignature() {
+        let text = "Gulls circled the harbour wall.\n\n* * * * * * *"
+        let symbols = SettingsPolicy.repeatedSymbolSet.defaultValue
+        let signature = { (rule: RepeatedSymbolRule) in
+            SpeechRenderSignature(text: rule.apply(to: text).text, voiceIdentifier: "voice.a")
+        }
+        let changed = [
+            RepeatedSymbolRule(style: .leaveOut, threshold: 4, symbols: symbols),
+            RepeatedSymbolRule(style: .repeatEach, threshold: 4, symbols: symbols),
+            RepeatedSymbolRule(style: .sayCount, threshold: -1, symbols: symbols),
+            RepeatedSymbolRule(style: .sayCount, threshold: 8, symbols: symbols),
+            RepeatedSymbolRule(style: .sayCount, threshold: 4, symbols: "-="),
+        ]
+        for rule in changed {
+            XCTAssertNotEqual(signature(rule), signature(.standard), "\(rule)")
+        }
+    }
+
     /// A render request signs exactly the text and voice it hands the
     /// synthesizer.
     func testRenderRequestSignsItsTextAndVoice() {
@@ -289,6 +310,35 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// A repeated-symbol style chosen in Settings applies to the next
+    /// chapter: its separator, rendered as a count, is never played.
+    func testChangingTheRepeatedSymbolStyleNeverPlaysTheOldAudio() throws {
+        for timing in ChangeTiming.allCases {
+            try assertStaleLookAheadIsNotPlayed(when: timing, chapters: Self.separatorChapters) { reader in
+                reader.substitutionService.repeatedSymbolStyle = .leaveOut
+            }
+        }
+    }
+
+    /// Checking Never collapse applies to the next chapter: its separator is
+    /// read symbol by symbol, not from the count rendered before.
+    func testChangingTheRepeatedSymbolThresholdNeverPlaysTheOldAudio() throws {
+        for timing in ChangeTiming.allCases {
+            try assertStaleLookAheadIsNotPlayed(when: timing, chapters: Self.separatorChapters) { reader in
+                reader.substitutionService.repeatedSymbolThreshold = -1
+            }
+        }
+    }
+
+    /// A symbol taken out of the set applies to the next chapter.
+    func testChangingTheRepeatedSymbolSetNeverPlaysTheOldAudio() throws {
+        for timing in ChangeTiming.allCases {
+            try assertStaleLookAheadIsNotPlayed(when: timing, chapters: Self.separatorChapters) { reader in
+                reader.substitutionService.repeatedSymbolSet = "-="
+            }
+        }
+    }
+
     /// Speed is applied as the audio plays, not when it is rendered, so a
     /// speed chosen while the next chapter renders keeps its instant start,
     /// and the chapter plays at the new speed.
@@ -424,6 +474,27 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     func testIncludingASectionAgainReArmsTheLookAheadOnce() throws {
         try assertChangeReArmsTheLookAheadOnce(skipping: ["Market"]) { reader in
             reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" }))
+        }
+    }
+
+    /// A repeated-symbol style chosen in Settings.
+    func testChangingTheRepeatedSymbolStyleReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce(chapters: Self.separatorChapters) { reader in
+            reader.substitutionService.repeatedSymbolStyle = .leaveOut
+        }
+    }
+
+    /// A repeated-symbol threshold chosen in Settings.
+    func testChangingTheRepeatedSymbolThresholdReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce(chapters: Self.separatorChapters) { reader in
+            reader.substitutionService.repeatedSymbolThreshold = 9
+        }
+    }
+
+    /// A repeated-symbol set edited in Settings.
+    func testChangingTheRepeatedSymbolSetReArmsTheLookAheadOnce() throws {
+        try assertChangeReArmsTheLookAheadOnce(chapters: Self.separatorChapters) { reader in
+            reader.substitutionService.repeatedSymbolSet = "-="
         }
     }
 
@@ -664,15 +735,21 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     /// Substitution rule `harbourSpelling` applies throughout.
     ///
     /// - Parameters:
+    ///   - chapters: The book's chapters; the second is rendered ahead.
     ///   - skippedHeadings: Sections skipped before playback begins.
     ///   - change: Changes one setting, as the listener would.
     private func assertChangeReArmsTheLookAheadOnce(
+        chapters: [Chapter] = PreRenderedSpeechInvalidationTests.harbourChapters,
         skipping skippedHeadings: Set<String> = [],
         file: StaticString = #filePath,
         line: UInt = #line,
         _ change: (ReaderViewModel) throws -> Void
     ) throws {
-        try withReader(skipping: skippedHeadings, substitutions: [Self.harbourSpelling]) { reader, renders in
+        try withReader(
+            chapters: chapters,
+            skipping: skippedHeadings,
+            substitutions: [Self.harbourSpelling]
+        ) { reader, renders in
             startSpeakingSilently(reader)
             let staleRender = try XCTUnwrap(renders.startNext(), file: file, line: line)
 
@@ -714,16 +791,22 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     /// - Parameters:
     ///   - timing: Whether `change` is applied while the render runs or once
     ///     it has finished.
+    ///   - chapters: The book's chapters; the second is rendered ahead.
     ///   - skippedHeadings: Sections skipped before playback begins.
     ///   - change: Changes one setting, as the listener would.
     private func assertStaleLookAheadIsNotPlayed(
         when timing: ChangeTiming,
+        chapters: [Chapter] = PreRenderedSpeechInvalidationTests.harbourChapters,
         skipping skippedHeadings: Set<String> = [],
         file: StaticString = #filePath,
         line: UInt = #line,
         _ change: (ReaderViewModel) throws -> Void
     ) throws {
-        try withReader(skipping: skippedHeadings, substitutions: [Self.harbourSpelling]) { reader, renders in
+        try withReader(
+            chapters: chapters,
+            skipping: skippedHeadings,
+            substitutions: [Self.harbourSpelling]
+        ) { reader, renders in
             startSpeakingSilently(reader)
             let staleRender = try XCTUnwrap(renders.startNext(), file: file, line: line)
             if timing == .afterRendering {
@@ -770,6 +853,18 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             ("Market", "Fish sold out by nine."),
         ]),
         chapter(sections: [("Evening", "Lamps came on along the pier.")]),
+    ]
+
+    /// `harbourChapters` with a separator line of seven asterisks closing
+    /// the middle chapter's first section, for the repeated-symbol settings
+    /// to rewrite in the chapter rendered ahead.
+    private static let separatorChapters: [Chapter] = [
+        harbourChapters[0],
+        chapter(sections: [
+            ("Harbour", "Gulls circled the harbour wall. Then rain came, briefly.\n\n* * * * * * *"),
+            ("Market", "Fish sold out by nine."),
+        ]),
+        harbourChapters[2],
     ]
 
     /// A chapter made of sections that each start with a level-one heading,

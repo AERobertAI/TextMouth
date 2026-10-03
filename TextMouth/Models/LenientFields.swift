@@ -157,6 +157,23 @@ extension LenientFields {
         optionalValue(key) { (number: Double) in rule.validatedConfigValue(number) }
     }
 
+    /// A `config.json` whole-number threshold validated by `rule` that may
+    /// be absent: nil when the field is missing, null, or not a whole
+    /// number, which leaves the preference as it is; any negative number is
+    /// the rule's off value, and any other is clamped into its range.
+    func optionalThreshold(_ key: Key, rule: ThresholdSettingRule) -> Int? {
+        optionalValue(key) { (threshold: Int) in rule.validated(threshold) }
+    }
+
+    /// A `config.json` set of characters validated by `rule` that may be
+    /// absent: nil when the field is missing, null, or not text, which
+    /// leaves the preference as it is; text keeps only the characters the
+    /// rule admits, each once. Text left empty is kept as it is, and, like
+    /// any empty text in the file, applying it keeps the current set.
+    func optionalCharacterSet(_ key: Key, rule: CharacterSetSettingRule) -> String? {
+        optionalValue(key) { (text: String) in rule.validated(text) }
+    }
+
     /// A `config.json` object holding an entry for each case of `rule`'s enum
     /// that it sets, read entry by entry so that one unusable entry never
     /// discards the others.

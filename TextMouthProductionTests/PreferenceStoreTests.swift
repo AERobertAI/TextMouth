@@ -210,6 +210,127 @@ final class PreferenceStoreTests: XCTestCase {
         withExtendedLifetime(observer) {}
     }
 
+    // MARK: - Repeated Symbols
+
+    /// The repeated-symbol settings written to the store by someone else,
+    /// as the settings model writes an edit of config.json, take effect in
+    /// the service at once, each published once, which is what open readers
+    /// re-prepare their speech on; nothing is written back.
+    func testRepeatedSymbolSettingsFollowChangesMadeInTheirStore() {
+        let store = makeSandboxedPreferences("repeated-symbols-follow")
+        let substitutions = TextSubstitutionService(rules: [], preferences: store)
+        var publications = 0
+        let subscription = substitutions.objectWillChange.sink { publications += 1 }
+
+        TextSubstitutionService.repeatedSymbolStylePreference.write(.leaveOut, to: store)
+        TextSubstitutionService.repeatedSymbolThresholdPreference.write(-1, to: store)
+        TextSubstitutionService.repeatedSymbolSetPreference.write("=~", to: store)
+
+        XCTAssertEqual(
+            substitutions.repeatedSymbolRule,
+            RepeatedSymbolRule(style: .leaveOut, threshold: -1, symbols: "=~")
+        )
+        XCTAssertEqual(publications, 3)
+
+        for key in ["repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet"] {
+            store.removeObject(forKey: key)
+        }
+        XCTAssertEqual(substitutions.repeatedSymbolRule, .standard, "back to the standard settings")
+        XCTAssertEqual(publications, 6)
+        for key in ["repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet"] {
+            XCTAssertNil(store.object(forKey: key), "\(key): nothing written back")
+        }
+        subscription.cancel()
+    }
+
+    /// Settings changed through the service are saved under their keys, in
+    /// readable forms, already validated: an unsupported threshold is
+    /// clamped and a set keeps only its symbols, each once.
+    func testRepeatedSymbolSettingsAreSavedValidated() {
+        let store = makeSandboxedPreferences("repeated-symbols-save")
+        let substitutions = TextSubstitutionService(rules: [], preferences: store)
+
+        substitutions.repeatedSymbolStyle = .repeatEach
+        substitutions.repeatedSymbolThreshold = 150
+        substitutions.repeatedSymbolSet = "* * = a1 *"
+
+        XCTAssertEqual(store.string(forKey: "repeatedSymbolStyle"), "repeat")
+        XCTAssertEqual(store.object(forKey: "repeatedSymbolThreshold") as? Int, 99)
+        XCTAssertEqual(store.string(forKey: "repeatedSymbolSet"), "*=")
+        XCTAssertEqual(substitutions.repeatedSymbolThreshold, 99)
+        XCTAssertEqual(substitutions.repeatedSymbolSet, "*=")
+
+        substitutions.repeatedSymbolThreshold = -12
+        XCTAssertEqual(substitutions.repeatedSymbolThreshold, -1)
+        XCTAssertEqual(store.object(forKey: "repeatedSymbolThreshold") as? Int, -1)
+    }
+
+    /// Setting a threshold or symbol set already in force publishes nothing,
+    /// so open readers are not asked to prepare their speech again; nor does
+    /// a value that validates to the one in force.
+    func testUnchangedRepeatedSymbolSettingsPublishNothing() {
+        let substitutions = TextSubstitutionService(rules: [])
+        var publications = 0
+        let subscription = substitutions.objectWillChange.sink { publications += 1 }
+
+        substitutions.repeatedSymbolThreshold = 4
+        substitutions.repeatedSymbolSet = SettingsPolicy.repeatedSymbolSet.defaultValue
+        substitutions.repeatedSymbolSet = SettingsPolicy.repeatedSymbolSet.defaultValue + " **"
+        XCTAssertEqual(publications, 0)
+
+        substitutions.repeatedSymbolThreshold = 6
+        XCTAssertEqual(publications, 1)
+        subscription.cancel()
+    }
+
+    /// A service without a store starts from the standard settings and
+    /// saves its changes nowhere, as the rule editor's Test button needs.
+    func testAServiceWithoutAStoreKeepsItsRepeatedSymbolSettingsToItself() {
+        let keys = TextSubstitutionService.preferenceKeys
+        let before = PreferenceSnapshot(keys, in: TextMouthRuntime.current.preferences)
+        let substitutions = TextSubstitutionService(rules: [])
+
+        XCTAssertEqual(substitutions.repeatedSymbolRule, .standard)
+        substitutions.repeatedSymbolStyle = .leaveOut
+        substitutions.repeatedSymbolThreshold = 9
+        substitutions.repeatedSymbolSet = "~"
+
+        let after = PreferenceSnapshot(keys, in: TextMouthRuntime.current.preferences)
+        for (earlier, later) in zip(before.values, after.values) {
+            XCTAssertEqual(earlier.value as? NSObject, later.value as? NSObject, earlier.key)
+        }
+    }
+
+    /// The repeated-symbol settings do not depend on the substitution
+    /// switch: with the rules off, runs are still collapsed.
+    func testRepeatedSymbolsApplyWithSubstitutionsOff() {
+        let substitutions = TextSubstitutionService(rules: [], isEnabled: false)
+
+        XCTAssertTrue(substitutions.repeatedSymbolRule.collapsesRuns)
+        XCTAssertEqual(substitutions.repeatedSymbolRule.apply(to: "* * * *").text, "4 asterisks")
+    }
+
+    /// The app's shared service follows this process's preferences for the
+    /// repeated-symbol settings too.
+    func testSharedServiceFollowsTheRepeatedSymbolSettings() {
+        let preferences = TextMouthRuntime.current.preferences
+        preservePreferences(TextSubstitutionService.preferenceKeys)
+        let shared = TextSubstitutionService.shared
+        let style = shared.repeatedSymbolStyle
+        let threshold = shared.repeatedSymbolThreshold
+        defer {
+            TextSubstitutionService.repeatedSymbolStylePreference.write(style, to: preferences)
+            TextSubstitutionService.repeatedSymbolThresholdPreference.write(threshold, to: preferences)
+        }
+        let otherStyle: RepeatedSymbolStyle = style == .leaveOut ? .sayCount : .leaveOut
+
+        TextSubstitutionService.repeatedSymbolStylePreference.write(otherStyle, to: preferences)
+        TextSubstitutionService.repeatedSymbolThresholdPreference.write(threshold == 7 ? 8 : 7, to: preferences)
+
+        XCTAssertEqual(shared.repeatedSymbolStyle, otherStyle)
+        XCTAssertEqual(shared.repeatedSymbolThreshold, threshold == 7 ? 8 : 7)
+    }
+
     // MARK: - Keyboard Shortcuts
 
     /// Bindings written to the store by someone else take effect in the
