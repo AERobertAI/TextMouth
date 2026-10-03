@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -107,27 +108,27 @@ final class MediaGestureDetectorTests: XCTestCase {
         let detector = detector([.play])
         let queue = DispatchQueue(label: "MediaGestureDetectorTests.concurrent", attributes: .concurrent)
         let group = DispatchGroup()
-        let resultLock = NSLock()
-        var matches = 0
+        // The blocks run concurrently, so they take the start time as a
+        // value rather than through the test case, and count under a lock.
+        let start = origin
+        let matches = OSAllocatedUnfairLock(initialState: 0)
 
         for index in 0..<1_000 {
             group.enter()
             queue.async {
                 let matched = detector.recordEvent(
                     .play,
-                    at: self.origin.addingTimeInterval(Double(index) / 1_000)
+                    at: start.addingTimeInterval(Double(index) / 1_000)
                 )
                 if matched {
-                    resultLock.lock()
-                    matches += 1
-                    resultLock.unlock()
+                    matches.withLock { $0 += 1 }
                 }
                 group.leave()
             }
         }
 
         XCTAssertEqual(group.wait(timeout: .now() + 5), .success)
-        XCTAssertEqual(matches, 1_000)
+        XCTAssertEqual(matches.withLock { $0 }, 1_000)
     }
 
     func testMalformedPatternDropsUnknownValuesAndKeepsValidOnes() {

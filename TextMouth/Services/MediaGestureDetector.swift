@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Detects a configurable sequence of media-control events within a
 /// time window, intended for AirPods / Bluetooth-headphone gestures
@@ -30,7 +31,13 @@ import Foundation
 /// Suppressing the LAST event keeps the leading N-1 events intact (the
 /// user got most of what they pressed) but spares them the unwanted
 /// final action.
-class MediaGestureDetector {
+///
+/// ## Threads
+/// MPRemoteCommand callbacks may arrive on the main queue or on one of the
+/// framework's own queues (Apple does not say which), so the detector may
+/// be used from any thread: everything it knows, its configuration and its
+/// buffer alike, is kept under one lock, which makes it Sendable (TODO Q06).
+final class MediaGestureDetector: Sendable {
     /// The kinds of media events the detector understands. Limited to
     /// commands that MPRemoteCommandCenter delivers reliably on macOS:
     /// volume isn't included because it's not routed through the
@@ -59,33 +66,51 @@ class MediaGestureDetector {
         }
     }
 
+    /// Everything the detector knows. Kept under one lock so that two rapid
+    /// presses arriving on different queues cannot race `recordEvent`'s
+    /// read-modify-write of the buffer and corrupt it, and so that each
+    /// event is matched against one consistent configuration.
+    private struct State {
+        /// See `pattern`.
+        var pattern: [EventType] = []
+        /// See `window`.
+        var window: TimeInterval = 2.0
+        /// See `isEnabled`.
+        var isEnabled = false
+        /// Rolling buffer of recently observed events. Trimmed on every
+        /// recordEvent to drop entries older than `window` from the
+        /// arrival of the latest event, so the matcher only ever inspects
+        /// timely sequences.
+        var buffer: [(type: EventType, timestamp: Date)] = []
+    }
+
+    /// The detector's state, read and written only through `withLock`.
+    private let state = OSAllocatedUnfairLock(initialState: State())
+
     /// Configured sequence the user wants to match. A 3-element pattern
     /// requires the last 3 events in the buffer to match in order. An
     /// empty pattern always returns false (effectively disabled).
-    var pattern: [EventType] = []
+    var pattern: [EventType] {
+        get { state.withLock { $0.pattern } }
+        set { state.withLock { $0.pattern = newValue } }
+    }
 
     /// Maximum elapsed time across the WHOLE pattern (first event to
     /// last event). 2 seconds is the default — long enough for a
     /// deliberate sequence but short enough that ordinary use of media
     /// keys won't collide.
-    var window: TimeInterval = 2.0
+    var window: TimeInterval {
+        get { state.withLock { $0.window } }
+        set { state.withLock { $0.window = newValue } }
+    }
 
     /// Whether the detector should run at all. When false,
     /// `recordEvent` returns false immediately and doesn't grow the
     /// buffer — a tiny saving but more importantly a clean off-switch.
-    var isEnabled: Bool = false
-
-    /// Rolling buffer of recently observed events. Trimmed on every
-    /// recordEvent to drop entries older than `window` from the
-    /// arrival of the latest event, so the matcher only ever inspects
-    /// timely sequences.
-    /// All access is serialised through `lock` because MPRemoteCommand
-    /// callbacks may arrive on either the main queue or one of the
-    /// framework's internal queues (Apple does not guarantee), so two
-    /// rapid presses could otherwise race the read-modify-write
-    /// sequence below and corrupt the buffer.
-    private var buffer: [(type: EventType, timestamp: Date)] = []
-    private let lock = NSLock()
+    var isEnabled: Bool {
+        get { state.withLock { $0.isEnabled } }
+        set { state.withLock { $0.isEnabled = newValue } }
+    }
 
     /// Cap on user-configured pattern length. The settings UI also
     /// enforces this, but the detector defends in depth: a corrupted
@@ -110,53 +135,50 @@ class MediaGestureDetector {
     /// the public call site continues to use the current wall-clock time.
     @discardableResult
     func recordEvent(_ type: EventType, at now: Date) -> Bool {
-        guard isEnabled, !pattern.isEmpty else { return false }
-
         // Hold the lock for the whole read-modify-write cycle.
         // recordEvent runs in microseconds even with a max-length
         // pattern, so blocking briefly here is preferable to a fancier
         // lock-free scheme.
-        lock.lock()
-        defer { lock.unlock() }
+        state.withLock { current in
+            guard current.isEnabled, !current.pattern.isEmpty else { return false }
 
-        // Trim entries older than the window measured from THIS event.
-        // Using the latest event as the anchor (rather than the first
-        // event in the buffer) means the user has the full window to
-        // complete the gesture from the moment they started pressing.
-        let cutoff = now.addingTimeInterval(-window)
-        buffer.removeAll { $0.timestamp < cutoff }
+            // Trim entries older than the window measured from THIS event.
+            // Using the latest event as the anchor (rather than the first
+            // event in the buffer) means the user has the full window to
+            // complete the gesture from the moment they started pressing.
+            let cutoff = now.addingTimeInterval(-current.window)
+            current.buffer.removeAll { $0.timestamp < cutoff }
 
-        // Append after trimming so the latest event is always present
-        // even if the buffer was just emptied by an extra-long pause.
-        buffer.append((type: type, timestamp: now))
+            // Append after trimming so the latest event is always present
+            // even if the buffer was just emptied by an extra-long pause.
+            current.buffer.append((type: type, timestamp: now))
 
-        // Cap buffer size at pattern length — older entries can't
-        // contribute to a match. Keeping more would only burn memory.
-        if buffer.count > pattern.count {
-            buffer.removeFirst(buffer.count - pattern.count)
+            // Cap buffer size at pattern length — older entries can't
+            // contribute to a match. Keeping more would only burn memory.
+            if current.buffer.count > current.pattern.count {
+                current.buffer.removeFirst(current.buffer.count - current.pattern.count)
+            }
+
+            // Need at least pattern.count entries to match.
+            guard current.buffer.count == current.pattern.count else { return false }
+
+            // All entries must already be inside the window thanks to the
+            // trim above; the order check is the remaining condition.
+            for (index, expected) in current.pattern.enumerated() {
+                if current.buffer[index].type != expected { return false }
+            }
+
+            // Match — reset so the next gesture starts fresh.
+            current.buffer.removeAll()
+            return true
         }
-
-        // Need at least pattern.count entries to match.
-        guard buffer.count == pattern.count else { return false }
-
-        // All entries must already be inside the window thanks to the
-        // trim above; the order check is the remaining condition.
-        for (index, expected) in pattern.enumerated() {
-            if buffer[index].type != expected { return false }
-        }
-
-        // Match — reset so the next gesture starts fresh.
-        buffer.removeAll()
-        return true
     }
 
     /// Reset the buffer without changing pattern / window / enabled.
     /// Useful when the gesture is reconfigured mid-sequence — drop
     /// the half-matched in-flight events so the user starts fresh.
     func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        buffer.removeAll()
+        state.withLock { $0.buffer.removeAll() }
     }
 
     // MARK: - Pattern <-> String Encoding
