@@ -1121,7 +1121,8 @@ enum FileImportService {
     ///   and the `__MACOSX` folder macOS adds to archives are passed over:
     ///   they hold copies of the archive's files that are not books.
     /// - Throws: `ArchiveBudgetError` when the batch's budget refuses an
-    ///   archive inside.
+    ///   archive inside, and `ImportCancelled` when the reader cancels while
+    ///   one is unpacked.
     static func importCandidates(in directory: URL, unpacking nested: NestedArchiveUnpacking) throws -> ImportCandidates {
         let topLevelBooks = DAISYParser.packageEntryPoints(in: directory)
         guard topLevelBooks.isEmpty else { return ImportCandidates(books: topLevelBooks) }
