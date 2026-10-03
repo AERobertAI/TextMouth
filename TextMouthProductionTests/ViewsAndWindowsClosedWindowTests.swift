@@ -82,7 +82,10 @@ final class ViewsAndWindowsClosedWindowTests: XCTestCase {
 
         XCTAssertNil(reader.content, "The closed reader kept the book's text")
         XCTAssertTrue(reader.headings.isEmpty, "The closed reader kept \(reader.headings.count) headings")
-        XCTAssertFalse(reader.speechService.audioEngine.hasRenderedAudio, "The closed reader kept rendered speech")
+        XCTAssertFalse(reader.holdsRenderedSpeech, "The closed reader kept rendered speech")
+        if renderedSeconds == 0 {
+            XCTAssertFalse(reader.speechService.hasAudioEngine, "Closing a reader that never spoke made a speech engine")
+        }
         XCTAssertNil(reader.currentOffsetMap)
         XCTAssertNil(reader.currentTransformation)
         XCTAssertNil(reader.lookAhead)

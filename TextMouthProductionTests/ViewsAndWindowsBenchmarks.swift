@@ -160,7 +160,7 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
         let result: [String: Any] = [
             "contentKept": reader?.content != nil,
             "headingsKept": reader?.headings.count ?? 0,
-            "renderedAudioKeptMB": megabytes(reader?.speechService.audioEngine.renderedAudioByteCount ?? 0),
+            "renderedAudioKept": reader?.holdsRenderedSpeech ?? false,
             "textWindowKeptCharacters": reader?.displayVisibleTextWindow.count ?? 0,
             "growthWhileClosedReaderHeldMB": megabytes(mallocBytesInUse() - before),
         ]

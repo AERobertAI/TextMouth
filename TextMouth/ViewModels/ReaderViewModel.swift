@@ -1372,16 +1372,17 @@ final class ReaderViewModel: ObservableObject {
     ///
     /// Released: the subscriptions, so a closed reader reacts to nothing;
     /// the look-ahead (which `stop()` has already dropped for a text book);
-    /// the rendered speech of the chapter last played; the offset maps of
-    /// its speech; the text window the reader showed; an audiobook's lists
-    /// of files and clips; and the book's content, with its headings. An
-    /// audiobook's player and its item went with `stop()`. What is left is
-    /// the reader itself and its services, whose size does not depend on
-    /// the book.
+    /// the text speech was speaking and the rendered speech of the chapter
+    /// last played, through `SpeechService.releaseSpeech()`, which makes no
+    /// engine to do it; the offset maps of that speech; the text window the
+    /// reader showed; an audiobook's lists of files and clips; and the
+    /// book's content, with its headings. An audiobook's player and its item
+    /// went with `stop()`. What is left is the reader itself and its
+    /// services, whose size does not depend on the book.
     private func releaseWhatGrowsWithTheBook() {
         cancellables.removeAll()
         discardLookAhead()
-        speechService.audioEngine.discardRenderedAudio()
+        speechService.releaseSpeech()
         currentTransformation = nil
         currentOffsetMap = nil
         pendingPlaybackUIRefresh = nil

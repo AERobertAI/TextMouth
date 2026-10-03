@@ -118,6 +118,14 @@ struct ReaderSheetHost<Sheet: View>: View {
     }
 }
 
+extension ReaderViewModel {
+    /// Whether the reader's speech holds rendered audio, asked without
+    /// making a speech engine: a reader that never spoke has none.
+    var holdsRenderedSpeech: Bool {
+        speechService.hasAudioEngine && speechService.audioEngine.hasRenderedAudio
+    }
+}
+
 // MARK: - Memory
 
 /// Bytes malloc holds for live allocations, across every zone.
