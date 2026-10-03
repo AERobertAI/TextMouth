@@ -213,6 +213,93 @@ final class IntegrationSleepTimerTests: XCTestCase {
         }
     }
 
+    // MARK: - Two Readers of One Book
+
+    /// The timer belongs to the reader that set it, not to its book (TODO
+    /// P01). The owner of the timer plays until the other window of its
+    /// book takes over, which pauses the owner, since only one reader plays
+    /// at a time. The end of a chapter in the other window then neither
+    /// stops that window nor ends the timer, and the owner, played again,
+    /// stops where its own chapter ends. Before the repair the timer was the
+    /// book's, so the other window's chapter end ended it and stopped the
+    /// wrong window.
+    func testTheTimerBelongsToTheReaderThatSetItNotToItsBook() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Two Readers")
+        world.settings.sleepFadeOutDuration = 0
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [0.5, 2.5, 5])
+        let owner = world.openReader(for: book)
+        let other = world.openReader(for: book)
+        waitForReaderToLoad(owner)
+        waitForReaderToLoad(other)
+        defer {
+            owner.stop()
+            other.stop()
+        }
+        owner.navigateTo(chapterIndex: 1, characterOffset: 0)
+
+        let recorder = recordingAnnouncements {
+            owner.startSleepTimer(duration: .endOfChapter)
+            owner.play()
+            other.play()
+            XCTAssertTrue(owner.isCurrentlyPaused, "Playing the other window did not pause the owner")
+            XCTAssertTrue(
+                eventually(within: 10) { other.currentChapterIndex == 1 },
+                "The other window's first chapter never ended"
+            )
+            XCTAssertTrue(other.audioPlaybackService.isPlaying, "The other window stopped at its own chapter's end")
+            XCTAssertFalse(other.isCurrentlyPaused, "The other window paused at its own chapter's end")
+            XCTAssertTrue(timer.isActive, "The other window's chapter end ended the timer")
+            XCTAssertEqual(owner.currentChapterIndex, 1, "The other window's chapter end moved the owner")
+
+            owner.togglePlayPause()
+            XCTAssertTrue(owner.audioPlaybackService.isPlaying, "The owner did not play again")
+            XCTAssertTrue(eventually(within: 10) { owner.currentChapterIndex == 2 }, "The owner's chapter never ended")
+            XCTAssertFalse(owner.audioPlaybackService.isPlaying, "The owner played on past its chapter's end")
+            XCTAssertFalse(owner.isCurrentlyPlaying)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Sleep timer expired at the end of the chapter. Playback paused."]
+        )
+        XCTAssertFalse(timer.isActive)
+        XCTAssertEqual(other.currentChapterIndex, 1, "The owner's chapter end moved the other window")
+    }
+
+    /// Restart Sleep Timer from a media gesture, which belongs to no window,
+    /// goes to the reader that set the last timer, not to every reader of
+    /// its book. Once that reader closes, which stops its timer, the gesture
+    /// goes to the reader left, which starts a timer of the last duration.
+    func testRestartFromAMediaGestureGoesToTheReaderThatSetTheTimer() throws {
+        let timer = SleepTimerService.shared
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("Sleep Timer Restart Route")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [30])
+        let owner = world.openReader(for: book)
+        let other = world.openReader(for: book)
+        waitForReaderToLoad(owner)
+        waitForReaderToLoad(other)
+        defer { other.stop() }
+        owner.startSleepTimer(duration: .minutes(30))
+
+        let restart = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil)
+        }
+        XCTAssertEqual(restart.announcements.map(\.message), ["Timer reset."], "Not just the owner restarted the timer")
+        XCTAssertEqual(timer.ownerID, owner.readerID)
+
+        owner.close()
+        XCTAssertFalse(timer.isActive, "Closing the owner's window left its timer running")
+        let restartAfterClosing = recordingAnnouncements {
+            world.notifications.post(name: .restartSleepTimer, object: nil)
+        }
+        XCTAssertEqual(restartAfterClosing.announcements.map(\.message), ["Timer restarted: 30 minutes."])
+        XCTAssertEqual(timer.ownerID, other.readerID)
+        XCTAssertEqual(timer.duration, .minutes(30))
+    }
+
     // MARK: - Helpers
 
     /// Counts each time `reader` goes from not paused to paused from now on.

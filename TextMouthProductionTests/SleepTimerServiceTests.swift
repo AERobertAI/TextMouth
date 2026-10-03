@@ -530,6 +530,21 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertEqual(service.remainingSeconds, 299)
     }
 
+    /// A reader that closes forgets itself as the last owner only when it
+    /// set the most recent timer; the duration is kept either way, for
+    /// Restart Sleep Timer in another reader.
+    func testForgettingTheLastOwnerKeepsTheDuration() {
+        start(.minutes(20))
+        service.stop()
+
+        service.forgetLastOwner(UUID())
+        XCTAssertEqual(service.lastOwnerID, owner, "Another reader's closing forgot the last owner")
+
+        service.forgetLastOwner(owner)
+        XCTAssertNil(service.lastOwnerID)
+        XCTAssertEqual(service.lastUsedDuration, .minutes(20))
+    }
+
     func testLastUsedDurationSurvivesStop() {
         start(.minutes(20))
 

@@ -19,9 +19,11 @@ import AppKit
 /// set before a long break doesn't expire silently in the background and
 /// pause the user mid-sentence after they resume. With a single shared
 /// timer but multiple book windows, the pause/resume calls must only
-/// take effect when issued by the *owning* book — Book B pausing should
+/// take effect when issued by the *owning* reader — Book B pausing should
 /// not halt Book A's running timer. Each playback action passes its
-/// `ownerID`; mismatching IDs are silently ignored.
+/// `ownerID`, the reader's own ID (`ReaderViewModel.readerID`), so two
+/// windows of the same book are told apart too; mismatching IDs are
+/// silently ignored.
 @MainActor
 final class SleepTimerService: ObservableObject {
     /// The single shared instance. All book windows and views read and
@@ -41,16 +43,17 @@ final class SleepTimerService: ObservableObject {
     /// Set by the owner via `start(...)`; cleared on stop.
     var onFadeStep: ((Float) -> Void)?
     /// Restores the owning playback backend when an in-progress fade is
-    /// cancelled, restarted, or replaced by another book's timer.
+    /// cancelled, restarted, or replaced by another reader's timer.
     var onFadeCancelled: (() -> Void)?
 
     /// Fade-out duration in seconds (0 = instant pause, no fade)
     var fadeOutDuration: TimeInterval = 0
 
-    /// Identifier of the book that started the current timer. Used to
+    /// Identifier of the reader that started the current timer. Used to
     /// gate `pauseCountdown(by:)`, `resumeCountdown(by:)`, and the
-    /// heading/chapter-end notifications so a different book's
-    /// playback events can't accidentally affect this timer.
+    /// heading/chapter-end notifications so another reader's playback
+    /// events, even those of a second window of the same book, can't
+    /// accidentally affect this timer.
     /// Nil means no active owner (timer is stopped, or was started
     /// without an owner — the latter only in tests).
     private(set) var ownerID: UUID?
@@ -67,10 +70,10 @@ final class SleepTimerService: ObservableObject {
     /// `stop()`. Used to route the .restartSleepTimer notification
     /// from the gesture detector — when the app is backgrounded and
     /// no window is "key", the gesture must still target the right
-    /// book reader. The reader whose book.id matches lastOwnerID is
+    /// book reader. The reader whose readerID matches lastOwnerID is
     /// the one that originally owned the (now expired) timer; that's
-    /// who should respond. Cleared only when no prior timer exists
-    /// at all.
+    /// who should respond. Nil when no prior timer exists at all, or
+    /// when that reader has closed (`forgetLastOwner(_:)`).
     private(set) var lastOwnerID: UUID?
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
@@ -220,15 +223,16 @@ final class SleepTimerService: ObservableObject {
     // MARK: - Start / Stop / Restart
 
     /// Start a new timer. Replaces any timer already running, regardless
-    /// of which book owned it. The provided callbacks become the active
+    /// of which reader owned it. The provided callbacks become the active
     /// callbacks; the previous owner's callbacks are dropped.
     ///
     /// - Parameters:
     ///   - duration: minutes, end-of-heading, or end-of-chapter
-    ///   - ownerID: UUID of the book starting the timer (use `book.id`).
-    ///     Optional only because some unit tests don't have a book —
-    ///     production callers should always pass an ID so pause/resume
-    ///     scoping works correctly.
+    ///   - ownerID: UUID of the reader starting the timer (use its
+    ///     `readerID`, never its book's ID, which a second window of the
+    ///     same book shares). Optional only because some unit tests don't
+    ///     have a reader — production callers should always pass an ID so
+    ///     pause/resume scoping works correctly.
     ///   - onExpire: fires after the timer finishes (after any fade).
     ///   - onFadeStep: optional per-step volume callback during fade.
     ///   - onFadeCancelled: restores playback if the fade is interrupted.
@@ -340,6 +344,17 @@ final class SleepTimerService: ObservableObject {
         fadeCancellation?()
     }
 
+    /// Forget `ownerID` as the owner of the most recent timer, because that
+    /// reader is closing: Restart Sleep Timer from a media gesture, which
+    /// belongs to no window, then goes to the focused reader rather than to
+    /// none. The duration last used is kept for it. Nothing changes when
+    /// another reader owned the most recent timer.
+    func forgetLastOwner(_ ownerID: UUID) {
+        guard lastOwnerID == ownerID else { return }
+        lastOwnerID = nil
+        timerLog(.event, "LAST_OWNER_FORGOTTEN owner=\(Self.ownerToken(ownerID))")
+    }
+
     /// Returns true once after a fade reaches silence and the timer is
     /// about to invoke its expiry callback. This lets the playback
     /// layer run the "pause first, then restore volume" cleanup even
@@ -361,8 +376,8 @@ final class SleepTimerService: ObservableObject {
     /// the user is away on a break.
     /// - No-op for heading-end / chapter-end modes (no wall-clock).
     /// - No-op when a fade is already in progress.
-    /// - No-op when called by a non-owner — Book B pausing must not
-    ///   affect a timer owned by Book A.
+    /// - No-op when called by a non-owner — another reader pausing, even
+    ///   one of the same book, must not affect this reader's timer.
     func pauseCountdown(by callerID: UUID) {
         // Ordinary playback pauses happen frequently with no timer armed;
         // keep the dedicated timer log focused on actual timer sessions.
@@ -414,7 +429,7 @@ final class SleepTimerService: ObservableObject {
     }
 
     /// Notify the timer that a heading boundary was crossed in the
-    /// owner book. Only the owner can advance an `endOfHeading` timer.
+    /// owner reader. Only the owner can advance an `endOfHeading` timer.
     func notifyHeadingBoundary(by callerID: UUID) {
         guard isActive, case .endOfHeading = duration else { return }
         guard self.ownerID == callerID else {
