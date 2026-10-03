@@ -111,9 +111,13 @@ struct LibraryWindowView: View {
         } message: {
             Text("\(libraryViewModel.pendingZipBooks.count) books were imported from the ZIP. Would you like to create a new folder to hold them?")
         }
-        // Delete original file confirmation dialog
-        .alert("Delete Original File?", isPresented: $libraryViewModel.showDeleteOriginalDialog) {
-            Button("Delete", role: .destructive) {
+        // Delete original file confirmation dialog, in the words of the Trash
+        // preference, which decides where the file goes
+        .alert(
+            libraryViewModel.pendingOriginalFileWording.confirmationTitle,
+            isPresented: $libraryViewModel.showDeleteOriginalDialog
+        ) {
+            Button(libraryViewModel.pendingOriginalFileWording.buttonTitle, role: .destructive) {
                 if let url = libraryViewModel.pendingOriginalURL {
                     libraryViewModel.deleteOriginalFile(at: url)
                 }
@@ -123,11 +127,7 @@ struct LibraryWindowView: View {
                 libraryViewModel.pendingOriginalURL = nil
             }
         } message: {
-            if let url = libraryViewModel.pendingOriginalURL {
-                Text("The book has been imported successfully. Delete the original file \"\(url.lastPathComponent)\"?")
-            } else {
-                Text("The book has been imported successfully. Delete the original file?")
-            }
+            Text(libraryViewModel.pendingOriginalFileWording.confirmationMessage)
         }
         // Remove book confirmation dialog (supports single or multiple books)
         .alert(

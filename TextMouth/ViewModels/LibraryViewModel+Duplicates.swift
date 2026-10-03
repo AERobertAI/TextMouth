@@ -141,6 +141,16 @@ extension LibraryViewModel {
         }
     }
 
+    /// The words of the Delete Original File confirmation for the file it
+    /// asks about, in the mode the Trash preference is in now: the deletion
+    /// reads the same preference, so the file goes where the button says.
+    var pendingOriginalFileWording: OriginalFileDeletionWording {
+        OriginalFileDeletionWording(
+            movesToTrash: removalPreferences.movesToTrash,
+            fileName: pendingOriginalURL?.lastPathComponent
+        )
+    }
+
     /// Deletes `url`, the original file of a book just imported, to the
     /// Trash or permanently as "Move to Trash instead of deleting" chooses
     /// (TODO S09). A deletion that fails is reported to the failure center

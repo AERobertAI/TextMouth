@@ -136,6 +136,73 @@ final class OriginalFileDeletionTests: XCTestCase {
         )
     }
 
+    // MARK: - The Confirmation and Storage Settings
+
+    /// The Delete Original File confirmation says where the file goes, in
+    /// both modes: its title, its button, and its message, which names the
+    /// file when it can.
+    func testTheConfirmationSaysWhereTheFileGoes() {
+        let trash = OriginalFileDeletionWording(movesToTrash: true, fileName: "Notes.epub")
+        XCTAssertEqual(trash.confirmationTitle, "Move Original File to Trash?")
+        XCTAssertEqual(trash.buttonTitle, "Move to Trash")
+        XCTAssertEqual(
+            trash.confirmationMessage,
+            "The book has been imported successfully. Move the original file “Notes.epub” to the Trash? "
+                + "You can recover it from the Trash until the Trash is emptied."
+        )
+
+        let permanent = OriginalFileDeletionWording(movesToTrash: false, fileName: "Notes.epub")
+        XCTAssertEqual(permanent.confirmationTitle, "Delete Original File Permanently?")
+        XCTAssertEqual(permanent.buttonTitle, "Delete Permanently")
+        XCTAssertEqual(
+            permanent.confirmationMessage,
+            "The book has been imported successfully. Delete the original file “Notes.epub” permanently? "
+                + "It cannot be recovered."
+        )
+        XCTAssertEqual(
+            OriginalFileDeletionWording(movesToTrash: false).confirmationMessage,
+            "The book has been imported successfully. Delete the original file permanently? It cannot be recovered."
+        )
+    }
+
+    /// Storage settings explain the import preference in the words of the
+    /// Trash toggle beside it.
+    func testStorageSettingsExplainTheImportPreferenceInTheWordsOfTheTrash() {
+        XCTAssertEqual(
+            OriginalFileDeletionWording(movesToTrash: true).automaticDeletionExplanation,
+            "The original file will be moved to the Trash after a successful import."
+        )
+        XCTAssertEqual(
+            OriginalFileDeletionWording(movesToTrash: false).automaticDeletionExplanation,
+            "The original file will be permanently deleted after a successful import."
+        )
+        XCTAssertEqual(
+            OriginalFileDeletionWording(movesToTrash: true).askingExplanation,
+            "You will be asked whether to move the original file to the Trash after each import."
+        )
+        XCTAssertEqual(
+            OriginalFileDeletionWording(movesToTrash: false).askingExplanation,
+            "You will be asked whether to delete the original file permanently after each import."
+        )
+    }
+
+    /// The library's confirmation follows the Trash preference in force,
+    /// which the deletion reads too, and names the file it asks about.
+    func testTheLibrarysConfirmationFollowsThePreferenceAndNamesTheFile() {
+        let model = LibraryViewModel(initializeServices: false)
+        model.pendingOriginalURL = URL(fileURLWithPath: "/Downloads/Atlas.epub")
+
+        withTrashPreference(movesToTrash: true) {
+            XCTAssertEqual(
+                model.pendingOriginalFileWording,
+                OriginalFileDeletionWording(movesToTrash: true, fileName: "Atlas.epub")
+            )
+        }
+        withTrashPreference(movesToTrash: false) {
+            XCTAssertEqual(model.pendingOriginalFileWording.buttonTitle, "Delete Permanently")
+        }
+    }
+
     // MARK: - Helpers
 
     /// A file named `name` in a folder of the test's own made read-only, so

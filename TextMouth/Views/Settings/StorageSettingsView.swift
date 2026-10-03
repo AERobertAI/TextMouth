@@ -165,17 +165,19 @@ struct StorageSettingsView: View {
                     ConfigService.shared.saveToDisk()
                 }
 
+                // Deleting the original follows "Move to Trash instead of
+                // deleting" below, so these say which it will be.
                 switch importDeleteBehavior {
                 case .keepOriginal:
                     Text("The original file will remain untouched after import.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 case .deleteAfterImport:
-                    Text("The original file will be permanently deleted after a successful import.")
+                    Text(originalFileWording.automaticDeletionExplanation)
                         .font(.caption)
                         .foregroundColor(.orange)
                 case .askEachTime:
-                    Text("You will be asked whether to delete the original after each import.")
+                    Text(originalFileWording.askingExplanation)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -331,6 +333,12 @@ struct StorageSettingsView: View {
     /// The removal preferences as this pane's toggles currently set them.
     private var removalPreferences: RemovalPreferences {
         RemovalPreferences(confirmsFirst: confirmBeforeDelete, movesToTrash: moveToTrash)
+    }
+
+    /// The words for deleting an import's original file, as this pane's
+    /// Trash toggle currently sets them.
+    private var originalFileWording: OriginalFileDeletionWording {
+        OriginalFileDeletionWording(movesToTrash: moveToTrash)
     }
 
     /// Whether the location and rebuild buttons are unavailable right now.
