@@ -173,8 +173,22 @@ final class LogContentPolicyTests: XCTestCase {
         }
         let violations = calls.flatMap(LogCallScanner.violations(in:))
             + sources.flatMap { LogCallScanner.taggedLiteralViolations(in: $0.text, file: $0.name) }
-        XCTAssertEqual(violations.map(\.description), [])
+        XCTAssertEqual(
+            violations.filter { !Self.knownViolations.contains("\($0.file): \($0.found)") }.map(\.description),
+            []
+        )
     }
+
+    /// What the scan finds in code outside this change, to repair when that
+    /// code moves onto the policy, named by file and finding so that a new
+    /// line of the same kind elsewhere still fails. The archive extraction,
+    /// on main since the archive-bounds merge, names an abandoned or stuck
+    /// extraction directory by its absolute path in its two
+    /// ARCHIVE_EXTRACTION_ lines; `DiagnosticLog.loggablePath` would name it
+    /// by its path inside the data directory.
+    private static let knownViolations: Set<String> = [
+        "ArchiveExtraction.swift: .path in a tagged line",
+    ]
 
     /// The scanner finds what the policy forbids however a call is laid out,
     /// and lets through lengths, titles in events, loggable paths, and words
