@@ -135,9 +135,10 @@ final class ReaderViewModel: ObservableObject {
     /// For multi-file audio books (ZIP import): file paths for each chapter
     var audioChapterFiles: [String] = []
 
-    /// For segmented audio (DAISY): clip start/end times per chapter.
-    /// When non-empty, each chapter's audio starts at segments[i].startTime
-    /// and stops at segments[i].endTime within the corresponding file.
+    /// For segmented audio (DAISY): the clips each chapter plays. When
+    /// non-empty, chapter i plays `audioSegments[i].clips` one after
+    /// another, each a time range within a file of the book's audio
+    /// folder, as one chain (see `audioClipChain(forChapterAt:)`).
     var audioSegments: [AudioSegment] = []
 
     /// Audio playback multiplier, separate from WPM. Always a value returned

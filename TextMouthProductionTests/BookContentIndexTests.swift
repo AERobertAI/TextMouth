@@ -279,6 +279,113 @@ final class BookContentIndexTests: XCTestCase {
         XCTAssertNil(damaged.resolvedAudioFilePaths(relativeTo: URL(fileURLWithPath: "/tmp/audio")))
     }
 
+    // MARK: - Chapters of several clips (TODO I03)
+
+    /// A chapter of several clips records each clip, starts where its first
+    /// clip does, and lasts as long as its clips together, as does the
+    /// book's total. Saved and read back, the index restores the very same
+    /// sections, and each chapter's file is the one it starts in.
+    func testSeveralClipSegmentIndexRoundTripsEveryClip() throws {
+        let opening = AudioSegment(title: "Opening", file: "a.mp3", startTime: 0, endTime: 30)
+        let survey = try XCTUnwrap(AudioSegment(title: "Harbor Survey", clips: [
+            AudioClip(file: "a.mp3", startTime: 30, endTime: 60),
+            AudioClip(file: "b.mp3", startTime: 0, endTime: 45.5),
+            AudioClip(file: "Disc 2/c.mp3", startTime: 2, endTime: 12)
+        ]))
+        let index = BookContentIndex.build(
+            fromChapters: [
+                Chapter(title: "Opening", text: String(repeating: " ", count: 300)),
+                Chapter(title: "Harbor Survey", text: String(repeating: " ", count: 855))
+            ],
+            format: .audio,
+            audioFilePaths: ["/tmp/audio/a.mp3", "/tmp/audio/a.mp3"],
+            audioSegments: [opening, survey]
+        )
+
+        let audio = try XCTUnwrap(index.chapters[1].audio)
+        XCTAssertEqual(audio.relativeFilePath, "a.mp3")
+        XCTAssertEqual(audio.startTime, 30)
+        XCTAssertEqual(audio.duration, 85.5)
+        XCTAssertEqual(audio.clips?.map(\.relativeFilePath), ["a.mp3", "b.mp3", "Disc 2/c.mp3"])
+        XCTAssertEqual(audio.clips?.map(\.startTime), [30, 0, 2])
+        XCTAssertEqual(audio.clips?.map(\.duration), [30, 45.5, 10])
+        XCTAssertNil(index.chapters[0].audio?.clips)
+        XCTAssertEqual(index.totalAudioDuration, 115.5)
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
+
+        let saved = try JSONDecoder().decode(BookContentIndex.self, from: JSONEncoder().encode(index))
+        XCTAssertEqual(saved, index)
+        XCTAssertEqual(saved.restoredAudioSegments(), [opening, survey])
+        XCTAssertEqual(
+            saved.resolvedAudioFilePaths(relativeTo: URL(fileURLWithPath: "/tmp/audio")),
+            ["/tmp/audio/a.mp3", "/tmp/audio/a.mp3"]
+        )
+    }
+
+    /// Chapters of one clip are written exactly as before, with no clip
+    /// list, so no book without several-clip chapters gets a new index.
+    func testOneClipSegmentIndexIsWrittenWithoutAClipList() throws {
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Segment", text: String(repeating: " ", count: 125))],
+            format: .audio,
+            audioSegments: [AudioSegment(title: "Segment", file: "shared.mp3", startTime: 10, endTime: 22.5)]
+        )
+
+        let json = String(decoding: try JSONEncoder().encode(index), as: UTF8.self)
+
+        XCTAssertFalse(json.contains("clips"), json)
+    }
+
+    /// An index saved before chapters could play several clips, as
+    /// bookInfo.json holds it, is still current and valid, and restores one
+    /// clip per chapter. Its version is unchanged, so it is not rebuilt.
+    func testIndexSavedBeforeClipListsRestoresOneClipPerChapter() throws {
+        let json = """
+        {"version":"1.0.0","kind":"audio","format":"audio","generatedAt":800000000,\
+        "totalWordCount":0,"totalCharacterCount":175,"totalAudioDuration":17.5,"audioLayout":"segmented",\
+        "chapters":[\
+        {"chapterIndex":0,"title":"Opening","startCharacterOffset":0,"characterCount":50,"wordCount":0,\
+        "headings":[{"id":"0-0-1-Opening","level":1,"text":"Opening","characterOffset":0,"globalCharacterOffset":0}],\
+        "audio":{"relativeFilePath":"book.mp3","startTime":0,"duration":5}},\
+        {"chapterIndex":1,"title":"Middle","startCharacterOffset":50,"characterCount":125,"wordCount":0,\
+        "headings":[{"id":"1-0-1-Middle","level":1,"text":"Middle","characterOffset":0,"globalCharacterOffset":50}],\
+        "audio":{"relativeFilePath":"book.mp3","startTime":5,"duration":12.5}}]}
+        """
+
+        let index = try JSONDecoder().decode(BookContentIndex.self, from: Data(json.utf8))
+
+        XCTAssertTrue(index.isCurrent)
+        XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
+        XCTAssertEqual(index.chapters.map { $0.audio?.clips }, [nil, nil])
+        XCTAssertEqual(index.restoredAudioSegments(), [
+            AudioSegment(title: "Opening", file: "book.mp3", startTime: 0, endTime: 5),
+            AudioSegment(title: "Middle", file: "book.mp3", startTime: 5, endTime: 17.5)
+        ])
+    }
+
+    /// One clip without its file loses the whole set of segments, as a
+    /// chapter without its file does, so no clip shifts onto another.
+    func testClipWithoutAudioFileVoidsTheSegments() throws {
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Survey", text: String(repeating: " ", count: 30))],
+            format: .audio,
+            audioSegments: [try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+                AudioClip(file: "a.mp3", startTime: 0, endTime: 1),
+                AudioClip(file: "b.mp3", startTime: 0, endTime: 2)
+            ]))]
+        )
+        XCTAssertEqual(index.restoredAudioSegments()?.first?.clips.count, 2)
+
+        for missingPath in [nil, ""] {
+            var damaged = index
+            damaged.chapters[0].audio?.clips?[1].relativeFilePath = missingPath
+            XCTAssertNil(damaged.restoredAudioSegments(), String(describing: missingPath))
+        }
+        var emptied = index
+        emptied.chapters[0].audio?.clips = []
+        XCTAssertNil(emptied.restoredAudioSegments())
+    }
+
     func testAudioAnalysisUsesPersistedIndexWithoutOpeningAsset() throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let packageName = "SavedAudioIndex-\(UUID().uuidString).tmb"

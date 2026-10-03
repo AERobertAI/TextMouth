@@ -6,19 +6,33 @@ import Foundation
 struct DAISYAudioClip {
     var file: String        // audio filename (relative path)
     var startTime: Double   // seconds
-    var endTime: Double     // seconds
+    var endTime: Double     // seconds; 0 when the SMIL gives no end (play to the end of the file)
     var parID: String       // ID of the parent <par> element (for fragment lookup)
 }
 
 /// SAX parser for DAISY SMIL files that extracts audio clip references.
 /// Handles both DAISY 2.02 (clip-begin="npt=SS.SSSs") and DAISY 3
 /// (clipBegin="H:MM:SS.mmm") timing formats. Each clip records the ID
-/// of its parent <par> element so callers can look up clips by SMIL fragment.
+/// of its parent <par> element so callers can look up clips by SMIL fragment,
+/// and every element with an ID records where playback reaches it among the
+/// clips, so a navigation reference to any element, a `par`, a `seq`, or
+/// the `text` inside a `par`, finds where its audio starts.
 class DAISYAudioSMILParser: DAISYSAXParser {
     private(set) var audioClips: [DAISYAudioClip] = []
 
     /// ID of the nearest enclosing <par> (or <seq>) element, used to tag clips
     private var currentParID: String = ""
+
+    /// For each element with an ID, the place in `audioClips` where playback
+    /// reaches it: the first clip it plays, or the first after it when it
+    /// plays none.
+    private var clipPositionsByID: [String: Int] = [:]
+
+    /// The elements open at this point of the parse, innermost last: whether
+    /// each is a `par`, and where playback reaches it. The children of a
+    /// `par` play together, so each starts where the `par` does; the
+    /// children of any other element play one after another.
+    private var openElements: [(isPar: Bool, clipPosition: Int)] = []
 
     /// Parse the file's audio clips in playback order.
     /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
@@ -36,16 +50,33 @@ class DAISYAudioSMILParser: DAISYSAXParser {
         return audioClips.first(where: { $0.parID == fragmentID })
     }
 
-    /// Find the index of the first audio clip matching the given fragment ID.
-    func clipIndex(forFragment fragmentID: String) -> Int? {
+    /// Where in `audioClips` playback starts for the element whose ID is
+    /// `fragmentID`: the first clip the element plays, the first its `par`
+    /// plays when it lies directly in one, or the first clip after it when
+    /// it plays none, which is `audioClips.count` when no clip in this file
+    /// follows it. Nil for an empty ID or one no element has.
+    func clipPosition(forFragment fragmentID: String) -> Int? {
         guard !fragmentID.isEmpty else { return nil }
-        return audioClips.firstIndex(where: { $0.parID == fragmentID })
+        return clipPositionsByID[fragmentID]
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName).lowercased()
+
+        // Where playback reaches this element: where its `par` begins, or
+        // once everything before it has played.
+        let clipPosition: Int
+        if let parent = openElements.last, parent.isPar {
+            clipPosition = parent.clipPosition
+        } else {
+            clipPosition = audioClips.count
+        }
+        openElements.append((isPar: localName == "par", clipPosition: clipPosition))
+        if let id = attributes["id"], !id.isEmpty, clipPositionsByID[id] == nil {
+            clipPositionsByID[id] = clipPosition
+        }
 
         // Track the ID of <par> and <seq> elements so audio clips know
         // which SMIL fragment they belong to
@@ -82,6 +113,11 @@ class DAISYAudioSMILParser: DAISYSAXParser {
                 parID: currentParID
             ))
         }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String,
+                namespaceURI: String?, qualifiedName: String?) {
+        _ = openElements.popLast()
     }
 
     /// Parse a DAISY time string to seconds.
@@ -129,11 +165,127 @@ class DAISYAudioSMILParser: DAISYSAXParser {
     }
 }
 
+// MARK: - Navigation and Playback Order
+
+/// A heading in a DAISY book's navigation (an NCX navPoint or an NCC
+/// heading), and where its audio starts: a fragment of a SMIL file.
+struct DAISYNavigationReference: Equatable {
+    /// The heading's title.
+    let title: String
+    /// The SMIL file's path inside the package.
+    let smilPath: String
+    /// The ID of the element in that file where the heading starts; empty
+    /// for the start of the file.
+    let fragment: String
+
+    /// The reference to `target`, as the navigation file `navigationFile`
+    /// writes it, made by the heading `title`.
+    init(title: String, target: String, in navigationFile: String) {
+        self.title = title
+        fragment = ParserUtilities.splitFragment(target).fragment
+        smilPath = ParserUtilities.resolvedPackagePath(target, relativeTo: navigationFile, preserveFragment: false)
+    }
+}
+
+/// Every audio clip a DAISY book plays, in the order it plays them: each
+/// SMIL file's clips in document order, the files in reading order. A
+/// heading's section is the clips from where it starts up to where the
+/// next heading starts, wherever those lie: playback runs on across `par`
+/// and `seq` boundaries, audio files, and SMIL files alike.
+struct DAISYPlaybackSequence {
+    /// One clip of the sequence.
+    struct Clip: Equatable {
+        /// The audio file's path inside the package.
+        var audioPath: String
+        /// Where the clip starts in its file, in seconds.
+        var startTime: Double
+        /// Where the clip ends in its file, in seconds; 0 plays to the end
+        /// of the file.
+        var endTime: Double
+
+        /// Whether the clip plays anything: it plays to its file's end, or
+        /// ends after it starts. A SMIL file can hold a clip of no length,
+        /// as for an element read in no time.
+        var playsSomething: Bool { endTime == 0 || endTime > startTime }
+    }
+
+    /// The clips, in the order the book plays them.
+    let clips: [Clip]
+    /// Where each SMIL file's clips begin in `clips`, by the file's path.
+    private let firstClipOfFile: [String: Int]
+    /// The parsed SMIL files, by path.
+    private let parsedFiles: [String: DAISYAudioSMILParser]
+
+    /// The sequence of the SMIL files at `paths`, in that order, from their
+    /// parses in `parsedFiles`. A path without a parse holds no clips and
+    /// is passed over; a path listed again adds nothing more.
+    init(playing paths: [String], parsedFiles: [String: DAISYAudioSMILParser]) {
+        var clips: [Clip] = []
+        var firstClipOfFile: [String: Int] = [:]
+        for path in paths where firstClipOfFile[path] == nil {
+            guard let parsed = parsedFiles[path] else { continue }
+            firstClipOfFile[path] = clips.count
+            clips += parsed.audioClips.map { clip in
+                Clip(
+                    audioPath: DAISYAudioConverter.resolvedAudioPath(for: clip, smilPath: path),
+                    startTime: clip.startTime,
+                    endTime: clip.endTime
+                )
+            }
+        }
+        self.clips = clips
+        self.firstClipOfFile = firstClipOfFile
+        self.parsedFiles = parsedFiles
+    }
+
+    /// Where in `clips` playback starts for `reference`: at its fragment,
+    /// or, when the fragment names nothing in its SMIL file, at that file's
+    /// first clip, as the converter has always fallen back. Nil when the
+    /// reference's SMIL file is not in the sequence.
+    func position(of reference: DAISYNavigationReference) -> Int? {
+        guard let first = firstClipOfFile[reference.smilPath],
+              let parsed = parsedFiles[reference.smilPath] else { return nil }
+        return first + (parsed.clipPosition(forFragment: reference.fragment) ?? 0)
+    }
+
+    /// Each of `references`' sections, in the same order: the clips from
+    /// where it starts up to (not including) where the next reference in
+    /// playback order starts, or to the end of the book.
+    ///
+    /// Nil for a reference with no audio of its own: one whose SMIL file is
+    /// not in the sequence, one after whose start no clip remains, and one
+    /// that a later reference in navigation order starts at the same place
+    /// as (a part's heading followed at once by its first chapter's), whose
+    /// audio belongs to that later heading.
+    func sections(for references: [DAISYNavigationReference]) -> [[Clip]?] {
+        let positions = references.map(position(of:))
+        // Every place a section starts, in playback order, with where the
+        // section starting there ends: where the next one starts.
+        let starts = Set(positions.compactMap { $0 }).sorted()
+        var endOfSectionAt: [Int: Int] = [:]
+        for (index, start) in starts.enumerated() {
+            endOfSectionAt[start] = index + 1 < starts.count ? starts[index + 1] : clips.count
+        }
+        // The last reference, in navigation order, starting at each place.
+        var lastReferenceAt: [Int: Int] = [:]
+        for (index, position) in positions.enumerated() {
+            if let position { lastReferenceAt[position] = index }
+        }
+        return positions.enumerated().map { index, position in
+            guard let position, lastReferenceAt[position] == index else { return nil }
+            let end = endOfSectionAt[position, default: clips.count]
+            return position < end ? Array(clips[position..<end]) : nil
+        }
+    }
+}
+
 // MARK: - DAISY Audio Converter
 
 /// Converts DAISY audio books into TextMouth's multi-file audio format
 /// by extracting audio files and generating a manifest.json with chapter
 /// segments derived from the NCC/NCX heading structure and SMIL timing.
+/// Each heading's segment holds every clip the heading plays, in order, up
+/// to the next heading, however many audio files they lie in.
 enum DAISYAudioConverter {
 
     /// Convert a DAISY audio ZIP into a TextMouth audio book directory.
@@ -169,7 +321,7 @@ enum DAISYAudioConverter {
     ) throws -> AudioManifest {
         let allFiles = provider.listFiles()
 
-        // Parse OPF for metadata
+        // Parse OPF for metadata and the reading order
         guard let opfPath = allFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) else {
             throw DAISYParserError.missingContent("No OPF file found")
         }
@@ -181,90 +333,12 @@ enum DAISYAudioConverter {
         }
         let navPoints = try DAISYNCXParser(path: ncxPath, in: provider).parse()
 
-        // Pre-parse all referenced SMIL files so we can compute segment
-        // boundaries across navPoints that share the same SMIL file.
-        // Key = resolved SMIL file path (without fragment), Value = parsed clips.
-        var smilCache: [String: DAISYAudioSMILParser] = [:]
-        let fm = FileManager.default
-
-        // Build the list of (navPoint, smilFilePath, fragmentID) tuples
-        struct NavRef {
-            let navPoint: DAISYNavPoint
-            let smilPath: String
-            let fragmentID: String
-        }
-        var navRefs: [NavRef] = []
-
-        for navPoint in navPoints {
-            let smilRef = navPoint.contentSrc
-            let split = ParserUtilities.splitFragment(smilRef)
-            let fragmentID = split.fragment
-            let smilPath = ParserUtilities.resolvedPackagePath(
-                smilRef,
-                relativeTo: ncxPath,
-                preserveFragment: false
-            )
-
-            // Parse the SMIL file once and cache it
-            guard try cachedAudioSMIL(at: smilPath, in: provider, cache: &smilCache) != nil else { continue }
-
-            navRefs.append(NavRef(navPoint: navPoint, smilPath: smilPath, fragmentID: fragmentID))
-        }
-
-        // Build segments. For each navPoint, find its fragment's clip start time.
-        // The segment's end time is determined by the NEXT navPoint's clip start
-        // (if they share the same resolved audio file), or this resolved audio
-        // file's last clip end in the SMIL.
-        var segments: [AudioSegment] = []
-        var copiedAudioFileNamesByPath: [String: String] = [:]
-        var usedAudioFileNames: Set<String> = []
-
-        for (i, ref) in navRefs.enumerated() {
-            guard let smilParser = smilCache[ref.smilPath] else { continue }
-            let clips = smilParser.audioClips
-            guard !clips.isEmpty else { continue }
-
-            // Find the clip for this navPoint's fragment, or fall back to the first clip
-            let clipForFragment = smilParser.clip(forFragment: ref.fragmentID)
-            let segmentClip = clipForFragment ?? clips[0]
-            let startTime = segmentClip.startTime
-
-            var nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
-            if i + 1 < navRefs.count {
-                let nextRef = navRefs[i + 1]
-                if let nextParser = smilCache[nextRef.smilPath] {
-                    let nextClips = nextParser.audioClips
-                    if let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first {
-                        nextClipAndPath = (clip: nextClip, smilPath: nextRef.smilPath)
-                    }
-                }
-            }
-
-            let endTime = segmentEndTime(
-                for: segmentClip,
-                clips: clips,
-                smilPath: ref.smilPath,
-                nextClipAndPath: nextClipAndPath
-            )
-
-            // Copy the audio file to the output directory
-            let audioSrcPath = resolvedAudioPath(for: segmentClip, smilPath: ref.smilPath)
-            let audioFileName = copyAudioFile(
-                from: audioSrcPath,
-                provider: provider,
-                toDirectory: audioDir,
-                fileNamesBySourcePath: &copiedAudioFileNamesByPath,
-                usedFileNames: &usedAudioFileNames,
-                fileManager: fm
-            )
-
-            segments.append(AudioSegment(
-                title: ref.navPoint.label,
-                file: audioFileName,
-                startTime: startTime,
-                endTime: endTime
-            ))
-        }
+        let segments = try sectionSegments(
+            for: navPoints.map { DAISYNavigationReference(title: $0.label, target: $0.contentSrc, in: ncxPath) },
+            readingOrder: spineSMILPaths(of: opfResult, opfPath: opfPath),
+            provider: provider,
+            toDirectory: audioDir
+        )
 
         // Also copy any remaining audio files not yet copied
         copyRemainingAudioFiles(from: provider, toDirectory: audioDir)
@@ -274,6 +348,17 @@ enum DAISYAudioConverter {
             author: opfResult.author.isEmpty ? nil : opfResult.author,
             segments: segments
         )
+    }
+
+    /// The SMIL files a DAISY 3 package's spine lists, in reading order, as
+    /// package paths. Z39.86-2005 §3.4: "A player must consult the spine
+    /// when it reaches the end of a SMIL file to determine which file to
+    /// render next."
+    private static func spineSMILPaths(of opf: DAISYOPFResult, opfPath: String) -> [String] {
+        opf.spineItemRefs
+            .compactMap { opf.manifest[$0] }
+            .filter { $0.mediaType.lowercased().contains("smil") || $0.href.lowercased().hasSuffix(".smil") }
+            .map { ParserUtilities.resolvedPackagePath($0.href, relativeTo: opfPath, preserveFragment: false) }
     }
 
     // MARK: - DAISY 2.02 Audio
@@ -292,82 +377,16 @@ enum DAISYAudioConverter {
         }
         let nccResult = try DAISY202NCCParser(path: nccPath, in: provider).parse()
 
-        // Pre-parse all referenced SMIL files for fragment-aware clip lookup
-        var smilCache: [String: DAISYAudioSMILParser] = [:]
-        let fm = FileManager.default
-
-        struct HeadingRef {
-            let heading: NCCHeading
-            let smilPath: String
-            let fragmentID: String
-        }
-        var headingRefs: [HeadingRef] = []
-
-        for heading in nccResult.headings {
-            let smilRef = heading.href
-            let split = ParserUtilities.splitFragment(smilRef)
-            let fragmentID = split.fragment
-            let smilPath = ParserUtilities.resolvedPackagePath(
-                smilRef,
-                relativeTo: nccPath,
-                preserveFragment: false
-            )
-
-            guard try cachedAudioSMIL(at: smilPath, in: provider, cache: &smilCache) != nil else { continue }
-
-            headingRefs.append(HeadingRef(heading: heading, smilPath: smilPath, fragmentID: fragmentID))
-        }
-
-        // Build segments with correct per-heading boundaries
-        var segments: [AudioSegment] = []
-        var copiedAudioFileNamesByPath: [String: String] = [:]
-        var usedAudioFileNames: Set<String> = []
-
-        for (i, ref) in headingRefs.enumerated() {
-            guard let smilParser = smilCache[ref.smilPath] else { continue }
-            let clips = smilParser.audioClips
-            guard !clips.isEmpty else { continue }
-
-            let clipForFragment = smilParser.clip(forFragment: ref.fragmentID)
-            let segmentClip = clipForFragment ?? clips[0]
-            let startTime = segmentClip.startTime
-
-            var nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
-            if i + 1 < headingRefs.count {
-                let nextRef = headingRefs[i + 1]
-                if let nextParser = smilCache[nextRef.smilPath] {
-                    let nextClips = nextParser.audioClips
-                    if let nextClip = nextParser.clip(forFragment: nextRef.fragmentID) ?? nextClips.first {
-                        nextClipAndPath = (clip: nextClip, smilPath: nextRef.smilPath)
-                    }
-                }
-            }
-
-            let endTime = segmentEndTime(
-                for: segmentClip,
-                clips: clips,
-                smilPath: ref.smilPath,
-                nextClipAndPath: nextClipAndPath
-            )
-
-            // Copy the audio file
-            let audioSrcPath = resolvedAudioPath(for: segmentClip, smilPath: ref.smilPath)
-            let audioFileName = copyAudioFile(
-                from: audioSrcPath,
-                provider: provider,
-                toDirectory: audioDir,
-                fileNamesBySourcePath: &copiedAudioFileNamesByPath,
-                usedFileNames: &usedAudioFileNames,
-                fileManager: fm
-            )
-
-            segments.append(AudioSegment(
-                title: ref.heading.text,
-                file: audioFileName,
-                startTime: startTime,
-                endTime: endTime
-            ))
-        }
+        // A DAISY 2.02 player plays each SMIL file to its end, then returns
+        // to the NCC for the next (DAISY 2.02 §2.3.5), and every SMIL file
+        // begins with a heading the NCC lists (§2.3.4.1), so the headings'
+        // own order is the reading order.
+        let segments = try sectionSegments(
+            for: nccResult.headings.map { DAISYNavigationReference(title: $0.text, target: $0.href, in: nccPath) },
+            readingOrder: [],
+            provider: provider,
+            toDirectory: audioDir
+        )
 
         // Copy remaining audio files
         copyRemainingAudioFiles(from: provider, toDirectory: audioDir)
@@ -377,6 +396,114 @@ enum DAISYAudioConverter {
             author: nccResult.author.isEmpty ? nil : nccResult.author,
             segments: segments
         )
+    }
+
+    // MARK: - Sections
+
+    /// The segments the headings `references` start, in their order, each
+    /// with every clip it plays up to the next heading in playback order
+    /// (see `DAISYPlaybackSequence`). Each clip's audio file is copied into
+    /// `audioDir` once, under its own name, or a numbered one when another
+    /// file had that name.
+    ///
+    /// A heading whose SMIL file the package lacks is left out, as is one
+    /// with no audio of its own, as a heading whose SMIL file holds no audio
+    /// always was. Clips of no length are dropped, and clips that continue
+    /// one another in a file are joined (`joiningContinuousClips(_:)`).
+    ///
+    /// - Parameter readingOrder: The SMIL files in the order the book is
+    ///   read, such as a DAISY 3 spine. Used when it names every SMIL file
+    ///   a heading starts in, so files no heading names play in their place;
+    ///   otherwise, or when empty, the headings' own order is used.
+    /// - Throws: `DAISYParserError.malformedXML` for a damaged SMIL file.
+    static func sectionSegments(
+        for references: [DAISYNavigationReference],
+        readingOrder: [String],
+        provider: DAISYFileProvider,
+        toDirectory audioDir: URL
+    ) throws -> [AudioSegment] {
+        // Parse each SMIL file a heading starts in, once.
+        var parsedFiles: [String: DAISYAudioSMILParser] = [:]
+        var playable: [DAISYNavigationReference] = []
+        for reference in references {
+            if try cachedAudioSMIL(at: reference.smilPath, in: provider, cache: &parsedFiles) != nil {
+                playable.append(reference)
+            }
+        }
+
+        // The reading order's files, parsed in turn, replace the headings'
+        // order when they include every file a heading starts in.
+        let headingOrder = playable.map(\.smilPath)
+        var playbackOrder = headingOrder
+        if !readingOrder.isEmpty {
+            var readable: [String] = []
+            for path in readingOrder {
+                if try cachedAudioSMIL(at: path, in: provider, cache: &parsedFiles) != nil {
+                    readable.append(path)
+                }
+            }
+            if Set(headingOrder).isSubset(of: readable) {
+                playbackOrder = readable
+            }
+        }
+
+        let sequence = DAISYPlaybackSequence(playing: playbackOrder, parsedFiles: parsedFiles)
+        var copiedAudioFileNamesByPath: [String: String] = [:]
+        var usedAudioFileNames: Set<String> = []
+        var segments: [AudioSegment] = []
+        for (reference, section) in zip(playable, sequence.sections(for: playable)) {
+            guard let section else { continue }
+            let clips = joiningContinuousClips(section.filter(\.playsSomething)).map { clip in
+                AudioClip(
+                    file: copyAudioFile(
+                        from: clip.audioPath,
+                        provider: provider,
+                        toDirectory: audioDir,
+                        fileNamesBySourcePath: &copiedAudioFileNamesByPath,
+                        usedFileNames: &usedAudioFileNames,
+                        fileManager: .default
+                    ),
+                    startTime: clip.startTime,
+                    endTime: clip.endTime
+                )
+            }
+            // A section whose every clip lasts no time plays nothing.
+            if let segment = AudioSegment(title: reference.title, clips: clips) {
+                segments.append(segment)
+            }
+        }
+        return segments
+    }
+
+    /// How far apart, in seconds, the end of one clip and the start of the
+    /// next in the same file may lie for the two to play as one. A SMIL
+    /// file lists a clip per phrase, and producers write clip times to the
+    /// millisecond, rounding one clip's end down and the next one's start
+    /// up, or writing the same time in two forms ("0:01:04.065" and
+    /// "npt=64.065s"). Fifty milliseconds is shorter than any syllable, so
+    /// joining clips this close changes nothing a listener can hear, while
+    /// playing them apart would add a seam between every phrase.
+    static let continuityTolerance: TimeInterval = 0.05
+
+    /// `clips` with each run of clips that continue one another in the same
+    /// file, within `continuityTolerance`, joined into one clip, so a
+    /// section plays each stretch of a file in one go rather than phrase by
+    /// phrase. A clip that plays to the end of its file continues into
+    /// nothing.
+    static func joiningContinuousClips(_ clips: [DAISYPlaybackSequence.Clip]) -> [DAISYPlaybackSequence.Clip] {
+        var joined: [DAISYPlaybackSequence.Clip] = []
+        for clip in clips {
+            if var last = joined.last,
+               last.audioPath == clip.audioPath,
+               last.endTime != 0,
+               abs(clip.startTime - last.endTime) <= continuityTolerance {
+                last.endTime = clip.endTime
+                joined[joined.count - 1] = last
+            } else {
+                joined.append(clip)
+            }
+        }
+        return joined
     }
 
     // MARK: - Helpers
@@ -405,29 +532,6 @@ enum DAISYAudioConverter {
             relativeTo: smilPath,
             preserveFragment: false
         )
-    }
-
-    /// Determine the boundary for a DAISY segment, accounting for clips in
-    /// different files that happen to share the same basename.
-    static func segmentEndTime(
-        for segmentClip: DAISYAudioClip,
-        clips: [DAISYAudioClip],
-        smilPath: String,
-        nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
-    ) -> Double {
-        let currentAudioPath = resolvedAudioPath(for: segmentClip, smilPath: smilPath)
-        let sameAudioClips = clips.filter {
-            resolvedAudioPath(for: $0, smilPath: smilPath) == currentAudioPath
-        }
-
-        var endTime = sameAudioClips.last?.endTime ?? segmentClip.endTime
-
-        if let nextClipAndPath,
-           resolvedAudioPath(for: nextClipAndPath.clip, smilPath: nextClipAndPath.smilPath) == currentAudioPath {
-            endTime = nextClipAndPath.clip.startTime
-        }
-
-        return endTime
     }
 
     private static func copyAudioFile(

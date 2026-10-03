@@ -22,18 +22,22 @@ func testResolvedAudioPath(for clip: DAISYAudioClip, smilPath: String) -> String
     DAISYAudioConverter.resolvedAudioPath(for: clip, smilPath: smilPath)
 }
 
-func testSegmentEndTime(
-    for segmentClip: DAISYAudioClip,
-    clips: [DAISYAudioClip],
-    smilPath: String,
-    nextClipAndPath: (clip: DAISYAudioClip, smilPath: String)?
-) -> Double {
-    DAISYAudioConverter.segmentEndTime(
-        for: segmentClip,
-        clips: clips,
-        smilPath: smilPath,
-        nextClipAndPath: nextClipAndPath
-    )
+/// The sections of `fragments` (one heading per SMIL fragment) in the SMIL
+/// file `smil`, read from "OPS/nav.smil": each heading's clips as
+/// "path start-end" lines, joined as the converter joins them, or nil for a
+/// heading with no audio of its own.
+func testSections(ofFragments fragments: [String], in smil: String) throws -> [[String]?] {
+    let parser = TestFragmentAwareSMILParser(data: Data(smil.utf8), file: "OPS/nav.smil")
+    _ = try parser.parse()
+    let references = fragments.map {
+        DAISYNavigationReference(title: $0, target: "nav.smil#\($0)", in: "OPS/nav.ncx")
+    }
+    let sequence = DAISYPlaybackSequence(playing: ["OPS/nav.smil"], parsedFiles: ["OPS/nav.smil": parser])
+    return sequence.sections(for: references).map { section in
+        section.map { clips in
+            DAISYAudioConverter.joiningContinuousClips(clips).map { "\($0.audioPath) \($0.startTime)-\($0.endTime)" }
+        }
+    }
 }
 #endif
 
@@ -202,7 +206,7 @@ test("Text-only DAISY does not have audio") {
     try assertTrue(!hasAudio, "Hyperion (text-only) should not have audio files")
 }
 
-test("DAISY audio boundary compares resolved paths, not basenames") {
+test("DAISY sections compare resolved audio paths, not basenames") {
     let smil = """
     <?xml version="1.0"?>
     <smil><body><seq>
@@ -211,30 +215,26 @@ test("DAISY audio boundary compares resolved paths, not basenames") {
     </seq></body></smil>
     """
     let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
-    let clips = try parser.parse()
-    let currentClip = parser.clip(forFragment: "a")!
-    let nextClip = parser.clip(forFragment: "b")!
-
-    let currentPath = testResolvedAudioPath(for: currentClip, smilPath: "OPS/nav.smil")
-    let nextPath = testResolvedAudioPath(for: nextClip, smilPath: "OPS/nav.smil")
+    _ = try parser.parse()
+    let currentPath = testResolvedAudioPath(for: parser.clip(forFragment: "a")!, smilPath: "OPS/nav.smil")
+    let nextPath = testResolvedAudioPath(for: parser.clip(forFragment: "b")!, smilPath: "OPS/nav.smil")
     try assertEqual((currentPath as NSString).lastPathComponent,
                     (nextPath as NSString).lastPathComponent,
                     "Basenames intentionally match")
     try assertTrue(currentPath != nextPath, "Resolved paths should distinguish directories")
 
-    let endTime = testSegmentEndTime(
-        for: currentClip,
-        clips: clips,
-        smilPath: "OPS/nav.smil",
-        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
-    )
-
-    try assertTrue(abs(endTime - 60.0) < 0.001,
-                   "Different resolved audio files should not use next clip start as boundary")
-    try assertTrue(endTime > currentClip.startTime, "Segment should not be truncated by basename collision")
+    // Each heading keeps its own file's clip whole; nothing is cut at the
+    // other file's times or joined across the two files.
+    try assertEqual(try testSections(ofFragments: ["a", "b"], in: smil), [
+        ["OPS/dirA/shared.mp3 10.0-60.0"],
+        ["OPS/dirB/shared.mp3 5.0-45.0"]
+    ])
+    try assertEqual(try testSections(ofFragments: ["a"], in: smil), [
+        ["OPS/dirA/shared.mp3 10.0-60.0", "OPS/dirB/shared.mp3 5.0-45.0"]
+    ])
 }
 
-test("DAISY audio boundary uses canonical same-file next clip") {
+test("DAISY section ends where the next heading starts in the same canonical file") {
     let smil = """
     <?xml version="1.0"?>
     <smil><body><seq>
@@ -243,26 +243,20 @@ test("DAISY audio boundary uses canonical same-file next clip") {
     </seq></body></smil>
     """
     let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
-    let clips = try parser.parse()
-    let currentClip = parser.clip(forFragment: "a")!
-    let nextClip = parser.clip(forFragment: "b")!
-
-    let currentPath = testResolvedAudioPath(for: currentClip, smilPath: "OPS/nav.smil")
-    let nextPath = testResolvedAudioPath(for: nextClip, smilPath: "OPS/nav.smil")
+    _ = try parser.parse()
+    let currentPath = testResolvedAudioPath(for: parser.clip(forFragment: "a")!, smilPath: "OPS/nav.smil")
+    let nextPath = testResolvedAudioPath(for: parser.clip(forFragment: "b")!, smilPath: "OPS/nav.smil")
     try assertEqual(currentPath, nextPath, "Dot segments should canonicalize to the same package path")
 
-    let endTime = testSegmentEndTime(
-        for: currentClip,
-        clips: clips,
-        smilPath: "OPS/nav.smil",
-        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
-    )
-
-    try assertTrue(abs(endTime - 25.0) < 0.001,
-                   "Same resolved audio file should end at the next segment start")
+    try assertEqual(try testSections(ofFragments: ["a", "b"], in: smil), [
+        ["OPS/audio/book.mp3 0.0-25.0"],
+        ["OPS/audio/book.mp3 25.0-50.0"]
+    ])
+    // With no heading at b, the two continuous clips play as one.
+    try assertEqual(try testSections(ofFragments: ["a"], in: smil), [["OPS/audio/book.mp3 0.0-50.0"]])
 }
 
-test("DAISY audio boundary defaults to current audio file last clip") {
+test("DAISY section runs on into the next file until the next heading") {
     let smil = """
     <?xml version="1.0"?>
     <smil><body><seq>
@@ -270,20 +264,15 @@ test("DAISY audio boundary defaults to current audio file last clip") {
       <par id="b1"><audio src="partB.mp3" clipBegin="0.0" clipEnd="90.0"/></par>
     </seq></body></smil>
     """
-    let parser = TestFragmentAwareSMILParser(data: smil.data(using: .utf8)!, file: "test.smil")
-    let clips = try parser.parse()
-    let currentClip = parser.clip(forFragment: "a1")!
-    let nextClip = parser.clip(forFragment: "b1")!
-
-    let endTime = testSegmentEndTime(
-        for: currentClip,
-        clips: clips,
-        smilPath: "OPS/nav.smil",
-        nextClipAndPath: (clip: nextClip, smilPath: "OPS/nav.smil")
-    )
-
-    try assertTrue(abs(endTime - 20.0) < 0.001,
-                   "A segment should end at the current audio file's last clip, not the SMIL's last clip")
+    // A heading at b1 ends the first section with its own file's clip.
+    try assertEqual(try testSections(ofFragments: ["a1", "b1"], in: smil), [
+        ["OPS/partA.mp3 0.0-20.0"],
+        ["OPS/partB.mp3 0.0-90.0"]
+    ])
+    // Without one, the first heading's narration continues into partB.
+    try assertEqual(try testSections(ofFragments: ["a1"], in: smil), [
+        ["OPS/partA.mp3 0.0-20.0", "OPS/partB.mp3 0.0-90.0"]
+    ])
 }
 
 }

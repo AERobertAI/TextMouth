@@ -130,14 +130,15 @@ enum AudioBookParser {
     /// - Parameter prober: checks that each file plays and measures it,
     ///   probing each file once; the app's AVFoundation probe unless a test
     ///   stands in for it.
-    /// - Returns: the book's content, one file path per heading, and, for a
-    ///   manifest with sections, the sections as the book plays them: an
-    ///   end slightly past its file's end is moved back to that end (see
-    ///   `endTolerance(forFileLasting:)`).
+    /// - Returns: the book's content, one file path per heading (for a
+    ///   section of several clips, its first clip's file), and, for a
+    ///   manifest with sections, the sections as the book plays them: a
+    ///   clip's end slightly past its file's end is moved back to that end
+    ///   (see `endTolerance(forFileLasting:)`).
     /// - Throws: `AudioParseError.unplayableFile` naming the first file, in
     ///   playing order, that cannot be played; `.invalidSegment` for a
-    ///   manifest section with a missing file or impossible times; and,
-    ///   for a section whose times do not fit its file, the section errors
+    ///   manifest clip with a missing file or impossible times; and, for a
+    ///   clip whose times do not fit its file, the section errors
     ///   `boundedSegments(_:fileDurations:)` describes.
     static func parseDirectory(
         url: URL,
@@ -212,10 +213,11 @@ enum AudioBookParser {
     }
 
     /// Parse segmented audio where chapters are time ranges within audio files.
-    /// Each segment specifies a file + start/end time. Segments referencing the
-    /// same file become chapters that share the underlying audio, with playback
-    /// controlled by clip start/end times. Returns the segments as the book
-    /// plays them (see `boundedSegments(_:fileDurations:)`).
+    /// Each segment plays one or more clips, each a file + start/end time, in
+    /// order. Segments referencing the same file become chapters that share
+    /// the underlying audio, with playback controlled by clip start/end
+    /// times. Returns the segments as the book plays them (see
+    /// `boundedSegments(_:fileDurations:)`).
     private static func parseSegmentedAudio(
         segments: [AudioSegment],
         audioDir: URL,
@@ -224,40 +226,48 @@ enum AudioBookParser {
         author: String,
         prober: AudioMediaProber
     ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]) {
+        // Every clip of every section, in the order the book plays them.
+        let clips = segments.flatMap(\.clips)
+
         // Only reference discovered in-package media. A manifest cannot
         // escape the package or introduce negative/non-finite clip ranges.
-        // Every section is checked before any file is opened, so a path
-        // the manifest made up never reaches AVFoundation.
-        for segment in segments {
-            guard availableFiles.contains(segment.file),
-                  segment.startTime.isFinite, segment.startTime >= 0,
-                  segment.endTime.isFinite, segment.endTime >= 0,
-                  segment.endTime == 0 || segment.endTime > segment.startTime else {
+        // Every clip is checked before any file is opened, so a path the
+        // manifest made up never reaches AVFoundation.
+        for clip in clips {
+            guard availableFiles.contains(clip.file),
+                  clip.startTime.isFinite, clip.startTime >= 0,
+                  clip.endTime.isFinite, clip.endTime >= 0,
+                  clip.endTime == 0 || clip.endTime > clip.startTime else {
                 throw AudioParseError.invalidSegment
             }
         }
 
-        // Check and measure each file the sections play from. A file that
-        // several sections share is probed once, and they share its length.
-        let fileDurations = try await playableDurations(
-            of: segments.map { (name: $0.file, url: audioDir.appendingPathComponent($0.file)) },
+        // Check and measure each file the clips play from. A file that
+        // several clips share is probed once, and they share its length.
+        let measured = try await playableDurations(
+            of: clips.map { (name: $0.file, url: audioDir.appendingPathComponent($0.file)) },
             prober: prober
         )
+        let fileDurations = Dictionary(zip(clips.map(\.file), measured)) { first, _ in first }
 
-        // Fit every section to its file before any becomes a heading.
+        // Fit every clip to its file before any section becomes a heading.
         let bounded = try boundedSegments(segments, fileDurations: fileDurations)
 
         var chapters: [Chapter] = []
         var filePaths: [String] = []
 
-        for (index, (segment, fileDuration)) in zip(bounded.segments, fileDurations).enumerated() {
+        for (index, segment) in bounded.segments.enumerated() {
+            // A section starts in its first clip's file.
             let filePath = audioDir.appendingPathComponent(segment.file).path
 
-            // An end time of 0 means "play to end of file". Either way the
-            // section lasts a positive time: it starts before its file ends,
-            // and any other end lies after its start and within the file.
-            let end = segment.endTime == 0 ? fileDuration : segment.endTime
-            let duration = end - segment.startTime
+            // A section lasts as long as its clips together, and each clip
+            // a positive time: it starts before its file ends, and any end
+            // other than 0 ("play to the end of the file") lies after its
+            // start and within the file.
+            let duration = segment.clips.reduce(0) { total, clip in
+                let end = clip.endTime == 0 ? fileDurations[clip.file, default: 0] : clip.endTime
+                return total + (end - clip.startTime)
+            }
 
             let placeholderLength = placeholderLength(for: max(1, duration))
             let placeholderText = String(repeating: " ", count: max(1, placeholderLength))
@@ -322,65 +332,84 @@ enum AudioBookParser {
         endToleranceSeconds + endToleranceFraction * fileDuration
     }
 
-    /// `segments` as the book will play them, each checked against the
-    /// measured length of its file (`fileDurations`, in the same order).
-    /// The first problem in book order is thrown:
+    /// `segments` as the book will play them, each clip checked against the
+    /// measured length of its file (`fileDurations`, by the file's path in
+    /// the audio folder; it holds every file a clip names). The first
+    /// problem in book order is thrown, naming the section and the clip's
+    /// file:
     ///
-    /// - A section must start before its file ends; otherwise
+    /// - Every clip must start before its file ends; otherwise
     ///   `AudioParseError.sectionStartsPastEnd`.
-    /// - A section may end past its file's end by up to
+    /// - A clip may end past its file's end by up to
     ///   `endTolerance(forFileLasting:)`, which covers encoder padding. Its
     ///   end is then moved back to exactly the file's end, and the move is
     ///   reported once per file in `clampedFiles`. An end further out is
     ///   `AudioParseError.sectionEndsPastEnd`. An end of 0 keeps its
-    ///   meaning, "play to the end of the file".
+    ///   meaning, "play to the end of the file", in a section of one clip.
+    ///   In a section of several it becomes the file's measured end, so
+    ///   every clip has a known length and playback can tell where in the
+    ///   section each clip begins.
     /// - Within one file, each section must start at or after the start of
     ///   the section before it in that file; otherwise
-    ///   `AudioParseError.sectionStartsBeforeEarlierSection`. Navigation in
+    ///   `AudioParseError.sectionStartsBeforeEarlierSection`. A section
+    ///   starts where its first clip does. Navigation in
     ///   reading order never goes back within a file, so a section that
     ///   does was timed against other audio or names the wrong file, and
     ///   the listener would hear the book out of order. Sections may
-    ///   overlap, though: the DAISY converter ends a heading at the last
-    ///   clip of its file in its SMIL file when the next heading plays from
-    ///   another file, so a later heading in the first file can start
-    ///   inside it. Overlap repeats audio but never loses any, and refusing
-    ///   it would refuse such books.
+    ///   overlap, though: books converted from DAISY before a heading could
+    ///   play several clips end a heading at the last clip of its file in
+    ///   its SMIL file when the next heading plays from another file, so a
+    ///   later heading in the first file can start inside it. Overlap
+    ///   repeats audio but never loses any, and refusing it would refuse
+    ///   such books. The later clips of a section are not
+    ///   compared: a section may return to an earlier part of a file, as a
+    ///   note recorded at the end of a file interrupts the text before it.
     private static func boundedSegments(
         _ segments: [AudioSegment],
-        fileDurations: [TimeInterval]
+        fileDurations: [String: TimeInterval]
     ) throws -> (segments: [AudioSegment], clampedFiles: [ClampedFile]) {
         var bounded: [AudioSegment] = []
-        // In the order the files' first sections were moved back.
+        // In the order the files' first clips were moved back.
         var clampedFiles: [ClampedFile] = []
         // The latest section so far in each file, which, as starts never go
         // back within a file, starts last of that file's sections so far.
         var latestSectionInFile: [String: (name: AudioSectionName, start: TimeInterval)] = [:]
 
-        for (index, (segment, fileDuration)) in zip(segments, fileDurations).enumerated() {
+        for (index, segment) in segments.enumerated() {
             let name = AudioSectionName(title: segment.title, number: index + 1)
-            guard segment.startTime < fileDuration else {
-                throw AudioParseError.sectionStartsPastEnd(
-                    section: name, file: segment.file, start: segment.startTime, fileDuration: fileDuration
-                )
-            }
+            let playsSeveralClips = segment.clips.count > 1
 
-            var playable = segment
-            if segment.endTime > fileDuration {
-                guard segment.endTime <= fileDuration + endTolerance(forFileLasting: fileDuration) else {
-                    throw AudioParseError.sectionEndsPastEnd(
-                        section: name, file: segment.file, end: segment.endTime, fileDuration: fileDuration
+            let playable = try segment.mappingClips { clip in
+                // Every file a clip names was measured before any section
+                // is bounded, so the default never applies.
+                let fileDuration = fileDurations[clip.file, default: 0]
+                guard clip.startTime < fileDuration else {
+                    throw AudioParseError.sectionStartsPastEnd(
+                        section: name, file: clip.file, start: clip.startTime, fileDuration: fileDuration
                     )
                 }
-                playable.endTime = fileDuration
-                let overshoot = segment.endTime - fileDuration
-                if let place = clampedFiles.firstIndex(where: { $0.file == segment.file }) {
-                    clampedFiles[place].sectionCount += 1
-                    clampedFiles[place].largestOvershoot = max(clampedFiles[place].largestOvershoot, overshoot)
-                } else {
-                    clampedFiles.append(ClampedFile(
-                        file: segment.file, fileDuration: fileDuration, sectionCount: 1, largestOvershoot: overshoot
-                    ))
+
+                var fitted = clip
+                if clip.endTime > fileDuration {
+                    guard clip.endTime <= fileDuration + endTolerance(forFileLasting: fileDuration) else {
+                        throw AudioParseError.sectionEndsPastEnd(
+                            section: name, file: clip.file, end: clip.endTime, fileDuration: fileDuration
+                        )
+                    }
+                    fitted.endTime = fileDuration
+                    let overshoot = clip.endTime - fileDuration
+                    if let place = clampedFiles.firstIndex(where: { $0.file == clip.file }) {
+                        clampedFiles[place].sectionCount += 1
+                        clampedFiles[place].largestOvershoot = max(clampedFiles[place].largestOvershoot, overshoot)
+                    } else {
+                        clampedFiles.append(ClampedFile(
+                            file: clip.file, fileDuration: fileDuration, sectionCount: 1, largestOvershoot: overshoot
+                        ))
+                    }
+                } else if clip.endTime == 0, playsSeveralClips {
+                    fitted.endTime = fileDuration
                 }
+                return fitted
             }
 
             if let earlier = latestSectionInFile[segment.file], segment.startTime < earlier.start {
@@ -545,18 +574,4 @@ struct AudioManifest: Codable {
     /// than whole-file boundaries. When present, this overrides the
     /// simple one-file-per-chapter model.
     var segments: [AudioSegment]?
-}
-
-/// A chapter segment within an audio file, defined by start/end times.
-/// Used for DAISY audio books where SMIL files define clip ranges
-/// within shared MP3 files.
-struct AudioSegment: Codable {
-    /// Chapter/section title
-    var title: String
-    /// Audio filename (relative to the audio directory)
-    var file: String
-    /// Start time in seconds within the audio file
-    var startTime: Double
-    /// End time in seconds within the audio file (0 = play to end)
-    var endTime: Double
 }
