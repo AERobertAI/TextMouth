@@ -9,7 +9,10 @@ import Foundation
 /// In a cloud library such a file can be only in the cloud, when the sync
 /// service removed its content to free space, so it is read with dataless
 /// files left in the cloud: a read that would download it, waiting on the
-/// network, here on the main thread, fails at once instead.
+/// network, here on the main thread, fails at once instead. It can also be
+/// cut short, as a write interrupted on another Mac leaves it; a file that
+/// can't be used is preserved beside itself (`LibraryIndexQuarantine`)
+/// before anything replaces it, so nothing it held is lost.
 enum SavedFile {
     /// What one read of a saved file found.
     enum Read: Equatable {
@@ -47,6 +50,23 @@ enum SavedFile {
         } catch {
             return .unreadable(error.localizedDescription)
         }
+    }
+
+    /// Keeps a copy of the file at `url`, which can't be read or decoded,
+    /// beside it, before anything replaces it: holding `bytes` when they
+    /// could be read, or linked to the file when they couldn't. Earlier
+    /// copies are compared with dataless files left in the cloud, so none
+    /// is downloaded. Returns the copy, or nil when none could be made.
+    static func preserveUnusable(_ url: URL, bytes: Data?) -> URL? {
+        DatalessFiles.withoutDownloading {
+            LibraryIndexQuarantine.preserve(url, bytes: bytes)
+        }
+    }
+
+    /// How a log line names the preserved copy `copy` of an unusable file:
+    /// by its name, or says none could be made.
+    static func describe(preservedCopy copy: URL?) -> String {
+        copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
     }
 
     /// Asks the sync service to download the file at `url`, which a read

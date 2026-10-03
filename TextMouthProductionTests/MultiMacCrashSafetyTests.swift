@@ -438,6 +438,32 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_180)
     }
 
+    /// Statistics cut short, as a write interrupted on another Mac leaves
+    /// them, are preserved beside the file before anything replaces it, so
+    /// nothing they held is lost; the statistics start afresh, and the next
+    /// save writes them.
+    func testHalfWrittenStatisticsArePreservedBeforeTheyAreReplaced() throws {
+        let file = try makeSandboxDirectory("StatsHalf").appendingPathComponent("reading_stats.json")
+        let half = halfOf(try statsData(totalSeconds: 9_000))
+        try half.write(to: file)
+
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+
+        XCTAssertEqual(service.stats.totalListeningSeconds, 0)
+        let copies = LibraryIndexQuarantine.existingCopies(of: file)
+        XCTAssertEqual(copies.count, 1, "the half-written statistics were not preserved")
+        XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, half)
+
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(60))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 60)
+        XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, half, "the preserved copy changed")
+    }
+
     /// Statistics that stood in for a file add to what the file holds: each
     /// day's, each book's, and the total listening, and the books finished
     /// that the file doesn't list yet.

@@ -223,7 +223,10 @@ final class ReadingStatsService: ObservableObject {
     }
 
     /// What reading_stats.json holds, read with dataless files left in the
-    /// cloud, so the read never waits on the network.
+    /// cloud, so the read never waits on the network. A file that can't be
+    /// read or decoded, such as one a write interrupted on another Mac cut
+    /// short, holds none: it is preserved beside itself first, so the save
+    /// that later replaces it loses nothing it held.
     private func readSavedStats() -> SavedStats {
         switch SavedFile.read(fileURL, using: readFile) {
         case .missing:
@@ -234,13 +237,25 @@ final class ReadingStatsService: ObservableObject {
             do {
                 return .saved(try Self.decodeStats(data))
             } catch {
-                print("Failed to load reading stats: \(error)")
+                preserveUnusableStatsFile(bytes: data, because: error.localizedDescription)
                 return .none
             }
         case .unreadable(let reason):
-            print("Failed to load reading stats: \(reason)")
+            preserveUnusableStatsFile(bytes: nil, because: reason)
             return .none
         }
+    }
+
+    /// Keeps a copy of reading_stats.json, which can't be used, beside it,
+    /// holding `bytes` when they could be read, and logs why the statistics
+    /// start afresh.
+    private func preserveUnusableStatsFile(bytes: Data?, because reason: String) {
+        let copy = SavedFile.preserveUnusable(fileURL, bytes: bytes)
+        DiagnosticLog.event(
+            .statistics,
+            "READING_STATS_FILE: could not read \(fileURL.lastPathComponent): \(reason); "
+                + "the statistics start afresh; \(SavedFile.describe(preservedCopy: copy))"
+        )
     }
 
     /// Whether a save may replace reading_stats.json now: always, unless
