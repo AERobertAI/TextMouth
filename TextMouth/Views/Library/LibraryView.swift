@@ -239,11 +239,14 @@ struct LibraryView: View {
                 )
             }
 
-            // Total time remaining bar (refreshTick forces periodic re-evaluation)
+            // Total time remaining bar (refreshTick forces periodic re-evaluation),
+            // with how many of the books shown are in the cloud (FR02)
             let _ = libraryViewModel.refreshTick
+            let summarizedBooks = displayedBooks
             TimeRemainingBar(
-                books: displayedBooks,
+                books: summarizedBooks,
                 wpm: settingsViewModel.wordsPerMinute,
+                booksInCloud: cloudStates.countInTheCloud(summarizedBooks),
                 focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
                 shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
             )

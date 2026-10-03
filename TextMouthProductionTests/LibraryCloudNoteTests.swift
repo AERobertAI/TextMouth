@@ -153,6 +153,69 @@ final class LibraryCloudNoteTests: XCTestCase {
         XCTAssertNil(states.listedState(of: bookID))
     }
 
+    // MARK: - Summary Line
+
+    /// In a cloud library the summary counts the books whose files are not
+    /// all on this Mac: in the cloud, downloading, left by a failed download,
+    /// or not synced yet. Downloaded books, local ones, and books not checked
+    /// yet are not counted.
+    func testSummaryCountsTheBooksNotOnThisMac() {
+        let states = BookCloudStates()
+        states.setLibraryLocation(.cloud(.iCloudDrive))
+        let recorded: [BookCloudState?] = [
+            .inCloud, .downloading(partway), .downloadFailed(failureReason), .waitingForSync,
+            .downloaded, .local, nil,
+        ]
+        let books = recorded.map { _ in book() }
+        for (book, state) in zip(books, recorded) {
+            if let state { states.record(state, for: book.id) }
+        }
+
+        XCTAssertEqual(states.countInTheCloud(books), 4)
+        XCTAssertEqual(states.countInTheCloud(Array(books.suffix(3))), 0)
+    }
+
+    /// A local library, or one on another volume, counts nothing, whatever
+    /// was recorded.
+    func testSummaryCountsNothingOutsideTheCloud() {
+        let books = [book(), book()]
+        for location in [StorageLocation.local, .otherVolume(name: "Archive Disk")] {
+            let states = BookCloudStates()
+            states.setLibraryLocation(location)
+            books.forEach { states.record(.inCloud, for: $0.id) }
+
+            XCTAssertEqual(states.countInTheCloud(books), 0, "\(location)")
+        }
+    }
+
+    /// The bar shows the count and speaks it after everything it said
+    /// before, worded for one book or several.
+    func testSummaryLineShowsAndSpeaksTheCount() {
+        let books = [book(percentRead: nil, opened: false), book(percentRead: nil), book()]
+
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200, booksInCloud: 1).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet. 1 book is in the cloud"
+        )
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200, booksInCloud: 3).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet. 3 books are in the cloud"
+        )
+        XCTAssertEqual(TimeRemainingBar.cloudCountText(1), "1 book in the cloud")
+        XCTAssertEqual(TimeRemainingBar.cloudCountText(3), "3 books in the cloud")
+    }
+
+    /// With nothing in the cloud, as in every local library, the bar reads
+    /// as it always has.
+    func testSummaryLineWithNothingInTheCloudReadsAsBefore() {
+        let books = [book(percentRead: nil, opened: false), book(percentRead: nil), book()]
+
+        XCTAssertEqual(
+            TimeRemainingBar(books: books, wpm: 200).summaryAccessibilityLabel,
+            "3 books. 3 books have not been opened yet"
+        )
+    }
+
     // MARK: - The Note's Picture
 
     /// Every note has a picture that exists in SF Symbols, so no row draws an

@@ -65,6 +65,10 @@ struct EditModeBar: View {
 struct TimeRemainingBar: View {
     let books: [Book]
     let wpm: Double
+    /// How many of `books` are in the cloud (FR02), which the bar shows and
+    /// speaks when it is more than 0. The list counts them in a cloud
+    /// library and passes 0 anywhere else, where the bar is as it was.
+    var booksInCloud: Int = 0
     /// Optional fallback focus target for the library when Continue Listening is absent.
     /// This summary is part of the content area and shows up reliably in the AX tree,
     /// unlike List section headers in this view hierarchy.
@@ -92,6 +96,12 @@ struct TimeRemainingBar: View {
                 }
 
                 Spacer()
+
+                if booksInCloud > 0 {
+                    Text(Self.cloudCountText(booksInCloud))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Text(CountWording.books(books.count))
                     .font(.caption)
@@ -137,7 +147,22 @@ struct TimeRemainingBar: View {
         if unknown > 0 {
             parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
         }
+        if booksInCloud > 0 {
+            parts.append("\(CountWording.phrase(booksInCloud, singular: "book is", plural: "books are")) in the cloud")
+        }
         return parts.joined(separator: ". ")
+    }
+
+    /// What VoiceOver says for the whole bar, as its body sets it.
+    var summaryAccessibilityLabel: String {
+        let (time, known, unknown) = computeTimeRemaining()
+        return accessibilityLabel(time: time, known: known, unknown: unknown)
+    }
+
+    /// The bar's visible count of books in the cloud: "1 book in the cloud",
+    /// "3 books in the cloud".
+    static func cloudCountText(_ count: Int) -> String {
+        "\(CountWording.books(count)) in the cloud"
     }
 }
 
