@@ -454,6 +454,33 @@ final class CompletionGenerationTests: XCTestCase {
         XCTAssertEqual(speech.currentWordRange, NSRange(location: 108, length: 5))
     }
 
+    /// The synthesizer may call back on a thread of its own while the main
+    /// queue changes which utterance is speaking, so nothing about a word is
+    /// decided where it is reported: the main queue places it by what it
+    /// knows when it handles the report. A word reported before its
+    /// utterance was the one speaking, and handled once it was, moves the
+    /// cursor from where that utterance starts; a word of the utterance
+    /// speaking, handled once a seek replaced it, moves nothing.
+    func testAWordReportedOffTheMainThreadIsPlacedWhenTheMainQueueHandlesIt() {
+        let speech = SpeechService(userDefaults: makeSandboxedPreferences("synthesizer-thread"))
+        defer { speech.stop() }
+        var words: [String] = []
+        speech.onWordSpoken = { _, word in words.append(word) }
+        let spoken = ReportedUtterance(utterance: AVSpeechUtterance(string: "Mooring lines are fast."))
+
+        reportWordOffTheMainThread(NSRange(location: 8, length: 5), of: spoken, to: speech)
+        speech._adoptLiveDirectUtteranceForTesting(spoken.utterance, baseOffset: 100)
+        handleQueuedCallbacks()
+        XCTAssertEqual(words, ["lines"])
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 108, length: 5))
+
+        reportWordOffTheMainThread(NSRange(location: 18, length: 4), of: spoken, to: speech)
+        speech._adoptLiveDirectUtteranceForTesting(AVSpeechUtterance(string: "Fenders out."), baseOffset: 300)
+        handleQueuedCallbacks()
+        XCTAssertEqual(words, ["lines"])
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: 108, length: 5))
+    }
+
     /// The start of the utterance speaking marks speech as playing and not
     /// paused; the start of another utterance changes nothing.
     func testAStartCountsOnlyForTheUtteranceSpeaking() {
@@ -566,6 +593,36 @@ final class CompletionGenerationTests: XCTestCase {
         var handled = false
         DispatchQueue.main.async { handled = true }
         XCTAssertTrue(eventually { handled }, "The callbacks were never handled", file: file, line: line)
+    }
+
+    /// Tell `speech`, on a thread other than the main thread, as the
+    /// synthesizer may, that it will speak `range` of `spoken`'s utterance.
+    /// Returns once the report is made but before the main queue has handled
+    /// what the report queued there: a semaphore, unlike an expectation,
+    /// never runs the main queue while the main thread waits on it.
+    private func reportWordOffTheMainThread(
+        _ range: NSRange,
+        of spoken: ReportedUtterance,
+        to speech: SpeechService,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let reported = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            speech.speechSynthesizer(
+                AVSpeechSynthesizer(),
+                willSpeakRangeOfSpeechString: range,
+                utterance: spoken.utterance
+            )
+            reported.signal()
+        }
+        XCTAssertEqual(
+            reported.wait(timeout: .now() + 5),
+            .success,
+            "The synthesizer's report never returned",
+            file: file,
+            line: line
+        )
     }
 
     // MARK: - End Notice Policy

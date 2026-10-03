@@ -85,8 +85,9 @@ enum SpeechResumePolicy {
 /// released, the next utterance made can take the same address and the
 /// same identifier. Holding the utterance keeps its address its own, so a
 /// callback for a stopped utterance is never taken for the live one's.
-/// `@unchecked Sendable` because the utterance is only held, and its
-/// identity read, never changed.
+/// `@unchecked Sendable` because the utterance is only held, never changed:
+/// the main queue reads its identity and its text (`speechString`, which
+/// cannot change once the utterance is made).
 struct ReportedUtterance: @unchecked Sendable {
     /// The utterance the synthesizer reported on.
     let utterance: AVSpeechUtterance
@@ -1312,11 +1313,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
 // MARK: - AVSpeechSynthesizerDelegate (direct mode fallback)
 
-/// The synthesizer's callbacks are handled on the main queue. Two rules keep
-/// what reaches it `Sendable`: each callback hands its utterance over as a
-/// `ReportedUtterance`, and the main queue reads the synthesizer's state
-/// from `directSynth`, the one synthesizer this service is the delegate
-/// of, never from the callback's own `synthesizer`.
+/// The synthesizer's callbacks are handled on the main queue. AVFoundation
+/// does not say which thread it calls them on, so a callback reads nothing
+/// of this service's state where it is called: it only queues its work for
+/// the main queue, which alone reads and changes that state. Two rules keep
+/// what reaches the main queue `Sendable`: each callback hands its utterance
+/// over as a `ReportedUtterance`, and the main queue reads the synthesizer's
+/// state from `directSynth`, the one synthesizer this service is the
+/// delegate of, never from the callback's own `synthesizer`.
 extension SpeechService: AVSpeechSynthesizerDelegate {
 
     nonisolated static func isLiveDirectUtterance(
@@ -1355,42 +1359,43 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         willSpeakRangeOfSpeechString characterRange: NSRange,
         utterance: AVSpeechUtterance
     ) {
-        // Identity check mirrors the one in didFinish — a willSpeak
-        // for an utterance we no longer consider live is the tail of
-        // an internal stopSpeaking (mode switch / seek / new chunk).
-        // Without this guard, a stale willSpeak could combine its
-        // characterRange (relative to the OLD utterance) with the
-        // CURRENT directModeBaseOffset (which already advanced for the
-        // NEW utterance) and emit a wildly wrong absolute position —
-        // exactly the symptom that makes seeks feel like they jumped
-        // to a random place.
-        guard usingDirectMode else { return }
-        // Held for the main queue, as every callback's utterance is, so its
-        // identity is still its own when it is checked again there.
+        // Held for the main queue (`ReportedUtterance`), which decides what
+        // the word means (`placeSpokenWord(at:of:)`).
         let spoken = ReportedUtterance(utterance: utterance)
+        DispatchQueue.main.async { [weak self] in
+            self?.placeSpokenWord(at: characterRange, of: spoken)
+        }
+    }
+
+    /// Move the cursor to the word the synthesizer said it will speak,
+    /// `characterRange` of `spoken`'s text, at the word's place in the whole
+    /// text. Runs on the main queue, where everything this decides by is
+    /// read and changed: whether speech is direct, which utterance is live,
+    /// the segments of a sleep fade, and the offsets their ranges count from.
+    ///
+    /// Only a word of the live utterance, or of a segment of the sleep fade
+    /// under way, moves the cursor. A word of any other utterance is the
+    /// tail of an internal stopSpeaking (a mode switch, a seek, a new
+    /// chunk), as a finish of one is (see `didFinish`): its range counts
+    /// from the start of the old utterance, and combining it with the offset
+    /// of the new one would put the cursor somewhere unrelated, which made
+    /// seeks seem to jump to a random place.
+    private func placeSpokenWord(at characterRange: NSRange, of spoken: ReportedUtterance) {
+        guard usingDirectMode else { return }
         let baseOffset: Int
         if isDirectSleepFadeActive, let fadeOffset = directFadeOffsets[spoken.id] {
             baseOffset = fadeOffset
-        } else {
-            guard Self.isLiveDirectUtterance(utterance, liveUtterance: liveDirectUtterance) else { return }
+        } else if Self.isLiveDirectUtterance(spoken.utterance, liveUtterance: liveDirectUtterance) {
             baseOffset = directModeBaseOffset
+        } else {
+            return
         }
-        let word = (utterance.speechString as NSString).substring(with: characterRange)
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            let isCurrentFadeSegment = self.isDirectSleepFadeActive
-                && self.directFadeOffsets[spoken.id] != nil
-            let isCurrentNormalUtterance = Self.isLiveDirectUtterance(
-                spoken.utterance,
-                liveUtterance: self.liveDirectUtterance
-            )
-            guard self.usingDirectMode,
-                  isCurrentFadeSegment || isCurrentNormalUtterance else { return }
-            // Adjust range to be absolute within the full chapter text
-            let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)
-            self.currentWordRange = absoluteRange
-            self.onWordSpoken?(absoluteRange, word)
-        }
+        let word = (spoken.utterance.speechString as NSString).substring(with: characterRange)
+        // The range counts from the start of its utterance; the cursor counts
+        // from the start of the whole chapter text.
+        let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)
+        currentWordRange = absoluteRange
+        onWordSpoken?(absoluteRange, word)
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
