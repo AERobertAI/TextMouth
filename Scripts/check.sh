@@ -7,11 +7,18 @@
 #   2. resolves Swift packages exactly as the committed Package.resolved pins
 #      them (make resolve-packages) and verifies that every pin's package,
 #      version, revision, and URL still matches the committed file;
-#   3. builds the Release app (make build);
-#   4. runs the hosted XCTest suite with the Makefile's flags (make test);
+#   3. builds the Release app from scratch (make build);
+#   4. runs the hosted XCTest suite with the Makefile's flags (make test),
+#      built from scratch in the same folder;
 # and finally confirms that no step changed the pins. It fails on any
 # generation, resolution, compile, or test error, and when the test run
 # reports no executed tests.
+#
+# Both builds start from scratch, because xcodebuild reports a file's
+# warnings only when it compiles that file. Before step 3 the gate removes
+# the compiled code earlier builds left (build/DerivedData/Build and
+# TextMouthTests/.build), keeping the package checkouts step 2 verified, so
+# every source compiles in the gate's own run, on this Mac as on CI.
 #
 # Usage: Scripts/check.sh [--dry-run] [--help]
 #
@@ -58,6 +65,15 @@ readonly RESOLVED_FILE="TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swi
 readonly LOG_DIR="build/check"
 # The committed pins, copied before any tool can rewrite Package.resolved.
 readonly COMMITTED_COPY="$LOG_DIR/committed-Package.resolved"
+# Where `make build` builds (DERIVED_BUILD_DIR in the Makefile). The gate has
+# `make test` build there too (TEST_DERIVED_DATA), so one removal before
+# step 3 starts both builds from scratch.
+readonly DERIVED_DATA="build/DerivedData"
+# The compiled code earlier builds left: Xcode's products and intermediates,
+# and SwiftPM's build of the hosted test runner. The package checkouts, in
+# build/DerivedData/SourcePackages, are kept.
+readonly EARLIER_XCODE_BUILD="$DERIVED_DATA/Build"
+readonly EARLIER_RUNNER_BUILD="TextMouthTests/.build"
 
 readonly STEP_COUNT=4
 readonly UPDATE_HINT="If a package version changed on purpose, run make update-packages, review the Package.resolved diff, and commit it with project.yml."
@@ -321,6 +337,20 @@ run_step() {
   return "$status"
 }
 
+# remove_earlier_builds: removes the compiled code earlier builds left, so
+# every source compiles in this run. A dry run only says what it would
+# remove.
+remove_earlier_builds() {
+  local removed="$EARLIER_XCODE_BUILD and $EARLIER_RUNNER_BUILD"
+  if (( dry_run )); then
+    detail "would remove the compiled code of earlier builds: $removed"
+    return 0
+  fi
+  rm -rf "$EARLIER_XCODE_BUILD" "$EARLIER_RUNNER_BUILD" ||
+    fail "step $step_number of $STEP_COUNT ($step_title): cannot remove the compiled code of earlier builds: $removed"
+  detail "removed the compiled code of earlier builds, so every source compiles: $removed"
+}
+
 # show_failure_lines <log>: prints the lines of a failed step's log a reader
 # needs first: errors with two lines of context (where compiler diagnostics
 # show the source line and caret), xcodebuild's verdict, and make's failure
@@ -432,10 +462,11 @@ main() {
   fi
 
   begin_step 3 "build the Release app"
+  remove_earlier_builds
   run_step build yes make build || step_failed build $?
 
   begin_step 4 "run the hosted XCTest suite"
-  run_step test yes make test || step_failed test $?
+  run_step test yes make test "TEST_DERIVED_DATA=$DERIVED_DATA" || step_failed test $?
   report_tests
 
   # No later step may re-resolve packages behind the gate's back.

@@ -71,6 +71,10 @@ write_stubs() {
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 echo "make $*" >> "$STUB_LOG"
 target=${1:-}
+# The gate removes earlier builds' compiled code before it builds.
+if [ "$target" = build ] && [ -e build/DerivedData/Build ]; then
+  echo "make build found build/DerivedData/Build from an earlier build" >> "$STUB_LOG"
+fi
 if [ "${STUB_FAIL_TARGET:-}" = "$target" ]; then
   echo "/stub/Sources/Stub.swift:1:1: error: simulated failure of make $target"
   echo "make: *** [$target] Error 65"
@@ -234,6 +238,27 @@ expect_verdict() {
   [[ $last == "$1"* ]] || problem "the last line was '$last', expected it to start with '$1'"
 }
 
+# plant_earlier_builds: fills the sandbox with stand-ins for what earlier
+# builds leave: Xcode's compiled code, SwiftPM's build of the test runner,
+# and the package checkouts that resolution made.
+plant_earlier_builds() {
+  local folder
+  for folder in build/DerivedData/Build/Products TextMouthTests/.build/debug build/DerivedData/SourcePackages/checkouts; do
+    mkdir -p "$sandbox/$folder"
+    : > "$sandbox/$folder/stand-in"
+  done
+}
+
+# expect_present <path>: the sandbox must still hold <path>.
+expect_present() {
+  [[ -e $sandbox/$1 ]] || problem "$1 was removed"
+}
+
+# expect_absent <path>: the sandbox must no longer hold <path>.
+expect_absent() {
+  [[ ! -e $sandbox/$1 ]] || problem "$1 is still there"
+}
+
 # expect_commands [command...]: the stubs must have recorded exactly these
 # commands, in this order; with no arguments, none at all.
 expect_commands() {
@@ -271,12 +296,21 @@ dry_run_cases() {
   expect_report "step 1 of 4: regenerate the Xcode project from project.yml"
   expect_report "would run: make generate"
   expect_report "would run: make resolve-packages"
+  expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
-  expect_report "would run: make test"
+  expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData"
   expect_report "pins match Package.resolved: "
   expect_report "$first_identity $first_version"
   expect_verdict "check: PASSED (dry run)"
   expect_commands
+  end_case
+
+  begin_case "a dry run removes no earlier build"
+  plant_earlier_builds
+  run_gate -- --dry-run
+  expect_status 0
+  expect_present build/DerivedData/Build/Products/stand-in
+  expect_present TextMouthTests/.build/debug/stand-in
   end_case
 
   begin_case "a dry run fails when the resolution changes a version"
@@ -455,10 +489,24 @@ real_run_cases() {
   expect_commands "make generate" \
     "slot make resolve-packages" "make resolve-packages" \
     "slot make build" "make build" \
-    "slot make test" "make test"
+    "slot make test TEST_DERIVED_DATA=build/DerivedData" "make test TEST_DERIVED_DATA=build/DerivedData"
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
   expect_report "Package.resolved still holds the committed pins"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a run removes earlier builds' compiled code before building and keeps the package checkouts"
+  plant_earlier_builds
+  run_gate
+  expect_status 0
+  # The make stub would have recorded finding an earlier build.
+  expect_commands "make generate" "make resolve-packages" "make build" \
+    "make test TEST_DERIVED_DATA=build/DerivedData"
+  expect_report "removed the compiled code of earlier builds, so every source compiles: build/DerivedData/Build and TextMouthTests/.build"
+  expect_absent build/DerivedData/Build
+  expect_absent TextMouthTests/.build
+  expect_present build/DerivedData/SourcePackages/checkouts/stand-in
   expect_verdict "check: PASSED"
   end_case
 
@@ -502,7 +550,8 @@ real_run_cases() {
   begin_case "a pin changed during the build fails the final check"
   run_gate STUB_BUILD_WRITES="$FIXTURES/revision-drift.resolved"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" "make test"
+  expect_commands "make generate" "make resolve-packages" "make build" \
+    "make test TEST_DERIVED_DATA=build/DerivedData"
   expect_report "revision 000000000000"
   expect_verdict "check: FAILED: Package.resolved changed during the build or tests"
   end_case
