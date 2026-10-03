@@ -30,6 +30,12 @@ import Foundation
 /// directory's folder is gone tells the library model, which checks the
 /// data directory and, finding it gone, stops saving. Package metadata
 /// writes are never held back: those that fail stay listed for a retry.
+///
+/// A package record that is only in the cloud (FR02) is neither read nor
+/// written, since reading it, or its package, would download it first and
+/// wait on the network: a save of its book goes to the library index alone
+/// until the record is on this Mac again, with one `BOOK_RECORD_IN_CLOUD`
+/// line saying so, and an analysis result for it is dropped.
 enum LibraryPersistenceService {
 
     /// All library-index writes and debounce state live on one queue so an
@@ -111,6 +117,17 @@ enum LibraryPersistenceService {
     /// session, and those whose marker a write has already found. Confined
     /// to bookInfoSaveQueue, where every package metadata write checks it.
     nonisolated(unsafe) private static var retiredPackages: Set<RetiredPackage> = []
+    /// How package metadata writes reach the files already in a package
+    /// (FR02): `MaintenanceFileAccess.live` in the app, so a record only in
+    /// the cloud is noticed without being read; hosted tests pretend files
+    /// are dataless with an access of their own
+    /// (`_useRecordAccessForTesting`). Confined to bookInfoSaveQueue.
+    nonisolated(unsafe) private static var recordAccess = MaintenanceFileAccess.live
+    /// The books whose saves went to the library index alone, because their
+    /// records were only in the cloud, since each record was last written:
+    /// each is logged once, so frequent saves do not flood the debug log.
+    /// Confined to bookInfoSaveQueue.
+    nonisolated(unsafe) private static var booksWithRecordsInCloud: Set<UUID> = []
 
     /// A retired package: the removed book's ID and its package directory.
     /// Both identify it because a .tmb import of the same book keeps the ID
@@ -320,9 +337,11 @@ enum LibraryPersistenceService {
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
-    /// analyzed (`contentChange(from:to:)`). A result for a book removed with
-    /// Remove from Library Only while it was being parsed is dropped quietly.
-    /// Neither is an error.
+    /// analyzed (`contentChange(from:to:)`), or when it would have to be
+    /// merged into a record only in the cloud (FR02), which is never read;
+    /// a later pass tries again once the record is on this Mac. A result for
+    /// a book removed with Remove from Library Only while it was being
+    /// parsed is dropped quietly. None of these is an error.
     ///
     /// The content decides, not the revision. Every reading checkpoint,
     /// bookmark, and metadata edit raises a book's revision, and the reader
@@ -348,7 +367,20 @@ enum LibraryPersistenceService {
             // (TODO S04).
             let analyzed = StorageBoundary.shared.rebasedToCurrent(analyzed)
             let pending = pendingBookInfos[analyzed.id].map { StorageBoundary.shared.rebasedToCurrent($0.book) }
-            let stored = pending == nil ? analyzed.storedBookInfo() : nil
+            // The record is read only when no snapshot waits, and never
+            // downloaded: one only in the cloud leaves nothing to merge into.
+            let stored: BookInfo?
+            if pending == nil {
+                switch storedRecord(of: analyzed) {
+                case .inCloud:
+                    logDroppedAnalysis(of: analyzed, because: "its record is only in the cloud")
+                    return nil
+                case .readable(let record):
+                    stored = record
+                }
+            } else {
+                stored = nil
+            }
             // The record was read from the analyzed book's package, so that
             // is where the book it describes lives.
             let latest = pending ?? stored.map {
@@ -522,27 +554,103 @@ enum LibraryPersistenceService {
     }
 
     /// Writes one package's metadata unless Remove from Library Only retired
-    /// the package, and reports whether it was written. Debounced saves, the
-    /// termination flush, and analysis results all end here. Each write
-    /// stores the next revision, and never one below the highest this
-    /// process has written for the book, even when the stored record has
-    /// lost its own. `stored` is the record now in the package when the
-    /// caller has just read it; otherwise it is read here. Must run on
-    /// bookInfoSaveQueue.
+    /// the package, or the record is only in the cloud (FR02), and reports
+    /// whether it was written. Debounced saves, the termination flush, and
+    /// analysis results all end here. Each write stores the next revision,
+    /// and never one below the highest this process has written for the
+    /// book, even when the stored record has lost its own. `stored` is the
+    /// record now in the package when the caller has just read it, without
+    /// downloading anything; otherwise it is read here, the same way
+    /// (`storedRecord(of:)`), before anything else in the package is
+    /// looked at. Must run on bookInfoSaveQueue.
     private static func writeBookInfo(
         _ book: Book,
         contentIndex: BookContentIndex?,
         stored: BookInfo? = nil
     ) throws -> Bool {
+        let replaced: BookInfo?
+        if let stored {
+            replaced = stored
+        } else {
+            switch storedRecord(of: book) {
+            case .inCloud(let item):
+                noteRecordInCloud(of: book, at: item)
+                return false
+            case .readable(let record):
+                replaced = record
+            }
+        }
         guard !isRetired(book) else { return false }
         let record = book.bookInfo(
-            replacing: stored ?? book.storedBookInfo(),
+            replacing: replaced,
             contentIndex: contentIndex,
             revisionFloor: bookInfoRevisions[book.id] ?? 0
         )
         try record.save(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision
+        booksWithRecordsInCloud.remove(book.id)
         return true
+    }
+
+    // MARK: - Records Only in the Cloud (FR02)
+
+    /// What a record write finds of the record already in a package.
+    private enum StoredRecord {
+        /// The record, or nil when there is none or it cannot be read, which
+        /// counts as none for every save.
+        case readable(BookInfo?)
+        /// The record, the package holding it, or the package's removal
+        /// marker (the item named) is only in the cloud: reading any of them
+        /// would download it, so the record is neither read nor written.
+        case inCloud(URL)
+    }
+
+    /// The record in `book`'s package, read with dataless files left in the
+    /// cloud, as orphan adoption reads a package's record: the package, its
+    /// record, and its removal marker are first checked without reading
+    /// them, and a read refused because the record went to the cloud
+    /// meanwhile also leaves it there. Must run on bookInfoSaveQueue.
+    private static func storedRecord(of book: Book) -> StoredRecord {
+        let package = book.tmbDirectory
+        let record = TextMouthPaths.bookInfoPath(in: package)
+        let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
+        if let inCloud = [package, record, marker].first(where: recordAccess.isInCloud) {
+            return .inCloud(inCloud)
+        }
+        do {
+            return .readable(try recordAccess.read(record) { try BookInfo.load(from: package) })
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return .inCloud(record)
+        } catch {
+            return .readable(nil)
+        }
+    }
+
+    /// Notes that a save of `book` went to the library index alone, because
+    /// `item`, its record or a file beside it, is only in the cloud: one
+    /// BOOK_RECORD_IN_CLOUD line, written once until the book's record is
+    /// written again. Must run on bookInfoSaveQueue.
+    private static func noteRecordInCloud(of book: Book, at item: URL) {
+        guard booksWithRecordsInCloud.insert(book.id).inserted else { return }
+        logLine(
+            "BOOK_RECORD_IN_CLOUD: book \(book.id.uuidString.prefix(8)) \"\(book.title)\": "
+                + "\(DiagnosticLog.loggablePath(item)) is only in the cloud, so the library index alone "
+                + "holds its saves until the record is on this Mac"
+        )
+    }
+
+    /// Makes package metadata writes reach the files already in a package
+    /// through `access` from now on, after any write under way, and returns
+    /// the access used before, for the test to put back. Hosted tests
+    /// pretend records are dataless this way, since only a sync service
+    /// makes dataless files.
+    @discardableResult
+    static func _useRecordAccessForTesting(_ access: MaintenanceFileAccess) -> MaintenanceFileAccess {
+        bookInfoSaveQueue.sync {
+            let previous = recordAccess
+            recordAccess = access
+            return previous
+        }
     }
 
     // MARK: - Remove from Library Only
