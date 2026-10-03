@@ -48,9 +48,12 @@ final class DataDirectoryMoveTests: XCTestCase {
         XCTAssertTrue(seen.phases.allSatisfy { $0 != nil }, "the progress was not shown while the move copied: \(seen.phases)")
         XCTAssertNil(model.dataDirectoryMove, "the progress stayed after the move")
         XCTAssertNil(DataDirectoryMoveProgress.running)
-        XCTAssertEqual(announcements.first, "Moving the library to \(destination.path).")
+        // What the move waits for, should other storage work be under way,
+        // is said first; then the copy's start, then only its quarters.
+        let copying = announcements.drop { $0.hasPrefix("Waiting for") }
+        XCTAssertEqual(copying.first, "Moving the library to \(destination.path).", "\(announcements)")
         let quarters = Set([25, 50, 75].map(DataDirectoryMoveWording.quarterAnnouncement(percent:)))
-        XCTAssertTrue(announcements.dropFirst().allSatisfy(quarters.contains), "\(announcements)")
+        XCTAssertTrue(copying.dropFirst().allSatisfy(quarters.contains), "\(announcements)")
     }
 
     // MARK: - Cancel
