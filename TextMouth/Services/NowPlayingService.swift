@@ -209,6 +209,9 @@ final class NowPlayingService {
         activeOwnerID.flatMap { handlersByOwner[$0] }
     }
     private let installsSystemIntegrations: Bool
+    /// Receives each routing diagnostic: by default the debug log, as a
+    /// `MEDIA_ROUTE` playback trace line, since every focus change, command,
+    /// and device change writes one. Tests pass a sink of their own.
     private let diagnosticSink: (String) -> Void
     private let nowProvider: () -> Date
     private let defaultOutputDeviceProvider: (() -> AudioDeviceID?)?
@@ -293,13 +296,7 @@ final class NowPlayingService {
 
     init(
         installsSystemIntegrations: Bool = true,
-        diagnosticSink: @escaping (String) -> Void = {
-            NSLog("MEDIA_ROUTE: %@", $0)
-            TextMouthPaths.appendLog(
-                to: TextMouthPaths.debugLogFile,
-                message: "MEDIA_ROUTE: \($0)"
-            )
-        },
+        diagnosticSink: @escaping (String) -> Void = { DiagnosticLog.trace(.playback, "MEDIA_ROUTE: \($0)") },
         now: @escaping () -> Date = Date.init,
         defaultOutputDevice: (() -> AudioDeviceID?)? = nil,
         audioDeviceIDs: (() -> [AudioDeviceID])? = nil,

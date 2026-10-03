@@ -113,4 +113,44 @@ final class LogContentPolicyTests: XCTestCase {
         XCTAssertEqual(description, "window #\(window.windowNumber) id='focus-diagnostics-test-window'")
         XCTAssertFalse(description.contains("Salt Road"), description)
     }
+
+    // MARK: - Media Routing
+
+    /// Media-route bookkeeping, logged for every focus change, command, and
+    /// device change, is playback trace in the debug log: absent while
+    /// tracing is off, and marked as trace while it is on.
+    @MainActor
+    func testMediaRouteLinesAreTrace() throws {
+        try XCTSkipIf(
+            DiagnosticLog.TraceSwitch.environmentTurnsTracingOn(ProcessInfo.processInfo.environment),
+            "TEXTMOUTH_TRACE_LOG turns tracing on for this whole run"
+        )
+        try TextMouthPaths.ensureDirectoryStructure()
+        let coordinator = NowPlayingService(installsSystemIntegrations: false)
+
+        setAppTracing(false)
+        let quiet = logLines(in: .debug) { setUpMediaSession(on: coordinator) }
+        setAppTracing(true)
+        let traced = logLines(in: .debug) { setUpMediaSession(on: coordinator) }
+
+        XCTAssertFalse(quiet.contains { $0.contains("MEDIA_ROUTE") }, "\(quiet)")
+        XCTAssertTrue(traced.contains { $0.contains(": TRACE playback: MEDIA_ROUTE: setup owner=") }, "\(traced)")
+    }
+
+    /// Set up one reader's media session on `coordinator`, with controls that
+    /// do nothing and no Bluetooth monitoring.
+    @MainActor
+    private func setUpMediaSession(on coordinator: NowPlayingService) {
+        NowPlayingSession(ownerID: UUID(), coordinator: coordinator).setup(
+            onPlay: {},
+            onPause: {},
+            onAudioRouteInvalidated: {},
+            onAudioRouteChangePause: {},
+            onTogglePlayPause: {},
+            onSkipForward: {},
+            onSkipBackward: {},
+            isCurrentlyPlaying: { false },
+            bluetoothMonitoring: false
+        )
+    }
 }
