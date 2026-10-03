@@ -39,24 +39,190 @@ final class AudioSeekGate: @unchecked Sendable {
     }
 }
 
+/// Counts the plays of an audio service's loaded file, so a notice
+/// AVFoundation posted during one play is never taken for the end of
+/// another. Each load, play from a time, seek, stop, and finish begins a
+/// new play.
+///
+/// AVFoundation may post its notices on any thread, where the count is
+/// read as each is posted, so the count is guarded by a lock.
+final class AudioPlaybackGeneration: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = 0
+
+    /// The generation of the play under way.
+    var current: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+
+    /// Begin a new play. Anything posted before now belongs to an earlier
+    /// one.
+    func advance() {
+        lock.lock()
+        defer { lock.unlock() }
+        value += 1
+    }
+}
+
+/// What the audio service made of one notice from AVFoundation that its
+/// loaded file played to its end.
+enum AudioEndNoticeOutcome: Equatable, Sendable {
+    /// The notice ended the play under way: a clip chain moved on to its
+    /// next clip, or playback finished.
+    case endedPlay
+    /// The notice ends the play under way, which was paused when it came.
+    /// It is held until playback resumes, which finishes the play, so the
+    /// listener's pause is never overridden by moving on.
+    case heldUntilResume
+    /// The notice was posted during an earlier play, before a load, a play
+    /// from a time, a seek, a stop, or a finish began the one under way. It
+    /// was ignored.
+    case postedDuringEarlierPlay
+    /// Nothing was playing when the notice was acted on, as when playback
+    /// finished at its clip's end just before the file's own end was
+    /// reported. It was ignored.
+    case nothingPlaying
+    /// The notice was the late end of an earlier playthrough of the same
+    /// file, which AVFoundation posted as the play under way began. It was
+    /// ignored, and that play was started again on a new player.
+    case lateForEarlierPlaythrough
+}
+
+/// Decides what AVFoundation's notice that the loaded file played to its
+/// end means for the play under way.
+///
+/// AVFoundation posts the notice a little after the playhead reaches the
+/// file's end (about 35 milliseconds, in hosted tests), so the play it ends
+/// may have given way to another by the time it is acted on. And when a
+/// play that ended at the file's end, at its clip's end, gives way to a new
+/// play of the same item, as a loop or a clip earlier in the same file
+/// does, AVFoundation still posts the end of that earlier playthrough: just
+/// as the new play's seek lands, with the playhead still exactly where
+/// that seek put it, leaving the player stopped there.
+enum AudioEndNoticePolicy {
+    /// How near, in seconds, the playhead must stand to where the play
+    /// under way began for a notice to count as the late end of an earlier
+    /// playthrough: a seek's landing rounded to its sample, with room to
+    /// spare. No play that has really reached the end is so short, unless
+    /// it began at the end.
+    static let playStartTolerance: TimeInterval = 0.01
+
+    /// What a notice means for the play under way.
+    ///
+    /// - Parameters:
+    ///   - postedGeneration: The play generation when AVFoundation posted
+    ///     the notice.
+    ///   - currentGeneration: The generation of the play under way.
+    ///   - isPlaying: Whether the service is playing, paused or not.
+    ///   - isPaused: Whether that playback is paused.
+    ///   - playhead: Where the item's playhead stood when the notice was
+    ///     posted, in seconds into the file, or nil when it is unknown.
+    ///   - playStart: Where the play under way began, in seconds into the
+    ///     file.
+    ///   - fileDuration: How long the file lasts, in seconds, or nil while
+    ///     unknown.
+    ///   - restartedFrom: The play start from which the play under way was
+    ///     started again on a new player, after an earlier late notice, or
+    ///     nil when it was not.
+    static func outcome(
+        postedGeneration: Int,
+        currentGeneration: Int,
+        isPlaying: Bool,
+        isPaused: Bool,
+        playhead: TimeInterval?,
+        playStart: TimeInterval,
+        fileDuration: TimeInterval?,
+        restartedFrom: TimeInterval?
+    ) -> AudioEndNoticeOutcome {
+        guard postedGeneration == currentGeneration else { return .postedDuringEarlierPlay }
+        guard isPlaying else { return .nothingPlaying }
+        if isLateForEarlierPlaythrough(
+            playhead: playhead,
+            playStart: playStart,
+            fileDuration: fileDuration,
+            restartedFrom: restartedFrom
+        ) {
+            return .lateForEarlierPlaythrough
+        }
+        return isPaused ? .heldUntilResume : .endedPlay
+    }
+
+    /// Whether a notice posted with the playhead at `playhead` is the late
+    /// end of an earlier playthrough: the playhead stands where the play
+    /// under way began, short of the file's end, on a player that has not
+    /// already been started again for that play.
+    ///
+    /// A playhead at or past the file's end has played to it, however its
+    /// play began. A player started again after a late notice holds a new
+    /// item, which has no earlier playthrough to report, so another notice
+    /// with the playhead still at the start is a real end there, as at the
+    /// true end of a file whose length was overestimated.
+    static func isLateForEarlierPlaythrough(
+        playhead: TimeInterval?,
+        playStart: TimeInterval,
+        fileDuration: TimeInterval?,
+        restartedFrom: TimeInterval?
+    ) -> Bool {
+        guard let playhead, playhead.isFinite else { return false }
+        if let fileDuration, playhead >= fileDuration { return false }
+        if let restartedFrom, abs(restartedFrom - playStart) <= playStartTolerance { return false }
+        return abs(playhead - playStart) <= playStartTolerance
+    }
+}
+
+/// What the audio service does with one tick of its position observer.
 enum AudioPositionObserverPolicy {
-    enum Action: Equatable {
+    enum Action: Equatable, Sendable {
+        /// Nothing: the position cannot be trusted, or belongs to no clip.
         case ignore
+        /// The clip being played has reached its end.
         case finishClip
+        /// Report this position, in seconds into the loaded file.
         case publish(TimeInterval)
     }
 
+    /// The action for a tick that finds the player `seconds` into its file.
+    ///
+    /// - Parameters:
+    ///   - seconds: The player's position as the tick is handled.
+    ///   - isSeeking: Whether a seek is still on its way. Until it lands,
+    ///     the player may report where it was before.
+    ///   - isPlaying: Whether playback is playing and not paused. Only such
+    ///     playback finishes its clip. Paused or finished playback at or
+    ///     past the clip's end reports nothing, since that time belongs to
+    ///     whatever follows the clip; paused playback finishes the clip on
+    ///     its first tick once resumed.
+    ///   - clipEndTime: Where the clip being played ends, in seconds into
+    ///     its file, or nil when it plays to the file's end.
     static func action(
         seconds: TimeInterval,
         isSeeking: Bool,
+        isPlaying: Bool,
         clipEndTime: TimeInterval?
     ) -> Action {
         guard seconds.isFinite, !isSeeking else { return .ignore }
         if let clipEndTime, seconds >= clipEndTime {
-            return .finishClip
+            return isPlaying ? .finishClip : .ignore
         }
         return .publish(seconds)
     }
+}
+
+/// One report from AVFoundation about the audio service's player, as the
+/// service dealt with it. Hosted tests receive each one through
+/// `AudioPlaybackService._reportHandledForTesting`.
+enum AudioPlayerReport: Equatable, Sendable {
+    /// A tick of the position observer of the player now loaded, finding
+    /// the player `seconds` into its file, and what the service did with it.
+    case tick(seconds: TimeInterval, action: AudioPositionObserverPolicy.Action)
+    /// A tick of the position observer of a player since released, which
+    /// the service turned away.
+    case tickFromReleasedPlayer
+    /// A notice that the loaded file played to its end, and what the
+    /// service made of it.
+    case endOfFile(AudioEndNoticeOutcome)
 }
 
 /// Decides whether audio that should be playing has stalled.
@@ -350,6 +516,13 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 /// is set and `onPlaybackFailed` is called. Playback halts, the player is
 /// released, and `currentTime` stays where it was, so the same position can
 /// be played again once the file is restored.
+///
+/// What plays ends once: `onPlaybackFinished` is called once each time
+/// playback runs to the end of its file, clip, or chain, however many ways
+/// AVFoundation reports that end, and never for a play that a load, a play
+/// from a time, a seek, or a stop has since replaced (see
+/// `AudioEndNoticePolicy`). An end that comes while playback is paused is
+/// held until it resumes.
 final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendable {
     @Published var isPlaying = false
     @Published var isPaused = false
@@ -361,6 +534,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// successfully.
     @Published private(set) var failure: AudioPlaybackFailure?
 
+    /// Called on the main queue once each time playback runs to the end of
+    /// what it was asked to play, never while it is paused.
     var onPlaybackFinished: (() -> Void)?
     var onPositionUpdate: ((TimeInterval) -> Void)?
     /// Called on the main queue once for each failure, after `failure` is
@@ -371,6 +546,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
+    /// Counts the position observers installed, one for each player. Each
+    /// observer's ticks carry the count it was installed with, so a tick of
+    /// an observer installed for an earlier player can never act on the
+    /// current one.
+    private var timeObserverGeneration = 0
     private var endObserver: NSObjectProtocol?
     /// Observes the current item failing to play to its end.
     private var failedToPlayToEndObserver: NSObjectProtocol?
@@ -418,6 +598,26 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// when consecutive segments share the same audio file.
     private let seekGate = AudioSeekGate()
 
+    /// The generation of the play under way. Each end-of-file notice
+    /// carries the generation it was posted in, and only a notice posted in
+    /// the play under way can end it.
+    private let playGeneration = AudioPlaybackGeneration()
+
+    /// Where the play under way began, in seconds into the loaded file: the
+    /// time the latest play or seek put the playhead at. The late end of an
+    /// earlier playthrough arrives with the playhead still exactly there.
+    private var playStartFileTime: TimeInterval = 0
+
+    /// The play start from which the play under way was started again on a
+    /// new player, after AVFoundation posted the late end of an earlier
+    /// playthrough as it began; nil when it was not.
+    private var restartedAfterLateEndFrom: TimeInterval?
+
+    /// The generation of a play whose end AVFoundation reported while it
+    /// was paused, or nil. Resuming finishes that play, unless a seek, a
+    /// load, or a stop has begun another since.
+    private var endHeldUntilResume: Int?
+
     /// Tracks the intended output volume independently of the AVPlayer
     /// instance. When load() creates a new AVPlayer for a chapter
     /// transition, the new player defaults to volume 1.0, discarding
@@ -460,12 +660,24 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ///   play it; false when the file failed its check.
     @discardableResult
     func load(url: URL) -> Bool {
+        loadFile(url, reusingLivePlayer: true)
+    }
+
+    /// Load `url` as `load(url:)` describes. A live player that already
+    /// holds the file is kept when `reusingLivePlayer` is true, as for the
+    /// next chapter or clip of the same file, and replaced by a new player
+    /// otherwise.
+    ///
+    /// Either way the loaded file begins a new play: nothing AVFoundation
+    /// posted before can end what plays next.
+    private func loadFile(_ url: URL, reusingLivePlayer: Bool) -> Bool {
         chained = nil
         let normalizedURL = url.standardizedFileURL
         // A failure releases its player, so a live player for this URL has
         // not failed and can keep playing the file.
-        if let loadedURL, loadedURL == normalizedURL, player != nil {
+        if reusingLivePlayer, let loadedURL, loadedURL == normalizedURL, player != nil {
             clipEndTime = nil
+            playGeneration.advance()
             return true
         }
 
@@ -588,21 +800,36 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
             reportPlaybackError(playerItem.error)
             return false
         }
-        let clampedTime = max(0, duration > 0 ? min(fileTime, duration) : fileTime)
-        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
-
-        // Block clip-end checks until the seek lands, preventing the stale-time
-        // race where the time observer sees the old position and re-triggers.
-        let seekToken = seekGate.begin()
-        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.seekGate.complete(seekToken)
-        }
-        recordPosition(atFileTime: clampedTime)
+        seekPlayer(toFileTime: fileTime)
         player.rate = Float(playbackSpeed)
         isPlaying = true
         isPaused = false
         scheduleProgressCheck()
         return true
+    }
+
+    /// Move the loaded player to `fileTime` seconds into its file, held
+    /// within the file once its length is known, as a new play: notices
+    /// AVFoundation posted before now belong to an earlier one.
+    ///
+    /// Clip-end checks wait until the seek lands, so the position observer
+    /// never acts on a position from before it.
+    private func seekPlayer(toFileTime fileTime: TimeInterval) {
+        guard let player else { return }
+        let clampedTime = max(0, duration > 0 ? min(fileTime, duration) : fileTime)
+        playGeneration.advance()
+        playStartFileTime = clampedTime
+        restartedAfterLateEndFrom = nil
+        endHeldUntilResume = nil
+        let seekToken = seekGate.begin()
+        player.seek(
+            to: CMTime(seconds: clampedTime, preferredTimescale: 600),
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        ) { [weak self] _ in
+            self?.seekGate.complete(seekToken)
+        }
+        recordPosition(atFileTime: clampedTime)
     }
 
     func pause() {
@@ -617,17 +844,50 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// failed. Returning false lets the reader reload the chapter after
     /// route changes, player loss, or a failure still on its way to the
     /// main queue; reloading reports a file that cannot play.
+    ///
+    /// Playback paused at the end of its file finishes instead, once this
+    /// call has returned, so the caller sees it resume before it ends: its
+    /// end came while it was paused and was held, or it was paused there
+    /// first. AVFoundation reports no end again for a player asked to play
+    /// on from its end, which then stays where it is.
     @discardableResult
     func resume() -> Bool {
         guard isPaused, let player, let item = player.currentItem,
               player.error == nil, item.status != .failed else {
             return false
         }
-        player.rate = Float(playbackSpeed)
         isPaused = false
         isPlaying = true
+        let generation = playGeneration.current
+        // A seek still on its way decides where playback stands; AVFoundation
+        // reports the end itself when it lands there and plays on.
+        let pausedAtTheEnd = !seekGate.isSeeking && Self.isAtEndOfFile(item)
+        if endHeldUntilResume == generation || pausedAtTheEnd {
+            endHeldUntilResume = nil
+            DispatchQueue.main.async { [weak self] in
+                self?.finishResumedPlayAtItsEnd(generation: generation)
+            }
+            return true
+        }
+        player.rate = Float(playbackSpeed)
         scheduleProgressCheck()
         return true
+    }
+
+    /// Finish the play of `generation`, resumed at its end, unless that
+    /// play has given way to another since: a seek, a load, or a stop began
+    /// one. A pause made in the meantime holds the end until the next
+    /// resume.
+    private func finishResumedPlayAtItsEnd(generation: Int) {
+        guard generation == playGeneration.current, isPlaying else {
+            DiagnosticLog.trace(.playback, "audio play resumed at its end gave way to another before it finished")
+            return
+        }
+        guard !isPaused else {
+            endHeldUntilResume = generation
+            return
+        }
+        reachedEnd()
     }
 
     func stop() {
@@ -655,6 +915,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         clipEndTime = nil
         itemBecameReady = false
         seekGate.cancelAll()
+        // Whatever the released player was playing is over: a notice it
+        // posted that is still on its way to the main queue ends nothing.
+        playGeneration.advance()
+        restartedAfterLateEndFrom = nil
+        endHeldUntilResume = nil
     }
 
     /// Halt playback because of `failure`, then publish it and tell
@@ -687,15 +952,15 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Move the loaded file's playback to `fileTime` seconds into it.
     private func seekLoadedFile(to fileTime: TimeInterval) {
         guard let player = player else { return }
-        let clampedTime = max(0, duration > 0 ? min(fileTime, duration) : fileTime)
-        let cmTime = CMTime(seconds: clampedTime, preferredTimescale: 600)
-        let seekToken = seekGate.begin()
-        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.seekGate.complete(seekToken)
-        }
-        recordPosition(atFileTime: clampedTime)
-        // Playing on from the new position is a fresh start to check.
+        seekPlayer(toFileTime: fileTime)
         if isPlaying && !isPaused {
+            // AVFoundation stops a player that reaches the end of its file,
+            // and a seek away from the end does not start it again, so
+            // playback that should be playing asks for its rate again; the
+            // end that stopped it was posted before this seek and ends
+            // nothing now. Playing on from the new position is a fresh start
+            // to check.
+            player.rate = Float(playbackSpeed)
             scheduleProgressCheck()
         }
     }
@@ -741,6 +1006,21 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// The item being played, or nil when no player exists. Hosted tests
     /// read its status and post the notifications AVFoundation posts for it.
     var _playerItemForTesting: AVPlayerItem? { playerItem }
+
+    /// The player now loaded, or nil. Hosted tests keep a released player
+    /// and play it on, to show that nothing it reports reaches its
+    /// successor.
+    var _playerForTesting: AVPlayer? { player }
+
+    /// Told, on the main queue, of every report from AVFoundation about the
+    /// player once the service has dealt with it. Hosted tests wait on these
+    /// reports instead of waiting a fixed time.
+    var _reportHandledForTesting: ((AudioPlayerReport) -> Void)?
+
+    /// Called on the main queue as an end-of-file notice, already posted,
+    /// is about to be acted on. Hosted tests stop, seek, or load here, as a
+    /// listener could just after the file's end was reached.
+    var _endNoticeArrivedForTesting: (() -> Void)?
 
     /// Pause the player without the service knowing, exactly as AVFoundation
     /// pauses it when a stall empties its buffer. Hosted tests use it to
@@ -788,6 +1068,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         // Loading another file resets the playing state; it is put back
         // below. A file that fails its check has been reported already.
         guard loadClip(index, of: chain) else { return }
+        continuePlayback(fromFileTime: fileTime, wasPlaying: wasPlaying, wasPaused: wasPaused)
+    }
+
+    /// Put the playback of a newly loaded player at `fileTime` seconds into
+    /// its file, in the state playback was in before the load: playing on
+    /// from there when it was playing, and otherwise paused or stopped
+    /// there, as it was.
+    private func continuePlayback(fromFileTime fileTime: TimeInterval, wasPlaying: Bool, wasPaused: Bool) {
         if wasPlaying && !wasPaused {
             playLoadedFile(from: fileTime)
         } else {
@@ -932,74 +1220,198 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     // MARK: - Observers
 
+    /// Watch the new player's clock: four times a second while it plays,
+    /// and whenever its time jumps or it starts or stops.
     private func setupTimeObserver() {
         guard let player = player else { return }
+        timeObserverGeneration += 1
+        let observerGeneration = timeObserverGeneration
         let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
-        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
             guard let self = self else { return }
-            let secs = CMTimeGetSeconds(time)
-
-            switch AudioPositionObserverPolicy.action(
-                seconds: secs,
-                isSeeking: self.seekGate.isSeeking,
-                clipEndTime: self.clipEndTime
-            ) {
-            case .ignore:
-                // While a seek is in progress, the player may report stale
-                // pre-seek positions. Suppress every observer side effect,
-                // including clip completion, until the latest seek lands.
+            // AVFoundation starts no tick once its observer is removed, and
+            // releasing a player removes its observer; a tick of an earlier
+            // player's observer is still turned away here, so none can act
+            // on the player now loaded.
+            guard observerGeneration == self.timeObserverGeneration else {
+                DiagnosticLog.trace(.playback, "audio position: ignored a tick from the observer of a released player")
+                self._reportHandledForTesting?(.tickFromReleasedPlayer)
                 return
-            case .finishClip:
-                // A clip chain plays on with its next clip; only the end of
-                // its last clip, or of a lone clip, finishes playback.
-                if self.advanceToNextClip() { return }
-                self.finishPlayback()
-                return
-            case .publish(let seconds):
-                self.recordPosition(atFileTime: seconds)
-                self.onPositionUpdate?(self.currentTime)
             }
+            self.playerClockDidTick()
         }
     }
 
+    /// Act on the position of the player now loaded: publish it, or end the
+    /// clip that has reached its end.
+    ///
+    /// The position is read from the player now rather than taken from the
+    /// tick, which AVFoundation can measure just before a seek or a new play
+    /// moves the player (it has handed over a tick still giving the old
+    /// time while a seek to the end landed).
+    private func playerClockDidTick() {
+        guard let player else { return }
+        let seconds = CMTimeGetSeconds(player.currentTime())
+        let action = AudioPositionObserverPolicy.action(
+            seconds: seconds,
+            isSeeking: seekGate.isSeeking,
+            isPlaying: isPlaying && !isPaused,
+            clipEndTime: clipEndTime
+        )
+        switch action {
+        case .ignore:
+            // Nothing to act on: a seek still on its way, during which the
+            // player may report where it was before; a time that is not a
+            // number; or paused or finished playback at or past its clip's
+            // end.
+            break
+        case .finishClip:
+            reachedEnd()
+        case .publish(let position):
+            recordPosition(atFileTime: position)
+            onPositionUpdate?(currentTime)
+        }
+        _reportHandledForTesting?(.tick(seconds: seconds, action: action))
+    }
+
+    /// AVFoundation's notice that the loaded file played to its end, as it
+    /// stood when the notice was posted.
+    private struct EndNotice: Sendable {
+        /// The generation of the play under way when the notice was posted.
+        let generation: Int
+        /// Where the item's playhead stood then, in seconds into the file,
+        /// or nil when it could not be read.
+        let playhead: TimeInterval?
+    }
+
+    /// Watch for AVFoundation's notice that the new item played to its end.
+    ///
+    /// The notice is read as it is posted, on whatever thread posts it (the
+    /// main thread, for a local file): the generation of the play under way
+    /// and the item's playhead go with it to the main queue, where
+    /// `handleEndNotice(_:)` acts on it. However late it is acted on, a
+    /// notice posted during an earlier play is told apart from the end of
+    /// the play under way. Releasing the player removes this observer.
     private func setupEndObserver() {
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: playerItem,
-            queue: .main
+            queue: nil
         ) { [weak self] notification in
-            // Removing the observer stops new deliveries, but one already
-            // queued for an item that `load(url:)` has since replaced must
-            // not finish the new item and advance past it.
-            guard let self, let item = self.playerItem,
-                  notification.object as AnyObject? === item else { return }
-            if self.chained != nil {
-                // Moving on to a clip later in the same file keeps the item
-                // and seeks it away from its end, so an end that arrives
-                // while that seek is under way is stale. A real end comes
-                // only once playback has run on to it.
-                guard !self.seekGate.isSeeking else { return }
-                // A clip chain plays on with its next clip; only the end of
-                // its last clip finishes playback.
-                if self.advanceToNextClip() { return }
+            guard let self else { return }
+            let notice = EndNotice(
+                generation: self.playGeneration.current,
+                playhead: (notification.object as? AVPlayerItem).map { CMTimeGetSeconds($0.currentTime()) }
+            )
+            DispatchQueue.main.async { [weak self] in
+                self?.handleEndNotice(notice)
             }
-            self.finishPlayback()
         }
+    }
+
+    /// Act on AVFoundation's notice that the loaded file played to its end,
+    /// as `AudioEndNoticePolicy` decides. A notice that ends nothing is
+    /// ignored with one trace line saying why.
+    private func handleEndNotice(_ notice: EndNotice) {
+        _endNoticeArrivedForTesting?()
+        let outcome = AudioEndNoticePolicy.outcome(
+            postedGeneration: notice.generation,
+            currentGeneration: playGeneration.current,
+            isPlaying: isPlaying,
+            isPaused: isPaused,
+            playhead: notice.playhead,
+            playStart: playStartFileTime,
+            fileDuration: loadedFileDuration,
+            restartedFrom: restartedAfterLateEndFrom
+        )
+        switch outcome {
+        case .endedPlay:
+            reachedEnd()
+        case .heldUntilResume:
+            DiagnosticLog.trace(.playback, "audio end of file held: playback was paused when it came; resuming finishes the play")
+            endHeldUntilResume = notice.generation
+        case .postedDuringEarlierPlay:
+            DiagnosticLog.trace(
+                .playback,
+                "audio end of file ignored: posted during an earlier play "
+                    + "(generation \(notice.generation), now \(playGeneration.current))"
+            )
+        case .nothingPlaying:
+            DiagnosticLog.trace(.playback, "audio end of file ignored: nothing was playing")
+        case .lateForEarlierPlaythrough:
+            DiagnosticLog.trace(
+                .playback,
+                "audio end of file ignored: the late end of an earlier playthrough, posted as the play "
+                    + "from \(playStartFileTime)s began; starting that play again on a new player"
+            )
+            restartOnFreshPlayer()
+        }
+        _reportHandledForTesting?(.endOfFile(outcome))
+    }
+
+    /// How long the loaded file lasts, in seconds, as its item reports once
+    /// it knows; nil before then or without an item.
+    private var loadedFileDuration: TimeInterval? {
+        guard let itemDuration = playerItem?.duration, itemDuration.isNumeric else { return nil }
+        return CMTimeGetSeconds(itemDuration)
+    }
+
+    /// Begin the play under way again, from where it began, on a new player
+    /// for the same file.
+    ///
+    /// AVFoundation leaves a player that posted the late end of an earlier
+    /// playthrough stopped where the new play began, and asking it for its
+    /// rate again does not start it. A new player holds a new item, which
+    /// has no earlier playthrough. Playback keeps its state and its clip: it
+    /// plays on when it was playing, and stays paused when it was paused.
+    private func restartOnFreshPlayer() {
+        guard let url = loadedURL else { return }
+        let start = playStartFileTime
+        let chain = chained
+        let clipEnd = clipEndTime
+        let wasPlaying = isPlaying
+        let wasPaused = isPaused
+        // A file that fails its check now is reported as any load reports it.
+        guard loadFile(url, reusingLivePlayer: false) else { return }
+        chained = chain
+        clipEndTime = clipEnd
+        continuePlayback(fromFileTime: start, wasPlaying: wasPlaying, wasPaused: wasPaused)
+        restartedAfterLateEndFrom = start
+    }
+
+    /// Carry playback on from the end of the clip or file it has just
+    /// played to: a clip chain plays on with its next clip, and only the end
+    /// of its last clip, or of a lone clip or file, finishes playback. Both
+    /// ways of noticing an end, the position observer reaching a clip's end
+    /// and AVFoundation's end-of-file notice, come through here.
+    private func reachedEnd() {
+        if advanceToNextClip() { return }
+        finishPlayback()
     }
 
     /// End playback because what it was asked to play has played to its
     /// end: the loaded file, the clip it was to stop at, or a chain's last
     /// clip. A clip that ends where its file does is reported twice, by the
     /// clip-end check and by AVFoundation's end-of-file notice, one after
-    /// the other; only the first is acted on, since playback that no longer
-    /// plays has nothing left to finish. `onPlaybackFinished` is therefore
-    /// called once each time playback is started and runs to its end.
+    /// the other; only the first is acted on. Finishing begins a new play
+    /// generation, so the second, posted during the play just finished,
+    /// ends nothing, and playback that no longer plays has nothing left to
+    /// finish anyway. `onPlaybackFinished` is therefore called once each
+    /// time playback is started and runs to its end.
+    ///
+    /// The clip's end is kept, so the player's ticks at or past it once it
+    /// has stopped report no time beyond the clip. Loading a file, or a
+    /// chain's clip, sets the end afresh.
+    ///
+    /// Paused playback never finishes here: its end is held until it
+    /// resumes, so the listener's pause is never overridden by moving on.
     private func finishPlayback() {
-        guard isPlaying else { return }
+        guard isPlaying, !isPaused else { return }
+        playGeneration.advance()
         player?.pause()
         isPlaying = false
         isPaused = false
-        clipEndTime = nil
+        DiagnosticLog.trace(.playback, "audio play finished (generation \(playGeneration.current))")
         onPlaybackFinished?()
     }
 
@@ -1126,15 +1538,19 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         guard item === playerItem, let player, let url = loadedURL else { return }
         // Only the newest check runs; scheduling another cancelled this one.
         progressCheck = nil
-        let reachedEndOfFile = item.duration.isNumeric
-            && CMTimeCompare(item.currentTime(), item.duration) >= 0
         guard AudioStallPolicy.isStalled(
             isPlaying: isPlaying,
             isPaused: isPaused,
             playerIsAdvancing: player.timeControlStatus == .playing,
-            reachedEndOfFile: reachedEndOfFile
+            reachedEndOfFile: Self.isAtEndOfFile(item)
         ) else { return }
         reportFailure(AudioPlaybackFailure(reason: .stalled, url: url))
+    }
+
+    /// Whether `item`'s playhead stands at or past the end of its file, as
+    /// far as its length is known.
+    private static func isAtEndOfFile(_ item: AVPlayerItem) -> Bool {
+        item.duration.isNumeric && CMTimeCompare(item.currentTime(), item.duration) >= 0
     }
 
     private func removeObservers() {

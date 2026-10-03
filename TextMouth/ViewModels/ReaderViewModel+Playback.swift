@@ -351,22 +351,35 @@ extension ReaderViewModel {
         return Self.hasSpeakableText(in: spokenText, fromSpokenOffset: spokenOffset)
     }
 
-    /// Speak `start`'s chapter from its offset, then look ahead to the next
-    /// speakable chapter. Starting a chapter other than the cursor's moves
-    /// the cursor to the beginning of that chapter.
-    func startSpeaking(_ start: SpeechStart) {
+    /// Speak `start`'s chapter from its offset, in a new chapter play, then
+    /// look ahead to the next speakable chapter. Starting a chapter other
+    /// than the cursor's moves the cursor to the beginning of that chapter.
+    ///
+    /// - Parameters:
+    ///   - start: The chapter's prepared speech and the offset to start at.
+    ///   - preRenderedEngine: An engine holding audio rendered ahead from
+    ///     exactly this speech, as `takeLookAheadEngine(for:)` hands it
+    ///     over, to play for an instant start; nil speaks the text.
+    func startSpeaking(_ start: SpeechStart, playing preRenderedEngine: AudioEngineService? = nil) {
         let speech = start.speech
         if speech.chapterIndex != currentChapterIndex {
             DiagnosticLog.trace(.playback, "passing over silent text from chapter \(currentChapterIndex) to \(speech.chapterIndex)")
             currentChapterIndex = speech.chapterIndex
             currentCharacterOffset = 0
         }
-        DiagnosticLog.trace(.playback, "startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(chapterPlaybackGeneration)")
+        let play = beginChapterPlay()
+        listenForSpeechEnd(of: play)
+        DiagnosticLog.trace(.playback, "startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
 
         currentTransformation = speech.transformation
         currentOffsetMap = speech.offsetMap
         utteranceBaseOffset = 0
-        speechService.speak(speech.text, fromCharOffset: start.offset)
+        if let preRenderedEngine {
+            DiagnosticLog.trace(.playback, "using pre-rendered engine for chapter \(speech.chapterIndex)")
+            speechService.usePreRenderedEngine(preRenderedEngine, text: speech.text, fromCharOffset: start.offset)
+        } else {
+            speechService.speak(speech.text, fromCharOffset: start.offset)
+        }
 
         // Pre-render the next chapter so it can start instantly when this one ends
         preRenderNextChapter()
@@ -378,6 +391,127 @@ extension ReaderViewModel {
     private func endBookWithNothingLeftToSpeak() {
         DiagnosticLog.trace(.playback, "nothing speakable from chapter=\(currentChapterIndex) offset=\(currentCharacterOffset); ending book")
         handleEndOfBook()
+    }
+
+    // MARK: - Chapter Plays and Their Ends
+
+    /// One play of one chapter: the chapter played, and the playback
+    /// generation the play began in.
+    ///
+    /// Every start of a chapter's speech or audio begins a new play in a
+    /// new generation: Play, a resume that starts the chapter again, a move
+    /// to another chapter, a chapter advance, and a loop. The speech or
+    /// audio service reports the end of what it plays to a callback made for
+    /// the play under way, so the end of a play the reader has left, by
+    /// beginning another or moving to another chapter, is told apart from
+    /// the end of the play under way however late it is reported.
+    struct ChapterPlay: Equatable, Sendable {
+        /// The chapter the play plays.
+        let chapterIndex: Int
+        /// The playback generation the play began in.
+        let generation: Int
+    }
+
+    /// Begin a new play of the cursor's chapter, in a new playback
+    /// generation.
+    func beginChapterPlay() -> ChapterPlay {
+        chapterPlaybackGeneration += 1
+        return ChapterPlay(chapterIndex: currentChapterIndex, generation: chapterPlaybackGeneration)
+    }
+
+    /// The play a reader stands in before any chapter has begun to play: the
+    /// cursor's chapter, in the current generation.
+    var cursorChapterPlay: ChapterPlay {
+        ChapterPlay(chapterIndex: currentChapterIndex, generation: chapterPlaybackGeneration)
+    }
+
+    /// Whether the end reported for `play` ends the play under way.
+    ///
+    /// The end of a play the reader has left is stale: a later play began,
+    /// which advances the generation, as moving a text book to another
+    /// chapter does too (moving an audiobook stops its audio service, which
+    /// then reports no end at all); or the reader closed. A stale end is
+    /// ignored, with one trace line, so no chapter is advanced from twice or
+    /// skipped.
+    ///
+    /// - Parameters:
+    ///   - play: The play whose end was reported.
+    ///   - backend: What reported it, "speech" or "audio", for the log.
+    func endsPlayUnderWay(_ play: ChapterPlay, reportedBy backend: String) -> Bool {
+        guard !hasClosed else {
+            DiagnosticLog.trace(.playback, "ignoring the \(backend) end of chapter \(play.chapterIndex): the reader has closed")
+            return false
+        }
+        guard play.generation == chapterPlaybackGeneration else {
+            DiagnosticLog.trace(
+                .playback,
+                "ignoring a stale \(backend) end of chapter \(play.chapterIndex): its play began in "
+                    + "generation \(play.generation), now \(chapterPlaybackGeneration)"
+            )
+            return false
+        }
+        return true
+    }
+
+    /// Take the end the speech service reports next as the end of `play`.
+    func listenForSpeechEnd(of play: ChapterPlay) {
+        speechService.onUtteranceFinished = { [weak self] in
+            self?.speechDidFinish(play)
+        }
+    }
+
+    /// Take the end the audio service reports next as the end of `play`.
+    func listenForAudioEnd(of play: ChapterPlay) {
+        audioPlaybackService.onPlaybackFinished = { [weak self] in
+            self?.audioDidFinish(play)
+        }
+    }
+
+    /// The speech of `play` finished. Save the position, tell the sleep
+    /// timer this book's document ended, and move on to the next chapter
+    /// with anything to say, or end the book when none remains.
+    ///
+    /// Chapters that are empty, entirely inside skipped sections, or deleted
+    /// by substitutions are passed over, exactly as starting playback passes
+    /// over them. The next chapter starts from audio rendered ahead when
+    /// that audio is exactly its speech now, rendered from the text and
+    /// voice in effect, for an instant start; audio rendered before the
+    /// voice, a substitution rule, the punctuation pauses, or the skipped
+    /// sections changed is discarded, and the chapter is spoken from its
+    /// current text.
+    private func speechDidFinish(_ play: ChapterPlay) {
+        DiagnosticLog.trace(.playback, "speech finished: chapter=\(play.chapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
+        guard endsPlayUnderWay(play, reportedBy: "speech") else { return }
+        savePosition()
+        sleepTimerService.notifyDocumentEnd(by: book.id)
+        guard content != nil else { return }
+        guard let speech = nextSpeakableChapterSpeech(from: play.chapterIndex + 1) else {
+            DiagnosticLog.trace(.playback, "no more speakable chapters, book ended")
+            handleEndOfBook()
+            return
+        }
+        DiagnosticLog.trace(.playback, "advancing to chapter \(speech.chapterIndex) (from \(play.chapterIndex))")
+        currentChapterIndex = speech.chapterIndex
+        currentCharacterOffset = 0
+        startSpeaking(SpeechStart(speech: speech, offset: 0), playing: takeLookAheadEngine(for: speech))
+    }
+
+    /// The audio of `play` played to its end. Save the position, tell the
+    /// sleep timer this book's document ended, and play the next chapter,
+    /// or end the book after the last.
+    private func audioDidFinish(_ play: ChapterPlay) {
+        guard endsPlayUnderWay(play, reportedBy: "audio") else { return }
+        savePosition()
+        sleepTimerService.notifyDocumentEnd(by: book.id)
+        guard let content else { return }
+        let nextIndex = play.chapterIndex + 1
+        if nextIndex < content.chapters.count {
+            currentChapterIndex = nextIndex
+            currentCharacterOffset = 0
+            playAudioChapter()
+        } else {
+            handleEndOfBook()
+        }
     }
 
     // MARK: - Look-ahead
@@ -869,23 +1003,10 @@ extension ReaderViewModel {
             }
         }
 
-        audioPlaybackService.onPlaybackFinished = { [weak self] in
-            guard let self = self else { return }
-            self.savePosition()
-            self.sleepTimerService.notifyDocumentEnd(by: self.book.id)
-
-            // Advance to next chapter (audio file)
-            if let content = self.content {
-                let nextIndex = self.currentChapterIndex + 1
-                if nextIndex < content.chapters.count {
-                    self.currentChapterIndex = nextIndex
-                    self.currentCharacterOffset = 0
-                    self.playAudioChapter()
-                } else {
-                    self.handleEndOfBook()
-                }
-            }
-        }
+        // Each chapter's audio, once it starts, reports its end for its own
+        // play (see `playAudioChapter()`); until one starts, the end belongs
+        // to the cursor's chapter.
+        listenForAudioEnd(of: cursorChapterPlay)
 
         // A file that cannot be played reports here instead, on the main
         // queue like the callbacks above, and never also as finished: the
@@ -903,9 +1024,14 @@ extension ReaderViewModel {
     /// A file that cannot be played is reported by the audio service before
     /// this returns, or later while it plays, and its failure handler stops
     /// the reader; this method then claims no Playing state at all.
+    ///
+    /// Each call begins a new play of the chapter, whose end alone the
+    /// audio service's next report can be: an end of an earlier play still
+    /// on its way is stale.
     func playAudioChapter() {
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
+        listenForAudioEnd(of: beginChapterPlay())
         // Audio that cannot be played claims no Playing state.
         guard startCurrentChapterAudio(in: content) else { return }
 

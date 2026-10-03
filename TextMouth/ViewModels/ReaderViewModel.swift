@@ -230,9 +230,12 @@ final class ReaderViewModel: ObservableObject {
     /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
     var lookAhead: LookAhead?
-    /// Incremented on every navigation/skip action. The onUtteranceFinished callback
-    /// checks this to ignore stale completions from a chapter that was playing before
-    /// the user navigated away.
+    /// The playback generation. Every chapter play (see `ChapterPlay`), and
+    /// every move to another chapter or loop, begins a new one. The end the
+    /// speech or audio service reports for a play ends it only while the
+    /// play's generation is still this one, so the end of a chapter the
+    /// reader has left is ignored; look-ahead renders are kept only within
+    /// the generation they began in.
     /// Accessed from Navigation and Playback extensions.
     var chapterPlaybackGeneration: Int = 0
 
@@ -511,54 +514,10 @@ final class ReaderViewModel: ObservableObject {
             }
         }
 
-        speechService.onUtteranceFinished = { [weak self] in
-            guard let self = self else { return }
-            let expectedGeneration = self.chapterPlaybackGeneration
-            DiagnosticLog.trace(.playback, "onUtteranceFinished: chapter=\(self.currentChapterIndex) offset=\(self.currentCharacterOffset) gen=\(expectedGeneration)")
-
-            // If a navigation happened since this chapter started playing,
-            // ignore this stale completion — the new chapter is already set up.
-            guard expectedGeneration == self.chapterPlaybackGeneration else {
-                DiagnosticLog.trace(.playback, "ignoring stale onUtteranceFinished (gen \(expectedGeneration) != \(self.chapterPlaybackGeneration))")
-                return
-            }
-
-            self.savePosition()
-            self.sleepTimerService.notifyDocumentEnd(by: self.book.id)
-            guard self.content != nil else { return }
-            // Advance to the next chapter with anything to say, passing over
-            // chapters that are empty, entirely inside skipped sections, or
-            // deleted by substitutions, exactly as starting playback does.
-            guard let speech = self.nextSpeakableChapterSpeech(from: self.currentChapterIndex + 1) else {
-                DiagnosticLog.trace(.playback, "no more speakable chapters, book ended")
-                self.handleEndOfBook()
-                return
-            }
-            let nextIndex = speech.chapterIndex
-            DiagnosticLog.trace(.playback, "advancing to chapter \(nextIndex) (from \(self.currentChapterIndex))")
-            self.currentChapterIndex = nextIndex
-            self.currentCharacterOffset = 0
-
-            // Increment generation for the new chapter
-            self.chapterPlaybackGeneration += 1
-
-            // Use the pre-rendered engine for an instant start when it holds
-            // exactly this chapter's speech, rendered from the text and voice
-            // in effect now. Audio rendered before the voice, a substitution
-            // rule, the punctuation pauses, or the skipped sections changed is
-            // discarded instead, and the chapter starts from its current text.
-            if let preEngine = self.takeLookAheadEngine(for: speech) {
-                DiagnosticLog.trace(.playback, "using pre-rendered engine for chapter \(nextIndex)")
-                // The prepared speech's map covers every pipeline stage
-                self.currentTransformation = speech.transformation
-                self.currentOffsetMap = speech.offsetMap
-                self.speechService.usePreRenderedEngine(preEngine, text: speech.text)
-                // Pre-render the chapter after that
-                self.preRenderNextChapter()
-            } else {
-                self.startSpeaking(SpeechStart(speech: speech, offset: 0))
-            }
-        }
+        // Each chapter's speech, once it starts, reports its end for its own
+        // play (see `startSpeaking(_:playing:)`); until one starts, the end
+        // belongs to the cursor's chapter.
+        listenForSpeechEnd(of: cursorChapterPlay)
 
         // Sleep timer callbacks are no longer set here — they're passed
         // when this VM starts a timer (see startSleepTimer below). This

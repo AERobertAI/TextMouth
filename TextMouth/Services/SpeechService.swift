@@ -75,6 +75,22 @@ enum SpeechResumePolicy {
     }
 }
 
+/// An utterance a synthesizer callback hands over to the main queue, kept
+/// alive until it is compared there with the live utterance.
+///
+/// An `ObjectIdentifier` alone is only an address: once its utterance is
+/// released, the next utterance made can take the same address and the
+/// same identifier. Holding the utterance keeps its address its own.
+/// `@unchecked Sendable` because the utterance is only held, and its
+/// identity read, never changed.
+struct FinishedUtterance: @unchecked Sendable {
+    /// The utterance the synthesizer reported on.
+    let utterance: AVSpeechUtterance
+
+    /// The utterance's identity, which no other live object shares.
+    var id: ObjectIdentifier { ObjectIdentifier(utterance) }
+}
+
 /// A short, pre-volume-adjusted utterance used to fade direct speech.
 /// `AVSpeechUtterance.volume` only takes effect when assigned before the
 /// utterance is enqueued, so direct `AVSpeechSynthesizer` playback cannot use
@@ -1377,9 +1393,15 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        let finishedUtteranceID = ObjectIdentifier(utterance)
+        // The utterance itself goes to the main queue, not only its
+        // identity, and stays alive until it is compared there. A stop or a
+        // seek made in the meantime releases it and starts another utterance,
+        // which could otherwise be made at its address and take this finish
+        // for its own, ending the chapter just as it restarted.
+        let finished = FinishedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            let finishedUtteranceID = finished.id
             if self.isDirectSleepFadeActive,
                let baseOffset = self.directFadeOffsets.removeValue(forKey: finishedUtteranceID),
                let length = self.directFadeLengths.removeValue(forKey: finishedUtteranceID) {
