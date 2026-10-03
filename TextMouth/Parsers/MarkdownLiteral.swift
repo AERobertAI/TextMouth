@@ -24,7 +24,7 @@ enum MarkdownLiteral {
     /// The text with every character Markdown could interpret made literal.
     ///
     /// Written a UTF-8 byte at a time, which the scalars it escapes allow
-    /// (PERF23: one scalar at a time took seven times as long). Every
+    /// (PERF23: one scalar at a time took six times as long). Every
     /// escaped scalar is ASCII, a single byte that UTF-8 never uses inside
     /// another scalar's bytes, and U+FEFF is the only scalar whose bytes are
     /// EF BB BF, since EF can only begin a scalar. Every other byte is

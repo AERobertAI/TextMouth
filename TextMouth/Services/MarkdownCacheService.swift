@@ -449,9 +449,9 @@ enum MarkdownCacheService {
     /// The lines and sections are Substrings of `markdown`, found by looking
     /// for line feeds among its UTF-8 bytes, so each section is copied once,
     /// when it is trimmed, rather than every line being copied into an array
-    /// and every section joined again (PERF22). Those copies once took a
-    /// quarter of the time a book took to open, and much of the memory a
-    /// book in one long chapter needed to open.
+    /// and every section joined again (PERF22: four times as long, and 46 MB
+    /// at its peak for a 20 MB book in one chapter, where this split needs
+    /// no more than the sections it keeps).
     static func splitChapters(_ markdown: String) -> [(title: String, content: String)] {
         var sections: [(title: String, content: String)] = []
         // The title of the section being read, and where its content starts:
