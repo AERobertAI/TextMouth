@@ -246,12 +246,13 @@ final class PersistenceCostTests: XCTestCase {
     /// makes one every minute while a Library window is visible, when the app
     /// becomes active, after every add, move, or removal, and every 2 seconds
     /// while a book downloads: the real book storage over the real item
-    /// provider, with the provider's location reads counted, for as many
-    /// packages as the user's library holds (643). It is measured twice: in
-    /// the test root, which is local, as the user's library is; and with
-    /// every location reported as iCloud Drive once the real provider has
-    /// worked it out, for a library in the cloud. Those packages are not on
-    /// disk, so each reads as waiting for sync after one failed listing.
+    /// provider, with the provider's location lookups counted
+    /// (`LocationCountingReads`), for as many packages as the user's
+    /// library holds (643). It is measured twice: in the test root, which is
+    /// local, as the user's library is; and with every location reported as
+    /// iCloud Drive once the real provider has looked it up, for a library
+    /// in the cloud. Those packages are not on disk, so each reads as
+    /// waiting for sync after one failed listing.
     ///
     /// Before PERF16 each refresh worked out where the library lives once,
     /// and once more for every package: 644 location reads in either
@@ -270,18 +271,18 @@ final class PersistenceCostTests: XCTestCase {
         }
 
         for reportsCloud in [false, true] {
-            let items = LocationCountingItems(reportingCloud: reportsCloud)
-            let storage = BookCloudStorageService(items: items)
+            let items = LocationCountingReads(reportingCloud: reportsCloud)
+            let storage = BookCloudStorageService(items: items.provider)
             let states = BookCloudStates()
             let clock = ContinuousClock()
             var durations: [Duration] = []
             var readsPerRefresh: [Int] = []
             for _ in 1...5 {
-                let readsBefore = items.locationReads
+                let readsBefore = items.count
                 let started = clock.now
                 await states.refresh(packages, using: storage)
                 durations.append(clock.now - started)
-                readsPerRefresh.append(items.locationReads - readsBefore)
+                readsPerRefresh.append(items.count - readsBefore)
             }
 
             let median = durations.sorted()[durations.count / 2]
@@ -587,51 +588,3 @@ private final class MainThreadHeartbeat {
     }
 }
 
-// MARK: - Counting Location Reads
-
-/// The item provider the app installs, with how often it works out where a
-/// folder lives counted. When `reportingCloud`, every location it has
-/// worked out is reported as iCloud Drive, so a library in the test root
-/// costs what a library in the cloud costs to locate. A refresh never asks
-/// for a download or a removal, so neither is passed on.
-private final class LocationCountingItems: CloudItemStatusProviding {
-    /// The provider the app installs.
-    private let system = UbiquitousItemStatusProvider()
-    /// Whether every location is reported as iCloud Drive.
-    private let reportsCloud: Bool
-    /// How many locations were worked out, from any thread.
-    private let reads = OSAllocatedUnfairLock(initialState: 0)
-
-    /// A provider that reports locations as they are, or every one as
-    /// iCloud Drive when `reportingCloud`.
-    init(reportingCloud: Bool) {
-        reportsCloud = reportingCloud
-    }
-
-    /// How many locations were worked out so far.
-    var locationReads: Int {
-        reads.withLock { $0 }
-    }
-
-    /// Works out where `folder` lives as the app does, and counts it.
-    func location(of folder: URL) -> StorageLocation {
-        reads.withLock { $0 += 1 }
-        let location = system.location(of: folder)
-        return reportsCloud ? .cloud(.iCloudDrive) : location
-    }
-
-    /// The file's state, as the app reads it.
-    func status(of file: URL) -> CloudItemStatus {
-        system.status(of: file)
-    }
-
-    /// Never asked for by a refresh.
-    func requestDownload(of file: URL) throws {
-        throw CocoaError(.featureUnsupported)
-    }
-
-    /// Never asked for by a refresh.
-    func removeLocalCopy(of file: URL) throws {
-        throw CocoaError(.featureUnsupported)
-    }
-}

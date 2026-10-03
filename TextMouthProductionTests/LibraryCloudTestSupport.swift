@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import XCTest
+import os
 @testable import TextMouth
 
 // MARK: - FR02 Library Cloud Test Support
@@ -138,6 +139,45 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
         observer?()
         held?.wait()
         try fake.removeDownload(of: package)
+    }
+}
+
+/// The item provider the app installs, reading the file system as the app
+/// does, with every lookup of where a folder lives counted (PERF16): each
+/// read of `UbiquitousItemStatusProvider.locationKeys`, one for each
+/// `location(of:)` of a folder that exists. With `reportingCloud`, every
+/// folder looked up reads as managed by a sync service, so the provider
+/// places a library in the test root in iCloud Drive, after the real
+/// lookup, and a test can see what locating a library in the cloud costs.
+///
+/// The provider is the app's own type, not a stand-in, so it suits book
+/// storage whatever else that storage asks of its provider.
+final class LocationCountingReads: Sendable {
+    /// The provider, reading through the counting reader.
+    let provider: UbiquitousItemStatusProvider
+    /// How many location lookups were read, from any thread.
+    private let reads: OSAllocatedUnfairLock<Int>
+
+    /// A provider whose folders are where they are, or all in iCloud Drive
+    /// when `reportingCloud`.
+    init(reportingCloud: Bool = false) {
+        let reads = OSAllocatedUnfairLock(initialState: 0)
+        self.reads = reads
+        provider = UbiquitousItemStatusProvider(readMetadata: { url, keys in
+            var metadata = try UbiquitousItemStatusProvider.readFreshMetadata(of: url, keys: keys)
+            if keys == UbiquitousItemStatusProvider.locationKeys {
+                reads.withLock { $0 += 1 }
+                if reportingCloud {
+                    metadata.isUbiquitousItem = true
+                }
+            }
+            return metadata
+        })
+    }
+
+    /// How many location lookups were read so far.
+    var count: Int {
+        reads.withLock { $0 }
     }
 }
 
