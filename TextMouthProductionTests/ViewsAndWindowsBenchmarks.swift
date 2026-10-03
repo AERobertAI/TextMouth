@@ -99,25 +99,45 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
 
     // MARK: - Closed Reader (PERF27)
 
-    /// What a reader keeps once its window closes, for a tiny book and for
-    /// a 2-million-character book with a minute of rendered speech, and the
-    /// malloc growth each leaves while held, as SwiftUI holds a closed
-    /// window's reader. The difference is what grows with the book.
+    /// What a reader keeps once its window closes, for a tiny book with a
+    /// second of rendered speech and for a 2-million-character book with a
+    /// minute of it, and the malloc growth each leaves while held, as
+    /// SwiftUI holds a closed window's reader. The difference is what grows
+    /// with the book.
     func testWhatAClosedReaderKeeps() throws {
         try requireOptIn()
         let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
         let tinyBook = try makeMarkdownBook(chapters: 1, charactersPerChapter: 400, sectionsPerChapter: 1)
         let bigBook = try makeMarkdownBook(chapters: 40, charactersPerChapter: 50_000, sectionsPerChapter: 4)
-        // A first reader pays the one-time costs: frameworks, voices, fonts.
-        _ = readerLifecycle(of: tinyBook, settings: settings, renderedSeconds: 0)
-        let tiny = readerLifecycle(of: tinyBook, settings: settings, renderedSeconds: 0)
+        // A first reader pays the one-time costs: frameworks, voices, fonts,
+        // and the audio system's first engine. Every reader gets some
+        // rendered speech, so each makes its speech engine, as every reader
+        // did at opening before PERF08: the difference between the two is
+        // only what grows with a book.
+        _ = readerLifecycle(of: tinyBook, settings: settings, renderedSeconds: 1)
+        let tiny = readerLifecycle(of: tinyBook, settings: settings, renderedSeconds: 1)
         let big = readerLifecycle(of: bigBook, settings: settings, renderedSeconds: 60)
-        let tinyGrowth = tiny["growthWhileClosedReaderHeldMB"] as? Double ?? 0
-        let bigGrowth = big["growthWhileClosedReaderHeldMB"] as? Double ?? 0
+        // The big book again: what its first reader left that a second one
+        // does not add again was a one-time cost, such as the text system's
+        // caches, rather than something each closed reader keeps.
+        let bigAgain = readerLifecycle(of: bigBook, settings: settings, renderedSeconds: 60)
+        // The same with no view drawing the readers.
+        let tinyUnseen = readerLifecycle(of: tinyBook, settings: settings, renderedSeconds: 1, hostingAView: false)
+        let bigUnseen = readerLifecycle(of: bigBook, settings: settings, renderedSeconds: 60, hostingAView: false)
+        /// Megabytes more that `first` left than `second`, to two decimals.
+        func difference(_ first: [String: Any], _ second: [String: Any]) -> Double {
+            let growth = { (result: [String: Any]) in (result["growthWhileClosedReaderHeldMB"] as? Double) ?? 0 }
+            return ((growth(first) - growth(second)) * 100).rounded() / 100
+        }
         emit("readerClose", [
             "tiny": tiny,
             "big": big,
-            "bigMinusTinyMB": ((bigGrowth - tinyGrowth) * 100).rounded() / 100,
+            "bigAgain": bigAgain,
+            "tinyUnseen": tinyUnseen,
+            "bigUnseen": bigUnseen,
+            "bigMinusTinyMB": difference(big, tiny),
+            "bigAgainMinusTinyMB": difference(bigAgain, tiny),
+            "bigMinusTinyUnseenMB": difference(bigUnseen, tinyUnseen),
         ])
     }
 
@@ -127,8 +147,14 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
     /// holds a closed reader window's reader. (An offscreen window that
     /// never becomes key escapes that retention, so the benchmark holds the
     /// reader itself.) Reports what the closed reader still holds and the
-    /// malloc growth it leaves.
-    private func readerLifecycle(of book: Book, settings: SettingsViewModel, renderedSeconds: TimeInterval) -> [String: Any] {
+    /// malloc growth it leaves. Without `hostingAView`, no view shows the
+    /// reader, which tells what drawing it leaves apart from the reader.
+    private func readerLifecycle(
+        of book: Book,
+        settings: SettingsViewModel,
+        renderedSeconds: TimeInterval,
+        hostingAView: Bool = true
+    ) -> [String: Any] {
         let model = LibraryViewModel(initializeServices: false)
         model.library = Library(books: [book])
         settle(nil, seconds: 0.5)
@@ -140,21 +166,21 @@ final class ViewsAndWindowsBenchmarks: XCTestCase {
             notificationCenter: NotificationCenter()
         )
         if let reader {
-            let hosted = hostOffscreen(
+            let hosted = hostingAView ? hostOffscreen(
                 ReaderView(viewModel: reader)
                     .environmentObject(SoundEffectService())
                     .environmentObject(settings)
-            )
+            ) : nil
             _ = waitUntil(timeout: 60) {
-                hosted.hostingView.layoutSubtreeIfNeeded()
+                hosted?.hostingView.layoutSubtreeIfNeeded()
                 return !reader.isLoading
             }
-            if renderedSeconds > 0 {
-                reader.speechService.audioEngine._installRenderedAudioForTesting(lasting: renderedSeconds)
-            }
-            settle(hosted.hostingView, seconds: 1)
+            reader.speechService.audioEngine._installRenderedAudioForTesting(lasting: renderedSeconds)
+            settle(hosted?.hostingView, seconds: 1)
             reader.close()
-            takeDown(hosted.window)
+            if let hosted {
+                takeDown(hosted.window)
+            }
         }
         settle(nil, seconds: 1.5)
         let result: [String: Any] = [
