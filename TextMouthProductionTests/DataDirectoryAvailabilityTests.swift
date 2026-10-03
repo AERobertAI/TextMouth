@@ -15,7 +15,7 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
     func testTheDefaultLocationIsAvailableEvenWhenMissing() throws {
         let home = try makeSandboxDirectory("DefaultHome")
         let root = TextMouthPaths.defaultRoot(in: home)
-        var check = makeCheck(root: root, home: home)
+        var check = makeCheck(root: root)
         check.isDefaultLocation = true
 
         XCTAssertEqual(check.run(itemStatus: LocalItemStatusProvider()), .available(nil, relocatedTo: nil))
@@ -43,7 +43,7 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
         let service = home.appendingPathComponent("Library/CloudStorage/GoogleDrive-reader@example.com", isDirectory: true)
         let root = service.appendingPathComponent("My Drive/TextMouth", isDirectory: true)
 
-        let outcome = makeCheck(root: root, home: home).run(itemStatus: LocalItemStatusProvider())
+        let outcome = makeCheck(root: root).run(itemStatus: LocalItemStatusProvider())
 
         XCTAssertEqual(
             outcome,
@@ -60,7 +60,7 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
         try FileManager.default.createDirectory(at: service, withIntermediateDirectories: true)
         let root = service.appendingPathComponent("TextMouth", isDirectory: true)
 
-        let outcome = makeCheck(root: root, home: home).run(itemStatus: LocalItemStatusProvider())
+        let outcome = makeCheck(root: root).run(itemStatus: LocalItemStatusProvider())
 
         XCTAssertEqual(outcome, .unavailable(.cloudFolderMissing(.dropbox, serviceFolderMissing: false, folder: root.path)))
     }
@@ -296,9 +296,8 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
     /// connected; on a mounted one, or anywhere else, a missing folder. The
     /// questions about /Volumes are answered here, so nothing looks there.
     func testAMissingFolderIsNamedByItsDriveOrCloudService() {
-        let home = URL(fileURLWithPath: "/Users/reader", isDirectory: true)
         func reason(_ path: String, mounted: Bool = false, present: Set<String> = []) -> DataDirectoryUnavailability {
-            .missingFolder(path, home: home, isMountedVolume: { _ in mounted }, exists: { present.contains($0) })
+            .missingFolder(path, isMountedVolume: { _ in mounted }, exists: { present.contains($0) })
         }
 
         XCTAssertEqual(
@@ -328,12 +327,14 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
         XCTAssertEqual(reason("/Users/reader/TextMouth"), .folderMissing(folder: "/Users/reader/TextMouth"))
     }
 
-    /// Cloud services are named by their folders in ~/Library/CloudStorage.
-    func testCloudServicesAreNamedByTheirFolders() {
-        XCTAssertEqual(DataDirectoryPaths.provider(namedBy: "GoogleDrive-reader@example.com"), .googleDrive)
-        XCTAssertEqual(DataDirectoryPaths.provider(namedBy: "Dropbox"), .dropbox)
-        XCTAssertEqual(DataDirectoryPaths.provider(namedBy: "OneDrive-Personal"), .other("OneDrive"))
-        XCTAssertEqual(DataDirectoryPaths.provider(namedBy: "Box"), .other("Box"))
+    /// A path in a cloud service's folder names the service and the
+    /// service's own folder; Trash folders are told apart from look-alikes.
+    func testCloudServiceFoldersAndTrashFoldersAreReadFromPaths() {
+        let drive = "/Users/reader/Library/CloudStorage/GoogleDrive-reader@example.com"
+        let found = DataDirectoryPaths.cloudFolder(holding: drive + "/My Drive/TextMouth")
+        XCTAssertEqual(found?.provider, .googleDrive)
+        XCTAssertEqual(found?.serviceFolder, drive)
+        XCTAssertNil(DataDirectoryPaths.cloudFolder(holding: "/Users/reader/Documents/TextMouth"))
         XCTAssertTrue(DataDirectoryPaths.isInTrash("/Users/reader/.Trash/TextMouth"))
         XCTAssertTrue(DataDirectoryPaths.isInTrash("/Volumes/Backup/.Trashes/501/TextMouth"))
         XCTAssertFalse(DataDirectoryPaths.isInTrash("/Users/reader/Trash Talk/TextMouth"))
@@ -341,15 +342,13 @@ final class DataDirectoryAvailabilityTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    /// A check of the custom location `root`, expecting `identity`, in this
-    /// process's sandboxed home unless `home` says otherwise.
-    private func makeCheck(root: URL, expecting identity: UUID? = nil, home: URL? = nil) -> DataDirectoryCheck {
+    /// A check of the custom location `root`, expecting `identity`.
+    private func makeCheck(root: URL, expecting identity: UUID? = nil) -> DataDirectoryCheck {
         DataDirectoryCheck(
             root: root,
             isDefaultLocation: false,
             expectedIdentity: identity,
-            bookmark: nil,
-            home: home ?? HostedTestSandbox.home
+            bookmark: nil
         )
     }
 

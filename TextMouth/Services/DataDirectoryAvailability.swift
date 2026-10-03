@@ -278,19 +278,17 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
     /// is simply gone. Decided from the path, with the two questions that
     /// need the file system passed in, so tests never look in /Volumes.
     /// - Parameters:
-    ///   - home: The home directory whose Library holds the cloud folders.
     ///   - isMountedVolume: Whether a volume is mounted at a /Volumes path.
     ///   - exists: Whether anything exists at a path.
     static func missingFolder(
         _ folder: String,
-        home: URL,
         isMountedVolume: (String) -> Bool,
         exists: (String) -> Bool
     ) -> DataDirectoryUnavailability {
         if let volume = DataDirectoryPaths.volume(holding: folder), !isMountedVolume(volume.mountPoint) {
             return .driveNotConnected(volume: volume.name, folder: folder)
         }
-        if let cloud = DataDirectoryPaths.cloudFolder(holding: folder, home: home) {
+        if let cloud = DataDirectoryPaths.cloudFolder(holding: folder) {
             return .cloudFolderMissing(
                 cloud.provider,
                 serviceFolderMissing: !exists(cloud.serviceFolder),
@@ -315,31 +313,22 @@ enum DataDirectoryPaths {
         return (components[2], "/Volumes/" + components[2])
     }
 
-    /// The cloud service whose folder in `home` holds `path`, and that
-    /// folder: iCloud Drive's in ~/Library/Mobile Documents, or a File
-    /// Provider drive's in ~/Library/CloudStorage, named as the drive names
-    /// its folder ("GoogleDrive-…", "Dropbox", "OneDrive-Personal"). Nil for
-    /// a path in no such folder.
-    static func cloudFolder(holding path: String, home: URL) -> (provider: CloudProvider, serviceFolder: String)? {
-        let library = home.standardizedFileURL.appendingPathComponent("Library", isDirectory: true)
-        let standardized = URL(fileURLWithPath: path).standardizedFileURL.path
-        if let service = child(of: library.appendingPathComponent("Mobile Documents").path, holding: standardized) {
-            return (.iCloudDrive, service)
+    /// The cloud service whose folder holds `path`, as the cloud services
+    /// read paths (`UbiquitousItemStatusProvider.provider(forPath:)`), and
+    /// that service's own folder: iCloud Drive's container in a Library's
+    /// Mobile Documents, or a File Provider drive's folder in its
+    /// CloudStorage. Nil for a path in no such folder.
+    static func cloudFolder(holding path: String) -> (provider: CloudProvider, serviceFolder: String)? {
+        var folder = URL(fileURLWithPath: path).standardizedFileURL
+        guard let provider = UbiquitousItemStatusProvider.provider(forPath: folder) else { return nil }
+        // The service's own folder is the shortest path still read as the
+        // service's: one level up from it is the place that holds them all.
+        var parent = folder.deletingLastPathComponent()
+        while parent.path != folder.path, UbiquitousItemStatusProvider.provider(forPath: parent) != nil {
+            folder = parent
+            parent = folder.deletingLastPathComponent()
         }
-        if let service = child(of: library.appendingPathComponent("CloudStorage").path, holding: standardized) {
-            return (provider(namedBy: (service as NSString).lastPathComponent), service)
-        }
-        return nil
-    }
-
-    /// The sync service a folder in ~/Library/CloudStorage belongs to, from
-    /// the folder's name: Google Drive's and Dropbox's by their prefixes,
-    /// any other by the part of the name before its first hyphen.
-    static func provider(namedBy folderName: String) -> CloudProvider {
-        if folderName.hasPrefix("GoogleDrive") { return .googleDrive }
-        if folderName.hasPrefix("Dropbox") { return .dropbox }
-        let service = folderName.split(separator: "-", maxSplits: 1).first.map(String.init) ?? ""
-        return .other(service.isEmpty ? folderName : service)
+        return (provider, folder.path)
     }
 
     /// How a debug log line names a data directory: its folder's name and
@@ -354,15 +343,6 @@ enum DataDirectoryPaths {
     /// a library there must not be opened as if it had only been renamed.
     static func isInTrash(_ path: String) -> Bool {
         URL(fileURLWithPath: path).standardizedFileURL.pathComponents.contains { $0 == ".Trash" || $0 == ".Trashes" }
-    }
-
-    /// The direct child of `parent` that `path` is, or lies inside: the
-    /// service's folder for a path deeper in it. Nil when `path` is not
-    /// below `parent`.
-    private static func child(of parent: String, holding path: String) -> String? {
-        guard path.hasPrefix(parent + "/") else { return nil }
-        guard let name = path.dropFirst(parent.count + 1).split(separator: "/").first else { return nil }
-        return parent + "/" + name
     }
 }
 
@@ -395,8 +375,6 @@ struct DataDirectoryCheck {
     var expectedIdentity: UUID?
     /// The bookmark of the folder, which can find it under another path.
     var bookmark: Data?
-    /// The home directory, whose Library holds the cloud services' folders.
-    var home: URL
 
     /// What the check found.
     enum Outcome: Equatable {
@@ -416,8 +394,7 @@ struct DataDirectoryCheck {
             isDefaultLocation: root.standardizedFileURL.path
                 == TextMouthPaths.defaultRoot(in: runtime.homeDirectory).standardizedFileURL.path,
             expectedIdentity: DataDirectoryPreferences.expectedIdentity.read(from: preferences),
-            bookmark: DataDirectoryPreferences.bookmark.read(from: preferences),
-            home: runtime.homeDirectory
+            bookmark: DataDirectoryPreferences.bookmark.read(from: preferences)
         )
     }
 
@@ -458,7 +435,6 @@ struct DataDirectoryCheck {
             }
             return .unavailable(.missingFolder(
                 root.path,
-                home: home,
                 isMountedVolume: FolderState.isMountPoint,
                 exists: { FileManager.default.fileExists(atPath: $0) }
             ))
