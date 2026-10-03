@@ -63,6 +63,7 @@ final class LibraryCloudRefreshTests: XCTestCase {
         XCTAssertEqual(fixture.states.state(of: books[0].id), .inCloud)
         XCTAssertEqual(fixture.states.state(of: books[1].id), .downloaded)
         XCTAssertEqual(fixture.storage.refreshCount, 1)
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0, "a refresh reads off the main thread")
     }
 
     /// Adding, moving, and removing a book each refresh once more, and the

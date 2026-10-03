@@ -359,3 +359,158 @@ struct LibraryCloudCommand: Identifiable, Equatable {
         return commands
     }
 }
+
+// MARK: - Running Commands
+
+extension BookDownloadProgress {
+    /// A download that has reported nothing yet, which the list shows as
+    /// "Downloading 0%": a book waiting its turn in a Download Now of
+    /// several books, or one whose first progress has not come in.
+    static let notStarted = BookDownloadProgress(completedFiles: 0, totalFiles: 0, completedBytes: 0, totalBytes: 0)
+}
+
+/// Runs the library list's cloud commands for a book or a selection (FR02).
+/// It records what it learns in `BookCloudStates`, announces through
+/// `VoiceOverAnnouncer` from the window that asked, and logs each command's
+/// start and end, with every failure. Files are read and changed off the
+/// main thread, by the book storage.
+@MainActor
+final class LibraryCloudCommands {
+    /// The commands every Library window runs.
+    static let shared = LibraryCloudCommands()
+
+    /// The books the list is downloading or has queued to download, by ID.
+    private(set) var booksDownloading: Set<UUID> = []
+
+    /// The store the commands record into.
+    private let states: BookCloudStates
+    /// The book storage, looked up when each command runs.
+    private let storage: @MainActor () -> any BookCloudStorage
+
+    /// Commands that record into `states` and act through `storage`.
+    /// - Parameters:
+    ///   - states: The store to record into.
+    ///   - storage: The book storage to act through, looked up when each
+    ///     command runs, so a storage installed later is used.
+    init(
+        states: BookCloudStates = .shared,
+        storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage }
+    ) {
+        self.states = states
+        self.storage = storage
+    }
+
+    // MARK: Download Now
+
+    /// Downloads `books` one after another (Download Now), recording each
+    /// download's progress and how it ended, then announces one summary.
+    ///
+    /// Only books whose state still lets them download, and that the list is
+    /// not downloading already, take part. Each shows "Downloading 0%" at
+    /// once and stays its download's until that ends, so no refresh changes
+    /// it meanwhile. Downloading one book at a time keeps a book waiting in
+    /// the sync service's queue from counting as stalled.
+    /// - Parameters:
+    ///   - books: The books to download, in list order.
+    ///   - library: The library they are in, which a book may leave or move
+    ///     within while it waits.
+    ///   - window: The window to announce from.
+    /// - Returns: The task running the downloads, which tests await; nil
+    ///   when no book needed downloading.
+    @discardableResult
+    func download(_ books: [Book], in library: LibraryViewModel, from window: NSWindow?) -> Task<Void, Never>? {
+        let queued = books.filter { book in
+            !booksDownloading.contains(book.id) && states.listedState(of: book.id)?.canDownload == true
+        }
+        guard !queued.isEmpty else { return nil }
+        let provider = states.libraryLocation.provider
+        for book in queued {
+            booksDownloading.insert(book.id)
+            states.beginDownload(of: book.id)
+            states.record(.downloading(.notStarted), for: book.id)
+        }
+        let titles = queued.map(\.title)
+        VoiceOverAnnouncer.announce(LibraryCloudWording.downloadStarted(titles: titles), from: window)
+        DiagnosticLog.event(.storage, "CLOUD_DOWNLOAD_STARTED: \(LibraryCloudWording.list(titles))")
+
+        let queuedIDs = queued.map(\.id)
+        return Task { [self, weak window] in
+            var downloaded: [String] = []
+            var failed: [(title: String, explanation: String)] = []
+            for bookID in queuedIDs {
+                switch await downloadQueuedBook(bookID, in: library, provider: provider) {
+                case .downloaded(let title)?:
+                    downloaded.append(title)
+                case .failed(let title, let explanation)?:
+                    failed.append((title: title, explanation: explanation))
+                case nil:
+                    break
+                }
+            }
+            DiagnosticLog.event(
+                .storage,
+                "CLOUD_DOWNLOAD_FINISHED: \(downloaded.count) downloaded, \(failed.count) failed"
+            )
+            if let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
+                VoiceOverAnnouncer.announce(summary, from: window)
+            }
+        }
+    }
+
+    /// How one book's download ended, by the title the summary names.
+    private enum DownloadEnding {
+        /// Every file of the book is on this Mac.
+        case downloaded(title: String)
+        /// The download failed, for the reason the explanation gives.
+        case failed(title: String, explanation: String)
+    }
+
+    /// Downloads the book `bookID` when its turn in a Download Now comes,
+    /// as the library has it then, recording its progress and how it ended.
+    /// Ends quietly, recording no ending, when the book has left the
+    /// library, before or during its download, or when the task was
+    /// cancelled; a later refresh then records what the storage says.
+    private func downloadQueuedBook(
+        _ bookID: UUID,
+        in library: LibraryViewModel,
+        provider: CloudProvider?
+    ) async -> DownloadEnding? {
+        defer {
+            booksDownloading.remove(bookID)
+            states.endDownload(of: bookID)
+        }
+        guard let book = library.bookByID(bookID) else { return nil }
+        // Starting a download can read files, which can wait on the
+        // network, so the storage is asked off the main thread.
+        let package = BookPackage(book)
+        let storage = storage()
+        let progressReports = await Task.detached(priority: .userInitiated) {
+            storage.download(package)
+        }.value
+        let ending: DownloadEnding
+        do {
+            for try await progress in progressReports {
+                states.record(.downloading(progress), for: bookID)
+            }
+            // Cancelling the task ends the loop without an error, and
+            // without a finished download.
+            guard !Task.isCancelled else { return nil }
+            ending = .downloaded(title: book.title)
+        } catch {
+            guard !Task.isCancelled, !(error is CancellationError) else { return nil }
+            let failure = (error as? BookCloudError) ?? .provider(error.localizedDescription)
+            let explanation = failure.explanation(in: provider)
+            DiagnosticLog.event(.storage, "CLOUD_DOWNLOAD_FAILED: \(book.title): \(explanation)")
+            ending = .failed(title: book.title, explanation: explanation)
+        }
+        // A book removed from the library meanwhile has no row to tell.
+        guard library.bookByID(bookID) != nil else { return nil }
+        switch ending {
+        case .downloaded:
+            states.record(.downloaded, for: bookID)
+        case .failed(_, let explanation):
+            states.record(.downloadFailed(explanation), for: bookID)
+        }
+        return ending
+    }
+}

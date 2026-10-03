@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import XCTest
 @testable import TextMouth
@@ -9,8 +10,9 @@ import XCTest
 // books made for them. Nothing here waits a fixed time.
 
 /// Book storage that passes every call to a `FakeBookCloudStorage`, counts
-/// the refreshes that read it, and can hold one refresh's reading until the
-/// test lets it go. A refresh reads `libraryLocation()` exactly once.
+/// the refreshes that read it and the calls made on the main thread, and
+/// can hold one refresh's reading until the test lets it go. A refresh
+/// reads `libraryLocation()` exactly once.
 final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// The scripted storage behind this one.
     let fake: FakeBookCloudStorage
@@ -19,6 +21,9 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     private let lock = NSLock()
     /// How many times `libraryLocation()` was read.
     private var locationReads = 0
+    /// How many calls of any kind were made on the main thread, where
+    /// none belongs: each can wait on the network in a real cloud folder.
+    private var callsOnMainThread = 0
     /// While set, the next read of the location waits on it.
     private var gate: DispatchSemaphore?
     /// Called on the reading thread as each refresh starts to read.
@@ -32,6 +37,18 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// How many refreshes have read this storage.
     var refreshCount: Int {
         lock.withLock { locationReads }
+    }
+
+    /// How many calls were made on the main thread; it should stay 0.
+    var mainThreadCalls: Int {
+        lock.withLock { callsOnMainThread }
+    }
+
+    /// Counts a call made on the main thread.
+    private func noteThread() {
+        if Thread.isMainThread {
+            lock.withLock { callsOnMainThread += 1 }
+        }
     }
 
     /// Calls `observer` on the reading thread whenever a refresh starts to
@@ -58,6 +75,7 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// Counts the read, tells the observer, waits while held, then answers
     /// as the fake does.
     func libraryLocation() -> StorageLocation {
+        noteThread()
         let (held, observer) = lock.withLock { () -> (DispatchSemaphore?, (@Sendable () -> Void)?) in
             locationReads += 1
             return (gate, readObserver)
@@ -69,16 +87,19 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
 
     /// The fake's state.
     func state(of package: BookPackage) -> BookCloudState {
-        fake.state(of: package)
+        noteThread()
+        return fake.state(of: package)
     }
 
     /// The fake's download.
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
-        fake.download(package)
+        noteThread()
+        return fake.download(package)
     }
 
     /// The fake's removal.
     func removeDownload(of package: BookPackage) throws {
+        noteThread()
         try fake.removeDownload(of: package)
     }
 }
@@ -185,5 +206,42 @@ extension XCTestCase {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             DispatchQueue.main.async { continuation.resume() }
         }
+    }
+
+    /// The messages VoiceOver was asked to announce while `body` ran, as
+    /// the announcer's recording delivery kept them; nothing is spoken. The
+    /// previous poster is put back afterwards.
+    @MainActor
+    func announcements(during body: () async -> Void) async -> [String] {
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = VoiceOverAnnouncer.makePoster(delivering: .record)
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let alreadyRecorded = VoiceOverAnnouncer.recordedAnnouncements.count
+        await body()
+        return VoiceOverAnnouncer.recordedAnnouncements.dropFirst(alreadyRecorded).map(\.message)
+    }
+
+    /// Waits until `states` records `state` for the book `bookID`, as soon
+    /// as it does, failing the test after `timeout` seconds rather than
+    /// waiting forever.
+    ///
+    /// A held download is safe to finish once its first step is recorded:
+    /// the fake registers the hold while it makes the stream, before any
+    /// step can be read from it.
+    @MainActor
+    func waitUntil(
+        _ states: BookCloudStates,
+        records state: BookCloudState,
+        for bookID: UUID,
+        timeout: TimeInterval = 10
+    ) async {
+        guard states.state(of: bookID) != state else { return }
+        let recorded = expectation(description: "\(state) is recorded")
+        recorded.assertForOverFulfill = false
+        let subscription = states.$states.sink { newStates in
+            if newStates[bookID] == state { recorded.fulfill() }
+        }
+        await fulfillment(of: [recorded], timeout: timeout)
+        subscription.cancel()
     }
 }

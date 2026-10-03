@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -95,6 +96,178 @@ final class LibraryCloudCommandTests: XCTestCase {
         )
     }
 
+    // MARK: - Download Now
+
+    /// Three steps of a download, by size.
+    private let steps = [
+        BookDownloadProgress(completedFiles: 0, totalFiles: 3, completedBytes: 100, totalBytes: 900),
+        BookDownloadProgress(completedFiles: 1, totalFiles: 3, completedBytes: 400, totalBytes: 900),
+        BookDownloadProgress(completedFiles: 2, totalFiles: 3, completedBytes: 800, totalBytes: 900),
+    ]
+
+    /// Download Now shows "Downloading 0%" at once, records each step of
+    /// progress in order, then "Downloaded", and says when it starts and
+    /// when it ends.
+    func testDownloadNowRecordsProgressInOrderThenDownloaded() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.fake.scriptDownload(of: book.id, steps: steps)
+
+        var recorded: [BookCloudState?] = []
+        let said = await announcements {
+            recorded = await fixture.recordedStates(of: book.id) {
+                await fixture.downloadAndWait([book])
+            }
+        }
+
+        XCTAssertEqual(recorded, [.downloading(.notStarted)] + steps.map { .downloading($0) } + [.downloaded])
+        XCTAssertEqual(said, ["Downloading Moby-Dick", "Moby-Dick downloaded"])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+        XCTAssertTrue(fixture.commands.booksDownloading.isEmpty)
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0, "the storage is never asked on the main thread")
+    }
+
+    /// Each way a download can fail records "Download Failed" with the
+    /// failure's explanation, which the end announcement says after naming
+    /// the book.
+    func testEachDownloadFailureRecordsAndSaysItsExplanation() async {
+        let failures: [BookCloudError] = [.offline, .stalled(seconds: 60), .provider("The account is full."), .packageMissing]
+        for failure in failures {
+            let book = cloudTestBook()
+            let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+            fixture.fake.scriptDownload(of: book.id, steps: [steps[0]], failingWith: failure)
+            let explanation = failure.explanation(in: .iCloudDrive)
+
+            var recorded: [BookCloudState?] = []
+            let said = await announcements {
+                recorded = await fixture.recordedStates(of: book.id) {
+                    await fixture.downloadAndWait([book])
+                }
+            }
+
+            XCTAssertEqual(
+                recorded,
+                [.downloading(.notStarted), .downloading(steps[0]), .downloadFailed(explanation)],
+                "\(failure)"
+            )
+            XCTAssertEqual(said, ["Downloading Moby-Dick", "Moby-Dick wasn't downloaded. " + explanation], "\(failure)")
+        }
+    }
+
+    /// Download Now for a selection downloads its books one after another
+    /// and says one summary as it starts and one as it ends.
+    func testDownloadingASelectionSaysOneSummary() async {
+        let books = [
+            cloudTestBook("Moby-Dick"),
+            cloudTestBook("Middlemarch", author: "George Eliot"),
+            cloudTestBook("Bleak House", author: "Charles Dickens"),
+        ]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map {
+            ($0.id, BookCloudState.inCloud)
+        }))
+        fixture.fake.scriptDownload(of: books[2].id, steps: [], failingWith: .offline)
+        let offline = BookCloudError.offline.explanation(in: .iCloudDrive)
+
+        let said = await announcements {
+            await fixture.downloadAndWait(books)
+        }
+
+        XCTAssertEqual(said, ["Downloading 3 books", "Downloaded 2 books. Bleak House wasn't downloaded. " + offline])
+        XCTAssertEqual(fixture.fake.downloadsStarted, books.map(\.id))
+        XCTAssertEqual(
+            books.map { fixture.states.state(of: $0.id) },
+            [.downloaded, .downloaded, .downloadFailed(offline)]
+        )
+    }
+
+    /// Every book of a Download Now shows "Downloading 0%" as soon as the
+    /// command starts, while it waits for its turn.
+    func testWaitingBooksShowAsDownloadingAtOnce() async {
+        let books = [cloudTestBook("Moby-Dick"), cloudTestBook("Middlemarch"), cloudTestBook("Bleak House")]
+        let fixture = CommandFixture(books: books, states: Dictionary(uniqueKeysWithValues: books.map {
+            ($0.id, BookCloudState.inCloud)
+        }))
+        fixture.fake.scriptDownload(of: books[0].id, steps: [steps[0]], holdsOpen: true)
+
+        let task = fixture.commands.download(books, in: fixture.model, from: nil)
+
+        XCTAssertEqual(
+            books.map { fixture.states.state(of: $0.id) },
+            Array(repeating: .downloading(.notStarted), count: 3)
+        )
+        XCTAssertEqual(fixture.commands.booksDownloading, Set(books.map(\.id)))
+        await waitUntil(fixture.states, records: .downloading(steps[0]), for: books[0].id)
+        XCTAssertEqual(
+            books.dropFirst().map { fixture.states.state(of: $0.id) },
+            [.downloading(.notStarted), .downloading(.notStarted)],
+            "the others wait their turn"
+        )
+        fixture.fake.finishHeldDownload(of: books[0].id)
+        await task?.value
+        XCTAssertEqual(books.map { fixture.states.state(of: $0.id) }, [.downloaded, .downloaded, .downloaded])
+    }
+
+    /// A book the list is downloading is not started again, and a book that
+    /// is downloaded already is not started at all.
+    func testOnlyBooksThatNeedItAreDownloaded() async {
+        let inCloud = cloudTestBook("Moby-Dick")
+        let downloaded = cloudTestBook("Middlemarch")
+        let fixture = CommandFixture(books: [inCloud, downloaded], states: [
+            inCloud.id: .inCloud,
+            downloaded.id: .downloaded,
+        ])
+        fixture.fake.scriptDownload(of: inCloud.id, steps: [steps[0]], holdsOpen: true)
+
+        let first = fixture.commands.download([inCloud], in: fixture.model, from: nil)
+        XCTAssertNotNil(first)
+        XCTAssertNil(fixture.commands.download([inCloud], in: fixture.model, from: nil), "it is downloading already")
+        XCTAssertNil(fixture.commands.download([downloaded], in: fixture.model, from: nil), "it is downloaded")
+        await waitUntil(fixture.states, records: .downloading(steps[0]), for: inCloud.id)
+        fixture.fake.finishHeldDownload(of: inCloud.id)
+        await first?.value
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [inCloud.id])
+        XCTAssertEqual(fixture.states.state(of: inCloud.id), .downloaded)
+    }
+
+    /// While the list downloads a book, a refresh leaves its progress alone,
+    /// even when the storage reports the book in the cloud meanwhile.
+    func testARefreshLeavesTheListsDownloadAlone() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.fake.scriptDownload(of: book.id, steps: [steps[1]], holdsOpen: true)
+
+        let task = fixture.commands.download([book], in: fixture.model, from: nil)
+        await waitUntil(fixture.states, records: .downloading(steps[1]), for: book.id)
+        await fixture.states.refresh([BookPackage(book)], using: fixture.fake)
+
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloading(steps[1]))
+        fixture.fake.finishHeldDownload(of: book.id)
+        await task?.value
+        XCTAssertEqual(fixture.states.state(of: book.id), .downloaded)
+    }
+
+    /// A book removed from the library while it waits for its turn is
+    /// skipped quietly, and the summary names only the books that ended.
+    func testABookThatLeavesTheLibraryIsSkippedQuietly() async {
+        let moby = cloudTestBook("Moby-Dick")
+        let emma = cloudTestBook("Emma", author: "Jane Austen")
+        let fixture = CommandFixture(books: [moby, emma], states: [moby.id: .inCloud, emma.id: .inCloud])
+        fixture.fake.scriptDownload(of: moby.id, steps: [steps[0]], holdsOpen: true)
+
+        let said = await announcements {
+            let task = fixture.commands.download([moby, emma], in: fixture.model, from: nil)
+            await waitUntil(fixture.states, records: .downloading(steps[0]), for: moby.id)
+            fixture.model.library.books.removeAll { $0.id == emma.id }
+            fixture.fake.finishHeldDownload(of: moby.id)
+            await task?.value
+        }
+
+        XCTAssertEqual(said, ["Downloading 2 books", "Moby-Dick downloaded"])
+        XCTAssertEqual(fixture.fake.downloadsStarted, [moby.id])
+        XCTAssertTrue(fixture.commands.booksDownloading.isEmpty)
+    }
+
     // MARK: - Wording
 
     /// Titles in a sentence join as "A", "A and B", "A, B, and C".
@@ -139,5 +312,55 @@ final class LibraryCloudCommandTests: XCTestCase {
             states.record(state, for: bookID)
         }
         return states
+    }
+}
+
+/// The library list's cloud commands with everything of their own: a store
+/// and fake storage for a library in iCloud Drive whose books start in the
+/// states given, and an inert library model holding the books. The storage
+/// counts the calls made on the main thread.
+@MainActor
+final class CommandFixture {
+    let states: BookCloudStates
+    let fake: FakeBookCloudStorage
+    let storage: CountingBookCloudStorage
+    let model: LibraryViewModel
+    let commands: LibraryCloudCommands
+
+    init(books: [Book], states recorded: [UUID: BookCloudState]) {
+        let states = BookCloudStates()
+        let fake = FakeBookCloudStorage(location: .cloud(.iCloudDrive))
+        let storage = CountingBookCloudStorage(fake)
+        self.states = states
+        self.fake = fake
+        self.storage = storage
+        model = LibraryViewModel(initializeServices: false)
+        commands = LibraryCloudCommands(states: states, storage: { storage })
+        model.library = Library(books: books)
+        states.setLibraryLocation(.cloud(.iCloudDrive))
+        for (bookID, state) in recorded {
+            states.record(state, for: bookID)
+            fake.setState(state, of: bookID)
+        }
+    }
+
+    /// Runs Download Now for `books`, from no window, and waits until it
+    /// has ended.
+    func downloadAndWait(_ books: [Book]) async {
+        await commands.download(books, in: model, from: nil)?.value
+    }
+
+    /// Every state recorded for the book `bookID` while `body` runs, in
+    /// order, starting after the one it had before.
+    func recordedStates(of bookID: UUID, during body: () async -> Void) async -> [BookCloudState?] {
+        var recorded: [BookCloudState?] = []
+        let subscription = states.$states
+            .map { $0[bookID] }
+            .removeDuplicates()
+            .dropFirst()
+            .sink { recorded.append($0) }
+        await body()
+        subscription.cancel()
+        return recorded
     }
 }
