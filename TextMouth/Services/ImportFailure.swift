@@ -81,10 +81,10 @@ struct ImportFailure: LocalizedError {
             .joined(separator: " ")
     }
 
-    /// Records this failure in the console and the debug log.
+    /// Records this failure as an import event, in the console and the
+    /// debug log.
     func log() {
-        print(logLine)
-        TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: logLine)
+        DiagnosticLog.event(.import, logLine)
     }
 
     /// The reason `error` gives for a failed import, without a file name:

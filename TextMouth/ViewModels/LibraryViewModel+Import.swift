@@ -155,7 +155,7 @@ extension LibraryViewModel {
                 if repaired != existing {
                     save()
                     let message = "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(FileManager.default.fileExists(atPath: repaired.filePath))"
-                    TextMouthPaths.appendLog(to: TextMouthPaths.debugLogFile, message: message)
+                    DiagnosticLog.event(.import, message)
                 }
             }
             return existing.id

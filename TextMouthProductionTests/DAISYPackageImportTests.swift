@@ -296,7 +296,7 @@ final class DAISYPackageImportTests: XCTestCase {
 
         XCTAssertEqual(try bookFiles(of: book), files.keys.filter { !$0.hasPrefix(".") }.sorted())
         try assertReadsInFull(book, sentences: Fixtures.packageBookSentences, headings: Fixtures.packageBookHeadings)
-        let logged = debugLogLines(containing: "DAISY_PACKAGE_WHOLE_FOLDER: \(folder.path): ")
+        let logged = debugLogLines(containing: "DAISY_PACKAGE_WHOLE_FOLDER: \(folder.lastPathComponent): ")
         XCTAssertEqual(logged.count, 1)
         XCTAssertTrue(logged.first?.contains("lists no DTBook content file") == true, logged.first ?? "")
     }
@@ -314,7 +314,7 @@ final class DAISYPackageImportTests: XCTestCase {
 
         XCTAssertEqual(try bookFiles(of: book), Fixtures.navigationBookFiles.filter { $0 != "images/eye splice.png" })
         XCTAssertEqual(
-            debugLogLines(containing: "DAISY_PACKAGE_MISSING: \(folder.appendingPathComponent("ncc.html").path): ").last
+            debugLogLines(containing: "DAISY_PACKAGE_MISSING: \(folder.lastPathComponent)/ncc.html: ").last
                 .map { $0.hasSuffix("refers to 1 file(s) that do not exist: images/eye splice.png") },
             true
         )
