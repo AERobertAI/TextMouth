@@ -30,9 +30,13 @@ enum PDFPageImageScanner {
     /// user space (the coordinates of its media box, before the page's
     /// rotation), in the order the page draws them. An image drawn through a
     /// rotated or skewed matrix is reported as the smallest upright
-    /// rectangle that holds it. Empty when the page draws no images.
+    /// rectangle that holds it. Empty when the page draws no images, or in
+    /// the unlikely case that Core Graphics cannot set up a scan, which
+    /// leaves the page to be read from its embedded text alone.
     static func imageRects(on page: CGPDFPage) -> [CGRect] {
-        let state = ScanState()
+        guard let operators = makeOperatorTable() else { return [] }
+        defer { CGPDFOperatorTableRelease(operators) }
+        let state = ScanState(operators: operators)
         let contentStream = CGPDFContentStreamCreateWithPage(page)
         defer { CGPDFContentStreamRelease(contentStream) }
         scan(contentStream, namingResourcesWith: contentStream, state: state)
@@ -41,8 +45,8 @@ enum PDFPageImageScanner {
 
     // MARK: - Scanning
 
-    /// Runs every operator in `contentStream` through the scanner's
-    /// operator table, recording images in `state`. The XObjects that
+    /// Runs every operator in `contentStream` through the scan's operator
+    /// table, recording images in `state`. The XObjects that
     /// `contentStream` draws are looked up in `resourceStream`'s resources:
     /// its own, or, for a form without resources, those of the stream that
     /// drew the form.
@@ -51,12 +55,10 @@ enum PDFPageImageScanner {
         namingResourcesWith resourceStream: CGPDFContentStreamRef,
         state: ScanState
     ) {
-        let table = makeOperatorTable()
-        defer { CGPDFOperatorTableRelease(table) }
         state.resourceStreams.append(resourceStream)
         defer { state.resourceStreams.removeLast() }
         let info = Unmanaged.passUnretained(state).toOpaque()
-        let scanner = CGPDFScannerCreate(contentStream, table, info)
+        let scanner = CGPDFScannerCreate(contentStream, state.operators, info)
         defer { CGPDFScannerRelease(scanner) }
         CGPDFScannerScan(scanner)
     }
@@ -65,11 +67,10 @@ enum PDFPageImageScanner {
     /// is skipped by the scanner without a callback. Each callback recovers
     /// the scan's `ScanState` from the scanner's info pointer, because a C
     /// callback cannot capture it; for the same reason the callbacks name
-    /// this type's helpers explicitly instead of capturing `Self`.
-    private static func makeOperatorTable() -> CGPDFOperatorTableRef {
-        guard let table = CGPDFOperatorTableCreate() else {
-            preconditionFailure("Core Graphics could not create a PDF operator table")
-        }
+    /// this type's helpers explicitly instead of capturing `Self`. Nil when
+    /// Core Graphics cannot create the table.
+    private static func makeOperatorTable() -> CGPDFOperatorTableRef? {
+        guard let table = CGPDFOperatorTableCreate() else { return nil }
         // q: save the graphics state, which includes the matrix.
         CGPDFOperatorTableSetCallback(table, "q") { _, info in
             PDFPageImageScanner.state(from: info)?.saveGraphicsState()
@@ -196,9 +197,12 @@ enum PDFPageImageScanner {
 
     /// What the scan has learned so far: the current transformation matrix,
     /// the matrices saved by `q`, how deep inside forms it is, and the
-    /// images found. A class, so the operator callbacks can reach it
-    /// through the scanner's info pointer.
+    /// images found, with the operator table that the page and every form
+    /// on it are scanned with. A class, so the operator callbacks can reach
+    /// it through the scanner's info pointer.
     private final class ScanState {
+        /// The callbacks every content stream of the page is scanned with.
+        let operators: CGPDFOperatorTableRef
         /// The current transformation matrix: image or form space to the
         /// page's default user space.
         var matrix = CGAffineTransform.identity
@@ -211,6 +215,11 @@ enum PDFPageImageScanner {
         var resourceStreams: [CGPDFContentStreamRef] = []
         /// Each image's rectangle in default user space, in drawing order.
         var imageRects: [CGRect] = []
+
+        /// A scan using `operators` for every stream it reads.
+        init(operators: CGPDFOperatorTableRef) {
+            self.operators = operators
+        }
 
         /// `q`: remember the current matrix.
         func saveGraphicsState() {
