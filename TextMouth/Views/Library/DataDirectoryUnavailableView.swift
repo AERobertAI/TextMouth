@@ -17,6 +17,15 @@ enum DataDirectoryUnavailableText {
     /// What Quit TextMouth does.
     static let quitHint = "Quits TextMouth without changing anything in the library's location."
 
+    /// The way to another library, under the reason: Storage settings and
+    /// the two buttons they show while the library isn't available, named
+    /// as their titles read (`StorageLocationWording`), so the sentence
+    /// follows any change to them. "To use another folder, open Settings,
+    /// Storage, and choose Choose Another Library or Use Default Location."
+    static let anotherFolderPointer = "To use another folder, open Settings, Storage, and choose "
+        + "\(buttonName(StorageLocationWording.chooserTitle(isLibraryAvailable: false))) or "
+        + "\(buttonName(StorageLocationWording.useDefaultTitle))."
+
     /// What VoiceOver hears when the screen appears: the heading, then why.
     static func announcement(for reason: DataDirectoryUnavailability) -> String {
         "\(title). \(reason.explanation)"
@@ -35,18 +44,25 @@ enum DataDirectoryUnavailableText {
             return nil
         }
     }
+
+    /// A button's title as a sentence names it: without the "..." that marks
+    /// a button opening a window or a chooser ("Use Default Location...").
+    private static func buttonName(_ title: String) -> String {
+        title.hasSuffix("...") ? String(title.dropLast(3)) : title
+    }
 }
 
 /// What every Library window shows in place of the library while the data
 /// directory can't be used (FR02): nothing was loaded, and nothing is saved.
 ///
 /// It reads in order with VoiceOver and a braille display: the heading, the
-/// reason in one sentence, the full path as selectable text, any refused
-/// action, then Try Again, the default button, which Return presses, and
-/// Quit TextMouth. VoiceOver focus moves to the reason when the view
-/// appears, and once VoiceOver has had time to say it, the heading and the
-/// reason are announced through `onAnnounce`, which the library model
-/// answers once for each reason, however many windows show the screen.
+/// reason in one sentence, where to choose another folder instead (Storage
+/// settings), the full path as selectable text, any refused action, then
+/// Try Again, the default button, which Return presses, and Quit TextMouth.
+/// VoiceOver focus moves to the reason when the view appears, and once
+/// VoiceOver has had time to say it, the heading and the reason are
+/// announced through `onAnnounce`, which the library model answers once for
+/// each reason, however many windows show the screen.
 struct DataDirectoryUnavailableView: View {
     /// Why the library can't be used.
     let unavailability: DataDirectoryUnavailability
@@ -82,6 +98,12 @@ struct DataDirectoryUnavailableView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .modifier(InitialVoiceOverFocusModifier(isTarget: true, delay: focusDelay))
+
+            // The way out when the library won't come back, read right
+            // after the reason and before the buttons.
+            Text(DataDirectoryUnavailableText.anotherFolderPointer)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
 
             location
 

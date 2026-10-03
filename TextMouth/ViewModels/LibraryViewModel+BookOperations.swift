@@ -266,10 +266,11 @@ extension LibraryViewModel {
     /// done, so none writes into a package as it moves; those already under
     /// way finish first, VoiceOver hearing what it waits for; and the saves
     /// already queued are written before anything moves. Throws
-    /// `LibraryTransitionError.storageBusy` while another hold is in place:
-    /// a data-directory move, Rebuild Directory, or another transition. A
-    /// transition that moves no package and rewrites no record, as for an
-    /// empty folder, only makes folders, at once, and holds nothing.
+    /// `StorageBusyError` while another operation holds the storage work,
+    /// saying which (#673): a data-directory move, Rebuild Directory, or
+    /// another folder edit. A transition that moves no package and rewrites
+    /// no record, as for an empty folder, only makes folders, at once, and
+    /// holds nothing.
     ///
     /// The library can change while the packages move, as when a reader saves
     /// its position or another window edits a book. Such changes are kept
@@ -291,9 +292,7 @@ extension LibraryViewModel {
             publish(plan)
             return
         }
-        guard let hold = StorageBoundary.shared.holdWork() else {
-            throw LibraryTransitionError.storageBusy
-        }
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
         defer { hold.release() }
         await hold.waitForWorkUnderWay { work in
             VoiceOverAnnouncer.announce(work.waitingMessage)
@@ -941,20 +940,6 @@ enum LibraryTransitionDiskWork {
             ) { [weak model] _ in
                 model?.retryRecordRestore(ofBookID: book.id, disk: disk)
             }
-        }
-    }
-}
-
-/// Why a library transition could not start.
-enum LibraryTransitionError: LocalizedError, Equatable {
-    /// Another operation holds the library's storage work: a data-directory
-    /// move, Rebuild Directory, or another move of books between folders.
-    case storageBusy
-
-    var errorDescription: String? {
-        switch self {
-        case .storageBusy:
-            return "TextMouth is still moving books or its data directory. Try again once that is done."
         }
     }
 }

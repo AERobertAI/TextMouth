@@ -4,7 +4,9 @@ import XCTest
 /// Work that writes into the data directory, and the hold a data-directory
 /// move puts on it (TODO S04): a move waits for the work under way and
 /// names it, work started meanwhile waits for the publication and runs
-/// under it, and nothing ever waits on itself.
+/// under it, and nothing ever waits on itself. Rebuild Directory and a
+/// folder edit hold the work the same way; only one operation holds it at
+/// a time, and another is told what holds it (#673).
 ///
 /// Every test uses a boundary of its own, so the app's data directory and
 /// its work are never involved, and releases its holds and its waiting
@@ -140,18 +142,44 @@ final class StorageGenerationWorkTests: XCTestCase {
         XCTAssertEqual(boundary.perform(.importing) { $0.number }, 0)
     }
 
-    /// Only one move holds work at a time; once its hold is released,
-    /// another move may hold it.
-    func testOnlyOneMoveHoldsWorkAtATime() throws {
+    /// Only one operation holds work at a time: while one does, every other
+    /// is refused and told what the first is doing (#673); once its hold is
+    /// released, another may hold the work, for any reason.
+    func testOnlyOneOperationHoldsWorkAtATimeAndARefusalSaysWhatHoldsIt() throws {
         let boundary = try makeBoundary()
-        let first = try makeHold(on: boundary)
+        let first = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
 
-        XCTAssertNil(boundary.holdWork(), "a second move held the work")
+        for reason in StorageHoldReason.allCases {
+            XCTAssertThrowsError(try boundary.holdWork(for: reason), "a second operation held the work") { error in
+                XCTAssertEqual(error as? StorageBusyError, StorageBusyError(reason: .movingBooksBetweenFolders))
+            }
+        }
         first.release()
         first.release()
-        let second = boundary.holdWork()
-        XCTAssertNotNil(second)
-        second?.release()
+        _ = try makeHold(on: boundary, for: .rebuildingDirectory)
+        XCTAssertThrowsError(try boundary.holdWork(for: .movingDataDirectory)) { error in
+            XCTAssertEqual(error as? StorageBusyError, StorageBusyError(reason: .rebuildingDirectory))
+        }
+    }
+
+    /// Whatever an operation holds the work for, work started meanwhile on
+    /// a background thread is told it is held, and runs once the hold is
+    /// released.
+    func testWorkWaitsWhateverTheHoldIsFor() async throws {
+        for reason in StorageHoldReason.allCases {
+            let boundary = try makeBoundary()
+            let hold = try makeHold(on: boundary, for: reason)
+            let told = expectation(description: "the extraction was told it is held for \(reason)")
+            let ran = expectation(description: "the extraction ran once the hold for \(reason) ended")
+
+            DispatchQueue.global().async {
+                boundary.perform(.textExtraction, whileHeld: { told.fulfill() }) { _ in ran.fulfill() }
+            }
+            await fulfillment(of: [told], timeout: 10)
+            hold.release()
+
+            await fulfillment(of: [ran], timeout: 10)
+        }
     }
 
     // MARK: - The Import Queue
@@ -197,10 +225,14 @@ final class StorageGenerationWorkTests: XCTestCase {
         StorageBoundary(root: try makeSandboxDirectory("WorkBoundary"))
     }
 
-    /// A move's hold on `boundary`'s work, released when the test ends
-    /// even when the test released it already.
-    private func makeHold(on boundary: StorageBoundary) throws -> StorageWorkHold {
-        let hold = try XCTUnwrap(boundary.holdWork(), "a move already held the work")
+    /// A hold on `boundary`'s work for `reason`, a move's unless the test
+    /// names another, released when the test ends even when the test
+    /// released it already.
+    private func makeHold(
+        on boundary: StorageBoundary,
+        for reason: StorageHoldReason = .movingDataDirectory
+    ) throws -> StorageWorkHold {
+        let hold = try boundary.holdWork(for: reason)
         addTeardownBlock { hold.release() }
         return hold
     }

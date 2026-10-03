@@ -234,23 +234,29 @@ struct TextMouthRuntime: @unchecked Sendable {
         return Date(timeIntervalSince1970: TimeInterval(started.tv_sec) + TimeInterval(started.tv_usec) / 1_000_000)
     }
 
-    /// How long after a sandbox was made a process with its identifier may
-    /// have started and still be the one that made it. A process makes its
-    /// sandbox as it starts, so only a change of the clock between the two
-    /// can put its start later; an hour allows for any such change.
-    static let sandboxMakerStartAllowance: TimeInterval = 60 * 60
+    /// How long after a folder named for a process was made a process with
+    /// that identifier may have started and still be the one that made it.
+    /// A process makes such a folder only once it runs (a sandbox as it
+    /// starts, an archive extraction directory during an import), so only a
+    /// change of the clock between the two can put its start later; an hour
+    /// allows for any such change.
+    static let folderMakerStartAllowance: TimeInterval = 60 * 60
 
-    /// Whether the process that made a sandbox named for `process`, made at
-    /// `made`, is still running. Process identifiers are reused, so a
-    /// running process with the identifier that started more than
-    /// `sandboxMakerStartAllowance` after `made` is a later process, and the
-    /// one that made the sandbox has ended. When either date is unknown, a
-    /// running process with the identifier counts as the maker, so a sweep
-    /// never deletes a sandbox a run may still be using.
-    static func isSandboxMakerRunning(_ process: Int32, sandboxMade made: Date?) -> Bool {
+    /// Whether the process that made a folder named for `process`, made at
+    /// `made`, is still running: the one rule of both sweeps of folders that
+    /// ended processes leave behind, the hosted-test sandboxes' here
+    /// (`abandonedSandboxes`) and the archive extraction directories' at
+    /// startup (`ArchiveExtractionDirectory.removeLeftovers`, #652).
+    /// Process identifiers are reused, so a running process with the
+    /// identifier that started more than `folderMakerStartAllowance` after
+    /// `made` is a later process, and the one that made the folder has
+    /// ended. When either date is unknown, a running process with the
+    /// identifier counts as the maker, so a sweep never deletes a folder a
+    /// process may still be using.
+    static func isFolderMakerRunning(_ process: Int32, folderMade made: Date?) -> Bool {
         guard isProcessRunning(process) else { return false }
         guard let made, let started = startDate(ofProcess: process) else { return true }
-        return started <= made.addingTimeInterval(sandboxMakerStartAllowance)
+        return started <= made.addingTimeInterval(folderMakerStartAllowance)
     }
 
     /// Whether `sandbox` was kept by its process (see `keepsSandbox`).
@@ -267,7 +273,7 @@ struct TextMouthRuntime: @unchecked Sendable {
     static func abandonedSandboxes(
         in temporaryDirectory: URL,
         currentProcess: Int32,
-        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isSandboxMakerRunning
+        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isFolderMakerRunning
     ) -> [URL] {
         let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]
         let entries = (try? FileManager.default.contentsOfDirectory(
@@ -297,7 +303,7 @@ struct TextMouthRuntime: @unchecked Sendable {
     static func removeAbandonedSandboxes(
         in temporaryDirectory: URL = FileManager.default.temporaryDirectory,
         currentProcess: Int32 = ProcessInfo.processInfo.processIdentifier,
-        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isSandboxMakerRunning
+        isMakerRunning: (_ process: Int32, _ sandboxMade: Date?) -> Bool = isFolderMakerRunning
     ) -> [URL] {
         abandonedSandboxes(in: temporaryDirectory, currentProcess: currentProcess, isMakerRunning: isMakerRunning)
             .filter { (try? FileManager.default.removeItem(at: $0)) != nil }

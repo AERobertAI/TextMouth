@@ -990,8 +990,9 @@ extension LibraryViewModel {
     /// (`copyAndPublish`). The held work goes on once `body` returns or
     /// throws, under whichever generation is current then.
     ///
-    /// Only one move runs at a time: another throws
-    /// `DataDirectoryMigrationError.moveInProgress`.
+    /// Only one operation holds the storage work at a time: while another
+    /// does (a move, a rebuild, or a folder edit moving books between
+    /// folders), this throws `StorageBusyError`, saying which (#673).
     private func withStorageWorkHeld<Value>(
         moving move: DataDirectoryMoveRequest?,
         waiting: (StorageWork?) async -> Void,
@@ -1000,9 +1001,9 @@ extension LibraryViewModel {
         if move != nil, let refusal = openBooksRefusal {
             throw refusal
         }
-        guard let hold = StorageBoundary.shared.holdWork() else {
-            throw DataDirectoryMigrationError.moveInProgress
-        }
+        // An operation that moves the data directory holds the work as a
+        // move; every other one here rebuilds the directory where it is.
+        let hold = try StorageBoundary.shared.holdWork(for: move == nil ? .rebuildingDirectory : .movingDataDirectory)
         defer { hold.release() }
         let progress = move.map { DataDirectoryMoveProgress(destination: $0.destination, isResetToDefault: $0.isResetToDefault) }
         if let progress {
@@ -1248,7 +1249,7 @@ extension LibraryViewModel {
         relaunching relauncher: TextMouthRelauncher = .live
     ) async -> OperationOutcome {
         guard dataDirectoryMove == nil else {
-            return .failure(Self.switchFailureContext, DataDirectoryMigrationError.moveInProgress)
+            return .failure(Self.switchFailureContext, StorageBusyError(reason: .movingDataDirectory))
         }
         LibraryPersistenceService.flushPendingSave()
         configService.flushScheduledSave()

@@ -191,7 +191,7 @@ final class StorageOperationOutcomeTests: XCTestCase {
         let model = LibraryViewModel(initializeServices: false)
         let destination = try makeNonEmptyDestination()
         let rootBefore = TextMouthPaths.root
-        let otherMove = try XCTUnwrap(StorageBoundary.shared.holdWork(), "another move held the storage work")
+        let otherMove = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
         defer { otherMove.release() }
 
         let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
@@ -202,6 +202,48 @@ final class StorageOperationOutcomeTests: XCTestCase {
         )
         XCTAssertEqual(TextMouthPaths.root, rootBefore)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.directory.path), ["keep.txt"])
+    }
+
+    /// A move asked for while books move between folders, a folder edit
+    /// holding the storage work, is refused before anything is copied,
+    /// saying what is happening rather than that a move is under way
+    /// (#673), and the data directory stays where it is.
+    func testAMoveIsRefusedWhileBooksMoveBetweenFolders() async throws {
+        protectDataDirectoryPreferences()
+        _ = try captureIndexSandbox()
+        let model = LibraryViewModel(initializeServices: false)
+        let destination = try makeNonEmptyDestination()
+        let rootBefore = TextMouthPaths.root
+        let folderEdit = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        defer { folderEdit.release() }
+
+        let outcome = await model.moveDataDirectoryReturningOutcome(to: destination.directory)
+
+        XCTAssertEqual(
+            outcome,
+            .failure("Failed to move directory: TextMouth is moving books between folders. Try again when that finishes.")
+        )
+        XCTAssertFalse(model.showError, "the status line reports it, not an alert behind Settings")
+        XCTAssertEqual(TextMouthPaths.root, rootBefore)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.directory.path), ["keep.txt"])
+    }
+
+    /// Rebuild Directory asked for while books move between folders is
+    /// refused before it changes anything, saying what is happening rather
+    /// than that a move is under way (#673).
+    func testARebuildIsRefusedWhileBooksMoveBetweenFolders() async throws {
+        _ = try captureIndexSandbox()
+        let model = LibraryViewModel(initializeServices: false)
+        let folderEdit = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        defer { folderEdit.release() }
+
+        let outcome = await model.rebuildDirectoryReturningOutcome()
+
+        XCTAssertEqual(
+            outcome,
+            .failure("Failed to rebuild directory: TextMouth is moving books between folders. Try again when that finishes.")
+        )
+        XCTAssertFalse(model.showError, "the status line reports it, not an alert behind Settings")
     }
 
     /// A success shows its own "Done" sentence, which is never shown as a
@@ -215,6 +257,24 @@ final class StorageOperationOutcomeTests: XCTestCase {
     }
 
     // MARK: - Outcome Wording
+
+    /// An operation refused while another holds the storage work is told
+    /// what that operation is doing (#673): a data-directory move, a
+    /// rebuild, or books moving between folders.
+    func testABusyRefusalSaysWhatHoldsTheStorageWork() {
+        XCTAssertEqual(
+            StorageBusyError(reason: .movingDataDirectory).localizedDescription,
+            "TextMouth is already moving its data directory. Try again once that move is done."
+        )
+        XCTAssertEqual(
+            StorageBusyError(reason: .rebuildingDirectory).localizedDescription,
+            "TextMouth is rebuilding its data directory. Try again when that finishes."
+        )
+        XCTAssertEqual(
+            StorageBusyError(reason: .movingBooksBetweenFolders).localizedDescription,
+            "TextMouth is moving books between folders. Try again when that finishes."
+        )
+    }
 
     /// "Done" carries the books the legacy migration could not move after a
     /// blank line, so the status line says what needs attention; a failure

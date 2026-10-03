@@ -640,12 +640,12 @@ final class HostedTestIsolationTests: XCTestCase {
         // launchd, process 1, has been running since the Mac started up.
         let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
         let hour: TimeInterval = 60 * 60
-        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted))
-        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: Date()))
-        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-0.5 * hour)))
-        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: launchdStarted.addingTimeInterval(-2 * hour)))
-        XCTAssertTrue(TextMouthRuntime.isSandboxMakerRunning(1, sandboxMade: nil), "An unknown date keeps a running process's")
-        XCTAssertFalse(TextMouthRuntime.isSandboxMakerRunning(Int32.max, sandboxMade: Date()))
+        XCTAssertTrue(TextMouthRuntime.isFolderMakerRunning(1, folderMade: launchdStarted))
+        XCTAssertTrue(TextMouthRuntime.isFolderMakerRunning(1, folderMade: Date()))
+        XCTAssertTrue(TextMouthRuntime.isFolderMakerRunning(1, folderMade: launchdStarted.addingTimeInterval(-0.5 * hour)))
+        XCTAssertFalse(TextMouthRuntime.isFolderMakerRunning(1, folderMade: launchdStarted.addingTimeInterval(-2 * hour)))
+        XCTAssertTrue(TextMouthRuntime.isFolderMakerRunning(1, folderMade: nil), "An unknown date keeps a running process's")
+        XCTAssertFalse(TextMouthRuntime.isFolderMakerRunning(Int32.max, folderMade: Date()))
 
         // The sweep, as runs make it, judging by when each folder was made.
         let manager = FileManager.default

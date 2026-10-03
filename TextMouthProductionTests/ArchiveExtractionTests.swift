@@ -327,7 +327,8 @@ final class ArchiveExtractionTests: XCTestCase {
     /// imports holds) with everything inside, logs each by its loggable path
     /// and never its absolute one, and leaves alone a directory in use,
     /// another running process's, anything else named, and a file named
-    /// like one.
+    /// like one. It asks whether a directory's maker runs only for other
+    /// processes' plain directories, telling it when each was made.
     func testSweepRemovesOnlyAbandonedExtractionDirectories() throws {
         let stoppedProcess: Int32 = 4_000_001
         let runningProcess: Int32 = 4_000_002
@@ -341,9 +342,19 @@ final class ArchiveExtractionTests: XCTestCase {
         let fileNamedLikeOne = parent.appendingPathComponent("extract-\(stoppedProcess)-\(UUID().uuidString)")
         try Data().write(to: fileNamedLikeOne)
 
-        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent) { $0 == runningProcess }
+        // Each process the sweep asked about, with when its directory was made.
+        var madeDates: [Int32: Date] = [:]
+
+        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent) { process, made in
+            madeDates[process] = made ?? .distantPast
+            return process == runningProcess
+        }
 
         XCTAssertEqual(removed, 2)
+        XCTAssertEqual(Set(madeDates.keys), [stoppedProcess, runningProcess], "only other processes' directories are asked about")
+        for (process, made) in madeDates {
+            XCTAssertLessThan(abs(made.timeIntervalSinceNow), 600, "process \(process) was not told when its directory was made")
+        }
         for gone in [stopped, ownAbandoned] {
             let named = DiagnosticLog.loggablePath(gone)
             XCTAssertFalse(FileManager.default.fileExists(atPath: gone.path), gone.lastPathComponent)
@@ -356,6 +367,44 @@ final class ArchiveExtractionTests: XCTestCase {
         for kept in [inUse.directory, running, unrelated, malformed, fileNamedLikeOne] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path), kept.lastPathComponent)
         }
+    }
+
+    /// Process identifiers are reused (#652). An extraction directory named
+    /// for a running process that started well after the directory was made
+    /// was left by an earlier process with that identifier, which has ended:
+    /// the sweep removes it, as the sandbox sweep removes such a sandbox.
+    /// One made after its process started stays, and so does one made up to
+    /// an hour before, which only a change of the clock explains.
+    func testSweepRemovesADirectoryWhoseIdentifierALaterProcessTook() throws {
+        // launchd, process 1, has run since the Mac started up, so a
+        // directory named for process 1 that was made before then was made
+        // by an earlier process 1: its recorded time does not match.
+        let launchdStarted = try XCTUnwrap(TextMouthRuntime.startDate(ofProcess: 1))
+        let hour: TimeInterval = 60 * 60
+        let taken = try makeDirectory(
+            "extract-1-\(UUID().uuidString)",
+            holdingAFile: true,
+            made: launchdStarted.addingTimeInterval(-2 * hour)
+        )
+        let madeBeforeAClockChange = try makeDirectory(
+            "extract-1-\(UUID().uuidString)",
+            holdingAFile: true,
+            made: launchdStarted.addingTimeInterval(-0.5 * hour)
+        )
+        let madeByTheRunningProcess = try makeDirectory("extract-1-\(UUID().uuidString)", holdingAFile: true)
+
+        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent)
+
+        XCTAssertEqual(removed, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: taken.path), "the leftover of an earlier process 1 stayed")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: madeBeforeAClockChange.path),
+            "a directory made within the hour before its process started was removed"
+        )
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: madeByTheRunningProcess.path),
+            "the running process's own directory was removed"
+        )
     }
 
     /// An abandoned extraction directory the sweep cannot remove, here
@@ -376,7 +425,7 @@ final class ArchiveExtractionTests: XCTestCase {
         }
         let named = DiagnosticLog.loggablePath(stuck)
 
-        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent) { _ in false }
+        let removed = ArchiveExtractionDirectory.removeLeftovers(in: parent) { _, _ in false }
 
         XCTAssertEqual(removed, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: stuck.path))
@@ -402,16 +451,16 @@ final class ArchiveExtractionTests: XCTestCase {
         XCTAssertNil(process(".import-\(uuid).tmb"))
     }
 
-    /// The real process check tells this running process from one that has
-    /// exited.
+    /// The sweep's real rule tells this running process from one that has
+    /// exited, for a directory made just now.
     func testProcessCheckTellsARunningProcessFromAStoppedOne() throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/true")
         try process.run()
         process.waitUntilExit()
 
-        XCTAssertTrue(ArchiveExtractionDirectory.isProcessRunning(getpid()))
-        XCTAssertFalse(ArchiveExtractionDirectory.isProcessRunning(process.processIdentifier))
+        XCTAssertTrue(TextMouthRuntime.isFolderMakerRunning(getpid(), folderMade: Date()))
+        XCTAssertFalse(TextMouthRuntime.isFolderMakerRunning(process.processIdentifier, folderMade: Date()))
     }
 
     // MARK: - Fixtures
@@ -446,12 +495,16 @@ final class ArchiveExtractionTests: XCTestCase {
     }
 
     /// A directory named `name` in `parent`, holding a file when
-    /// `holdingAFile`, as an interrupted extraction leaves one.
-    private func makeDirectory(_ name: String, holdingAFile: Bool) throws -> URL {
+    /// `holdingAFile`, as an interrupted extraction leaves one, and recorded
+    /// as made at `made` when one is given, rather than now.
+    private func makeDirectory(_ name: String, holdingAFile: Bool, made: Date? = nil) throws -> URL {
         let directory = parent.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if holdingAFile {
             try Data("Departs at nine.".utf8).write(to: directory.appendingPathComponent("timetable.txt"))
+        }
+        if let made {
+            try FileManager.default.setAttributes([.creationDate: made], ofItemAtPath: directory.path)
         }
         return directory
     }

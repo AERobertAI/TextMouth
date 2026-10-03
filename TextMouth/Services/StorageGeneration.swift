@@ -58,6 +58,44 @@ enum StorageWork: Sendable, CaseIterable {
     }
 }
 
+/// What an operation holding the storage work is doing (#673), which an
+/// operation refused meanwhile names (`StorageBusyError`), so the refusal
+/// says what is actually happening rather than that a data-directory move
+/// is under way, whatever holds the work.
+enum StorageHoldReason: Sendable, CaseIterable {
+    /// Moving the data directory: Change Location's Move Library Here, a
+    /// location requested in config.json, or Reset to Default from a custom
+    /// location.
+    case movingDataDirectory
+    /// Rebuild Directory, or Reset to Default where the library already is:
+    /// misplaced packages are put back and unlisted ones adopted.
+    case rebuildingDirectory
+    /// A folder edit from the library's sheets moving its books' packages
+    /// between folders (PERF14).
+    case movingBooksBetweenFolders
+}
+
+/// The refusal of an operation that needs the storage work held while
+/// another operation holds it (TODO S04, #673). Its description, which
+/// Storage settings' status line, the library's error alert, and VoiceOver
+/// give after the refused operation's own words, such as "Failed to move
+/// directory: ", says what the other operation is doing.
+struct StorageBusyError: LocalizedError, Equatable {
+    /// What the operation holding the storage work is doing.
+    let reason: StorageHoldReason
+
+    var errorDescription: String? {
+        switch reason {
+        case .movingDataDirectory:
+            return "TextMouth is already moving its data directory. Try again once that move is done."
+        case .rebuildingDirectory:
+            return "TextMouth is rebuilding its data directory. Try again when that finishes."
+        case .movingBooksBetweenFolders:
+            return "TextMouth is moving books between folders. Try again when that finishes."
+        }
+    }
+}
+
 /// Where the data directory is now, and the boundary between data-directory
 /// moves and the work that writes into the data directory (TODO S04).
 ///
@@ -72,8 +110,11 @@ enum StorageWork: Sendable, CaseIterable {
 ///
 /// Work that writes into the data directory runs through `perform(_:...)`,
 /// which keeps it from running across a publication: a move holds new work
-/// back (`holdWork()`), waits for the work already under way, copies and
+/// back (`holdWork(for:)`), waits for the work already under way, copies and
 /// publishes, and then lets the held work go on under the new generation.
+/// Rebuild Directory and a folder edit moving books between folders hold
+/// new work back the same way, each saying why (`StorageHoldReason`), and
+/// only one operation holds it at a time.
 ///
 /// `@unchecked Sendable`: every stored property is guarded by `condition`,
 /// a lock never held while calling out, so nothing reached from here, such
@@ -99,8 +140,9 @@ final class StorageBoundary: @unchecked Sendable {
     private var finishedWorkCount = 0
     /// Moves waiting for a piece of work to finish.
     private var finishWaiters: [CheckedContinuation<Void, Never>] = []
-    /// Whether a move holds new work back.
-    private var holdsWork = false
+    /// What the operation holding new work back is doing; nil while no
+    /// operation holds it.
+    private var holdReason: StorageHoldReason?
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
@@ -212,11 +254,12 @@ final class StorageBoundary: @unchecked Sendable {
     /// Runs `body`, a piece of `work` that writes into the data directory,
     /// with the generation it runs under, and returns what it returns.
     ///
-    /// While a data-directory move holds work (`holdWork()`), work started
-    /// on a background thread first tells `whileHeld`, then waits until the
-    /// move publishes or gives up, and runs under the generation current
-    /// then. A move waits for the work under way before it copies anything,
-    /// so no piece of work runs across a publication.
+    /// While an operation holds work (`holdWork(for:)`), such as a
+    /// data-directory move, work started on a background thread first tells
+    /// `whileHeld`, then waits until the hold is released, as when the move
+    /// publishes or gives up, and runs under the generation current then. A
+    /// move waits for the work under way before it copies anything, so no
+    /// piece of work runs across a publication.
     ///
     /// Two kinds of work run at once, unrecorded. Work on the main thread,
     /// where waiting would stall the very work a move waits for, such as an
@@ -256,17 +299,17 @@ final class StorageBoundary: @unchecked Sendable {
         set { Thread.current.threadDictionary[workDepthKey] = newValue }
     }
 
-    /// Records `work` as under way, once no move holds work back, and
-    /// returns its ticket and the generation it runs under. A move holding
-    /// work makes it tell `whileHeld`, outside the lock, and wait.
+    /// Records `work` as under way, once no operation holds work back, and
+    /// returns its ticket and the generation it runs under. An operation
+    /// holding work makes it tell `whileHeld`, outside the lock, and wait.
     private func begin(_ work: StorageWork, whileHeld: (() -> Void)?) -> (ticket: Int, generation: StorageGeneration) {
         condition.lock()
-        if holdsWork, let whileHeld {
+        if holdReason != nil, let whileHeld {
             condition.unlock()
             whileHeld()
             condition.lock()
         }
-        while holdsWork {
+        while holdReason != nil {
             condition.wait()
         }
         let ticket = nextTicket
@@ -291,25 +334,30 @@ final class StorageBoundary: @unchecked Sendable {
         }
     }
 
-    // MARK: - Holding Work for a Move
+    // MARK: - Holding Work
 
-    /// Holds new work back for a data-directory move, until the hold is
-    /// released; nil while another move holds it. The move then waits for
-    /// the work already under way (`StorageWorkHold.waitForWorkUnderWay`)
-    /// before it copies anything, and releases the hold once it has
-    /// published, or given up.
-    func holdWork() -> StorageWorkHold? {
+    /// Holds new work back for the operation `reason` names, such as a
+    /// data-directory move, until the hold is released. The operation then
+    /// waits for the work already under way
+    /// (`StorageWorkHold.waitForWorkUnderWay`) before it changes anything,
+    /// and releases the hold once it is done, or has given up.
+    /// - Throws: `StorageBusyError` while another operation holds the work,
+    ///   saying what that operation is doing (#673): only one holds it at a
+    ///   time.
+    func holdWork(for reason: StorageHoldReason) throws -> StorageWorkHold {
         condition.lock()
         defer { condition.unlock() }
-        guard !holdsWork else { return nil }
-        holdsWork = true
+        if let heldFor = holdReason {
+            throw StorageBusyError(reason: heldFor)
+        }
+        holdReason = reason
         return StorageWorkHold(boundary: self)
     }
 
     /// Lets the held work go on, under the generation current now.
     fileprivate func releaseWork() {
         condition.lock()
-        holdsWork = false
+        holdReason = nil
         condition.broadcast()
         condition.unlock()
     }
@@ -341,11 +389,12 @@ final class StorageBoundary: @unchecked Sendable {
     }
 }
 
-/// A data-directory move's hold on the work that writes into the data
-/// directory (TODO S04). While it lasts, new work started on a background
-/// thread waits (`StorageBoundary.perform`); `waitForWorkUnderWay` waits
-/// for the work already running. Releasing it lets the held work go on,
-/// under whatever generation is current then.
+/// An operation's hold on the work that writes into the data directory
+/// (TODO S04): a data-directory move's, Rebuild Directory's, or a folder
+/// edit's (`StorageHoldReason`). While it lasts, new work started on a
+/// background thread waits (`StorageBoundary.perform`);
+/// `waitForWorkUnderWay` waits for the work already running. Releasing it
+/// lets the held work go on, under whatever generation is current then.
 ///
 /// `@unchecked Sendable`: its one variable is guarded by `lock`.
 final class StorageWorkHold: @unchecked Sendable {
@@ -356,7 +405,7 @@ final class StorageWorkHold: @unchecked Sendable {
     /// Whether the hold was released.
     private var isReleased = false
 
-    /// A hold on `boundary`'s work, which `StorageBoundary.holdWork()` makes.
+    /// A hold on `boundary`'s work, which `StorageBoundary.holdWork(for:)` makes.
     fileprivate init(boundary: StorageBoundary) {
         self.boundary = boundary
     }

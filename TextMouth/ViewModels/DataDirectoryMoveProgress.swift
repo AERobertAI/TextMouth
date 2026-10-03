@@ -56,8 +56,8 @@ final class DataDirectoryMoveProgress: ObservableObject, Identifiable {
     private var endHandlers: [@MainActor @Sendable () -> Void] = []
 
     /// The move under way in this process, if any: one at a time, since
-    /// each holds the storage work (`StorageBoundary.holdWork()`). Quitting
-    /// asks it to stop first (`stopForQuit(then:)`).
+    /// each holds the storage work (`StorageBoundary.holdWork(for:)`).
+    /// Quitting asks it to stop first (`stopForQuit(then:)`).
     private(set) static weak var running: DataDirectoryMoveProgress?
 
     /// A move to `destination`; `isResetToDefault` for Reset to Default.
