@@ -150,7 +150,8 @@ func runFolderSortSettingTests() {
         library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "Fiction")
         try assertEqual(library.sortSetting(for: "Fiction").sortField, .author)
 
-        library.removeFolderAndContents(id: folderID)
+        // The folder holds no books, so no package is left to delete.
+        _ = library.removeFolderAndContents(id: folderID)
         // Should fall back to default now
         try assertEqual(library.sortSetting(for: "Fiction").sortField, .title)
         try assertTrue(library.folderSortSettings["Fiction"] == nil, "Entry should be removed")
@@ -165,7 +166,8 @@ func runFolderSortSettingTests() {
         library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: false), for: "Fiction")
         library.setSortSetting(FolderSortSetting(sortField: .fileSize, sortAscending: true), for: "Fiction/SciFi")
 
-        library.removeFolderAndContents(id: parentID)
+        // The folder holds no books, so no package is left to delete.
+        _ = library.removeFolderAndContents(id: parentID)
         try assertTrue(library.folderSortSettings["Fiction"] == nil)
         try assertTrue(library.folderSortSettings["Fiction/SciFi"] == nil)
     }
@@ -310,7 +312,8 @@ func runFolderSortSettingTests() {
         library.setSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "Fiction")
 
         // Delete the folder
-        library.removeFolderAndContents(id: folderID)
+        // The folder holds no books, so no package is left to delete.
+        _ = library.removeFolderAndContents(id: folderID)
 
         // Category sort setting should be unaffected
         try assertEqual(library.sortSetting(for: "__recent__").sortField, .dateAdded)
