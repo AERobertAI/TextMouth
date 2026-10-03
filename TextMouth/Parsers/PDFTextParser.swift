@@ -309,19 +309,46 @@ enum PDFTextParser {
         return joinLinesIntoParagraphs(lines)
     }
 
+    /// One heading or paragraph of a page's Markdown, as the paragraph
+    /// joiner writes it, with the line it begins with, so that text read
+    /// from the page's pictures can be placed between whole paragraphs
+    /// (TODO T09).
+    struct ParagraphBlock: Equatable {
+        /// The block's Markdown with the line breaks around it, exactly as
+        /// it is joined into the page.
+        var markdown: String
+        /// The index, among the lines joined, of the block's first line.
+        var firstLine: Int
+    }
+
     /// Join an array of text lines into Markdown, merging consecutive body-text
     /// lines into single paragraphs where appropriate.
     static func joinLinesIntoParagraphs(_ lines: [TextLine]) -> String {
-        var markdown = ""
+        markdown(of: paragraphBlocks(lines))
+    }
+
+    /// The Markdown of a page's `blocks`, joined in order.
+    static func markdown(of blocks: [ParagraphBlock]) -> String {
+        blocks.map(\.markdown).joined().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Join an array of text lines into headings and paragraphs, merging
+    /// consecutive body-text lines into single paragraphs where appropriate.
+    /// PDF line breaks are visual, not semantic — a line that doesn't end
+    /// with sentence-ending punctuation and is followed by another body line
+    /// at the same font size is likely a continuation of the same paragraph.
+    static func paragraphBlocks(_ lines: [TextLine]) -> [ParagraphBlock] {
+        var blocks: [ParagraphBlock] = []
         var i = 0
 
         while i < lines.count {
             let line = lines[i]
+            let firstLine = i
 
             if line.isHeading {
                 // Headings always stand alone
                 let prefix = String(repeating: "#", count: max(1, min(line.headingLevel, 6)))
-                markdown += "\n\(prefix) \(line.text)\n\n"
+                blocks.append(ParagraphBlock(markdown: "\n\(prefix) \(line.text)\n\n", firstLine: firstLine))
                 i += 1
                 continue
             }
@@ -372,11 +399,11 @@ enum PDFTextParser {
                 i += 1
             }
 
-            markdown += "\n\(paragraph)\n"
+            blocks.append(ParagraphBlock(markdown: "\n\(paragraph)\n", firstLine: firstLine))
             i += 1
         }
 
-        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+        return blocks
     }
 
     /// Detect the most common font size in an attributed string (the "body" size)
