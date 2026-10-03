@@ -7,79 +7,79 @@
       "value" : 851
     },
     "cloud.refreshLocalLibrary" : {
-      "summary" : "One cloud refresh of a 643-book library that is not in a cloud location.",
+      "summary" : "Processor time, on every thread, of one cloud refresh of a 643-book library that is not in a cloud location.",
       "unit" : "milliseconds",
-      "value" : 0.161
+      "value" : 0.173
     },
     "epub.extraction" : {
       "summary" : "Extracting the 1 MB EPUB's text into content.md, with its index and fingerprints.",
       "unit" : "milliseconds",
-      "value" : 1187.925
+      "value" : 1195.592
     },
     "headingSheet.publish" : {
       "summary" : "Main-thread time one reader publish costs the open Headings sheet of a 180-heading book.",
       "unit" : "milliseconds",
-      "value" : 1.753
+      "value" : 1.74
     },
     "launch" : {
       "summary" : "Launch with a 643-book library: reading library.json, the startup repair, and the text cache check.",
       "unit" : "milliseconds",
-      "value" : 130.793
+      "value" : 132.724
     },
     "list.derivation.author" : {
       "summary" : "One derivation of the 643-book All Items list sorted by Author.",
       "unit" : "milliseconds",
-      "value" : 4.52
+      "value" : 4.458
     },
     "list.derivation.dateAdded" : {
       "summary" : "One derivation of the 643-book All Items list sorted by Date Added.",
       "unit" : "milliseconds",
-      "value" : 1.075
+      "value" : 1.056
     },
     "list.derivation.fileSize" : {
       "summary" : "One derivation of the 643-book All Items list sorted by File Size.",
       "unit" : "milliseconds",
-      "value" : 2.774
+      "value" : 2.789
     },
     "list.derivation.lastOpened" : {
       "summary" : "One derivation of the 643-book All Items list sorted by Last Opened.",
       "unit" : "milliseconds",
-      "value" : 2.85
+      "value" : 2.874
     },
     "list.derivation.manualOrder" : {
       "summary" : "One derivation of the 643-book All Items list sorted by Manual Order.",
       "unit" : "milliseconds",
-      "value" : 4.268
+      "value" : 4.172
     },
     "list.derivation.title" : {
       "summary" : "One derivation of the 643-book All Items list sorted by Title.",
       "unit" : "milliseconds",
-      "value" : 4.278
+      "value" : 4.2
     },
     "list.firstSortByFileSize" : {
       "summary" : "The first sort of the 643 books by File Size, which measures every book's package.",
       "unit" : "milliseconds",
-      "value" : 25.124
+      "value" : 26.012
     },
     "livePosition.update" : {
       "summary" : "One live reading position update in a 643-book library, as a playing reader makes each second.",
       "unit" : "microseconds",
-      "value" : 129.372
+      "value" : 146.803
     },
     "open.audiobook" : {
       "summary" : "Opening a 3-file audiobook in a reader until it has loaded.",
       "unit" : "milliseconds",
-      "value" : 4.89
+      "value" : 4.597
     },
     "open.textBook" : {
       "summary" : "Opening the 1 MB EPUB in a reader until the speech of its first chapter is prepared.",
       "unit" : "milliseconds",
-      "value" : 210.3
+      "value" : 208.406
     },
     "render.keptMemory" : {
       "summary" : "The memory a 40,000-character chapter's rendered speech keeps once built.",
       "unit" : "megabytes",
-      "value" : 43.354
+      "value" : 43.349
     },
     "render.peakMemory" : {
       "summary" : "The most memory taken while a 40,000-character chapter's rendered speech is built.",
@@ -89,7 +89,7 @@
     "speech.millionCharacterChapter" : {
       "summary" : "Preparing the speech of a 1,000,000-character chapter with the developer's 16 substitution rules.",
       "unit" : "milliseconds",
-      "value" : 237.276
+      "value" : 236.652
     }
   },
   "configuration" : "Debug",
