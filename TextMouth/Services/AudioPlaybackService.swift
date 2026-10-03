@@ -39,24 +39,54 @@ final class AudioSeekGate: @unchecked Sendable {
     }
 }
 
+/// What the audio service does with one tick of its position observer.
 enum AudioPositionObserverPolicy {
-    enum Action: Equatable {
+    enum Action: Equatable, Sendable {
+        /// Nothing: the position cannot be trusted, or belongs to no clip.
         case ignore
+        /// The clip being played has reached its end.
         case finishClip
+        /// Report this position, in seconds into the loaded file.
         case publish(TimeInterval)
     }
 
+    /// The action for a tick that finds the player `seconds` into its file.
+    ///
+    /// - Parameters:
+    ///   - seconds: The player's position as the tick is handled.
+    ///   - isSeeking: Whether a seek is still on its way. Until it lands,
+    ///     the player may report where it was before.
+    ///   - isPlaying: Whether playback is playing and not paused. Only such
+    ///     playback finishes its clip. Paused or finished playback at or
+    ///     past the clip's end reports nothing, since that time belongs to
+    ///     whatever follows the clip; paused playback finishes the clip on
+    ///     its first tick once resumed.
+    ///   - clipEndTime: Where the clip being played ends, in seconds into
+    ///     its file, or nil when it plays to the file's end.
     static func action(
         seconds: TimeInterval,
         isSeeking: Bool,
+        isPlaying: Bool,
         clipEndTime: TimeInterval?
     ) -> Action {
         guard seconds.isFinite, !isSeeking else { return .ignore }
         if let clipEndTime, seconds >= clipEndTime {
-            return .finishClip
+            return isPlaying ? .finishClip : .ignore
         }
         return .publish(seconds)
     }
+}
+
+/// One report from AVFoundation about the audio service's player, as the
+/// service dealt with it. Hosted tests receive each one through
+/// `AudioPlaybackService._reportHandledForTesting`.
+enum AudioPlayerReport: Equatable, Sendable {
+    /// A tick of the position observer of the player now loaded, finding
+    /// the player `seconds` into its file, and what the service did with it.
+    case tick(seconds: TimeInterval, action: AudioPositionObserverPolicy.Action)
+    /// A tick of the position observer of a player since released, which
+    /// the service turned away.
+    case tickFromReleasedPlayer
 }
 
 /// Decides whether audio that should be playing has stalled.
@@ -371,6 +401,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
+    /// Counts the position observers installed, one for each player. Each
+    /// observer's ticks carry the count it was installed with, so a tick of
+    /// an observer installed for an earlier player can never act on the
+    /// current one.
+    private var timeObserverGeneration = 0
     private var endObserver: NSObjectProtocol?
     /// Observes the current item failing to play to its end.
     private var failedToPlayToEndObserver: NSObjectProtocol?
@@ -742,6 +777,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// read its status and post the notifications AVFoundation posts for it.
     var _playerItemForTesting: AVPlayerItem? { playerItem }
 
+    /// The player now loaded, or nil. Hosted tests keep a released player
+    /// and play it on, to show that nothing it reports reaches its
+    /// successor.
+    var _playerForTesting: AVPlayer? { player }
+
+    /// Told, on the main queue, of every report from AVFoundation about the
+    /// player once the service has dealt with it. Hosted tests wait on these
+    /// reports instead of waiting a fixed time.
+    var _reportHandledForTesting: ((AudioPlayerReport) -> Void)?
+
     /// Pause the player without the service knowing, exactly as AVFoundation
     /// pauses it when a stall empties its buffer. Hosted tests use it to
     /// stall playback of a local file, which never stalls by itself.
@@ -932,34 +977,58 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     // MARK: - Observers
 
+    /// Watch the new player's clock: four times a second while it plays,
+    /// and whenever its time jumps or it starts or stops.
     private func setupTimeObserver() {
         guard let player = player else { return }
+        timeObserverGeneration += 1
+        let observerGeneration = timeObserverGeneration
         let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
-        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
             guard let self = self else { return }
-            let secs = CMTimeGetSeconds(time)
-
-            switch AudioPositionObserverPolicy.action(
-                seconds: secs,
-                isSeeking: self.seekGate.isSeeking,
-                clipEndTime: self.clipEndTime
-            ) {
-            case .ignore:
-                // While a seek is in progress, the player may report stale
-                // pre-seek positions. Suppress every observer side effect,
-                // including clip completion, until the latest seek lands.
+            // AVFoundation starts no tick once its observer is removed, and
+            // releasing a player removes its observer; a tick of an earlier
+            // player's observer is still turned away here, so none can act
+            // on the player now loaded.
+            guard observerGeneration == self.timeObserverGeneration else {
+                DiagnosticLog.trace(.playback, "audio position: ignored a tick from the observer of a released player")
+                self._reportHandledForTesting?(.tickFromReleasedPlayer)
                 return
-            case .finishClip:
-                // A clip chain plays on with its next clip; only the end of
-                // its last clip, or of a lone clip, finishes playback.
-                if self.advanceToNextClip() { return }
-                self.finishPlayback()
-                return
-            case .publish(let seconds):
-                self.recordPosition(atFileTime: seconds)
-                self.onPositionUpdate?(self.currentTime)
             }
+            self.playerClockDidTick()
         }
+    }
+
+    /// Act on the position of the player now loaded: publish it, or end the
+    /// clip that has reached its end.
+    ///
+    /// The position is read from the player now rather than taken from the
+    /// tick, which AVFoundation can measure just before a seek or a new play
+    /// moves the player (it has handed over a tick still giving the old
+    /// time while a seek to the end landed).
+    private func playerClockDidTick() {
+        guard let player else { return }
+        let seconds = CMTimeGetSeconds(player.currentTime())
+        let action = AudioPositionObserverPolicy.action(
+            seconds: seconds,
+            isSeeking: seekGate.isSeeking,
+            isPlaying: isPlaying && !isPaused,
+            clipEndTime: clipEndTime
+        )
+        switch action {
+        case .ignore:
+            // Nothing to act on: a seek still on its way, during which the
+            // player may report where it was before; a time that is not a
+            // number; or paused or finished playback at or past its clip's
+            // end.
+            break
+        case .finishClip:
+            reachedEnd()
+        case .publish(let position):
+            recordPosition(atFileTime: position)
+            onPositionUpdate?(currentTime)
+        }
+        _reportHandledForTesting?(.tick(seconds: seconds, action: action))
     }
 
     private func setupEndObserver() {
@@ -979,12 +1048,19 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 // while that seek is under way is stale. A real end comes
                 // only once playback has run on to it.
                 guard !self.seekGate.isSeeking else { return }
-                // A clip chain plays on with its next clip; only the end of
-                // its last clip finishes playback.
-                if self.advanceToNextClip() { return }
             }
-            self.finishPlayback()
+            self.reachedEnd()
         }
+    }
+
+    /// Carry playback on from the end of the clip or file it has just
+    /// played to: a clip chain plays on with its next clip, and only the end
+    /// of its last clip, or of a lone clip or file, finishes playback. Both
+    /// ways of noticing an end, the position observer reaching a clip's end
+    /// and AVFoundation's end-of-file notice, come through here.
+    private func reachedEnd() {
+        if advanceToNextClip() { return }
+        finishPlayback()
     }
 
     /// End playback because what it was asked to play has played to its
@@ -994,12 +1070,15 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// the other; only the first is acted on, since playback that no longer
     /// plays has nothing left to finish. `onPlaybackFinished` is therefore
     /// called once each time playback is started and runs to its end.
+    ///
+    /// The clip's end is kept, so the player's ticks at or past it once it
+    /// has stopped report no time beyond the clip. Loading a file, or a
+    /// chain's clip, sets the end afresh.
     private func finishPlayback() {
         guard isPlaying else { return }
         player?.pause()
         isPlaying = false
         isPaused = false
-        clipEndTime = nil
         onPlaybackFinished?()
     }
 
