@@ -588,9 +588,10 @@ final class LibraryCloudCommandTests: XCTestCase {
 
 /// The library list's cloud commands with everything of their own: a store
 /// and fake storage for a library in iCloud Drive whose books start in the
-/// states given, a set of kept books in memory, empty at first, and an inert
-/// library model holding the books. The storage counts the calls made on the
-/// main thread, and the fixture counts the refreshes the commands ask for.
+/// states given, a set of kept books in memory, empty at first, a clock the
+/// test sets, and an inert library model holding the books. The storage
+/// counts the calls made on the main thread, and the fixture counts the
+/// refreshes the commands ask for.
 @MainActor
 final class CommandFixture {
     let states: BookCloudStates
@@ -604,6 +605,8 @@ final class CommandFixture {
     let refreshRequests: RequestCounter
     /// What the commands showed in Finder, one list of files each time.
     let revealed: RevealLog
+    /// The time the commands read, which only the test moves.
+    let clock: CommandClock
 
     init(books: [Book], states recorded: [UUID: BookCloudState]) {
         let states = BookCloudStates()
@@ -612,19 +615,22 @@ final class CommandFixture {
         let storage = CountingBookCloudStorage(fake)
         let refreshRequests = RequestCounter()
         let revealed = RevealLog()
+        let clock = CommandClock()
         self.states = states
         self.kept = kept
         self.fake = fake
         self.storage = storage
         self.refreshRequests = refreshRequests
         self.revealed = revealed
+        self.clock = clock
         model = LibraryViewModel(initializeServices: false)
         commands = LibraryCloudCommands(
             states: states,
             kept: kept,
             storage: { storage },
             refreshAfterRemoval: { refreshRequests.count += 1 },
-            revealInFinder: { revealed.files.append($0) }
+            revealInFinder: { revealed.files.append($0) },
+            now: { clock.now }
         )
         model.library = Library(books: books)
         states.setLibraryLocation(.cloud(.iCloudDrive))
@@ -667,4 +673,16 @@ final class RequestCounter {
 final class RevealLog {
     /// One list of files for each time Finder was asked.
     var files: [[URL]] = []
+}
+
+/// A clock the cloud commands read, which only the test moves.
+@MainActor
+final class CommandClock {
+    /// The time now, as the commands see it.
+    var now = Date(timeIntervalSince1970: 1_790_000_000)
+
+    /// Moves the time on by `seconds`.
+    func advance(by seconds: TimeInterval) {
+        now = now.addingTimeInterval(seconds)
+    }
 }

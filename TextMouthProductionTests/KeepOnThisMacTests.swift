@@ -259,6 +259,109 @@ final class KeepOnThisMacTests: XCTestCase {
         XCTAssertFalse(lines.contains { $0.contains("DOWNLOAD_NOW") }, "a keep's downloads are not Download Now's")
     }
 
+    // MARK: - Downloading Again After Eviction
+
+    /// A kept book whose download the drive removes is downloaded again at
+    /// the next cloud refresh, quietly: its row shows the download, and
+    /// VoiceOver hears nothing, since nobody asked just then.
+    func testAKeptBookEvictedIsDownloadedAgainAtTheNextRefresh() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .downloaded])
+        fixture.kept.keep([book.id])
+        let refresher = makeRefresher(for: fixture)
+        await refresher.waitForRefreshes()
+        XCTAssertEqual(fixture.fake.downloadsStarted, [], "a downloaded book needs nothing")
+
+        // The drive removes the book's download.
+        fixture.fake.setState(.inCloud, of: book.id)
+        let said = await announcements {
+            refresher.requestRefresh()
+            await refresher.waitForRefreshes()
+            await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        }
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+        XCTAssertEqual(said, [])
+        XCTAssertEqual(fixture.storage.mainThreadCalls, 0)
+    }
+
+    /// A refresh downloads no book this Mac doesn't keep.
+    func testARefreshDownloadsNoBookNotKept() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        let refresher = makeRefresher(for: fixture)
+
+        await refresher.waitForRefreshes()
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud)
+    }
+
+    /// A kept book whose download failed waits before a refresh tries it
+    /// again, so a Mac offline isn't asked every minute; once the wait is
+    /// over, the next refresh downloads it.
+    func testAFailedKeptBookWaitsBeforeTheNextTry() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.keep([book.id])
+        fixture.fake.scriptDownload(of: book.id, steps: [], failingWith: .offline)
+        let failure = BookCloudError.offline.explanation(in: .iCloudDrive)
+
+        // The first refresh tries, and the download fails.
+        let refresher = makeRefresher(for: fixture)
+        await refresher.waitForRefreshes()
+        await waitUntil(fixture.states, records: .downloadFailed(failure), for: book.id)
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+
+        // A refresh within the wait finds the book in the cloud and leaves it.
+        fixture.clock.advance(by: LibraryCloudCommands.keptBookRetryDelay - 1)
+        refresher.requestRefresh()
+        await refresher.waitForRefreshes()
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud)
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+
+        // The first refresh after the wait downloads it.
+        fixture.clock.advance(by: 1)
+        refresher.requestRefresh()
+        await refresher.waitForRefreshes()
+        await waitUntil(fixture.states, records: .downloaded, for: book.id)
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id, book.id])
+    }
+
+    /// A kept book that hasn't arrived from the sync service yet is kept
+    /// for when it does: the first refresh that finds it in the cloud
+    /// downloads it.
+    func testAKeptBookWaitingForSyncDownloadsOnceItArrives() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .waitingForSync])
+        fixture.kept.keep([book.id])
+        let refresher = makeRefresher(for: fixture)
+        await refresher.waitForRefreshes()
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+
+        fixture.fake.setState(.inCloud, of: book.id)
+        refresher.requestRefresh()
+        await refresher.waitForRefreshes()
+        await waitUntil(fixture.states, records: .downloaded, for: book.id)
+
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+    }
+
+    /// A library outside the cloud downloads nothing, kept or not: its
+    /// books are always on this Mac.
+    func testALibraryOutsideTheCloudDownloadsNothing() async {
+        let book = cloudTestBook()
+        let fixture = CommandFixture(books: [book], states: [book.id: .inCloud])
+        fixture.kept.keep([book.id])
+        fixture.fake.setLibraryLocation(.otherVolume(name: "Archive Disk"))
+        let refresher = makeRefresher(for: fixture)
+
+        await refresher.waitForRefreshes()
+
+        XCTAssertNil(fixture.commands.downloadEvictedKeptBooks(in: fixture.model))
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+    }
+
     // MARK: - Wording
 
     /// The commands' titles name one book plainly and count a selection's.
@@ -344,5 +447,30 @@ final class KeepOnThisMacTests: XCTestCase {
             BookCloudError.keptOnThisMac.explanation(in: .dropbox),
             "The book is kept on this Mac, so its download can't be removed. Choose Stop Keeping on This Mac first."
         )
+    }
+
+    // MARK: - Helpers
+
+    /// A refresher over `fixture`'s store and storage, whose timer sleeps
+    /// until the test wakes it, which it never does here, and which hands
+    /// each refresh to the fixture's commands to download again the kept
+    /// books it found in the cloud, as the app's refresher does. Its Library
+    /// window appears now, which starts one refresh, and disappears when the
+    /// test ends, which stops the timer.
+    private func makeRefresher(for fixture: CommandFixture) -> LibraryCloudRefresher {
+        let sleep = SteppedSleep()
+        let storage = fixture.storage
+        let commands = fixture.commands
+        let refresher = LibraryCloudRefresher(
+            states: fixture.states,
+            storage: { storage },
+            sleep: { try await sleep.sleep($0) },
+            notificationCenter: NotificationCenter(),
+            afterRefresh: { commands.downloadEvictedKeptBooks(in: $0) }
+        )
+        let window = UUID()
+        refresher.libraryWindowAppeared(window, showing: fixture.model)
+        addTeardownBlock { @MainActor in refresher.libraryWindowDisappeared(window) }
+        return refresher
     }
 }

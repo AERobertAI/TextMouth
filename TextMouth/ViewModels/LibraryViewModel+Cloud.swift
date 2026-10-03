@@ -93,7 +93,8 @@ enum LibraryCloudRefreshScope: Comparable {
 /// off the main thread. Refreshes never overlap: a request made while one
 /// runs starts one more right after it, reading every book any of the
 /// requests asked for, so the last refresh always reads after the last
-/// request.
+/// request. After each refresh, the books kept on this Mac that it found
+/// only in the cloud are downloaded again (Keep on This Mac).
 @MainActor
 final class LibraryCloudRefresher {
     /// Waits for a duration, throwing when the waiting task is cancelled.
@@ -118,6 +119,9 @@ final class LibraryCloudRefresher {
     private let sleep: Sleep
     /// Where the app's activation is posted.
     private let notificationCenter: NotificationCenter
+    /// What follows each refresh, with the library it read: downloading
+    /// again the kept books it found only in the cloud.
+    private let afterRefresh: @MainActor (LibraryViewModel) -> Void
 
     /// The library the Library windows show, whose books are refreshed.
     private weak var library: LibraryViewModel?
@@ -143,18 +147,24 @@ final class LibraryCloudRefresher {
     ///   - notificationCenter: Where `NSApplication.didBecomeActiveNotification`
     ///     is posted.
     ///   - isEnabled: False for a refresher that never refreshes.
+    ///   - afterRefresh: What follows each refresh: the list's commands
+    ///     download again the kept books found only in the cloud.
     init(
         states: BookCloudStates = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         sleep: @escaping Sleep = { try await Task.sleep(for: $0) },
         notificationCenter: NotificationCenter = .default,
-        isEnabled: Bool = true
+        isEnabled: Bool = true,
+        afterRefresh: @escaping @MainActor (LibraryViewModel) -> Void = {
+            LibraryCloudCommands.shared.downloadEvictedKeptBooks(in: $0)
+        }
     ) {
         self.states = states
         self.storage = storage
         self.sleep = sleep
         self.notificationCenter = notificationCenter
         self.isEnabled = isEnabled
+        self.afterRefresh = afterRefresh
     }
 
     // MARK: Windows
@@ -201,12 +211,15 @@ final class LibraryCloudRefresher {
 
     /// Refreshes `scope`, then back to back what was requested meanwhile,
     /// until no request is left; then lets the next request start a new run.
+    /// Each refresh is followed by `afterRefresh`, which reads only what the
+    /// refresh recorded.
     private func refreshUntilCurrent(_ scope: LibraryCloudRefreshScope) async {
         var next: LibraryCloudRefreshScope? = scope
         while let scope = next {
             scopeRequestedWhileRunning = nil
             guard let library else { break }
             await states.refresh(packages(of: library, in: scope), using: storage())
+            afterRefresh(library)
             next = scopeRequestedWhileRunning
         }
         refreshing = nil
@@ -470,10 +483,20 @@ final class LibraryCloudCommands {
     /// The commands every Library window runs.
     static let shared = LibraryCloudCommands()
 
+    /// How long a kept book whose download failed waits before a refresh
+    /// downloads it again on its own: long enough that a Mac offline, or a
+    /// sync service paused, isn't asked every minute, short enough that the
+    /// book comes back soon after the network does. Download Now and Keep on
+    /// This Mac never wait.
+    static let keptBookRetryDelay: TimeInterval = 5 * 60
+
     /// The books the list is downloading or has queued to download, by ID.
     private(set) var booksDownloading: Set<UUID> = []
     /// The books whose downloads the list is removing now, by ID.
     private(set) var booksBeingRemoved: Set<UUID> = []
+    /// When each kept book whose last download failed may be downloaded
+    /// again by a refresh, by ID.
+    private var keptBookRetryTimes: [UUID: Date] = [:]
 
     /// The store the commands record into.
     private let states: BookCloudStates
@@ -487,6 +510,8 @@ final class LibraryCloudCommands {
     private let refreshAfterRemoval: @MainActor () -> Void
     /// Selects files in Finder.
     private let revealInFinder: @MainActor ([URL]) -> Void
+    /// The time now, which decides when a failed kept book is tried again.
+    private let now: @MainActor () -> Date
 
     /// Commands that record into `states` and act through `storage`.
     /// - Parameters:
@@ -496,18 +521,21 @@ final class LibraryCloudCommands {
     ///     command runs, so a storage installed later is used.
     ///   - refreshAfterRemoval: Asks for a refresh after a removal.
     ///   - revealInFinder: Selects files in Finder.
+    ///   - now: The time now: the system clock, unless a test sets it.
     init(
         states: BookCloudStates = .shared,
         kept: KeptBooks = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() },
-        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) }
+        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
+        now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.states = states
         self.kept = kept
         self.storage = storage
         self.refreshAfterRemoval = refreshAfterRemoval
         self.revealInFinder = revealInFinder
+        self.now = now
     }
 
     /// Runs `command` for the Library window `window` shows, announcing
@@ -565,8 +593,41 @@ final class LibraryCloudCommands {
         let released = kept.stopKeeping(books.map(\.id))
         let titles = books.filter { released.contains($0.id) }.map(\.title)
         guard !titles.isEmpty else { return }
+        released.forEach { keptBookRetryTimes[$0] = nil }
         DiagnosticLog.event(.storage, "KEEP_ON_MAC: stopped keeping \(LibraryCloudWording.list(titles)) on this Mac")
         VoiceOverAnnouncer.announce(LibraryCloudWording.stoppedKeeping(titles: titles), from: window)
+    }
+
+    /// Downloads again each book of `library` kept on this Mac that the
+    /// latest refresh recorded as only in the cloud: the sync service
+    /// removed its download, while TextMouth ran or before it started. The
+    /// cloud refresher calls this after each refresh.
+    ///
+    /// Nothing is announced, since nobody asked just then; the rows show
+    /// "Downloading", and KEPT_BOOK_DOWNLOAD lines log the downloads. A
+    /// kept book whose last download failed waits `keptBookRetryDelay`
+    /// before a refresh tries it again, so a Mac offline isn't asked every
+    /// minute; a book waiting for sync downloads once it has arrived.
+    /// - Returns: The task running the downloads, which tests await; nil
+    ///   when no kept book needed downloading.
+    @discardableResult
+    func downloadEvictedKeptBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
+        guard states.showsCloudNotes, !kept.bookIDs.isEmpty else { return nil }
+        let time = now()
+        let evicted = library.library.books.filter { book in
+            kept.contains(book.id)
+                && states.listedState(of: book.id) == .inCloud
+                && (keptBookRetryTimes[book.id].map { $0 <= time } ?? true)
+        }
+        return download(evicted, in: library, from: nil, origin: .keptBookRefresh)
+    }
+
+    /// Notes how a download of the book `bookID` ended, for a kept book: a
+    /// failure makes refreshes wait `keptBookRetryDelay` before they try it
+    /// again, and a success lets the next eviction be downloaded at once.
+    private func noteKeptBookDownload(_ bookID: UUID, failed: Bool) {
+        guard kept.contains(bookID) else { return }
+        keptBookRetryTimes[bookID] = failed ? now().addingTimeInterval(Self.keptBookRetryDelay) : nil
     }
 
     // MARK: Show in Finder
@@ -609,10 +670,18 @@ final class LibraryCloudCommands {
         /// Keep on This Mac, for the kept books in the cloud: Keep on This
         /// Mac announced the start, so VoiceOver hears only the end.
         case keepOnThisMac
+        /// A refresh found kept books only in the cloud: nobody asked just
+        /// then, so VoiceOver hears nothing, and the rows show the downloads.
+        case keptBookRefresh
 
         /// Whether VoiceOver hears which books start downloading.
         var announcesStart: Bool {
             self == .downloadNow
+        }
+
+        /// Whether VoiceOver hears how the downloads ended.
+        var announcesEnd: Bool {
+            self != .keptBookRefresh
         }
 
         /// The tags of the lines logged as the downloads start, as one of
@@ -622,7 +691,7 @@ final class LibraryCloudCommands {
             switch self {
             case .downloadNow:
                 return ("DOWNLOAD_NOW_STARTED", "DOWNLOAD_NOW_FAILED", "DOWNLOAD_NOW_FINISHED")
-            case .keepOnThisMac:
+            case .keepOnThisMac, .keptBookRefresh:
                 return ("KEPT_BOOK_DOWNLOAD_STARTED", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED")
             }
         }
@@ -675,7 +744,8 @@ final class LibraryCloudCommands {
                 .storage,
                 "\(origin.logTags.finished): \(downloaded.count) downloaded, \(failed.count) failed"
             )
-            if let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
+            if origin.announcesEnd,
+               let summary = LibraryCloudWording.downloadFinished(downloaded: downloaded, failed: failed) {
                 VoiceOverAnnouncer.announce(summary, from: window)
             }
         }
@@ -733,8 +803,10 @@ final class LibraryCloudCommands {
         switch ending {
         case .downloaded:
             states.record(.downloaded, for: bookID)
+            noteKeptBookDownload(bookID, failed: false)
         case .failed(_, let explanation):
             states.record(.downloadFailed(explanation), for: bookID)
+            noteKeptBookDownload(bookID, failed: true)
         }
         return ending
     }
