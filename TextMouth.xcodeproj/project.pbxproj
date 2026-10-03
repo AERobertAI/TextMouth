@@ -1705,24 +1705,24 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/weichsel/ZIPFoundation.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.9.19;
+				kind = exactVersion;
+				version = 0.9.20;
 			};
 		};
 		D7B9D80C81F2D803EC29788F /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.7.5;
+				kind = exactVersion;
+				version = 2.13.9;
 			};
 		};
 		EAC81789CCD3DA63250E61E1 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/swiftlang/swift-markdown.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.5.0;
+				kind = exactVersion;
+				version = 0.9.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
