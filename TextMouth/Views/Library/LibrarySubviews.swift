@@ -65,6 +65,10 @@ struct EditModeBar: View {
 struct TimeRemainingBar: View {
     let books: [Book]
     let wpm: Double
+    /// How many of `books` are in the cloud (FR02), which the bar shows and
+    /// speaks when it is more than 0. The list counts them in a cloud
+    /// library and passes 0 anywhere else, where the bar is as it was.
+    var booksInCloud: Int = 0
     /// Optional fallback focus target for the library when Continue Listening is absent.
     /// This summary is part of the content area and shows up reliably in the AX tree,
     /// unlike List section headers in this view hierarchy.
@@ -92,6 +96,12 @@ struct TimeRemainingBar: View {
                 }
 
                 Spacer()
+
+                if booksInCloud > 0 {
+                    Text(Self.cloudCountText(booksInCloud))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Text(CountWording.books(books.count))
                     .font(.caption)
@@ -137,7 +147,22 @@ struct TimeRemainingBar: View {
         if unknown > 0 {
             parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
         }
+        if booksInCloud > 0 {
+            parts.append("\(CountWording.phrase(booksInCloud, singular: "book is", plural: "books are")) in the cloud")
+        }
         return parts.joined(separator: ". ")
+    }
+
+    /// What VoiceOver says for the whole bar, as its body sets it.
+    var summaryAccessibilityLabel: String {
+        let (time, known, unknown) = computeTimeRemaining()
+        return accessibilityLabel(time: time, known: known, unknown: unknown)
+    }
+
+    /// The bar's visible count of books in the cloud: "1 book in the cloud",
+    /// "3 books in the cloud".
+    static func cloudCountText(_ count: Int) -> String {
+        "\(CountWording.books(count)) in the cloud"
     }
 }
 
@@ -210,6 +235,18 @@ struct BookRow: View {
     var wpm: Double = 200
     var isEditMode: Bool = false
     var isEditSelected: Bool = false
+    /// The book's cloud state, shown and spoken after the New or Now Reading
+    /// badge (FR02). Nil when the library is not in a cloud location, or the
+    /// book has not been checked yet: the row then looks and reads as it
+    /// always has. The list passes what `BookCloudStates` recorded, so a row
+    /// never asks the file system anything.
+    var cloudState: BookCloudState? = nil
+    /// The cloud commands of the row's context menu, which are also the
+    /// row's VoiceOver actions (VO-Command-Space), under the same names
+    /// (FR02).
+    var cloudCommands: [LibraryCloudCommand] = []
+    /// Runs one of `cloudCommands`.
+    var performCloudCommand: (LibraryCloudCommand) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -244,6 +281,11 @@ struct BookRow: View {
                             .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(3)
+                    }
+
+                    // "Downloaded", "In Cloud", and so on, in a cloud library.
+                    if let cloudState {
+                        BookCloudNote(state: cloudState)
                     }
                 }
                 HStack {
@@ -281,6 +323,17 @@ struct BookRow: View {
             ? "Double-tap to \(isEditSelected ? "deselect" : "select")"
             : "Press Enter to open, Command I for info")
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
+        .accessibilityActions {
+            ForEach(cloudCommands) { command in
+                Button(command.title) { performCloudCommand(command) }
+            }
+        }
+    }
+
+    /// The names of the row's own VoiceOver actions, in the order VoiceOver
+    /// lists them.
+    var accessibilityActionNames: [String] {
+        cloudCommands.map(\.title)
     }
 
     /// Spoken label for the whole row, replacing its combined children.
@@ -296,8 +349,12 @@ struct BookRow: View {
         } else if isOpenInWindow {
             parts.append("Now Reading")
         }
-        if let progress = Self.progressText(for: book) {
-            parts.append(progress.spoken)
+        if let cloudNote = cloudState?.spokenNote {
+            parts.append(cloudNote)
+        }
+        let besideDownloadPercentage = cloudState?.speaksPercentage ?? false
+        if let progress = Self.spokenProgress(for: book, besideDownloadPercentage: besideDownloadPercentage) {
+            parts.append(progress)
         }
         if let remaining = book.estimatedTimeRemaining(wpm: wpm) {
             parts.append("\(TimeFormatting.spoken(remaining)) remaining")
@@ -313,6 +370,15 @@ struct BookRow: View {
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
         return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
+    }
+
+    /// The reading progress as the row's label speaks it: "42 percent", or
+    /// "42 percent read" when the label also speaks a download's percentage
+    /// (FR02), so it never holds two bare percentages. Nil when the row
+    /// shows no progress.
+    static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
+        guard let progress = progressText(for: book) else { return nil }
+        return besideDownloadPercentage ? "\(progress.spoken) read" : progress.spoken
     }
 }
 

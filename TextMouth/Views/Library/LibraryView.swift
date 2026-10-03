@@ -154,15 +154,25 @@ struct LibraryView: View {
     /// Books selected via edit mode (persists through VoiceOver navigation)
     @State private var editSelection: Set<UUID> = []
     @State private var bookInfoTarget: Book?
-    /// EPUB metadata loaded on-demand when showing the rich editor from the library
-    @State private var richInfoEPUBMetadata: EPUBMetadata?
-    /// Audio metadata loaded on-demand when showing the rich editor from the library
-    @State private var richInfoAudioMetadata: AudioMetadata?
+    /// What the Book Info sheet shows for `bookInfoTarget`: read off the
+    /// main thread, and never downloaded for a book only in the cloud (FR02).
+    @State private var bookInfo: LibraryBookInfo = .simple
+    /// The Book Info request still reading, so only the latest one presents
+    /// its sheet.
+    @State private var bookInfoRequest: UUID?
     /// The NSWindow hosting this library, for checking key window status on notifications
     @State private var hostWindow: NSWindow?
     /// Whether removing asks first and where deleted files go, kept current
     /// so removal buttons and confirmations say what removal will do.
     @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
+    /// Every book's cloud state (FR02), observed so the rows' notes follow
+    /// each refresh and download. Rows read only what it recorded.
+    @ObservedObject private var cloudStates = BookCloudStates.shared
+    /// This window's token for the cloud refresher, which keeps refreshing
+    /// while any Library window is visible (FR02).
+    @State private var cloudRefreshToken = UUID()
+    /// A Remove Download refusal to show in this window (FR02).
+    @State private var cloudRefusal: LibraryCloudRefusal?
 
     var body: some View {
         let subfolders = category == .folders ? libraryViewModel.subfoldersOf(currentFolderPath) : []
@@ -236,11 +246,14 @@ struct LibraryView: View {
                 )
             }
 
-            // Total time remaining bar (refreshTick forces periodic re-evaluation)
+            // Total time remaining bar (refreshTick forces periodic re-evaluation),
+            // with how many of the books shown are in the cloud (FR02)
             let _ = libraryViewModel.refreshTick
+            let summarizedBooks = displayedBooks
             TimeRemainingBar(
-                books: displayedBooks,
+                books: summarizedBooks,
                 wpm: settingsViewModel.wordsPerMinute,
+                booksInCloud: cloudStates.countInTheCloud(summarizedBooks),
                 focusIdentifier: preferredLibraryFocusTarget == .timeSummary ? voiceOverFocusID : nil,
                 shouldTriggerFocus: preferredLibraryFocusTarget == .timeSummary
             )
@@ -297,94 +310,7 @@ struct LibraryView: View {
                 Section {
                     // Reference refreshTick so the list re-evaluates when the timer fires
                     let _ = libraryViewModel.refreshTick
-                    ForEach(Array(filteredBooks.enumerated()), id: \.element.id) { index, book in
-                        BookRow(
-                            book: book,
-                            isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
-                            wpm: settingsViewModel.wordsPerMinute,
-                            isEditMode: isEditMode,
-                            isEditSelected: editSelection.contains(book.id)
-                        )
-                            .tag(book.id)
-                            .accessibilityAction(.default) {
-                                if isEditMode {
-                                    toggleEditSelection(book.id)
-                                } else {
-                                    onOpenBook(book)
-                                }
-                            }
-                            .contextMenu {
-                                // Determine which books the action applies to:
-                                // use edit selection in edit mode, native selection otherwise,
-                                // falling back to just the clicked book.
-                                let targetBooks: [Book] = {
-                                    let ids = LibrarySelectionPolicy.contextTargets(
-                                        clickedID: book.id,
-                                        effectiveSelection: effectiveSelection
-                                    )
-                                    return filteredBooks.filter { ids.contains($0.id) }
-                                }()
-                                let isMulti = targetBooks.count > 1
-
-                                if !isMulti {
-                                    Button("Open") {
-                                        onOpenBook(book)
-                                    }
-                                    Button("Book Info") {
-                                        showBookInfo(for: book)
-                                    }
-                                }
-                                if !isEditMode {
-                                    Button("Select") {
-                                        editSelection.insert(book.id)
-                                        isEditMode = true
-                                    }
-                                }
-                                Button(isMulti ? "Move \(targetBooks.count) Books to Folder..." : "Move to Folder...") {
-                                    booksToMove = targetBooks
-                                    showMoveSheet = true
-                                }
-                                // Manual order move commands: single book only, where
-                                // the list shows one folder's manual order (TODO A06)
-                                if !isMulti, let folder = reorderableFolder {
-                                    let canUp = libraryViewModel.canMoveBookInManualOrder(
-                                        bookID: book.id, direction: -1, folderPath: folder
-                                    )
-                                    let canDown = libraryViewModel.canMoveBookInManualOrder(
-                                        bookID: book.id, direction: 1, folderPath: folder
-                                    )
-                                    if canUp || canDown {
-                                        Divider()
-                                    }
-                                    if canUp {
-                                        Button("Move Up") {
-                                            moveBook(book.id, direction: -1, inManualOrderOf: folder)
-                                        }
-                                    }
-                                    if canDown {
-                                        Button("Move Down") {
-                                            moveBook(book.id, direction: 1, inManualOrderOf: folder)
-                                        }
-                                    }
-                                }
-                                Divider()
-                                // Says what removal will do: ask first, or
-                                // move the files to the Trash, or delete them.
-                                Button(
-                                    LibraryRemoveCommandWording(
-                                        preferences: removalPreferences,
-                                        books: targetBooks
-                                    ).menuTitle,
-                                    role: .destructive
-                                ) {
-                                    libraryViewModel.removeBooks(targetBooks)
-                                    clearAllSelections()
-                                }
-                            }
-                    }
-                    // Dragging rearranges a folder's manual order only where
-                    // the rows are that whole order; elsewhere it is off.
-                    .onMove(perform: dragReorderAction)
+                    bookRows
                 } header: {
                     Text("Books (\(filteredBooks.count))")
                         .accessibilityAddTraits(.isHeader)
@@ -558,6 +484,13 @@ struct LibraryView: View {
             hostWindow = window
         }))
         .trackingRemovalPreferences($removalPreferences)
+        // Keeps the books' cloud states refreshed while the window is
+        // visible, and shows Remove Download's refusals (FR02).
+        .modifier(LibraryCloudWindowSupport(
+            token: cloudRefreshToken,
+            library: libraryViewModel,
+            refusal: $cloudRefusal
+        ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
         .sheet(isPresented: $libraryViewModel.showIndexRecoveryOptions) {
@@ -572,39 +505,7 @@ struct LibraryView: View {
             }
         }
         .sheet(item: $bookInfoTarget) { book in
-            if book.format == .epub, let metadata = richInfoEPUBMetadata {
-                // EPUB books get the rich metadata editor with publisher, date, etc.
-                MetadataEditorView(
-                    metadata: metadata,
-                    isEPUB: true,
-                    onSave: { updated, writeToFile in
-                        // The library's copy of the EPUB is written first when
-                        // asked, and nothing changes if that fails: the editor
-                        // then stays open and shows why (TODO A09). VoiceOver
-                        // hears the outcome from the editor, which has focus.
-                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
-                        VoiceOverAnnouncer.announce(save.message)
-                        return save.outcome
-                    }
-                )
-            } else if book.format.isAudio, let audioMeta = richInfoAudioMetadata {
-                // Audio books get the rich metadata editor with album, genre, etc.
-                MetadataEditorView(
-                    audioMetadata: audioMeta,
-                    onSave: { updated in
-                        var updatedBook = book
-                        updatedBook.title = updated.title
-                        updatedBook.author = updated.artist
-                        updatedBook.audioAlbum = updated.album
-                        updatedBook.audioGenre = updated.genre
-                        updatedBook.audioYear = updated.year
-                        libraryViewModel.updateBookMetadata(updatedBook)
-                    }
-                )
-            } else {
-                // Plain text, markdown, HTML — simple title/author editor
-                LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
-            }
+            bookInfoSheet(for: book)
         }
         .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
             // Only open in the focused library window
@@ -882,6 +783,170 @@ struct LibraryView: View {
         editSelection = LibrarySelectionPolicy.toggled(editSelection, id: id)
     }
 
+    // MARK: - Book Rows
+
+    /// The rows of the books shown. Dragging rearranges a folder's manual
+    /// order only where the rows are that whole order; elsewhere it is off.
+    private var bookRows: some View {
+        // The selection in list order, and its cloud commands, made once
+        // for all the rows that belong to it.
+        let selectedIDs = effectiveSelection
+        let selection = selectedBooks
+        let selectionCloudCommands = LibraryCloudCommand.commands(
+            for: selection,
+            isSelection: selection.count > 1,
+            states: cloudStates
+        )
+        return ForEach(Array(filteredBooks.enumerated()), id: \.element.id) { _, book in
+            bookRow(
+                book,
+                selectedIDs: selectedIDs,
+                selection: selection,
+                selectionCloudCommands: selectionCloudCommands
+            )
+        }
+        .onMove(perform: dragReorderAction)
+    }
+
+    /// One book's row, with its context menu and its VoiceOver actions,
+    /// which share the books they act on and the cloud commands (FR02).
+    /// - Parameters:
+    ///   - book: The row's book.
+    ///   - selectedIDs: Every selected book, by either selection.
+    ///   - selection: The selected books the list shows, in its order.
+    ///   - selectionCloudCommands: The cloud commands of `selection`.
+    private func bookRow(
+        _ book: Book,
+        selectedIDs: Set<UUID>,
+        selection: [Book],
+        selectionCloudCommands: [LibraryCloudCommand]
+    ) -> some View {
+        let targets = commandTargets(for: book, selectedIDs: selectedIDs, selection: selection)
+        let cloudCommands = targets.count > 1
+            ? selectionCloudCommands
+            : LibraryCloudCommand.commands(for: targets, isSelection: false, states: cloudStates)
+        return BookRow(
+            book: book,
+            isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
+            wpm: settingsViewModel.wordsPerMinute,
+            isEditMode: isEditMode,
+            isEditSelected: editSelection.contains(book.id),
+            cloudState: cloudStates.listedState(of: book.id),
+            cloudCommands: cloudCommands,
+            performCloudCommand: performCloudCommand
+        )
+        .tag(book.id)
+        .accessibilityAction(.default) {
+            if isEditMode {
+                toggleEditSelection(book.id)
+            } else {
+                onOpenBook(book)
+            }
+        }
+        .contextMenu {
+            bookContextMenu(for: book, targets: targets, cloudCommands: cloudCommands)
+        }
+    }
+
+    // MARK: - Row Commands
+
+    /// The books a row's commands act on: the selection, in list order,
+    /// when the row belongs to a selection of several books (in edit mode
+    /// or the list's own), and otherwise the row's own book.
+    /// - Parameters:
+    ///   - book: The row's book.
+    ///   - selectedIDs: Every selected book, by either selection.
+    ///   - selection: The selected books the list shows, in its order.
+    private func commandTargets(for book: Book, selectedIDs: Set<UUID>, selection: [Book]) -> [Book] {
+        let ids = LibrarySelectionPolicy.contextTargets(clickedID: book.id, effectiveSelection: selectedIDs)
+        return ids.count > 1 ? selection : [book]
+    }
+
+    /// A book row's context menu. Its commands act on `targets`: the
+    /// selection when the row belongs to one, otherwise the row's book.
+    /// The cloud commands (FR02) are also the row's VoiceOver actions.
+    @ViewBuilder
+    private func bookContextMenu(for book: Book, targets: [Book], cloudCommands: [LibraryCloudCommand]) -> some View {
+        let isMulti = targets.count > 1
+
+        if !isMulti {
+            Button("Open") {
+                onOpenBook(book)
+            }
+            Button("Book Info") {
+                showBookInfo(for: book)
+            }
+        }
+        if !isEditMode {
+            Button("Select") {
+                editSelection.insert(book.id)
+                isEditMode = true
+            }
+        }
+        Button(isMulti ? "Move \(targets.count) Books to Folder..." : "Move to Folder...") {
+            booksToMove = targets
+            showMoveSheet = true
+        }
+        // Manual order move commands: single book only, where
+        // the list shows one folder's manual order (TODO A06)
+        if !isMulti, let folder = reorderableFolder {
+            let canUp = libraryViewModel.canMoveBookInManualOrder(
+                bookID: book.id, direction: -1, folderPath: folder
+            )
+            let canDown = libraryViewModel.canMoveBookInManualOrder(
+                bookID: book.id, direction: 1, folderPath: folder
+            )
+            if canUp || canDown {
+                Divider()
+            }
+            if canUp {
+                Button("Move Up") {
+                    moveBook(book.id, direction: -1, inManualOrderOf: folder)
+                }
+            }
+            if canDown {
+                Button("Move Down") {
+                    moveBook(book.id, direction: 1, inManualOrderOf: folder)
+                }
+            }
+        }
+        // Download Now and Remove Download in a cloud library, and Show in
+        // Finder in every library (FR02).
+        if !cloudCommands.isEmpty {
+            Divider()
+            ForEach(cloudCommands) { command in
+                Button(command.title) {
+                    performCloudCommand(command)
+                }
+            }
+        }
+        Divider()
+        // Says what removal will do: ask first, or
+        // move the files to the Trash, or delete them.
+        Button(
+            LibraryRemoveCommandWording(
+                preferences: removalPreferences,
+                books: targets
+            ).menuTitle,
+            role: .destructive
+        ) {
+            libraryViewModel.removeBooks(targets)
+            clearAllSelections()
+        }
+    }
+
+    /// Runs a row's cloud command, from its context menu or its VoiceOver
+    /// actions, announcing from this window and showing here a refusal it
+    /// reports (FR02).
+    private func performCloudCommand(_ command: LibraryCloudCommand) {
+        Task {
+            let refusal = await LibraryCloudCommands.shared.perform(command, in: libraryViewModel, from: hostWindow)
+            if let refusal {
+                cloudRefusal = refusal
+            }
+        }
+    }
+
     // MARK: - Finishing Sheets
 
     /// Finishes the operation a sheet started: after a success runs `close`,
@@ -1090,46 +1155,131 @@ struct LibraryView: View {
         }
     }
 
-    /// Load format-specific metadata and present the appropriate info editor.
-    /// EPUB and audio books get the rich MetadataEditorView; plain text formats
-    /// get the simple LibraryBookInfoSheet.
+    /// Shows Book Info for `book` once its metadata is read. EPUB and audio
+    /// books get the rich MetadataEditorView; other formats, and an EPUB
+    /// that cannot be read, get the simple LibraryBookInfoSheet. The reading
+    /// happens off the main thread and never downloads a book whose file is
+    /// only in the cloud, whose editor shows what the library keeps (FR02).
+    /// A later request replaces one still reading.
     private func showBookInfo(for book: Book) {
-        richInfoEPUBMetadata = nil
-        richInfoAudioMetadata = nil
-
-        guard book.format.usesRichMetadataEditor else {
+        let request = UUID()
+        bookInfoRequest = request
+        Task {
+            let info = await LibraryBookInfoReader.system.info(for: book)
+            guard bookInfoRequest == request else { return }
+            bookInfoRequest = nil
+            bookInfo = info
             bookInfoTarget = book
-            return
         }
+    }
 
-        if book.format == .epub {
-            // Load EPUB metadata from the file
-            let url = URL(fileURLWithPath: book.filePath)
-            if let extracted = try? EPUBParser.readMetadata(url: url) {
-                richInfoEPUBMetadata = book.mergingEditableEPUBMetadata(extracted)
-            }
-        } else if book.format.isAudio {
-            // Load audio metadata asynchronously, then show the sheet
-            Task {
-                let meta = await AudioPlaybackService.extractFullMetadata(
-                    from: URL(fileURLWithPath: book.filePath)
-                )
-                // Overlay stored user edits
-                var merged = meta
-                merged.title = book.title
-                merged.artist = book.author
-                if let album = book.audioAlbum { merged.album = album }
-                if let genre = book.audioGenre { merged.genre = genre }
-                if let year = book.audioYear { merged.year = year }
-                await MainActor.run {
-                    richInfoAudioMetadata = merged
-                    bookInfoTarget = book
+    /// The Book Info sheet for `book`, as `showBookInfo(for:)` read it.
+    @ViewBuilder
+    private func bookInfoSheet(for book: Book) -> some View {
+        switch bookInfo {
+        case .epub(let metadata, let isCloudOnly):
+            VStack(spacing: 0) {
+                if isCloudOnly {
+                    bookInfoCloudOnlyNote
                 }
+                // EPUB books get the rich metadata editor with publisher, date, etc.
+                MetadataEditorView(
+                    metadata: metadata,
+                    isEPUB: true,
+                    onSave: { updated, writeToFile in
+                        // Writing an EPUB only in the cloud would download it
+                        // first while the interface waited, so the editor
+                        // stays open and says why instead.
+                        if let refusal = LibraryBookInfo.writeRefusal(
+                            isCloudOnly: isCloudOnly,
+                            writesToFile: writeToFile
+                        ) {
+                            VoiceOverAnnouncer.announce(refusal)
+                            return .failure(refusal)
+                        }
+                        // The library's copy of the EPUB is written first when
+                        // asked, and nothing changes if that fails: the editor
+                        // then stays open and shows why (TODO A09). VoiceOver
+                        // hears the outcome from the editor, which has focus.
+                        let save = libraryViewModel.saveEPUBMetadata(updated, for: book, writingToFile: writeToFile)
+                        VoiceOverAnnouncer.announce(save.message)
+                        return save.outcome
+                    }
+                )
             }
-            return // Don't set bookInfoTarget yet — the Task will do it
+        case .audio(let metadata, let isCloudOnly):
+            VStack(spacing: 0) {
+                if isCloudOnly {
+                    bookInfoCloudOnlyNote
+                }
+                // Audio books get the rich metadata editor with album, genre, etc.
+                MetadataEditorView(
+                    audioMetadata: metadata,
+                    onSave: { updated in
+                        var updatedBook = book
+                        updatedBook.title = updated.title
+                        updatedBook.author = updated.artist
+                        updatedBook.audioAlbum = updated.album
+                        updatedBook.audioGenre = updated.genre
+                        updatedBook.audioYear = updated.year
+                        libraryViewModel.updateBookMetadata(updatedBook)
+                    }
+                )
+            }
+        case .simple:
+            // Plain text, markdown, HTML — simple title/author editor
+            LibraryBookInfoSheet(book: book, libraryViewModel: libraryViewModel)
         }
+    }
 
-        bookInfoTarget = book
+    /// Says, above the editor, that some details appear once the book is
+    /// downloaded, for a book whose file is only in the cloud (FR02).
+    private var bookInfoCloudOnlyNote: some View {
+        Label(LibraryBookInfo.cloudOnlyNote, systemImage: "cloud")
+            .font(.callout)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding([.horizontal, .top])
+    }
+}
+
+// MARK: - Cloud Library Window Support (FR02)
+
+/// A Library window's part in the cloud library (FR02): while the window is
+/// visible, the shared refresher keeps the books' cloud states current, and
+/// the window shows the refusals of the Remove Download commands run in it.
+private struct LibraryCloudWindowSupport: ViewModifier {
+    /// The window's token for the refresher.
+    let token: UUID
+    /// The library the window shows.
+    let library: LibraryViewModel
+    /// The refusal to show, cleared when its alert is dismissed.
+    @Binding var refusal: LibraryCloudRefusal?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                LibraryCloudRefresher.shared.libraryWindowAppeared(token, showing: library)
+            }
+            .onDisappear {
+                LibraryCloudRefresher.shared.libraryWindowDisappeared(token)
+            }
+            // Why Remove Download kept a book's download, which VoiceOver
+            // has also heard announced.
+            .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { refusal in
+                Text(refusal.message)
+            }
+    }
+
+    /// Whether the alert shows; dismissing it forgets the refusal.
+    private var isShowingRefusal: Binding<Bool> {
+        Binding(
+            get: { refusal != nil },
+            set: { isPresented in
+                if !isPresented { refusal = nil }
+            }
+        )
     }
 }
 
