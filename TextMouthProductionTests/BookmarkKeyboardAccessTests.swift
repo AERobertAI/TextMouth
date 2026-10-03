@@ -417,6 +417,26 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         }
     }
 
+    /// Opening on a bookmark far down a long list scrolls its row into view,
+    /// so a sighted keyboard user sees where focus went.
+    func testOpeningScrollsTheTargetedRowIntoView() throws {
+        // The panel shows about seven rows; bookmark 31 is the 31st.
+        let reader = makeReader(
+            bookmarks: makeBookmarks(count: 40),
+            position: ReadingPosition(chapterIndex: 30, characterOffset: 10)
+        )
+        defer { reader.close() }
+
+        try withRenderedPanel(for: reader) { hostingView in
+            XCTAssertTrue(waitUntil { focusTargetRows(in: hostingView) == [30] }, "\(focusTargetRows(in: hostingView))")
+            let shown = waitUntil {
+                hostingView.layoutSubtreeIfNeeded()
+                return isRowInView(30, in: hostingView)
+            }
+            XCTAssertTrue(shown, "Bookmark 31's row is scrolled into view")
+        }
+    }
+
     /// A rendered panel without bookmarks opens with VoiceOver focus
     /// requested outside the list: on the Add button, the only control
     /// besides the rows that asks for it.
@@ -649,6 +669,19 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
                     return area.minY <= center && center <= area.maxY
                 }
             }
+        }
+    }
+
+    /// Whether row `row` (counted from zero at the top) lies wholly inside
+    /// the part of the list scrolled into view.
+    private func isRowInView(_ row: Int, in hostingView: NSView) -> Bool {
+        let rows = renderedRowButtons(in: hostingView)
+        guard rows.indices.contains(row),
+              let scrollView = descendants(of: hostingView, as: NSScrollView.self).first,
+              let list = scrollView.documentView else { return false }
+        let visible = scrollView.documentVisibleRect
+        return rows[row].allSatisfy { button in
+            visible.contains(button.convert(button.bounds, to: list))
         }
     }
 

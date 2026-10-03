@@ -70,39 +70,57 @@ struct BookmarkPanelView: View {
     @FocusState private var noteFieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            switch mode {
-            case .list:
-                listContent
-            case .add:
-                addContent
-            case .edit(let bookmark):
-                editContent(bookmark)
+        ScrollViewReader { list in
+            VStack(spacing: 0) {
+                switch mode {
+                case .list:
+                    listContent
+                case .add:
+                    addContent
+                case .edit(let bookmark):
+                    editContent(bookmark)
+                }
+            }
+            .frame(width: 380, height: 400)
+            .navigationTitle(viewModel.book.title)
+            .onAppear {
+                rebuildRows()
+                requestFocus(Self.openingFocusTarget(for: viewModel), voiceOverDelay: Self.openingVoiceOverDelay)
+            }
+            .onChange(of: viewModel.bookmarks) { _, _ in
+                rebuildRows()
+            }
+            .onChange(of: viewModel.headings) { _, _ in
+                rebuildRows()
+            }
+            // Keyboard focus follows each request once SwiftUI has drawn its
+            // target: after an add or an edit the list itself comes back, and
+            // on opening the sheet is still presenting. A newer request
+            // cancels one still waiting. VoiceOver follows through the
+            // target's own `RequestedVoiceOverFocus`, so the two land on the
+            // same control. The list scrolls to the target even when keyboard
+            // focus cannot go there (keyboard navigation off), so the new or
+            // nearest bookmark is in view.
+            .task(id: focusRequest) {
+                guard let target = focusRequest.target else { return }
+                try? await Task.sleep(for: Self.keyboardFocusDelay)
+                guard !Task.isCancelled else { return }
+                focusedControl = target
+                scroll(list, toShow: target)
+            }
+            // Keep the row with keyboard focus in view as the user moves it.
+            .onChange(of: focusedControl) { _, control in
+                guard let control else { return }
+                scroll(list, toShow: control)
             }
         }
-        .frame(width: 380, height: 400)
-        .navigationTitle(viewModel.book.title)
-        .onAppear {
-            rebuildRows()
-            requestFocus(Self.openingFocusTarget(for: viewModel), voiceOverDelay: Self.openingVoiceOverDelay)
-        }
-        .onChange(of: viewModel.bookmarks) { _, _ in
-            rebuildRows()
-        }
-        .onChange(of: viewModel.headings) { _, _ in
-            rebuildRows()
-        }
-        // Keyboard focus follows each request once SwiftUI has drawn its
-        // target: after an add or an edit the list itself comes back, and on
-        // opening the sheet is still presenting. A newer request cancels one
-        // still waiting. VoiceOver follows through the target's own
-        // `RequestedVoiceOverFocus`, so the two land on the same control.
-        .task(id: focusRequest) {
-            guard let target = focusRequest.target else { return }
-            try? await Task.sleep(for: Self.keyboardFocusDelay)
-            guard !Task.isCancelled else { return }
-            focusedControl = target
-        }
+    }
+
+    /// Scroll the list just enough to show the row `target` names. The Add
+    /// button, above the list, is always in view.
+    private func scroll(_ list: ScrollViewProxy, toShow target: BookmarkPanelFocusTarget) {
+        guard case .bookmark(let id) = target else { return }
+        list.scrollTo(id)
     }
 
     // MARK: - List Mode
