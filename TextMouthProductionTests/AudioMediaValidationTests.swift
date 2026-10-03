@@ -499,6 +499,171 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(parsed.content.chapters.map(\.title), ["Part One", "First Sounding", "Interlude", "Second Sounding"])
     }
 
+    // MARK: - Sections of Several Clips
+
+    /// A section whose clips play from three files lasts as long as its
+    /// clips together. A middle clip that plays to its file's end is given
+    /// that end, so every clip of the section has a known length, while a
+    /// one-clip section keeps its 0. The section starts in its first clip's
+    /// file.
+    func testSectionOfSeveralClipsLastsAsLongAsItsClipsTogether() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("c.wav"), duration: 1.5)
+        let survey = try XCTUnwrap(AudioSegment(title: "Harbor Survey", clips: [
+            AudioClip(file: "a.wav", startTime: 0.5, endTime: 2),
+            AudioClip(file: "b.wav", startTime: 0, endTime: 0),
+            AudioClip(file: "c.wav", startTime: 0, endTime: 1.5)
+        ]))
+        try writeManifest(sections: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 0.5),
+            survey,
+            AudioSegment(title: "Closing Notes", file: "c.wav", startTime: 0, endTime: 0)
+        ])
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder)
+
+        // Half a second, given a second's worth; 1.5 + 1 + 1.5 seconds; 1.5.
+        XCTAssertEqual(parsed.content.chapters.map(\.text.count), [10, 40, 15])
+        XCTAssertEqual(describeClips(parsed.segments), [
+            ["a.wav 0.0–0.5"],
+            ["a.wav 0.5–2.0", "b.wav 0.0–1.0", "c.wav 0.0–1.5"],
+            ["c.wav 0.0–0.0"]
+        ])
+        XCTAssertEqual(parsed.filePaths, ["a.wav", "a.wav", "c.wav"].map { folder.appendingPathComponent($0).path })
+    }
+
+    /// I04's clamp applies to every clip: a middle clip ending just past
+    /// its file's end is moved back to exactly that end, and the move is
+    /// logged for its file.
+    func testMiddleClipEndingWithinTheToleranceIsMovedBack() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("c.wav"), duration: 1)
+        let title = "Padded Middle Clip \(UUID().uuidString)"
+        try writeManifest(title: title, sections: [try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+            AudioClip(file: "a.wav", startTime: 0, endTime: 2),
+            AudioClip(file: "b.wav", startTime: 0, endTime: 1.25),
+            AudioClip(file: "c.wav", startTime: 0, endTime: 1)
+        ]))])
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder)
+
+        XCTAssertEqual(describeClips(parsed.segments), [["a.wav 0.0–2.0", "b.wav 0.0–1.0", "c.wav 0.0–1.0"]])
+        XCTAssertEqual(parsed.content.chapters.map(\.text.count), [40])
+        let tag = "\(AudioBookParser.clampLogTag): \(title): "
+        let logged = debugLogLines(containing: tag).compactMap { line in
+            line.range(of: tag).map { String(line[$0.lowerBound...]) }
+        }
+        XCTAssertEqual(logged, [
+            tag + "b.wav: moved 1 section's end back to the file's measured end of 1.000 s, from 0.250 s past it"
+        ])
+    }
+
+    /// A middle clip starting after its file ends fails, naming the heading
+    /// and that clip's file, not the file the heading starts in.
+    func testMiddleClipStartingPastItsFilesEndFailsNamingThatFile() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try writeManifest(sections: [
+            AudioSegment(title: "Opening", file: "a.wav", startTime: 0, endTime: 1),
+            try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+                AudioClip(file: "a.wav", startTime: 1, endTime: 2),
+                AudioClip(file: "b.wav", startTime: 3, endTime: 3.5)
+            ]))
+        ])
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .sectionStartsPastEnd(
+            section: AudioSectionName(title: "Survey", number: 2), file: "b.wav", start: 3, fileDuration: 1
+        ))
+    }
+
+    /// A middle clip ending far past its file's end fails the same way.
+    func testMiddleClipEndingFarPastItsFilesEndFails() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try writeManifest(sections: [try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+            AudioClip(file: "a.wav", startTime: 0, endTime: 2),
+            AudioClip(file: "b.wav", startTime: 0, endTime: 5),
+            AudioClip(file: "a.wav", startTime: 0, endTime: 1)
+        ]))])
+
+        let error = await parseDirectoryError()
+
+        XCTAssertEqual(error, .sectionEndsPastEnd(
+            section: AudioSectionName(title: "Survey", number: 1), file: "b.wav", end: 5, fileDuration: 1
+        ))
+    }
+
+    /// A clip naming a file the book lacks, or with impossible times, is
+    /// refused before any file is probed, wherever it lies in its section.
+    func testMalformedLaterClipsAreRefusedBeforeAnyFileIsProbed() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"))
+        let malformed = [
+            AudioClip(file: "missing.wav", startTime: 0, endTime: 1),
+            AudioClip(file: "../a.wav", startTime: 0, endTime: 1),
+            AudioClip(file: "a.wav", startTime: -1, endTime: 0),
+            AudioClip(file: "a.wav", startTime: 0.75, endTime: 0.5)
+        ]
+        for clip in malformed {
+            try writeManifest(sections: [try XCTUnwrap(AudioSegment(title: "Survey", clips: [
+                AudioClip(file: "a.wav", startTime: 0, endTime: 0.5),
+                clip
+            ]))])
+            let recorder = ProbeRecorder()
+
+            let error = await parseDirectoryError(prober: recorder.prober())
+
+            XCTAssertEqual(error, .invalidSegment, clip.file)
+            XCTAssertEqual(recorder.probedFiles, [], clip.file)
+        }
+    }
+
+    /// Clips sharing a file probe it once: five clips in two files are two
+    /// probes.
+    func testFileSharedByClipsIsProbedOnce() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("b.wav"), duration: 1)
+        try writeManifest(sections: [
+            try XCTUnwrap(AudioSegment(title: "One", clips: [
+                AudioClip(file: "a.wav", startTime: 0, endTime: 0.5),
+                AudioClip(file: "b.wav", startTime: 0, endTime: 0.5)
+            ])),
+            try XCTUnwrap(AudioSegment(title: "Two", clips: [
+                AudioClip(file: "b.wav", startTime: 0.5, endTime: 1),
+                AudioClip(file: "a.wav", startTime: 0.5, endTime: 1),
+                AudioClip(file: "a.wav", startTime: 1.5, endTime: 2)
+            ]))
+        ])
+        let recorder = ProbeRecorder()
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder, prober: recorder.prober())
+
+        XCTAssertEqual(recorder.probedFiles.sorted(), ["a.wav", "b.wav"])
+        XCTAssertEqual(parsed.content.chapters.map(\.text.count), [10, 15])
+    }
+
+    /// Only where sections start is kept in order within a file. A later
+    /// clip of a section may go back in a file, as a note recorded at the
+    /// end of a file interrupts the text before it.
+    func testLaterClipsOfASectionMayGoBackInAFile() async throws {
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 2)
+        try writeManifest(sections: [
+            try XCTUnwrap(AudioSegment(title: "Chapter 1", clips: [
+                AudioClip(file: "a.wav", startTime: 0, endTime: 0.5),
+                AudioClip(file: "a.wav", startTime: 1.5, endTime: 2),
+                AudioClip(file: "a.wav", startTime: 0.5, endTime: 1)
+            ])),
+            AudioSegment(title: "Chapter 2", file: "a.wav", startTime: 1, endTime: 1.5)
+        ])
+
+        let parsed = try await AudioBookParser.parseDirectory(url: folder)
+
+        XCTAssertEqual(parsed.content.chapters.map(\.text.count), [15, 10])
+    }
+
     /// Times are written as spoken words, which read the same on screen,
     /// aloud, and in braille: an hour into a ten-minute file.
     func testRangeMessagesSpeakTimesInWords() async throws {
@@ -680,11 +845,19 @@ final class AudioMediaValidationTests: XCTestCase {
         try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
     }
 
-    /// Sections as "title | file | start–end" lines, which compare as a
-    /// whole and read clearly in a failure message (`AudioSegment` is not
-    /// `Equatable`).
+    /// Sections as "title | file | start–end" lines (of each section's
+    /// first clip), which compare as a whole and read clearly in a failure
+    /// message.
     private func describe(_ sections: [AudioSegment]?) -> [String] {
         (sections ?? []).map { "\($0.title) | \($0.file) | \($0.startTime)–\($0.endTime)" }
+    }
+
+    /// Each section's clips as "file start–end" lines, section by section,
+    /// which compare as a whole and read clearly in a failure message.
+    private func describeClips(_ sections: [AudioSegment]?) -> [[String]] {
+        (sections ?? []).map { section in
+            section.clips.map { "\($0.file) \($0.startTime)–\($0.endTime)" }
+        }
     }
 }
 
